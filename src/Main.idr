@@ -21,8 +21,5 @@ three_by_one_by_two = MkTensor [[[1, 2]], [[3, 4]], [[5, 6]]]
 three_by_three : Tensor [3, 3] Double
 three_by_three = MkTensor [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 
-bc_prf : Broadcastable [1, 1, 1] [3, 1, 2]
-bc_prf = Extend (One Refl _) (Extend (Eq Refl) (Extend (One Refl _) Empty))
-
 main : IO ()
 main = printLn $ two_by_four @@ four_by_three

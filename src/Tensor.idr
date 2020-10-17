@@ -45,9 +45,6 @@ export
 transpose : Tensor [m, n] dtype -> Tensor [n, m] dtype
 transpose (MkTensor x) = MkTensor $ transpose x
 
-export
-cross : Tensor
-
 -- why does this work with a and b but not other names?
 -- see http://docs.idris-lang.org/en/latest/tutorial/interfaces.html#functors-and-applicatives
 public export
@@ -88,7 +85,6 @@ export partial
     dot : Num ty => Vect (S n) ty -> Array (S n :: ps) ty -> Array ps ty
     dot {ps = []} x y = sum $ zipWith (*) x y
     dot {ps = (_ :: [])} x y = foldr1 (zipWith (+)) $ zipWith (\x_elem, y_row => map (* x_elem) y_row) x y
-    dot {ps = (_ :: _ :: [])} x y = ?r
 
 public export implicit doubleToScalar : Double -> Tensor [] Double
 doubleToScalar = MkTensor
@@ -125,7 +121,7 @@ det {n = S (S Z)} (MkTensor [[a, b, c], [d, e, f], [g, h, i]]) = MkTensor $ a * 
 
 partial
 adjugate : Neg dtype => Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
-adjugate {n = Z} (MkTensor [[a]]) = ?r
+adjugate {n = Z} (MkTensor [[a]]) = MkTensor [[1]]
 adjugate {n = (S Z)} (MkTensor [[a, b], [c, d]]) = MkTensor [[d, -c], [-b, a]]
 adjugate {n = (S (S Z))} (MkTensor [[a, b, c], [d, e, f], [g, h, i]]) = MkTensor [
     [e * i - f * h, - (d * i - f * g), d * h - e * g],
