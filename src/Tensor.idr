@@ -144,3 +144,75 @@ inverse x = let det_@(MkTensor d) = det x in if (d == 0.0) then Nothing else Jus
 export
 diag : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 diag (MkTensor x) = MkTensor $ product $ diag x
+
+---------------------------- broadcasting ---------------------------------
+
+-- see https://www.tensorflow.org/xla/broadcasting
+|||
+||| can add arbitrary dimensions to the head of the shape, but not to the tail
+||| [3] -> [3, 3]
+||| [] -> [2, 4, 7]
+|||
+||| can multiply any 1
+||| [1, 3] -> [3, 3]
+||| [3, 1] -> [3, 3]
+|||
+-- todo it may be miles simpler to say that you can only broadcast by the second
+--  rule, then provide a way to add 1s to the head of the from shape, which
+--  would then enable the second route, so rather than broadcast t, it would be
+--  broadcast (expand t)
+public export
+data DimBroadcastable : Nat -> Nat -> Type where
+  Eq : l = r -> DimBroadcastable l r
+  One : l = 1 -> (r : Nat) -> DimBroadcastable l r
+
+public export
+data Broadcastable : (from : Shape {rank}) -> (to : Shape {rank}) -> Type where
+  Empty : Broadcastable [] []  -- todo can this be Broadcastable x x?
+  Extend : DimBroadcastable fd td -> Broadcastable f t -> Broadcastable (fd :: f) (td :: t)
+
+cannot_broadcast_for_incompatible_heads : ((d = 1) -> Void) -> ((d = d') -> Void) -> Broadcastable (d :: ds) (d' :: ds') -> Void
+cannot_broadcast_for_incompatible_heads d_neq_1 d_neq_d' (Extend (Eq prf) _) = d_neq_d' prf
+cannot_broadcast_for_incompatible_heads d_neq_1 d_neq_d' (Extend (One prf _) _) = d_neq_1 prf
+
+cannot_broadcast_for_incompatible_tails : (Broadcastable ds ds' -> Void) -> Broadcastable (d :: ds) (d' :: ds') -> Void
+cannot_broadcast_for_incompatible_tails tails_are_not_broadcastable (Extend _ tails_are_broadcastable) = tails_are_not_broadcastable tails_are_broadcastable
+
+export
+is_broadcastable : Tensor from dtype -> Tensor to dtype -> Dec (Broadcastable from to)
+is_broadcastable {from} {to} _ _ = is_broadcastable' from to where
+  is_broadcastable' : (from : Shape) -> (to : Shape) -> Dec (Broadcastable from to)
+  is_broadcastable' [] [] = Yes Empty
+  is_broadcastable' (d :: ds) (d' :: ds') with (is_broadcastable' ds ds')
+    | Yes tails_are_broadcastable with (decEq d d')
+      | Yes d_eq_d' = Yes $ Extend (Eq d_eq_d') tails_are_broadcastable
+      | No d_neq_d' with (decEq d 1)
+        | Yes d_eq_1 = Yes $ Extend (One d_eq_1 d') tails_are_broadcastable
+        | No d_neq_1 = No $ cannot_broadcast_for_incompatible_heads d_neq_1 d_neq_d'
+    | No tails_are_not_broadcastable = No (cannot_broadcast_for_incompatible_tails tails_are_not_broadcastable)
+
+export partial
+broadcast : Tensor from dtype -> {auto prf : Broadcastable from to} -> Tensor to dtype
+broadcast {from} {to} {dtype} {prf} (MkTensor x) = MkTensor (broadcast' from to x) where
+  partial
+  broadcast' : (from : Shape) -> (to : Shape) -> {auto prf_ : Broadcastable from to} -> Array from dtype -> Array to dtype
+  broadcast' {prf_ = Empty} [] [] x = x
+  broadcast' {prf_ = (Extend (Eq Refl) _)} (d :: ds) (d :: dds) x = map (broadcast' ds dds) x
+  broadcast' {prf_ = (Extend (One Refl dd) _)} ((S Z) :: ds) (dd :: dds) x = replicate dd (head (map (broadcast' ds dds) x))
+
+public export
+data Nestable : (from : Shape) -> (to : Shape) -> Type where
+  Same : Nestable f f  -- todo why does this break if I call it Eq?
+  AddOne : Nestable f t -> Nestable f (1 :: t)
+
+export
+is_nestable : Tensor from dtype -> Tensor to dtype -> Dec (Nestable from to)
+is_nestable {from} {to} _ _ = is_nestable' from to where
+  is_nestable' : (from : Shape) -> (to : Shape) -> Dec (Nestable from to)
+
+export partial
+pad : {auto prf : Nestable from to} -> Tensor from dtype -> Tensor to dtype
+pad (MkTensor x) = MkTensor (pad' x) where
+  pad' : {auto prf' : Nestable from to} -> Array from dtype -> Array to dtype
+  pad' {prf' = Same} x = x
+  pad' {prf' = (AddOne y)} x = [pad' x]
