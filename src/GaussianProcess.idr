@@ -42,14 +42,16 @@ export
 marginalise : {samples : Nat} -> GaussianProcess features -> Tensor (samples :: features) Double -> Gaussian samples
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
+PI : Double
+
 log_marginal_likelihood : {samples : Nat}
  -> GaussianProcess features
  -> Gaussian (S samples)
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Maybe $ Tensor [] Double
-log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x_train, y_train) = case inverse {leading=[]} (kernel x_train x_train + cov) of
-  Nothing => Nothing
-  Just inv => ?rhs
+log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = let kc = kernel x x + cov in map foo (inverse {leading=[]} kc) where
+  foo : Tensor [S samples, S samples] Double -> Tensor [] Double
+  foo inv = (MkTensor (-1.0 / 2)) * ((@@) {leading=[]} {head=[]} ((@@) {leading=[]} {head=[]} y inv) y - (log $ det inv) + (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI))
 
 export
 optimize : {samples : Nat}

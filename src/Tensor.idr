@@ -101,6 +101,9 @@ export
 (/) : Fractional dtype => Tensor (leading ++: shape) dtype -> Tensor leading dtype -> Tensor (leading ++: shape) dtype
 -- (/) t (MkTensor x) = map (/ x) t
 
+export
+log : Tensor shape Double -> Tensor shape Double
+
 ---------------------------- other ----------------------------------
 
 ew_eq : Eq dtype => Tensor shape dtype -> dtype -> Tensor shape Bool
