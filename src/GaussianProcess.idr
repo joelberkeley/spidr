@@ -43,9 +43,12 @@ log_marginal_likelihood : {samples : Nat}
  -> Gaussian (S samples)
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Maybe $ Tensor [] Double
-log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = let kc = kernel x x + cov in map foo (inverse {leading=[]} kc) where
+log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo (inverse {leading=[]} $ kernel x x + cov) where
   foo : Tensor [S samples, S samples] Double -> Tensor [] Double
-  foo inv = (MkTensor (-1.0 / 2)) * ((@@) {leading=[]} {head=[]} ((@@) {leading=[]} {head=[]} y inv) y - (log $ det inv) + (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI))
+  foo inv = let a = (@@) {leading=[]} {head=[]} ((@@) {leading=[]} {head=[]} y inv) y
+                b = (log $ det inv)
+                c = (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI) in
+                  (MkTensor (-1.0 / 2)) * (a - b + c)
 
 export
 optimize : {samples : Nat}
