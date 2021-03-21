@@ -22,21 +22,15 @@ posterior : {samples : Nat}
  -> (likelihood : Gaussian (S samples))
  -> (training_data : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
  -> Maybe $ GaussianProcess features
--- todo replace case and tmp with `with` as
--- posterior (MkGP _ kernel) (MkGaussian _ cov) (x_train, y_train) with (inverse (kernel x_train x_train + cov))
---   | Nothing = Nothing
---   | Just inv = Just $ MkGP posterior_mean_function posterior_kernel where
-posterior (MkGP _ kernel) (MkGaussian _ cov) (x_train, y_train) = case inverse {leading=[]} (kernel x_train x_train + cov) of
-  Nothing => Nothing
-  Just inv' => tmp inv' where
-    tmp : Tensor [S samples, S samples] Double -> Maybe $ GaussianProcess features
-    tmp inv = Just $ MkGP posterior_mean_function posterior_kernel where
-      posterior_mean_function : MeanFunction features
-      -- todo can we use rewrite to avoid the use of implicits here and for posterior_kernel?
-      posterior_mean_function {samples} x = (@@) {leading=[]} {head=[samples]} ((@@) {leading=[]} {head=[samples]} (kernel x x_train) inv) y_train
+posterior (MkGP _ kernel) (MkGaussian _ cov) (x_train, y_train) = map foo $ inverse {leading=[]} (kernel x_train x_train + cov) where
+  foo : Tensor [S samples, S samples] Double -> GaussianProcess features
+  foo inv = MkGP posterior_mean_function posterior_kernel where
+    posterior_mean_function : MeanFunction features
+    -- todo can we use rewrite to avoid the use of implicits here and for posterior_kernel?
+    posterior_mean_function {samples} x = (@@) {leading=[]} {head=[samples]} ((@@) {leading=[]} {head=[samples]} (kernel x x_train) inv) y_train
 
-      posterior_kernel : Kernel features
-      posterior_kernel {samples} x x' = kernel x x' - (@@) {leading=[]} {head=[samples]} ((@@) {leading=[]} {head=[samples]} (kernel x x_train) inv) (kernel x_train x')
+    posterior_kernel : Kernel features
+    posterior_kernel {samples} x x' = kernel x x' - (@@) {leading=[]} {head=[samples]} ((@@) {leading=[]} {head=[samples]} (kernel x x_train) inv) (kernel x_train x')
 
 export
 marginalise : {samples : Nat} -> GaussianProcess features -> Tensor (samples :: features) Double -> Gaussian samples
