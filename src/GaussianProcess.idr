@@ -32,10 +32,11 @@ posterior (MkGP _ kernel) (MkGaussian _ cov) (x_train, y_train) = case inverse {
     tmp : Tensor [S samples, S samples] Double -> Maybe $ GaussianProcess features
     tmp inv = Just $ MkGP posterior_mean_function posterior_kernel where
       posterior_mean_function : MeanFunction features
-      posterior_mean_function x = vdot (kernel x x_train) (vdot inv y_train)
+      -- todo can we use rewrite to avoid the use of implicits here and for posterior_kernel?
+      posterior_mean_function {samples} x = (@@) {leading=[]} {head=[samples]} ((@@) {leading=[]} {head=[samples]} (kernel x x_train) inv) y_train
 
       posterior_kernel : Kernel features
-      posterior_kernel x x' = kernel x x' - matmul (matmul (kernel x x_train) inv) (kernel x_train x')
+      posterior_kernel {samples} x x' = kernel x x' - (@@) {leading=[]} {head=[samples]} ((@@) {leading=[]} {head=[samples]} (kernel x x_train) inv) (kernel x_train x')
 
 export
 marginalise : {samples : Nat} -> GaussianProcess features -> Tensor (samples :: features) Double -> Gaussian samples

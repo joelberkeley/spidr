@@ -82,14 +82,7 @@ diag : (n : Nat) -> dtype -> Tensor [n, n] dtype
 infixl 9 @@
 
 export
-(@@) : Num dtype => {0 leading : Shape} -> Tensor (leading ++: [S n]) dtype -> Tensor (S n :: ps) dtype -> Tensor (leading ++: ps) dtype
-
--- todo subsume vdot and matmul into @@
-export
-vdot : Num dtype => Tensor [m, S n] dtype -> Tensor [S n] dtype -> Tensor [m] dtype
-
-export
-matmul : Num dtype => Tensor [m, S n] dtype -> Tensor [S n, p] dtype -> Tensor [m, p] dtype
+(@@) : Num dtype => Tensor (leading ++: head ++: [S n]) dtype -> Tensor (leading ++: (S n :: tail)) dtype -> Tensor (leading ++: head ++: tail) dtype
 
 export
 (+) : Num dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
