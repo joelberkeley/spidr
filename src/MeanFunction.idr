@@ -5,9 +5,9 @@ import Tensor
 
 public export
 MeanFunction : (features : Shape) -> Type
-MeanFunction features = {samples : Nat} -> Tensor (samples :: features) Double -> Tensor [samples] Double
+MeanFunction features = {sm : Nat} -> Tensor (sm :: features) Double -> Tensor [sm] Double
 
--- todo is it possible to implement this without using `samples`? If so, we can make samples erased
+-- todo is it possible to implement this without using `sm`? If so, we can make `sm` erased
 export
 zero : MeanFunction features
-zero {samples} (MkTensor x) = replicate [samples] $ MkTensor 0
+zero {sm} (MkTensor x) = replicate {over=[sm]} $ MkTensor 0

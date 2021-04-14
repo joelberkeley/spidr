@@ -1,6 +1,7 @@
 module Tensor
 
 import Data.Vect
+import Data.Nat
 
 %default total
 
@@ -29,11 +30,17 @@ Show (ArrayLike shape dtype) => Show (Tensor shape dtype) where
 ----------------------------- structural operations ----------------------------
 
 infixl 9 ++:  -- todo is this right?
+infixl 9 :++  -- todo is this right?
 
 public export
-(++:) : {0 r, r' : Nat} -> Shape {rank=r} -> Shape {rank=r'} -> Shape {rank=r + r'}
-(++:) [] y = y
-(++:) (x :: xs) y = x :: (xs ++: y)
+(++:) : {0 r, r' : Nat} -> Shape {rank=r} -> Shape {rank=r'} -> Shape {rank=r' + r}
+(++:) [] y = rewrite plusZeroRightNeutral r' in y
+(++:) {r = S rr} (x :: xs) y = rewrite sym $ plusSuccRightSucc r' rr in x :: (xs ++: y)
+
+public export
+(:++) : {0 r, r' : Nat} -> Shape {rank=r} -> Shape {rank=r'} -> Shape {rank=r + r'}
+(:++) [] y = y
+(:++) (x :: xs) y = x :: (xs :++ y)
 
 export
 index : (idx: Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
@@ -60,9 +67,9 @@ public export
     g {s = (_ :: _)} ys = map g ys
 
 export
-replicate : (over : Shape) -> Tensor shape dtype -> Tensor (over ++ shape) dtype
-replicate over (MkTensor x) = MkTensor (f over x) where
-  f : (over: Shape) -> ArrayLike s dtype -> ArrayLike (over ++ s) dtype
+replicate : {over : Shape} -> Tensor shape dtype -> Tensor (over :++ shape) dtype
+replicate (MkTensor x) = MkTensor (f over x) where
+  f : (over: Shape) -> ArrayLike shape dtype -> ArrayLike (over :++ shape) dtype
   f [] x' = x'
   f (d :: ds) x' = replicate d (f ds x')
 
@@ -81,8 +88,9 @@ diag : (n : Nat) -> dtype -> Tensor [n, n] dtype
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
+-- here `head` is not the leading dimensions: that would go before each of (head ++: [S n]), (S n :: tail) and (head ++: tail)
 export
-(@@) : Num dtype => Tensor (leading ++: head ++: [S n]) dtype -> Tensor (leading ++: (S n :: tail)) dtype -> Tensor (leading ++: head ++: tail) dtype
+(@@) : Num dtype => Tensor (head ++: [S n]) dtype -> Tensor (S n :: tail) dtype -> Tensor (head ++: tail) dtype
 
 export
 (+) : Num dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
@@ -98,11 +106,13 @@ export
 
 ||| floating point division. we don't support integer division
 export
-(/) : Fractional dtype => Tensor (leading ++: shape) dtype -> Tensor leading dtype -> Tensor (leading ++: shape) dtype
+(/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 -- (/) t (MkTensor x) = map (/ x) t
 
 export
 log : Tensor shape Double -> Tensor shape Double
+
+min : Tensor [S _] Double -> Tensor [] Double
 
 ---------------------------- other ----------------------------------
 
@@ -113,14 +123,14 @@ any : Tensor shape Bool -> Bool
 all : Tensor shape Bool -> Bool
 
 export
-det : Neg dtype => Tensor (leading ++: [S n, S n]) dtype -> Tensor leading dtype
+det : Neg dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 
-adjugate : Neg dtype => Tensor (leading ++: [S n, S n]) dtype -> Tensor (leading ++: [S n, S n]) dtype
+adjugate : Neg dtype => Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 
 cholesky : Tensor [S n, S n] dtype => Maybe (Tensor [S n, S n] dtype)
 
 export
-inverse : {0 leading: _} -> Tensor (leading ++: [S n, S n]) Double -> Maybe $ Tensor (leading ++: [S n, S n]) Double
+inverse : Tensor [S n, S n] Double -> Maybe $ Tensor [S n, S n] Double
 inverse x = let det_ = det x in if any (ew_eq det_ 0) then Nothing else Just $ (adjugate x) / det_
 
 -- todo should taking the diag or det return a dtype or a Tensor [] dtype?
