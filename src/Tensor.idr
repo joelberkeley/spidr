@@ -22,13 +22,10 @@ import Data.Nat
 
 ----------------------------- core definitions ----------------------------
 
--- todo we can include covariance if we make this `Vect rank Integer`
 public export
 Shape : {rank: Nat} -> Type
 Shape {rank} = Vect rank Nat
 
--- todo this type gives users a lot of flexibility, and i might end up paying for
---   it in code complexity
 public export
 ArrayLike : Shape -> Type -> Type
 ArrayLike [] dtype = dtype
@@ -61,7 +58,6 @@ export
 index : (idx: Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 index idx (MkTensor x) = MkTensor $ index idx x
 
--- todo if we can define flatmap, can we write this as map2 with do notation?
 zipWith : {shape : _} -> (a -> b -> c) -> Tensor shape a -> Tensor shape b -> Tensor shape c
 zipWith f (MkTensor x) (MkTensor y) = MkTensor (zipWithArray f x y) where
   zipWithArray : {shape': _} -> (a -> b -> c) -> ArrayLike shape' a -> ArrayLike shape' b -> ArrayLike shape' c
@@ -91,9 +87,6 @@ replicate (MkTensor x) = MkTensor (f over x) where
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
 cast_dtype tensor = map cast tensor
-
--- export
--- foldr1 : {axis : _} -> (dtype -> dtype -> dtype) -> {leading : Shape {rank = axis}} -> (axis : Nat) -> Tensor (leading ++ _ :: tail) dtype -> Tensor (leading ++ tail) dtype
 
 export
 diag : (n : Nat) -> dtype -> Tensor [n, n] dtype
@@ -148,10 +141,7 @@ export
 inverse : Tensor [S n, S n] Double -> Maybe $ Tensor [S n, S n] Double
 inverse x = let det_ = det x in if any (ew_eq det_ 0) then Nothing else Just $ (adjugate x) / det_
 
--- todo should taking the diag or det return a dtype or a Tensor [] dtype?
---  does the signature of index tell us it must be Tensor [] dtype?
---  i guess it would be inconvenient to have to re-wrap it into a Tensor for
---  further calculations
+-- NOTE we return the diag or det as a Tensor partly so that we can keep using it as a Tensor and partly to match the Poplibs API
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 trace_product (MkTensor x) = MkTensor $ product $ diag x
