@@ -1,3 +1,18 @@
+{--
+Copyright 2021 Joel Berkeley
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+--}
 module BayesianOptimization
 
 import Tensor
@@ -27,6 +42,5 @@ AcquisitionBuilder {model} features targets batch_size = Data features targets -
 expected_improvement : (ProbabilisticModel features [] (Gaussian samples [1]) model) => model -> (best : Tensor [] Double) -> Acquisition 1 features
 expected_improvement model best at = let normal = predict model at in (best - mean normal) * (cdf normal best) + (?squeeze $ covariance normal) * ?prob
 
---expected_improvement_by_model : (ProbabilisticModel features [] model) => Data features [] -> model -> Acquisition 1 features 
+--expected_improvement_by_model : (ProbabilisticModel features [] model) => Data features [] -> model -> Acquisition 1 features
 --expected_improvement_by_model (query_points, _) model' at = let best = min $ predict model' (?expand_dims0 query_points) in expected_improvement model best
-
