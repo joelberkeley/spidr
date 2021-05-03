@@ -7,4 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: echo "i am" && whoami && echo "that's who i am"
+    - run: curl -L https://nixos.org/nix/install | sh
+    - run: nix-env -i idris2
+    - run: idris2
