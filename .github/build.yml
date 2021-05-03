@@ -1,0 +1,10 @@
+on:
+  pull_request:
+    branches: master
+
+jobs:
+  types:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: whoami
