@@ -7,4 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: whoami
+    - run: |
+      echo "foo"
+      whoami
