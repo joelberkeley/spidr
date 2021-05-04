@@ -29,6 +29,11 @@ data GaussianProcess : (0 features : Shape) -> Type where
 
 -- todo implement for no training data
 -- todo we don't use the likelihood mean. Is that right?
+||| The posterior Gaussian process conditioned on the specified `training_data`.
+|||
+||| @prior The prior belief.
+||| @likelihood The likelihood of the observations given the prior target distribution. Here this is simply the noise variance. The mean is unused.
+||| @training_data The observed feature and corresponding target values.
 export
 posterior : {s : Nat}
  -> (prior : GaussianProcess features)
@@ -45,16 +50,24 @@ posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) = ma
     posterior_kernel : Kernel features
     posterior_kernel x x' = kernel x x' - (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) (kernel x_train x')
 
+||| The marginal distribution of the Gaussian process at the specified feature values.
+|||
+||| @at The feature values at which to evaluate the marginal distribution.
 export
-marginalise : {samples : Nat} -> GaussianProcess features -> Tensor (samples :: features) Double -> Gaussian samples []
+marginalise : {samples : Nat} -> GaussianProcess features -> (at : Tensor (samples :: features) Double) -> Gaussian samples []
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
 PI : Double
 
+||| The log marginal likelihood of the `data` for a given Gaussian process `prior` and `likelihood`.
+|||
+||| @prior The prior belief.
+||| @likelihood The likelihood of the observations given the prior target distribution.
+||| @data The data.
 log_marginal_likelihood : {samples : Nat}
- -> GaussianProcess features
- -> Gaussian (S samples) []
- -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
+ -> (prior : GaussianProcess features)
+ -> (likelihood : Gaussian (S samples) [])
+ -> (data : Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
  -> Maybe $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ inverse (kernel x x + cov) where
   foo : Tensor [S samples, S samples] Double -> Tensor [] Double
@@ -63,12 +76,18 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ in
                 c = (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI) in
                   (MkTensor (-1.0 / 2)) * (a - b + c)
 
+||| Return the hyperparameter values that maximize the log marginal likelihood of the `data` given the prior (as constructed from `prior_from_parameters`) and `likelihood`.
+|||
+||| @optimizer Implements the optimization tactic.
+||| @prior_from_parameters Constructs the prior from the hyperparameters
+||| @likelihood The likelihood of the observations given the prior target distribution.
+||| @data The data.
 export
 optimize : {samples : Nat}
- -> Optimizer hp
- -> (hp -> GaussianProcess features)
- -> Gaussian (S samples) []
- -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
+ -> (optimizer : Optimizer hp)
+ -> (prior_from_parameters : hp -> GaussianProcess features)
+ -> (likelihood : Gaussian (S samples) [])
+ -> (data : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
  -> Maybe hp
 optimize optimizer gp_from_hyperparameters likelihood training_data = optimizer objective where
   objective : hp -> Maybe $ Tensor [] Double
