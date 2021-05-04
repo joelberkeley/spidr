@@ -21,4 +21,4 @@ import Kernel
 import MeanFunction
 
 main : IO ()
-
+main = printLn "OK!"
