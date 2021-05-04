@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| This module contains the `Tensor` object, an array of values of arbitrary type, along with a
+||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
 import Data.Vect
@@ -20,17 +22,28 @@ import Data.Nat
 
 ----------------------------- core definitions ----------------------------
 
+||| Describes the shape of a `Tensor`. For example, a `Tensor` of `Double`s with contents
+||| `[[0, 1, 2], [3, 4, 5]]` has two elements in its outer-most axis, and each of those elements
+||| has three `Double`s in it, so this has shape [2, 3]. A `Tensor` can have axes of zero length,
+||| though the shape cannot be unambiguously inferred by visualising it. For example, `[[], []]`
+||| can have shape [2, 0], [2, 0, 5] or etc. A scalar `Tensor` has shape `[]`.
+|||
+||| The rank is the number of elements in the shape, or equivalently the number of axes.
 public export
 Shape : {rank: Nat} -> Type
 Shape {rank} = Vect rank Nat
 
+||| A multidimensional array of a given shape, of elements of a given type.
 public export
 ArrayLike : Shape -> Type -> Type
 ArrayLike [] dtype = dtype
 ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
 
+||| A `Tensor` contains an array of values, and is differentiated from a nested `Vect` by having
+||| its own type and API.
 public export
 data Tensor : (shape: Shape) -> (dtype: Type) -> Type where
+  ||| Construct a `Tensor` from an array.
   MkTensor : ArrayLike shape dtype -> Tensor shape dtype
 
 export
