@@ -175,7 +175,6 @@ cholesky : Tensor [S n, S n] dtype => Maybe (Tensor [S n, S n] dtype)
 ||| The inverse of a matrix.
 export
 inverse : Tensor [S n, S n] Double -> Maybe $ Tensor [S n, S n] Double
-inverse x = let det_ = det x in if any (ew_eq det_ $ MkTensor 0) then Nothing else Just $ (adjugate x) / det_
 
 ||| The product of all elements along the diagonal of a matrix.
 export
