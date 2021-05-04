@@ -13,23 +13,34 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| This module contains definitions and implementations for probability distributions.
 module Distribution
 
 import Tensor
 import Data.Vect
 
-||| assumes multivariate, where every sub-event has the same shape
+||| A joint, or multivariate distribution over a tensor of floating point values. Every sub-event
+||| is assumed to have the same shape.
 export
 interface Distribution (dim : Nat) (event_shape : Shape) dist where
+  ||| The mean of the distribution
   mean : dist -> Tensor (dim :: event_shape) Double
-  covariance : dist -> Tensor (dim :: dim :: event_shape) Double
-  cdf : dist -> Tensor (dim :: event_shape) Double -> Tensor [] Double
 
+  ||| The covariance, or correlation between sub-events
+  covariance : dist -> Tensor (dim :: dim :: event_shape) Double
+
+||| A joint Gaussian distribution.
 public export
 data Gaussian : (dim : Nat) -> (event_shape : Shape) -> Type where
+  ||| @mean The Gaussian mean.
+  ||| @covariance The Gaussian covariance.
   MkGaussian : (mean : Tensor (dim :: event_shape) Double) -> (covariance : Tensor (dim :: dim :: event_shape) Double) -> Gaussian dim event_shape
 
 {dim : Nat} -> {event_shape : Shape} -> Distribution dim event_shape (Gaussian dim event_shape) where
   mean (MkGaussian mean' _) = mean'
   covariance  (MkGaussian _ cov) = cov
-  cdf (MkGaussian mean cov) = ?cdf'
+
+||| The cumulative distribution function of the Gaussian at the specified point (that is, the
+||| probability the random variable takes a value less than or equal to the given point).
+export
+cdf : Gaussian 1 event_shape -> Tensor (1 :: event_shape) Double -> Tensor [] Double

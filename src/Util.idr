@@ -13,12 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-import Tensor
+||| This module contains miscellaneous utilities
+module Util
 
-import Data.Vect
-import GaussianProcess
-import Kernel
-import MeanFunction
-
-main : IO ()
-
+||| The constant Pi
+export
+PI : Double
+PI = 3.1415926535897932385
