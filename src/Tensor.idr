@@ -41,9 +41,6 @@ Show (ArrayLike shape dtype) => Show (Tensor shape dtype) where
 
 ----------------------------- structural operations ----------------------------
 
-foo : Integer
-foo = "a"
-
 infixl 9 ++:  -- todo is this right?
 infixl 9 :++  -- todo is this right?
 
