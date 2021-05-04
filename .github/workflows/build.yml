@@ -1,6 +1,6 @@
 on:
-  push:
-    branches: install-idris
+  pull_request:
+    branches: $default-branch
 
 jobs:
   install:
