@@ -63,11 +63,11 @@ PI : Double
 |||
 ||| @prior The prior belief.
 ||| @likelihood The likelihood of the observations given the prior target distribution.
-||| @data The data.
+||| @data_ The data.
 log_marginal_likelihood : {samples : Nat}
  -> (prior : GaussianProcess features)
  -> (likelihood : Gaussian (S samples) [])
- -> (data : Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
+ -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
  -> Maybe $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ inverse (kernel x x + cov) where
   foo : Tensor [S samples, S samples] Double -> Tensor [] Double
@@ -81,13 +81,13 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ in
 ||| @optimizer Implements the optimization tactic.
 ||| @prior_from_parameters Constructs the prior from the hyperparameters
 ||| @likelihood The likelihood of the observations given the prior target distribution.
-||| @data The data.
+||| @data_ The data.
 export
 optimize : {samples : Nat}
  -> (optimizer : Optimizer hp)
  -> (prior_from_parameters : hp -> GaussianProcess features)
  -> (likelihood : Gaussian (S samples) [])
- -> (data : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
+ -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
  -> Maybe hp
 optimize optimizer gp_from_hyperparameters likelihood training_data = optimizer objective where
   objective : hp -> Maybe $ Tensor [] Double
