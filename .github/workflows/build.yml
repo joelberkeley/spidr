@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
-      curl -L https://nixos.org/nix/install | sh
-      . "$HOME"/.nix-profile/etc/profile.d/nix.sh
+        curl -L https://nixos.org/nix/install | sh
+        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
     - run: nix-env -i idris2
     - run: idris2
