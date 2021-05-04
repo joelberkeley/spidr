@@ -23,16 +23,19 @@ import MeanFunction
 import Optimize
 import Distribution
 
+||| A Gaussian process is a collection of random variables, any finite number of which have joint
+||| Gaussian distribution. A Gaussian process can be defined entirely by a mean function and kernel.
 public export
 data GaussianProcess : (0 features : Shape) -> Type where
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
 -- todo implement for no training data
--- todo we don't use the likelihood mean. Is that right?
+-- todo we don't use the likelihood mean
 ||| The posterior Gaussian process conditioned on the specified `training_data`.
 |||
 ||| @prior The prior belief.
-||| @likelihood The likelihood of the observations given the prior target distribution. Here this is simply the noise variance. The mean is unused.
+||| @likelihood The likelihood of the observations given the prior target distribution. Here this is
+|||   simply the noise variance. The mean is unused.
 ||| @training_data The observed feature and corresponding target values.
 export
 posterior : {s : Nat}
@@ -54,7 +57,10 @@ posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) = ma
 |||
 ||| @at The feature values at which to evaluate the marginal distribution.
 export
-marginalise : {samples : Nat} -> GaussianProcess features -> (at : Tensor (samples :: features) Double) -> Gaussian samples []
+marginalise : {samples : Nat}
+  -> GaussianProcess features
+  -> Tensor (samples :: features) Double
+  -> Gaussian samples []
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
 PI : Double
@@ -76,7 +82,8 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ in
                 c = (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI) in
                   (MkTensor (-1.0 / 2)) * (a - b + c)
 
-||| Return the hyperparameter values that maximize the log marginal likelihood of the `data` given the prior (as constructed from `prior_from_parameters`) and `likelihood`.
+||| Find the hyperparameter values that maximize the log marginal likelihood of the `data` for the
+||| prior (as constructed from `prior_from_parameters`) and `likelihood`.
 |||
 ||| @optimizer Implements the optimization tactic.
 ||| @prior_from_parameters Constructs the prior from the hyperparameters
