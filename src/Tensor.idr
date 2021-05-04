@@ -177,7 +177,7 @@ export
 inverse : Tensor [S n, S n] Double -> Maybe $ Tensor [S n, S n] Double
 inverse x = let det_ = det x in if any (ew_eq det_ $ MkTensor 0) then Nothing else Just $ (adjugate x) / det_
 
-||| The product of all diagonal elements in a tensor.
+||| The product of all elements along the diagonal of a matrix.
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 trace_product (MkTensor x) = MkTensor $ product $ diag x
