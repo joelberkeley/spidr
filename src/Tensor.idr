@@ -18,8 +18,6 @@ module Tensor
 import Data.Vect
 import Data.Nat
 
-%default total
-
 ----------------------------- core definitions ----------------------------
 
 public export

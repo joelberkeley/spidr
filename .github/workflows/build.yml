@@ -24,6 +24,4 @@ jobs:
     - run: |
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
-        cd src
-        idris2 Main.idr -o main
-        ./build/exec/main
+        idris2 --build spidr.ipkg
