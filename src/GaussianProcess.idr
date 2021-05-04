@@ -13,20 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| This module contains the `GaussianProcess` type for defining Gaussian process, along with
+||| functionality for training and inference.
 module GaussianProcess
 
 import Tensor
 import Data.Vect
-import Data.Nat
 import Kernel
 import MeanFunction
 import Optimize
 import Distribution
+import Util
 
 ||| A Gaussian process is a collection of random variables, any finite number of which have joint
-||| Gaussian distribution. A Gaussian process can be defined entirely by a mean function and kernel.
+||| Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian
+||| distribution over a target space.
 public export
 data GaussianProcess : (0 features : Shape) -> Type where
+  ||| Construct a `GaussianProcess` as a pair of mean function and kernel.
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
 -- todo implement for no training data
@@ -63,17 +67,10 @@ marginalise : {samples : Nat}
   -> Gaussian samples []
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
-PI : Double
-
-||| The log marginal likelihood of the `data` for a given Gaussian process `prior` and `likelihood`.
-|||
-||| @prior The prior belief.
-||| @likelihood The likelihood of the observations given the prior target distribution.
-||| @data_ The data.
 log_marginal_likelihood : {samples : Nat}
- -> (prior : GaussianProcess features)
- -> (likelihood : Gaussian (S samples) [])
- -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
+ -> GaussianProcess features
+ -> Gaussian (S samples) []
+ -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Maybe $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ inverse (kernel x x + cov) where
   foo : Tensor [S samples, S samples] Double -> Tensor [] Double
@@ -82,8 +79,10 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ in
                 c = (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI) in
                   (MkTensor (-1.0 / 2)) * (a - b + c)
 
-||| Find the hyperparameter values that maximize the log marginal likelihood of the `data` for the
-||| prior (as constructed from `prior_from_parameters`) and `likelihood`.
+||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
+||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined
+||| according to `optimizer`. For maximum likelihood estimation, it should (at least approximately)
+||| maximize its objective.
 |||
 ||| @optimizer Implements the optimization tactic.
 ||| @prior_from_parameters Constructs the prior from the hyperparameters
