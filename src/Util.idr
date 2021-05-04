@@ -13,19 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains definitions for and implementations of kernel functions, intended
-||| particularly for use in Gaussian processes.
-module Kernel
+||| This module contains miscellaneous utilities
+module Util
 
-import Data.Vect
-import Tensor
-
-||| A `Kernel` function maps pairs of points in a feature space to the covariance between those two
-||| points in some target space.
-public export
-Kernel : (features : Shape) -> Type
-Kernel features = {sk, sk' : Nat} -> Tensor (sk :: features) Double -> Tensor (sk' :: features) Double -> Tensor [sk, sk'] Double
-
-||| The linear kernel.
+||| The constant Pi
 export
-linear : Kernel features
+PI : Double
+PI = 3.1415926535897932385

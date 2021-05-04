@@ -10,7 +10,8 @@ modules =
   Kernel,
   MeanFunction,
   Optimize,
-  Tensor
+  Tensor,
+  Util
 
 readme = "README.md"
 license = "Apache License, Version 2.0"

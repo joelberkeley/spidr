@@ -13,16 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| This module contains definitions for and implementations of mean functions, particularly for
+||| use in Gaussian processes.
 module MeanFunction
 
 import Data.Vect
 import Tensor
 
+||| A `MeanFunction` maps a point in feature space to the mean value of a corresponding
+||| distribution in target space.
 public export
 MeanFunction : (features : Shape) -> Type
 MeanFunction features = {sm : Nat} -> Tensor (sm :: features) Double -> Tensor [sm] Double
 
 -- todo is it possible to implement this without using `sm`? If so, we can make `sm` erased
+||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
 zero {sm} (MkTensor x) = replicate {over=[sm]} $ MkTensor 0
