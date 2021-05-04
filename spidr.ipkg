@@ -1,0 +1,17 @@
+package spidr
+version = 0.0.1
+
+sourcedir = "src"
+modules =
+  BayesianOptimization,
+  Distribution,
+  GaussianProcess,
+  Kernel,
+  MeanFunction,
+  Optimize,
+  Tensor,
+opts = "--total"
+
+readme = "README.md"
+license = "Apache License, Version 2.0"
+authors = "Joel Berkeley"
