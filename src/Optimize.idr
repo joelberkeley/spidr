@@ -19,17 +19,20 @@ module Optimize
 import Tensor
 import Data.Vect
 
-||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a
-||| scalar-valued function over that space.
+||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a scalar-valued
+||| function over that space.
 public export
 Optimizer : Type -> Type
 Optimizer a = (a -> Maybe $ Tensor [] Double) -> Maybe a
 
-||| Construct an `Optimizer` over a scalar feature space that approximates the optimum by
-||| evaluating its objective over a finite, evenly-spaced grid.
+||| Construct an `Optimizer` over a scalar feature space that approximates the optimum by evaluating
+||| its objective over a finite, evenly-spaced grid.
 |||
 ||| @density The density of the grid.
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
 export
-grid_search : (density : Tensor [d] Double) -> (lower : Tensor [d] Double) -> (upper : Tensor [d] Double) -> Optimizer (Tensor [] Double)
+grid_search : (density : Tensor [d] Double) ->
+              (lower : Tensor [d] Double) ->
+              (upper : Tensor [d] Double) ->
+              Optimizer (Tensor [] Double)

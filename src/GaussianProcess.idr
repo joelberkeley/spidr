@@ -47,15 +47,18 @@ posterior : {s : Nat}
  -> (likelihood : Gaussian (S s) [])
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> Maybe $ GaussianProcess features
-posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) = map foo $ inverse (kernel x_train x_train + cov) where
-  foo : Tensor [S s, S s] Double -> GaussianProcess features
-  foo inv = MkGP posterior_mean_function posterior_kernel where
-    posterior_mean_function : MeanFunction features
-    -- todo can we use rewrite to avoid the use of implicits here and for posterior_kernel?
-    posterior_mean_function {sm} x = mean_function x + (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) y_train
+posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
+  map foo $ inverse (kernel x_train x_train + cov) where
+    foo : Tensor [S s, S s] Double -> GaussianProcess features
+    foo inv = MkGP posterior_mean_function posterior_kernel where
+      posterior_mean_function : MeanFunction features
+      -- todo can we use rewrite to avoid the use of implicits here and for posterior_kernel?
+      posterior_mean_function {sm} x =
+        mean_function x + (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) y_train
 
-    posterior_kernel : Kernel features
-    posterior_kernel x x' = kernel x x' - (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) (kernel x_train x')
+      posterior_kernel : Kernel features
+      posterior_kernel x x' =
+        kernel x x' - (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) (kernel x_train x')
 
 ||| The marginal distribution of the Gaussian process at the specified feature values.
 |||
@@ -72,12 +75,13 @@ log_marginal_likelihood : {samples : Nat}
  -> Gaussian (S samples) []
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Maybe $ Tensor [] Double
-log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = map foo $ inverse (kernel x x + cov) where
-  foo : Tensor [S samples, S samples] Double -> Tensor [] Double
-  foo inv = let a = (@@) {head=[]} ((@@) {head=[]} y inv) y
-                b = (log $ det inv)
-                c = (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI) in
-                  (MkTensor (-1.0 / 2)) * (a - b + c)
+log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
+  map foo $ inverse (kernel x x + cov) where
+    foo : Tensor [S samples, S samples] Double -> Tensor [] Double
+    foo inv = let a = (@@) {head=[]} ((@@) {head=[]} y inv) y
+                  b = (log $ det inv)
+                  c = (MkTensor $ the Double $ cast samples) * (log $ MkTensor $ 2.0 * PI) in
+                    (MkTensor (-1.0 / 2)) * (a - b + c)
 
 ||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
 ||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined

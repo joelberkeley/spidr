@@ -27,14 +27,15 @@ import Distribution
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
-interface (Distribution samples targets dist) => ProbabilisticModel (0 features : Shape) (0 targets : Shape) dist model where
-  ||| Return the probability distribution over the target space at the specified points in the
-  ||| feature space, given the model.
-  predict : model -> Tensor (samples :: features) Double -> dist
+interface (Distribution samples targets dist) => 
+  ProbabilisticModel (0 features : Shape) (0 targets : Shape) dist model where
+    ||| Return the probability distribution over the target space at the specified points in the
+    ||| feature space, given the model.
+    predict : model -> Tensor (samples :: features) Double -> dist
 
 interface Domain where
 
-||| An `Acquisition` function quantifies how useful it would be to query the objective at a given
+||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 public export
 Acquisition : Nat -> Shape -> Type
@@ -51,18 +52,26 @@ public export
 Data : Shape -> Shape -> Type
 Data features targets = (Tensor features Double, Tensor targets Double)
 
-||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that data.
+||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
+||| data.
 public export
-AcquisitionBuilder : (ProbabilisticModel features targets model dist) => {model : Type} -> (features : Shape) -> (targets : Shape) -> Nat -> Type
-AcquisitionBuilder {model} features targets batch_size = Data features targets -> model -> Acquisition batch_size features
+AcquisitionBuilder : (ProbabilisticModel features targets model dist) =>
+                     {model : Type} -> (features : Shape) -> (targets : Shape) -> Nat -> Type
+AcquisitionBuilder {model} features targets batch_size =
+  Data features targets -> model -> Acquisition batch_size features
 
-||| Construct the acquisition function that estimates the absolute improvement in the best observation
-||| if we were to evaluate the objective at a given point.
+||| Construct the acquisition function that estimates the absolute improvement in the best
+||| observation if we were to evaluate the objective at a given point.
 |||
 ||| @model The model over the historic data.
 ||| @best The current best observation.
-expected_improvement : (ProbabilisticModel features [] (Gaussian samples [1]) model_t) => (model : model_t) -> (best : Tensor [] Double) -> Acquisition 1 features
---expected_improvement model best at = let normal = predict model at in (best - mean normal) * (cdf normal best) + (?squeeze $ covariance normal) * ?prob
+expected_improvement : (ProbabilisticModel features [] (Gaussian samples [1]) model_t) =>
+                       (model : model_t) -> (best : Tensor [] Double) -> Acquisition 1 features
+--expected_improvement model best at =
+--  let normal = predict model at in
+--      (best - mean normal) * (cdf normal best) + (?squeeze $ covariance normal) * ?prob
 
---expected_improvement_by_model : (ProbabilisticModel features [] model) => Data features [] -> model -> Acquisition 1 features
---expected_improvement_by_model (query_points, _) model' at = let best = min $ predict model' (?expand_dims0 query_points) in expected_improvement model best
+--expected_improvement_by_model : (ProbabilisticModel features [] model) =>
+--                                Data features [] -> model -> Acquisition 1 features
+--expected_improvement_by_model (query_points, _) model' at =
+--  let best = min $ predict model' (?expand_dims0 query_points) in expected_improvement model best

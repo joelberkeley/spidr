@@ -80,11 +80,13 @@ index idx (MkTensor x) = MkTensor $ index idx x
 
 zipWith : {shape : _} -> (a -> b -> c) -> Tensor shape a -> Tensor shape b -> Tensor shape c
 zipWith f (MkTensor x) (MkTensor y) = MkTensor (zipWithArray f x y) where
-  zipWithArray : {shape': _} -> (a -> b -> c) -> ArrayLike shape' a -> ArrayLike shape' b -> ArrayLike shape' c
+  zipWithArray : {shape': _} ->
+                 (a -> b -> c) -> ArrayLike shape' a -> ArrayLike shape' b -> ArrayLike shape' c
   zipWithArray {shape'=[]} f x y = f x y
   zipWithArray {shape'=(d :: ds)} f x y = zipWith (zipWithArray f) x y
 
-||| Tranpose a tensor. For example, `transpose $ MkTensor [[1, 2], [3, 4]]` is `MkTensor [[1, 3], [2, 4]]`.
+||| Tranpose a tensor. For example, `transpose $ MkTensor [[1, 2], [3, 4]]` is
+||| `MkTensor [[1, 3], [2, 4]]`.
 export
 transpose : {n, m : _} -> Tensor [m, n] dtype -> Tensor [n, m] dtype
 transpose (MkTensor x) = MkTensor $ transpose x
@@ -124,11 +126,13 @@ diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
--- here `head` is not the leading dimensions: that would go before each of (head ++: [S n]), (S n :: tail) and (head ++: tail)
+-- here `head` is not the leading dimensions: that would go before
+-- each of (head ++: [S n]), (S n :: tail) and (head ++: tail)
 ||| Matrix multiply two tensors. The tensors are contracted along the last axis of the first tensor
 ||| and the first axis of the last tensor.
 export
-(@@) : Num dtype => Tensor (head ++: [S n]) dtype -> Tensor (S n :: tail) dtype -> Tensor (head ++: tail) dtype
+(@@) : Num dtype =>
+       Tensor (head ++: [S n]) dtype -> Tensor (S n :: tail) dtype -> Tensor (head ++: tail) dtype
 
 ||| Element-wise addition.
 export
