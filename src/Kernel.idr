@@ -24,7 +24,10 @@ import Tensor
 ||| points in some target space.
 public export
 Kernel : (features : Shape) -> Type
-Kernel features = {sk, sk' : Nat} -> Tensor (sk :: features) Double -> Tensor (sk' :: features) Double -> Tensor [sk, sk'] Double
+Kernel features = {sk, sk' : Nat} ->
+  Tensor (sk :: features) Double ->
+  Tensor (sk' :: features) Double ->
+  Tensor [sk, sk'] Double
 
 ||| The linear kernel.
 export

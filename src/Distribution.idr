@@ -34,11 +34,14 @@ public export
 data Gaussian : (dim : Nat) -> (event_shape : Shape) -> Type where
   ||| @mean The Gaussian mean.
   ||| @covariance The Gaussian covariance.
-  MkGaussian : (mean : Tensor (dim :: event_shape) Double) -> (covariance : Tensor (dim :: dim :: event_shape) Double) -> Gaussian dim event_shape
+  MkGaussian : (mean : Tensor (dim :: event_shape) Double) ->
+               (covariance : Tensor (dim :: dim :: event_shape) Double) ->
+               Gaussian dim event_shape
 
-{dim : Nat} -> {event_shape : Shape} -> Distribution dim event_shape (Gaussian dim event_shape) where
-  mean (MkGaussian mean' _) = mean'
-  covariance  (MkGaussian _ cov) = cov
+{dim : Nat} -> {event_shape : Shape} ->
+  Distribution dim event_shape (Gaussian dim event_shape) where
+    mean (MkGaussian mean' _) = mean'
+    covariance  (MkGaussian _ cov) = cov
 
 ||| The cumulative distribution function of the Gaussian at the specified point (that is, the
 ||| probability the random variable takes a value less than or equal to the given point).
