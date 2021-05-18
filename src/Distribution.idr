@@ -21,7 +21,8 @@ import Data.Vect
 
 ||| A joint, or multivariate distribution over a tensor of floating point values. Every sub-event
 ||| is assumed to have the same shape.
-export
+public export
+-- todo should we make dim implicit?
 interface Distribution (dim : Nat) (event_shape : Shape) dist where
   ||| The mean of the distribution
   mean : dist -> Tensor (dim :: event_shape) Double
@@ -38,6 +39,7 @@ data Gaussian : (dim : Nat) -> (event_shape : Shape) -> Type where
                (covariance : Tensor (dim :: dim :: event_shape) Double) ->
                Gaussian dim event_shape
 
+export
 {dim : Nat} -> {event_shape : Shape} ->
   Distribution dim event_shape (Gaussian dim event_shape) where
     mean (MkGaussian mean' _) = mean'

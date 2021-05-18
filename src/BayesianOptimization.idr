@@ -27,8 +27,8 @@ import Distribution
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
-interface (Distribution samples targets dist) => 
-  ProbabilisticModel (0 features, targets : Shape) dist model where
+interface (Distribution samples targets dist) =>
+  ProbabilisticModel (0 features : Shape) dist model where
     ||| Return the probability distribution over the target space at the specified points in the
     ||| feature space, given the model.
     predict : model -> Tensor (samples :: features) Double -> dist
@@ -55,21 +55,26 @@ Data features targets = (Tensor features Double, Tensor targets Double)
 ||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
 ||| data.
 public export
-KnowledgeBased : (dist : Type) -> (features, targets : Shape) -> Type -> Type
-KnowledgeBased dist features targets t = {model : Type} ->
-  (ProbabilisticModel features targets model dist) => Data features targets -> model -> t
+KnowledgeBased : (Distribution _ targets d) => (d : Type) -> (features : Shape) -> Type -> Type
+KnowledgeBased d features out = {model : Type} ->
+  (ProbabilisticModel features model d) => Data features targets -> model -> out
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
 |||
 ||| @model The model over the historic data.
 ||| @best The current best observation.
-expected_improvement : (ProbabilisticModel features [] (Gaussian samples [1]) model_t) =>
-                       (model : model_t) -> (best : Tensor [] Double) -> Acquisition 1 features
---expected_improvement model best at =
+expectedImprovement : (ProbabilisticModel features (Gaussian _ []) m) =>
+                      (model : m) -> (best : Tensor [] Double) -> Acquisition 1 features
+--expectedImprovement model best at =
 --  let normal = predict model at in
 --      (best - mean normal) * (cdf normal best) + (?squeeze $ covariance normal) * ?prob
 
-expected_improvement_by_model : KnowledgeBased (Gaussian _ []) features [] $ Acquisition 1 features
--- expected_improvement_by_model (query_points, _) model at =
+expectedImprovementByModel : KnowledgeBased (Gaussian _ []) features $ Acquisition 1 features
+-- expectedImprovementByModel (query_points, _) model at =
 --  let best = min $ predict model (?expand_dims0 query_points) in expected_improvement model best
+
+probabilityOfFeasibility : KnowledgeBased (Gaussian _ []) features $ Acquisition 1 features
+
+expectedConstrainedImprovement : KnowledgeBased (Gaussian _ []) features $
+                                 (Acquisition 1 features -> Acquisition 1 features)
