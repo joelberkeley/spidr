@@ -149,7 +149,35 @@ export
 (+) : Num dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
+infixl 8 +=
+
+||| Element-wise in-place addition.
+|||
+||| Implementation notes
+||| ====================
+||| 
+||| As a purely functional language, Idris guarantees immutability: values cannot be modified.
+||| How then can we write a function that updates in-place? The answer is that the value must be
+||| made invalid, and a new reference to it created. For example
+|||
+||| ```
+||| one : Tensor [] Double
+||| one = MkTensor 1
+|||
+||| three : Tensor [] Double
+||| three = one + (MkTensor 2)
+|||
+||| 1 one : Tensor [] Double
+||| one = MkTensor 1
+|||
+||| three_in_place : Tensor [] Double
+||| three_in_place = one += (MkTensor 2)
+||| ```
+|||
+(+=) : (1 t : Tensor shape dtype) -> Tensor shape dtype -> Tensor shape dtype
+
 ||| Element-wise negation.
+=======
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
