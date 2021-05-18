@@ -78,3 +78,14 @@ probabilityOfFeasibility : KnowledgeBased (Gaussian _ []) features $ Acquisition
 
 expectedConstrainedImprovement : KnowledgeBased (Gaussian _ []) features $
                                  (Acquisition 1 features -> Acquisition 1 features)
+
+data Connection : ty -> out -> Type where
+  MkConnection : (Type -> ty) -> (ty -> out) -> Connection ty out
+
+Functor (Connection ty) where
+  map f (MkConnection get g) = MkConnection get g' where
+    g' : ty -> b
+    g' x = f $ g x
+
+Applicative (Connection ty) where
+  
