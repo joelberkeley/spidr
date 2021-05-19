@@ -37,24 +37,24 @@ interface Domain where
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
-public export
+public export 0
 Acquisition : Nat -> Shape -> Type
 Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
 
 ||| An `AcquisitionOptimizer` returns the points which optimize a given `Acquisition`.
-public export
+public export 0
 AcquisitionOptimizer : {batch_size : Nat} -> {features : Shape} -> Type
 AcquisitionOptimizer = Optimizer $ Tensor (batch_size :: features) Double
 
 ||| Observed query points and objective values
-public export
+public export 0
 Data : Shape -> Shape -> Type
 Data features targets = (Tensor features Double, Tensor targets Double)
 
 ||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
 ||| data.
-public export
-0 KnowledgeBased : (d : Type) ->
+public export 0
+KnowledgeBased : (d : Type) ->
                    (Distribution samples targets d) => (features : Shape) -> Type -> Type
 KnowledgeBased d features out = {model : Type} ->
   (ProbabilisticModel features d model) => (Data features targets, model) -> out
@@ -64,6 +64,7 @@ KnowledgeBased d features out = {model : Type} ->
 |||
 ||| @model The model over the historic data.
 ||| @best The current best observation.
+export
 expectedImprovement : (ProbabilisticModel features (Gaussian _ []) m) =>
                       (model : m) -> (best : Tensor [] Double) -> Acquisition 1 features
 --expectedImprovement model best at =
@@ -74,6 +75,7 @@ expectedImprovement : (ProbabilisticModel features (Gaussian _ []) m) =>
 -- implementation of `Distribution` for `Gaussian`
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
+export
 expectedImprovementByModel : KnowledgeBased {targets=[]} {samples=samples}
   (Gaussian samples []) features $ Acquisition 1 features
 --expectedImprovementByModel ((query_points, _), model) at =
@@ -81,10 +83,12 @@ expectedImprovementByModel : KnowledgeBased {targets=[]} {samples=samples}
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
+export
 probabilityOfFeasibility : (limit : Tensor [] Double) ->
   KnowledgeBased {targets=[]} {samples=samples} (Gaussian samples []) features
   $ Acquisition 1 features
 
+export
 expectedConstrainedImprovement : KnowledgeBased {targets=[]} {samples=samples}
   (Gaussian samples []) features $ (Acquisition 1 features -> Acquisition 1 features)
 
