@@ -52,12 +52,19 @@ public export
 Data : Shape -> Shape -> Type
 Data features targets = (Tensor features Double, Tensor targets Double)
 
+--data Knowledge : (features, targets : Shape) -> dist -> Type where
+--  MkKnowledge : Data features targets ->
+--                (Distribution samples targets dist, ProbabilisticModel features dist m) => m ->
+--                Knowledge features targets dist
+
+
 ||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
 ||| data.
 public export
-KnowledgeBased : (Distribution _ targets d) => (d : Type) -> (features : Shape) -> Type -> Type
+0 KnowledgeBased : (d : Type) ->
+                   (Distribution samples targets d) => (features : Shape) -> Type -> Type
 KnowledgeBased d features out = {model : Type} ->
-  (ProbabilisticModel features model d) => Data features targets -> model -> out
+  (ProbabilisticModel features d model) => (Data features targets, model) -> out
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -70,22 +77,37 @@ expectedImprovement : (ProbabilisticModel features (Gaussian _ []) m) =>
 --  let normal = predict model at in
 --      (best - mean normal) * (cdf normal best) + (?squeeze $ covariance normal) * ?prob
 
-expectedImprovementByModel : KnowledgeBased (Gaussian _ []) features $ Acquisition 1 features
+-- todo can I get the type checker to infer `targets` and `samples`? It should be able to, given the
+-- implementation of `Distribution` for `Gaussian`
+expectedImprovementByModel : KnowledgeBased {targets=[]} {samples=samples}
+  (Gaussian samples []) features $ Acquisition 1 features
 -- expectedImprovementByModel (query_points, _) model at =
 --  let best = min $ predict model (?expand_dims0 query_points) in expected_improvement model best
 
-probabilityOfFeasibility : KnowledgeBased (Gaussian _ []) features $ Acquisition 1 features
+probabilityOfFeasibility : KnowledgeBased {targets=[]} {samples=samples}
+  (Gaussian samples []) features $ Acquisition 1 features
 
-expectedConstrainedImprovement : KnowledgeBased (Gaussian _ []) features $
-                                 (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement : KnowledgeBased {targets=[]} {samples=samples}
+  (Gaussian samples []) features $ (Acquisition 1 features -> Acquisition 1 features)
 
-data Connection : ty -> out -> Type where
-  MkConnection : (Type -> ty) -> (ty -> out) -> Connection ty out
+data Connection : Type -> Type -> Type where
+  MkConnection : (i -> ty) -> (ty -> o) -> Connection i o
 
-Functor (Connection ty) where
-  map f (MkConnection get g) = MkConnection get g' where
-    g' : ty -> b
-    g' x = f $ g x
+Functor (Connection i) where
+  map f (MkConnection get g) = MkConnection get $ f . g
 
-Applicative (Connection ty) where
-  
+Applicative (Connection i) where
+  pure x = MkConnection (\_ => ()) (\_ => x)
+  (MkConnection get g) <*> (MkConnection get' g') = MkConnection
+    (\ii => (get ii, get' ii)) (\(t, t') => g t $ g' t')
+
+data_and_model : (ProbabilisticModel features dist m) => (Data features targets, m)
+
+ei_setup : (ProbabilisticModel features (Gaussian samples []) m) =>
+           Connection (Data features [], m) $ Acquisition 1 features
+ei_setup = MkConnection (\x => x) expectedImprovementByModel
+
+eci_setup : (ProbabilisticModel features dist m) => Connection ((Data features targets, m), (Data features targets, m)) $ Acquisition 1 features
+eci_setup = let eci = MkConnection fst expectedConstrainedImprovement
+                pof = MkConnection snd probabilityOfFeasibility in
+                  eci <*> pof

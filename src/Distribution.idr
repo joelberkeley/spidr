@@ -23,7 +23,7 @@ import Data.Vect
 ||| is assumed to have the same shape.
 public export
 -- todo should we make dim implicit?
-interface Distribution (dim : Nat) (event_shape : Shape) dist where
+interface Distribution (0 dim : Nat) (0 event_shape : Shape) dist where
   ||| The mean of the distribution
   mean : dist -> Tensor (dim :: event_shape) Double
 
@@ -32,7 +32,7 @@ interface Distribution (dim : Nat) (event_shape : Shape) dist where
 
 ||| A joint Gaussian distribution.
 public export
-data Gaussian : (dim : Nat) -> (event_shape : Shape) -> Type where
+data Gaussian : (0 dim : Nat) -> (0 event_shape : Shape) -> Type where
   ||| @mean The Gaussian mean.
   ||| @covariance The Gaussian covariance.
   MkGaussian : (mean : Tensor (dim :: event_shape) Double) ->
@@ -40,7 +40,7 @@ data Gaussian : (dim : Nat) -> (event_shape : Shape) -> Type where
                Gaussian dim event_shape
 
 export
-{dim : Nat} -> {event_shape : Shape} ->
+{0 dim : Nat} -> {0 event_shape : Shape} ->
   Distribution dim event_shape (Gaussian dim event_shape) where
     mean (MkGaussian mean' _) = mean'
     covariance  (MkGaussian _ cov) = cov
