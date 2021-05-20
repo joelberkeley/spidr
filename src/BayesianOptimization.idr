@@ -56,8 +56,8 @@ Data features targets = (Tensor features Double, Tensor targets Double)
 public export 0
 KnowledgeBased : (d : Type) -> Distribution samples targets d =>
                  (features : Shape) -> Type -> Type
-KnowledgeBased d features out = {model : Type} ->
-  (ProbabilisticModel features d model) => (Data features targets, model) -> out
+KnowledgeBased d features out = {model : Type} -> ProbabilisticModel features d model =>
+                                (Data features targets, model) -> out
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
