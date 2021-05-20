@@ -93,9 +93,13 @@ expectedConstrainedImprovement : KnowledgeBased {targets=[]} {samples=samples}
   (Gaussian samples []) features $ (Acquisition 1 features -> Acquisition 1 features)
 
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
-||| final value, via some arbitrary intermediate state. The intermediate state can be a subset of
-||| the original data and thus allows users to allocate different parts of the original data to
-||| different parts of the system.
+||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can
+||| contain just a subset of the original data and thus allows users to allocate different parts of
+||| the original data for use in constructing different final values.
+|||
+||| The primary application in spidr for this is to allow users to allocate individial pairs of
+||| data sets and models to `KnowledgeBased`s, without demanding users represent all their data sets
+||| and models in any specific way.
 public export
 data Connection : Type -> Type -> Type where
   ||| Construct a `Connection`.
