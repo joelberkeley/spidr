@@ -27,7 +27,7 @@ import Distribution
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
-interface (Distribution samples targets dist) =>
+interface Distribution samples targets dist =>
   ProbabilisticModel (0 features : Shape) dist model where
     ||| Return the probability distribution over the target space at the specified points in the
     ||| feature space, given the model.
@@ -54,8 +54,8 @@ Data features targets = (Tensor features Double, Tensor targets Double)
 ||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
 ||| data.
 public export 0
-KnowledgeBased : (d : Type) ->
-                   (Distribution samples targets d) => (features : Shape) -> Type -> Type
+KnowledgeBased : (d : Type) -> Distribution samples targets d =>
+                 (features : Shape) -> Type -> Type
 KnowledgeBased d features out = {model : Type} ->
   (ProbabilisticModel features d model) => (Data features targets, model) -> out
 
@@ -65,7 +65,7 @@ KnowledgeBased d features out = {model : Type} ->
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : (ProbabilisticModel features (Gaussian _ []) m) =>
+expectedImprovement : ProbabilisticModel features (Gaussian _ []) m =>
                       (model : m) -> (best : Tensor [] Double) -> Acquisition 1 features
 --expectedImprovement model best at =
 --  let normal = predict model at in
