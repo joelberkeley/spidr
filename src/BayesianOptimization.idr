@@ -46,6 +46,7 @@ public export 0
 AcquisitionOptimizer : {batch_size : Nat} -> {features : Shape} -> Type
 AcquisitionOptimizer = Optimizer $ Tensor (batch_size :: features) Double
 
+-- todo this only allows one point. Should it allow multiple?
 ||| Observed query points and objective values
 public export 0
 Data : Shape -> Shape -> Type
@@ -66,10 +67,9 @@ KnowledgeBased d features out = {model : Type} -> ProbabilisticModel features d 
 ||| @best The current best observation.
 export
 expectedImprovement : ProbabilisticModel features (Gaussian _ []) m =>
-                      (model : m) -> (best : Tensor [] Double) -> Acquisition 1 features
---expectedImprovement model best at =
---  let normal = predict model at in
---    (best - mean normal) * (cdf normal best) + (?squeeze $ covariance normal) * ?prob
+                      (model : m) -> (best : Tensor [1] Double) -> Acquisition 1 features
+expectedImprovement model best at = let gaussian = predict model at in
+  (best - mean gaussian) * (cdf gaussian best) + (?squeeze $ variance gaussian) * pdf gaussian best
 
 -- todo can I get the type checker to infer `targets` and `samples`? It should be able to, given the
 -- implementation of `Distribution` for `Gaussian`

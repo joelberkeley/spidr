@@ -30,6 +30,11 @@ interface Distribution (0 dim : Nat) (0 event_shape : Shape) dist where
   ||| The covariance, or correlation between sub-events
   covariance : dist -> Tensor (dim :: dim :: event_shape) Double
 
+-- todo should we squeeze the first dim on the output?
+||| The variance of a single random variable
+export
+variance : Distribution 1 event_shape d => d -> Tensor (1 :: event_shape) Double
+
 ||| A joint Gaussian distribution.
 public export
 data Gaussian : (0 dim : Nat) -> (0 event_shape : Shape) -> Type where
@@ -44,6 +49,10 @@ export
   Distribution dim event_shape (Gaussian dim event_shape) where
     mean (MkGaussian mean' _) = mean'
     covariance  (MkGaussian _ cov) = cov
+
+||| The probability density function of the Gaussian at the specified point.
+export
+pdf : Gaussian dim event_shape -> Tensor (dim :: event_shape) Double -> Tensor [] Double
 
 ||| The cumulative distribution function of the Gaussian at the specified point (that is, the
 ||| probability the random variable takes a value less than or equal to the given point).
