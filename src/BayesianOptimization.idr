@@ -24,14 +24,15 @@ import Tensor
 import Data.Vect
 import Optimize
 import Distribution
+import GaussianProcess
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
-interface Distribution samples targets dist =>
-  ProbabilisticModel (0 features : Shape) dist model where
-    ||| Return the probability distribution over the target space at the specified points in the
-    ||| feature space, given the model.
-    predict : model -> Tensor (samples :: features) Double -> dist
+interface Distribution targets dist => ProbabilisticModel
+(0 features : Shape) dist model where
+  ||| Return the probability distribution over the target space at the specified points in the
+  ||| feature space, given the model.
+  predict : {samples : Nat} -> model -> Tensor (samples :: features) Double -> dist samples
 
 interface Domain where
 
@@ -51,13 +52,11 @@ AcquisitionOptimizer = Optimizer $ Tensor (batch_size :: features) Double
 public export 0
 Data : Shape -> Shape -> Type
 Data features targets = (Tensor features Double, Tensor targets Double)
-
 ||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
 ||| data.
 public export 0
-KnowledgeBased : (d : Type) -> Distribution samples targets d =>
-                 (features : Shape) -> Type -> Type
-KnowledgeBased d features out = {0 model : Type} -> ProbabilisticModel features d model =>
+KnowledgeBased : Shape -> (dist : Nat -> Type) -> Distribution targets dist => Type -> Type
+KnowledgeBased features dist out = {0 model : Type} -> ProbabilisticModel features dist model =>
                                 (Data features targets, model) -> out
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
@@ -66,18 +65,18 @@ KnowledgeBased d features out = {0 model : Type} -> ProbabilisticModel features 
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : ProbabilisticModel features (Gaussian _ []) m =>
+expectedImprovement : ProbabilisticModel features (Gaussian []) m =>
                       (model : m) -> (best : Tensor [1] Double) -> Acquisition 1 features
-expectedImprovement model best at = let gaussian = predict model at in
-  (best - mean gaussian) * (cdf gaussian best) + (?squeeze $ variance gaussian) * pdf gaussian best
+-- expectedImprovement model best at = let gaussian = predict model at in
+--   (best - mean gaussian) * (cdf gaussian best) + pdf gaussian best * (variance gaussian) 
 
 -- todo can I get the type checker to infer `targets` and `samples`? It should be able to, given the
 -- implementation of `Distribution` for `Gaussian`
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
-expectedImprovementByModel : KnowledgeBased {targets=[]} {samples=samples}
-  (Gaussian samples []) features $ Acquisition 1 features
+expectedImprovementByModel : KnowledgeBased features {targets=[]} (Gaussian []) $
+                             Acquisition 1 features
 --expectedImprovementByModel ((query_points, _), model) at =
 --  let best = min $ predict model (?expand_dims0 query_points) in expectedImprovement model best
 
@@ -85,12 +84,12 @@ expectedImprovementByModel : KnowledgeBased {targets=[]} {samples=samples}
 ||| value less than the specified `limit`.
 export
 probabilityOfFeasibility : (limit : Tensor [] Double) ->
-  KnowledgeBased {targets=[]} {samples=samples} (Gaussian samples []) features
-  $ Acquisition 1 features
+                           KnowledgeBased features {targets=[]} (Gaussian []) $
+                           Acquisition 1 features
 
 export
-expectedConstrainedImprovement : KnowledgeBased {targets=[]} {samples=samples}
-  (Gaussian samples []) features $ (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement : KnowledgeBased features {targets=[]} (Gaussian []) $
+                                 (Acquisition 1 features -> Acquisition 1 features)
 
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
 ||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can

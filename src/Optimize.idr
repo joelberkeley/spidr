@@ -32,7 +32,7 @@ Optimizer a = (a -> Maybe $ Tensor [] Double) -> Maybe a
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
 export
-grid_search : (density : Tensor [d] Double) ->
+grid_search : (density : Tensor [d] Integer) ->
               (lower : Tensor [d] Double) ->
               (upper : Tensor [d] Double) ->
               Optimizer (Tensor [] Double)
