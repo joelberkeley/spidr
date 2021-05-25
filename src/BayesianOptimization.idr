@@ -28,19 +28,15 @@ import GaussianProcess
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
-interface Distribution targets dist => ProbabilisticModel
-(0 features : Shape) dist model where
-  ||| Return the probability distribution over the target space at the specified points in the
-  ||| feature space, given the model.
-  predict : {samples : Nat} -> model -> Tensor (samples :: features) Double -> dist samples
-
-interface Domain where
+ProbabilisticModel : Distribution targets marginal => Shape -> Type
+ProbabilisticModel {marginal} features = {0 samples : Nat} ->
+        Tensor (samples :: features) Double -> marginal samples
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 public export 0
 Acquisition : Nat -> Shape -> Type
-Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
+Acquisition batch_size features = Tensor (batch_size :: features) Double -> Maybe $ Tensor [] Double
 
 ||| An `AcquisitionOptimizer` returns the points which optimize a given `Acquisition`.
 public export 0
@@ -51,13 +47,14 @@ AcquisitionOptimizer = Optimizer $ Tensor (batch_size :: features) Double
 ||| Observed query points and objective values
 public export 0
 Data : Shape -> Shape -> Type
-Data features targets = (Tensor features Double, Tensor targets Double)
-||| An `AcquisitionBuilder` constructs an `Acquisition` from historic data and the model over that
-||| data.
+Data features targets = {0 samples : Nat} ->   
+  (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
+
+||| A `KnowledgeBased` constructs values from historic data and the model over that data.
 public export 0
-KnowledgeBased : Shape -> (dist : Nat -> Type) -> Distribution targets dist => Type -> Type
-KnowledgeBased features dist out = {0 model : Type} -> ProbabilisticModel features dist model =>
-                                (Data features targets, model) -> out
+KnowledgeBased : Distribution targets marginal => Shape -> Type -> Type
+KnowledgeBased {targets} {marginal} features out =
+  (Data features targets, ProbabilisticModel features {targets} {marginal}) -> out
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -65,30 +62,30 @@ KnowledgeBased features dist out = {0 model : Type} -> ProbabilisticModel featur
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : ProbabilisticModel features (Gaussian []) m =>
-                      (model : m) -> (best : Tensor [1] Double) -> Acquisition 1 features
--- expectedImprovement model best at = let gaussian = predict model at in
---   (best - mean gaussian) * (cdf gaussian best) + pdf gaussian best * (variance gaussian) 
+expectedImprovement : ProbabilisticModel features {targets=[1]} {marginal=Gaussian [1]} ->
+                      (best : Tensor [1] Double) -> Acquisition 1 features
+--expectedImprovement predict best at = let marginal = predict at in
+--  (best - mean marginal) * (cdf marginal best) + pdf marginal best * (variance marginal) 
 
 -- todo can I get the type checker to infer `targets` and `samples`? It should be able to, given the
 -- implementation of `Distribution` for `Gaussian`
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
-expectedImprovementByModel : KnowledgeBased features {targets=[]} (Gaussian []) $
+expectedImprovementByModel : KnowledgeBased features {targets=[1]} {marginal=Gaussian [1]} $
                              Acquisition 1 features
---expectedImprovementByModel ((query_points, _), model) at =
---  let best = min $ predict model (?expand_dims0 query_points) in expectedImprovement model best
+--expectedImprovementByModel ((query_points, _), predict) = let best = min $ predict query_points in
+--                                                              expectedImprovement predict best
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
 probabilityOfFeasibility : (limit : Tensor [] Double) ->
-                           KnowledgeBased features {targets=[]} (Gaussian []) $
+                           KnowledgeBased features {targets=[1]} {marginal=Gaussian [1]} $
                            Acquisition 1 features
 
 export
-expectedConstrainedImprovement : KnowledgeBased features {targets=[]} (Gaussian []) $
+expectedConstrainedImprovement : KnowledgeBased features {targets=[1]} {marginal=Gaussian [1]} $
                                  (Acquisition 1 features -> Acquisition 1 features)
 
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
@@ -104,6 +101,12 @@ data Connection : Type -> Type -> Type where
   ||| Construct a `Connection`.
   MkConnection : (i -> ty) -> (ty -> o) -> Connection i o
 
+apply' : Connection i o -> i -> o
+apply' (MkConnection in_ out) = out . in_
+
+direct : (i -> o) -> Connection i o
+direct = MkConnection (\x => x)
+
 export
 Functor (Connection i) where
   map f (MkConnection get g) = MkConnection get $ f . g
@@ -113,4 +116,37 @@ Applicative (Connection i) where
   pure x = MkConnection (\_ => ()) (\_ => x)
   (MkConnection get g) <*> (MkConnection get' g') = MkConnection
     (\ii => (get ii, get' ii)) (\(t, t') => g t $ g' t')
+
+----------------------------------------------------
+
+historic_data : Data [2] [1]
+
+public export 0 Model : Type
+Model = ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} 
+
+model : Model
+
+optimizer : AcquisitionOptimizer
+
+new_point : Maybe $ Tensor [1, 2] Double
+new_point = let ei = direct expectedImprovementByModel
+                acquisition = map optimizer ei in
+                  apply' acquisition (historic_data, model)
+
+data Map : k -> v -> Type where
+
+idx : k -> Map k v -> v
+
+infixl 9 >>>
+
+(>>>) : k -> (ty -> o) -> Connection (Map k ty) o
+(>>>) key = MkConnection (idx key)
+
+data_model_mapping : Map String (Data [2] [1], Model)
+
+new_point_constrained : Maybe $ Tensor [1, 2] Double
+new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement
+                            pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ MkTensor 0.5)
+                            acquisition = map optimizer $ eci <*> pof in
+                              apply' acquisition data_model_mapping
 
