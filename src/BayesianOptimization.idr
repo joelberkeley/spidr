@@ -50,10 +50,10 @@ Data : Shape -> Shape -> Type
 Data features targets = {0 samples : Nat} ->   
   (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
 
-||| A `KnowledgeBased` constructs values from historic data and the model over that data.
+||| An `Empiric` constructs values from historic data and the model over that data.
 public export 0
-KnowledgeBased : Distribution targets marginal => Shape -> Type -> Type
-KnowledgeBased {targets} {marginal} features out =
+Empiric : Distribution targets marginal => Shape -> Type -> Type
+Empiric {targets} {marginal} features out =
   (Data features targets, ProbabilisticModel features {targets} {marginal}) -> out
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
@@ -72,7 +72,7 @@ expectedImprovement : ProbabilisticModel features {targets=[1]} {marginal=Gaussi
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
-expectedImprovementByModel : KnowledgeBased features {targets=[1]} {marginal=Gaussian [1]} $
+expectedImprovementByModel : Empiric features {targets=[1]} {marginal=Gaussian [1]} $
                              Acquisition 1 features
 --expectedImprovementByModel ((query_points, _), predict) = let best = min $ predict query_points in
 --                                                              expectedImprovement predict best
@@ -80,12 +80,11 @@ expectedImprovementByModel : KnowledgeBased features {targets=[1]} {marginal=Gau
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] Double) ->
-                           KnowledgeBased features {targets=[1]} {marginal=Gaussian [1]} $
-                           Acquisition 1 features
+probabilityOfFeasibility : (limit : Tensor [] Double) -> Distribution [1] d =>
+                           Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
 
 export
-expectedConstrainedImprovement : KnowledgeBased features {targets=[1]} {marginal=Gaussian [1]} $
+expectedConstrainedImprovement : Empiric features {targets=[1]} {marginal=Gaussian [1]} $
                                  (Acquisition 1 features -> Acquisition 1 features)
 
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
@@ -101,8 +100,8 @@ data Connection : Type -> Type -> Type where
   ||| Construct a `Connection`.
   MkConnection : (i -> ty) -> (ty -> o) -> Connection i o
 
-apply' : Connection i o -> i -> o
-apply' (MkConnection in_ out) = out . in_
+apply : Connection i o -> i -> o
+apply (MkConnection in_ out) = out . in_
 
 direct : (i -> o) -> Connection i o
 direct = MkConnection (\x => x)
@@ -122,7 +121,7 @@ Applicative (Connection i) where
 historic_data : Data [2] [1]
 
 public export 0 Model : Type
-Model = ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} 
+Model = ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 
 model : Model
 
@@ -130,8 +129,8 @@ optimizer : AcquisitionOptimizer
 
 new_point : Maybe $ Tensor [1, 2] Double
 new_point = let ei = direct expectedImprovementByModel
-                acquisition = map optimizer ei in
-                  apply' acquisition (historic_data, model)
+                acquisition = map optimizer ei
+             in apply acquisition (historic_data, model)
 
 data Map : k -> v -> Type where
 
@@ -147,6 +146,6 @@ data_model_mapping : Map String (Data [2] [1], Model)
 new_point_constrained : Maybe $ Tensor [1, 2] Double
 new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement
                             pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ MkTensor 0.5)
-                            acquisition = map optimizer $ eci <*> pof in
-                              apply' acquisition data_model_mapping
+                            acquisition = map optimizer $ eci <*> pof
+                         in apply acquisition data_model_mapping
 
