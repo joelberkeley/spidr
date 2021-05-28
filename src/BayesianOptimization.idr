@@ -113,9 +113,5 @@ Functor (Connection i) where
 export
 Applicative (Connection i) where
   pure x = MkConnection (\_ => ()) (\_ => x)
-  (MkConnection {ty} get g) <*> (MkConnection {ty=ty'} get' g') = MkConnection get'' g'' where
-    get'' : i -> (ty, ty')
-    get'' ii = (get ii, get' ii)
-
-    g'' : (ty, ty') -> b
-    g'' (t, t') = g t $ g' t'
+  (MkConnection get g) <*> (MkConnection get' g') =
+    MkConnection (\ii => (get ii, get' ii)) (\(t, t') => g t $ g' t')
