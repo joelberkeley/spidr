@@ -24,7 +24,6 @@ import Tensor
 import Data.Vect
 import Optimize
 import Distribution
-import GaussianProcess
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
