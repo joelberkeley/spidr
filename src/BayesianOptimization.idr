@@ -99,8 +99,8 @@ public export
 data Connection i o = MkConnection (i -> ty) (ty -> o)
 
 export
-apply' : Connection i o -> i -> o
-apply' (MkConnection in_ out) = out . in_
+apply : Connection i o -> i -> o
+apply (MkConnection in_ out) = out . in_
 
 export
 direct : (i -> o) -> Connection i o

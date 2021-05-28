@@ -20,7 +20,7 @@ optimizer : AcquisitionOptimizer
 new_point : Maybe $ Tensor [1, 2] Double                                                             
 new_point = let ei = direct expectedImprovementByModel                                               
                 acquisition = map optimizer ei                                                       
-             in apply' acquisition (historic_data, model)                                             
+             in apply acquisition (historic_data, model)                                             
                                                                                                      
 data Map : k -> v -> Type where                                                                      
                                                                                                      
@@ -37,4 +37,4 @@ new_point_constrained : Maybe $ Tensor [1, 2] Double
 new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement                     
                             pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ MkTensor 0.5)         
                             acquisition = map optimizer $ eci <*> pof                                
-                         in apply' acquisition data_model_mapping
+                         in BayesianOptimization.apply acquisition data_model_mapping
