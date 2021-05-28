@@ -5,6 +5,7 @@ import MeanFunction
 import GaussianProcess
 import Distribution
 import BayesianOptimization
+import Optimize
 import Util
 
 historic_data : Data [2] [1]                                                                         
