@@ -8,22 +8,22 @@ import BayesianOptimization
 import Optimize
 import Util
 
-historic_data : Data [2] [1]                                                                         
-                                                                                                     
-public export 0 Model : Type                                                                         
-Model = ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}                                 
-                                                                                                     
-model : Model                                                                                        
+historic_data : Data [2] [1]
 
-optimizer : AcquisitionOptimizer                                                                                                     
-                                                                                                     
-new_point : Maybe $ Tensor [1, 2] Double                                                             
-new_point = let ei = direct expectedImprovementByModel                                               
-                acquisition = map optimizer ei                                                       
-             in apply acquisition (historic_data, model)                                             
-                                                                                                     
-data Map : k -> v -> Type where                                                                      
-                                                                                                     
+public export 0 Model : Type
+Model = ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+
+model : Model
+
+optimizer : AcquisitionOptimizer
+
+new_point : Maybe $ Tensor [1, 2] Double
+new_point = let ei = direct expectedImprovementByModel
+                acquisition = map optimizer ei
+             in apply acquisition (historic_data, model)
+
+data Map : k -> v -> Type where
+
 idx : k -> Map k v -> v
 
 infixl 9 >>>
