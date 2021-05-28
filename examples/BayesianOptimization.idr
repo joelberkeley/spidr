@@ -24,17 +24,17 @@ new_point = let ei = direct expectedImprovementByModel
                                                                                                      
 data Map : k -> v -> Type where                                                                      
                                                                                                      
-idx : k -> Map k v -> v                                                                              
-                                                                                                     
-infixl 9 >>>                                                                                         
-                                                                                                     
-(>>>) : k -> (ty -> o) -> Connection (Map k ty) o                                                    
-(>>>) key = MkConnection (idx key)                                                                   
-                                                                                                     
-data_model_mapping : Map String (Data [2] [1], Model)                                                
-                                                                                                     
-new_point_constrained : Maybe $ Tensor [1, 2] Double                                                 
-new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement                     
-                            pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ MkTensor 0.5)         
-                            acquisition = map optimizer $ eci <*> pof                                
-                         in BayesianOptimization.apply acquisition data_model_mapping
+idx : k -> Map k v -> v
+
+infixl 9 >>>
+
+(>>>) : k -> (ty -> o) -> Connection (Map k ty) o
+(>>>) key = MkConnection (idx key)
+
+data_model_mapping : Map String $ Pair (Data [2] [1]) Model
+
+new_point_constrained : Maybe $ Tensor [1, 2] Double
+new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement
+                            pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ MkTensor 0.5)
+                            acquisition = map optimizer $ eci <*> pof
+                         in apply acquisition data_model_mapping
