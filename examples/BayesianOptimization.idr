@@ -1,7 +1,9 @@
+import Data.Vect
 import Tensor
 import Kernel
 import MeanFunction
 import GaussianProcess
+import Distribution
 import BayesianOptimization
 import Util
 
@@ -11,8 +13,8 @@ public export 0 Model : Type
 Model = ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}                                 
                                                                                                      
 model : Model                                                                                        
-                                                                                                     
-optimizer : AcquisitionOptimizer                                                                     
+
+optimizer : AcquisitionOptimizer                                                                                                     
                                                                                                      
 new_point : Maybe $ Tensor [1, 2] Double                                                             
 new_point = let ei = direct expectedImprovementByModel                                               

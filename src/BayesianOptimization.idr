@@ -28,6 +28,7 @@ import GaussianProcess
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
+public export 0
 ProbabilisticModel : Distribution targets marginal => Shape -> Type
 ProbabilisticModel {marginal} features = {0 samples : Nat} ->
         Tensor (samples :: features) Double -> marginal samples
@@ -98,9 +99,11 @@ expectedConstrainedImprovement : Empiric features {targets=[1]} {marginal=Gaussi
 public export
 data Connection i o = MkConnection (i -> ty) (ty -> o)
 
+export
 apply : Connection i o -> i -> o
 apply (MkConnection in_ out) = out . in_
 
+export
 direct : (i -> o) -> Connection i o
 direct = MkConnection (\x => x)
 

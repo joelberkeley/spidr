@@ -21,7 +21,7 @@ import Data.Vect
 
 ||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a scalar-valued
 ||| function over that space.
-public export
+public export 0
 Optimizer : Type -> Type
 Optimizer a = (a -> Maybe $ Tensor [] Double) -> Maybe a
 
