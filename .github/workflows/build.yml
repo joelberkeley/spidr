@@ -33,6 +33,6 @@ jobs:
     - run: |
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
-        mkdir out/idris2-v0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
+        mkdir -p out/idris2-v0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
         idris2 examples/BayesianOptimization.idr
