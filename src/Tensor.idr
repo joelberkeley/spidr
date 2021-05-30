@@ -191,7 +191,7 @@ export
 ||| scalar LHS.
 export
 (*) : Num dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto prf : Broadcastable l r} -> Tensor r dtype
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
 
 ||| Elementwise floating point division. This reduces to standard tensor division by a scalar for
 ||| scalar denominator.
