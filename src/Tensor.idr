@@ -127,7 +127,7 @@ public export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
   Same : Broadcastable x x
 
-export
+-- todo do we need this function? Won't we defer this to Poplar?
 broadcast : Tensor from dtype -> {auto prf : Broadcastable from to} -> Tensor to dtype
 broadcast x {prf = Same} = x
 
