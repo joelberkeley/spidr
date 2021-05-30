@@ -121,6 +121,16 @@ cast_dtype tensor = map cast tensor
 export
 diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
+-------------------------------- broadcasting -------------------------------
+
+export
+data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
+  Id : Broadcastable x x
+
+export
+broadcast : Tensor from dtype -> {auto prf : Broadcastable from to} -> Tensor to dtype
+broadcast x {prf = Id} = x
+
 ----------------------------- numeric operations ----------------------------
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
@@ -136,9 +146,13 @@ export
 
 ||| Element-wise addition.
 export
-(+) : Num dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) t1 t2 = zipWith (+) t1 t2
-
+(+) : Num dtype => {r : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
+(+) t1 t2 = zipWith (+) (broadcast t1) t2
+{-
+export
+(+) : Num dtype => {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+(+) t1 t2 = zipWith (+) t1 (broadcast t2)
+-}
 ||| Element-wise subtraction.
 export
 (-) : Neg dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
