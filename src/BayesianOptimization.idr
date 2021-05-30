@@ -83,6 +83,10 @@ export
 probabilityOfFeasibility : (limit : Tensor [] Double) -> Distribution [1] d =>
                            Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
 
+||| Build the expected improvement acquisition function in the context of a constraint on the input
+||| domain, where points that do not satisfy the constraint do not offer an improvement. The
+||| complete acquisition function is built from a constraint acquisition function, which quantifies
+||| whether specified points in the input space satisfy the constraint.
 export
 expectedConstrainedImprovement : Empiric features {targets=[1]} {marginal=Gaussian [1]} $
                                  (Acquisition 1 features -> Acquisition 1 features)
