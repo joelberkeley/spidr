@@ -125,11 +125,11 @@ diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
 export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
-  Id : Broadcastable x x
+  Same : Broadcastable x x
 
 export
 broadcast : Tensor from dtype -> {auto prf : Broadcastable from to} -> Tensor to dtype
-broadcast x {prf = Id} = x
+broadcast x {prf = Same} = x
 
 ----------------------------- numeric operations ----------------------------
 
@@ -146,29 +146,32 @@ export
 
 ||| Element-wise addition.
 export
-(+) : Num dtype => {r : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
-(+) t1 t2 = zipWith (+) (broadcast t1) t2
-{-
-export
-(+) : Num dtype => {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
-(+) t1 t2 = zipWith (+) t1 (broadcast t2)
--}
+(+) : Num dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+(+) t1 t2 = zipWith (+) t1 $ broadcast t2
+
 ||| Element-wise subtraction.
 export
-(-) : Neg dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) t1 t2 = zipWith (-) t1 t2
+(-) : Neg dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
+(-) t1 t2 = zipWith (-) t1 $ broadcast t2
 
-||| Multiplication with a scalar.
+-- todo do I want a dedicated operator for elementwise multiplication, so that `x * y` is always
+--   the mathematical version, and readers can differentiate between that and, say, `x *# y` for
+--   elementwise multiplication? Same question for `/`
+||| Elementwise multiplication. This reduces to standard tensor multiplication with a scalar for
+||| scalar LHS.
 export
-(*) : Num dtype => {shape : _} -> Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) (MkTensor x) t = map (* x) t
+(*) : Num dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
 
-||| Floating point division by a scalar.
+||| Elementwise floating point division. This reduces to standard tensor division by a scalar for
+||| scalar denominator.
 export
-(/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
--- (/) t (MkTensor x) = map (/ x) t
+(/) : Fractional dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
-||| The element-wise logarithm.
+||| The elementwise logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double
 
@@ -176,7 +179,10 @@ min : Tensor [S _] Double -> Tensor [] Double
 
 ---------------------------- other ----------------------------------
 
-ew_eq : Eq dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape Bool
+||| Elementwise equality.
+export
+(==) : Eq dtype =
+       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 any : Tensor shape Bool -> Tensor [] Bool
 
