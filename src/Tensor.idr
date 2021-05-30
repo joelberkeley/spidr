@@ -125,7 +125,7 @@ diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
 -- todo apparently this works even if dimensions are zero in TensorFlow. Do we want it to work?
 ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
-||| shape `to.
+||| shape `to`.
 public export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
   ||| Proof that a shape can be broadcast to itself. For example:
