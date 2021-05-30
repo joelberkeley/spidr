@@ -126,6 +126,11 @@ diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 public export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
   Same : Broadcastable x x
+  -- NOTE : f and t don't need to have the same rank for Widen to be valid, but it keeps Widen
+  -- faithful to its name.
+  Widen : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (1 :: f) (_ :: t)
+  Extend : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
+  Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
 ----------------------------- numeric operations ----------------------------
 
@@ -144,13 +149,15 @@ export
 export
 (+) : Num dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
-(+) t1 t2 = zipWith (+) t1 $ broadcast t2
+
+||| Element-wise negation.
+export
+negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
 ||| Element-wise subtraction.
 export
 (-) : Neg dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
-(-) t1 t2 = zipWith (-) t1 $ broadcast t2
 
 -- todo do I want a dedicated operator for elementwise multiplication, so that `x * y` is always
 --   the mathematical version, and readers can differentiate between that and, say, `x *# y` for
@@ -159,7 +166,7 @@ export
 ||| scalar LHS.
 export
 (*) : Num dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto prf : Broadcastable l r} -> Tensor r dtype
 
 ||| Elementwise floating point division. This reduces to standard tensor division by a scalar for
 ||| scalar denominator.
@@ -167,7 +174,7 @@ export
 (/) : Fractional dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
-||| The elementwise logarithm.
+||| The element-wise logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double
 
@@ -175,7 +182,7 @@ min : Tensor [S _] Double -> Tensor [] Double
 
 ---------------------------- other ----------------------------------
 
-||| Elementwise equality.
+||| Element-wise equality.
 export
 (==) : Eq dtype =
        {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
