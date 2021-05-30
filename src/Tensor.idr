@@ -123,7 +123,7 @@ diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
 -------------------------------- broadcasting -------------------------------
 
-export
+public export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
   Same : Broadcastable x x
 
