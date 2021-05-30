@@ -35,4 +35,4 @@ jobs:
         nix-env -i idris2
         mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
-        idris2 --check tests/unit/Tensor.idr 
+        idris2 --check tests/unit/Tensor.idr
