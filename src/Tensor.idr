@@ -127,10 +127,6 @@ public export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
   Same : Broadcastable x x
 
--- todo do we need this function? Won't we defer this to Poplar?
-broadcast : Tensor from dtype -> {auto prf : Broadcastable from to} -> Tensor to dtype
-broadcast x {prf = Same} = x
-
 ----------------------------- numeric operations ----------------------------
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
