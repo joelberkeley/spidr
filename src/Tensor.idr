@@ -123,14 +123,39 @@ diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
 -------------------------------- broadcasting -------------------------------
 
+-- todo apparently this works even if dimensions are zero in TensorFlow. Do we want it to work?
+||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
+||| shape `to.
 public export
 data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
-  Same : Broadcastable x x
-  -- NOTE : f and t don't need to have the same rank for Widen to be valid, but it keeps Widen
-  -- faithful to its name.
-  Widen : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (1 :: f) (_ :: t)
+  ||| Proof that a shape can be broadcast to itself. For example:
+  |||
+  ||| [] to []
+  ||| [3, 4] to [3, 4]
+  |||
+  ||| Implementation note: we could have used `Broadcast [] []`, which would have been more atomic
+  ||| wrt. the other constructors, but the author guesses that this implementation helps the type
+  ||| checker avoid applications of `Extend`.
+  Same : Broadcastable x x 
+
+  ||| Proof that any dimension with size one can be stacked to any size. For example:
+  |||
+  ||| [1, 3] to [5, 3]
+  ||| [3, 1, 2] to [3, 5, 2]
+  Stack : Broadcastable f (1 :: t) -> Broadcastable f (_ :: t)
+
+  ||| Proof that any dimension can be broadcast to itself. For example:
+  |||
+  ||| [2, ...] to [2, ...], assuming the ellipses are broadcast-compatible.
+  |||
+  ||| Implementation note: the ranks must be equal so that the dimensions are added along the same
+  ||| axes.
   Extend : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
-  Nest : Broadcastable f t -> Broadcastable f (_ :: t)
+
+  ||| Proof that broadcasting can add outer dimensions i.e. nesting.
+  |||
+  ||| [3] to [1, 3]
+  Nest : Broadcastable f t -> Broadcastable f (1 :: t)
 
 ----------------------------- numeric operations ----------------------------
 
