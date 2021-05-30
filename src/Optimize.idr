@@ -21,7 +21,7 @@ import Data.Vect
 
 ||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a scalar-valued
 ||| function over that space.
-public export
+public export 0
 Optimizer : Type -> Type
 Optimizer a = (a -> Maybe $ Tensor [] Double) -> Maybe a
 
@@ -32,7 +32,7 @@ Optimizer a = (a -> Maybe $ Tensor [] Double) -> Maybe a
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
 export
-grid_search : (density : Tensor [d] Double) ->
+grid_search : (density : Tensor [d] Integer) ->
               (lower : Tensor [d] Double) ->
               (upper : Tensor [d] Double) ->
               Optimizer (Tensor [] Double)

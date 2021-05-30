@@ -44,7 +44,7 @@ data GaussianProcess : (0 features : Shape) -> Type where
 export
 posterior : {s : Nat}
  -> (prior : GaussianProcess features)
- -> (likelihood : Gaussian (S s) [])
+ -> (likelihood : Gaussian [] (S s))
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> Maybe $ GaussianProcess features
 posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
@@ -67,12 +67,12 @@ export
 marginalise : {samples : Nat}
   -> GaussianProcess features
   -> Tensor (samples :: features) Double
-  -> Gaussian samples []
+  -> Gaussian [] samples
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
 log_marginal_likelihood : {samples : Nat}
  -> GaussianProcess features
- -> Gaussian (S samples) []
+ -> Gaussian [] (S samples)
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Maybe $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
@@ -96,7 +96,7 @@ export
 optimize : {samples : Nat}
  -> (optimizer : Optimizer hp)
  -> (prior_from_parameters : hp -> GaussianProcess features)
- -> (likelihood : Gaussian (S samples) [])
+ -> (likelihood : Gaussian [] (S samples))
  -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
  -> Maybe hp
 optimize optimizer gp_from_hyperparameters likelihood training_data = optimizer objective where
