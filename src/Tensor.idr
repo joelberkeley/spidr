@@ -209,7 +209,7 @@ min : Tensor [S _] Double -> Tensor [] Double
 
 ||| Element-wise equality.
 export
-(==) : Eq dtype =
+(==) : Eq dtype =>
        {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 any : Tensor shape Bool -> Tensor [] Bool
