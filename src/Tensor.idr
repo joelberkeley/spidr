@@ -75,7 +75,7 @@ public export
 |||
 ||| @idx The row to fetch.
 export
-index : (idx: Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
+index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 index idx (MkTensor x) = MkTensor $ index idx x
 
 zipWith : {shape : _} -> (a -> b -> c) -> Tensor shape a -> Tensor shape b -> Tensor shape c
@@ -121,6 +121,40 @@ cast_dtype tensor = map cast tensor
 export
 diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
+||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
+||| shape `to`.
+public export
+data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
+  ||| Proof that a shape can be broadcast to itself. For example:
+  |||
+  ||| [] to []
+  ||| [3, 4] to [3, 4]
+  |||
+  ||| Implementation note: we could have used `Broadcast [] []`, which would have been more atomic
+  ||| wrt. the other constructors, but the author guesses that this implementation helps the type
+  ||| checker avoid applications of `Extend`.
+  Same : Broadcastable x x
+
+  ||| Proof that any dimension with size one can be stacked to any size. For example:
+  |||
+  ||| [1, 3] to [5, 3]
+  ||| [3, 1, 2] to [3, 5, 2]
+  -- todo does this need to work for 1 :: t -> 0 :: t?
+  Stack : Broadcastable f (1 :: t) -> Broadcastable f (S (S _) :: t)
+
+  ||| Proof that any dimension can be broadcast to itself. For example:
+  |||
+  ||| [2, ...] to [2, ...], assuming the ellipses are broadcast-compatible.
+  |||
+  ||| Implementation note: the ranks must be equal so that the dimensions are added along the same
+  ||| axes.
+  Extend : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
+
+  ||| Proof that broadcasting can add outer dimensions i.e. nesting.
+  |||
+  ||| [3] to [1, 3]
+  Nest : Broadcastable f t -> Broadcastable f (1 :: t)
+
 ----------------------------- numeric operations ----------------------------
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
@@ -136,23 +170,32 @@ export
 
 ||| Element-wise addition.
 export
-(+) : Num dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) t1 t2 = zipWith (+) t1 t2
+(+) : Num dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+
+||| Element-wise negation.
+export
+negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
 ||| Element-wise subtraction.
 export
-(-) : Neg dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) t1 t2 = zipWith (-) t1 t2
+(-) : Neg dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
 
-||| Multiplication with a scalar.
+-- todo do I want a dedicated operator for elementwise multiplication, so that `x * y` is always
+--   the mathematical version, and readers can differentiate between that and, say, `x *# y` for
+--   elementwise multiplication? Same question for `/`
+||| Elementwise multiplication. This reduces to standard tensor multiplication with a scalar for
+||| scalar LHS.
 export
-(*) : Num dtype => {shape : _} -> Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) (MkTensor x) t = map (* x) t
+(*) : Num dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
 
-||| Floating point division by a scalar.
+||| Elementwise floating point division. This reduces to standard tensor division by a scalar for
+||| scalar denominator.
 export
-(/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
--- (/) t (MkTensor x) = map (/ x) t
+(/) : Fractional dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
 ||| The element-wise logarithm.
 export
@@ -162,7 +205,10 @@ min : Tensor [S _] Double -> Tensor [] Double
 
 ---------------------------- other ----------------------------------
 
-ew_eq : Eq dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape Bool
+||| Element-wise equality.
+export
+(==) : Eq dtype =>
+       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 any : Tensor shape Bool -> Tensor [] Bool
 

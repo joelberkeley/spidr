@@ -25,7 +25,7 @@ jobs:
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
         idris2 --build spidr.ipkg
-  examples:
+  test-unit:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -35,4 +35,15 @@ jobs:
         nix-env -i idris2
         mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
-        idris2 --check examples/BayesianOptimization.idr
+        idris2 --check test/unit/*
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: curl -L https://nixos.org/nix/install | sh
+    - run: |
+        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
+        nix-env -i idris2
+        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
+        IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
+        idris2 --check test/integration/*
