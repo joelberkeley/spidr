@@ -39,6 +39,17 @@ ArrayLike : Shape -> Type -> Type
 ArrayLike [] dtype = dtype
 ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
 
+namespace vector
+  public export
+  shape : Vect len ty -> (r ** Shape {rank=r})
+  shape [] = ?rhs
+  shape (x :: _) = let (rx ** shapex) = shape x in (1 + rx ** len :: shapex)
+
+namespace double
+  public export
+  shape : Double -> (r ** Shape {rank=r})
+  shape _ = (0 ** [])
+
 ||| A `Tensor` contains an array of values, and is differentiated from a nested `Vect` by having
 ||| its own type and API.
 public export
