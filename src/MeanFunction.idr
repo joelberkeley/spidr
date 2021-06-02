@@ -30,4 +30,3 @@ MeanFunction features = {sm : Nat} -> Tensor (sm :: features) Double -> Tensor [
 ||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
-zero {sm} (MkTensor x) = replicate {over=[sm]} $ MkTensor 0
