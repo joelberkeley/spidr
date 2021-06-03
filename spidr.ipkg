@@ -6,11 +6,11 @@ sourcedir = "src"
 modules =
   BayesianOptimization,
   Distribution,
-  Main,
   GaussianProcess,
   Kernel,
   MeanFunction,
   Optimize,
+  Poplar,
   Tensor,
   Util
 
