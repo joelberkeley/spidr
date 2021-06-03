@@ -20,6 +20,3 @@ libpoplar fname = "C:" ++ fname ++ ",libpoplar"
 
 %foreign (libpoplar "add")
 add : Int -> Int -> Int
-
-add_idr : Int -> Int -> Int
-add_idr = (+)
