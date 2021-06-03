@@ -13,14 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-import System
-
 import Poplar
 
 infix 0 ==?
 
 (==?) : Eq ty => ty -> ty -> IO ()
-x ==? y = if x == y then exitSuccess else exitFailure
+x ==? y = printLn $ if x == y then "PASS" else "FAIL"
 
 test_add : IO ()
-test_add = add 2 3 ==? 6 
+test_add = add 2 3 ==? 5
