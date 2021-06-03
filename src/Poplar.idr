@@ -19,4 +19,5 @@ libpoplar : String -> String
 libpoplar fname = "C:" ++ fname ++ ",libpoplar"
 
 %foreign (libpoplar "add")
+export
 add : Int -> Int -> Int
