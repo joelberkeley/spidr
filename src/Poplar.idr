@@ -13,5 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-%foreign "C:add,libffi"
+module Poplar
+
+libpoplar : String -> String
+libpoplar fname = "C:" ++ fname ++ ",libpoplar"
+
+%foreign (libpoplar "add")
 add : Int -> Int -> Int
+
+add_idr : Int -> Int -> Int
+add_idr = (+)

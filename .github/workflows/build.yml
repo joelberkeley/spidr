@@ -36,6 +36,19 @@ jobs:
         mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
         idris2 --check test/unit/*
+  test-ffi:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: curl -L https://nixos.org/nix/install | sh
+    - run: |
+        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
+        nix-env -i idris2
+        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
+        IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
+        cc -shared c/poplar.c -o src/libpoplar.so
+        RES=${idris2 Poplar.idr --client ":exec printLn $ add 1 2"}
+        if [ "$RES" == "3" ]; then (exit 1)
   test-integration:
     runs-on: ubuntu-latest
     steps:
