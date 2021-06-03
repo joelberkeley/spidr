@@ -78,10 +78,9 @@ log_marginal_likelihood : {samples : Nat}
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
   map foo $ inverse (kernel x x + cov) where
     foo : Tensor [S samples, S samples] Double -> Tensor [] Double
-    foo inv = let n = the (Tensor [] _) $ const $ the Double $ cast samples
-                  log2pi = the (Tensor [] _) $ log $ const $ 2.0 * PI
-                  half = the (Tensor [] _) $ const $ 1.0 / 2
-               in - half * ((@@) {head=[]} ((@@) {head=[]} y inv) y - log (det inv) + n * log2pi)
+    foo inv = let n = const $ the Double $ cast samples
+                  y_inv_y = (@@) {head=[]} ((@@) {head=[]} y inv) y
+               in - (y_inv_y - log (det inv) + n * (log $ const (2.0 * PI))) / const 2.0
 
 ||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
 ||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined

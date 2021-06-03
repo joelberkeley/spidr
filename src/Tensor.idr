@@ -35,18 +35,33 @@ Shape {rank} = Vect rank Nat
 
 ||| A multidimensional array of a given shape, of elements of a given type.
 public export
-ArrayLike : Shape -> Type -> Type
-ArrayLike [] dtype = dtype
-ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
+interface TensorLike ty where
+  shape : (r ** Vect r Nat)
+  dtype : Type
 
-||| A `Tensor` is either a scalar value or array of values.
 export
-data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
-  MkTensor : ArrayLike shape dtype -> Tensor shape dtype
+TensorLike Integer where
+  shape = (_ ** [])
+  dtype = Integer
 
-||| Construct a `Tensor` from `ArrayLike` data.
 export
-const : ArrayLike shape dtype -> Tensor shape dtype
+TensorLike Double where
+  shape = (_ ** [])
+  dtype = Double
+
+export
+{len : Nat} -> TensorLike ty => TensorLike (Vect len ty) where
+  shape = (_ ** len :: (snd $ shape {ty}))
+  dtype = dtype {ty}
+
+||| Container type for a tensor of any dimensionality.
+export
+data Tensor : Shape -> Type -> Type where
+  MkTensor : TensorLike ty => ty -> Tensor (snd $ shape {ty}) (dtype {ty})
+
+||| Construct a `Tensor` from `TensorLike` data.
+export
+const : TensorLike ty => ty -> Tensor (snd $ shape {ty}) (dtype {ty})
 const = MkTensor
 
 ||| Represents a mutable tensor. That is, a tensor that can be modified in-place.

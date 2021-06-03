@@ -15,7 +15,16 @@ limitations under the License.
 --}
 import Data.Vect                                                                                     
 import Tensor                                                                                        
-                                                                                                     
+
+test_can_construct_scalar : Tensor [] Double
+test_can_construct_scalar = const 0.0
+
+test_can_construct_vector : Tensor [3] Double
+test_can_construct_vector = const [0.0, 1.0, 2.0]
+
+test_can_construct_matrix : Tensor [2, 3] Double
+test_can_construct_matrix = const [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]]
+
 test_can_broadcast : List (from ** to ** Broadcastable from to)
 
 test_can_broadcast_scalar : Broadcastable [] []
