@@ -39,16 +39,15 @@ ArrayLike : Shape -> Type -> Type
 ArrayLike [] dtype = dtype
 ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
 
-||| A `Tensor` contains an array of values, and is differentiated from a nested `Vect` by having
-||| its own type and API.
-public export
+||| A `Tensor` is either a scalar value or array of values.
+export
 data Tensor : (shape: Shape) -> (dtype: Type) -> Type where
-  ||| Construct a `Tensor` from an array.
   MkTensor : ArrayLike shape dtype -> Tensor shape dtype
 
+||| Construct a `Tensor` from `ArrayLike` data.
 export
-Show (ArrayLike shape dtype) => Show (Tensor shape dtype) where
-  show (MkTensor x) = "Tensor " ++ show x
+const : ArrayLike shape dtype -> Tensor shape dtype
+const = MkTensor
 
 ----------------------------- structural operations ----------------------------
 
@@ -76,44 +75,21 @@ public export
 ||| @idx The row to fetch.
 export
 index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
-index idx (MkTensor x) = MkTensor $ index idx x
 
-zipWith : {shape : _} -> (a -> b -> c) -> Tensor shape a -> Tensor shape b -> Tensor shape c
-zipWith f (MkTensor x) (MkTensor y) = MkTensor (zipWithArray f x y) where
-  zipWithArray : {shape': _} ->
-                 (a -> b -> c) -> ArrayLike shape' a -> ArrayLike shape' b -> ArrayLike shape' c
-  zipWithArray {shape'=[]} f x y = f x y
-  zipWithArray {shape'=(d :: ds)} f x y = zipWith (zipWithArray f) x y
-
-||| Tranpose a tensor. For example, `transpose $ MkTensor [[1, 2], [3, 4]]` is
-||| `MkTensor [[1, 3], [2, 4]]`.
+||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is
+||| `const [[1, 3], [2, 4]]`.
 export
 transpose : {n, m : _} -> Tensor [m, n] dtype -> Tensor [n, m] dtype
-transpose (MkTensor x) = MkTensor $ transpose x
-
--- why does this work with a and b but not other names?
--- see http://docs.idris-lang.org/en/latest/tutorial/interfaces.html#functors-and-applicatives
-public export
-{shape : _} -> Functor (Tensor shape) where
-  map f (MkTensor x) = MkTensor (g x) where
-    g : {s : _} -> ArrayLike s a -> ArrayLike s b
-    g {s = []} y = f y
-    g {s = (_ :: _)} ys = map g ys
 
 ||| Replicate a tensor over shape `over`.
 |||
 ||| @over The shape over which to replicate the tensor.
 export
 replicate : {over : Shape} -> Tensor shape dtype -> Tensor (over :++ shape) dtype
-replicate (MkTensor x) = MkTensor (f over x) where
-  f : (over: Shape) -> ArrayLike shape dtype -> ArrayLike (over :++ shape) dtype
-  f [] x' = x'
-  f (d :: ds) x' = replicate d (f ds x')
 
 ||| Cast the tensor elements to a dtype inferred from the expected type.
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
-cast_dtype tensor = map cast tensor
 
 ||| Construct a diagonal tensor from the given value, where all off-diagonal elements are zero.
 |||
@@ -229,4 +205,3 @@ inverse : Tensor [S n, S n] Double -> Maybe $ Tensor [S n, S n] Double
 ||| The product of all elements along the diagonal of a matrix.
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
-trace_product (MkTensor x) = MkTensor $ product $ diag x
