@@ -10,6 +10,7 @@ modules =
   Kernel,
   MeanFunction,
   Optimize,
+  Poplar,
   Tensor,
   Util
 
