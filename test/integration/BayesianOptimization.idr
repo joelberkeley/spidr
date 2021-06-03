@@ -50,6 +50,6 @@ data_model_mapping : Map String $ Pair (Data [2] [1]) Model
 
 new_point_constrained : Maybe $ Tensor [1, 2] Double
 new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement
-                            pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ MkTensor 0.5)
+                            pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ const 0.5)
                             acquisition = map optimizer $ eci <*> pof
                          in apply acquisition data_model_mapping

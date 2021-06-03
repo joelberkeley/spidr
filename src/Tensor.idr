@@ -76,8 +76,8 @@ public export
 export
 index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 
-||| Tranpose a tensor. For example, `transpose $ MkTensor [[1, 2], [3, 4]]` is
-||| `MkTensor [[1, 3], [2, 4]]`.
+||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is
+||| `const [[1, 3], [2, 4]]`.
 export
 transpose : {n, m : _} -> Tensor [m, n] dtype -> Tensor [n, m] dtype
 
