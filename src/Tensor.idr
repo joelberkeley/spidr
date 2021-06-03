@@ -44,7 +44,7 @@ export
 data Tensor : (shape: Shape) -> (dtype: Type) -> Type where
   MkTensor : ArrayLike shape dtype -> Tensor shape dtype
 
-||| Construct a `Tensor` from `TensorLike` data.
+||| Construct a `Tensor` from `ArrayLike` data.
 export
 const : ArrayLike shape dtype -> Tensor shape dtype
 const = MkTensor
