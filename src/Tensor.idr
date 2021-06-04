@@ -41,13 +41,52 @@ ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
 
 ||| A `Tensor` is either a scalar value or array of values.
 export
-data Tensor : (shape: Shape) -> (dtype: Type) -> Type where
+data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : ArrayLike shape dtype -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `ArrayLike` data.
 export
 const : ArrayLike shape dtype -> Tensor shape dtype
 const = MkTensor
+
+||| Represents a mutable tensor. That is, a tensor that can be modified in-place.
+|||
+||| We can do this in Idris with linearity. Linearity is offered by quantitative type theory*, which
+||| allows us to guarantee that a value is used at run time either never (erased), once (linear), or
+||| more. In-place mutation traditionally suffers from the problem that you have to reason about
+||| what state a value is in in a series of computations: whether it has been mutated and how. For
+||| example, in the following pseudo-code,
+|||
+||| > a = 1
+||| > a += 1  -- todo this isn't valid in idris. Does that matter?
+||| > b = f(a)
+|||
+||| We have to be aware of whether `a` was modified between its initialization and its use in the
+||| calculation of `b`. This problem is solved by simply defining a new variable, as
+|||
+||| > a = 1
+||| > a' = a + 1
+||| > b = f(a')
+|||
+||| but this doesn't provide the same performance benefits of in-place mutation. The conundrum is
+||| (at least largely) solved with linear types, because you can require that the action of mutating
+||| a value "uses it up" such that the previous reference to it cannot be used any more. In the
+||| first example, the mutation `a += 1` would use up `a` and we wouldn't be able to use it in the
+||| construction of `b`, so the problem no longer exists.
+|||
+||| In order to ensure `Variable` is only used as a linear type, it is accessible only via the
+||| function `var`.
+|||
+||| *See http://www.type-driven.org.uk/edwinb
+export
+data Variable : (shape : Shape) -> (dtype : Type) -> Type where
+  MkVariable : ArrayLike shape dtype -> Variable shape dtype
+
+||| Gives access to the `Variable` type whilst ensuring it is used linearly.
+var : (1 p : (1 v : Variable shape dtype) -> a) -> a
+
+||| Convert a `Variable` to a `Tensor`.
+freeze : (1 v : Variable shape dtype -> Tensor shape dtype)
 
 ----------------------------- structural operations ----------------------------
 
@@ -152,32 +191,9 @@ export
 infixl 8 +=
 
 ||| Element-wise in-place addition.
-|||
-||| Implementation notes
-||| ====================
-||| 
-||| As a purely functional language, Idris guarantees immutability: values cannot be modified.
-||| How then can we write a function that updates in-place? The answer is that the value must be
-||| made invalid, and a new reference to it created. For example
-|||
-||| ```
-||| one : Tensor [] Double
-||| one = MkTensor 1
-|||
-||| three : Tensor [] Double
-||| three = one + (MkTensor 2)
-|||
-||| 1 one : Tensor [] Double
-||| one = MkTensor 1
-|||
-||| three_in_place : Tensor [] Double
-||| three_in_place = one += (MkTensor 2)
-||| ```
-|||
-(+=) : (1 t : Tensor shape dtype) -> Tensor shape dtype -> Tensor shape dtype
+(+=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
 
 ||| Element-wise negation.
-=======
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
