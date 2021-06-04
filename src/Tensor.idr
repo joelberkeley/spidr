@@ -189,9 +189,21 @@ export
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
 infixl 8 +=
+infixl 8 -=
+infixl 8 *=
+infixl 8 /=
 
 ||| Element-wise in-place addition.
 (+=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
+
+||| Element-wise in-place subtraction.
+(-=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
+
+||| Element-wise in-place multiplication.
+(*=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
+
+||| Element-wise in-place division.
+(/=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
 
 ||| Element-wise negation.
 export
