@@ -41,13 +41,62 @@ ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
 
 ||| A `Tensor` is either a scalar value or array of values.
 export
-data Tensor : (shape: Shape) -> (dtype: Type) -> Type where
+data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : ArrayLike shape dtype -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `ArrayLike` data.
 export
 const : ArrayLike shape dtype -> Tensor shape dtype
 const = MkTensor
+
+||| Represents a mutable tensor. That is, a tensor that can be modified in-place.
+|||
+||| We can do this in Idris with linearity. Linearity is offered by quantitative type theory*, which
+||| allows us to guarantee that a value is used at run time either never (erased), once (linear), or
+||| more. In-place mutation traditionally suffers from the problem that you have to reason about
+||| what state a value is in in a series of computations: whether it has been mutated and how. For
+||| example, in the following pseudo-code,
+|||
+||| > a = 1
+||| > a += 1  -- todo this isn't valid in idris. Does that matter?
+||| > b = f(a)
+|||
+||| We have to be aware of whether `a` was modified between its initialization and its use in the
+||| calculation of `b`. This problem is solved by simply defining a new variable, as
+|||
+||| > a = 1
+||| > a' = a + 1
+||| > b = f(a')
+|||
+||| but this doesn't provide the same performance benefits of in-place mutation. The conundrum is
+||| (at least largely) solved with linear types, because you can require that the action of mutating
+||| a value "uses it up" such that the previous reference to it cannot be used any more. In the
+||| first example, the mutation `a += 1` would use up `a` and we wouldn't be able to use it in the
+||| construction of `b`, so the problem no longer exists.
+|||
+||| In order to ensure `Variable` is only used as a linear type, it is accessible only via the
+||| function `var`.
+|||
+||| *See http://www.type-driven.org.uk/edwinb
+export
+data Variable : (shape : Shape) -> (dtype : Type) -> Type where
+  MkVariable : ArrayLike shape dtype -> Variable shape dtype
+
+||| Provides access to a linear `Variable` type with contents `arr`. For example:
+|||
+||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| > addOne v = v += 1
+||| >
+||| > three : Tensor [] Double
+||| > three = var 2 (freeze . addOne)
+|||
+||| @arr The initial contents of the `Variable`.
+||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
+var : ArrayLike shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
+var arr f = f (MkVariable arr)
+
+||| Convert a `Variable` to a `Tensor`.
+freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 
 ----------------------------- structural operations ----------------------------
 
@@ -172,6 +221,31 @@ export
 export
 (/) : Fractional dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+
+infix 8 +=
+infix 8 -=
+infix 8 *=
+infix 8 /=
+
+||| Element-wise in-place addition. It is in-place in the sense that the value in memory is mutated
+||| in-place. However, you must still use the result to get the updated value. For example:
+|||
+||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| > addOne v = v += 1
+(+=) : Num dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+
+||| Element-wise in-place subtraction. See `(+=)` for details.
+(-=) : Neg dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+
+||| Element-wise in-place multiplication. See `(+=)` for details.
+(*=) : Num dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+
+||| Element-wise in-place division. See `(+=)` for details.
+(/=) : Fractional dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
 ||| The element-wise logarithm.
 export
