@@ -82,11 +82,21 @@ export
 data Variable : (shape : Shape) -> (dtype : Type) -> Type where
   MkVariable : ArrayLike shape dtype -> Variable shape dtype
 
-||| Gives access to the `Variable` type whilst ensuring it is used linearly.
-var : (1 p : (1 v : Variable shape dtype) -> a) -> a
+||| Provides access to a linear `Variable` type with contents `arr`. For example:
+|||
+||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| > addOne v = v += 1
+||| >
+||| > three : Tensor [] Double
+||| > three = var 2 (freeze . addOne)
+|||
+||| @arr The initial contents of the `Variable`.
+||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
+var : ArrayLike shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
+var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
-freeze : (1 v : Variable shape dtype -> Tensor shape dtype)
+freeze : (1 v : Variable shape dtype) -> Tensor shape dtype
 
 ----------------------------- structural operations ----------------------------
 
@@ -188,23 +198,6 @@ export
 (+) : Num dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
-infix 8 +=
-infix 8 -=
-infix 8 *=
-infix 8 /=
-
-||| Element-wise in-place addition.
-(+=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
-
-||| Element-wise in-place subtraction.
-(-=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
-
-||| Element-wise in-place multiplication.
-(*=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
-
-||| Element-wise in-place division.
-(/=) : (1 v : Variable shape dtype) -> Tensor shape dtype -> Tensor shape dtype
-
 ||| Element-wise negation.
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
@@ -228,6 +221,31 @@ export
 export
 (/) : Fractional dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+
+infix 8 +=
+infix 8 -=
+infix 8 *=
+infix 8 /=
+
+||| Element-wise in-place addition. It is in-place in the sense that the value in memory is mutated
+||| in-place. However, you must still use the result to get the updated value. For example:
+|||
+||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| > addOne v = v += 1
+(+=) : Num dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+
+||| Element-wise in-place subtraction. See `(+=)` for details.
+(-=) : Neg dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+
+||| Element-wise in-place multiplication. See `(+=)` for details.
+(*=) : Num dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+
+||| Element-wise in-place division. See `(+=)` for details.
+(/=) : Fractional dtype =>
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
 ||| The element-wise logarithm.
 export
