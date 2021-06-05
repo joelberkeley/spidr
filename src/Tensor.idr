@@ -36,32 +36,29 @@ Shape {rank} = Vect rank Nat
 ||| A multidimensional array of a given shape, of elements of a given type.
 public export
 interface TensorLike ty where
-  shape : (r ** Vect r Nat)
-  dtype : Type
+  metadata : ((r ** Vect r Nat), Type)
 
 export
 TensorLike Integer where
-  shape = (_ ** [])
-  dtype = Integer
+  metadata = ((_ ** []), Integer)
 
 export
 TensorLike Double where
-  shape = (_ ** [])
-  dtype = Double
+  metadata = ((_ ** []), Integer)
 
 export
 {len : Nat} -> TensorLike ty => TensorLike (Vect len ty) where
-  shape = (_ ** len :: (snd $ shape {ty}))
-  dtype = dtype {ty}
+  metadata = let ((_ ** shape'), dtype) = metadata {ty}
+              in ((_ ** len :: shape'), dtype)
 
 ||| Container type for a tensor of any dimensionality.
 export
 data Tensor : Shape -> Type -> Type where
-  MkTensor : TensorLike ty => ty -> Tensor (snd $ shape {ty}) (dtype {ty})
+  MkTensor : TensorLike ty => ty -> let ((_ ** shape), dtype) = metadata {ty} in Tensor shape dtype
 
 ||| Construct a `Tensor` from `TensorLike` data.
 export
-const : TensorLike ty => ty -> Tensor (snd $ shape {ty}) (dtype {ty})
+const : TensorLike ty => ty -> let ((_ ** shape), dtype) = metadata {ty} in Tensor shape dtype
 const = MkTensor
 
 ||| Represents a mutable tensor. That is, a tensor that can be modified in-place.
@@ -95,7 +92,7 @@ const = MkTensor
 ||| *See http://www.type-driven.org.uk/edwinb
 export
 data Variable : (shape : Shape) -> (dtype : Type) -> Type where
-  MkVariable : TensorLike ty => ty -> Variable (snd $ shape {ty}) (dtype {ty})
+  MkVariable : TensorLike ty => ty -> let ((_ ** shape), dtype) = metadata {ty} in Variable shape dtype
 
 ||| Provides access to a linear `Variable` type with contents `arr`. For example:
 |||
@@ -107,7 +104,8 @@ data Variable : (shape : Shape) -> (dtype : Type) -> Type where
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : TensorLike ty => ty -> (1 f : (1 v : Variable (snd $ shape {ty}) (dtype {ty})) -> a) -> a
+var : TensorLike ty => ty ->
+      (1 f : (1 v : let ((_ ** shape), dtype) = metadata {ty} in Variable shape dtype) -> a) -> a
 var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
