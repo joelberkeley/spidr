@@ -95,7 +95,7 @@ const = MkTensor
 ||| *See http://www.type-driven.org.uk/edwinb
 export
 data Variable : (shape : Shape) -> (dtype : Type) -> Type where
-  MkVariable : ArrayLike shape dtype -> Variable shape dtype
+  MkVariable : TensorLike ty => ty -> Variable (snd $ shape {ty}) (dtype {ty})
 
 ||| Provides access to a linear `Variable` type with contents `arr`. For example:
 |||
@@ -107,7 +107,7 @@ data Variable : (shape : Shape) -> (dtype : Type) -> Type where
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : ArrayLike shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
+var : TensorLike ty => ty -> (1 f : (1 v : Variable (snd $ shape {ty}) (dtype {ty})) -> a) -> a
 var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
