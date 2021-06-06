@@ -291,7 +291,7 @@ export
 log : Tensor shape Double -> Tensor shape Double
 
 export
-reduce_min : Tensor (S _ :: tail) Double -> Tensor tail Double
+min : Tensor [S _] Double -> Tensor [] Double
 
 ---------------------------- other ----------------------------------
 
