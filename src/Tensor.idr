@@ -130,6 +130,10 @@ index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 export
 transpose : {n, m : _} -> Tensor [m, n] dtype -> Tensor [n, m] dtype
 
+||| A `Tensor` of `1`s.
+export
+ones : {dtype : Type} -> {shape : Shape} -> Tensor shape dtype
+
 ||| Replicate a tensor over shape `over`.
 |||
 ||| @over The shape over which to replicate the tensor.
@@ -182,6 +186,36 @@ data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
 
 ----------------------------- numeric operations ----------------------------
 
+||| Element-wise equality.
+export
+(==) : Eq dtype =>
+       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+
+||| Element-wise inequality.
+export
+(/=) : Eq dtype =>
+       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+
+||| Element-wise less than.
+export
+(<) : Ord dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+
+||| Element-wise greater than.
+export
+(>) : Ord dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool 
+
+||| Element-wise less than or equal.
+export
+(<=) : Ord dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+
+||| Element-wise greater than or equal.
+export
+(>=) : Ord dtype =>
+      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
@@ -232,33 +266,34 @@ infix 8 /=
 |||
 ||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
 ||| > addOne v = v += 1
+export
 (+=) : Num dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
 ||| Element-wise in-place subtraction. See `(+=)` for details.
+export
 (-=) : Neg dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
 ||| Element-wise in-place multiplication. See `(+=)` for details.
+export
 (*=) : Num dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
+-- todo what to name this? /= is usually for inequality
 ||| Element-wise in-place division. See `(+=)` for details.
-(/=) : Fractional dtype =>
+export
+(//=) : Fractional dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
 ||| The element-wise logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double
 
+export
 min : Tensor [S _] Double -> Tensor [] Double
 
 ---------------------------- other ----------------------------------
-
-||| Element-wise equality.
-export
-(==) : Eq dtype =>
-       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 any : Tensor shape Bool -> Tensor [] Bool
 
