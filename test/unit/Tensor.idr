@@ -45,3 +45,15 @@ test_cannot_stack_greater_than_one (Extend [2] [7] (Stack (Nest (Nest _)))) impo
 
 test_can_nest : Broadcastable [3, 2, 5] [1, 3, 2, 5]
 test_can_nest = Nest Same
+
+test_squeezable_can_noop : Squeezable [3, 2, 5] [3, 2, 5]
+test_squeezable_can_noop = Same
+
+test_squeezable_can_remove_ones : Squeezable [1, 3, 1, 1, 2, 5, 1] [3, 2, 5]
+test_squeezable_can_remove_ones = Nest (Extend (Nest (Nest (Extend (Extend (Nest Same))))))
+
+test_squeezable_can_flatten_only_ones : Squeezable [1, 1] []
+test_squeezable_can_flatten_only_ones = Nest (Nest Same)
+
+test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
+test_squeezable_cannot_remove_non_ones (Nest _) impossible
