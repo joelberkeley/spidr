@@ -150,7 +150,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
-namespace namespace_broadcast
+namespace ns_broadcast
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
   ||| shape `to`.
   public export
@@ -185,7 +185,7 @@ namespace namespace_broadcast
     ||| [3] to [1, 3]
     Nest : Broadcastable f t -> Broadcastable f (1 :: t)
 
-namespace namespace_squeezable
+namespace ns_squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
