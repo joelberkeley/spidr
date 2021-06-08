@@ -13,12 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module defines functionality for Bayesian optimization, the data-efficient optimization of
-||| objective functions. Bayesian optimization recommends new points at which to query your
-||| objective by placing a probabilistic model over known data then optimizing an "acquisition
-||| function" which quantifies how useful it would be to evaluate the objective at any given set of
-||| points.
-module BayesianOptimization
+module Model
 
-import public BayesianOptimization.Acquisition as BayesianOptimization
-import public BayesianOptimization.Util as BayesianOptimization
+import public Model.GaussianProcess as Model
+import public Model.Kernel as Model
+import public Model.MeanFunction as Model
+
+import Distribution
+import Tensor
+
+||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
+||| a target space.
+public export 0
+ProbabilisticModel : Distribution targets marginal => Shape -> Type
+ProbabilisticModel {marginal} features = {0 samples : Nat} ->
+        Tensor (samples :: features) Double -> marginal samples

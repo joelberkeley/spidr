@@ -17,7 +17,6 @@ limitations under the License.
 module Distribution
 
 import Tensor
-import Data.Vect
 
 ||| A joint, or multivariate distribution over a tensor of floating point values. Every sub-event
 ||| is assumed to have the same shape.
