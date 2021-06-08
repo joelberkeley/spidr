@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module BayesianOptimization.Acquisition
 
+import Data.Nat
 import Distribution
 import Tensor
 import Model
