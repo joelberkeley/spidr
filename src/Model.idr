@@ -26,5 +26,5 @@ import Tensor
 ||| a target space.
 public export 0
 ProbabilisticModel : Distribution targets marginal => Shape -> Type
-ProbabilisticModel {marginal} features = {0 samples : Nat} ->
-        Tensor (samples :: features) Double -> marginal samples
+ProbabilisticModel {marginal} features =
+  {0 samples : Nat} -> Tensor (samples :: features) Double -> marginal samples

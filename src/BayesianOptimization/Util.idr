@@ -19,22 +19,21 @@ import Distribution
 import Tensor
 import Model
 
--- todo this only allows one point. Should it allow multiple?
 ||| Observed query points and objective values
 public export 0
-Data : Shape -> Shape -> Type
-Data features targets = {0 samples : Nat} ->   
+Data : {0 samples : Nat} -> Shape -> Shape -> Type
+Data features targets =
   (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
 public export 0
 Empiric : Distribution targets marginal => Shape -> Type -> Type
-Empiric {targets} {marginal} features out =
-  (Data features targets, ProbabilisticModel features {targets} {marginal}) -> out
+Empiric {targets} {marginal} features out = {s : Nat} ->
+  (Data {samples=S s} features targets, ProbabilisticModel features {targets} {marginal}) -> out
 
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
 ||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can
-||| contain just a subset of the original data and thus allows users to allocate different parts of
+||| contain just a subset of the original data and thus allows users to delegate different parts of
 ||| the original data for use in constructing different final values.
 |||
 ||| The primary application in spidr for this is to allow users to allocate individial pairs of
@@ -43,10 +42,12 @@ Empiric {targets} {marginal} features out =
 public export
 data Connection i o = MkConnection (i -> ty) (ty -> o)
 
+||| Convert the `Connection` into a function.
 export
-apply : Connection i o -> i -> o
-apply (MkConnection in_ out) = out . in_
+run : Connection i o -> i -> o
+run (MkConnection get g) = g . get
 
+||| Utility to create a `Connection` with no intermediate state.
 export
 direct : (i -> o) -> Connection i o
 direct = MkConnection (\x => x)

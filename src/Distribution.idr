@@ -21,13 +21,19 @@ import Tensor
 ||| A joint, or multivariate distribution over a tensor of floating point values. Every sub-event
 ||| is assumed to have the same shape.
 public export
--- todo should we make dim implicit?
 interface Distribution (0 event_shape : Shape) (0 dist : Nat -> Type) where
   ||| The mean of the distribution
   mean : dist dim -> Tensor (dim :: event_shape) Double
 
   ||| The covariance, or correlation between sub-events
   covariance : dist dim -> Tensor (dim :: dim :: event_shape) Double
+
+  ||| The probability density function of the distribution at the specified point.
+  pdf : dist dim -> Tensor (dim :: event_shape) Double -> Tensor [] Double
+
+  ||| The cumulative distribution function of the distribution at the specified point (that is, the
+  ||| probability the random variable takes a value less than or equal to the given point).
+  cdf : dist dim -> Tensor (dim :: event_shape) Double -> Tensor [] Double
 
 -- todo should we squeeze the first dim on the output?
 ||| The variance of a single random variable
@@ -47,12 +53,5 @@ export
 Distribution e (Gaussian e) where
   mean (MkGaussian mean' _) = mean'
   covariance  (MkGaussian _ cov) = cov
-
-||| The probability density function of the Gaussian at the specified point.
-export
-pdf : Gaussian event_shape dim -> Tensor (dim :: event_shape) Double -> Tensor [] Double
-
-||| The cumulative distribution function of the Gaussian at the specified point (that is, the
-||| probability the random variable takes a value less than or equal to the given point).
-export
-cdf : Gaussian event_shape 1 -> Tensor (1 :: event_shape) Double -> Tensor [] Double
+  pdf _ = ?pdf_gaussian
+  cdf _ = ?cdf_gaussian
