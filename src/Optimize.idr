@@ -17,7 +17,6 @@ limitations under the License.
 module Optimize
 
 import Tensor
-import Data.Vect
 
 ||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a scalar-valued
 ||| function over that space.

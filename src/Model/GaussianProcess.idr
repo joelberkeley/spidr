@@ -15,10 +15,9 @@ limitations under the License.
 --}
 ||| This module contains the `GaussianProcess` type for defining Gaussian process, along with
 ||| functionality for training and inference.
-module GaussianProcess
+module Model.GaussianProcess
 
 import Tensor
-import Data.Vect
 import Kernel
 import MeanFunction
 import Optimize

@@ -5,10 +5,16 @@ opts = "--total"
 sourcedir = "src"
 modules =
   BayesianOptimization,
+  BayesianOptimization.Acquisition,
+  BayesianOptimization.Util,
+
   Distribution,
-  GaussianProcess,
-  Kernel,
-  MeanFunction,
+
+  Model,
+  Model.GaussianProcess,
+  Model.Kernel,
+  Model.MeanFunction,
+
   Optimize,
   Poplar,
   Tensor,

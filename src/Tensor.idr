@@ -17,7 +17,7 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import Data.Vect
+import public Data.Vect
 import Data.Nat
 
 ----------------------------- core definitions ----------------------------
