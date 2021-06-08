@@ -18,8 +18,8 @@ limitations under the License.
 module Model.GaussianProcess
 
 import Tensor
-import Kernel
-import MeanFunction
+import Model.Kernel
+import Model.MeanFunction
 import Optimize
 import Distribution
 import Util
