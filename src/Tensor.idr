@@ -150,7 +150,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
 
-namespace ns_broadcast
+namespace ns_broadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
   ||| shape `to`.
   public export
@@ -184,6 +184,10 @@ namespace ns_broadcast
     |||
     ||| [3] to [1, 3]
     Nest : Broadcastable f t -> Broadcastable f (1 :: t)
+
+||| Broadcast a `Tensor` to a new compatible shape.
+export
+broadcast : {auto prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
 namespace ns_squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -317,7 +321,7 @@ export
 log : Tensor shape Double -> Tensor shape Double
 
 export
-min : Tensor [S _] Double -> Tensor [] Double
+reduce_min : Tensor (S _ :: tail) Double -> Tensor tail Double
 
 ---------------------------- other ----------------------------------
 
