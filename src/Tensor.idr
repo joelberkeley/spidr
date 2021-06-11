@@ -19,6 +19,7 @@ module Tensor
 
 import public Data.Vect
 import Data.Nat
+import Poplar
 
 ----------------------------- core definitions ----------------------------
 
@@ -33,24 +34,23 @@ public export
 Shape : {rank: Nat} -> Type
 Shape {rank} = Vect rank Nat
 
-F64 : Type
-U32 : Type
-
+||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`. For a Poplar
+||| backend, these types must be convertible to types supported by the IPU.
 export
 interface ScalarLike ty where
-  ipu_type : Type
+  archType : ArchType
 
 export
 ScalarLike Double where
-  ipu_type = F64
+  archType = ?F64
 
 export
 ScalarLike Integer where
-  ipu_type = U32
+  archType = I32  -- todo correct?
 
 export
 ScalarLike Bool where
-  ipu_type = Bool
+  archType = BOOL
 
 ||| A multidimensional array of a given shape, of elements of a given type.
 public export 0
