@@ -31,6 +31,8 @@ Empiric : Distribution targets marginal => Shape -> Type -> Type
 Empiric {targets} {marginal} features out = {s : Nat} ->
   (Data {samples=S s} features targets, ProbabilisticModel features {targets} {marginal}) -> out
 
+infix 9 >>>
+
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
 ||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can
 ||| contain just a subset of the original data and thus allows users to delegate different parts of
@@ -40,24 +42,24 @@ Empiric {targets} {marginal} features out = {s : Nat} ->
 ||| data sets and models to `KnowledgeBased`s, without demanding users represent all their data sets
 ||| and models in any specific way.
 public export
-data Connection i o = MkConnection (i -> ty) (ty -> o)
+data Connection i o = (>>>) (i -> ty) (ty -> o)
 
 ||| Convert the `Connection` into a function.
 export
 run : Connection i o -> i -> o
-run (MkConnection get g) = g . get
+run (get >>> g) = g . get
 
 ||| Utility to create a `Connection` with no intermediate state.
 export
 direct : (i -> o) -> Connection i o
-direct = MkConnection (\x => x)
+direct = (>>>) (\x => x)
 
 export
 Functor (Connection i) where
-  map f (MkConnection get g) = MkConnection get $ f . g
+  map f (get >>> g) = get >>> (f . g)
 
 export
 Applicative (Connection i) where
-  pure x = MkConnection (\_ => ()) (\_ => x)
-  (MkConnection get g) <*> (MkConnection get' g') =
-    MkConnection (\ii => (get ii, get' ii)) (\(t, t') => g t $ g' t')
+  pure x = (\_ => ()) >>> (\_ => x)
+  (get >>> g) <*> (get' >>> g') =
+    (\ii => (get ii, get' ii)) >>> (\(t, t') => g t $ g' t')
