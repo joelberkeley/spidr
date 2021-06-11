@@ -35,19 +35,15 @@ new_point = let ei = direct $ expectedImprovementByModel {s=_}
                 acquisition = map optimizer ei
              in run acquisition (historic_data, model)
 
-data Map : k -> v -> Type where
+record DataPair o f where
+  constructor MkDataPair
+  objective : o
+  failure : f
 
-idx : k -> Map k v -> v
-
-infix 9 >>>
-
-(>>>) : k -> (ty -> o) -> Connection (Map k ty) o
-(>>>) key = MkConnection (idx key)
-
-data_model_mapping : Map String $ Pair (Data {samples=5} [2] [1]) Model
+data_model_mapping : DataPair (Data {samples=5} [2] [1]) Model
 
 new_point_constrained : Maybe $ Tensor [1, 2] Double
-new_point_constrained = let eci = "OBJECTIVE" >>> expectedConstrainedImprovement {s=_}
-                            pof = "CONSTRAINT" >>> (probabilityOfFeasibility $ const 0.5) {s=_}
+new_point_constrained = let eci = objective >>> expectedConstrainedImprovement {s=_}
+                            pof = failure >>> (probabilityOfFeasibility $ const 0.5) {s=_}
                             acquisition = map optimizer (eci <*> pof)
                          in run acquisition data_model_mapping
