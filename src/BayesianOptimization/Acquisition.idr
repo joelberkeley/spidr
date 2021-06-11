@@ -83,7 +83,7 @@ negativeLowerConfidenceBound beta = if beta < 0 then Nothing else Just impl wher
   impl (_, predict) at = let marginal = predict at
                              mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
                              variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
-                          in Just $ mean - variance * (the (Tensor [] _) $ const beta)
+                          in Just $ mean - variance * const {shape=[]} beta
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
