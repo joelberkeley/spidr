@@ -19,6 +19,7 @@ module Tensor
 
 import public Data.Vect
 import Data.Nat
+import Poplar
 
 ----------------------------- core definitions ----------------------------
 
@@ -33,20 +34,38 @@ public export
 Shape : {rank: Nat} -> Type
 Shape {rank} = Vect rank Nat
 
+||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`. For a Poplar
+||| backend, these types must be convertible to types supported by the IPU.
+export
+interface ScalarLike ty where
+  archType : ArchType
+
+export
+ScalarLike Double where
+  archType = ?F64
+
+export
+ScalarLike Integer where
+  archType = I32  -- todo correct?
+
+export
+ScalarLike Bool where
+  archType = BOOL
+
 ||| A multidimensional array of a given shape, of elements of a given type.
-public export
-ArrayLike : Shape -> Type -> Type
-ArrayLike [] dtype = dtype
-ArrayLike (d :: ds) dtype = Vect d (ArrayLike ds dtype)
+public export 0
+Array : {0 dtype : Type} -> ScalarLike dtype => Shape -> Type
+Array {dtype} [] = dtype
+Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 
 ||| A `Tensor` is either a scalar value or array of values.
 export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
-  MkTensor : ArrayLike shape dtype -> Tensor shape dtype
+  MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 
-||| Construct a `Tensor` from `ArrayLike` data.
+||| Construct a `Tensor` from `Array` data.
 export
-const : ArrayLike shape dtype -> Tensor shape dtype
+const : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 const = MkTensor
 
 ||| Represents a mutable tensor. That is, a tensor that can be modified in-place.
@@ -80,7 +99,7 @@ const = MkTensor
 ||| *See http://www.type-driven.org.uk/edwinb
 export
 data Variable : (shape : Shape) -> (dtype : Type) -> Type where
-  MkVariable : ArrayLike shape dtype -> Variable shape dtype
+  MkVariable : ScalarLike dtype => Array shape {dtype=dtype} -> Variable shape dtype
 
 ||| Provides access to a linear `Variable` type with contents `arr`. For example:
 |||
@@ -92,7 +111,8 @@ data Variable : (shape : Shape) -> (dtype : Type) -> Type where
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : ArrayLike shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
+var : ScalarLike dtype =>
+      Array shape {dtype=dtype} -> (1 f : (1 v : Variable shape dtype) -> a) -> a
 var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
