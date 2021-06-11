@@ -25,7 +25,7 @@ test_can_construct_matrix : Tensor [2, 3] Double
 test_can_construct_matrix = const [[0.0, -1.0, -2.0], [3.0, 4.0, 5.0]]
 
 test_can_construct_integer_matrix : Tensor [2, 3] Integer
-test_can_construct_integer_matrix = const [[0, 1, 2], [3, 4, 5]]
+test_can_construct_integer_matrix = const [[0, -1, -2], [3, 4, 5]]
 
 test_can_broadcast : List (from ** to ** Broadcastable from to)
 
