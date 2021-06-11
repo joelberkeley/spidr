@@ -40,10 +40,9 @@ record DataPair o f where
   objective : o
   failure : f
 
-data_model_mapping : DataPair (Data {samples=5} [2] [1]) Model
-
 new_point_constrained : Maybe $ Tensor [1, 2] Double
 new_point_constrained = let eci = objective >>> expectedConstrainedImprovement {s=_}
                             pof = failure >>> (probabilityOfFeasibility $ const 0.5) {s=_}
                             acquisition = map optimizer (eci <*> pof)
-                         in run acquisition data_model_mapping
+                            dataAndModel = MkDataPair (historic_data, model) (historic_data, model)
+                         in run acquisition dataAndModel
