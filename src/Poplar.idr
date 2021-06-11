@@ -22,6 +22,6 @@ libpoplar fname = "C:" ++ fname ++ ",libpoplar"
 export
 add : Int -> Int -> Int
 
-||| Valid Poplar data types.
+||| Scalar data types supported by Poplar.
 public export
 data ArchType = BOOL | U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | F16 | F32
