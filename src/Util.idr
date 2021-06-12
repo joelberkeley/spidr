@@ -24,6 +24,7 @@ PI = 3.1415926535897932385
 ||| An `Exception` indicates a runtime error.
 public export
 interface Exception exc where
+  ||| Show the exception in a human readable format.
   format : exc -> String
 
 ||| Indicates a value is invalid.
