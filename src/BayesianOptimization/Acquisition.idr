@@ -21,6 +21,7 @@ import Tensor
 import Model
 import Optimize
 import BayesianOptimization.Util
+import Util
 
 -- todo is there a simpler way (e.g. using S), to require batch_size is positive while actually
 --   passing in the batch size and not batch_size - 1 (which would be a weird API)?
@@ -79,7 +80,7 @@ negativeLowerConfidenceBound : (beta : Double) ->
   Acquisition 1 features
 negativeLowerConfidenceBound beta =
   if beta < 0
-  then Left $ MkValueError $ "beta should be greater that or equal to zero, got " ++ show beta
+  then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right impl where
     impl : Empiric features {targets=[1]} {marginal=Gaussian [1]} $ Acquisition 1 features
     impl (_, predict) at = let marginal = predict at
