@@ -30,7 +30,7 @@ model : Model
 optimizer : AcquisitionOptimizer
 
 -- todo we definitely shouldn't need to specify the sample and batch sizes
-new_point : Maybe $ Tensor [1, 2] Double
+new_point : Tensor [1, 2] Double
 new_point = let ei = direct $ expectedImprovementByModel {s=_}
                 acquisition = map optimizer ei
              in run acquisition (historic_data, model)
@@ -40,7 +40,7 @@ record DataPair o f where
   objective : o
   failure : f
 
-new_point_constrained : Maybe $ Tensor [1, 2] Double
+new_point_constrained : Tensor [1, 2] Double
 new_point_constrained = let eci = objective >>> expectedConstrainedImprovement {s=_}
                             pof = failure >>> (probabilityOfFeasibility $ const 0.5) {s=_}
                             acquisition = map optimizer (eci <*> pof)

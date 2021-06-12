@@ -26,7 +26,7 @@ public export
 interface Exception exc where
   format : exc -> String
 
-||| An `Exception` that indicates a value is invalid.
+||| Indicates a value is invalid.
 public export
 data ValueError = MkValueError String
 

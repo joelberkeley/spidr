@@ -93,7 +93,7 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 ||| @data_ The data.
 export
 optimize : {samples : Nat}
- -> (optimizer : Optimizer hp)
+ -> (optimizer : Optimizer {m=Either SingularMatrixError} hp)
  -> (prior_from_parameters : hp -> GaussianProcess features)
  -> (likelihood : Gaussian [] (S samples))
  -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))

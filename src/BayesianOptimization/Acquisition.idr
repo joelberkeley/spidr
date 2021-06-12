@@ -15,13 +15,12 @@ limitations under the License.
 --}
 module BayesianOptimization.Acquisition
 
-import Data.Nat
+import public Data.Nat
 import Distribution
 import Tensor
 import Model
 import Optimize
 import BayesianOptimization.Util
-import Util
 
 -- todo is there a simpler way (e.g. using S), to require batch_size is positive while actually
 --   passing in the batch size and not batch_size - 1 (which would be a weird API)?
@@ -30,8 +29,7 @@ import Util
 ||| set of points, towards the goal of optimizing the objective.
 public export 0
 Acquisition : (batch_size : Nat) -> {auto prf : GT batch_size 0} -> Shape -> Type
-Acquisition batch_size features = {0 exc : Type} -> Exception exc => 
-  Tensor (batch_size :: features) Double -> Either exc $ Tensor [] Double
+Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
 
 ||| An `AcquisitionOptimizer` returns the points which optimize a given `Acquisition`.
 public export 0
@@ -52,7 +50,7 @@ expectedImprovement predict best at =
       variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
       mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
       cdf = cdf marginal $ broadcast {to=[1, 1]} best
-   in Right $ (best - mean) * cdf + variance * pdf
+   in (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
@@ -68,8 +66,7 @@ expectedImprovementByModel ((query_points, _), predict) at =
 export
 probabilityOfFeasibility : (limit : Tensor [] Double) -> Distribution [1] d =>
                            Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit (_, predict) at =
-  Right $ cdf (predict at) $ broadcast {to=[1, 1]} limit
+probabilityOfFeasibility limit (_, predict) at = cdf (predict at) $ broadcast {to=[1, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -88,7 +85,7 @@ negativeLowerConfidenceBound beta =
     impl (_, predict) at = let marginal = predict at
                                mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
                                variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
-                            in Right $ mean - variance * const {shape=[]} beta
+                            in mean - variance * const {shape=[]} beta
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The

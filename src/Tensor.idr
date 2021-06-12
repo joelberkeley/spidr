@@ -354,7 +354,7 @@ all : Tensor shape Bool -> Tensor [] Bool
 export
 det : Neg dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 
-||| Indicates an Cholesky decomposition was impossible (at the attempted precision).
+||| Indicates a Cholesky decomposition was impossible (at the attempted precision).
 export
 data CholeskyError = MkCholeskyError String
 
@@ -365,7 +365,8 @@ Exception CholeskyError where
 export
 cholesky : Tensor [S n, S n] dtype => Either CholeskyError $ Tensor [S n, S n] dtype
 
-||| Indicates an  decomposition was impossible (at the attempted precision).
+||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
+||| singular.
 export
 data SingularMatrixError = MkSingularMatrixError String
 
