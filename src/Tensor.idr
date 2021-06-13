@@ -117,7 +117,7 @@ var : ScalarLike dtype =>
 var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
-freeze : (1 v : Variable shape dtype) -> Tensor shape dtype
+freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 
 ----------------------------- structural operations ----------------------------
 
