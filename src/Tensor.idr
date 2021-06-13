@@ -20,6 +20,7 @@ module Tensor
 import public Data.Vect
 import Data.Nat
 import Poplar
+import Util
 
 ----------------------------- core definitions ----------------------------
 
@@ -353,13 +354,29 @@ all : Tensor shape Bool -> Tensor [] Bool
 export
 det : Neg dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 
-adjugate : Neg dtype => Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
+||| Indicates a Cholesky decomposition was impossible (at the attempted precision).
+export
+data CholeskyError = MkCholeskyError String
 
-cholesky : Tensor [S n, S n] dtype => Maybe (Tensor [S n, S n] dtype)
+export
+Exception CholeskyError where
+  format (MkCholeskyError msg) = msg
+
+export
+cholesky : Tensor [S n, S n] dtype => Either CholeskyError $ Tensor [S n, S n] dtype
+
+||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
+||| singular.
+export
+data SingularMatrixError = MkSingularMatrixError String
+
+export
+Exception SingularMatrixError where
+  format (MkSingularMatrixError msg) = msg
 
 ||| The inverse of a matrix.
 export
-inverse : Tensor [S n, S n] Double -> Maybe $ Tensor [S n, S n] Double
+inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, S n] Double
 
 ||| The product of all elements along the diagonal of a matrix.
 export

@@ -45,7 +45,7 @@ posterior : {s : Nat}
  -> (prior : GaussianProcess features)
  -> (likelihood : Gaussian [] (S s))
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
- -> Maybe $ GaussianProcess features
+ -> Either SingularMatrixError $ GaussianProcess features
 posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
   map foo $ inverse (kernel x_train x_train + cov) where
     foo : Tensor [S s, S s] Double -> GaussianProcess features
@@ -73,7 +73,7 @@ log_marginal_likelihood : {samples : Nat}
  -> GaussianProcess features
  -> Gaussian [] (S samples)
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
- -> Maybe $ Tensor [] Double
+ -> Either SingularMatrixError $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
   map foo $ inverse (kernel x x + cov) where
     foo : Tensor [S samples, S samples] Double -> Tensor [] Double
@@ -93,11 +93,11 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 ||| @data_ The data.
 export
 optimize : {samples : Nat}
- -> (optimizer : Optimizer hp)
+ -> (optimizer : Optimizer {m=Either SingularMatrixError} hp)
  -> (prior_from_parameters : hp -> GaussianProcess features)
  -> (likelihood : Gaussian [] (S samples))
  -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
- -> Maybe hp
+ -> Either SingularMatrixError hp
 optimize optimizer gp_from_hyperparameters likelihood training_data = optimizer objective where
-  objective : hp -> Maybe $ Tensor [] Double
+  objective : hp -> Either SingularMatrixError $ Tensor [] Double
   objective hp' = log_marginal_likelihood (gp_from_hyperparameters hp') likelihood training_data

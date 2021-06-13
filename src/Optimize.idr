@@ -21,8 +21,8 @@ import Tensor
 ||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a scalar-valued
 ||| function over that space.
 public export 0
-Optimizer : Type -> Type
-Optimizer a = (a -> Maybe $ Tensor [] Double) -> Maybe a
+Optimizer : {default id m : Type -> Type} -> Type -> Type
+Optimizer a = (a -> m $ Tensor [] Double) -> m a
 
 ||| Construct an `Optimizer` over a scalar feature space that approximates the optimum by evaluating
 ||| its objective over a finite, evenly-spaced grid.
