@@ -50,7 +50,7 @@ How we produce the new point from the data and models depends on the problem at 
 
 and model that data
 
-> model : Maybe $ ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+> model : Either SingularMatrixError $ ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 > model = let prior = MkGP zero linear
 >             likelihood = MkGaussian ?mean ?cov
 >             (qp, obs) = historicData
@@ -58,13 +58,12 @@ and model that data
 
 then we optimize over the marginal mean
 
-TODO gridSearch usage is messy
 > optimizer : Optimizer $ Tensor [1, 2] Double
 > optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.0, 1.0])
->              in \f => map broadcast $ gs $ f . broadcast
+>              in \f => broadcast . gs $ f . broadcast
 >
-> newPoint : Maybe $ Tensor [1, 2] Double
-> newPoint = optimizer $ Just . squeeze . mean {event_shape=[1]} . !model
+> newPoint : Either SingularMatrixError $ Tensor [1, 2] Double
+> newPoint = Right $ optimizer $ squeeze . mean {event_shape=[1]} . !model
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
 
@@ -145,7 +144,8 @@ Let's now implement this last example, and we'll look at a particular representa
 
 We'll model the failure regions
 
-> failureModel : Maybe $ ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+> failureModel : Either SingularMatrixError $
+>                ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 > failureModel = ?failureModel_rhs
 
 Now we'll choose a representation for all our data. We'll use a simple named pair
@@ -157,9 +157,9 @@ Now we'll choose a representation for all our data. We'll use a simple named pai
 
 We can now construct our empirical point. We'll use `run` to convert our `Connection i o` to a function `i -> o` and apply it to the data and models.
 
-> newPoint' : Maybe $ Tensor [1, 2] Double
+> newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
 > newPoint' = let eci = objective >>> expectedConstrainedImprovement {s=_}
 >                 pof = failure >>> (probabilityOfFeasibility $ const 0.5) {s=_}
 >                 acquisition = map optimizer (eci <*> pof)
 >                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
->              in run acquisition dataAndModel
+>              in Right $ run acquisition dataAndModel
