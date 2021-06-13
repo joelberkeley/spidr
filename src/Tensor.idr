@@ -105,10 +105,10 @@ data Variable : (shape : Shape) -> (dtype : Type) -> Type where
 ||| Provides access to a linear `Variable` type with contents `arr`. For example:
 |||
 ||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
-||| > addOne v = v += 1
+||| > addOne v = v += const {shape=[]} 1
 ||| >
 ||| > three : Tensor [] Double
-||| > three = var 2 (freeze . addOne)
+||| > three = var 2.0 $ \v => freeze $ addOne v
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
