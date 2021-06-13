@@ -359,7 +359,7 @@ export
 data CholeskyError = MkCholeskyError String
 
 export
-Exception CholeskyError where
+Error CholeskyError where
   format (MkCholeskyError msg) = msg
 
 export
@@ -371,7 +371,7 @@ export
 data SingularMatrixError = MkSingularMatrixError String
 
 export
-Exception SingularMatrixError where
+Error SingularMatrixError where
   format (MkSingularMatrixError msg) = msg
 
 ||| The inverse of a matrix.

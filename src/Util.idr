@@ -21,10 +21,10 @@ export
 PI : Double
 PI = 3.1415926535897932385
 
-||| An `Exception` indicates a runtime error.
+||| An `Error` indicates a runtime error.
 public export
-interface Exception exc where
-  ||| Show the exception in a human readable format.
+interface Error exc where
+  ||| Show the error in a human readable format.
   format : exc -> String
 
 ||| Indicates a value is invalid.
@@ -32,5 +32,5 @@ public export
 data ValueError = MkValueError String
 
 export
-Exception ValueError where
+Error ValueError where
   format (MkValueError msg) = msg
