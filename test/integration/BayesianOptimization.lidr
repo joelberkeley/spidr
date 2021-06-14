@@ -52,7 +52,7 @@ and model that data
 
 > model : Either SingularMatrixError $ ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 > model = let prior = MkGP zero linear
->             likelihood = MkGaussian ?mean ?cov
+>             likelihood = MkGaussian (fill 0) (diag 0.22)
 >             (qp, obs) = historicData
 >          in map ?marginalise $ posterior prior likelihood (qp, squeeze obs)
 
