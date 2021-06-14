@@ -151,9 +151,9 @@ index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 export
 transpose : {n, m : _} -> Tensor [m, n] dtype -> Tensor [n, m] dtype
 
-||| A `Tensor` of `1`s.
+||| A `Tensor` where every element has the specified value.
 export
-ones : {dtype : Type} -> {shape : Shape} -> Tensor shape dtype
+fill : dtype -> Tensor shape dtype
 
 ||| Replicate a tensor over shape `over`.
 |||
@@ -165,11 +165,9 @@ replicate : {over : Shape} -> Tensor shape dtype -> Tensor (over :++ shape) dtyp
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
 
-||| Construct a diagonal tensor from the given value, where all off-diagonal elements are zero.
-|||
-||| @n The length of the tensor rows and columns.
+||| Construct a diagonal tensor from the specified value, where all off-diagonal elements are zero.
 export
-diag : Num dtype => (n : Nat) -> dtype -> Tensor [n, n] dtype
+diag : Num dtype => dtype -> Tensor [n, n] dtype
 
 namespace ns_broadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
