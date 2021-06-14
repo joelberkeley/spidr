@@ -129,7 +129,7 @@ In spidr, we call these minimal empirical objects `Empiric`s. An `Empiric featur
     |              |
     +--------------+
 
-TODO we don't actually have to represent the two contributions as acq and acq -> acq, they could be any a and b and form an acquisition function f(a, b). This probably doesn't affect the design, but it might mean readers are left wondering why I've chosen that specific setup.
+TODO we don't actually have to represent the two contributions as acq and acq -> acq, they could be any a and b and form an acquisition function f(a, b). This doesn't affect the design, but it might mean readers are left wondering why I've chosen those particular empirical values.
 
 In order to combine each empirical value, we could construct each individually with the relevant data and model, then combine the results, but we might not have access to the data at the point we connect them together. Instead, we'll look at how to connect them together *before* we apply the data and models.
 
