@@ -46,8 +46,16 @@ ScalarLike Double where
   archType = ?F64
 
 export
+ScalarLike Int where
+  archType = U32
+
+export
 ScalarLike Integer where
-  archType = I32  -- todo correct?
+  archType = U64
+
+export
+ScalarLike Nat where
+  archType = I64
 
 export
 ScalarLike Bool where
@@ -78,7 +86,7 @@ const = MkTensor
 ||| example, in the following pseudo-code,
 |||
 ||| > a = 1
-||| > a += 1  -- todo this isn't valid in idris. Does that matter?
+||| > a += 1
 ||| > b = f(a)
 |||
 ||| We have to be aware of whether `a` was modified between its initialization and its use in the
@@ -121,8 +129,8 @@ freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 
 ----------------------------- structural operations ----------------------------
 
-infixl 9 ++:  -- todo is this right?
-infixl 9 :++  -- todo is this right?
+infixl 9 ++:
+infixl 9 :++
 
 ||| Concatenate two Shapes. This function differs from `++` in that the function definition is
 ||| public and so is fully resolvable at the type level, and from `:++` in the order of the
@@ -188,7 +196,6 @@ namespace ns_broadcastable
     |||
     ||| [1, 3] to [5, 3]
     ||| [3, 1, 2] to [3, 5, 2]
-    -- todo does this need to work for 1 :: t -> 0 :: t?
     Stack : Broadcastable f (1 :: t) -> Broadcastable f (S (S _) :: t)
   
     ||| Proof that any dimension can be broadcast to itself. For example:
@@ -290,9 +297,6 @@ export
 (-) : Neg dtype =>
       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
 
--- todo do I want a dedicated operator for elementwise multiplication, so that `x * y` is always
---   the mathematical version, and readers can differentiate between that and, say, `x *# y` for
---   elementwise multiplication? Same question for `/`
 ||| Elementwise multiplication. This reduces to standard tensor multiplication with a scalar for
 ||| scalar LHS.
 export
@@ -329,7 +333,6 @@ export
 (*=) : Num dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
--- todo what to name this? /= is usually for inequality
 ||| Element-wise in-place division. See `(+=)` for details.
 export
 (//=) : Fractional dtype =>

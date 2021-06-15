@@ -23,9 +23,6 @@ import Optimize
 import BayesianOptimization.Util
 import Util
 
--- todo is there a simpler way (e.g. using S), to require batch_size is positive while actually
---   passing in the batch size and not batch_size - 1 (which would be a weird API)?
--- todo needs leading dims?
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 public export 0

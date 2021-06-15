@@ -32,8 +32,6 @@ data GaussianProcess : (0 features : Shape) -> Type where
   ||| Construct a `GaussianProcess` as a pair of mean function and kernel.
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
--- todo implement for no training data
--- todo we don't use the likelihood mean
 ||| The posterior Gaussian process conditioned on the specified `training_data`.
 |||
 ||| @prior The prior belief.
@@ -51,7 +49,6 @@ posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
     foo : Tensor [S s, S s] Double -> GaussianProcess features
     foo inv = MkGP posterior_mean_function posterior_kernel where
       posterior_mean_function : MeanFunction features
-      -- todo can we use rewrite to avoid the use of implicits here and for posterior_kernel?
       posterior_mean_function {sm} x =
         mean_function x + (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) y_train
 
