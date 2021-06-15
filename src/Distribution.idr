@@ -35,7 +35,6 @@ interface Distribution (0 event_shape : Shape) (0 dist : Nat -> Type) where
   ||| probability the random variable takes a value less than or equal to the given point).
   cdf : dist dim -> Tensor (dim :: event_shape) Double -> Tensor [] Double
 
--- todo should we squeeze the first dim on the output?
 ||| The variance of a single random variable
 export
 variance : Distribution event_shape dist => dist 1 -> Tensor (1 :: event_shape) Double

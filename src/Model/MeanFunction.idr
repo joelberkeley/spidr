@@ -25,7 +25,6 @@ public export
 MeanFunction : (features : Shape) -> Type
 MeanFunction features = {sm : Nat} -> Tensor (sm :: features) Double -> Tensor [sm] Double
 
--- todo is it possible to implement this without using `sm`? If so, we can make `sm` erased
 ||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
