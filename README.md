@@ -10,7 +10,7 @@ With spidr, we explore what is possible when we bring the latest developments in
   - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
 
-So that we can emphasise clarity and design, we may choose to omit algorithms if related algorithms already exist in spidr, as features take time to implement and maintain.
+We may choose to omit conceptually similar algorithms where they don't contribute to insights in design or machine learning computation.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
