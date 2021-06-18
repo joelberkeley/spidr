@@ -39,8 +39,8 @@ infix 9 >>>
 ||| the original data for use in constructing different final values.
 |||
 ||| The primary application in spidr for this is to allow users to allocate individial pairs of
-||| data sets and models to `KnowledgeBased`s, without demanding users represent all their data sets
-||| and models in any specific way.
+||| data sets and models to `Empiric`s, without demanding users represent all their data sets and
+||| models in any specific way.
 public export
 data Connection i o = (>>>) (i -> ty) (ty -> o)
 
