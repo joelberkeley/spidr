@@ -14,5 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "poplar.hpp"
+#include "iostream"
 
 Scalar::Scalar(float x) :xx{x} {}
+
+Scalar Scalar::add(Scalar other) {
+    return Scalar(this->xx + other.xx);
+}
+
+void Scalar::show() {
+    std::cout << "Scalar(" + std::to_string(this->xx) + ")";
+}

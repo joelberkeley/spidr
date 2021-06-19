@@ -16,6 +16,8 @@ limitations under the License.
 class Scalar {
     public:
         Scalar(float x);
+        Scalar add(Scalar);
+        void show();
 
     private:
         float xx;
