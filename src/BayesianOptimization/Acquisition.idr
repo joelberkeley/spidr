@@ -29,11 +29,6 @@ public export 0
 Acquisition : (batch_size : Nat) -> {auto prf : GT batch_size 0} -> Shape -> Type
 Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
 
-||| An `AcquisitionOptimizer` returns the points which optimize a given `Acquisition`.
-public export 0
-AcquisitionOptimizer : {b : Nat} -> {0 features : Shape} -> Type
-AcquisitionOptimizer = Optimizer $ Tensor (S b :: features) Double
-
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
 |||
