@@ -28,15 +28,3 @@ import Tensor
 public export 0
 Optimizer : {default id m : Type -> Type} -> Type -> Type
 Optimizer a = (a -> m $ Tensor [] Double) -> m a
-
-||| Construct a `Optimizer` that implements grid search over a scalar feature space. Grid search
-||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
-|||
-||| @density The density of the grid.
-||| @lower The lower (inclusive) bound of the grid.
-||| @upper The upper (exclusive) bound of the grid.
-export
-gridSearch : (density : Tensor [d] Integer) ->
-             (lower : Tensor [d] Double) ->
-             (upper : Tensor [d] Double) ->
-             Optimizer (Tensor [d] Double)

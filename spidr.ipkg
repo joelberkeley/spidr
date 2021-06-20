@@ -6,6 +6,8 @@ sourcedir = "src"
 modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,
+  BayesianOptimization.Domain,
+  BayesianOptimization.Optimize,
   BayesianOptimization.Util,
 
   Distribution,

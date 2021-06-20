@@ -68,12 +68,14 @@ model = let prior = MkGP zero (rbf $ const 0.3)
 then we optimize over the marginal mean
 
 ```idris
-optimizer : Optimizer $ Tensor [1, 2] Double
-optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.0, 1.0])
-             in \f => broadcast . gs $ f . broadcast
+domain : ContinuousDomain [2]
+domain = MkContinuousDomain (const [0, 0]) (const [1, 1])
+
+optimizer : ContinuousDomain [2] -> Optimizer $ Tensor [1, 2] Double
+optimizer = gridSearch (const [100, 100])
 
 newPoint : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint = Right $ optimizer $ squeeze . mean {event=[1]} . !model
+newPoint = pure $ optimizer domain $ squeeze . mean {event=[1]} . !model
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -191,7 +193,16 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
 newPoint' = let eci = objective >>> expectedConstrainedImprovement
                 pof = failure >>> probabilityOfFeasibility (const 0.5)
-                acquisition = map optimizer (eci <*> pof)
+                acquisition = map (optimizer domain) (eci <*> pof)
                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
              in pure $ run acquisition dataAndModel
+
+newPoint'' : Either SingularMatrixError $ State (TrustRegionState 2) $ Tensor [1, 2] Double
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement
+                 pof = failure >>> probabilityOfFeasibility (const 0.5)
+                 tr = objective >>> trustRegion 0.7 0.0001 domain
+                 optimize = (map . (flip optimizer) .)
+                 acquisition = [| optimize eci pof tr |]
+                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
+              in pure $ run acquisition dataAndModel
 ```
