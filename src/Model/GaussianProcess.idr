@@ -55,7 +55,7 @@ posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
       posterior_kernel x x' =
         kernel x x' - (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) (kernel x_train x')
 
-   in Right $ MkGP posterior_mean_function posterior_kernel
+   in pure $ MkGP posterior_mean_function posterior_kernel
 
 ||| The marginal distribution of the Gaussian process at the specified feature values.
 |||
@@ -77,7 +77,7 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
       n = const {shape=[]} $ cast samples
       log2pi = log $ const {shape=[]} $ 2.0 * PI
       half = const {shape=[]} 0.5
-   in Right $ - half * ((@@) {head=[]} ((@@) {head=[]} y inv) y - log (det inv) + n * log2pi)
+   in pure $ - half * ((@@) {head=[]} ((@@) {head=[]} y inv) y - log (det inv) + n * log2pi)
 
 ||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
 ||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined
