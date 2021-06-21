@@ -45,7 +45,7 @@ posterior : {s : Nat}
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> Either SingularMatrixError $ GaussianProcess features
 posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
-  let inv = !(inverse (kernel x_train x_train + cov))
+  let inv = !(inverse $ kernel x_train x_train + cov)
 
       posterior_mean_function : MeanFunction features
       posterior_mean_function {sm} x =
@@ -73,7 +73,7 @@ log_marginal_likelihood : {samples : Nat}
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Either SingularMatrixError $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
-  let inv = !(inverse (kernel x x + cov))
+  let inv = !(inverse $ kernel x x + cov)
       n = const {shape=[]} $ cast samples
       log2pi = log $ const {shape=[]} $ 2.0 * PI
       half = const {shape=[]} 0.5
