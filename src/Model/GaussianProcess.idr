@@ -45,9 +45,8 @@ posterior : {s : Nat}
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> Either SingularMatrixError $ GaussianProcess features
 posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
-  map with_inv $ inverse (kernel x_train x_train + cov) where
-    with_inv : Tensor [S s, S s] Double -> GaussianProcess features
-    with_inv inv = MkGP posterior_mean_function posterior_kernel where
+  let inv = !(inverse (kernel x_train x_train + cov))
+
       posterior_mean_function : MeanFunction features
       posterior_mean_function {sm} x =
         mean_function x + (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) y_train
@@ -55,6 +54,8 @@ posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
       posterior_kernel : Kernel features
       posterior_kernel x x' =
         kernel x x' - (@@) {head=[_]} ((@@) {head=[_]} (kernel x x_train) inv) (kernel x_train x')
+
+   in Right $ MkGP posterior_mean_function posterior_kernel
 
 ||| The marginal distribution of the Gaussian process at the specified feature values.
 |||
@@ -72,13 +73,11 @@ log_marginal_likelihood : {samples : Nat}
  -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
  -> Either SingularMatrixError $ Tensor [] Double
 log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
-  map with_inv $ inverse (kernel x x + cov) where
-    with_inv : Tensor [S samples, S samples] Double -> Tensor [] Double
-    with_inv inv = let n = const {shape=[]} $ cast samples
-                       log2pi = log $ const {shape=[]} $ 2.0 * PI
-                       half = const {shape=[]} 0.5
-                    in - half * ((@@) {head=[]} ((@@) {head=[]} y inv) y
-                                 - log (det inv) + n * log2pi)
+  let inv = !(inverse (kernel x x + cov))
+      n = const {shape=[]} $ cast samples
+      log2pi = log $ const {shape=[]} $ 2.0 * PI
+      half = const {shape=[]} 0.5
+   in Right $ - half * ((@@) {head=[]} ((@@) {head=[]} y inv) y - log (det inv) + n * log2pi)
 
 ||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
 ||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined
