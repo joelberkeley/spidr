@@ -17,6 +17,7 @@ limitations under the License.
 ||| functionality for training and inference.
 module Model.GaussianProcess
 
+import Data.Nat
 import Tensor
 import Model.Kernel
 import Model.MeanFunction
@@ -59,10 +60,10 @@ posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
 |||
 ||| @at The feature values at which to evaluate the marginal distribution.
 export
-marginalise : {samples : Nat}
+marginalise : {s : Nat}
   -> GaussianProcess features
-  -> Tensor (samples :: features) Double
-  -> Gaussian [] samples
+  -> Tensor ((S s) :: features) Double
+  -> Gaussian [] (S s)
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
 log_marginal_likelihood : {samples : Nat}
