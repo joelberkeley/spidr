@@ -68,3 +68,15 @@ test_squeezable_can_flatten_only_ones = Nest (Nest Same)
 
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
+
+test_tensor_contraction11 : Tensor [4] Double -> Tensor [4] Double -> Tensor [] Double
+test_tensor_contraction11 = (@@)
+
+test_tensor_contraction12 : Tensor [4] Double -> Tensor [4, 5] Double -> Tensor [5] Double
+test_tensor_contraction12 = (@@)
+
+test_tensor_contraction21 : Tensor [3, 4] Double -> Tensor [4] Double -> Tensor [3] Double
+test_tensor_contraction21 = (@@)
+
+test_tensor_contraction22 : Tensor [3, 4] Double -> Tensor [4, 5] Double -> Tensor [3, 5] Double
+test_tensor_contraction22 = (@@)

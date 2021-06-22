@@ -129,25 +129,6 @@ freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 
 ----------------------------- structural operations ----------------------------
 
-infixl 9 ++:
-infixl 9 :++
-
-||| Concatenate two Shapes. This function differs from `++` in that the function definition is
-||| public and so is fully resolvable at the type level, and from `:++` in the order of the
-||| resulting ranks.
-public export
-(++:) : {0 r, r' : Nat} -> Shape {rank=r} -> Shape {rank=r'} -> Shape {rank=r' + r}
-(++:) [] y = rewrite plusZeroRightNeutral r' in y
-(++:) {r = S rr} (x :: xs) y = rewrite sym $ plusSuccRightSucc r' rr in x :: (xs ++: y)
-
-||| Concatenate two Shapes. This function differs from `++` in that the function definition is
-||| public and so is fully resolvable at the type level, and from `:++` in the order of the
-||| resulting ranks.
-public export
-(:++) : {0 r, r' : Nat} -> Shape {rank=r} -> Shape {rank=r'} -> Shape {rank=r + r'}
-(:++) [] y = y
-(:++) (x :: xs) y = x :: (xs :++ y)
-
 ||| Get the `idx`-th row from a tensor.
 |||
 ||| @idx The row to fetch.
@@ -167,7 +148,7 @@ fill : dtype -> Tensor shape dtype
 |||
 ||| @over The shape over which to replicate the tensor.
 export
-replicate : Tensor shape dtype -> Tensor (over :++ shape) dtype
+replicate : Tensor shape dtype -> Tensor (over ++ shape) dtype
 
 ||| Cast the tensor elements to a dtype inferred from the expected type.
 export
@@ -271,13 +252,11 @@ export
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
--- here `head` is not the leading dimensions: that would go before
--- each of (head ++: [S n]), (S n :: tail) and (head ++: tail)
-||| Matrix multiply two tensors. The tensors are contracted along the last axis of the first tensor
-||| and the first axis of the last tensor.
+||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
+||| the first axis of the last tensor.
 export
-(@@) : Num dtype =>
-       Tensor (head ++: [S n]) dtype -> Tensor (S n :: tail) dtype -> Tensor (head ++: tail) dtype
+(@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail) dtype ->
+       {auto prf : last l = S n} -> Tensor (init l ++ tail) dtype
 
 ||| Element-wise addition.
 export
