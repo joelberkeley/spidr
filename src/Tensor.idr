@@ -252,8 +252,8 @@ export
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
-||| Matrix multiply two tensors. The tensors are contracted along the last axis of the first tensor
-||| and the first axis of the last tensor.
+||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
+||| the first axis of the last tensor.
 export
 (@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail) dtype ->
        {auto prf : last l = S n} -> Tensor (init l ++ tail) dtype
