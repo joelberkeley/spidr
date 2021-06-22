@@ -157,7 +157,7 @@ index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 ||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is
 ||| `const [[1, 3], [2, 4]]`.
 export
-transpose : {n, m : _} -> Tensor [m, n] dtype -> Tensor [n, m] dtype
+transpose : Tensor [m, n] dtype -> Tensor [n, m] dtype
 
 ||| A `Tensor` where every element has the specified value.
 export
@@ -167,7 +167,7 @@ fill : dtype -> Tensor shape dtype
 |||
 ||| @over The shape over which to replicate the tensor.
 export
-replicate : {over : Shape} -> Tensor shape dtype -> Tensor (over :++ shape) dtype
+replicate : Tensor shape dtype -> Tensor (over :++ shape) dtype
 
 ||| Cast the tensor elements to a dtype inferred from the expected type.
 export
@@ -244,33 +244,29 @@ squeeze : {auto _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
 ||| Element-wise equality.
 export
-(==) : Eq dtype =>
-       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(==) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise inequality.
 export
-(/=) : Eq dtype =>
-       {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(/=) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise less than.
 export
-(<) : Ord dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(<) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise greater than.
 export
-(>) : Ord dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool 
+(>) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise less than or equal.
 export
 (<=) : Ord dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise greater than or equal.
 export
 (>=) : Ord dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -286,7 +282,7 @@ export
 ||| Element-wise addition.
 export
 (+) : Num dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
 ||| Element-wise negation.
 export
@@ -295,19 +291,19 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 ||| Element-wise subtraction.
 export
 (-) : Neg dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
+      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
 
 ||| Elementwise multiplication. This reduces to standard tensor multiplication with a scalar for
 ||| scalar LHS.
 export
 (*) : Num dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
+      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
 
 ||| Elementwise floating point division. This reduces to standard tensor division by a scalar for
 ||| scalar denominator.
 export
 (/) : Fractional dtype =>
-      {l : _} -> Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
 infix 8 +=
 infix 8 -=
