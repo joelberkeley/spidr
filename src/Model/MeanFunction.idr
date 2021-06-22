@@ -23,7 +23,7 @@ import Tensor
 ||| distribution in target space.
 public export
 MeanFunction : (features : Shape) -> Type
-MeanFunction features = {sm : Nat} -> Tensor (sm :: features) Double -> Tensor [sm] Double
+MeanFunction features = forall sm . Tensor (sm :: features) Double -> Tensor [sm] Double
 
 ||| A mean function where the mean is zero in all target dimensions.
 export
