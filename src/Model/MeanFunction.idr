@@ -28,3 +28,4 @@ MeanFunction features = forall sm . Tensor (sm :: features) Double -> Tensor [sm
 ||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
+zero _ = fill 0
