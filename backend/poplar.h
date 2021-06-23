@@ -13,9 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/* This file defines the C API for Poplar. */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 struct cScalar;
 typedef struct cScalar cScalar;
 cScalar* cScalar_new(float x);
 void cScalar_del(cScalar* s);
 cScalar* cScalar_add(cScalar* s, cScalar* other);
-void cScalar_show(cScalar* s);
+void cScalar_print(cScalar* s);
+
+#ifdef __cplusplus
+}
+#endif

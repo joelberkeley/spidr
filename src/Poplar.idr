@@ -15,12 +15,29 @@ limitations under the License.
 --}
 module Poplar
 
+import System.FFI
+
 libpoplar : String -> String
 libpoplar fname = "C:" ++ fname ++ ",libpoplar"
 
-%foreign (libpoplar "add")
 export
-add : Int -> Int -> Int
+Scalar : Type
+Scalar = Struct "cScalar" [("x", Double)]
+
+%foreign (libpoplar "cScalar_new")
+export
+mkScalar : Double -> Scalar
+
+%foreign (libpoplar "cScalar_add")
+export
+(+) : Scalar -> Scalar -> Scalar
+
+%foreign (libpoplar "cScalar_print")
+prim__print : Scalar -> PrimIO ()
+
+export
+print : Scalar -> IO ()
+print = primIO . prim__print
 
 ||| Scalar data types supported by Poplar.
 public export

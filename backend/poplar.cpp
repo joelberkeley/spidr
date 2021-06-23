@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/* This file glues the C API to the Poplar C++ API. */
 #include "poplar.h"
 #include "stub.hpp"
 
@@ -35,8 +36,8 @@ cScalar* cScalar_add(cScalar* s, cScalar* other) {
     return reinterpret_cast<cScalar*>(s_->add(other_));
 }
 
-void cScalar_show(cScalar* s) {
-    return reinterpret_cast<Scalar*>(s)->show();
+void cScalar_print(cScalar* s) {
+    return reinterpret_cast<Scalar*>(s)->print();
 }
 
 #ifdef __cplusplus

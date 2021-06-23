@@ -13,15 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "stub.hpp"
-#include "iostream"
+/* This file is a stub API for Poplar. We will replace it with a Poplar install eventually. */
+class Scalar {
+    public:
+        Scalar(float x);
+        Scalar* add(Scalar *);
+        void print();
 
-Scalar::Scalar(float x) :xx{x} {}
-
-Scalar* Scalar::add(Scalar* other) {
-    return new Scalar(this->xx + other->xx);
-}
-
-void Scalar::show() {
-    std::cout << "Scalar(" + std::to_string(this->xx) + ")";
-}
+    private:
+        float xx;
+};

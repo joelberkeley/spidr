@@ -13,12 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-class Scalar {
-    public:
-        Scalar(float x);
-        Scalar* add(Scalar *);
-        void show();
+/*
+This file is a stub implementation for Poplar. We will replace it with a Poplar install eventually.
+*/
+#include "stub.hpp"
+#include "iostream"
 
-    private:
-        float xx;
-};
+Scalar::Scalar(float x) :xx{x} {}
+
+Scalar* Scalar::add(Scalar* other) {
+    // todo dangling pointer?
+    return new Scalar(this->xx + other->xx);
+}
+
+void Scalar::print() {
+    std::cout << "Scalar(" + std::to_string(this->xx) + ")";
+}
