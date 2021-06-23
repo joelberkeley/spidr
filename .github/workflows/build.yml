@@ -46,8 +46,9 @@ jobs:
     - run: |
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
-        g++ -c -shared -fPIC stub.cpp
-        g++ -shared -o libpoplar.so -fPIC poplar.cpp
+        gcc -c -shared -fPIC stub.cpp
+        ar rcs libstub.a stub.o
+        gcc -shared -o libpoplar.so -fPIC poplar.cpp -lstdc++ -L. -lstub
         mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/unit/Poplar.idr -x test_add | grep -q FAIL)
