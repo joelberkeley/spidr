@@ -13,15 +13,32 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "poplar.hpp"
-#include "iostream"
+#include "poplar.h"
+#include "stub.hpp"
 
-Scalar::Scalar(float x) :xx{x} {}
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-Scalar Scalar::add(Scalar other) {
-    return Scalar(this->xx + other.xx);
+cScalar* cScalar_new(float x) {
+    return reinterpret_cast<cScalar*>(new Scalar(x));
 }
 
-void Scalar::show() {
-    std::cout << "Scalar(" + std::to_string(this->xx) + ")";
+void cScalar_del(cScalar* s) {
+    delete reinterpret_cast<Scalar*>(s);
 }
+
+cScalar* cScalar_add(cScalar* s, cScalar* other) {
+    Scalar* s_ = reinterpret_cast<Scalar*>(s);
+    Scalar* other_ = reinterpret_cast<Scalar*>(other);
+    return reinterpret_cast<cScalar*>(s_->add(other_));
+}
+
+void cScalar_show(cScalar* s) {
+    return reinterpret_cast<Scalar*>(s)->show();
+}
+
+#ifdef __cplusplus
+}
+#endif

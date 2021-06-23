@@ -13,6 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-int add (int x, int y) {
-    return x + y;
-}
+class Scalar {
+    public:
+        Scalar(float x);
+        Scalar* add(Scalar *);
+        void show();
+
+    private:
+        float xx;
+};
