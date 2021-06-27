@@ -20,6 +20,5 @@ modules =
   Tensor,
   Util
 
-brief = "spidr explores how we can advance probabilistic modelling with programming language theory and machine learning hardware."
 readme = "README.md"
 license = "Apache License, Version 2.0"
