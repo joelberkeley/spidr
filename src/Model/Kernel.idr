@@ -23,7 +23,7 @@ import Tensor
 ||| points in some target space.
 public export
 Kernel : (features : Shape) -> Type
-Kernel features = forall sk, sk' .
+Kernel features = {sk, sk' : _} ->
   Tensor (sk :: features) Double ->
   Tensor (sk' :: features) Double ->
   Tensor [sk, sk'] Double

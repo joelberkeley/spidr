@@ -158,7 +158,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
-namespace ns_broadcastable
+namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
   ||| shape `to`.
   public export
@@ -196,7 +196,7 @@ namespace ns_broadcastable
 export
 broadcast : {auto prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
-namespace ns_squeezable
+namespace NSSqueezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
