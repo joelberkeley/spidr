@@ -35,7 +35,6 @@ jobs:
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
         cc -shared c/poplar.c -o libpoplar.so
-        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
         idris2 --check test/unit/*
   test-ffi:
@@ -47,7 +46,6 @@ jobs:
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
         cc -shared c/poplar.c -o libpoplar.so
-        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/unit/Poplar.idr -x test_add | grep -q FAIL)
   test-integration:
@@ -59,6 +57,5 @@ jobs:
         . "$HOME"/.nix-profile/etc/profile.d/nix.sh
         nix-env -i idris2
         cc -shared c/poplar.c -o libpoplar.so
-        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
         IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
         idris2 --check test/integration/*
