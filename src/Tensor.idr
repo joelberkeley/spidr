@@ -291,11 +291,11 @@ export
 (/) : Fractional dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
-infix 9 ^
+infixr 9 ^
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
 export
-(^) : Num dtype => (base : Tensor l dtype) -> (exponent : Tensor r Nat) ->
+(^) : Num dtype => (base : Tensor l dtype) -> (exponent : Tensor r dtype) ->
       {auto _ : Broadcastable r l} -> Tensor l dtype
 
 ||| The element-wise natural exponential.
@@ -331,7 +331,6 @@ export
 (//=) : Fractional dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
--- todo this can fail
 ||| The element-wise natural logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double

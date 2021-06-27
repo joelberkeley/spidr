@@ -32,11 +32,9 @@ Kernel features = {sk, sk' : _} ->
 
 ||| The radial basis function, or squared exponential kernel.
 export
-rbf : {d : Nat} -> Double -> Either ValueError $ Kernel [S d]
-rbf 0 = Left $ MkValueError "Length scale must be non-zero"
-rbf length_scale = Right impl where
-  impl : Kernel [S d]
-  impl {sk} {sk'} x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
-                             xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
-                             l2_norm = reduce_sum 2 $ (xs' - xs) ^ (const {shape=[]} 2)
-                          in exp (- l2_norm / (const {shape=[]} $ 2.0 * pow length_scale 2.0))
+rbf : {d : Nat} -> Tensor [] Double -> Kernel [S d]
+rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
+                            xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
+                            l2_norm = reduce_sum 2 $ (xs' - xs) ^ (const {shape=[]} 2)
+                            two = const {shape=[]} 2.0
+                         in exp (- l2_norm / (two * length_scale ^ two))
