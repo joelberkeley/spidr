@@ -69,7 +69,7 @@ Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 
 ||| A `Tensor` is either a scalar value or array of values.
 export
-data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
+data Tensor : (shape : Shape {rank}) -> (dtype : Type) -> Type where
   MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
@@ -135,6 +135,12 @@ freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 export
 index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 
+||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
+||| specified axis in the new `Tensor` (as opposed to the original `Tensor`).
+export
+expand :
+  (axis : Fin (S rank)) -> Tensor {rank=rank} shape dtype -> Tensor (insertAt axis 1 shape) dtype
+
 ||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is
 ||| `const [[1, 3], [2, 4]]`.
 export
@@ -177,8 +183,9 @@ namespace NSBroadcastable
     |||
     ||| [1, 3] to [5, 3]
     ||| [3, 1, 2] to [3, 5, 2]
-    Stack : Broadcastable f (1 :: t) -> Broadcastable f (S (S _) :: t)
-  
+    ||| [3, 1, 2] to [3, 0, 2]
+    Stack : Broadcastable f (1 :: t) -> Broadcastable f (_ :: t)
+
     ||| Proof that any dimension can be broadcast to itself. For example:
     |||
     ||| [2, ...] to [2, ...], assuming the ellipses are broadcast-compatible.
@@ -284,6 +291,17 @@ export
 (/) : Fractional dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
+infixr 9 ^
+
+||| Each element in `base` raised to the power of the corresponding element in `exponent`.
+export
+(^) : Num dtype => (base : Tensor l dtype) -> (exponent : Tensor r dtype) ->
+      {auto _ : Broadcastable r l} -> Tensor l dtype
+
+||| The element-wise natural exponential.
+export
+exp : Tensor shape Double -> Tensor shape Double
+
 infix 8 +=
 infix 8 -=
 infix 8 *=
@@ -313,12 +331,21 @@ export
 (//=) : Fractional dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
-||| The element-wise logarithm.
+||| The element-wise natural logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double
 
+||| Reduce a `Tensor` along the specified `axis` to the smallest element along that axis, removing
+||| the axis in the process.
 export
-reduce_min : Tensor (S _ :: tail') Double -> Tensor tail' Double
+reduce_min : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
+  {auto prf : IsSucc $ index axis shape} -> Tensor (deleteAt axis shape) dtype
+
+||| Reduce a `Tensor` along the specified `axis` to the sum of its components, removing the axis in
+||| the process.
+export
+reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
+  {auto prf : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
 
 ---------------------------- other ----------------------------------
 

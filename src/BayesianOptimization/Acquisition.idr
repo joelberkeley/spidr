@@ -51,7 +51,7 @@ export
 expectedImprovementByModel :
   Empiric features {targets=[1]} {marginal=Gaussian [1]} $ Acquisition 1 features
 expectedImprovementByModel ((query_points, _), predict) at =
-  let best = squeeze {from=[1]} $ reduce_min $ mean $ predict query_points
+  let best = squeeze {from=[1]} $ reduce_min 0 $ mean $ predict query_points
    in expectedImprovement predict best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a
