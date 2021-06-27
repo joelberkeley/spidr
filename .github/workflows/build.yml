@@ -16,24 +16,14 @@ on:
     branches: master
 
 jobs:
-  install:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
-    - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
-        cc -shared c/poplar.c -o libpoplar.so
-        idris2 --build spidr.ipkg
   test-unit:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
         idris2 --install spidr.ipkg
         idris2 --check test/unit/*
@@ -41,10 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
         idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/unit/Poplar.idr -x test_add | grep -q FAIL)
@@ -52,10 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
         idris2 --install spidr.ipkg
         idris2 --check test/integration/*
