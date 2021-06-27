@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         idris2 --mkdoc spidr.ipkg
         mv build/docs .
     - run: |
