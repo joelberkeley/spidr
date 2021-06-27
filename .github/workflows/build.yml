@@ -26,7 +26,7 @@ jobs:
         brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
         idris2 --install spidr.ipkg
-        idris2 --check test/unit/*
+        bash -c "res=0; for f in test/unit/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)"
   test-ffi:
     runs-on: ubuntu-latest
     steps:
@@ -48,4 +48,4 @@ jobs:
         brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
         idris2 --install spidr.ipkg
-        idris2 --check test/integration/*
+        bash -c "res=0; for f in test/integration/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)"
