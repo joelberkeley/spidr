@@ -255,8 +255,8 @@ infixl 9 @@
 ||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
 ||| the first axis of the last tensor.
 export
-(@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tl) dtype ->
-       {auto prf : last l = S n} -> Tensor (init l ++ tl) dtype
+(@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
+       {auto prf : last l = S n} -> Tensor (init l ++ tail') dtype
 
 ||| Element-wise addition.
 export
@@ -318,7 +318,7 @@ export
 log : Tensor shape Double -> Tensor shape Double
 
 export
-reduce_min : Tensor (S _ :: tl) Double -> Tensor tl Double
+reduce_min : Tensor (S _ :: tail') Double -> Tensor tail' Double
 
 ---------------------------- other ----------------------------------
 
