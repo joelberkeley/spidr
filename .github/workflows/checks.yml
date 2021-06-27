@@ -20,29 +20,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    - run: curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
         idris2 --install spidr.ipkg
         res=0; for f in test/unit/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
-  test-ffi:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        cc -shared c/poplar.c -o libpoplar.so
-        idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/unit/Poplar.idr -x test_add | grep -q FAIL)
-  test-integration:
+  tutorials:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    - run: curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
