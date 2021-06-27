@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
