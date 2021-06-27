@@ -158,7 +158,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
-namespace ns_broadcastable
+namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
   ||| shape `to`.
   public export
@@ -196,7 +196,7 @@ namespace ns_broadcastable
 export
 broadcast : {auto prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
-namespace ns_squeezable
+namespace NSSqueezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
@@ -255,8 +255,8 @@ infixl 9 @@
 ||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
 ||| the first axis of the last tensor.
 export
-(@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail) dtype ->
-       {auto prf : last l = S n} -> Tensor (init l ++ tail) dtype
+(@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
+       {auto prf : last l = S n} -> Tensor (init l ++ tail') dtype
 
 ||| Element-wise addition.
 export
@@ -318,7 +318,7 @@ export
 log : Tensor shape Double -> Tensor shape Double
 
 export
-reduce_min : Tensor (S _ :: tail) Double -> Tensor tail Double
+reduce_min : Tensor (S _ :: tail') Double -> Tensor tail' Double
 
 ---------------------------- other ----------------------------------
 

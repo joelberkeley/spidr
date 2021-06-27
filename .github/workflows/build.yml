@@ -16,49 +16,36 @@ on:
     branches: master
 
 jobs:
-  install:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
-    - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
-        cc -shared c/poplar.c -o libpoplar.so
-        idris2 --build spidr.ipkg
   test-unit:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
-        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
-        IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
-        idris2 --check test/unit/*
+        idris2 --install spidr.ipkg
+        res=0; for f in test/unit/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
   test-ffi:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
-        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
-        IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
+        idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/unit/Poplar.idr -x test_add | grep -q FAIL)
   test-integration:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: curl -L https://nixos.org/nix/install | sh
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        . "$HOME"/.nix-profile/etc/profile.d/nix.sh
-        nix-env -i idris2
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         cc -shared c/poplar.c -o libpoplar.so
-        mkdir -p out/idris2-0.3.0  # workaround for https://github.com/idris-lang/Idris2/pull/1300
-        IDRIS2_PREFIX=$(pwd)/out idris2 --install spidr.ipkg
-        idris2 --check test/integration/*
+        idris2 --install spidr.ipkg
+        res=0; for f in test/integration/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
