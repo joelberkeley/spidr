@@ -14,4 +14,6 @@ We may choose to omit conceptually similar algorithms where they don't contribut
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
+spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [tutorials](tutorials).
+
 We use [semantic versioning](https://semver.org/). Contributions are welcome.
