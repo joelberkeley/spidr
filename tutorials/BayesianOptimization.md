@@ -59,7 +59,7 @@ and model that data
 
 ```idris
 model : Either SingularMatrixError $ ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
-model = let prior = MkGP zero (rbf 0.3)
+model = let prior = MkGP zero (rbf $ const 0.3)
             likelihood = MkGaussian (fill 0) (diag 0.22)
             (qp, obs) = historicData
          in map ?marginalise $ posterior prior likelihood (qp, squeeze obs)
