@@ -1,5 +1,5 @@
 package spidr
-version = "0.0.1"
+version = 0.0.1
 
 opts = "--total"
 sourcedir = "src"
