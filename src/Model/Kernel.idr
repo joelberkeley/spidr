@@ -35,6 +35,6 @@ export
 rbf : {d : Nat} -> Tensor [] Double -> Kernel [S d]
 rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
                             xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
-                            l2_norm = reduce_sum 2 $ (xs' - xs) ^ (const {shape=[]} 2)
                             two = const {shape=[]} 2.0
+                            l2_norm = reduce_sum 2 $ (xs' - xs) ^ two
                          in exp (- l2_norm / (two * length_scale ^ two))
