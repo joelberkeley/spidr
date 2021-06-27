@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-on: release
+on:
+  push:
+    branches: docs
 
 jobs:
   docs:
@@ -26,7 +28,7 @@ jobs:
         mv build/docs .
     - run: |
         git add .
-        git config --global user.email "none"
-        git config --global user.name "none"
+        git config user.email "none"
+        git config user.name "none"
         git commit -m "build documentation"
         git push -f origin HEAD:gh-pages
