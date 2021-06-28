@@ -179,8 +179,8 @@ We can now construct our empirical point. We'll need the `run` function to conve
 
 ```idris
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint' = let eci = objective >>> expectedConstrainedImprovement {s=_}
-                pof = failure >>> (probabilityOfFeasibility $ const 0.5) {s=_}
+newPoint' = let eci = objective >>> expectedConstrainedImprovement
+                pof = failure >>> (probabilityOfFeasibility $ const 0.5)
                 acquisition = map optimizer (eci <*> pof)
                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
              in Right $ run acquisition dataAndModel
