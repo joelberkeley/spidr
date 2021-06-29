@@ -183,7 +183,7 @@ record Labelled o f where
   failure : f
 ```
 
-Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We construct a `Connection` with `>>>`, and convert the final `Connection i o` at the end into a function `i -> o` with `run`, such that we can apply it to the data and models. Connecting it all together, here's our empirical point:
+Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We construct a `Connection` with `>>>`, and convert the final `Connection i o` at the end into a function `i -> o` with `run`, such that we can apply it to the data and models. Putting it all together, here's our empirical point:
 
 ```idris
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
