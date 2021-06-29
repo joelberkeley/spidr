@@ -152,14 +152,14 @@ Since each `Empiric` takes one data set and model, we can't in general combine t
 
 We can now think about combining empirical values by combining `Connection i` values. How then do we do that? Let's take a look in the context of the above diagram. If we'd constructed each empirical value first, then combined them, we'd have a `x : Acquisition 1 [2]` and an `f : Acquisition 1 [2] -> Acquisition 1 [2]`, from which we construct a complete acquisition function as `f x`. But as we explained earlier, we're not constructing our empirical values at this point, so we have a `x_conn : Connection i Acquisition 1 [2]` and `f_conn : Connection i (Acquisition 1 [2] -> Acquisition 1 [2])`, and we need to apply the function in the context of a `Connection`. This is the role of an applicative functor: lifting function application to a context. We simply make `Connection i` an applicative functor and, in Idris, we can write function application in a context as `f_conn <*> x_conn`. Similarly, we can't optimize the acquisition function in the resulting `y_conn : Connection i Acquisition` directly, but we can use the functor's `map` method instead, as `map optimizer y_conn`, resulting in a `Connection i (Tensor 1 [2] Double)`, which gives us precisely the empirical points we're after.
 
-Let's now implement this example. We'll choose a particular representation for our data and models on the way. First off we'll need some data on failure regions,
+Let's now implement this example. We'll choose a particular representation for our data and models on the way. We'll reuse the data from above for objective values, define some data on failure regions,
 
 ```idris
 failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 ```
 
-and to model that data (spidr doesn't currently have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
+and model the failure data (spidr doesn't currently have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
 
 ```idris
 data Bernoulli : Shape -> Nat -> Type where
@@ -174,7 +174,7 @@ failureModel : Either SingularMatrixError $
                ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
 ```
 
-We'll reuse the data from above for objective values. Next we'll choose a representation for all our data, a simple named pair:
+A simple named pair will do well as a representation `i`
 
 ```idris
 record Labelled o f where
@@ -183,13 +183,13 @@ record Labelled o f where
   failure : f
 ```
 
-Idris generates two methods `objective` and `failure` from this `record`. We'll use these as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We construct a `Connection i o` with `>>>`, and convert it at the end into a function `i -> o` with `run`, such that we can apply it to the data and models. Here's our empirical point.
+Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We construct a `Connection i o` with `>>>`, and convert it at the end into a function `i -> o` with `run`, such that we can apply it to the data and models. Here's our empirical point:
 
 ```idris
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
 newPoint' = let eci = objective >>> expectedConstrainedImprovement
-                pof = failure >>> (probabilityOfFeasibility $ const 0.5)
+                pof = failure >>> probabilityOfFeasibility (const 0.5)
                 acquisition = map optimizer (eci <*> pof)
                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
-             in Right $ run acquisition dataAndModel
+             in pure $ run acquisition dataAndModel
 ```
