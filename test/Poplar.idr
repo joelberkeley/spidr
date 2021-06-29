@@ -21,4 +21,4 @@ infix 0 ==?
 x ==? y = printLn $ if x == y then "PASS" else "FAIL"
 
 test_add : IO ()
-test_add = print (mkScalar 2 + mkScalar 3)
+test_add = (cast $ add (mkScalar 2) (mkScalar 3)) ==? 5.0

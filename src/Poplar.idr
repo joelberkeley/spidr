@@ -30,14 +30,14 @@ mkScalar : Double -> Scalar
 
 %foreign (libpoplar "cScalar_add")
 export
-(+) : Scalar -> Scalar -> Scalar
+add : Scalar -> Scalar -> Scalar
 
-%foreign (libpoplar "cScalar_print")
-prim__print : Scalar -> PrimIO ()
+%foreign (libpoplar "cScalar_toDouble")
+toDouble : Scalar -> Double
 
 export
-print : Scalar -> IO ()
-print = primIO . prim__print
+Cast Scalar Double where
+  cast = toDouble
 
 ||| Scalar data types supported by Poplar.
 public export

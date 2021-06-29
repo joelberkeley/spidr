@@ -14,16 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /* This file glues the C API to the Poplar C++ API. */
-#include "iostream"
-
 class Scalar {
     public:
         Scalar(double x) :xx{x} {};
-        Scalar* add(Scalar* other) {
+        Scalar* add(Scalar* other) const {
             return new Scalar(this->xx + other->xx);
         };
-        void print() {
-            std::cout << "Scalar(" + std::to_string(this->xx) + ")";
+        double toDouble() const {
+            return this->xx;
         };
 
     private:
@@ -49,7 +47,7 @@ extern "C"
         return reinterpret_cast<cScalar*>(s_->add(other_));
     }
 
-    void cScalar_print(cScalar* s) {
-        return reinterpret_cast<Scalar*>(s)->print();
+    double cScalar_toDouble(cScalar* s) {
+        return reinterpret_cast<Scalar*>(s)->toDouble();
     }
 }
