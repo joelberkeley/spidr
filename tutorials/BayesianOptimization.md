@@ -144,7 +144,7 @@ In spidr, we call these minimal empirical objects `Empiric`s. An `Empiric featur
     +--------------+
 </pre>
 
-TODO we don't actually have to represent the two contributions as acq and acq -> acq, they could be any a and b and form an acquisition function f(a, b). This doesn't affect the design, but it might mean readers are left wondering why I've chosen those particular empirical values.
+Note we could have chosen a different representation for the first _Acquisition function_ and _Acquisition function -> Acquisition function_. Indeed, any `a` and `b` will do as long as we have some `f` that combines them into an acquisition function `f a b`. In practice, the forms we chose are appropriate for this problem, and it doesn't actually affect the design what implementation we chose. I may choose to revisit this without this making assumption.
 
 In order to combine each empirical value, we could construct each individually with the relevant data and model, then combine the results, but we might not have access to the data at the point we connect them together. Instead, we'll look at how to connect them together *before* we apply the data and models.
 
@@ -152,21 +152,29 @@ Since each `Empiric` takes one data set and model, we can't in general combine t
 
 We can now think about combining empirical values by combining `Connection i` values. How then do we do that? Let's take a look in the context of the above diagram. If we'd constructed each empirical value first, then combined them, we'd have a `x : Acquisition 1 [2]` and an `f : Acquisition 1 [2] -> Acquisition 1 [2]`, from which we construct a complete acquisition function as `f x`. But as we explained earlier, we're not constructing our empirical values at this point, so we have a `x_conn : Connection i Acquisition 1 [2]` and `f_conn : Connection i (Acquisition 1 [2] -> Acquisition 1 [2])`, and we need to apply the function in the context of a `Connection`. This is the role of an applicative functor: lifting function application to a context. We simply make `Connection i` an applicative functor and, in Idris, we can write function application in a context as `f_conn <*> x_conn`. Similarly, we can't optimize the acquisition function in the resulting `y_conn : Connection i Acquisition` directly, but we can use the functor's `map` method instead, as `map optimizer y_conn`, resulting in a `Connection i (Tensor 1 [2] Double)`, which gives us precisely the empirical points we're after.
 
-Let's now implement this example. We'll choose a particular representation for our data and models on the way. First off we'll need some data on failure regions. We'll reuse the data from above for objective values.
+Let's now implement this example. We'll choose a particular representation for our data and models on the way. We'll reuse the data from above for objective values, define some data on failure regions
 
 ```idris
 failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 ```
 
-We'll model the failure regions
+and model that failure data (spidr doesn't have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
 
 ```idris
+data Bernoulli : Shape -> Nat -> Type where
+
+Distribution e (Bernoulli e) where
+  mean _ = ?mean'
+  covariance _ = ?covariance'
+  pdf _ = ?pdf'
+  cdf _ = ?cdf'
+
 failureModel : Either SingularMatrixError $
-               ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+               ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
 ```
 
-and choose a representation for all our data. We'll use a simple named pair
+A simple named pair will do well as a representation `i` for all our data and models.
 
 ```idris
 record Labelled o f where
@@ -175,13 +183,13 @@ record Labelled o f where
   failure : f
 ```
 
-We can now construct our empirical point. We'll need the `run` function to convert our `Connection i o` to a function `i -> o` and apply it to the data and models.
+Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We construct a `Connection` with `>>>`, and convert the final `Connection i o` at the end into a function `i -> o` with `run`, such that we can apply it to the data and models. Putting it all together, here's our empirical point:
 
 ```idris
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
 newPoint' = let eci = objective >>> expectedConstrainedImprovement
-                pof = failure >>> (probabilityOfFeasibility $ const 0.5)
+                pof = failure >>> probabilityOfFeasibility (const 0.5)
                 acquisition = map optimizer (eci <*> pof)
                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
-             in Right $ run acquisition dataAndModel
+             in pure $ run acquisition dataAndModel
 ```
