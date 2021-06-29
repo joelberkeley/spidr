@@ -159,11 +159,19 @@ failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 ```
 
-and to model that data (spidr doesn't currently have the functionality for an appropriate model, so we'll use the same kind of model as for the objective data, but leave the implementation empty)
+and to model that data (spidr doesn't currently have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
 
 ```idris
+data Bernoulli : Shape -> Nat -> Type where
+
+Distribution e (Bernoulli e) where
+  mean _ = ?mean'
+  covariance _ = ?covariance'
+  pdf _ = ?pdf'
+  cdf _ = ?cdf'
+
 failureModel : Either SingularMatrixError $
-               ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+               ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
 ```
 
 We'll reuse the data from above for objective values. Next we'll choose a representation for all our data, a simple named pair:
