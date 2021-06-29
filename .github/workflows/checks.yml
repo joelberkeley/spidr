@@ -24,7 +24,7 @@ jobs:
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
-        cc -shared c/poplar.c -o libpoplar.so
+        g++ -shared -fPIC -o libpoplar.so backend/poplar.cpp
         idris2 --install spidr.ipkg
         res=0; for f in test/unit/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
   test-ffi:
@@ -35,7 +35,7 @@ jobs:
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
-        cc -shared c/poplar.c -o libpoplar.so
+        g++ -shared -fPIC -o libpoplar.so backend/poplar.cpp
         idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/unit/Poplar.idr -x test_add | grep -q FAIL)
   tutorials:
@@ -46,6 +46,6 @@ jobs:
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
-        cc -shared c/poplar.c -o libpoplar.so
+        g++ -shared -fPIC -o libpoplar.so backend/poplar.cpp
         idris2 --install spidr.ipkg
         res=0; for f in tutorials/*.md; do idris2 --check "$f" || res=$?; done; $(exit $res)
