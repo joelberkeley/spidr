@@ -13,14 +13,39 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| This module contains (will contain) the Idris API to Poplar.
 module Poplar
+
+import System.FFI
 
 libpoplar : String -> String
 libpoplar fname = "C:" ++ fname ++ ",libpoplar"
 
-%foreign (libpoplar "add")
 export
-add : Int -> Int -> Int
+Scalar : Type
+Scalar = Struct "cScalar" [("x", Double)]
+
+%foreign (libpoplar "cScalar_new")
+export
+mkScalar : Double -> Scalar
+
+%foreign (libpoplar "cScalar_del")
+prim__delScalar : Scalar -> PrimIO ()
+
+export
+delScalar : Scalar -> IO ()
+delScalar = primIO . prim__delScalar
+
+%foreign (libpoplar "cScalar_add")
+export
+add : Scalar -> Scalar -> Scalar
+
+%foreign (libpoplar "cScalar_toDouble")
+toDouble : Scalar -> Double
+
+export
+Cast Scalar Double where
+  cast = toDouble
 
 ||| Scalar data types supported by Poplar.
 public export
