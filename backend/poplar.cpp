@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/* This file contains the C-compatible API to Poplar's C++ API. */
+/* This file contains (will contain) the C-compatible API to Poplar's C++ API. */
 class Scalar {
     public:
         Scalar(double x) :xx{x} {};
