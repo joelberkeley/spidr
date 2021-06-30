@@ -30,23 +30,23 @@ class Scalar {
 
 extern "C"
 {
-    typedef struct cScalar cScalar;
+    struct cScalar;
 
-    cScalar* cScalar_new(double x) {
+    struct cScalar* cScalar_new(double x) {
         return reinterpret_cast<cScalar*>(new Scalar(x));
     }
 
-    void cScalar_del(cScalar* s) {
+    void cScalar_del(struct cScalar* s) {
         delete reinterpret_cast<Scalar*>(s);
     }
 
-    cScalar* cScalar_add(cScalar* s, cScalar* other) {
+    struct cScalar* cScalar_add(struct cScalar* s, struct cScalar* other) {
         Scalar* s_ = reinterpret_cast<Scalar*>(s);
         Scalar* other_ = reinterpret_cast<Scalar*>(other);
         return reinterpret_cast<cScalar*>(s_->add(other_));
     }
 
-    double cScalar_toDouble(cScalar* s) {
+    double cScalar_toDouble(struct cScalar* s) {
         return reinterpret_cast<Scalar*>(s)->toDouble();
     }
 }
