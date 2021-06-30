@@ -17,8 +17,8 @@ limitations under the License.
 class Scalar {
     public:
         Scalar(double x) :xx{x} {};
-        Scalar* add(Scalar* other) const {
-            return new Scalar(this->xx + other->xx);
+        Scalar* add(Scalar& other) const {
+            return new Scalar(this->xx + other.xx);
         };
         double toDouble() const {
             return this->xx;
@@ -40,10 +40,10 @@ extern "C"
         delete reinterpret_cast<Scalar*>(s);
     }
 
-    struct cScalar* cScalar_add(struct cScalar* s, struct cScalar* other) {
-        Scalar* s_ = reinterpret_cast<Scalar*>(s);
-        Scalar* other_ = reinterpret_cast<Scalar*>(other);
-        return reinterpret_cast<cScalar*>(s_->add(other_));
+    struct cScalar* cScalar_add(struct cScalar& s, struct cScalar& other) {
+        Scalar& s_ = reinterpret_cast<Scalar&>(s);
+        Scalar& other_ = reinterpret_cast<Scalar&>(other);
+        return reinterpret_cast<cScalar*>(s_.add(other_));
     }
 
     double cScalar_toDouble(struct cScalar* s) {
