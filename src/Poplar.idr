@@ -28,6 +28,13 @@ Scalar = Struct "cScalar" [("x", Double)]
 export
 mkScalar : Double -> Scalar
 
+%foreign (libpoplar "cScalar_del")
+prim__delScalar : Scalar -> PrimIO ()
+
+export
+delScalar : Scalar -> IO ()
+delScalar = primIO . prim__delScalar
+
 %foreign (libpoplar "cScalar_add")
 export
 add : Scalar -> Scalar -> Scalar

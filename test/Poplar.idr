@@ -21,4 +21,10 @@ infix 0 ==?
 x ==? y = printLn $ if x == y then "PASS" else "FAIL"
 
 test_add : IO ()
-test_add = (cast $ add (mkScalar 2) (mkScalar 3)) ==? 5.0
+test_add = do let two = mkScalar 2
+                  three = mkScalar 3
+                  five = add two three
+              cast five ==? 5.0
+              delScalar two
+              delScalar three
+              delScalar five
