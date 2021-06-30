@@ -30,7 +30,6 @@ class Scalar {
 
 extern "C"
 {
-    struct cScalar;
     typedef struct cScalar cScalar;
 
     cScalar* cScalar_new(double x) {
