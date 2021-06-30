@@ -46,7 +46,7 @@ extern "C"
         return reinterpret_cast<cScalar*>(s_.add(other_));
     }
 
-    double cScalar_toDouble(struct cScalar* s) {
-        return reinterpret_cast<Scalar*>(s)->toDouble();
+    double cScalar_toDouble(struct cScalar& s) {
+        return reinterpret_cast<Scalar&>(s).toDouble();
     }
 }
