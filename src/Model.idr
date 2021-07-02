@@ -25,6 +25,6 @@ import Tensor
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
 public export 0
-ProbabilisticModel : Distribution targets marginal => Shape -> Type
-ProbabilisticModel {marginal} features =
+ProbabilisticModel : Distribution marginal => Shape -> Type
+ProbabilisticModel features =
   forall samples . Tensor (samples :: features) Double -> marginal samples
