@@ -61,13 +61,18 @@ export
 ScalarLike Bool where
   archType = BOOL
 
-||| A multidimensional array of a given shape, of elements of a given type.
+||| An `Array shape` is either:
+||| 
+||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
+||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
 public export 0
 Array : {0 dtype : Type} -> ScalarLike dtype => Shape -> Type
 Array {dtype} [] = dtype
 Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 
-||| A `Tensor` is either a scalar value or array of values.
+||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
+||| though the runtime representation will likely contain more than its value, and will depend on
+||| the specific backend.
 export
 data Tensor : (shape : Shape {rank}) -> (dtype : Type) -> Type where
   MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
@@ -77,7 +82,7 @@ export
 const : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 const = MkTensor
 
-||| Represents a mutable tensor. That is, a tensor that can be modified in-place.
+||| A mutable tensor. That is, a tensor that can be modified in-place.
 |||
 ||| We can do this in Idris with linearity. Linearity is offered by quantitative type theory*, which
 ||| allows us to guarantee that a value is used at run time either never (erased), once (linear), or
@@ -85,16 +90,20 @@ const = MkTensor
 ||| what state a value is in in a series of computations: whether it has been mutated and how. For
 ||| example, in the following pseudo-code,
 |||
-||| > a = 1
-||| > a += 1
-||| > b = f(a)
+||| ```
+||| a = 1
+||| a += 1
+||| b = f(a)
+||| ```
 |||
 ||| We have to be aware of whether `a` was modified between its initialization and its use in the
 ||| calculation of `b`. This problem is solved by simply defining a new variable, as
 |||
-||| > a = 1
-||| > a' = a + 1
-||| > b = f(a')
+||| ```
+||| a = 1
+||| a' = a + 1
+||| b = f(a')
+||| ```
 |||
 ||| but this doesn't provide the same performance benefits of in-place mutation. The conundrum is
 ||| (at least largely) solved with linear types, because you can require that the action of mutating
@@ -110,13 +119,15 @@ export
 data Variable : (shape : Shape) -> (dtype : Type) -> Type where
   MkVariable : ScalarLike dtype => Array shape {dtype=dtype} -> Variable shape dtype
 
-||| Provides access to a linear `Variable` type with contents `arr`. For example:
+||| Provides access to a linear `Variable` with initial contents `arr`. For example:
 |||
-||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
-||| > addOne v = v += const {shape=[]} 1
-||| >
-||| > three : Tensor [] Double
-||| > three = var 2.0 $ \v => freeze $ addOne v
+||| ```idris
+||| addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| addOne v = v += const {shape=[]} 1
+||| 
+||| three : Tensor [] Double
+||| three = var 2.0 $ \v => freeze $ addOne v
+||| ```
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
@@ -129,43 +140,43 @@ freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 
 ----------------------------- structural operations ----------------------------
 
-||| Get the `idx`-th row from a tensor.
+||| Get the `idx`-th row from a tensor. For example, `index 1 $ const [[1, 2], [3, 4], [5, 6]]`
+||| is equivalent to `const [3, 4]`.
 |||
 ||| @idx The row to fetch.
 export
 index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
-||| specified axis in the new `Tensor` (as opposed to the original `Tensor`).
+||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example, 
+||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
+||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand :
   (axis : Fin (S rank)) -> Tensor {rank=rank} shape dtype -> Tensor (insertAt axis 1 shape) dtype
 
-||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is
+||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is equivalent to
 ||| `const [[1, 3], [2, 4]]`.
 export
 transpose : Tensor [m, n] dtype -> Tensor [n, m] dtype
 
-||| A `Tensor` where every element has the specified value.
+||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
+||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
 export
 fill : dtype -> Tensor shape dtype
 
-||| Replicate a tensor over shape `over`.
-|||
-||| @over The shape over which to replicate the tensor.
-export
-replicate : Tensor shape dtype -> Tensor (over ++ shape) dtype
-
-||| Cast the tensor elements to a dtype inferred from the expected type.
+||| Cast the tensor elements to a new data type.
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
 
 ||| Construct a diagonal tensor from the specified value, where all off-diagonal elements are zero.
+||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
+||| `const [[3.0, 0.0], [0.0, 3.0]]`.
 export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
 namespace NSBroadcastable
-  ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcasted to the
+  ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
   public export
   data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
@@ -199,7 +210,19 @@ namespace NSBroadcastable
     ||| [3] to [1, 3]
     Nest : Broadcastable f t -> Broadcastable f (1 :: t)
 
-||| Broadcast a `Tensor` to a new compatible shape.
+||| Broadcast a `Tensor` to a new compatible shape. For example,
+|||
+||| ```idris
+||| x : Tensor [2, 3] Double
+||| x = broadcast (const [1, 2, 3])
+||| ```
+|||
+||| is equivalent to
+|||
+||| ```idris
+||| x : Tensor [2, 3] Double
+||| x = const [[1, 2, 3], [1, 2, 3]]
+||| ```
 export
 broadcast : {auto prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
