@@ -214,14 +214,14 @@ namespace NSBroadcastable
 |||
 ||| ```idris
 ||| x : Tensor [2, 3] Double
-||| x = broadcast (const [1, 2, 3])
+||| x = broadcast (const [4, 5, 6])
 ||| ```
 |||
 ||| is equivalent to
 |||
 ||| ```idris
 ||| x : Tensor [2, 3] Double
-||| x = const [[1, 2, 3], [1, 2, 3]]
+||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
 broadcast : {auto prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
@@ -237,7 +237,8 @@ namespace NSSqueezable
     ||| [3, 4] to [3, 4]
     Same : Squeezable x x
 
-    ||| Proof that any dimensions can be preserved in the process of squeezing. For example:
+    ||| Proof that any dimensions (including those of length 1) can be preserved in the process of
+    ||| squeezing. For example:
     |||
     ||| ...
     Extend : Squeezable from to -> Squeezable (x :: from) (x :: to)
@@ -247,34 +248,55 @@ namespace NSSqueezable
     ||| [1, 3, 1, 1, 4] to [3, 4]
     Nest : Squeezable from to -> Squeezable (1 :: from) to
 
-||| Remove dimensions of length one from a `Tensor` such that it has the desired shape.
+||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
+||| 
+||| ```idris
+||| x : Tensor [2, 1, 3, 1] Double
+||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
+|||
+||| y : Tensor [2, 1, 3] Double
+||| y = squeeze x
+||| ```
+|||
+||| is equivalent to
+|||
+||| ```idris
+||| y : Tensor [2, 1, 3] Double
+||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
+||| ```
 export
 squeeze : {auto _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
 ----------------------------- numeric operations ----------------------------
 
-||| Element-wise equality.
+||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
+||| `const [True, False]`.
 export
 (==) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
-||| Element-wise inequality.
+||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
+||| `const [False, True]`.
 export
 (/=) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
-||| Element-wise less than.
+||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
+||| `const [True, False, False]`.
 export
 (<) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
-||| Element-wise greater than.
+||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
+||| `const [False, False, True]`.
 export
 (>) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
-||| Element-wise less than or equal.
+||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is equivalent
+||| to `const [True, True, False]`.
 export
 (<=) : Ord dtype =>
        Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
-||| Element-wise greater than or equal.
+||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
+||| equivalent to `const [False, True, True]`.
 export
 (>=) : Ord dtype =>
        Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
@@ -283,44 +305,69 @@ export
 infixl 9 @@
 
 ||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
-||| the first axis of the last tensor.
+||| the first axis of the last tensor. For example:
+|||
+||| ```idris
+||| x : Tensor [2, 3] Double
+||| x = const [[-1, -2, -3], [0, 1, 2]]
+|||
+||| y : Tensor [3, 1] Double
+||| y = const [[4, 0, 5]]
+|||
+||| z : Tensor [2, 1] Double
+||| z = x @@ y
+||| ```
+|||
+||| is equivalent to
+|||
+||| ```idris
+||| z : Tensor [2, 1] Double
+||| z = const [-19, 10]
+||| ```
 export
 (@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
        {auto prf : last l = S n} -> Tensor (init l ++ tail') dtype
 
-||| Element-wise addition.
+||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
+||| `const [4, 6]`.
 export
 (+) : Num dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
-||| Element-wise negation.
+||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
-||| Element-wise subtraction.
+||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
+||| `const [-1, 2]`.
 export
 (-) : Neg dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
 
-||| Elementwise multiplication. This reduces to standard tensor multiplication with a scalar for
-||| scalar LHS.
+||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
+||| `const [8, 15]`.
 export
 (*) : Num dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
 
-||| Elementwise floating point division. This reduces to standard tensor division by a scalar for
-||| scalar denominator.
+||| Elementwise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent to
+||| `const [0.5, 0.6]`.
 export
 (/) : Fractional dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
 
 infixr 9 ^
 
+-- todo we don't support complex yet
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
+||| example, `const [2, 25, -9] / const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
+|||
+||| Note: The first root is used.
 export
 (^) : Num dtype => (base : Tensor l dtype) -> (exponent : Tensor r dtype) ->
       {auto _ : Broadcastable r l} -> Tensor l dtype
 
+-- todo
 ||| The element-wise natural exponential.
 export
 exp : Tensor shape Double -> Tensor shape Double
@@ -331,50 +378,55 @@ infix 8 *=
 infix 8 /=
 
 ||| Element-wise in-place addition. It is in-place in the sense that the value in memory is mutated
-||| in-place. However, you must still use the result to get the updated value. For example:
+||| in-place. However, since the function is linear its `Variable`, you must still use the result to
+||| get the updated value. For example:
 |||
-||| > addOne : (1 v : Variable [] Double) -> Variable [] Double
-||| > addOne v = v += 1
+||| ```idris
+||| addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| addOne v = v += const {shape=[]} 1
+||| ```
+|||
+||| Other than the fact that it works on a `Variable`, and mutates the value in-place, it works
+||| exactly like `(+)` on a `Tensor.
 export
 (+=) : Num dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
-||| Element-wise in-place subtraction. See `(+=)` for details.
+||| Element-wise in-place subtraction. See `(+=)` and `(+)` for details.
 export
 (-=) : Neg dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
-||| Element-wise in-place multiplication. See `(+=)` for details.
+||| Element-wise in-place multiplication. See `(+=)` and `(*)` for details.
 export
 (*=) : Num dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
-||| Element-wise in-place division. See `(+=)` for details.
+||| Element-wise in-place division. See `(+=)` and `(/)` for details.
 export
 (//=) : Fractional dtype =>
   (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
 
+-- todo
 ||| The element-wise natural logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double
 
 ||| Reduce a `Tensor` along the specified `axis` to the smallest element along that axis, removing
-||| the axis in the process.
+||| the axis in the process. For example, `reduce_min 1 $ const [[-1, 5, 10], [4, 5, 6]]` is
+||| equivalent to `const [-1, 5, 6]`.
 export
 reduce_min : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
   {auto prf : IsSucc $ index axis shape} -> Tensor (deleteAt axis shape) dtype
 
 ||| Reduce a `Tensor` along the specified `axis` to the sum of its components, removing the axis in
-||| the process.
+||| the process. For example, `reduce_sum 1 $ const [[-1, 2, 3], [4, 5, -6]]` is equivalent to
+||| `const [3, 7, -3]`.
 export
 reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
   {auto prf : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
 
 ---------------------------- other ----------------------------------
-
-any : Tensor shape Bool -> Tensor [] Bool
-
-all : Tensor shape Bool -> Tensor [] Bool
 
 ||| The determinant of a tensor.
 export
