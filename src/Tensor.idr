@@ -428,7 +428,8 @@ reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
 
 ---------------------------- other ----------------------------------
 
-||| The determinant of a tensor.
+||| The determinant of a tensor. For example, `det $ const [[1, 2], [3, 4]]` is equivalent to
+||| `const -2`.
 export
 det : Neg dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 
@@ -452,10 +453,12 @@ export
 Error SingularMatrixError where
   format (MkSingularMatrixError msg) = msg
 
-||| The inverse of a matrix.
+||| The inverse of a matrix. For example, `inverse $ const [[1, 2], [3, 4]]` is equivalent to
+||| `const [[-2, -1], [-1.5, -0.5]]`.
 export
 inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, S n] Double
 
-||| The product of all elements along the diagonal of a matrix.
+||| The product of all elements along the diagonal of a matrix. For example,
+||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
