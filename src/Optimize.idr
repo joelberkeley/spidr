@@ -22,8 +22,9 @@ import Tensor
 ||| optimizes a scalar-valued function over that space.
 |||
 ||| If the function is not well-defined at points in the feature space, and this is expressed by
-||| some context in the function values, such as `Maybe (Tensor [] Double)`, this can be captured in
-||| the value `m` as e.g. `{m=Maybe}`.
+||| wrapping function values in some context, this extra context can be captured in the value `m`.
+||| For example, a function `a -> Maybe (Tensor [] Double)`, can be optimized by an
+||| `Optimizer {m=Maybe} a`.
 public export 0
 Optimizer : {default id m : Type -> Type} -> Type -> Type
 Optimizer a = (a -> m $ Tensor [] Double) -> m a
