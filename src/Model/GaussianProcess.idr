@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `GaussianProcess` type for defining Gaussian process, along with
+||| This module contains the `GaussianProcess` type for defining a Gaussian process, along with
 ||| functionality for training and inference.
 module Model.GaussianProcess
 
@@ -83,7 +83,7 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 ||| maximize its objective.
 |||
 ||| @optimizer Implements the optimization tactic.
-||| @prior_from_parameters Constructs the prior from the hyperparameters
+||| @prior_from_parameters Constructs the prior from hyperparameters.
 ||| @likelihood The likelihood of the observations given the prior target distribution.
 ||| @data_ The data.
 export

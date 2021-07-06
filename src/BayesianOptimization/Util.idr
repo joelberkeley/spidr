@@ -19,7 +19,7 @@ import Distribution
 import Tensor
 import Model
 
-||| Observed query points and objective values
+||| Objective query points and either corresponding objective values or metadata.
 public export 0
 Data : {0 samples : Nat} -> Shape -> Shape -> Type
 Data features targets =
@@ -44,12 +44,12 @@ infix 9 >>>
 public export
 data Connection i o = (>>>) (i -> ty) (ty -> o)
 
-||| Convert the `Connection` into a function.
+||| Convert the `Connection` to a function.
 export
 run : Connection i o -> i -> o
 run (get >>> g) = g . get
 
-||| Utility to create a `Connection` with no intermediate state.
+||| Create a `Connection` with no intermediate state.
 export
 direct : (i -> o) -> Connection i o
 direct = (>>>) (\x => x)

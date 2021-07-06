@@ -13,19 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module provides optimizers of functions over various feature spaces.
+||| This module contains definitions of function optimizers.
 module Optimize
 
 import Tensor
 
-||| An `Optimizer` finds the value, in an arbitrary feature space, which optimizes a scalar-valued
-||| function over that space.
+||| An `Optimizer` finds the value, in a `Tensor`-valued feature space, which (approximately)
+||| optimizes a scalar-valued function over that space.
+|||
+||| If the function is not well-defined at points in the feature space, and this is expressed by
+||| wrapping function values in some context, this extra context can be captured in the value `m`.
+||| For example, a function `a -> Maybe (Tensor [] Double)`, can be optimized by an
+||| `Optimizer {m=Maybe} a`.
 public export 0
 Optimizer : {default id m : Type -> Type} -> Type -> Type
 Optimizer a = (a -> m $ Tensor [] Double) -> m a
 
-||| Construct an `Optimizer` over a scalar feature space that approximates the optimum by evaluating
-||| its objective over a finite, evenly-spaced grid.
+||| Construct a `Optimizer` that implements grid search over a scalar feature space. Grid search
+||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
 |||
 ||| @density The density of the grid.
 ||| @lower The lower (inclusive) bound of the grid.
