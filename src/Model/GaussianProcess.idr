@@ -74,8 +74,7 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
   let inv = !(inverse $ kernel x x + cov)
       n = const {shape=[]} $ cast samples
       log2pi = log $ const {shape=[]} $ 2.0 * PI
-      half = const {shape=[]} 0.5
-   in pure $ - half * (y @@ inv @@ y - log (det inv) + n * log2pi)
+   in pure $ - (y @@ inv @@ y - log (det inv) + n * log2pi) / const {shape=[]} 2
 
 ||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
 ||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined
