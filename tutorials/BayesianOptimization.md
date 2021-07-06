@@ -165,8 +165,6 @@ and model that failure data (spidr doesn't have the functionality for an appropr
 data Bernoulli : Shape -> Nat -> Type where
 
 Distribution e (Bernoulli e) where
-  mean _ = ?mean'
-  covariance _ = ?covariance'
   pdf _ = ?pdf'
   cdf _ = ?cdf'
 

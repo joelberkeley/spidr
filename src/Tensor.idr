@@ -155,10 +155,14 @@ export
 expand :
   (axis : Fin (S rank)) -> Tensor {rank=rank} shape dtype -> Tensor (insertAt axis 1 shape) dtype
 
-||| Tranpose a tensor. For example, `transpose $ const [[1, 2], [3, 4]]` is equivalent to
-||| `const [[1, 3], [2, 4]]`.
+||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
+||| to `const [[1, 3], [2, 4]]`.
 export
-transpose : Tensor [m, n] dtype -> Tensor [n, m] dtype
+(.T) : {shape : Shape} -> {dtype : Type} -> Tensor shape dtype ->
+       let leading = init (init shape)
+           m = last (init shape)
+           n = last shape
+        in Tensor (leading ++ [n, m]) dtype
 
 ||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
 ||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
@@ -461,10 +465,14 @@ reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
 
 ---------------------------- other ----------------------------------
 
-||| The determinant of a tensor. For example, `det $ const [[1, 2], [3, 4]]` is equivalent to
-||| `const -2`.
+||| The determinant of a tensor (with respect to the last two axes). For example,
+||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : Neg dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
+      let leading = init (init shape)
+          m = last (init shape)
+          n = last shape
+       in {auto isSquare : m = n} -> {auto nonEmpty : IsSucc m} -> Tensor leading dtype
 
 ||| Indicates a Cholesky decomposition was impossible (at the attempted precision).
 export
