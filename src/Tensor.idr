@@ -472,7 +472,7 @@ det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
       let leading = init (init shape)
           m = last (init shape)
           n = last shape
-       in {auto prf : m = n} -> {auto prf : IsSucc m} -> Tensor leading dtype
+       in {auto isSquare : m = n} -> {auto nonEmpty : IsSucc m} -> Tensor leading dtype
 
 ||| Indicates a Cholesky decomposition was impossible (at the attempted precision).
 export

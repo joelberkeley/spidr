@@ -44,7 +44,8 @@ interface Distribution (0 event_shape : Shape) (0 dist : Nat -> Type) where
   ||| The probability density function of the distribution at the specified point.
   pdf : dist (S d) -> Tensor (S d :: event_shape) Double -> Tensor [] Double
 
-  ||| The cumulative distribution function of the distribution at the specified point (that is, the ||| probability the random variable takes a value less than or equal to the given point).
+  ||| The cumulative distribution function of the distribution at the specified point (that is, the
+  ||| probability the random variable takes a value less than or equal to the given point).
   cdf : dist (S d) -> Tensor (S d :: event_shape) Double -> Tensor [] Double
 
 ||| A joint Gaussian distribution.
