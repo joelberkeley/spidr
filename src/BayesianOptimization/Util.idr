@@ -19,7 +19,7 @@ import Distribution
 import Tensor
 import Model
 
-||| Observed query points and objective values
+||| Objective query points and either corresponding objective values or metadata.
 public export 0
 Data : {0 samples : Nat} -> Shape -> Shape -> Type
 Data features targets =

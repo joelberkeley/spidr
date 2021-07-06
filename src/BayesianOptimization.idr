@@ -15,7 +15,7 @@ limitations under the License.
 --}
 ||| This module defines functionality for Bayesian optimization, the data-efficient optimization of
 ||| objective functions. Bayesian optimization recommends new points at which to query your
-||| objective by placing a probabilistic model over known data then optimizing an "acquisition
+||| objective by placing a probabilistic model over historic data then optimizing an "acquisition
 ||| function" which quantifies how useful it would be to evaluate the objective at any given set of
 ||| points.
 module BayesianOptimization
