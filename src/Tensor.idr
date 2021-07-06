@@ -35,9 +35,6 @@ public export
 Shape : {rank: Nat} -> Type
 Shape {rank} = Vect rank Nat
 
-export
-revSplitAt : (idx : Nat) -> Shape {rank=r + idx} -> (Shape {rank=r}, Shape {rank=idx})
-
 ||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`. For a Poplar
 ||| backend, these types must be convertible to types supported by the IPU.
 export
