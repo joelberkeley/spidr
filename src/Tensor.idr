@@ -468,10 +468,10 @@ reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
 
 ---------------------------- other ----------------------------------
 
-||| The determinant of a tensor. For example, `det $ const [[1, 2], [3, 4]]` is equivalent to
-||| `const -2`.
+||| The determinant of a tensor (with respect to the last two axes). For example,
+||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : {dtype : Type} -> Neg dtype => {shape : Shape} -> Tensor shape dtype ->
+det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
       let leading = init (init shape)
           m = last (init shape)
           n = last shape
