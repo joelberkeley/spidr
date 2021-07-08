@@ -69,7 +69,7 @@ Distribution [1] (Gaussian [1]) where
         diff = x - mean
 
         exponent : Tensor [] Double
-        exponent = - (squeeze {from=[1, 1, 1]} $ diff.T @@ cov.T @@ diff) / (const {shape=[]} 2.0)
+        exponent = - (squeeze $ diff.T @@ cov.T @@ diff) / (const {shape=[]} 2.0)
 
         denominator : Tensor [] Double
         denominator = (const {shape=[]} $ 2 * PI) ^ (const {shape=[]} $ cast (S d) / 2.0)
