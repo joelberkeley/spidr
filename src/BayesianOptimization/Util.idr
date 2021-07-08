@@ -27,9 +27,10 @@ Data features targets =
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
 public export 0
-Empiric : Distribution targets marginal => Shape -> Type -> Type
-Empiric {targets} {marginal} features out = forall s .
-  (Data {samples=S s} features targets, ProbabilisticModel features {targets} {marginal}) -> out
+Empiric : (features : Shape) -> (targets : Shape {rank=t}) ->
+          (marginal : Shape {rank=t} -> Nat -> Type) -> Type -> Type
+Empiric features targets marginal out = forall s .
+  (Data {samples=S s} features targets, ProbabilisticModel features (marginal targets)) -> out
 
 infix 9 >>>
 

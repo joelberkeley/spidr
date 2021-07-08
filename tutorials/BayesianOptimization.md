@@ -58,7 +58,7 @@ historicData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]], const [[1.2], [-0.5]
 and model that data
 
 ```idris
-model : Either SingularMatrixError $ ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+model : Either SingularMatrixError $ ProbabilisticModel [2] (Gaussian [1])
 model = let prior = MkGP zero (rbf $ const 0.3)
             likelihood = MkGaussian (fill 0) (diag 0.22)
             (qp, obs) = historicData
@@ -73,7 +73,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint = Right $ optimizer $ squeeze . mean {event_shape=[1]} . !model
+newPoint = Right $ optimizer $ squeeze . mean {event=[1]} . !model
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -164,12 +164,11 @@ and model that failure data (spidr doesn't have the functionality for an appropr
 ```idris
 data Bernoulli : Shape -> Nat -> Type where
 
-Distribution e (Bernoulli e) where
+Distribution Bernoulli where
   pdf _ = ?pdf'
   cdf _ = ?cdf'
 
-failureModel : Either SingularMatrixError $
-               ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
+failureModel : Either SingularMatrixError $ ProbabilisticModel [2] (Bernoulli [1])
 ```
 
 A simple named pair will do well as a representation `i` for all our data and models.
