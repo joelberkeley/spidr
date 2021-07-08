@@ -49,7 +49,7 @@ expectedImprovement predict best at =
 ||| the observation value at each point.
 export
 expectedImprovementByModel :
-  Empiric features [1] Gaussian $ Acquisition 1 features
+  Empiric features [1] (Gaussian [1]) $ Acquisition 1 features
 expectedImprovementByModel ((query_points, _), predict) at =
   let best = squeeze {from=[1]} $ reduce_min 0 $ mean $ predict query_points
    in expectedImprovement predict best at
@@ -57,8 +57,8 @@ expectedImprovementByModel ((query_points, _), predict) at =
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] Double) -> Distribution d =>
-                           Empiric features [1] d $ Acquisition 1 features
+probabilityOfFeasibility : (limit : Tensor [] Double) -> Distribution [1] marginal =>
+                           Empiric features [1] marginal $ Acquisition 1 features
 probabilityOfFeasibility limit (_, predict) at = cdf (predict at) $ broadcast {to=[1, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
@@ -68,12 +68,12 @@ probabilityOfFeasibility limit (_, predict) at = cdf (predict at) $ broadcast {t
 |||   `Nothing`.
 export
 negativeLowerConfidenceBound : (beta : Double) ->
-  Either ValueError $ Empiric features [1] Gaussian $ Acquisition 1 features
+  Either ValueError $ Empiric features [1] (Gaussian [1]) $ Acquisition 1 features
 negativeLowerConfidenceBound beta =
   if beta < 0
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right impl where
-    impl : Empiric features [1] Gaussian $ Acquisition 1 features
+    impl : Empiric features [1] (Gaussian [1]) $ Acquisition 1 features
     impl (_, predict) at = let marginal = predict at
                                mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
                                variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
@@ -84,5 +84,5 @@ negativeLowerConfidenceBound beta =
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
 export
-expectedConstrainedImprovement : Empiric features [1] Gaussian $
+expectedConstrainedImprovement : Empiric features [1] (Gaussian [1]) $
                                  (Acquisition 1 features -> Acquisition 1 features)

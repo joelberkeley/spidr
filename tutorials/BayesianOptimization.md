@@ -164,7 +164,7 @@ and model that failure data (spidr doesn't have the functionality for an appropr
 ```idris
 data Bernoulli : Shape -> Nat -> Type where
 
-Distribution Bernoulli where
+Distribution [1] (Bernoulli [1]) where
   pdf _ = ?pdf'
   cdf _ = ?cdf'
 
