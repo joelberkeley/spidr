@@ -57,7 +57,7 @@ expectedImprovementByModel ((query_points, _), predict) at =
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] Double) -> Distribution [1] d =>
+probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] d =>
                            Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
 probabilityOfFeasibility limit (_, predict) at = cdf (predict at) $ broadcast {to=[1, 1]} limit
 
