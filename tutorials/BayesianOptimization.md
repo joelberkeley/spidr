@@ -73,7 +73,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint = Right $ optimizer $ squeeze . mean {event_shape=[1]} . !model
+newPoint = Right $ optimizer $ squeeze . mean {event=[1]} . !model
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -165,8 +165,12 @@ and model that failure data (spidr doesn't have the functionality for an appropr
 data Bernoulli : Shape -> Nat -> Type where
 
 Distribution e (Bernoulli e) where
-  pdf _ = ?pdf'
-  cdf _ = ?cdf'
+  mean = ?mean'
+  cov = ?cov'
+
+ClosedFormDistribution e (Bernoulli e) where
+  pdf = ?pdf'
+  cdf = ?cdf'
 
 failureModel : Either SingularMatrixError $
                ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
