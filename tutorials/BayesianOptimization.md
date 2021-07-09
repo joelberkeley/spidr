@@ -159,21 +159,15 @@ failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 ```
 
-and model that failure data (spidr doesn't have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
+and model that failure data
 
 ```idris
-data Bernoulli : Shape -> Nat -> Type where
-
-Distribution e (Bernoulli e) where
-  mean = ?mean'
-  cov = ?cov'
-
-ClosedFormDistribution e (Bernoulli e) where
-  pdf = ?pdf'
-  cdf = ?cdf'
-
 failureModel : Either SingularMatrixError $
-               ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
+               ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+failureModel = let prior = MkGP zero (rbf $ const 0.3)
+                   likelihood = MkGaussian (fill 0) (diag 0.22)
+                   (qp, obs) = failureData
+                in map ?marginalise $ posterior prior likelihood (qp, squeeze obs)
 ```
 
 A simple named pair will do well as a representation `i` for all our data and models.
