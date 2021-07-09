@@ -53,9 +53,9 @@ interface Distribution event dist =>
 public export
 data Gaussian : (0 event : Shape) -> (dim : Nat) -> Type where
   ||| @mean The Gaussian mean.
-  ||| @covariance The Gaussian covariance.
+  ||| @cov The Gaussian covariance.
   MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) Double) ->
-               (covariance : Tensor (S d :: S d :: event) Double) ->
+               (cov : Tensor (S d :: S d :: event) Double) ->
                Gaussian event (S d)
 
 export
