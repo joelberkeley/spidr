@@ -156,7 +156,7 @@ Let's now implement this example. We'll choose a particular representation for o
 
 ```idris
 failureData : Data {samples=4} [2] [1]
-failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
+failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[], [], [], []])
 ```
 
 and model that failure data
@@ -164,8 +164,8 @@ and model that failure data
 ```idris
 failureModel : Either SingularMatrixError $
                ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
-failureModel = let prior = MkGP zero (rbf $ const 0.3)
-                   likelihood = MkGaussian (fill 0) (diag 0.22)
+failureModel = let prior = MkGP zero (rbf $ const _)
+                   likelihood = MkGaussian (fill 0) (diag _)
                    (qp, obs) = failureData
                 in map ?marginalise $ posterior prior likelihood (qp, squeeze obs)
 ```
