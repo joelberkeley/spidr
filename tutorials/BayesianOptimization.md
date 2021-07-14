@@ -44,6 +44,7 @@ While we can trivially represent a number of new query points with a `Tensor`, w
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. First we define some data
 
 <!-- idris
+import Data.Morphisms
 import Tensor
 import BayesianOptimization
 import Model
@@ -186,7 +187,7 @@ record Labelled o f where
   failure : f
 ```
 
-Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We can use the helper function `>>>` to make a `~>` from an `Empiric` and `i -> (Data, ProbabilisticModel)`. And convert a `i ~> o` into a function `i -> o` with `run`, such that we can apply it to the data and models. Putting it all together, here's our empirical point:
+Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We can use the helper function `>>>` to make a `~>` from an `Empiric` and each of these functions. And at the end convert a `i ~> o` into a function `i -> o` with `run`, to apply it to the data and models. Putting it all together, here's our empirical point:
 
 ```idris
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double

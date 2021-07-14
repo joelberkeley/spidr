@@ -24,24 +24,3 @@ public export 0
 Data : {0 samples : Nat} -> Shape -> Shape -> Type
 Data features targets =
   (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
-
-infix 9 ~>
-
-||| An `i ~> o` is a minimal wrapper for unary functions.
-public export
-record (~>) i o where
-  constructor MkUnary
-  run : (i -> o)
-
-export
-Functor (i ~>) where
-  map f (MkUnary g) = MkUnary (f . g)
-
-export
-Applicative (i ~>) where
-  pure x = MkUnary (\_ => x)
-  (MkUnary f) <*> (MkUnary g) = MkUnary (\i => (f i) (g i))
-
-export
-Monad (i ~>) where
-  join x = MkUnary (\i => run (run x i) i)
