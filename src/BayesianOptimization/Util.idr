@@ -63,3 +63,7 @@ Applicative (Connection i) where
   pure x = (\_ => ()) >>> (\_ => x)
   (get >>> g) <*> (get' >>> g') =
     (\ii => (get ii, get' ii)) >>> (\(t, t') => g t $ g' t')
+
+export
+Monad (Connection i) where
+  join x = direct (\i => run (run x i) i)
