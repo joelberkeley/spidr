@@ -52,12 +52,3 @@ Applicative (i ~>) where
 export
 Monad (i ~>) where
   join x = MkUnary (\i => run (run x i) i)
-
--- todo use stdlib state types
-public export 0
-State : Type -> Type -> Type
-State s a = s -> (s, a)
-
-export
-map : (a -> b) -> State s a -> State s b
-map f st = \s => let (s, a) = st s in (s, f a)
