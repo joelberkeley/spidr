@@ -16,7 +16,6 @@ limitations under the License.
 module BayesianOptimization.Acquisition
 
 import Data.Morphisms
-import Control.App
 import public Data.Nat
 import Distribution
 import Tensor
