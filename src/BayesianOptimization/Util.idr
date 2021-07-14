@@ -25,13 +25,7 @@ Data : {0 samples : Nat} -> Shape -> Shape -> Type
 Data features targets =
   (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
 
-||| An `Empiric` constructs values from historic data and the model over that data.
-public export 0
-Empiric : Distribution targets marginal => Shape -> Type -> Type
-Empiric {targets} {marginal} features out = forall s .
-  (Data {samples=S s} features targets, ProbabilisticModel features {targets} {marginal}) -> out
-
-infix 9 >>>
+infix 9 ~>
 
 ||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
 ||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can
@@ -42,28 +36,28 @@ infix 9 >>>
 ||| data sets and models to `Empiric`s, without demanding users represent all their data sets and
 ||| models in any specific way.
 public export
-data Connection i o = (>>>) (i -> ty) (ty -> o)
-
-||| Convert the `Connection` to a function.
-export
-run : Connection i o -> i -> o
-run (get >>> g) = g . get
-
-||| Create a `Connection` with no intermediate state.
-export
-direct : (i -> o) -> Connection i o
-direct = (>>>) (\x => x)
+record (~>) i o where
+  constructor MkUnary
+  run : (i -> o)
 
 export
-Functor (Connection i) where
-  map f (get >>> g) = get >>> (f . g)
+Functor (i ~>) where
+  map f (MkUnary g) = MkUnary (f . g)
 
 export
-Applicative (Connection i) where
-  pure x = (\_ => ()) >>> (\_ => x)
-  (get >>> g) <*> (get' >>> g') =
-    (\ii => (get ii, get' ii)) >>> (\(t, t') => g t $ g' t')
+Applicative (i ~>) where
+  pure x = MkUnary (\_ => x)
+  (MkUnary f) <*> (MkUnary g) = MkUnary (\i => (f i) (g i))
 
 export
-Monad (Connection i) where
-  join x = direct (\i => run (run x i) i)
+Monad (i ~>) where
+  join x = MkUnary (\i => run (run x i) i)
+
+-- todo use stdlib state types
+public export 0
+State : Type -> Type -> Type
+State s a = s -> (s, a)
+
+export
+map : (a -> b) -> State s a -> State s b
+map f st = \s => let (s, a) = st s in (s, f a)
