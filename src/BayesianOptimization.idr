@@ -21,4 +21,6 @@ limitations under the License.
 module BayesianOptimization
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
+import public BayesianOptimization.Domain as BayesianOptimization
+import public BayesianOptimization.Optimize as BayesianOptimization
 import public BayesianOptimization.Util as BayesianOptimization

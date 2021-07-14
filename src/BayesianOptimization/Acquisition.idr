@@ -21,6 +21,7 @@ import Tensor
 import Model
 import Optimize
 import BayesianOptimization.Util
+import BayesianOptimization.Domain
 import Util
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
@@ -57,8 +58,8 @@ expectedImprovementByModel ((query_points, _), predict) at =
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] d =>
-                           Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
+probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] m =>
+                           Empiric features {targets=[1]} {marginal=m} $ Acquisition 1 features
 probabilityOfFeasibility limit (_, predict) at = cdf (predict at) $ broadcast {to=[1, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
@@ -87,3 +88,37 @@ negativeLowerConfidenceBound beta =
 export
 expectedConstrainedImprovement : Empiric features {targets=[1]} {marginal=Gaussian [1]} $
                                  (Acquisition 1 features -> Acquisition 1 features)
+
+||| The state type used in the trust region algorithm.
+export
+record TrustRegionState (dim : Nat) where
+    constructor MkTrustRegionState
+    localDomain : ContinuousDomain [dim]
+    maxDiagonal : Tensor [dim] Double
+    best : Tensor [1] Double
+    isGlobal : Tensor [] Bool
+
+||| The initial trust region state for a given global domain.
+export
+init : {d : Nat} -> ContinuousDomain [S d] -> TrustRegionState (S d)
+init domain = let maxDiag = (upper domain - lower domain) / (the (Tensor [S d] Double) ?scaling)
+               in MkTrustRegionState domain maxDiag ?best (const True)
+
+||| The trust region algorithm for intelligently choosing a local search domain from empirical data
+||| and a previous search step.
+export
+trustRegion : {d : Nat} -> (beta : Double) -> (kappa : Double) -> ContinuousDomain [S d] ->
+  Distribution [1] m => Empiric [S d] {targets=[1]} {marginal=m} $
+  State (TrustRegionState (S d)) $ ContinuousDomain [S d]
+trustRegion beta kappa global_domain ((qp, obs), predict)
+            (MkTrustRegionState prev_local_domain prev_max_diag prev_best prev_is_global) =
+  let best = reduce_min 0 obs
+      tr_vol = reduce_prod 0 $ upper prev_local_domain - lower prev_local_domain
+      is_success = squeeze $ best < (prev_best - (const {shape=[]} kappa) * tr_vol)
+      max_diag = if ?prev_is_global' then prev_max_diag else
+                 let beta = const {shape=[]} beta in
+                 if ?is_success' then prev_max_diag / beta else beta * prev_max_diag
+      is_global = is_success || not prev_is_global
+      local_domain = if ?is_global' then global_domain else
+                     let xmin = ?xmin_rhs in MkContinuousDomain ?upper ?lower
+   in (MkTrustRegionState local_domain max_diag best is_global, local_domain)

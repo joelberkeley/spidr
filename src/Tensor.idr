@@ -463,7 +463,29 @@ export
 reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
   {auto prf : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
 
+export
+reduce_prod : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
+  {auto prf : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
+
 ---------------------------- other ----------------------------------
+
+||| Element-wise boolean negation.
+export
+not : Tensor shape Bool -> Tensor shape Bool
+
+||| Element-wise boolean or.
+|||
+||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
+||| switch arguments for shapes to be compatible.
+export
+(||) : Tensor l Bool -> Tensor r Bool -> {auto _ : Broadcastable r l} -> Tensor l Bool
+
+||| Element-wise boolean and.
+|||
+||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
+||| switch arguments for shapes to be compatible.
+export
+(&&) : Tensor l Bool -> Tensor r Bool -> {auto _ : Broadcastable r l} -> Tensor l Bool
 
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
