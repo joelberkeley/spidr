@@ -44,7 +44,6 @@ While we can trivially represent a number of new query points with a `Tensor`, w
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. First we define some data
 
 <!-- idris
-import Data.Morphisms
 import Tensor
 import BayesianOptimization
 import Model

@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module BayesianOptimization.Acquisition
 
-import Data.Morphisms
 import public Data.Nat
 import Distribution
 import Tensor
@@ -29,19 +28,6 @@ public export 0
 Empiric : Distribution targets marginal => Shape -> Type -> Type
 Empiric {targets} {marginal} features out = forall s .
   Data {samples=S s} features targets -> ProbabilisticModel features {targets} {marginal} -> out
-
-infix 9 >>>
-
-||| Compose two functions that each use two values and wrap them in a morphism. This is a
-||| convenience function for contructing unary wrappers with `Empiric`s and the corresponding
-||| handler functions for data and models.
-export
-(>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
-f >>> g = Mor (uncurry g . f)
-
-export
-run : (i ~> o) -> i -> o
-run = applyMor
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
