@@ -32,6 +32,9 @@ Empiric {targets} {marginal} features out = forall s .
 
 infix 9 >>>
 
+||| Compose two functions that each use two values and wrap them in a `~>`. This is a convenience
+||| function for contructing unary wrappers with `Empiric`s and the corresponding handler functions
+||| for data and models.
 export
 (>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
 f >>> g = MkUnary (uncurry g . f)

@@ -27,14 +27,7 @@ Data features targets =
 
 infix 9 ~>
 
-||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
-||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can
-||| contain just a subset of the original data and thus allows users to delegate different parts of
-||| the original data for use in constructing different final values.
-|||
-||| The primary application in spidr for this is to allow users to allocate individial pairs of
-||| data sets and models to `Empiric`s, without demanding users represent all their data sets and
-||| models in any specific way.
+||| An `i ~> o` is a minimal wrapper for unary functions.
 public export
 record (~>) i o where
   constructor MkUnary
