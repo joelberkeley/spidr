@@ -91,5 +91,11 @@ negativeLowerConfidenceBound beta =
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
 export
-expectedConstrainedImprovement : Empiric features {targets=[1]} {marginal=Gaussian [1]} $
-                                 (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement : (limit : Double) ->
+  Empiric features {targets=[1]} {marginal=Gaussian [1]} $
+  (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement limit (qp, _) predict constraint_f x =
+  let is_feasible = (constraint_f ?qp) >= (const {shape=[]} limit)
+   in if ?not (?any is_feasible) then constraint_f x else
+      let best = ?reduce_min ?axis $ ?mean $ predict $ ?mask qp is_feasible
+       in (expectedImprovement predict best) x * constraint_f x
