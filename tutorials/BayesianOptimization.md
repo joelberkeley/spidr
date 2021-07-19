@@ -19,11 +19,7 @@ limitations under the License.
 
 In this tutorial on design in Bayesian optimization, we'll look at how we can use historic data on a black-box objective function to predict what inputs are likely to optimize a black-box function. We'll detail the architecture of spidr's Bayesian optimization functionality as we go.
 
-TODO the following setup doesn't assume how we represent the data and model it. Can we not even mention separate data sets?
-
-In Bayesian optimization, we use historic observations to choose a point to evaluate. In the simplest case, this will be a pair of input points and objective values. We also construct a model of how input points map to objective values. In more complex cases, one data set and one model might be too restrictive. For example, if the objective fails to evaluate at some points, it might not be appropriate to model both the objective value and its probability of failure together. Rather, since our model of the objective values will only be over a subset of the data, we could represent with separate data sets for the data on objective values and probability of failure. For other problems, we can expect to have any number of data sets, and model each data set separately.
-
-Our task is to find a new point at which to evaluate our objective function, using our data and models. We can represent this visually:
+Our task is to find a new point at which to evaluate our objective function, using historic function evaluations and a model or models of that data. We can represent this visually:
 
 <pre>
 +-----------------------+
@@ -41,9 +37,9 @@ Our task is to find a new point at which to evaluate our objective function, usi
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves yet to a particular representation for our data and models. For now, we'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves yet to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double` (for continuous input space of features with shape `features`).
 
-How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some data
+How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
 <!-- idris
 import Tensor
@@ -166,9 +162,9 @@ There are a number of ways for us to implement our solution. We'll choose a rela
 
 The final point is then gathered from `map optimizer (oa <*> fa)`, and this concludes our discussion of the core design. Next, we'll implement this in full, and introduce some convenience syntax on the way.
 
-## Separating representation from computation with `Empiric` and `>>>`
+## Separating representation from computation with `Empiric`
 
-The `Morphism i o`, or `i ~> o` type, has proven to be quite flexibly in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the value, this means the value is doing two things. It would be nice to be able to separate these concerns of representation and computation. To do this, let's take a look at acquisition function. Recall that while `modelMean` only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes one data set and the corresponding model. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needds, we can always construct our `i ~> o` explicitly.
+The `Morphism i o`, or `i ~> o` type, has proven to be quite flexibly in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the value, this means the value is doing two things. It would be nice to be able to separate these concerns of representation and computation. To do this, let's take a look at acquisition function. Recall that while `modelMean` only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes one data set and the corresponding model. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
 
 With this new functionality at hand, we'll return to our objective with failure regions. First we define some data on failure regions, and model that data
 
@@ -193,10 +189,9 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```
 newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint' = let ei = objective >>> expectedImprovementByModel
-                eci = objective >>> expectedConstrainedImprovement
+newPoint' = let eci = objective >>> expectedConstrainedImprovement
                 pof = failure >>> probabilityOfFeasibility (const 0.5)
-                acquisition = map optimizer (eci <*> (eci <*> pof))
+                acquisition = map optimizer (eci <*> pof)
                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
              in pure $ run acquisition dataAndModel
 ```
