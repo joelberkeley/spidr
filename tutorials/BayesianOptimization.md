@@ -166,24 +166,33 @@ There are a number of ways for us to implement our solution. We'll choose a rela
 
 The final point is then gathered from `map optimizer (oa <*> fa)`, and this concludes our discussion of the core design. Next, we'll implement this in full, and introduce some convenience syntax on the way.
 
-## Separating representation from implementation with `Empiric` and `>>>`
+## Separating representation from computation with `Empiric` and `>>>`
 
-Before we see this in action, we'll recall that, while `modelMean` only uses the model directly, other acquisition functions can also depend directly on the data. In spidr, we standardise most of our acquisition functions to depend on a given data set and the model over that data. Since all acquisitions will depend on at least one, and they always appear together, this is a convenient API choice that seems to work well in most cases. We provide a number of type aliases and convenience functions for this setup. Of particular note: an `Empiric features o` is a function that constructs an `o` from a data set and model (for feature space of shape `features`); and `f >>> emp` is shorthand for constructing an `i ~> o` from a function `f` that gets a data set and model from `i`, and an `Empiric features o`. With that in mind, we'll return to our objective with failure regions:
+The `Morphism i o`, or `i ~> o` type, has proven to be quite flexibly in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the value, this means the value is doing two things. It would be nice to be able to separate these concerns of representation and computation. To do this, let's take a look at acquisition function. Recall that while `modelMean` only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes one data set and the corresponding model. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needds, we can always construct our `i ~> o` explicitly.
 
-TODO we haven't explained most of this code.
+With this new functionality at hand, we'll return to our objective with failure regions. First we define some data on failure regions, and model that data
+
 ```
 failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 
 failureModel : Either SingularMatrixError $
                ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
+```
 
+Then we choose a representation of our data and models. We'll use the following named pair
+
+```
 record Labelled o f where
   constructor Label
   objective : o
   failure : f
+```
 
-newPointWithApply : Either SingularMatrixError $ Tensor [1, 2] Double
+Idris generates two methods `objective` and `failure` from this `record`, which we'll use to get the respective data and model. Putting it all together, here's our empirical point:
+
+```
+newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
 newPoint' = let ei = objective >>> expectedImprovementByModel
                 eci = objective >>> expectedConstrainedImprovement
                 pof = failure >>> probabilityOfFeasibility (const 0.5)
@@ -191,96 +200,3 @@ newPoint' = let ei = objective >>> expectedImprovementByModel
                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
              in pure $ run acquisition dataAndModel
 ```
-
-OLD VERSION STARTS HERE
-
-Now when it comes to implementing empirical acquisition functions, if they are built directly from the representation `i`, they'll need some way of handling that representation. This means they are doing more than one thing, which isn't great for composability. We'd like to separate the task of handling the generic representation `i` from the task of constructing the `o`. So that empirical functionality doesn't need to think about representation, we can use a minimal subset of data and models for each. Naturally, everything empirical will use a data set, but every data set is paired with a model, so a reasonable option would be for each empirical object to use one data set and one model: `Data -> ProbabilisticModel -> o`. Objects which need more than this can be constructed from multiple empirical objects. Note that we could have decided that each object use _either_ a data set _or_ a model, but then we'd need two kinds of empirical object even though every data set will be paired with a model anyway. The corresponding functionality for handling the generic representation can be captured in a `i -> (Data, ProbabilisticModel)`.
-
-In spidr, we call our minimal empirical objects `Empiric`s. An `Empiric features o` produces an empirical value of type `o` from a single data set and model (for features with shape `features`). We'll want to be able to modify the output of an `Empiric` (for example to optimize an empirical acquisition function to get an empirical set of points) and, as we'll see in a moment, to combine the output of multiple `Empiric`s. To help us think about this, let's look at the example of a scalar objective with failure regions. We'll use an acquisition function which combines a measure of how optimal each point is likely to be (based on the objective value data), with a measure of how likely the point is to lie within a failure region (based on the failure region data). Since we're using two data sets, we'll need two `Empiric`s, where the output of one is combined with the output of the other to complete the acquisition function. Finally, the acquisition function must be optimized like in the previous example. The picture now looks as follows:
-
-<pre>
-+---------------------------------------+
-|                                       |
-|          All data and models          |
-|                                       |
-+---------------------------------------+
-        |                    |
-        |                    |
-        v                    v
-+---------------+    +------------------------------+
-|               |    |                              |
-|  Acquisition  |    |  Acquisition -> Acquisition  |
-|    function   |    |    function       function   |
-|               |    |                              |
-+---------------+    +------------------------------+
-        |                    |
-        +---+----------------+
-            |
-            v
-    +---------------+
-    |               |
-    |  Acquisition  |
-    |    function   |
-    |               |
-    +---------------+    +-------------+
-            |            |             |
-            |------<-----|  Optimizer  |
-            v            |             |
-    +--------------+     +-------------+
-    |              |
-    |  New points  |
-    |              |
-    +--------------+
-</pre>
-
-Note we could have chosen a different representation for the first _Acquisition function_ and _Acquisition function -> Acquisition function_. Indeed, any `a` and `b` will do as long as we have some `f` that combines them into an acquisition function `f a b`. In practice, the forms we chose are appropriate for this problem, and it doesn't actually affect the design what implementation we chose. I may choose to revisit this without this making assumption.
-
-In order to combine each empirical value, we could construct each individually with the relevant data and model, then combine the results, but we might not have access to the data at the point we connect them together. Instead, we'll look at how to connect them together *before* we apply the data and models.
-
-Since each `Empiric` takes one data set and model, we can't in general combine two `Empiric`s into a single `Empiric` because they may use different data and models. Thus, to combine `Empiric`s we must first compose each one with functionality to get the specific data and model from the representation `i`. That is, we want one `i -> (Data, ProbabilisticModel)` for each `Empiric`. Naturally, we can combine a `i -> (Data, ProbabilisticModel)` and a `Data -> ProbabilisticModel -> o` into a single `i -> o`. Since `i -> o` values accept all the data and models, and only differ in what they produce, we can combine them.
-
-How do we combine them? Let's take a look in the context of the above diagram. If we'd constructed each empirical value first, then combined them, we'd have a `x : Acquisition 1 [2]` and an `f : Acquisition 1 [2] -> Acquisition 1 [2]`, from which we construct a complete acquisition function as `f x`. But as we explained earlier, we're not constructing our empirical values at this point, so we have a `x_conn : i -> Acquisition 1 [2]` and `f_conn : i -> (Acquisition 1 [2] -> Acquisition 1 [2])`. This is the kind of work an _applicative functor_ is made for: it lifts function application to a context. We could implement `Applicative` for functions `i -> o`, but so that we don't add methods unnecessarily to such a common type as unary functions, we'll wrap our `i -> o` in a thin type `i ~> o` (note the tilde `~` rather than hyphen `-`) and implement `Applicative` for that. Having implemented `Applicative` for `i ~>` we can write function application in a context as `f_conn <*> x_conn`. Similarly, we can't optimize the acquisition function in the resulting `y' : i ~> Acquisition` directly, but we can use the functor's `map` method instead, as `map optimizer y'`, resulting in a `i ~> (Tensor 1 [2] Double)`, which gives us precisely the empirical points we're after.
-
-Let's now implement this example. We'll choose a particular representation for our data and models on the way. We'll reuse the data from above for objective values, define some data on failure regions
-
-```idris
-failureData : Data {samples=4} [2] [1]
-failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
-```
-
-and model that failure data (spidr doesn't have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
-
-```idris
-data Bernoulli : Shape -> Nat -> Type where
-
-Distribution e (Bernoulli e) where
-  mean = ?mean'
-  cov = ?cov'
-
-ClosedFormDistribution e (Bernoulli e) where
-  pdf = ?pdf'
-  cdf = ?cdf'
-
-failureModel : Either SingularMatrixError $
-               ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
-```
-
-A simple named pair will do well as a representation `i` for all our data and models.
-
-```idris
-record Labelled o f where
-  constructor Label
-  objective : o
-  failure : f
-```
-
-Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We can use the helper function `>>>` to make a `~>` from an `Empiric` and each of these functions. And at the end convert a `i ~> o` into a function `i -> o` with `run`, to apply it to the data and models. Putting it all together, here's our empirical point:
-
-<!-- ```idris
-newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint' = let eci = objective >>> expectedConstrainedImprovement
-                pof = failure >>> probabilityOfFeasibility (const 0.5)
-                acquisition = map optimizer (eci <*> pof)
-                dataAndModel = Label (historicData, !model) (failureData, !failureModel)
-             in pure $ run acquisition dataAndModel
-``` -->
