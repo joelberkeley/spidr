@@ -112,9 +112,9 @@ In the above example, we constructed the acquisition function from our model, th
 modelMean : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} -> Acquisition 1 [2]
 modelMean model = squeeze . mean {event=[1]} . model
 
-newPointWithMap : Either SingularMatrixError $ Tensor [1, 2] Double
-newPointWithMap = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
-                   in pure $ run acquisition !model  -- `run` turns a `Morphism` into a function
+newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
+newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
+             in pure $ run acquisition !model  -- `run` turns a `Morphism` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -188,10 +188,10 @@ record Labelled o f where
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to get the respective data and model. Putting it all together, here's our empirical point:
 
 ```
-newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint' = let eci = objective >>> expectedConstrainedImprovement
-                pof = failure >>> probabilityOfFeasibility (const 0.5)
-                acquisition = map optimizer (eci <*> pof)
-                dataAndModel = Label (historicData, !model) (failureData, !failureModel)
-             in pure $ run acquisition dataAndModel
+newPoint'' : Either SingularMatrixError $ Tensor [1, 2] Double
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement
+                 pof = failure >>> probabilityOfFeasibility (const 0.5)
+                 acquisition = map optimizer (eci <*> pof)
+                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
+              in pure $ run acquisition dataAndModel
 ```
