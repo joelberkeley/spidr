@@ -49,4 +49,4 @@ Cast Scalar Double where
 
 ||| Scalar data types supported by XLA.
 public export
-data ArchType = BOOL | U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | F16 | F32
+data ArchType = BOOL | U8 | U16 | U32 | U64 | I8 | I16 | I32 | I64 | F16 | F32 | F64

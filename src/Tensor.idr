@@ -42,7 +42,7 @@ interface ScalarLike ty where
 
 export
 ScalarLike Double where
-  archType = ?F64
+  archType = F64
 
 export
 ScalarLike Int where
