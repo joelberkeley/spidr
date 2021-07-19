@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module BayesianOptimization.Util
 
+import public Data.Morphisms
 import Distribution
 import Tensor
 import Model
@@ -25,45 +26,15 @@ Data : {0 samples : Nat} -> Shape -> Shape -> Type
 Data features targets =
   (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
 
-||| An `Empiric` constructs values from historic data and the model over that data.
-public export 0
-Empiric : Distribution targets marginal => Shape -> Type -> Type
-Empiric {targets} {marginal} features out = forall s .
-  (Data {samples=S s} features targets, ProbabilisticModel features {targets} {marginal}) -> out
-
 infix 9 >>>
 
-||| A `Connection` encapsulates the machinery to convert an initial representation of data to some
-||| arbitrary final value, via another arbitrary intermediate state. The intermediate state can
-||| contain just a subset of the original data and thus allows users to delegate different parts of
-||| the original data for use in constructing different final values.
-|||
-||| The primary application in spidr for this is to allow users to allocate individial pairs of
-||| data sets and models to `Empiric`s, without demanding users represent all their data sets and
-||| models in any specific way.
-public export
-data Connection i o = (>>>) (i -> ty) (ty -> o)
-
-||| Convert the `Connection` to a function.
+||| Compose two functions that each use two values and wrap them in a morphism. This is a
+||| convenience function for contructing unary wrappers with `Empiric`s and the corresponding
+||| handler functions for data and models.
 export
-run : Connection i o -> i -> o
-run (get >>> g) = g . get
-
-||| Create a `Connection` with no intermediate state.
-export
-direct : (i -> o) -> Connection i o
-direct = (>>>) (\x => x)
+(>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
+f >>> g = Mor (uncurry g . f)
 
 export
-Functor (Connection i) where
-  map f (get >>> g) = get >>> (f . g)
-
-export
-Applicative (Connection i) where
-  pure x = (\_ => ()) >>> (\_ => x)
-  (get >>> g) <*> (get' >>> g') =
-    (\ii => (get ii, get' ii)) >>> (\(t, t') => g t $ g' t')
-
-export
-Monad (Connection i) where
-  join x = direct (\i => run (run x i) i)
+run : (i ~> o) -> i -> o
+run = applyMor

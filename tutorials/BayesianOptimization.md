@@ -15,13 +15,11 @@ limitations under the License.
 -->
 # Design: Bayesian optimization
 
-In this tutorial, we'll look at how, in Bayesian optimization, we can use historic data on a black-box objective function to predict what inputs are likely to optimize the function. We'll detail the architecture of spidr's Bayesian optimization functionality as we go.
+## A Bayesian optimization refresher
 
-When choosing a point to next evaluate, we can use historic observations. In the simplest case, this will be a pair of input points and objective values. We can also construct a model of how input points map to objective values. Together, we have historic data and a model over that data.
+In this tutorial on design in Bayesian optimization, we'll look at how we can use historic data on a black-box objective function to predict what inputs are likely to optimize a black-box function. We'll detail the architecture of spidr's Bayesian optimization functionality as we go.
 
-In more complex cases, one data set and one model might be too restrictive. For example, if the objective fails to evaluate at some points, it might not be appropriate to model both the objective value (a regression problem) and its failure regions (a classification problem) together. Since our model of the objective values will only be over a subset of the data, one way we could represent this is to have separate data sets for the data on objective values and failure regions. More generally, we can expect to have any number of data sets, and one model for each data set.
-
-Our task is to find a new point at which to evaluate our objective function, using our data and models. We can represent this visually:
+Our task is to find a new point at which to evaluate our objective function, using historic function evaluations and a model or models of that data. We can represent this visually:
 
 <pre>
 +-----------------------+
@@ -39,9 +37,9 @@ Our task is to find a new point at which to evaluate our objective function, usi
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves yet to a particular representation for our data and models. For now, we'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double`, where we've assumed a continuous input space of features of shape `features`.
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double` (for continuous input space of features with shape `features`).
 
-How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. First we define some data
+How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
 <!-- idris
 import Tensor
@@ -49,6 +47,7 @@ import BayesianOptimization
 import Model
 import Distribution
 import Optimize
+import Util
 -->
 ```idris
 historicData : Data {samples=3} [2] [1]
@@ -65,7 +64,7 @@ model = let prior = MkGP zero (rbf $ const 0.3)
          in map ?marginalise $ posterior prior likelihood (qp, squeeze obs)
 ```
 
-then we optimize over the marginal mean
+then optimize over the marginal mean
 
 ```idris
 optimizer : Optimizer $ Tensor [1, 2] Double
@@ -73,7 +72,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint = Right $ optimizer $ squeeze . mean {event=[1]} . !model
+newPoint = pure $ optimizer $ squeeze . mean {event=[1]} . !model
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -103,11 +102,28 @@ This is a particularly simple example of the standard approach of defining an _a
     +--------------+
 </pre>
 
-In this case, our acquisition function depends on the model (which in turn depends on the data). It is empirical. On the other hand, the optimizer does not depend on the data. Finally, the new points are empirical since they depend on the acquisition function. We can see from this simple setup that we want to be able to combine empirical objects and non-empirical objects to empirically find a new point. That is, we want to have a number of `i -> o`: functions from data and models in a representation `i` to a number of `o`, where the form of these functions depends on how we want to approach the problem at hand. We also want to be able to combine these `o` with non-empirical functionality.
+In this case, our acquisition function depends on the model (which in turn depends on the data). It is empirical. The optimizer does not depend on the data. Finally, the new points are empirical since they depend on the acquisition function. We can see from this simple setup that we want to be able to combine empirical objects and non-empirical objects to empirically find a new point. That is, we want to have a number of `i -> o`: functions from data and models in a representation `i` to a number of `o`, where the form of these functions depends on how we want to approach the problem at hand. We also want to be able to combine these `o` with non-empirical functionality.
 
-Now when it comes to implementing empirical acquisition functions, if they are built directly from the representation `i`, they'll need some way of handling that representation. This means they are doing more than one thing. We'd like to separate the task of handling the generic representation `i` from the task of constructing the `o`. So that empirical functionality doesn't need to think about representation, we can use a minimal subset of data and models for each. Naturally, everything empirical will use a data set, but every data set is paired with a model, so a reasonable option would be for each empirical object to use one data set and one model. Objects which need more than this can be constructed from multiple empirical objects. Note that we could have decided that each object use _either_ a data set _or_ a model, but then we'd need two kinds of empirical object even though every data set will be paired with a model anyway.
+## Modifying empirical values with `Functor`
 
-In spidr, we call these minimal empirical objects `Empiric`s. An `Empiric features o` produces an empirical value of type `o` from a single data set and model (for features with shape `features`). We'll want to be able to modify the output of an `Empiric` (for example to optimize an empirical acquisition function to get an empirical set of points) and, as we'll see in a moment, to combine the output of multiple `Empiric`s. To help us think about this, let's look at the example of a scalar objective with failure regions. We'll use an acquisition function which combines a measure of how optimal each point is likely to be (based on the objective value data), with a measure of how likely the point is to lie within a failure region (based on the failure region data). Since we're using two data sets, we'll need two `Empiric`s, where the output of one is combined with the output of the other to complete the acquisition function. Finally, the acquisition function must be optimized like in the previous example. The picture now looks as follows:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
+
+```
+modelMean : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} -> Acquisition 1 [2]
+modelMean model = squeeze . mean {event=[1]} . model
+
+newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
+newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
+             in pure $ run acquisition !model  -- `run` turns a `Morphism` into a function
+```
+
+## Combining empirical values with `Applicative`
+
+Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
+
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Morphism` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Morphism` context. For example, we can apply the `a -> b` function in `f : i ~> (a -> b)` to the `a` value in `x : i ~> a` as `f <*> x` (which is an `i ~> b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, simply creates an `i ~> o` from a simple `o` value.
+
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach. Namely, the case `fa : i ~> Acquisition` and `oa : i ~> (Acquisition -> Acquisition)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -144,54 +160,38 @@ In spidr, we call these minimal empirical objects `Empiric`s. An `Empiric featur
     +--------------+
 </pre>
 
-Note we could have chosen a different representation for the first _Acquisition function_ and _Acquisition function -> Acquisition function_. Indeed, any `a` and `b` will do as long as we have some `f` that combines them into an acquisition function `f a b`. In practice, the forms we chose are appropriate for this problem, and it doesn't actually affect the design what implementation we chose. I may choose to revisit this without this making assumption.
+The final point is then gathered from `map optimizer (oa <*> fa)`, and this concludes our discussion of the core design. Next, we'll implement this in full, and introduce some convenience syntax on the way.
 
-In order to combine each empirical value, we could construct each individually with the relevant data and model, then combine the results, but we might not have access to the data at the point we connect them together. Instead, we'll look at how to connect them together *before* we apply the data and models.
+## Separating representation from computation with `Empiric`
 
-Since each `Empiric` takes one data set and model, we can't in general combine two `Empiric`s into a single `Empiric` because they may use different data and models. Thus, to combine `Empiric`s we must first bundle each one with a mechanism to get the specific data and model from the representation `i`. That is, we want one `i -> (Data, ProbabilisticModel)` for each `Empiric`. In spidr, we do this with the `Connection i o` type. A `Connection i o` is like an `Empiric` but it uses all the data and models and therefore a `Connection i a` and a `Connection i b` only differ in what they produce.
+The `Morphism i o`, or `i ~> o` type, has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `i ~> o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Taking a look at `modelMean`, while that only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes one data set and the corresponding model. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
 
-We can now think about combining empirical values by combining `Connection i` values. How then do we do that? Let's take a look in the context of the above diagram. If we'd constructed each empirical value first, then combined them, we'd have a `x : Acquisition 1 [2]` and an `f : Acquisition 1 [2] -> Acquisition 1 [2]`, from which we construct a complete acquisition function as `f x`. But as we explained earlier, we're not constructing our empirical values at this point, so we have a `x_conn : Connection i Acquisition 1 [2]` and `f_conn : Connection i (Acquisition 1 [2] -> Acquisition 1 [2])`, and we need to apply the function in the context of a `Connection`. This is the role of an applicative functor: lifting function application to a context. We simply make `Connection i` an applicative functor and, in Idris, we can write function application in a context as `f_conn <*> x_conn`. Similarly, we can't optimize the acquisition function in the resulting `y_conn : Connection i Acquisition` directly, but we can use the functor's `map` method instead, as `map optimizer y_conn`, resulting in a `Connection i (Tensor 1 [2] Double)`, which gives us precisely the empirical points we're after.
+With this new functionality at hand, we'll return to our objective with failure regions. First we define some data on failure regions, and model that data
 
-Let's now implement this example. We'll choose a particular representation for our data and models on the way. We'll reuse the data from above for objective values, define some data on failure regions
-
-```idris
+```
 failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
-```
-
-and model that failure data (spidr doesn't have the functionality for an appropriate model, so we'll use stubs to illustrate the idea)
-
-```idris
-data Bernoulli : Shape -> Nat -> Type where
-
-Distribution e (Bernoulli e) where
-  mean = ?mean'
-  cov = ?cov'
-
-ClosedFormDistribution e (Bernoulli e) where
-  pdf = ?pdf'
-  cdf = ?cdf'
 
 failureModel : Either SingularMatrixError $
-               ProbabilisticModel [2] {targets=[1]} {marginal=Bernoulli [1]}
+               ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 ```
 
-A simple named pair will do well as a representation `i` for all our data and models.
+Then we choose a representation of our data and models. We'll use the following named pair
 
-```idris
+```
 record Labelled o f where
   constructor Label
   objective : o
   failure : f
 ```
 
-Idris generates two methods `objective` and `failure` from this `record`, which we'll use as our `i -> (Data, ProbabilisticModel)` for getting the respective data and model. We construct a `Connection` with `>>>`, and convert the final `Connection i o` at the end into a function `i -> o` with `run`, such that we can apply it to the data and models. Putting it all together, here's our empirical point:
+Idris generates two methods `objective` and `failure` from this `record`, which we'll use to get the respective data and model. Putting it all together, here's our empirical point:
 
-```idris
-newPoint' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint' = let eci = objective >>> expectedConstrainedImprovement
-                pof = failure >>> probabilityOfFeasibility (const 0.5)
-                acquisition = map optimizer (eci <*> pof)
-                dataAndModel = Label (historicData, !model) (failureData, !failureModel)
-             in pure $ run acquisition dataAndModel
+```
+newPoint'' : Either SingularMatrixError $ Tensor [1, 2] Double
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement
+                 pof = failure >>> probabilityOfFeasibility (const 0.5)
+                 acquisition = map optimizer (eci <*> pof)
+                 dataAndModel = Label (historicData, !model) (failureData, !failureModel)
+              in pure $ run acquisition dataAndModel
 ```

@@ -23,6 +23,12 @@ import Optimize
 import BayesianOptimization.Util
 import Util
 
+||| An `Empiric` constructs values from historic data and the model over that data.
+public export 0
+Empiric : Distribution targets marginal => Shape -> Type -> Type
+Empiric {targets} {marginal} features out = forall s .
+  Data {samples=S s} features targets -> ProbabilisticModel features {targets} {marginal} -> out
+
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 public export 0
@@ -50,7 +56,7 @@ expectedImprovement predict best at =
 export
 expectedImprovementByModel :
   Empiric features {targets=[1]} {marginal=Gaussian [1]} $ Acquisition 1 features
-expectedImprovementByModel ((query_points, _), predict) at =
+expectedImprovementByModel (query_points, _) predict at =
   let best = squeeze {from=[1]} $ reduce_min 0 $ mean $ predict query_points
    in expectedImprovement predict best at
 
@@ -59,7 +65,7 @@ expectedImprovementByModel ((query_points, _), predict) at =
 export
 probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] d =>
                            Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit (_, predict) at = cdf (predict at) $ broadcast {to=[1, 1]} limit
+probabilityOfFeasibility limit _ predict at = cdf (predict at) $ broadcast {to=[1, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -75,15 +81,16 @@ negativeLowerConfidenceBound beta =
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right impl where
     impl : Empiric features {targets=[1]} {marginal=Gaussian [1]} $ Acquisition 1 features
-    impl (_, predict) at = let marginal = predict at
-                               mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
-                               variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
-                            in mean - variance * const {shape=[]} beta
+    impl _ predict at = let marginal = predict at
+                            mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
+                            variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
+                         in mean - variance * const {shape=[]} beta
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
 export
-expectedConstrainedImprovement : Empiric features {targets=[1]} {marginal=Gaussian [1]} $
-                                 (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement : (limit : Double) ->
+  Empiric features {targets=[1]} {marginal=Gaussian [1]} $
+  (Acquisition 1 features -> Acquisition 1 features)
