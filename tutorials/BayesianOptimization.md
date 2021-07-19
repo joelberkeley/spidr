@@ -137,7 +137,7 @@ There are a number of ways for us to implement our solution. We'll choose a rela
 +---------------+    +------------------------------+
 |               |    |                              |
 |  Acquisition  |    |  Acquisition -> Acquisition  |
-|    function   |    |    function      function    |
+|    function   |    |    function       function   |
 |               |    |                              |
 +---------------+    +------------------------------+
         |                    |
