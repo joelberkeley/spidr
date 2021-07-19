@@ -13,40 +13,40 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains (will contain) the Idris API to Poplar.
-module Poplar
+||| This module contains (will contain) the Idris API to XLA.
+module XLA
 
 import System.FFI
 
-libpoplar : String -> String
-libpoplar fname = "C:" ++ fname ++ ",libpoplar"
+libxla : String -> String
+libxla fname = "C:" ++ fname ++ ",libxla"
 
 export
 Scalar : Type
 Scalar = Struct "cScalar" [("x", Double)]
 
-%foreign (libpoplar "cScalar_new")
+%foreign (libxla "cScalar_new")
 export
 mkScalar : Double -> Scalar
 
-%foreign (libpoplar "cScalar_del")
+%foreign (libxla "cScalar_del")
 prim__delScalar : Scalar -> PrimIO ()
 
 export
 delScalar : Scalar -> IO ()
 delScalar = primIO . prim__delScalar
 
-%foreign (libpoplar "cScalar_add")
+%foreign (libxla "cScalar_add")
 export
 add : Scalar -> Scalar -> Scalar
 
-%foreign (libpoplar "cScalar_toDouble")
+%foreign (libxla "cScalar_toDouble")
 toDouble : Scalar -> Double
 
 export
 Cast Scalar Double where
   cast = toDouble
 
-||| Scalar data types supported by Poplar.
+||| Scalar data types supported by XLA.
 public export
 data ArchType = BOOL | U8 | I8 | U16 | I16 | U32 | I32 | U64 | I64 | F16 | F32
