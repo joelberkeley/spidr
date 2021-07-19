@@ -16,7 +16,7 @@ modules =
   Model.MeanFunction,
 
   Optimize,
-  Poplar,
+  XLA,
   Tensor,
   Util
 

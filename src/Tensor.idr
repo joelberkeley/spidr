@@ -19,7 +19,7 @@ module Tensor
 
 import public Data.Vect
 import Data.Nat
-import Poplar
+import XLA
 import Util
 
 ----------------------------- core definitions ----------------------------
@@ -35,15 +35,14 @@ public export
 Shape : {rank: Nat} -> Type
 Shape {rank} = Vect rank Nat
 
-||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`. For a Poplar
-||| backend, these types must be convertible to types supported by the IPU.
+||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`.
 export
 interface ScalarLike ty where
   archType : ArchType
 
 export
 ScalarLike Double where
-  archType = ?F64
+  archType = F64
 
 export
 ScalarLike Int where
