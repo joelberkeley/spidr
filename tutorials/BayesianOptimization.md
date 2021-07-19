@@ -37,7 +37,7 @@ Our task is to find a new point at which to evaluate our objective function, usi
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves yet to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double` (for continuous input space of features with shape `features`).
 
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
@@ -106,7 +106,7 @@ In this case, our acquisition function depends on the model (which in turn depen
 
 ## Modifying empirical values with `Functor`
 
-In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which implements `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
 
 ```
 modelMean : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} -> Acquisition 1 [2]
@@ -119,11 +119,11 @@ newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `M
 
 ## Combining empirical values with `Applicative`
 
-Let's now explore the problem of optimization with failure regions, where we'll see how the `Applicative` interface can help construct our optimization solution. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values, and we'll use them as `i ~> fa` etc.
+Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Morphism` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Morphism` context. For example, we can apply the `a -> b` function in `f : i ~> (a -> b)` to the `a` value in `x : i ~> a` as `f <*> x` (which is an `i ~> b`), and we can do this before we actually have access to any `i` values. The second simply creates an `i ~> o` from a simple `o` value.
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Morphism` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Morphism` context. For example, we can apply the `a -> b` function in `f : i ~> (a -> b)` to the `a` value in `x : i ~> a` as `f <*> x` (which is an `i ~> b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, simply creates an `i ~> o` from a simple `o` value.
 
-There are a number of ways for us to implement our solution. We'll choose a relatively simple one that demonstrates the approach. Namely, the case `fa : i ~> Acquisition` and `oa : i ~> (Acquisition -> Acquisition)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach. Namely, the case `fa : i ~> Acquisition` and `oa : i ~> (Acquisition -> Acquisition)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -164,7 +164,7 @@ The final point is then gathered from `map optimizer (oa <*> fa)`, and this conc
 
 ## Separating representation from computation with `Empiric`
 
-The `Morphism i o`, or `i ~> o` type, has proven to be quite flexibly in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the value, this means the value is doing two things. It would be nice to be able to separate these concerns of representation and computation. To do this, let's take a look at acquisition function. Recall that while `modelMean` only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes one data set and the corresponding model. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
+The `Morphism i o`, or `i ~> o` type, has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `i ~> o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Taking a look at `modelMean`, while that only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes one data set and the corresponding model. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
 
 With this new functionality at hand, we'll return to our objective with failure regions. First we define some data on failure regions, and model that data
 
