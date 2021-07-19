@@ -33,13 +33,6 @@ data GaussianProcess : (0 features : Shape) -> Type where
   ||| Construct a `GaussianProcess` as a pair of mean function and kernel.
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
-||| The posterior Gaussian process conditioned on the specified `training_data`.
-|||
-||| @prior The prior belief.
-||| @likelihood The likelihood of the observations given the prior target distribution. Here this is
-|||   simply the noise variance. The mean is unused.
-||| @training_data The observed feature and corresponding target values.
-export
 posterior : {s : Nat}
  -> (prior : GaussianProcess features)
  -> (likelihood : Gaussian [] (S s))
@@ -86,13 +79,28 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 ||| @prior_from_parameters Constructs the prior from hyperparameters.
 ||| @likelihood The likelihood of the observations given the prior target distribution.
 ||| @data_ The data.
+||| The posterior Gaussian process conditioned on the specified `training_data`.
+|||
+||| @prior The prior belief.
+||| @likelihood The likelihood of the observations given the prior target distribution. Here this is
+|||   simply the noise variance. The mean is unused.
+||| @training_data The observed feature and corresponding target values.
 export
-optimize : {samples : Nat}
- -> (optimizer : Optimizer {m=Either SingularMatrixError} hp)
- -> (prior_from_parameters : hp -> GaussianProcess features)
+fit : {samples : Nat}
+ -> Optimizer {m=Either SingularMatrixError} hp
+ -> (hp -> GaussianProcess features)
  -> (likelihood : Gaussian [] (S samples))
  -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
- -> Either SingularMatrixError hp
-optimize optimizer gp_from_hyperparameters likelihood training_data = optimizer objective where
-  objective : hp -> Either SingularMatrixError $ Tensor [] Double
-  objective hp' = log_marginal_likelihood (gp_from_hyperparameters hp') likelihood training_data
+ -> Either SingularMatrixError (GaussianProcess features)
+fit optimize prior_from_params likelihood (x, y) =
+  let posterior_from_params = hp -> GaussianProcess features
+      posterior_from_params hp = 
+        let 
+  let (MkGaussian mean cov) = likelihood
+
+      objective : hp -> Either SingularMatrixError $ Tensor [] Double
+      objective hp' = log_marginal_likelihood (prior_from_params hp') likelihood (x, y)
+   in
+  let (MkGP meanf kernel) = prior_from_params !(optimize objective)
+      cov_cholesky = !(cholesky $ kernel x x + cov)
+   in ?rhs
