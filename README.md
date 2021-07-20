@@ -10,7 +10,7 @@ With spidr, we explore what is possible when we bring the latest developments in
   - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
 
-We may choose to omit conceptually similar algorithms where they don't contribute to insights in design or machine learning computation.
+This is a tall order, so to keep the workload manageable we may choose to omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness stands spidr apart from most other machine learning framworks.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
