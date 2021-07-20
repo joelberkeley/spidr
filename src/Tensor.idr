@@ -192,13 +192,13 @@ namespace NSBroadcastable
     ||| wrt. the other constructors, but the author guesses that this implementation helps the type
     ||| checker avoid applications of `Extend`.
     Same : Broadcastable x x
-  
+
     ||| Proof that any dimension with size one can be stacked to any size. For example:
     |||
     ||| [1, 3] to [5, 3]
     ||| [3, 1, 2] to [3, 5, 2]
     ||| [3, 1, 2] to [3, 0, 2]
-    Stack : Broadcastable f (1 :: t) -> Broadcastable f (_ :: t)
+    Stack : {auto prf : Not (s = 1)} -> Broadcastable f (1 :: t) -> Broadcastable f (s :: t)
 
     ||| Proof that any dimension can be broadcast to itself. For example:
     |||
@@ -207,7 +207,7 @@ namespace NSBroadcastable
     ||| Implementation note: the ranks must be equal so that the dimensions are added along the same
     ||| axes.
     Extend : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
-  
+
     ||| Proof that broadcasting can add outer dimensions i.e. nesting.
     |||
     ||| [3] to [1, 3]

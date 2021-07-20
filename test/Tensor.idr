@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+import Data.Nat
 import Tensor
 
 test_can_construct_scalar : Tensor [] Double
@@ -27,11 +28,11 @@ test_can_construct_matrix = const [[0.0, -1.0, -2.0], [3.0, 4.0, 5.0]]
 test_can_construct_integer_matrix : Tensor [2, 3] Integer
 test_can_construct_integer_matrix = const [[0, -1, -2], [3, 4, 5]]
 
-test_.T : Tensor [2, 3] Double -> Tensor [3, 2] Double
-test_.T x = x.T
+test_T : Tensor [2, 3] Double -> Tensor [3, 2] Double
+test_T x = x.T
 
-test_.T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
-test_.T_with_leading x = x.T
+test_T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
+test_T_with_leading x = x.T
 
 test_can_broadcast : List (from ** to ** Broadcastable from to)
 
@@ -82,7 +83,7 @@ test_tensor_contraction22 : Tensor [3, 4] Double -> Tensor [4, 5] Double -> Tens
 test_tensor_contraction22 x y = x @@ y
 
 test_det : Tensor [3, 3] Double -> Tensor [] Double
-test_det = det
+test_det x = det x
 
 test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
-test_det_with_leading = det
+test_det_with_leading x = det x
