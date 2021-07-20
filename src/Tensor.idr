@@ -487,7 +487,7 @@ cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 infix 9 \\
 
 export
-(\\) : Tensor [S n, S n] dtype -> Tensor (S n :: tl) dtype -> Tensor (S n :: tl) dtype
+(\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
 ||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
 ||| singular.
