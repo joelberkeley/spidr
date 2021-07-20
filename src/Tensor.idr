@@ -482,7 +482,12 @@ Error CholeskyError where
   format (MkCholeskyError msg) = msg
 
 export
-cholesky : Tensor [S n, S n] dtype => Either CholeskyError $ Tensor [S n, S n] dtype
+cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
+
+infix 9 \\
+
+export
+(\\) : Tensor [S n, S n] dtype -> Tensor (S n :: tl) dtype -> Tensor (S n :: tl) dtype
 
 ||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
 ||| singular.
@@ -502,3 +507,6 @@ inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, 
 ||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+
+export
+trace : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype

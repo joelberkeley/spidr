@@ -38,14 +38,15 @@ posterior : {s : Nat}
  -> (likelihood : Gaussian [] (S s))
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> Either SingularMatrixError $ GaussianProcess features
-posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
-  let inv = !(inverse $ kernel x_train x_train + cov)
+posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x, y) =
+  let l = cholesky (kernel x x + cov)
+      alpha = l.T \\ (l \\ y)
 
       posterior_mean_function : MeanFunction features
       posterior_mean_function x = mean_function x + (kernel x x_train) @@ inv @@ y_train
 
       posterior_kernel : Kernel features
-      posterior_kernel x x' = kernel x x' - (kernel x x_train) @@ inv @@ (kernel x_train x')
+      posterior_kernel x* x*' = kernel x* x*' - (kernel x* x) @@ inv @@ (kernel x_train x')
 
    in pure $ MkGP posterior_mean_function posterior_kernel
 
@@ -86,21 +87,22 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 |||   simply the noise variance. The mean is unused.
 ||| @training_data The observed feature and corresponding target values.
 export
-fit : {samples : Nat}
- -> Optimizer {m=Either SingularMatrixError} hp
+fit : {s : Nat}
+ -> Optimizer hp
  -> (hp -> GaussianProcess features)
- -> (likelihood : Gaussian [] (S samples))
- -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
+ -> (likelihood : Gaussian [] (S s))
+ -> (data_ : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> Either SingularMatrixError (GaussianProcess features)
 fit optimize prior_from_params likelihood (x, y) =
-  let posterior_from_params = hp -> GaussianProcess features
-      posterior_from_params hp = 
-        let 
-  let (MkGaussian mean cov) = likelihood
+  let (MkGaussian _ cov) = likelihood
 
-      objective : hp -> Either SingularMatrixError $ Tensor [] Double
-      objective hp' = log_marginal_likelihood (prior_from_params hp') likelihood (x, y)
-   in
-  let (MkGP meanf kernel) = prior_from_params !(optimize objective)
-      cov_cholesky = !(cholesky $ kernel x x + cov)
-   in ?rhs
+      objective : hp -> Tensor [] Double
+      objective hp = let (MkGP meanf kernel) = prior_from_params hp
+                         l = cholesky (kernel x x + cov)
+                         alpha = l.T \\ (l \\ y)
+                         n = const {shape=[]} $ cast (S s)
+                         log2pi = log $ const {shape=[]} $ 2.0 * PI
+                         two = const {shape=[]} 2
+                      in - y @@ alpha / two - trace (log l) - n * log2pi / two
+
+   in posterior (prior_from_params (optimize objective)) likelihood (x, y)
