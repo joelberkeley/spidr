@@ -198,7 +198,9 @@ namespace NSBroadcastable
     ||| [1, 3] to [5, 3]
     ||| [3, 1, 2] to [3, 5, 2]
     ||| [3, 1, 2] to [3, 0, 2]
-    Stack : {auto prf : Not (s = 1)} -> Broadcastable f (1 :: t) -> Broadcastable f (s :: t)
+    Stack : Broadcastable f (1 :: t) -> Broadcastable f (S _ :: t)
+
+    Zero : Broadcastable f (1 :: t) -> Broadcastable f (0 :: t)
 
     ||| Proof that any dimension can be broadcast to itself. For example:
     |||
