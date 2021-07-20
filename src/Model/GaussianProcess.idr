@@ -47,7 +47,7 @@ posterior : {s : Nat}
  -> (prior : GaussianProcess features)
  -> (likelihood : Gaussian [] (S s))
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
- -> Either SingularMatrixError $ GaussianProcess features
+ -> GaussianProcess features
 posterior (MkGP prior_meanf prior_kernel) (MkGaussian _ cov) (x_train, y_train) =
   let l = cholesky (prior_kernel x_train x_train + cov)
       alpha = l.T \\ (l \\ y_train)
@@ -59,32 +59,32 @@ posterior (MkGP prior_meanf prior_kernel) (MkGaussian _ cov) (x_train, y_train) 
       posterior_kernel x x' = prior_kernel x x' -
                               (l \\ (prior_kernel x_train x)).T @@ (l \\ (prior_kernel x_train x'))
 
-   in pure $ MkGP posterior_meanf posterior_kernel
+   in MkGP posterior_meanf posterior_kernel
 
-log_marginal_likelihood : {samples : Nat}
+log_marginal_likelihood : {s : Nat}
  -> GaussianProcess features
- -> Gaussian [] (S samples)
- -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
- -> Either SingularMatrixError $ Tensor [] Double
-log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) = ?lml
+ -> Gaussian [] (S s)
+ -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
+ -> Tensor [] Double
+log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
+  let l = cholesky (kernel x x + cov)
+      alpha = l.T \\ (l \\ y)
+      n = const {shape=[]} $ cast (S s)
+      log2pi = log $ const {shape=[]} $ 2.0 * PI
+      two = const {shape=[]} 2
+  in - y @@ alpha / two - trace (log l) - n * log2pi / two
 
 export
 fit : {s : Nat}
  -> Optimizer hp
- -> (hp -> GaussianProcess features)
- -> (likelihood : Gaussian [] (S s))
+ -> (mk_prior : hp -> GaussianProcess features)
+ -> (mk_likelihood : hp -> Gaussian [] (S s))
  -> (data_ : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
- -> Either SingularMatrixError (GaussianProcess features)
-fit optimize prior_from_params likelihood (x, y) =
-  let (MkGaussian _ cov) = likelihood
+ -> GaussianProcess features
+fit optimize mk_prior mk_likelihood data_ =
+  let objective : hp -> Tensor [] Double
+      objective hp = log_marginal_likelihood (mk_prior hp) (mk_likelihood hp) data_
 
-      objective : hp -> Tensor [] Double
-      objective hp = let (MkGP meanf kernel) = prior_from_params hp
-                         l = cholesky (kernel x x + cov)
-                         alpha = l.T \\ (l \\ y)
-                         n = const {shape=[]} $ cast (S s)
-                         log2pi = log $ const {shape=[]} $ 2.0 * PI
-                         two = const {shape=[]} 2
-                      in - y @@ alpha / two - trace (log l) - n * log2pi / two
+      params := optimize objective
 
-   in posterior (prior_from_params (optimize objective)) likelihood (x, y)
+   in posterior (mk_prior params) (mk_likelihood params) data_

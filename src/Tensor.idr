@@ -168,6 +168,12 @@ export
 export
 fill : dtype -> Tensor shape dtype
 
+export
+concat : Vect n (Tensor shape dtype) -> Tensor (n :: shape) dtype
+
+export
+split : Tensor (n :: shape) dtype -> Vect n (Tensor shape dtype)
+
 ||| Cast the tensor elements to a new data type.
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
@@ -176,7 +182,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 ||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
 ||| `const [[3.0, 0.0], [0.0, 3.0]]`.
 export
-diag : Num dtype => dtype -> Tensor [n, n] dtype
+diag : Num dtype => Tensor [] Double -> Tensor [n, n] dtype
 
 namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
