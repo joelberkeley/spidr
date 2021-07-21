@@ -34,29 +34,35 @@ test_T x = x.T
 test_T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
 test_T_with_leading x = x.T
 
-test_can_broadcast : List (from ** to ** Broadcastable from to)
+test_broadcastable : List (from ** to ** Broadcastable from to)
 
-test_can_broadcast_scalar : Broadcastable [] []
-test_can_broadcast_scalar = Same
+test_broadcastable_identity0: Broadcastable [] []
+test_broadcastable_identity0 = Same
 
-test_can_broadcast_scalar_to_any : Broadcastable [] [3, 2, 5]
-test_can_broadcast_scalar_to_any = Nest (Nest (Nest Same))
+test_broadcastable_identity1 : Broadcastable [3, 2, 5] [3, 2, 5]
+test_broadcastable_identity1 = Same
 
-test_cannot_broadcast_any_to_scalar : Broadcastable [3, 2, 5] [] -> Void
-test_cannot_broadcast_any_to_scalar _ impossible
+test_broadcastable_scalar_to_any : Broadcastable [] [3, 2, 5]
+test_broadcastable_scalar_to_any = Nest (Nest (Nest Same))
 
-test_can_broadcast_to_itself : Broadcastable [3, 2, 5] [3, 2, 5]
-test_can_broadcast_to_itself = Same
+test_broadcastable_cannot_reduce_rank0 : Broadcastable [5] [] -> Void
+test_broadcastable_cannot_reduce_rank0 _ impossible
 
-test_can_stack_inner_1 : Broadcastable [3, 1, 5] [3, 7, 5]
-test_can_stack_inner_1 = Extend (Stack Same)
+test_broadcastable_cannot_reduce_rank1 : Broadcastable [3, 2, 5] [] -> Void
+test_broadcastable_cannot_reduce_rank1 _ impossible
 
-test_cannot_stack_greater_than_one : Broadcastable [3, 2] [3, 7] -> Void
-test_cannot_stack_greater_than_one (Extend Same) impossible
-test_cannot_stack_greater_than_one (Nest Same) impossible
+test_broadcastable_can_stack_inner_one : Broadcastable [3, 1, 5] [3, 7, 5]
+test_broadcastable_can_stack_inner_one = Extend (Stack Same)
 
-test_can_nest : Broadcastable [3, 2, 5] [1, 3, 2, 5]
-test_can_nest = Nest Same
+test_broadcastable_cannot_stack_dimension_gt_one : Broadcastable [3, 2] [3, 7] -> Void
+test_broadcastable_cannot_stack_dimension_gt_one (Extend Same) impossible
+test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
+
+test_broadcastable_can_nest0 : Broadcastable [3, 2, 5] [1, 3, 2, 5]
+test_broadcastable_can_nest0 = Nest Same
+
+test_broadcastable_can_nest1 : Broadcastable [3, 2, 5] [7, 3, 2, 5]
+test_broadcastable_can_nest1 = Nest Same
 
 test_squeezable_can_noop : Squeezable [3, 2, 5] [3, 2, 5]
 test_squeezable_can_noop = Same
