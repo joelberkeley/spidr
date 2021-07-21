@@ -198,9 +198,7 @@ namespace NSBroadcastable
     ||| [1, 3] to [5, 3]
     ||| [3, 1, 2] to [3, 5, 2]
     ||| [3, 1, 2] to [3, 0, 2]
-    Stack : Broadcastable f (1 :: t) -> Broadcastable f (S _ :: t)
-
-    Zero : Broadcastable f (1 :: t) -> Broadcastable f (0 :: t)
+    Stack : Broadcastable f t -> Broadcastable (1 :: f) (_ :: t)
 
     ||| Proof that any dimension can be broadcast to itself. For example:
     |||
@@ -208,12 +206,12 @@ namespace NSBroadcastable
     |||
     ||| Implementation note: the ranks must be equal so that the dimensions are added along the same
     ||| axes.
-    Extend : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
+    Extend : {f, t : Shape {rank=r}} -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
 
     ||| Proof that broadcasting can add outer dimensions i.e. nesting.
     |||
     ||| [3] to [1, 3]
-    Nest : Broadcastable f t -> Broadcastable f (1 :: t)
+    Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
