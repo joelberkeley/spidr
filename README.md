@@ -1,6 +1,6 @@
 # spidr
 
-**NOTE** spidr is in very early development. It is not ready for use.
+**Note:** spidr is in very early development. It is not ready for use.
 
 With spidr, we explore what is possible when we bring the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning utilities, libraries and frameworks; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
 
