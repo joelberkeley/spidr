@@ -10,13 +10,13 @@ With spidr, we explore what is possible when we bring the latest developments in
   - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
 
-This is a tall order, so to keep the workload manageable we may choose to omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness stands spidr apart from most other machine learning framworks.
+This is a tall order, so to keep the workload manageable we may choose to omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is spidr's distinctive feature.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
 spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [tutorials](tutorials). The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
-We use [semantic versioning](https://semver.org/). Contributions are welcome.
+We use [semantic versioning](https://semver.org/).
 
 ## Installation
 
@@ -29,7 +29,7 @@ Clone this repository, then install spidr with
 idris2 --install spidr.ipkg
 ```
 
-You can then `import Tensor` etc. in your `Foo.idr` file and run it in a REPL with
+You can then `import Tensor` etc. in your file `Foo.idr` and run it in a REPL with
 ```bash
 idris2 -p spidr Foo.idr
 ```
@@ -37,4 +37,4 @@ See `idris2 --help` for more build options.
 
 ## Contact
 
-To ask for new features or report bugs, make a new GitHub issue. For any other questions, you can private message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
+To ask for new features or report bugs, make a new GitHub issue. For any other questions, private message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
