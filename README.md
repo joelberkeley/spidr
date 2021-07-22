@@ -22,7 +22,7 @@ We use [semantic versioning](https://semver.org/). Contributions are welcome.
 
 **Note:** spidr is not executable at this time. Only type checking is possible.
 
-Install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure.
+Install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
 
 Clone this repository, then install spidr with
 ```bash
