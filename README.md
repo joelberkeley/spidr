@@ -30,7 +30,7 @@ idris2 --install spidr.ipkg
 ```
 
 You can then `import Tensor` etc. in your `Foo.idr` file and run it in a REPL with
-```
+```bash
 idris2 -p spidr Foo.idr
 ```
 See `idris2 --help` for more build options.
