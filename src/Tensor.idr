@@ -181,7 +181,7 @@ diag : Num dtype => dtype -> Tensor [n, n] dtype
 
 data DimBroadcastable (from : Nat) -> (to : Nat) -> Type where
   Eq : DimBroadcastable x x
-  Stack : DimBroadcastable 1 (S _)
+  Stack : DimBroadcastable 1 _
   Zero : DimBroadcastable _ 0
 
 
