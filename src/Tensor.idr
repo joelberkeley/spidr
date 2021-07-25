@@ -178,6 +178,13 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
+
+data DimBroadcastable (from : Nat) -> (to : Nat) -> Type where
+  Eq : DimBroadcastable x x
+  Stack : DimBroadcastable 1 _
+  Zero : DimBroadcastable _ 0
+
+
 namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
@@ -195,23 +202,11 @@ namespace NSBroadcastable
 
     ||| Proof that any dimension with size one can be stacked to any size. For example:
     |||
-    ||| [1, 3] to [5, 3]
-    |||
-    ||| Implementation note: `Stack` still results in valid shape broadcasting if `f` and `t` are
-    ||| allowed to have different ranks, but by demanding they have the same rank, we remove
-    ||| duplicate implementations. For example, with the rank constraint, `Broadcastable [1] [3, 5]`
-    ||| can only be `Nest (Stack Same)`. Without the rank constraint, it can also be
-    ||| `Stack (Nest Same)`.
-    Stack : {f, t : Shape {rank=r}} -> Broadcastable f t -> Broadcastable (1 :: f) (_ :: t)
-
-    ||| Proof that any dimension can be broadcast to itself. For example, the first axis in:
-    |||
-    ||| [2, 3, 5] to [2, 3, 5]
-    ||| [2, 1, 5] to [2, 3, 5]
-    |||
-    ||| Implementation note: the ranks must be equal so that the dimensions are added along the same
-    ||| axes.
-    Extend : {f, t : Shape {rank=r}} -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
+    ||| ...
+    Match : {from, to : Shape {rank=r}}
+            -> DimBroadcastable fDim tDim
+            -> Broadcastable from to
+            -> Broadcastable (fDim :: from) (tDim :: to)
 
     ||| Proof that broadcasting can add outer dimensions i.e. nesting. For example:
     |||
