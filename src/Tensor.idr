@@ -179,9 +179,18 @@ export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
 
+||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
+||| of shape `to`.
 data DimBroadcastable (from : Nat) -> (to : Nat) -> Type where
+  ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
+  ||| `[2, 3]`.
   Eq : DimBroadcastable x x
+
+  ||| Proof that a dimension of length one can be broadcast to any size. For example in shapes
+  ||| `[2, 1]` to `[2, 3]`
   Stack : DimBroadcastable 1 _
+
+  ||| Proof that any dimension can be broadcast to zero. For example in shapes `[2, 3]` to `[2, 0]`.
   Zero : DimBroadcastable _ 0
 
 
@@ -195,14 +204,17 @@ namespace NSBroadcastable
     ||| [] to []
     ||| [3, 4] to [3, 4]
     |||
-    ||| Implementation note: we could have used `Broadcast [] []`, which would have been more atomic
-    ||| wrt. the other constructors, but the author guesses that this implementation helps the type
-    ||| checker avoid applications of `Extend`.
+    ||| Implementation note: we could have used `Broadcast [] []`, which would have resulted in more
+    ||| atomic constructors for `Broadcastable`, but the author guesses that this implementation helps
+    ||| the type checker avoid applications of `Match`.
     Same : Broadcastable x x
 
-    ||| Proof that any dimension with size one can be stacked to any size. For example:
+    ||| Proof that dimensions of size `fDim` can be broadcast to size `tDim` if these dimensions
+    ||| are `DimBroadcastable`. For example:
     |||
-    ||| ...
+    ||| [2, 3] to [2, 3]
+    ||| [2, 1] to [2, 3]
+    ||| [2, 1] to [2, 0]
     Match : {from, to : Shape {rank=r}}
             -> {auto _ : DimBroadcastable fDim tDim}
             -> Broadcastable from to
