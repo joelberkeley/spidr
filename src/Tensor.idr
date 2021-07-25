@@ -209,16 +209,16 @@ namespace NSBroadcastable
     ||| the type checker avoid applications of `Match`.
     Same : Broadcastable x x
 
-    ||| Proof that dimensions of size `fDim` can be broadcast to size `tDim` if these dimensions
-    ||| are `DimBroadcastable`. For example:
+    ||| Proof that a dimension of size `f` can be broadcast to size `t` if these dimensions
+    ||| are `DimBroadcastable f t`. For example:
     |||
     ||| [2, 3] to [2, 3]
     ||| [2, 1] to [2, 3]
     ||| [2, 1] to [2, 0]
     Match : {from, to : Shape {rank=r}}
-            -> {auto _ : DimBroadcastable fDim tDim}
+            -> {auto _ : DimBroadcastable f t}
             -> Broadcastable from to
-            -> Broadcastable (fDim :: from) (tDim :: to)
+            -> Broadcastable (f :: from) (t :: to)
 
     ||| Proof that broadcasting can add outer dimensions i.e. nesting. For example:
     |||
