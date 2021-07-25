@@ -204,7 +204,7 @@ namespace NSBroadcastable
     |||
     ||| ...
     Match : {from, to : Shape {rank=r}}
-            -> DimBroadcastable fDim tDim
+            -> {auto _ : DimBroadcastable fDim tDim}
             -> Broadcastable from to
             -> Broadcastable (fDim :: from) (tDim :: to)
 
