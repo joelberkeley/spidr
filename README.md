@@ -37,4 +37,4 @@ See `idris2 --help` for more build options.
 
 ## Contact
 
-To ask for new features or report bugs, make a new GitHub issue. For any other questions, private message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
+To ask for new features or to report bugs, make a new GitHub issue. For any other questions or comments, private message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
