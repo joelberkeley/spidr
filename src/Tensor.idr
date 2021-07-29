@@ -178,6 +178,21 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
+||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
+||| of shape `to`.
+public export
+data DimBroadcastable : (from : Nat) -> (to : Nat) -> Type where
+  ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
+  ||| `[2, 3]`.
+  Same : DimBroadcastable x x
+
+  ||| Proof that a dimension of length one can be broadcast to any size. For example in shapes
+  ||| `[2, 1]` to `[2, 3]`
+  Stack : DimBroadcastable 1 _
+
+  ||| Proof that any dimension can be broadcast to zero. For example in shapes `[2, 3]` to `[2, 0]`.
+  Zero : DimBroadcastable _ 0
+
 namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
@@ -188,30 +203,27 @@ namespace NSBroadcastable
     ||| [] to []
     ||| [3, 4] to [3, 4]
     |||
-    ||| Implementation note: we could have used `Broadcast [] []`, which would have been more atomic
-    ||| wrt. the other constructors, but the author guesses that this implementation helps the type
-    ||| checker avoid applications of `Extend`.
+    ||| Implementation note: we could have used `Broadcast [] []`, which would have resulted in more
+    ||| atomic constructors for `Broadcastable`, but the author guesses that this implementation helps
+    ||| the type checker avoid applications of `Match`.
     Same : Broadcastable x x
-  
-    ||| Proof that any dimension with size one can be stacked to any size. For example:
-    |||
-    ||| [1, 3] to [5, 3]
-    ||| [3, 1, 2] to [3, 5, 2]
-    ||| [3, 1, 2] to [3, 0, 2]
-    Stack : Broadcastable f (1 :: t) -> Broadcastable f (_ :: t)
 
-    ||| Proof that any dimension can be broadcast to itself. For example:
+    ||| Proof that a dimension of size `f` can be broadcast to size `t` if these dimensions
+    ||| are `DimBroadcastable f t`. For example:
     |||
-    ||| [2, ...] to [2, ...], assuming the ellipses are broadcast-compatible.
-    |||
-    ||| Implementation note: the ranks must be equal so that the dimensions are added along the same
-    ||| axes.
-    Extend : (f, t : Shape {rank=r}) -> Broadcastable f t -> Broadcastable (x :: f) (x :: t)
-  
-    ||| Proof that broadcasting can add outer dimensions i.e. nesting.
+    ||| [2, 3] to [2, 3]
+    ||| [2, 1] to [2, 3]
+    ||| [2, 1] to [2, 0]
+    Match : {from, to : Shape {rank=r}}
+            -> {auto _ : DimBroadcastable f t}
+            -> Broadcastable from to
+            -> Broadcastable (f :: from) (t :: to)
+
+    ||| Proof that broadcasting can add outer dimensions i.e. nesting. For example:
     |||
     ||| [3] to [1, 3]
-    Nest : Broadcastable f t -> Broadcastable f (1 :: t)
+    ||| [3] to [5, 3]
+    Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
@@ -244,7 +256,7 @@ namespace NSSqueezable
     ||| squeezing. For example:
     |||
     ||| ...
-    Extend : Squeezable from to -> Squeezable (x :: from) (x :: to)
+    Match : Squeezable from to -> Squeezable (x :: from) (x :: to)
 
     ||| Proof that any dimensions of length one can be squeezed out. For example:
     |||
