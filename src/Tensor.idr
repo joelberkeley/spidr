@@ -168,6 +168,12 @@ export
 export
 fill : dtype -> Tensor shape dtype
 
+export
+concat : Vect n (Tensor shape dtype) -> Tensor (n :: shape) dtype
+
+export
+split : Tensor (n :: shape) dtype -> Vect n (Tensor shape dtype)
+
 ||| Cast the tensor elements to a new data type.
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
@@ -176,7 +182,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 ||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
 ||| `const [[3.0, 0.0], [0.0, 3.0]]`.
 export
-diag : Num dtype => dtype -> Tensor [n, n] dtype
+diag : Num dtype => Tensor [] Double -> Tensor [n, n] dtype
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
 ||| of shape `to`.
@@ -494,7 +500,12 @@ Error CholeskyError where
   format (MkCholeskyError msg) = msg
 
 export
-cholesky : Tensor [S n, S n] dtype => Either CholeskyError $ Tensor [S n, S n] dtype
+cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
+
+infix 9 \\
+
+export
+(\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
 ||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
 ||| singular.
@@ -514,3 +525,6 @@ inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, 
 ||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+
+export
+trace : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype

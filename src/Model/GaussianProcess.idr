@@ -33,29 +33,6 @@ data GaussianProcess : (0 features : Shape) -> Type where
   ||| Construct a `GaussianProcess` as a pair of mean function and kernel.
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
-||| The posterior Gaussian process conditioned on the specified `training_data`.
-|||
-||| @prior The prior belief.
-||| @likelihood The likelihood of the observations given the prior target distribution. Here this is
-|||   simply the noise variance. The mean is unused.
-||| @training_data The observed feature and corresponding target values.
-export
-posterior : {s : Nat}
- -> (prior : GaussianProcess features)
- -> (likelihood : Gaussian [] (S s))
- -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
- -> Either SingularMatrixError $ GaussianProcess features
-posterior (MkGP mean_function kernel) (MkGaussian _ cov) (x_train, y_train) =
-  let inv = !(inverse $ kernel x_train x_train + cov)
-
-      posterior_mean_function : MeanFunction features
-      posterior_mean_function x = mean_function x + (kernel x x_train) @@ inv @@ y_train
-
-      posterior_kernel : Kernel features
-      posterior_kernel x x' = kernel x x' - (kernel x x_train) @@ inv @@ (kernel x_train x')
-
-   in pure $ MkGP posterior_mean_function posterior_kernel
-
 ||| The marginal distribution of the Gaussian process at the specified feature values.
 |||
 ||| @at The feature values at which to evaluate the marginal distribution.
@@ -66,33 +43,48 @@ marginalise : {s : Nat}
   -> Gaussian [] (S s)
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
-log_marginal_likelihood : {samples : Nat}
+posterior : {s : Nat}
+ -> (prior : GaussianProcess features)
+ -> (likelihood : Gaussian [] (S s))
+ -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> GaussianProcess features
- -> Gaussian [] (S samples)
- -> (Tensor ((S samples) :: features) Double, Tensor [S samples] Double)
- -> Either SingularMatrixError $ Tensor [] Double
-log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
-  let inv = !(inverse $ kernel x x + cov)
-      n = const {shape=[]} $ cast samples
-      log2pi = log $ const {shape=[]} $ 2.0 * PI
-   in pure $ - (y @@ inv @@ y - log (det inv) + n * log2pi) / const {shape=[]} 2
+posterior (MkGP prior_meanf prior_kernel) (MkGaussian _ cov) (x_train, y_train) =
+  let l = cholesky (prior_kernel x_train x_train + cov)
+      alpha = l.T \\ (l \\ y_train)
 
-||| Find the hyperparameter values that optimize the log marginal likelihood of the `data` for the
-||| prior (as constructed from `prior_from_parameters`) and `likelihood`. Optimization is defined
-||| according to `optimizer`. For maximum likelihood estimation, it should (at least approximately)
-||| maximize its objective.
-|||
-||| @optimizer Implements the optimization tactic.
-||| @prior_from_parameters Constructs the prior from hyperparameters.
-||| @likelihood The likelihood of the observations given the prior target distribution.
-||| @data_ The data.
+      posterior_meanf : MeanFunction features
+      posterior_meanf x = prior_meanf x + (prior_kernel x x_train) @@ alpha
+
+      posterior_kernel : Kernel features
+      posterior_kernel x x' = prior_kernel x x' -
+                              (l \\ (prior_kernel x_train x)).T @@ (l \\ (prior_kernel x_train x'))
+
+   in MkGP posterior_meanf posterior_kernel
+
+log_marginal_likelihood : {s : Nat}
+ -> GaussianProcess features
+ -> Gaussian [] (S s)
+ -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
+ -> Tensor [] Double
+log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
+  let l = cholesky (kernel x x + cov)
+      alpha = l.T \\ (l \\ y)
+      n = const {shape=[]} $ cast (S s)
+      log2pi = log $ const {shape=[]} $ 2.0 * PI
+      two = const {shape=[]} 2
+  in - y @@ alpha / two - trace (log l) - n * log2pi / two
+
 export
-optimize : {samples : Nat}
- -> (optimizer : Optimizer {m=Either SingularMatrixError} hp)
- -> (prior_from_parameters : hp -> GaussianProcess features)
- -> (likelihood : Gaussian [] (S samples))
- -> (data_ : (Tensor ((S samples) :: features) Double, Tensor [S samples] Double))
- -> Either SingularMatrixError hp
-optimize optimizer gp_from_hyperparameters likelihood training_data = optimizer objective where
-  objective : hp -> Either SingularMatrixError $ Tensor [] Double
-  objective hp' = log_marginal_likelihood (gp_from_hyperparameters hp') likelihood training_data
+fit : {s : Nat}
+ -> Optimizer hp
+ -> (mk_prior : hp -> GaussianProcess features)
+ -> (mk_likelihood : hp -> Gaussian [] (S s))
+ -> (data_ : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
+ -> GaussianProcess features
+fit optimize mk_prior mk_likelihood data_ =
+  let objective : hp -> Tensor [] Double
+      objective hp = log_marginal_likelihood (mk_prior hp) (mk_likelihood hp) data_
+
+      params := optimize objective
+
+   in posterior (mk_prior params) (mk_likelihood params) data_
