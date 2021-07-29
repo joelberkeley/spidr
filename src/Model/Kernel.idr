@@ -33,7 +33,7 @@ Kernel features = {sk, sk' : _} ->
 ||| The radial basis function, or squared exponential kernel.
 export
 rbf : {d : Nat} -> Tensor [] Double -> Kernel [S d]
-rbf length_scale x x' = let xs = broadcast {prf=Match (Match Same)} {to=[sk, sk', S d]} $ expand 1 x
+rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
                             xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
                             two = const {shape=[]} 2.0
                             l2_norm = reduce_sum 2 $ (xs' - xs) ^ two
