@@ -180,10 +180,11 @@ diag : Num dtype => dtype -> Tensor [n, n] dtype
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
 ||| of shape `to`.
+public export
 data DimBroadcastable : (from : Nat) -> (to : Nat) -> Type where
   ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
   ||| `[2, 3]`.
-  Eq : DimBroadcastable x x
+  Same : DimBroadcastable x x
 
   ||| Proof that a dimension of length one can be broadcast to any size. For example in shapes
   ||| `[2, 1]` to `[2, 3]`
