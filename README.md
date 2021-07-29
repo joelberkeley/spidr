@@ -1,6 +1,6 @@
 # spidr
 
-**NOTE** spidr is in very early development. It is not ready for use.
+**Note:** spidr is in very early development. It is not ready for use.
 
 With spidr, we explore what is possible when we bring the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning utilities, libraries and frameworks; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
 
@@ -10,10 +10,28 @@ With spidr, we explore what is possible when we bring the latest developments in
   - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
 
-This is a tall order, so to keep the workload manageable we may choose to omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness stands spidr apart from most other machine learning framworks.
+This is a tall order, so to keep the workload manageable we may choose to omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is spidr's distinctive feature.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
-spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [tutorials](tutorials).
+spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [tutorials](tutorials). The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
-We use [semantic versioning](https://semver.org/). Contributions are welcome.
+We use [semantic versioning](https://semver.org/).
+
+## Installation
+
+**Note:** spidr is not executable at this time. Only type checking is possible.
+
+First install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Then clone this repository, and install spidr with
+```bash
+idris2 --install spidr.ipkg
+```
+Finally, in your Idris file `Foo.idr`, you can `import Tensor` etc. and run it in a REPL with
+```bash
+idris2 -p spidr Foo.idr
+```
+See `idris2 --help` for more build options.
+
+## Contact
+
+To ask for new features or to report bugs, make a new GitHub issue. For any other questions or comments, private message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
