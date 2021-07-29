@@ -22,14 +22,11 @@ We use [semantic versioning](https://semver.org/).
 
 **Note:** spidr is not executable at this time. Only type checking is possible.
 
-Install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
-
-Clone this repository, then install spidr with
+First install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Then clone this repository, and install spidr with
 ```bash
 idris2 --install spidr.ipkg
 ```
-
-You can then `import Tensor` etc. in your file `Foo.idr` and run it in a REPL with
+In your Idris file `Foo.idr`, you can then `import Tensor` etc. and run it in a REPL with
 ```bash
 idris2 -p spidr Foo.idr
 ```
