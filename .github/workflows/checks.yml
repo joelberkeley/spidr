@@ -23,7 +23,7 @@ jobs:
     - run: |
         export PATH=$PATH:$HOME/.idris2/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.idris2/lib
         sudo apt install -y git chezscheme libgmp3-dev
-        git clone https://github.com/idris-lang/Idris2.git
+        git clone https://github.com/idris-lang/Idris2.git && cd Idris2
         make bootstrap SCHEME=chez
         make install
         make all
@@ -41,7 +41,7 @@ jobs:
     - run: |
         export PATH=$PATH:$HOME/.idris2/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.idris2/lib
         sudo apt install -y git chezscheme libgmp3-dev
-        git clone https://github.com/idris-lang/Idris2.git
+        git clone https://github.com/idris-lang/Idris2.git && cd Idris2
         make bootstrap SCHEME=chez
         make install
         make all
@@ -59,7 +59,7 @@ jobs:
     - run: |
         export PATH=$PATH:$HOME/.idris2/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.idris2/lib
         sudo apt install -y git chezscheme libgmp3-dev
-        git clone https://github.com/idris-lang/Idris2.git
+        git clone https://github.com/idris-lang/Idris2.git && cd Idris2
         make bootstrap SCHEME=chez
         make install
         make all
