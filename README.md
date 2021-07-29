@@ -26,7 +26,7 @@ First install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). 
 ```bash
 idris2 --install spidr.ipkg
 ```
-In your Idris file `Foo.idr`, you can then `import Tensor` etc. and run it in a REPL with
+Finally, in your Idris file `Foo.idr`, you can `import Tensor` etc. and run it in a REPL with
 ```bash
 idris2 -p spidr Foo.idr
 ```
