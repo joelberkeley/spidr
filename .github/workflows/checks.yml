@@ -32,6 +32,9 @@ jobs:
         make clean
         make all && make install
         cd -
+        rm -rf Idris2/
+    - run: |
+        export PATH=$PATH:$HOME/.idris2/bin
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         res=0; for f in test/unit/*.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
