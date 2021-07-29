@@ -178,10 +178,9 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => dtype -> Tensor [n, n] dtype
 
-
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
 ||| of shape `to`.
-data DimBroadcastable (from : Nat) -> (to : Nat) -> Type where
+data DimBroadcastable : (from : Nat) -> (to : Nat) -> Type where
   ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
   ||| `[2, 3]`.
   Eq : DimBroadcastable x x
@@ -192,7 +191,6 @@ data DimBroadcastable (from : Nat) -> (to : Nat) -> Type where
 
   ||| Proof that any dimension can be broadcast to zero. For example in shapes `[2, 3]` to `[2, 0]`.
   Zero : DimBroadcastable _ 0
-
 
 namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
