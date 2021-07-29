@@ -108,7 +108,7 @@ In this case, our acquisition function depends on the model (which in turn depen
 
 In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
 
-```
+```idris
 modelMean : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} -> Acquisition 1 [2]
 modelMean model = squeeze . mean {event=[1]} . model
 
@@ -121,9 +121,9 @@ newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `M
 
 Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Morphism` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Morphism` context. For example, we can apply the `a -> b` function in `f : i ~> (a -> b)` to the `a` value in `x : i ~> a` as `f <*> x` (which is an `i ~> b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, simply creates an `i ~> o` from a simple `o` value.
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Morphism` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Morphism` context. For example, we can apply the `a -> b` function in `f : i ~> (a -> b)` to the `a` value in `x : i ~> a` as `f <*> x` (which is an `i ~> b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates an `i ~> o` from an `o`.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach. Namely, the case `fa : i ~> Acquisition` and `oa : i ~> (Acquisition -> Acquisition)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : i ~> Acquisition` and `oa : i ~> (Acquisition -> Acquisition)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -168,7 +168,7 @@ The `Morphism i o`, or `i ~> o` type, has proven flexible in allowing us to cons
 
 With this new functionality at hand, we'll return to our objective with failure regions. First we define some data on failure regions, and model that data
 
-```
+```idris
 failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 
@@ -178,7 +178,7 @@ failureModel : Either SingularMatrixError $
 
 Then we choose a representation of our data and models. We'll use the following named pair
 
-```
+```idris
 record Labelled o f where
   constructor Label
   objective : o
@@ -187,9 +187,9 @@ record Labelled o f where
 
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to get the respective data and model. Putting it all together, here's our empirical point:
 
-```
+```idris
 newPoint'' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
                  pof = failure >>> probabilityOfFeasibility (const 0.5)
                  acquisition = map optimizer (eci <*> pof)
                  dataAndModel = Label (historicData, !model) (failureData, !failureModel)

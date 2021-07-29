@@ -91,6 +91,6 @@ negativeLowerConfidenceBound beta =
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
 export
-expectedConstrainedImprovement : (limit : Double) ->
+expectedConstrainedImprovement : (limit : Tensor [] Double) ->
   Empiric features {targets=[1]} {marginal=Gaussian [1]} $
   (Acquisition 1 features -> Acquisition 1 features)
