@@ -54,6 +54,9 @@ jobs:
         make clean
         make all && make install
         cd -
+        rm -rf Idris2/
+    - run: |
+        export PATH=$PATH:$HOME/.idris2/bin
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/XLA.idr -x test_add | grep -q FAIL)
@@ -73,6 +76,9 @@ jobs:
         make clean
         make all && make install
         cd -
+        rm -rf Idris2/
+    - run: |
+        export PATH=$PATH:$HOME/.idris2/bin
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         res=0; for f in tutorials/*.md; do idris2 --check "$f" || res=$?; done; $(exit $res)
