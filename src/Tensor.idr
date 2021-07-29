@@ -256,7 +256,7 @@ namespace NSSqueezable
     ||| squeezing. For example:
     |||
     ||| ...
-    Extend : Squeezable from to -> Squeezable (x :: from) (x :: to)
+    Match : Squeezable from to -> Squeezable (x :: from) (x :: to)
 
     ||| Proof that any dimensions of length one can be squeezed out. For example:
     |||
