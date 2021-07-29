@@ -189,7 +189,7 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Either SingularMatrixError $ Tensor [1, 2] Double
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
                  pof = failure >>> probabilityOfFeasibility (const 0.5)
                  acquisition = map optimizer (eci <*> pof)
                  dataAndModel = Label (historicData, !model) (failureData, !failureModel)
