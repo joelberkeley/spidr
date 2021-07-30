@@ -168,12 +168,6 @@ export
 export
 fill : dtype -> Tensor shape dtype
 
-export
-concat : Vect n (Tensor shape dtype) -> Tensor (n :: shape) dtype
-
-export
-split : Tensor (n :: shape) dtype -> Vect n (Tensor shape dtype)
-
 ||| Cast the tensor elements to a new data type.
 export
 cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
@@ -528,5 +522,6 @@ inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, 
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 
+||| Sum the diagonal elements of the input. In Einstein notation: `X \mapsto X_{ii}`.
 export
 trace : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
