@@ -72,19 +72,27 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
       n = const {shape=[]} $ cast (S s)
       log2pi = log $ const {shape=[]} $ 2.0 * PI
       two = const {shape=[]} 2
-  in - y @@ alpha / two - trace (log l) - n * log2pi / two
+   in - y @@ alpha / two - trace (log l) - n * log2pi / two
 
+||| Find the hyperparameters which maximize the marginal likelihood for the specified structures of
+||| prior and likelihood, then return the posterior for that given prior, likelihood and
+||| hyperparameters.
+|||
+||| @optimizer The optimization tactic.
+||| @mk_prior Constructs the prior from *all* the hyperparameters.
+||| @mk_likelihood Constructs the likelihood from *all* the hyperparameters.
+||| @training_data The observed data.
 export
 fit : {s : Nat}
- -> Optimizer hp
+ -> (optimizer: Optimizer hp)
  -> (mk_prior : hp -> GaussianProcess features)
  -> (mk_likelihood : hp -> Gaussian [] (S s))
- -> (data_ : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
+ -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> GaussianProcess features
-fit optimize mk_prior mk_likelihood data_ =
+fit optimizer mk_prior mk_likelihood training_data =
   let objective : hp -> Tensor [] Double
-      objective hp = log_marginal_likelihood (mk_prior hp) (mk_likelihood hp) data_
+      objective hp = log_marginal_likelihood (mk_prior hp) (mk_likelihood hp) training_data
 
-      params := optimize objective
+      params := optimizer objective
 
-   in posterior (mk_prior params) (mk_likelihood params) data_
+   in posterior (mk_prior params) (mk_likelihood params) training_data

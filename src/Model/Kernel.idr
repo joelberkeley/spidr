@@ -30,9 +30,16 @@ Kernel features = {sk, sk' : _} ->
   Tensor (sk' :: features) Double ->
   Tensor [sk, sk'] Double
 
-||| The radial basis function, or squared exponential kernel.
+||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
+|||
+||| (\mathbf x_i, \mathbf x_j) \mapsto \exp \left(
+|||    - \frac{(\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j) }{2l^2}
+||| \right)
+|||
+||| @length_scale The length scale `l`. This affects how similar two marginal values are given the
+|||   distance between these points in feature space.
 export
-rbf : {d : Nat} -> Tensor [] Double -> Kernel [S d]
+rbf : {d : Nat} -> (length_scale : Tensor [] Double) -> Kernel [S d]
 rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
                             xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
                             two = const {shape=[]} 2.0

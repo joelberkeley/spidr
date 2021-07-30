@@ -59,8 +59,8 @@ and model that data
 ```idris
 model : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 model = let optimizer = gridSearch (const [100, 100]) (const [-10, 10]) (const [-10, 10])
-            mk_prior = \params => MkGP zero (rbf $ index 0 params)
-            mk_likelihood = \params => MkGaussian (fill 0) (diag $ index 1 params)
+            mk_prior = \len_and_noise => MkGP zero (rbf $ index 0 len_and_noise)
+            mk_likelihood = \len_and_noise => MkGaussian (fill 0) (diag $ index 1 len_and_noise)
             (qp, obs) = historicData
          in ?marginalise $ fit optimizer mk_prior mk_likelihood (qp, squeeze obs)
 ```
