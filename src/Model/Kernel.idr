@@ -36,8 +36,11 @@ Kernel features = {sk, sk' : _} ->
 |||    - \frac{(\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j) }{2l^2}
 ||| \right)
 |||
-||| @length_scale The length scale `l`. This affects how similar two marginal values are given the
-|||   distance between these points in feature space.
+||| Two points that are close in feature space will be more tightly correlated than points that
+||| are further apart. The distance over which the correlation reduces is given by the length
+||| scale `l`. Smaller length scales result in faster-varying target values.
+|||
+||| @length_scale The length scale `l`.
 export
 rbf : {d : Nat} -> (length_scale : Tensor [] Double) -> Kernel [S d]
 rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
