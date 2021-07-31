@@ -79,20 +79,20 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 ||| hyperparameters.
 |||
 ||| @optimizer The optimization tactic.
-||| @mk_prior Constructs the prior from *all* the hyperparameters.
-||| @mk_likelihood Constructs the likelihood from *all* the hyperparameters.
+||| @prior Constructs the prior from *all* the hyperparameters.
+||| @likelihood Constructs the likelihood from *all* the hyperparameters.
 ||| @training_data The observed data.
 export
 fit : {s : Nat}
  -> (optimizer: Optimizer hp)
- -> (mk_prior : hp -> GaussianProcess features)
- -> (mk_likelihood : hp -> Gaussian [] (S s))
+ -> (prior : hp -> GaussianProcess features)
+ -> (likelihood : hp -> Gaussian [] (S s))
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> GaussianProcess features
-fit optimizer mk_prior mk_likelihood training_data =
+fit optimizer prior likelihood training_data =
   let objective : hp -> Tensor [] Double
-      objective hp = log_marginal_likelihood (mk_prior hp) (mk_likelihood hp) training_data
+      objective hp = log_marginal_likelihood (prior hp) (likelihood hp) training_data
 
       params := optimizer objective
 
-   in posterior (mk_prior params) (mk_likelihood params) training_data
+   in posterior (prior params) (likelihood params) training_data
