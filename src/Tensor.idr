@@ -176,7 +176,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 ||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
 ||| `const [[3.0, 0.0], [0.0, 3.0]]`.
 export
-diag : Num dtype => Tensor [] Double -> Tensor [n, n] dtype
+diag : Num dtype => Tensor [] dtype -> Tensor [n, n] dtype
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
 ||| of shape `to`.
