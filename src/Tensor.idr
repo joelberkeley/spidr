@@ -493,7 +493,7 @@ export
 Error CholeskyError where
   format (MkCholeskyError msg) = msg
 
-||| Cholesky decomposition. Finds `l` from `x` where `x = l.T @@ l`.
+||| Cholesky decomposition. Finds the lower triangular matrix `l` from `x` s.t. `x = l @@ l.T`.
 export
 cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 
