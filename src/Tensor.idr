@@ -485,7 +485,7 @@ det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
           n = last shape
        in {auto isSquare : m = n} -> {auto nonEmpty : IsSucc m} -> Tensor leading dtype
 
-||| Cholesky decomposition. Finds the lower triangular matrix `l` from `x` s.t. `x = l @@ l.T`.
+||| Cholesky decomposition. Finds the lower triangular matrix `L` from `X` s.t. `X = L @@ L.T`.
 export
 cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 
