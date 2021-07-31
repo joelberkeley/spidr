@@ -499,7 +499,7 @@ cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 
 infix 9 \\
 
-||| Find `Y` from `A` and `X` s.t. `X = AY` where `A` is a lower-triangular matrix.
+||| Find `Y` from `A` and `X` s.t. `X = AY` where `A` is a lower triangular matrix.
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
