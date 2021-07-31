@@ -485,14 +485,6 @@ det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
           n = last shape
        in {auto isSquare : m = n} -> {auto nonEmpty : IsSucc m} -> Tensor leading dtype
 
-||| Indicates a Cholesky decomposition was impossible (at the attempted precision).
-export
-data CholeskyError = MkCholeskyError String
-
-export
-Error CholeskyError where
-  format (MkCholeskyError msg) = msg
-
 ||| Cholesky decomposition. Finds the lower triangular matrix `l` from `x` s.t. `x = l @@ l.T`.
 export
 cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
@@ -522,6 +514,6 @@ inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, 
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
 
-||| Sum the diagonal elements of the input. In Einstein notation: `X \mapsto X_{ii}`.
+||| Sum the elements along the diagonal of the input.
 export
 trace : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
