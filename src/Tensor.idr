@@ -176,7 +176,7 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 ||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
 ||| `const [[3.0, 0.0], [0.0, 3.0]]`.
 export
-diag : Num dtype => dtype -> Tensor [n, n] dtype
+diag : Num dtype => Tensor [] dtype -> Tensor [n, n] dtype
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
 ||| of shape `to`.
@@ -485,16 +485,15 @@ det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
           n = last shape
        in {auto isSquare : m = n} -> {auto nonEmpty : IsSucc m} -> Tensor leading dtype
 
-||| Indicates a Cholesky decomposition was impossible (at the attempted precision).
+||| Cholesky decomposition. Finds the lower triangular matrix `L` from `X` s.t. `X = L @@ L.T`.
 export
-data CholeskyError = MkCholeskyError String
+cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 
-export
-Error CholeskyError where
-  format (MkCholeskyError msg) = msg
+infix 9 \\
 
+||| Find `Y` from `A` and `X` s.t. `X = AY` where `A` is a lower triangular matrix.
 export
-cholesky : Tensor [S n, S n] dtype => Either CholeskyError $ Tensor [S n, S n] dtype
+(\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
 ||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
 ||| singular.
@@ -514,3 +513,7 @@ inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, 
 ||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
 export
 trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+
+||| Sum the elements along the diagonal of the input.
+export
+trace : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
