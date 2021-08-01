@@ -165,9 +165,9 @@ The final point is then gathered from `map optimizer (oa <*> fa)`, and this conc
 
 ## Separating representation from computation with `Empiric`
 
-The `Morphism i o`, or `i ~> o` type, has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `i ~> o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Taking a look at `modelMean`, while that only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least the model _or_ the data, and these two always appear together, we can define an atomic empirical value as one that takes any subset of the data, and the corresponding model of that data. We call this an `Empiric`. We can then pair each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value, with the infix operator `>>>` as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
+The `Morphism i o`, or `i ~> o` type, has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `i ~> o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Look again at `modelMean`. While that only uses the model directly, other acquisition functions can also depend directly on the data. All acquisitions will depend on at least a model or some data, and in Bayesian optimization, these two always appear together. Given this, we choose to define an atomic empirical value as one that takes any subset of the data, and the corresponding model of that subset of data. We call this an `Empiric`. We can then chain each `Empiric` value `emp` with functionality `f` to gather the data set and model from the `i` value. We provide the infix operator `>>>` for this, used as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
 
-With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions and to model that data. Recall that we can represent this in any form we like, and we'll simply use a dedicated `Data` set and `ProbabilisticModel`:
+With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data. Recall that we can represent this in any form we like, and we'll simply use a dedicated `Data` set and `ProbabilisticModel`:
 
 ```idris
 failureData : Data {samples=4} [2] [1]
@@ -176,7 +176,7 @@ failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0
 failureModel : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
 ```
 
-We'll gather all the data and models in a `record`:
+and we'll gather all the data and models in a `record`:
 
 ```idris
 record Labelled o f where
