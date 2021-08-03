@@ -31,7 +31,7 @@ public export 0
 Optimizer : {default id 0 m : Type -> Type} -> (0 domain : Type) -> Type
 Optimizer a = (a -> m $ Tensor [] Double) -> m a
 
-||| Construct a `Optimizer` that implements grid search over a scalar feature space. Grid search
+||| Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search
 ||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
 |||
 ||| @density The density of the grid.
@@ -42,3 +42,16 @@ gridSearch : (density : Tensor [d] Integer) ->
              (lower : Tensor [d] Double) ->
              (upper : Tensor [d] Double) ->
              Optimizer (Tensor [d] Double)
+
+||| The L-BFGS optimization tactic, see
+|||
+||| Nocedal, Jorge, Updating quasi-Newton matrices with limited storage.
+||| Math. Comp. 35 (1980), no. 151, 773–782.
+|||
+||| available at
+|||
+||| https://www.ams.org/journals/mcom/1980-35-151/S0025-5718-1980-0572855-7/
+|||
+||| @initial_points The points from which to start optimization.
+export
+lbfgs : forall n . (initial_points : Tensor [n] Double) -> Optimizer (Tensor [n] Double)
