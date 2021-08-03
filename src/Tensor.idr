@@ -154,6 +154,22 @@ freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 export
 index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
 
+||| Split a `Tensor` along the first axis at the specified index. For example,
+||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
+||| `(const [[1, 2]], const [[3, 4], [5, 6]])`.
+|||
+||| @idx The index of the row at which to split the `Tensor`. The row with index `idx` in
+|||   the input `Tensor` will appear in the result as the first row in the second `Tensor`.
+export
+split : (idx : Nat) -> Tensor ((idx + rest) :: tl) dtype
+  -> (Tensor (idx :: tl) dtype, Tensor (rest :: tl) dtype)
+
+||| Concatenate two `Tensor`s along their first axis. For example,
+||| `concat (const [[1, 2], [3, 4]]) (const [[5, 6]])` is equivalent to
+||| `const [[1, 2], [3, 4], [5, 6]]`.
+export
+concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
+
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example, 
 ||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
@@ -247,7 +263,7 @@ namespace Broadcastable
 ||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
-broadcast : {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
+broadcast : forall from, to . {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the

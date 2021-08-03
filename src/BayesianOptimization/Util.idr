@@ -20,16 +20,6 @@ import Distribution
 import Tensor
 import Model
 
-||| Objective query points and either corresponding objective values or metadata.
-|||
-||| @samples The number of points in each of the feature and target data.
-||| @features The shape of the feature domain.
-||| @targets The shape of the target domain.
-public export 0
-Data : {0 samples : Nat} -> (0 features : Shape) -> (0 targets : Shape) -> Type
-Data features targets =
-  (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
-
 infix 9 >>>
 
 ||| Compose two functions that each use two values and wrap them in a morphism. This is a
