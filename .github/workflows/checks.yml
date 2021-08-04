@@ -21,19 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        export PATH=$PATH:$HOME/.idris2/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.idris2/lib
-        sudo apt install -y git chezscheme libgmp3-dev
-        git clone --depth 1 --branch v0.4.0 https://github.com/idris-lang/Idris2
-        cd Idris2
-        make bootstrap SCHEME=scheme
-        make install
-        make all
-        make install
-        cd -
-        rm -rf Idris2/
-    - run: |
-        export PATH=$PATH:$HOME/.idris2/bin
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         res=0; for f in test/**.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
@@ -41,19 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        export PATH=$PATH:$HOME/.idris2/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.idris2/lib
-        sudo apt install -y git chezscheme libgmp3-dev
-        git clone --depth 1 --branch v0.4.0 https://github.com/idris-lang/Idris2
-        cd Idris2
-        make bootstrap SCHEME=scheme
-        make install
-        make all
-        make install
-        cd -
-        rm -rf Idris2/
-    - run: |
-        export PATH=$PATH:$HOME/.idris2/bin
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/XLA.idr -x test_add | grep -q FAIL)
@@ -61,19 +43,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        export PATH=$PATH:$HOME/.idris2/bin && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.idris2/lib
-        sudo apt install -y git chezscheme libgmp3-dev
-        git clone --depth 1 --branch v0.4.0 https://github.com/idris-lang/Idris2
-        cd Idris2
-        make bootstrap SCHEME=scheme
-        make install
-        make all
-        make install
-        cd -
-        rm -rf Idris2/
-    - run: |
-        export PATH=$PATH:$HOME/.idris2/bin
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install idris2
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         res=0; for f in tutorials/*.md; do idris2 --check "$f" || res=$?; done; $(exit $res)
