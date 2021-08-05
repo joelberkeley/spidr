@@ -47,7 +47,7 @@ XlaOpFactory = (builder : GCAnyPtr) -> IO GCAnyPtr
 ||| @shape The `Tensor` shape.
 ||| @dtype The element type.
 export
-data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
+data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : XlaOpFactory -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
@@ -141,7 +141,7 @@ freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
 |||
 ||| @idx The row to fetch.
 export
-index : (idx : Fin d) -> Tensor (d :: ds) dtype -> Tensor ds dtype
+index : (idx : Nat) -> {auto 0 prf : GT d idx} -> Tensor (d :: ds) dtype -> Tensor ds dtype
 
 ||| Split a `Tensor` along the first axis at the specified index. For example,
 ||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
@@ -165,12 +165,14 @@ concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: 
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand :
-  (axis : Fin (S rank)) -> Tensor {rank=rank} shape dtype -> Tensor (insertAt axis 1 shape) dtype
+  (axis : Nat) -> forall shape . {auto 0 _ : (length shape) `GT` axis} -> Tensor shape dtype ->
+  Tensor ((take axis shape) ++ 1 :: (drop axis shape)) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export
-(.T) : forall shape, dtype . Tensor shape dtype ->
+(.T) : forall shape, dtype . {auto 0 _ : NonEmpty shape} -> {auto 0 _ : NonEmpty (init shape)} ->
+       Tensor shape dtype ->
        let leading = init (init shape)
            m = last (init shape)
            n = last shape
@@ -222,7 +224,7 @@ namespace Broadcastable
     ||| [2, 3] to [2, 3]
     ||| [2, 1] to [2, 3]
     ||| [2, 1] to [2, 0]
-    Match : {0 from, to : Shape {rank=r}}
+    Match : forall from, to . {auto 0 _ : length from = length to}
             -> {auto 0 _ : DimBroadcastable f t}
             -> Broadcastable from to
             -> Broadcastable (f :: from) (t :: to)
@@ -726,7 +728,7 @@ log : Tensor shape F64 -> Tensor shape F64
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : forall shape, dtype . Primitive.Neg dtype=> Tensor shape dtype ->
+det : forall shape, dtype . Primitive.Neg dtype => Tensor shape dtype ->
       let leading = init (init shape)
           m = last (init shape)
           n = last shape
