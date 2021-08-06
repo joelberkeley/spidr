@@ -25,7 +25,7 @@ import Util
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
 public export 0
-Empiric : Distribution targets marginal => Shape -> Type -> Type
+Empiric : Distribution targets marginal => (0 features : Shape) -> Type -> Type
 Empiric {targets} {marginal} features out = forall s .
   Data {samples=S s} features targets -> ProbabilisticModel features {targets} {marginal} -> out
 

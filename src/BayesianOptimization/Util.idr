@@ -22,7 +22,7 @@ import Model
 
 ||| Objective query points and either corresponding objective values or metadata.
 public export 0
-Data : {0 samples : Nat} -> Shape -> Shape -> Type
+Data : {0 samples : Nat} -> (0 features : Shape) -> (0 targets : Shape) -> Type
 Data features targets =
   (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
 
