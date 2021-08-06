@@ -26,7 +26,7 @@ import Tensor
 ||| For example, a function `a -> Maybe (Tensor [] Double)`, can be optimized by an
 ||| `Optimizer {m=Maybe} a`.
 public export 0
-Optimizer : {default id m : Type -> Type} -> Type -> Type
+Optimizer : {default id 0 m : Type -> Type} -> Type -> Type
 Optimizer a = (a -> m $ Tensor [] Double) -> m a
 
 ||| Construct a `Optimizer` that implements grid search over a scalar feature space. Grid search

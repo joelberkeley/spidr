@@ -21,9 +21,9 @@ import Tensor
 
 ||| A `MeanFunction` maps a point in feature space to the mean value of a corresponding
 ||| distribution in target space.
-public export
+public export 0
 MeanFunction : (features : Shape) -> Type
-MeanFunction features = {sm : _} -> Tensor (sm :: features) Double -> Tensor [sm] Double
+MeanFunction features = forall sm . Tensor (sm :: features) Double -> Tensor [sm] Double
 
 ||| A mean function where the mean is zero in all target dimensions.
 export

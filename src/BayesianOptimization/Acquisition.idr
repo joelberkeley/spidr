@@ -32,7 +32,7 @@ Empiric {targets} {marginal} features out = forall s .
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 public export 0
-Acquisition : (batch_size : Nat) -> {auto prf : GT batch_size 0} -> Shape -> Type
+Acquisition : (batch_size : Nat) -> {auto 0 _ : GT batch_size 0} -> Shape -> Type
 Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
