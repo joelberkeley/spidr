@@ -24,7 +24,7 @@ import Util
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
 ||| same shape.
 public export
-interface Distribution (0 event : Shape) (0 dist : Nat -> Type) where
+interface Distribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
   ||| The mean of the distribution.
   mean : dist dim -> Tensor (dim :: event) Double
 
@@ -41,7 +41,7 @@ variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 ||| approximation). Every sub-event is assumed to have the same shape.
 public export
 interface Distribution event dist =>
-  ClosedFormDistribution (0 event : Shape) (0 dist : Nat -> Type) where
+  ClosedFormDistribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
     ||| The probability density function of the distribution at the specified point.
     pdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
 
@@ -51,7 +51,7 @@ interface Distribution event dist =>
 
 ||| A joint Gaussian distribution.
 public export
-data Gaussian : (0 event : Shape) -> (dim : Nat) -> Type where
+data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
   MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) Double) ->

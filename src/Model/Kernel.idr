@@ -24,7 +24,7 @@ import Util
 ||| A `Kernel` function maps pairs of points in a feature space to the covariance between those two
 ||| points in some target space.
 public export 0
-Kernel : (features : Shape) -> Type
+Kernel : (0 features : Shape) -> Type
 Kernel features = forall sk, sk' .
   Tensor (sk :: features) Double ->
   Tensor (sk' :: features) Double ->

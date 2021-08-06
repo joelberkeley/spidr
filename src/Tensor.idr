@@ -33,7 +33,7 @@ import Util
 ||| The rank is the number of elements in the shape, or equivalently the number of axes.
 public export 0
 Shape : {0 rank: Nat} -> Type
-Shape {rank} = Vect rank Nat
+Shape = Vect rank Nat
 
 ||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`.
 export
@@ -65,7 +65,7 @@ ScalarLike Bool where
 ||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
 ||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
 public export 0
-Array : ScalarLike dtype => Shape -> Type
+Array : ScalarLike dtype => (0 shape : Shape) -> Type
 Array {dtype} [] = dtype
 Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 
@@ -359,7 +359,7 @@ infixl 9 @@
 ||| ```
 export
 (@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
-       {auto 0 prf : last l = S n} -> Tensor (init l ++ tail') dtype
+       {auto 0 _ : last l = S n} -> Tensor (init l ++ tail') dtype
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
