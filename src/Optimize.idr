@@ -25,8 +25,10 @@ import Tensor
 ||| wrapping function values in some context, this extra context can be captured in the value `m`.
 ||| For example, a function `a -> Maybe (Tensor [] Double)`, can be optimized by an
 ||| `Optimizer {m=Maybe} a`.
+|||
+||| @domain The type of the domain over which to find the optimizer.
 public export 0
-Optimizer : {default id 0 m : Type -> Type} -> (0 out : Type) -> Type
+Optimizer : {default id 0 m : Type -> Type} -> (0 domain : Type) -> Type
 Optimizer a = (a -> m $ Tensor [] Double) -> m a
 
 ||| Construct a `Optimizer` that implements grid search over a scalar feature space. Grid search

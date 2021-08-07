@@ -28,6 +28,8 @@ import Util
 ||| A Gaussian process is a collection of random variables, any finite number of which have joint
 ||| Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian
 ||| distribution over a target space.
+|||
+||| @features The shape of the feature domain.
 public export
 data GaussianProcess : (0 features : Shape) -> Type where
   ||| Construct a `GaussianProcess` as a pair of mean function and kernel.

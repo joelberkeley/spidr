@@ -64,6 +64,8 @@ ScalarLike Bool where
 ||| 
 ||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
 ||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
+|||
+||| @shape The shape of this array.
 public export 0
 Array : ScalarLike dtype => (0 shape : Shape) -> Type
 Array {dtype} [] = dtype
@@ -72,6 +74,9 @@ Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
 ||| the specific backend.
+|||
+||| @shape The `Tensor` shape.
+||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
   MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
@@ -114,6 +119,9 @@ const = MkTensor
 ||| function `var`.
 |||
 ||| *See http://www.type-driven.org.uk/edwinb
+|||
+||| @shape The `Variable` shape.
+||| @dtype The element type.
 export
 data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkVariable : ScalarLike dtype => Array shape {dtype=dtype} -> Variable shape dtype
@@ -178,8 +186,8 @@ cast_dtype : Cast dtype dtype' => Tensor shape dtype -> Tensor shape dtype'
 export
 diag : Num dtype => Tensor [] dtype -> Tensor [n, n] dtype
 
-||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
-||| of shape `to`.
+||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
+||| dimension of size `to`.
 public export
 data DimBroadcastable : (0 from : Nat) -> (0 to : Nat) -> Type where
   ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
