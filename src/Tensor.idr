@@ -31,9 +31,9 @@ import Util
 ||| can have shape [2, 0], [2, 0, 5] or etc. A scalar `Tensor` has shape `[]`.
 |||
 ||| The rank is the number of elements in the shape, or equivalently the number of axes.
-public export
-Shape : {rank: Nat} -> Type
-Shape {rank} = Vect rank Nat
+public export 0
+Shape : {0 rank: Nat} -> Type
+Shape = Vect rank Nat
 
 ||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`.
 export
@@ -64,16 +64,21 @@ ScalarLike Bool where
 ||| 
 ||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
 ||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
+|||
+||| @shape The shape of this array.
 public export 0
-Array : {0 dtype : Type} -> ScalarLike dtype => Shape -> Type
+Array : ScalarLike dtype => (0 shape : Shape) -> Type
 Array {dtype} [] = dtype
 Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
 ||| the specific backend.
+|||
+||| @shape The `Tensor` shape.
+||| @dtype The element type.
 export
-data Tensor : (shape : Shape {rank}) -> (dtype : Type) -> Type where
+data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
   MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
@@ -114,8 +119,11 @@ const = MkTensor
 ||| function `var`.
 |||
 ||| *See http://www.type-driven.org.uk/edwinb
+|||
+||| @shape The `Variable` shape.
+||| @dtype The element type.
 export
-data Variable : (shape : Shape) -> (dtype : Type) -> Type where
+data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkVariable : ScalarLike dtype => Array shape {dtype=dtype} -> Variable shape dtype
 
 ||| Provides access to a linear `Variable` with initial contents `arr`. For example:
@@ -157,7 +165,7 @@ expand :
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export
-(.T) : {shape : Shape} -> {dtype : Type} -> Tensor shape dtype ->
+(.T) : forall shape, dtype . Tensor shape dtype ->
        let leading = init (init shape)
            m = last (init shape)
            n = last shape
@@ -170,7 +178,7 @@ fill : dtype -> Tensor shape dtype
 
 ||| Cast the tensor elements to a new data type.
 export
-cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor shape dtype'
+cast_dtype : Cast dtype dtype' => Tensor shape dtype -> Tensor shape dtype'
 
 ||| Construct a diagonal tensor from the specified value, where all off-diagonal elements are zero.
 ||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
@@ -178,10 +186,10 @@ cast_dtype : Cast dtype dtype' => {shape : _} -> Tensor shape dtype -> Tensor sh
 export
 diag : Num dtype => Tensor [] dtype -> Tensor [n, n] dtype
 
-||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a shape
-||| of shape `to`.
+||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
+||| dimension of size `to`.
 public export
-data DimBroadcastable : (from : Nat) -> (to : Nat) -> Type where
+data DimBroadcastable : (0 from : Nat) -> (0 to : Nat) -> Type where
   ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
   ||| `[2, 3]`.
   Same : DimBroadcastable x x
@@ -197,7 +205,7 @@ namespace NSBroadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
   public export
-  data Broadcastable : (from : Shape) -> (to : Shape) -> Type where
+  data Broadcastable : (0 from : Shape) -> (0 to : Shape) -> Type where
     ||| Proof that a shape can be broadcast to itself. For example:
     |||
     ||| [] to []
@@ -214,8 +222,8 @@ namespace NSBroadcastable
     ||| [2, 3] to [2, 3]
     ||| [2, 1] to [2, 3]
     ||| [2, 1] to [2, 0]
-    Match : {from, to : Shape {rank=r}}
-            -> {auto _ : DimBroadcastable f t}
+    Match : {0 from, to : Shape {rank=r}}
+            -> {auto 0 _ : DimBroadcastable f t}
             -> Broadcastable from to
             -> Broadcastable (f :: from) (t :: to)
 
@@ -239,13 +247,13 @@ namespace NSBroadcastable
 ||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
-broadcast : {auto prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
+broadcast : {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
 namespace NSSqueezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
-  data Squeezable : (from : Shape) -> (to : Shape) -> Type where
+  data Squeezable : (0 from : Shape) -> (0 to : Shape) -> Type where
     ||| Proof that a shape can be squeezed to itself. For example:
     |||
     ||| [] to []
@@ -280,7 +288,7 @@ namespace NSSqueezable
 ||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
 ||| ```
 export
-squeeze : {auto _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
+squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
 ----------------------------- numeric operations ----------------------------
 
@@ -290,7 +298,7 @@ squeeze : {auto _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 ||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
 ||| switch the arguments for shapes to be compatible.
 export
-(==) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(==) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
 ||| `const [False, True]`.
@@ -298,7 +306,7 @@ export
 ||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
 ||| switch the arguments for shapes to be compatible.
 export
-(/=) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(/=) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
@@ -306,7 +314,7 @@ export
 ||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
 ||| use `>=` for shapes to be compatible.
 export
-(<) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(<) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
@@ -314,7 +322,7 @@ export
 ||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
 ||| use `<=` for shapes to be compatible.
 export
-(>) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+(>) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is equivalent
 ||| to `const [True, True, False]`.
@@ -323,7 +331,7 @@ export
 ||| use `>` for shapes to be compatible.
 export
 (<=) : Ord dtype =>
-       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+       Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
@@ -332,7 +340,7 @@ export
 ||| use `<` for shapes to be compatible.
 export
 (>=) : Ord dtype =>
-       Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l Bool
+       Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -359,7 +367,7 @@ infixl 9 @@
 ||| ```
 export
 (@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
-       {auto prf : last l = S n} -> Tensor (init l ++ tail') dtype
+       {auto 0 _ : last l = S n} -> Tensor (init l ++ tail') dtype
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
@@ -368,7 +376,7 @@ export
 ||| switch the arguments for shapes to be compatible.
 export
 (+) : Num dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
@@ -381,7 +389,7 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 ||| broadcast explicitly for shapes to be compatible.
 export
 (-) : Neg dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype 
+      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype 
 
 ||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
@@ -390,7 +398,7 @@ export
 ||| switch the arguments for shapes to be compatible.
 export
 (*) : Num dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable l r} -> Tensor r dtype
+      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable l r} -> Tensor r dtype
 
 ||| Elementwise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent to
 ||| `const [0.5, 0.6]`.
@@ -399,7 +407,7 @@ export
 ||| broadcast explicitly for shapes to be compatible.
 export
 (/) : Fractional dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
 
 infixr 9 ^
 
@@ -413,7 +421,7 @@ infixr 9 ^
 ||| broadcast explicitly for shapes to be compatible.
 export
 (^) : Num dtype => (base : Tensor l dtype) -> (exponent : Tensor r dtype) ->
-      {auto _ : Broadcastable r l} -> Tensor l dtype
+      {auto 0 _ : Broadcastable r l} -> Tensor l dtype
 
 -- todo
 ||| The element-wise natural exponential.
@@ -438,22 +446,22 @@ infix 8 //=
 ||| exactly like `(+)` on a `Tensor`.
 export
 (+=) : Num dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
 
 ||| Element-wise in-place subtraction. See `(+=)` and `(+)` for details.
 export
 (-=) : Neg dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
 
 ||| Element-wise in-place multiplication. See `(+=)` and `(*)` for details.
 export
 (*=) : Num dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
 
 ||| Element-wise in-place division. See `(+=)` and `(/)` for details.
 export
 (//=) : Fractional dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Variable l dtype
+  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
 
 -- todo
 ||| The element-wise natural logarithm.
@@ -465,25 +473,25 @@ log : Tensor shape Double -> Tensor shape Double
 ||| equivalent to `const [-1, 5, 6]`.
 export
 reduce_min : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
-  {auto prf : IsSucc $ index axis shape} -> Tensor (deleteAt axis shape) dtype
+  {auto 0 _ : IsSucc $ index axis shape} -> Tensor (deleteAt axis shape) dtype
 
 ||| Reduce a `Tensor` along the specified `axis` to the sum of its components, removing the axis in
 ||| the process. For example, `reduce_sum 1 $ const [[-1, 2, 3], [4, 5, -6]]` is equivalent to
 ||| `const [3, 7, -3]`.
 export
 reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
-  {auto prf : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
+  {auto 0 _ : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
 
 ---------------------------- other ----------------------------------
 
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : {shape : Shape} -> {dtype : Type} -> Neg dtype => Tensor shape dtype ->
+det : forall shape, dtype . Neg dtype => Tensor shape dtype ->
       let leading = init (init shape)
           m = last (init shape)
           n = last shape
-       in {auto isSquare : m = n} -> {auto nonEmpty : IsSucc m} -> Tensor leading dtype
+       in {auto 0 isSquare : m = n} -> {auto 0 nonEmpty : IsSucc m} -> Tensor leading dtype
 
 ||| Cholesky decomposition. Finds the lower triangular matrix `L` from `X` s.t. `X = L @@ L.T`.
 export

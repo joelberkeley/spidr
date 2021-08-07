@@ -24,15 +24,22 @@ import BayesianOptimization.Util
 import Util
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
+|||
+||| @features The shape of the feature domain.
+||| @out The type of the value constructed by the `Empiric`.
 public export 0
-Empiric : Distribution targets marginal => Shape -> Type -> Type
+Empiric : Distribution targets marginal => (0 features : Shape) -> (0 out : Type) -> Type
 Empiric {targets} {marginal} features out = forall s .
   Data {samples=S s} features targets -> ProbabilisticModel features {targets} {marginal} -> out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
+|||
+||| @batch_size The number of points in the feature domain that the `Acquisition` evaluates
+|||   at once.
+||| @features The shape of the feature domain.
 public export 0
-Acquisition : (batch_size : Nat) -> {auto prf : GT batch_size 0} -> Shape -> Type
+Acquisition : (0 batch_size : Nat) -> {auto 0 _ : GT batch_size 0} -> (0 features : Shape) -> Type
 Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best

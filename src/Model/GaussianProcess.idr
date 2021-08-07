@@ -28,6 +28,8 @@ import Util
 ||| A Gaussian process is a collection of random variables, any finite number of which have joint
 ||| Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian
 ||| distribution over a target space.
+|||
+||| @features The shape of the feature domain.
 public export
 data GaussianProcess : (0 features : Shape) -> Type where
   ||| Construct a `GaussianProcess` as a pair of mean function and kernel.
@@ -37,14 +39,14 @@ data GaussianProcess : (0 features : Shape) -> Type where
 |||
 ||| @at The feature values at which to evaluate the marginal distribution.
 export
-marginalise : {s : Nat}
+marginalise : {s : _}
   -> GaussianProcess features
   -> Tensor ((S s) :: features) Double
   -> Gaussian [] (S s)
 marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
 
-posterior : {s : Nat}
- -> (prior : GaussianProcess features)
+posterior : forall s .
+ (prior : GaussianProcess features)
  -> (likelihood : Gaussian [] (S s))
  -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
  -> GaussianProcess features
@@ -61,7 +63,7 @@ posterior (MkGP prior_meanf prior_kernel) (MkGaussian _ cov) (x_train, y_train) 
 
    in MkGP posterior_meanf posterior_kernel
 
-log_marginal_likelihood : {s : Nat}
+log_marginal_likelihood : {s : _}
  -> GaussianProcess features
  -> Gaussian [] (S s)
  -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
@@ -83,7 +85,7 @@ log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
 ||| @likelihood Constructs the likelihood from *all* the hyperparameters.
 ||| @training_data The observed data.
 export
-fit : {s : Nat}
+fit : {s : _}
  -> (optimizer: Optimizer hp)
  -> (prior : hp -> GaussianProcess features)
  -> (likelihood : hp -> Gaussian [] (S s))

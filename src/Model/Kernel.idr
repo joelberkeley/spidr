@@ -23,9 +23,11 @@ import Util
 
 ||| A `Kernel` function maps pairs of points in a feature space to the covariance between those two
 ||| points in some target space.
-public export
-Kernel : (features : Shape) -> Type
-Kernel features = {sk, sk' : _} ->
+|||
+||| @features The shape of the feature domain.
+public export 0
+Kernel : (0 features : Shape) -> Type
+Kernel features = forall sk, sk' .
   Tensor (sk :: features) Double ->
   Tensor (sk' :: features) Double ->
   Tensor [sk, sk'] Double
@@ -42,7 +44,7 @@ Kernel features = {sk, sk' : _} ->
 |||
 ||| @length_scale The length scale `l`.
 export
-rbf : {d : Nat} -> (length_scale : Tensor [] Double) -> Kernel [S d]
+rbf : (length_scale : Tensor [] Double) -> Kernel [S d]
 rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
                             xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
                             two = const {shape=[]} 2.0

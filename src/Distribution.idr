@@ -23,8 +23,11 @@ import Util
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the first
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
 ||| same shape.
+|||
+||| @event The shape of each sub-event.
+||| @dist Constructs the distribution from the number of events in the distribution.
 public export
-interface Distribution (0 event : Shape) (0 dist : Nat -> Type) where
+interface Distribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
   ||| The mean of the distribution.
   mean : dist dim -> Tensor (dim :: event) Double
 
@@ -39,9 +42,12 @@ variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
 ||| approximation). Every sub-event is assumed to have the same shape.
+|||
+||| @event The shape of each sub-event.
+||| @dist Constructs the distribution from the number of events in the distribution.
 public export
 interface Distribution event dist =>
-  ClosedFormDistribution (0 event : Shape) (0 dist : Nat -> Type) where
+  ClosedFormDistribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
     ||| The probability density function of the distribution at the specified point.
     pdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
 
@@ -50,8 +56,11 @@ interface Distribution event dist =>
     cdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
 
 ||| A joint Gaussian distribution.
+|||
+||| @event The shape of each sub-event.
+||| @dim The number of sub-events.
 public export
-data Gaussian : (0 event : Shape) -> (dim : Nat) -> Type where
+data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
   MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) Double) ->
