@@ -201,7 +201,7 @@ data DimBroadcastable : (0 from : Nat) -> (0 to : Nat) -> Type where
   ||| Proof that any dimension can be broadcast to zero. For example in shapes `[2, 3]` to `[2, 0]`.
   Zero : DimBroadcastable _ 0
 
-namespace NSBroadcastable
+namespace Broadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
   public export
@@ -249,7 +249,7 @@ namespace NSBroadcastable
 export
 broadcast : {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
-namespace NSSqueezable
+namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
