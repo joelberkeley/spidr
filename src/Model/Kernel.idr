@@ -32,13 +32,13 @@ Kernel features = forall sk, sk' .
   Tensor (sk' :: features) Double ->
   Tensor [sk, sk'] Double
 
-l2_norm : Tensor [] Double
+scaled_l2_norm : Tensor [] Double
  -> Tensor [sk, S d] Double
  -> Tensor [sk', S d] Double
  -> Tensor [sk, sk'] Double
-l2_norm len x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
-                       xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
-                    in reduce_sum 2 $ ((xs' - xs) / len) ^ const {shape=[]} 2.0
+scaled_l2_norm len x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
+                              xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
+                           in reduce_sum 2 $ ((xs' - xs) / len) ^ const {shape=[]} 2.0
 
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
 |||
@@ -53,7 +53,7 @@ l2_norm len x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
 ||| @length_scale The length scale `l`.
 export
 rbf : (length_scale : Tensor [] Double) -> Kernel [S d]
-rbf length_scale x x' = exp (- l2_norm length_scale x x' / const {shape=[]} 2.0)
+rbf length_scale x x' = exp (- scaled_l2_norm length_scale x x' / const {shape=[]} 2.0)
 
 ||| The Matern kernel for parameter 5/2. This is a stationary kernel with form
 |||
@@ -67,7 +67,7 @@ rbf length_scale x x' = exp (- l2_norm length_scale x x' / const {shape=[]} 2.0)
 ||| @length_scale The length scale `\rho`.
 export
 matern52 : (amplitude : Tensor [] Double) -> (length_scale : Tensor [] Double) -> Kernel [S d]
-matern52 amp len x x' = let d2 = (const {shape=[]} 5.0) * l2_norm len x x'
+matern52 amp len x x' = let d2 = (const {shape=[]} 5.0) * scaled_l2_norm len x x'
                             d = d2 ^ (const {shape=[]} 0.5)
                          in (amp ^ (const {shape=[]} 2.0))
                             * (d2 / const {shape=[]} 3.0 + d + (const {shape=[]} 1.0)) * exp (- d)
