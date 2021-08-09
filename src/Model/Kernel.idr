@@ -55,6 +55,16 @@ export
 rbf : (length_scale : Tensor [] Double) -> Kernel [S d]
 rbf length_scale x x' = exp (- l2_norm length_scale x x' / const {shape=[]} 2.0)
 
+||| The Matern kernel for parameter 5/2. This is a stationary kernel with form
+|||
+||| (\mathbf x_i, \mathbf x_j) \mapsto \sigma^2 \left(
+|||   1 + \frac{\sqrt{5} r}{\rho} + \frac{5 r^2}{3 \rho^2}
+||| \right) \exp \left( -\frac{\sqrt{5} r}{\rho} \right)
+|||
+||| where `r = x_i - x_j` and `\rho > 0`.
+|||
+||| @amplitude The amplitude `\sigma`.
+||| @length_scale The length scale `\rho`.
 export
 matern52 : (amplitude : Tensor [] Double) -> (length_scale : Tensor [] Double) -> Kernel [S d]
 matern52 amp len x x' = let d2 = (const {shape=[]} 5.0) * l2_norm len x x'
