@@ -33,11 +33,11 @@ Kernel features = forall sk, sk' .
   Tensor [sk, sk'] Double
 
 scaled_l2_norm : Tensor [] Double
- -> Tensor [sk, S d] Double
- -> Tensor [sk', S d] Double
- -> Tensor [sk, sk'] Double
-scaled_l2_norm len x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
-                              xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
+ -> Tensor [n, S d] Double
+ -> Tensor [n', S d] Double
+ -> Tensor [n, n'] Double
+scaled_l2_norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
+                              xs' = broadcast {to=[n, n', S d]} $ expand 0 x'
                            in reduce_sum 2 $ ((xs' - xs) / len) ^ const {shape=[]} 2.0
 
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
