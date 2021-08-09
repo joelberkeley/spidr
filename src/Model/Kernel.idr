@@ -32,11 +32,19 @@ Kernel features = forall sk, sk' .
   Tensor (sk' :: features) Double ->
   Tensor [sk, sk'] Double
 
+scaled_l2_norm : Tensor [] Double
+ -> Tensor [n, S d] Double
+ -> Tensor [n', S d] Double
+ -> Tensor [n, n'] Double
+scaled_l2_norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
+                           in reduce_sum 2 $ ((xs - expand 0 x') / len) ^ const {shape=[]} 2.0
+
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
 |||
-||| (\mathbf x_i, \mathbf x_j) \mapsto \exp \left(
-|||    - \frac{(\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j) }{2l^2}
-||| \right)
+||| (\mathbf x_i, \mathbf x_j) \mapsto \exp \left(- \frac{r^2}{2l^2} \right)
+|||
+||| where `r^2 = (\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j)` and the
+||| length scale `l > 0`.
 |||
 ||| Two points that are close in feature space will be more tightly correlated than points that
 ||| are further apart. The distance over which the correlation reduces is given by the length
@@ -45,8 +53,22 @@ Kernel features = forall sk, sk' .
 ||| @length_scale The length scale `l`.
 export
 rbf : (length_scale : Tensor [] Double) -> Kernel [S d]
-rbf length_scale x x' = let xs = broadcast {to=[sk, sk', S d]} $ expand 1 x
-                            xs' = broadcast {to=[sk, sk', S d]} $ expand 0 x'
-                            two = const {shape=[]} 2.0
-                            l2_norm = reduce_sum 2 $ (xs' - xs) ^ two
-                         in exp (- l2_norm / (two * length_scale ^ two))
+rbf length_scale x x' = exp (- scaled_l2_norm length_scale x x' / const {shape=[]} 2.0)
+
+||| The Matern kernel for parameter 5/2. This is a stationary kernel with form
+|||
+||| (\mathbf x_i, \mathbf x_j) \mapsto \sigma^2 \left(
+|||   1 + \frac{\sqrt{5}r}{l} + \frac{5 r^2}{3 l^2}
+||| \right) \exp \left( -\frac{\sqrt{5}r}{l} \right)
+|||
+||| where `r^2 = (\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j)` and the
+||| length scale `l > 0`.
+|||
+||| @amplitude The amplitude `\sigma`.
+||| @length_scale The length scale `l`.
+export
+matern52 : (amplitude : Tensor [] Double) -> (length_scale : Tensor [] Double) -> Kernel [S d]
+matern52 amp len x x' = let d2 = (const {shape=[]} 5.0) * scaled_l2_norm len x x'
+                            d = d2 ^ (const {shape=[]} 0.5)
+                         in (amp ^ (const {shape=[]} 2.0))
+                            * (d2 / const {shape=[]} 3.0 + d + (const {shape=[]} 1.0)) * exp (- d)
