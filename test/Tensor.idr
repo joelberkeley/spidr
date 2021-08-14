@@ -47,7 +47,9 @@ test_dimbroadcastable = [
     (3 ** 0 ** Zero)
 ]
 
-test_broadcastable : List (fr ** tr ** from : Shape {rank=fr} ** to : Shape {rank=tr} ** Broadcastable from to)
+test_broadcastable : List (
+    fr ** tr ** from : Shape {rank=fr} ** to : Shape {rank=tr} ** Broadcastable from to
+)
 test_broadcastable = [
     (_ ** _ ** [] ** [] ** Same),
     (_ ** _ ** [3, 2, 5] ** [3, 2, 5] ** Same),
