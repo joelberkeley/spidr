@@ -37,6 +37,7 @@ jobs:
 
         ./install_deps.sh
         idris2 --install spidr.ipkg
+        ./test/install_deps.sh
         idris2 --install test.ipkg
         ./build/exec/test
   tutorials:

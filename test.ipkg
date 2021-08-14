@@ -7,6 +7,14 @@ sourcedir = "test"
 executable = test
 main = Main
 
+depends =
+  contrib,
+  elab-util,
+  hedgehog,
+  pretty-show,
+  sop,
+  spidr
+
 modules =
   Unit.Model.TestKernel,
   Unit.Util.TestHashable,

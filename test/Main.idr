@@ -15,6 +15,9 @@ limitations under the License.
 --}
 module Main
 
+import Data.SOP
+import Hedgehog
+
 import Unit.Model.TestKernel
 import Unit.Util.TestHashable
 import Unit.TestDistribution
@@ -35,4 +38,11 @@ main = do
   Unit.Model.TestKernel.test
   Unit.TestDistribution.test
 
-  putStrLn "Tests passed"
+  putStrLn "Old style tests passed\n\n"
+
+  _ <- checkGroup $ MkGroup "All" [
+    ("Scalar addition", scalarAddition),
+    ("Vector addition", vectorAddition)
+    -- ("arrayAddition", arrayAddition),
+    -- ("test_addition", test_addition)
+  ]

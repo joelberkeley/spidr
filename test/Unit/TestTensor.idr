@@ -16,9 +16,14 @@ limitations under the License.
 module Unit.TestTensor
 
 import Data.Nat
+import Data.Vect
 import System
 
 import Literal
+import Data.SOP
+import Data.Bounded
+import Hedgehog
+
 import Tensor
 
 import Utils
@@ -632,6 +637,82 @@ test_add = do
   S32.testElementwiseBinary "(+)" (+) (+)
   F64.testElementwiseBinary "(+)" (+) (+)
 
+<<<<<<< HEAD
+=======
+export
+test_abs_scalar : Property
+test_abs_scalar =
+    let doubles = double (exponentialDoubleFrom (-9999) 0 9999)
+     in property $ do
+            x <- forAll doubles
+            let x' = fromLiteral {dtype=F64} x
+            toLiteral (abs x') === abs x
+
+export
+test_abs_vector : Property
+test_abs_vector =
+    let doubles = vect 4 (double (exponentialDoubleFrom (-9999) 0 9999))
+     in property $ do
+            [x, y] <- forAll (np [doubles, doubles])
+            let x' = fromLiteral {dtype=F64} x
+                res = toLiteral (abs x')
+            res === map abs x
+
+export
+scalarAddition : Property
+scalarAddition =
+    let doubles = double (exponentialDoubleFrom (-9999) 0 9999)
+     in property $ do
+            [x, y] <- forAll (np [doubles, doubles])
+            let x' = fromLiteral {dtype=F64} x
+                y' = fromLiteral {dtype=F64} y
+            [| x + y |] === toLiteral (x' + y')
+
+export
+vectorAddition : Property
+vectorAddition =
+    let doubles = vect 4 (double (exponentialDoubleFrom (-9999) 0 9999))
+     in property $ do
+            [x, y] <- forAll (np [doubles, doubles])
+            let x' = fromLiteral {dtype=F64} x
+                y' = fromLiteral {dtype=F64} y
+            [| x + y |] === toLiteral (x' + y')
+
+export
+arrayAddition : Property
+arrayAddition =
+    let doubles = vect 3 (vect 4 (double (exponentialDoubleFrom (-9999) 0 9999)))
+     in property $ do
+            [x, y] <- forAll (np [doubles, doubles])
+            let x' = fromLiteral {dtype=F64} x
+                y' = fromLiteral {dtype=F64} y
+            [| x + y |] === toLiteral (x' + y')
+
+maxRank : Nat
+maxRank = 5
+
+maxDim : Nat
+maxDim = 20
+
+literal : (shape : Shape) -> Gen a -> Gen (Literal shape a)
+literal [] gen = gen
+literal (d :: ds) gen = vect d (array ds gen)
+
+doubles' : Gen Double
+doubles' = double (exponentialDoubleFrom (-9999) 0 9999)
+
+export
+test_addition : Property
+test_addition = property $ do
+    shape <- forAll $ list (linear 0 maxRank) (nat $ linear 0 maxDim)
+    let doubles = literal shape doubles'
+    [x, y] <- forAll (np [doubles, doubles])
+    let x' = fromLiteral {dtype=F64} x
+        y' = fromLiteral {dtype=F64} y
+    [| x + y |] === toLiteral (x' + y')
+
+export
+>>>>>>> add property testing with hedgehog
 test_Sum : IO ()
 test_Sum = do
   let x = fromLiteral {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
