@@ -34,7 +34,7 @@ test_T x = x.T
 test_T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
 test_T_with_leading x = x.T
 
-test_dimbroadcastable : List ((a ** b ** DimBroadcastable a b))
+test_dimbroadcastable : List (a ** b ** DimBroadcastable a b)
 test_dimbroadcastable = [
     (0 ** 0 ** Same),
     (1 ** 1 ** Same),
