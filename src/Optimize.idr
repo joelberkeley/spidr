@@ -43,7 +43,7 @@ gridSearch : (density : Tensor [d] Integer) ->
              (upper : Tensor [d] Double) ->
              Optimizer (Tensor [d] Double)
 
-||| The L-BFGS optimization tactic, see
+||| The limited-memory BFGS (L-BFGS) optimization tactic, see
 |||
 ||| Nocedal, Jorge, Updating quasi-Newton matrices with limited storage.
 ||| Math. Comp. 35 (1980), no. 151, 773–782.
