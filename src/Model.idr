@@ -17,7 +17,6 @@ limitations under the License.
 module Model
 
 import Distribution
-import Optimize
 import Tensor
 
 ||| Objective query points and either corresponding objective values or metadata.
