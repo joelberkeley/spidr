@@ -52,10 +52,10 @@ expectedImprovement : ProbabilisticModel features {targets=[1]} {marginal=Gaussi
                       (best : Tensor [] Double) -> Acquisition 1 features
 expectedImprovement predict best at =
   let marginal = predict at
-      pdf = pdf marginal $ broadcast {to=[1, 1]} best
-      variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
-      mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
-      cdf = cdf marginal $ broadcast {to=[1, 1]} best
+      pdf = pdf marginal $ broadcast {to=[_, 1]} best
+      variance = squeeze {to=[]} $ variance marginal
+      mean = squeeze {to=[]} $ mean marginal
+      cdf = cdf marginal $ broadcast {to=[_, 1]} best
    in (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
@@ -64,7 +64,7 @@ export
 expectedImprovementByModel :
   Empiric features {targets=[1]} {marginal=Gaussian [1]} $ Acquisition 1 features
 expectedImprovementByModel (query_points, _) predict at =
-  let best = squeeze {from=[1]} $ reduce_min 0 $ mean $ predict query_points
+  let best = squeeze $ reduce_min 0 $ mean $ predict query_points
    in expectedImprovement predict best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a
@@ -72,7 +72,7 @@ expectedImprovementByModel (query_points, _) predict at =
 export
 probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] d =>
                            Empiric features {targets=[1]} {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit _ predict at = cdf (predict at) $ broadcast {to=[1, 1]} limit
+probabilityOfFeasibility limit _ predict at = cdf (predict at) $ broadcast {to=[_, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -86,12 +86,9 @@ negativeLowerConfidenceBound : (beta : Double) ->
 negativeLowerConfidenceBound beta =
   if beta < 0
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
-  else Right impl where
-    impl : Empiric features {targets=[1]} {marginal=Gaussian [1]} $ Acquisition 1 features
-    impl _ predict at = let marginal = predict at
-                            mean = squeeze {from=[1, 1]} {to=[]} $ mean marginal
-                            variance = squeeze {from=[1, 1]} {to=[]} $ variance marginal
-                         in mean - variance * const {shape=[]} beta
+  else Right \_, predict, at =>
+    let marginal = predict at
+     in squeeze $ mean marginal - (const {shape=[]} beta) * (variance marginal)
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
