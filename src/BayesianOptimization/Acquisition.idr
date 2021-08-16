@@ -29,7 +29,7 @@ import Util
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
 Empiric : Distribution targets marginal => (0 features : Shape) -> (0 out : Type) -> Type
-Empiric {targets} {marginal} features out = forall s .
+Empiric features out = forall s .
   Data {samples=S s} features targets -> ProbabilisticModel features {marginal} -> out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
