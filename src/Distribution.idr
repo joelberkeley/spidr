@@ -20,11 +20,6 @@ import Data.Nat
 import Tensor
 import Util
 
-||| A collection of variables with common shapes.
-public export
-0 Multivariate : {0 rank : Nat} -> Type
-Multivariate = (0 event : Shape {rank=rank}) -> (0 dim : Nat) -> Type
-
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the first
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
 ||| same shape.
@@ -32,16 +27,16 @@ Multivariate = (0 event : Shape {rank=rank}) -> (0 dim : Nat) -> Type
 ||| @event The shape of each sub-event.
 ||| @dist Constructs the distribution from the number of events in the distribution.
 public export
-interface Distribution (0 event : Shape {rank=r}) (0 dist : Multivariate {rank=r}) | dist where
+interface Distribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) | dist where
   ||| The mean of the distribution.
-  mean : dist event dim -> Tensor (dim :: event) Double
+  mean : dist dim -> Tensor (dim :: event) Double
 
   ||| The covariance, or correlation, between sub-events.
-  cov : dist event dim -> Tensor (dim :: dim :: event) Double
+  cov : dist dim -> Tensor (dim :: dim :: event) Double
 
 ||| The variance of a single random variable.
 export
-variance : Distribution event dist => dist event 1 -> Tensor (1 :: event) Double
+variance : Distribution event dist => dist 1 -> Tensor (1 :: event) Double
 variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
@@ -52,13 +47,13 @@ variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 ||| @dist Constructs the distribution from the number of events in the distribution.
 public export
 interface Distribution event dist =>
-  ClosedFormDistribution (0 event : Shape {rank=r}) (0 dist : Multivariate {rank=r}) where
+  ClosedFormDistribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
     ||| The probability density function of the distribution at the specified point.
-    pdf : dist event (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
+    pdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
 
     ||| The cumulative distribution function of the distribution at the specified point (that is,
     ||| the probability the random variable takes a value less than or equal to the given point).
-    cdf : dist event (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
+    cdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
 
 ||| A joint Gaussian distribution.
 |||
@@ -68,17 +63,17 @@ public export
 data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
-  MkGaussian : {d : _} -> (mean : Tensor (S d :: event) Double) ->
+  MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) Double) ->
                (cov : Tensor (S d :: S d :: event) Double) ->
                Gaussian event (S d)
 
 export
-Distribution event Gaussian where
+Distribution event (Gaussian event) where
   mean (MkGaussian mean' _) = mean'
   cov (MkGaussian _ cov') = cov'
 
 export
-ClosedFormDistribution [1] Gaussian where
+ClosedFormDistribution [1] (Gaussian [1]) where
   pdf (MkGaussian {d} mean cov) x =
     let diff : Tensor [S d, 1] Double
         diff = x - mean

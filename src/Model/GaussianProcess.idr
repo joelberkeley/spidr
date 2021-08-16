@@ -83,10 +83,10 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
                    -> Tensor [] Double -> ConjugateGPRegression features
 
 export
-ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
-  marginalise (MkConjugateGPR mk_gp gp_params _) x =
-    let (MkGP meanf kernel) = mk_gp gp_params
-      in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
+marginalise : ConjugateGPRegression features -> ProbabilisticModel features {marginal=Gaussian [1]}
+marginalise (MkConjugateGPR mk_gp gp_params _) x =
+  let (MkGP meanf kernel) = mk_gp gp_params
+    in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
 
 export
 {features : _} ->

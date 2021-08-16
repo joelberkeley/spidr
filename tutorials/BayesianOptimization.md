@@ -113,12 +113,12 @@ In this case, our acquisition function depends on the model (which in turn depen
 In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
 
 ```idris
-modelMean : ConjugateGPRegression [2] -> Acquisition 1 [2]
-modelMean model = squeeze . mean . (marginalise model)
+modelMean : ProbabilisticModel [2] {marginal=Gaussian [1]} -> Acquisition 1 [2]
+modelMean predict = squeeze . mean . predict
 
 newPoint' : Tensor [1, 2] Double
 newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
-             in run acquisition model  -- `run` turns a `Morphism` into a function
+             in run acquisition (marginalise model)  -- `run` turns a `Morphism` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -200,6 +200,7 @@ newPoint'' : Tensor [1, 2] Double
 newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5) {s=_}
                  pof = failure >>> probabilityOfFeasibility (const 0.5) {s=_}
                  acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, model) (failureData, failureModel)
+                 dataAndModel = Label (historicData, marginalise model)
+                                      (failureData, marginalise failureModel)
               in run acquisition dataAndModel
 ```

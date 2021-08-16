@@ -27,7 +27,7 @@ import Tensor
 ||| @targets The shape of the target domain.
 public export 0
 Data : {0 samples : Nat} -> (0 features : Shape) -> (0 targets : Shape) -> Type
-Data features targets = (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
+Data features targets = (Tensor (Vect.(::) samples features) Double, Tensor (Vect.(::) samples targets) Double)
 
 ||| A `ProbabilisticModel` is a mapping from a feature space to a probability distribution over
 ||| a target space.
@@ -35,11 +35,9 @@ Data features targets = (Tensor (samples :: features) Double, Tensor (samples ::
 ||| @features The shape of the feature domain.
 ||| @targets The shape of the target domain.
 ||| @marginal The type of mulitvariate marginal distribution.
-public export
-interface Distribution targets marginal =>
- ProbabilisticModel (0 features : Shape) (0 targets : Shape {rank=r})
-    (0 marginal : Multivariate {rank=r}) model | model where
-  marginalise : model -> {s : _} -> Tensor ((S s) :: features) Double -> marginal targets (S s)
+public export 0
+ProbabilisticModel : Distribution targets marginal => (0 features : Shape) -> Type
+ProbabilisticModel features = {n : _} -> Tensor (Vect.(::) (S n) features) Double -> marginal (S n)
 
 ||| @features The shape of the feature domain.
 ||| @targets The shape of the target domain.
