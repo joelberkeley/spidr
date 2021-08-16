@@ -28,7 +28,6 @@ import Tensor
 |||
 ||| @features The shape of the feature domain.
 public export 0
-ProbabilisticModel : forall marginal . Distribution targets marginal =>
-  (0 features : Shape {rank}) -> Type
+ProbabilisticModel : Distribution targets marginal => (0 features : Shape {rank}) -> Type
 ProbabilisticModel features = forall n .
   Tensor ((::) {len=rank} {elem=Nat} n features) Double -> marginal n
