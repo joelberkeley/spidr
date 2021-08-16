@@ -76,7 +76,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Tensor [1, 2] Double
-newPoint = optimizer $ squeeze . mean . (marginalise model)
+newPoint = optimizer $ squeeze . mean . (predict_latent model)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -118,7 +118,7 @@ modelMean predict = squeeze . mean . predict
 
 newPoint' : Tensor [1, 2] Double
 newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
-             in run acquisition (marginalise model)  -- `run` turns a `Morphism` into a function
+             in run acquisition (predict_latent model)  -- `run` turns a `Morphism` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -200,7 +200,7 @@ newPoint'' : Tensor [1, 2] Double
 newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5) {s=_}
                  pof = failure >>> probabilityOfFeasibility (const 0.5) {s=_}
                  acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, marginalise model)
-                                      (failureData, marginalise failureModel)
+                 dataAndModel = Label (historicData, predict_latent model)
+                                      (failureData, predict_latent failureModel)
               in run acquisition dataAndModel
 ```

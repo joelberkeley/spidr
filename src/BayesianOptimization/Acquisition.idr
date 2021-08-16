@@ -48,8 +48,8 @@ Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tens
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : ProbabilisticModel features {marginal=Gaussian [1]}
-                      -> (best : Tensor [] Double) -> Acquisition 1 features
+expectedImprovement : ProbabilisticModel features {marginal=Gaussian [1]} ->
+                      (best : Tensor [] Double) -> Acquisition 1 features
 expectedImprovement predict best at =
   let marginal = predict at
       pdf = pdf marginal $ broadcast {to=[_, 1]} best
@@ -69,9 +69,9 @@ expectedImprovementByModel (query_points, _) predict at =
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] Double) -> forall d . ClosedFormDistribution [1] d =>
+probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] d =>
                            Empiric features {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit _ predict at = cdf (predict at) $ broadcast {to=[1, 1]} limit
+probabilityOfFeasibility limit _ predict at = cdf (predict at) $ broadcast {to=[_, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.

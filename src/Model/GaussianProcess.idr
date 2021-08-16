@@ -66,9 +66,9 @@ log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
       two = const {shape=[]} 2
    in - y @@ alpha / two - trace (log l) - n * log2pi / two
 
-||| A trainable probabilistic model implementing vanilla Gaussian process regression. That is,
-||| regression with a Gaussian process as conjugate prior for homoskedastic Gaussian likelihoods.
-||| See the following for details:
+||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
+||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following
+||| for details:
 |||
 ||| Gaussian Processes for Machine Learning
 ||| Carl Edward Rasmussen and Christopher K. I. Williams
@@ -82,26 +82,31 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
   MkConjugateGPR : (Tensor [p] Double -> GaussianProcess features) -> Tensor [p] Double
                    -> Tensor [] Double -> ConjugateGPRegression features
 
+||| Construct a probabilistic model for the latent target values.
 export
-marginalise : ConjugateGPRegression features -> ProbabilisticModel features {marginal=Gaussian [1]}
-marginalise (MkConjugateGPR mk_gp gp_params _) x =
+predict_latent : ConjugateGPRegression features
+  -> ProbabilisticModel features {marginal=Gaussian [1]}
+predict_latent (MkConjugateGPR mk_gp gp_params _) x =
   let (MkGP meanf kernel) = mk_gp gp_params
     in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
 
+||| Fit the Gaussian process and noise to the specified data.
 export
-{features : _} ->
-  Trainable features [1] (ConjugateGPRegression features) where
-    fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer {s} training_data =
-      let objective : Tensor [S p] Double -> Tensor [] Double
-          objective params = let (noise, prior_params) = split 1 params
-                                 (x, y) = training_data
-                              in log_marginal_likelihood (mk_prior prior_params)
-                                 (squeeze noise) (x, squeeze y)
+fit : ConjugateGPRegression features
+  -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
+  -> {s : _} -> Data {samples=S s} features [1]
+  -> ConjugateGPRegression features
+fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer {s} training_data =
+  let objective : Tensor [S p] Double -> Tensor [] Double
+      objective params = let (noise, prior_params) = split 1 params
+                             (x, y) = training_data
+                          in log_marginal_likelihood (mk_prior prior_params)
+                             (squeeze noise) (x, squeeze y)
 
-          (noise, gp_params) := split 1 $ optimizer (concat (expand 0 noise) gp_params) objective
+      (noise, gp_params) := split 1 $ optimizer (concat (expand 0 noise) gp_params) objective
 
-          mk_posterior : Tensor [p] Double -> GaussianProcess features
-          mk_posterior params' = let (x, y) = training_data
-                                  in posterior (mk_prior params') (squeeze noise) (x, squeeze y)
+      mk_posterior : Tensor [p] Double -> GaussianProcess features
+      mk_posterior params' = let (x, y) = training_data
+                              in posterior (mk_prior params') (squeeze noise) (x, squeeze y)
 
-       in MkConjugateGPR mk_posterior gp_params (squeeze noise)
+    in MkConjugateGPR mk_posterior gp_params (squeeze noise)

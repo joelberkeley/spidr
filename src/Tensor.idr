@@ -263,7 +263,7 @@ namespace Broadcastable
 ||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
-broadcast : forall from, to . {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
+broadcast : {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the

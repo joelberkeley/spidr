@@ -38,12 +38,3 @@ Data features targets = (Tensor (Vect.(::) samples features) Double, Tensor (Vec
 public export 0
 ProbabilisticModel : Distribution targets marginal => (0 features : Shape) -> Type
 ProbabilisticModel features = {n : _} -> Tensor (Vect.(::) (S n) features) Double -> marginal (S n)
-
-||| @features The shape of the feature domain.
-||| @targets The shape of the target domain.
-public export
-interface Trainable (0 features : Shape) (0 targets : Shape) ty where
-  fit : ty
-    -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
-    -> {s : _} -> Data {samples=S s} features targets
-    -> ty
