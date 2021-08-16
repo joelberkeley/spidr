@@ -27,7 +27,7 @@ import Util
 ||| @event The shape of each sub-event.
 ||| @dist Constructs the distribution from the number of events in the distribution.
 public export
-interface Distribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
+interface Distribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) | dist where
   ||| The mean of the distribution.
   mean : dist dim -> Tensor (dim :: event) Double
 
