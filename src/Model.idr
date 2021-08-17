@@ -30,6 +30,9 @@ data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
            -> Tensor (Vect.(::) (S s) targets) Double
            -> Dataset features targets
 
+export
+concat : Data {samples=s} f t -> Data {samples=s'} f t -> Data {samples=s + s'} f t
+
 ||| A `ProbabilisticModel` is a mapping from a feature domain to a probability distribution over
 ||| a target domain.
 |||

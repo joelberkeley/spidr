@@ -211,32 +211,26 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
 iterate : n -> (n -> n) -> Stream n
 iterate start diff = start :: iterate (diff start) diff
 
-bayesopt : i -> (points -> i -> i) -> (i ~> points) -> Stream i
-bayesopt data_and_model update acquisition = iterate data_and_model (\dm => update (run acquisition dm) dm)
+bayesopt : i -> (i ~> points) -> (points -> i -> i) -> Stream i
+bayesopt data_and_model acquisition update = iterate data_and_model (\dm => update (run acquisition dm) dm)
 ```
 
 ```idris
 objective : Tensor [1, 2] Double -> Tensor [1, 1] Double
 
-gpr : ConjugateGPRegression (Tensor [2] Double) [2]
+gpr : ConjugateGPRegression [2]
 
-0 DataModel : {samples : Nat} -> Type
-DataModel = (Data {samples=samples} [2] [1], ConjugateGPRegression (Tensor [2] Double) [2])
+0 DataModel : Type
+DataModel = (Data [2] [1], ConjugateGPRegression [2])
 
-observe : {s : Nat} -> Tensor [1, 2] Double -> DataModel {samples=s} -> DataModel {samples=S s}
-observe point ((qp, obs), model) = let (qp', obs') = (concat point qp, concat (objective point) obs)
-                                    in ((qp', obs'), fit lbfgs (qp', squeeze obs') model)
+observe : Tensor [1, 2] Double -> DataModel -> DataModel
+observe point (dataset, model) = let dataset' = concat (point, objective point) dataset
+                                  in (dataset', fit model lbfgs dataset')
 
--- making ProbabilisticModel an interface may remove the need for this function, and we can use `Mor`
-mkPredict : {samples : Nat} -> DataModel {samples=samples} -> (Data {samples=samples} [2] [1], ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]})
--- `predict_latent gpr` produces `Gaussian []`, but `Gaussian [1]` is required
-mkPredict {samples} ((qp, obs), gpr) = 
-  let model : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]}
-      -- model {samples=s} x = let (MkGaussian mean cov) = the (Gaussian [] s) $ predict_latent gpr (the (Tensor [s, 2] Double) x)
-      --                        in the (Gaussian [1] s) $ MkGaussian (expand 1 mean) (expand 2 cov)
-   in ((qp, obs), model)
+mkPredict : (Data {samples} [2] [1], ConjugateGPRegression [2]) -> (Data {samples} [2] [1], ProbabilisticModel [2] {marginal=Gaussian [1]})
+mkPredict (d, gpr) = (d, predict_latent gpr)
 
-points : Stream (n ** DataModel {samples=n})
+points : Stream DataModel
 points = let acquisition = map optimizer $ mkPredict >>> expectedImprovementByModel
-          in bayesopt (historicData, gpr) observe acquisition
+          in bayesopt (historicData, gpr) acquisition observe
 ```
