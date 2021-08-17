@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module BayesianOptimization.Util
+module BayesianOptimization.Morphisms
 
 import public Data.Morphisms
 import Distribution
@@ -29,6 +29,7 @@ export
 (>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
 f >>> g = Mor (uncurry g . f)
 
+||| Extract the underlying function from a `Morphism`.
 export
 run : (i ~> o) -> i -> o
 run = applyMor
