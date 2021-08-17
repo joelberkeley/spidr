@@ -51,6 +51,7 @@ import Model.MeanFunction
 import Distribution
 import Optimize
 import Util
+import Data.Stream
 -->
 ```idris
 historicData : Dataset [2] [1]
@@ -208,29 +209,24 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
 ## Iterative Bayesian optimization with infinite data types
 
 ```idris
-iterate : n -> (n -> n) -> Stream n
-iterate start diff = start :: iterate (diff start) diff
-
-bayesopt : i -> (i ~> points) -> (points -> i -> i) -> Stream i
-bayesopt data_and_model acquisition update = iterate data_and_model (\dm => update (run acquisition dm) dm)
+bayesLoop : i -> (i ~> points) -> (points -> i -> i) -> Stream i
+bayesLoop data_and_model acquisition update = iterate (\dm => update (run acquisition dm) dm) data_and_model
 ```
 
 ```idris
 objective : Tensor [1, 2] Double -> Tensor [1, 1] Double
 
-gpr : ConjugateGPRegression [2]
-
-0 DataModel : Type
-DataModel = (Data [2] [1], ConjugateGPRegression [2])
-
-observe : Tensor [1, 2] Double -> DataModel -> DataModel
-observe point (dataset, model) = let dataset' = concat (point, objective point) dataset
+observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2]) -> (Dataset [2] [1], ConjugateGPRegression [2])
+observe point (dataset, model) = let dataset' = concat dataset $ MkDataset point (objective point)
                                   in (dataset', fit model lbfgs dataset')
 
-mkPredict : (Data {samples} [2] [1], ConjugateGPRegression [2]) -> (Data {samples} [2] [1], ProbabilisticModel [2] {marginal=Gaussian [1]})
+mkPredict : (Dataset [2] [1], ConjugateGPRegression [2]) -> (Dataset [2] [1], ProbabilisticModel [2] {marginal=Gaussian [1]})
 mkPredict (d, gpr) = (d, predict_latent gpr)
 
-points : Stream DataModel
+points : Stream (Dataset [2] [1], ConjugateGPRegression [2])
 points = let acquisition = map optimizer $ mkPredict >>> expectedImprovementByModel
-          in bayesopt (historicData, gpr) acquisition observe
+          in bayesLoop (historicData, model) acquisition observe
+
+firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
+firstFive = take 5 points
 ```

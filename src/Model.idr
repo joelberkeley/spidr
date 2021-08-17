@@ -31,7 +31,8 @@ data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
            -> Dataset features targets
 
 export
-concat : Data {samples=s} f t -> Data {samples=s'} f t -> Data {samples=s + s'} f t
+concat : Dataset f t -> Dataset f t -> Dataset f t
+concat (MkDataset x y) (MkDataset x' y') = MkDataset (concat x x') (concat y y')
 
 ||| A `ProbabilisticModel` is a mapping from a feature domain to a probability distribution over
 ||| a target domain.
