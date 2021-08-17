@@ -20,7 +20,7 @@ import Distribution
 import Tensor
 import Model
 import Optimize
-import BayesianOptimization.Util
+import BayesianOptimization.Morphisms
 import Util
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
