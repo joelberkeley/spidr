@@ -15,9 +15,9 @@ limitations under the License.
 --}
 ||| This module defines functionality for Bayesian optimization, the data-efficient optimization of
 ||| objective functions. Bayesian optimization recommends new points at which to query your
-||| objective by placing a probabilistic model over historic data then optimizing an "acquisition
-||| function" which quantifies how useful it would be to evaluate the objective at any given set of
-||| points.
+||| objective by placing a probabilistic model over historic data then, typically, optimizing an
+||| _acquisition function_ which quantifies how useful it would be to evaluate the objective at any
+||| given set of points.
 module BayesianOptimization
 
 import public Data.Stream
@@ -25,6 +25,15 @@ import public Data.Stream
 import public BayesianOptimization.Acquisition as BayesianOptimization
 import public BayesianOptimization.Morphisms as BayesianOptimization
 
-loop : i -> (i ~> points) -> (points -> i -> i) -> Stream i
-loop data_and_model acquisition update =
-    iterate (\dm => update (run acquisition dm) dm) data_and_model
+||| A Bayesian optimization loop as a (potentially infinite) stream of values. The values are
+||| typically the observed data, and the models of that data. The loop iteratively finds new points
+||| with the specified `tactic` then updates the values with these new points (assuming some
+||| implicit objective function).
+|||
+||| @tactic The tactic which which to recommend new points. This could be optimizing an acquisition
+|||   function, for example. Note this is a `Morphism`, not a function.
+||| @observer A function which evaluates the optimization objective at the recommended points, then
+|||   updates the values (typically data and models).
+export
+loop : (tactic : i ~> points) -> (observer : points -> i -> i) -> i -> Stream i
+loop tactic update = iterate (\ii => update (run tactic ii) ii)
