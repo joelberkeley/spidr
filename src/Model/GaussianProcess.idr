@@ -13,8 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `GaussianProcess` type for defining a Gaussian process, along with
-||| functionality for training and inference.
+||| This module contains functionality for Gaussian process inference.
 module Model.GaussianProcess
 
 import Tensor
