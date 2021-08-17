@@ -93,7 +93,7 @@ predict_latent (MkConjugateGPR mk_gp gp_params _) x =
 export
 fit : ConjugateGPRegression features
   -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
-  -> (dataset : Dataset features [1])
+  -> Dataset features [1]
   -> ConjugateGPRegression features
 fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] Double -> Tensor [] Double
