@@ -19,7 +19,8 @@ module Model
 import Distribution
 import Tensor
 
-||| Objective query points and either corresponding objective values or metadata.
+||| Observed pairs of data points from feature and target domains. Data sets such as this are
+||| commonly used in supervised learning settings.
 |||
 ||| @samples The number of points in each of the feature and target data.
 ||| @features The shape of the feature domain.
