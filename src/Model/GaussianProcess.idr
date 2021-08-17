@@ -93,19 +93,17 @@ predict_latent (MkConjugateGPR mk_gp gp_params _) x =
 export
 fit : ConjugateGPRegression features
   -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
-  -> {s : _} -> Data {samples=S s} features [1]
+  -> Dataset features [1]
   -> ConjugateGPRegression features
-fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer {s} training_data =
+fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] Double -> Tensor [] Double
       objective params = let (noise, prior_params) = split 1 params
-                             (x, y) = training_data
                           in log_marginal_likelihood (mk_prior prior_params)
                              (squeeze noise) (x, squeeze y)
 
       (noise, gp_params) := split 1 $ optimizer (concat (expand 0 noise) gp_params) objective
 
       mk_posterior : Tensor [p] Double -> GaussianProcess features
-      mk_posterior params' = let (x, y) = training_data
-                              in posterior (mk_prior params') (squeeze noise) (x, squeeze y)
+      mk_posterior params' = posterior (mk_prior params') (squeeze noise) (x, squeeze y)
 
     in MkConjugateGPR mk_posterior gp_params (squeeze noise)
