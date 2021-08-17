@@ -22,7 +22,6 @@ import Model.Kernel
 import Model.MeanFunction
 import Optimize
 import Distribution
-import Util
 
 ||| A Gaussian process is a collection of random variables, any finite number of which have joint
 ||| Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian
@@ -61,7 +60,7 @@ log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + diag {n=S s} noise)
       alpha = l.T \\ (l \\ y)
       n = const {shape=[]} $ cast (S s)
-      log2pi = log $ const {shape=[]} $ 2.0 * PI
+      log2pi = log $ const {shape=[]} $ 2.0 * pi
       two = const {shape=[]} 2
    in - y @@ alpha / two - trace (log l) - n * log2pi / two
 

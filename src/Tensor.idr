@@ -20,7 +20,7 @@ module Tensor
 import public Data.Vect
 import Data.Nat
 import XLA
-import Util
+import Error
 
 ----------------------------- core definitions ----------------------------
 
