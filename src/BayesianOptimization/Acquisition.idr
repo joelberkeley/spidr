@@ -22,7 +22,7 @@ import Tensor
 import Data
 import Model
 import Optimize
-import BayesianOptimization.Morphisms
+import BayesianOptimization.Binary
 import Error
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
@@ -32,8 +32,8 @@ import Error
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
 Empiric : Distribution marginal => (0 features, targets : Shape) -> (0 out : Type) -> Type
-Empiric features targets out = {0 model : _}
-  -> ProbabilisticModel features targets marginal model => Dataset features targets -> model -> out
+Empiric features targets out = {0 model : _} -> ProbabilisticModel features targets marginal model
+  => Binary (Dataset features targets) model out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
@@ -66,7 +66,7 @@ expectedImprovement model best at =
 ||| the observation value at each point.
 export
 expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-expectedImprovementByModel (MkDataset query_points _) model at =
+expectedImprovementByModel = MkBinary $ \(MkDataset query_points _), model, at =>
   let best = squeeze $ reduce @{Min} 0 $ mean {event=[1]} $ marginalise model query_points
    in expectedImprovement model best at
 
@@ -75,7 +75,8 @@ expectedImprovementByModel (MkDataset query_points _) model at =
 export
 probabilityOfFeasibility : (limit : Tensor [] F64) -> ClosedFormDistribution [1] d =>
                            Empiric features [1] {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadcast {to=[_, 1]} limit
+probabilityOfFeasibility limit = MkBinary $ \_, model, at =>
+  cdf (marginalise model at) $ broadcast {to=[_, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -88,7 +89,7 @@ negativeLowerConfidenceBound : (beta : Double) ->
 negativeLowerConfidenceBound beta =
   if beta < 0
   then Left $ MkValueError "beta should be greater than or equal to zero, got \{show beta}"
-  else Right $ \_, model, at =>
+  else Right $ MkBinary $ \_, model, at =>
     let marginal = marginalise model at
      in squeeze $ mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
 

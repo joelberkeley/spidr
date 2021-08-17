@@ -69,7 +69,7 @@ and model that data
 model : ConjugateGPRegression [2]
 model = let mk_gp = \len => MkGP zero (matern52 1.0 $ squeeze len)
             model = MkConjugateGPR mk_gp (fromLiteral [0.5]) 0.2
-         in fit model lbfgs historicData
+         in fit lbfgs historicData model
 ```
 
 then optimize over the marginal mean
@@ -121,8 +121,8 @@ modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model = squeeze . mean {event=[1]} . (marginalise model)
 
 newPoint' : Tensor [1, 2] F64
-newPoint' = let acquisition = map optimizer (Mor (modelMean @{Latent}))  -- `Mor` makes a `Morphism`
-             in run acquisition model  -- `run` turns a `Morphism` into a function
+newPoint' = let acquisition = map optimizer $ MkBinary (\_ => modelMean @{Latent})
+             in run acquisition historicData model  -- `run` turns a `Binary` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -183,7 +183,7 @@ failureData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 
 failureModel : ConjugateGPRegression [2]
 failureModel = let mk_gp = \len => MkGP zero (rbf $ squeeze len)
                    model = MkConjugateGPR mk_gp (fromLiteral [0.2]) 0.1
-                in fit model lbfgs failureData
+                in fit lbfgs historicData model
 ```
 
 and we'll gather all the data and models in a `record`:
@@ -199,11 +199,10 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.5
-                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} 0.5
+newPoint'' = let eci = objective <| objective |> expectedConstrainedImprovement @{Latent} 0.5
+                 pof = failure <| failure |> probabilityOfFeasibility @{%search} @{Latent} 0.5
                  acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, model) (failureData, failureModel)
-              in run acquisition dataAndModel
+              in run acquisition (Label historicData failureData) (Label model failureModel)
 ```
 
 ## Iterative Bayesian optimization with infinite data types
@@ -211,24 +210,17 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.
 Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 
 ```idris
-objective : Tensor [n, 2] F64 -> Tensor [n, 1] F64
+objective : Tensor [n, 2] F64 -> Dataset [2] [1]
 ```
 
 at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
-
-```idris
-observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
-                            -> (Dataset [2] [1], ConjugateGPRegression [2])
-observe point (dataset, model) = let new_data = MkDataset point (objective point)
-                                  in (dataset <+> new_data, fit model lbfgs new_data)
-```
 
 We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) F64` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
-iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{Latent}
-              in loop tactic observe (historicData, model)
+iterations = let tactic = map optimizer (expectedImprovementByModel @{Latent})
+              in loop tactic objective (fit lbfgs) historicData model
 ```
 
 We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations

@@ -24,7 +24,7 @@ import public Data.Stream
 import Tensor
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
-import public BayesianOptimization.Morphisms as BayesianOptimization
+import public BayesianOptimization.Binary as BayesianOptimization
 
 ||| A Bayesian optimization loop as a (potentially infinite) stream of values. The values are
 ||| typically the observed data, and the models of that data. The loop iteratively finds new points
@@ -36,6 +36,11 @@ import public BayesianOptimization.Morphisms as BayesianOptimization
 ||| @observer A function which evaluates the optimization objective at the recommended points, then
 |||   updates the values (typically data and models).
 export
-loop : (tactic : i ~> Tensor shape dtype)
-  -> (observer : Tensor shape dtype -> i -> i) -> i -> Stream i
-loop tactic observer = iterate (\ii => observer (run tactic ii) ii)
+loop : Semigroup data_ =>
+  (tactic : Binary data_ model points)
+  -> (objective : points -> data_)
+  -> (model_update : data_ -> model -> model)
+  -> data_ -> model -> Stream (data_, model)
+loop tactic objective model_update = curry $ iterate $
+  \(dataset, model) => let new_dataset = objective (run tactic dataset model)
+                        in (dataset <+> new_dataset, model_update new_dataset model)

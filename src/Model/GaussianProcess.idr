@@ -103,11 +103,11 @@ export
 
 ||| Fit the Gaussian process and noise to the specified data.
 export
-fit : ConjugateGPRegression features
-  -> (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
+fit : (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
   -> ConjugateGPRegression features
-fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
+  -> ConjugateGPRegression features
+fit optimizer (MkDataset x y) (MkConjugateGPR {p} mk_prior gp_params noise) =
   let objective : Tensor [S p] F64 -> Tensor [] F64
       objective params = let (noise, prior_params) = split 0 1 params
                           in log_marginal_likelihood (mk_prior prior_params)
