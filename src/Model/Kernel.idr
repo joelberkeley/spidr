@@ -19,7 +19,6 @@ module Model.Kernel
 
 import Tensor
 import Data.Nat
-import Util
 
 ||| A `Kernel` function maps pairs of points in a feature space to the covariance between those two
 ||| points in some target space.

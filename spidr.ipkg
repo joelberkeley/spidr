@@ -18,7 +18,7 @@ modules =
   Optimize,
   XLA,
   Tensor,
-  Util
+  Error
 
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."
 readme = "README.md"

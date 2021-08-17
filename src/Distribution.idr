@@ -18,7 +18,6 @@ module Distribution
 
 import Data.Nat
 import Tensor
-import Util
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the first
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
@@ -82,7 +81,7 @@ ClosedFormDistribution [1] (Gaussian [1]) where
         exponent = - (squeeze $ diff.T @@ cov.T @@ diff) / (const {shape=[]} 2.0)
 
         denominator : Tensor [] Double
-        denominator = (const {shape=[]} $ 2 * PI) ^ (const {shape=[]} $ cast (S d) / 2.0)
+        denominator = (const {shape=[]} $ 2 * pi) ^ (const {shape=[]} $ cast (S d) / 2.0)
                       * (det $ squeeze {to=[S d, S d]} cov) ^ (const {shape=[]} 0.5)
 
      in (exp exponent) / denominator

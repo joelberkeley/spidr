@@ -21,7 +21,7 @@ import Tensor
 import Model
 import Optimize
 import BayesianOptimization.Morphisms
-import Util
+import Error
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
 |||
