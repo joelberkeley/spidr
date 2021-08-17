@@ -25,10 +25,17 @@ import Tensor
 ||| @samples The number of points in each of the feature and target data.
 ||| @features The shape of the feature domain.
 ||| @targets The shape of the target domain.
-public export 0
-Data : {0 samples : Nat} -> (0 features : Shape) -> (0 targets : Shape) -> Type
-Data features targets =
-  (Tensor (Vect.(::) samples features) Double, Tensor (Vect.(::) samples targets) Double)
+public export
+data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
+  MkDataset : {samples : _} -> Tensor (Vect.(::) samples features) Double
+           -> Tensor (Vect.(::) samples targets) Double
+           -> Dataset features targets
+
+public export
+data NonEmpty : Dataset features targets -> Type where
+  IsNonEmpty : (x : Tensor (S s :: features) Double)
+               -> (y : Tensor (S s :: targets) Double)
+               -> NonEmpty $ MkDataset x y
 
 ||| A `ProbabilisticModel` is a mapping from a feature domain to a probability distribution over
 ||| a target domain.

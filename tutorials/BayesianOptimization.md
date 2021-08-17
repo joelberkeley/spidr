@@ -53,8 +53,8 @@ import Optimize
 import Util
 -->
 ```idris
-historicData : Data {samples=3} [2] [1]
-historicData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]], const [[1.2], [-0.5], [0.7]])
+historicData : Dataset [2] [1]
+historicData = MkDataset (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]) (const [[1.2], [-0.5], [0.7]])
 ```
 
 and model that data
@@ -173,8 +173,8 @@ The `Morphism i o`, or `i ~> o` type has proven flexible in allowing us to const
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data. Recall that we can represent this in any form we like, and we'll simply use a dedicated `Data` set and `ProbabilisticModel`:
 
 ```idris
-failureData : Data {samples=4} [2] [1]
-failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
+failureData : Dataset [2] [1]
+failureData = MkDataset (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]) (const [[0], [0], [0], [1]])
 
 failureModel : ConjugateGPRegression [2]
 failureModel = let mk_gp = \len => MkGP zero (rbf $ squeeze len)
@@ -197,8 +197,8 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Tensor [1, 2] Double
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5) {s=_}
-                 pof = failure >>> probabilityOfFeasibility (const 0.5) {s=_}
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
+                 pof = failure >>> probabilityOfFeasibility (const 0.5)
                  acquisition = map optimizer (eci <*> pof)
                  dataAndModel = Label (historicData, predict_latent model)
                                       (failureData, predict_latent failureModel)
