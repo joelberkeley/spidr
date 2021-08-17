@@ -13,12 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `GaussianProcess` type for defining a Gaussian process, along with
-||| functionality for training and inference.
+||| This module contains functionality for Gaussian process inference.
 module Model.GaussianProcess
 
-import Data.Nat
 import Tensor
+import Model
 import Model.Kernel
 import Model.MeanFunction
 import Optimize
@@ -35,23 +34,13 @@ data GaussianProcess : (0 features : Shape) -> Type where
   ||| Construct a `GaussianProcess` as a pair of mean function and kernel.
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
-||| The marginal distribution of the Gaussian process at the specified feature values.
-|||
-||| @at The feature values at which to evaluate the marginal distribution.
-export
-marginalise : {s : _}
+posterior :
+  GaussianProcess features
+  -> Tensor [] Double
+  -> forall s . (Tensor ((S s) :: features) Double, Tensor [S s] Double)
   -> GaussianProcess features
-  -> Tensor ((S s) :: features) Double
-  -> Gaussian [] (S s)
-marginalise (MkGP mean_function kernel) x = MkGaussian (mean_function x) (kernel x x)
-
-posterior : forall s .
- (prior : GaussianProcess features)
- -> (likelihood : Gaussian [] (S s))
- -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
- -> GaussianProcess features
-posterior (MkGP prior_meanf prior_kernel) (MkGaussian _ cov) (x_train, y_train) =
-  let l = cholesky (prior_kernel x_train x_train + cov)
+posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
+  let l = cholesky (prior_kernel x_train x_train + diag {n=S s} noise)
       alpha = l.T \\ (l \\ y_train)
 
       posterior_meanf : MeanFunction features
@@ -63,38 +52,60 @@ posterior (MkGP prior_meanf prior_kernel) (MkGaussian _ cov) (x_train, y_train) 
 
    in MkGP posterior_meanf posterior_kernel
 
-log_marginal_likelihood : {s : _}
- -> GaussianProcess features
- -> Gaussian [] (S s)
- -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
- -> Tensor [] Double
-log_marginal_likelihood (MkGP _ kernel) (MkGaussian _ cov) (x, y) =
-  let l = cholesky (kernel x x + cov)
+log_marginal_likelihood :
+  GaussianProcess features
+  -> Tensor [] Double
+  -> {s : _} -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
+  -> Tensor [] Double
+log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
+  let l = cholesky (kernel x x + diag {n=S s} noise)
       alpha = l.T \\ (l \\ y)
       n = const {shape=[]} $ cast (S s)
       log2pi = log $ const {shape=[]} $ 2.0 * PI
       two = const {shape=[]} 2
    in - y @@ alpha / two - trace (log l) - n * log2pi / two
 
-||| Find the hyperparameters which maximize the marginal likelihood for the specified structures of
-||| prior and likelihood, then return the posterior for that given prior, likelihood and
-||| hyperparameters.
+||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
+||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following
+||| for details:
 |||
-||| @optimizer The optimization tactic.
-||| @prior Constructs the prior from *all* the hyperparameters.
-||| @likelihood Constructs the likelihood from *all* the hyperparameters.
-||| @training_data The observed data.
+||| Gaussian Processes for Machine Learning
+||| Carl Edward Rasmussen and Christopher K. I. Williams
+||| The MIT Press, 2006. ISBN 0-262-18253-X.
+|||
+||| or
+|||
+||| Pattern Recognition and Machine Learning, Christopher M. Bishop
+public export
+data ConjugateGPRegression : (0 features : Shape) -> Type where
+  MkConjugateGPR : (Tensor [p] Double -> GaussianProcess features) -> Tensor [p] Double
+                   -> Tensor [] Double -> ConjugateGPRegression features
+
+||| Construct a probabilistic model for the latent target values.
 export
-fit : {s : _}
- -> (optimizer: Optimizer hp)
- -> (prior : hp -> GaussianProcess features)
- -> (likelihood : hp -> Gaussian [] (S s))
- -> (training_data : (Tensor ((S s) :: features) Double, Tensor [S s] Double))
- -> GaussianProcess features
-fit optimizer prior likelihood training_data =
-  let objective : hp -> Tensor [] Double
-      objective hp = log_marginal_likelihood (prior hp) (likelihood hp) training_data
+predict_latent : ConjugateGPRegression features
+  -> ProbabilisticModel features {marginal=Gaussian [1]}
+predict_latent (MkConjugateGPR mk_gp gp_params _) x =
+  let (MkGP meanf kernel) = mk_gp gp_params
+    in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
 
-      params := optimizer objective
+||| Fit the Gaussian process and noise to the specified data.
+export
+fit : ConjugateGPRegression features
+  -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
+  -> {s : _} -> Data {samples=S s} features [1]
+  -> ConjugateGPRegression features
+fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer {s} training_data =
+  let objective : Tensor [S p] Double -> Tensor [] Double
+      objective params = let (noise, prior_params) = split 1 params
+                             (x, y) = training_data
+                          in log_marginal_likelihood (mk_prior prior_params)
+                             (squeeze noise) (x, squeeze y)
 
-   in posterior (prior params) (likelihood params) training_data
+      (noise, gp_params) := split 1 $ optimizer (concat (expand 0 noise) gp_params) objective
+
+      mk_posterior : Tensor [p] Double -> GaussianProcess features
+      mk_posterior params' = let (x, y) = training_data
+                              in posterior (mk_prior params') (squeeze noise) (x, squeeze y)
+
+    in MkConjugateGPR mk_posterior gp_params (squeeze noise)

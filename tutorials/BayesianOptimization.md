@@ -45,6 +45,9 @@ How we produce the new points from the data and models depends on the problem at
 import Tensor
 import BayesianOptimization
 import Model
+import Model.GaussianProcess
+import Model.Kernel
+import Model.MeanFunction
 import Distribution
 import Optimize
 import Util
@@ -57,12 +60,12 @@ historicData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]], const [[1.2], [-0.5]
 and model that data
 
 ```idris
-model : ProbabilisticModel [2] {marginal=Gaussian [1]}
-model = let optimizer = gridSearch (const [100, 100]) (const [-10, 10]) (const [-10, 10])
-            mk_prior = \len_and_noise => MkGP zero (rbf $ index 0 len_and_noise)
-            mk_likelihood = \len_and_noise => MkGaussian (fill 0) (diag $ index 1 len_and_noise)
-            (qp, obs) = historicData
-         in ?marginalise $ fit optimizer mk_prior mk_likelihood (qp, squeeze obs)
+model : ConjugateGPRegression [2]
+model = let mk_gp = \len => MkGP zero (matern52 (const {shape=[]} 1.0) $ squeeze len)
+            length_scale = const {shape=[1]} [0.5]
+            noise = const {shape=[]} 0.2
+            model = MkConjugateGPR mk_gp length_scale noise
+         in fit model lbfgs historicData
 ```
 
 then optimize over the marginal mean
@@ -73,7 +76,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Tensor [1, 2] Double
-newPoint = optimizer $ squeeze . mean . model
+newPoint = optimizer $ squeeze . mean . (predict_latent model)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -110,12 +113,12 @@ In this case, our acquisition function depends on the model (which in turn depen
 In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
 
 ```idris
-modelMean : ProbabilisticModel [2] {targets=[1]} {marginal=Gaussian [1]} -> Acquisition 1 [2]
-modelMean model = squeeze . mean . model
+modelMean : ProbabilisticModel [2] {marginal=Gaussian [1]} -> Acquisition 1 [2]
+modelMean predict = squeeze . mean . predict
 
 newPoint' : Tensor [1, 2] Double
 newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
-             in run acquisition model  -- `run` turns a `Morphism` into a function
+             in run acquisition (predict_latent model)  -- `run` turns a `Morphism` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -173,7 +176,12 @@ With this new functionality at hand, we'll return to our objective with failure 
 failureData : Data {samples=4} [2] [1]
 failureData = (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]], const [[0], [0], [0], [1]])
 
-failureModel : ProbabilisticModel [2] {marginal=Gaussian [1]}
+failureModel : ConjugateGPRegression [2]
+failureModel = let mk_gp = \len => MkGP zero (rbf $ squeeze len)
+                   length_scale = const {shape=[1]} [0.2]
+                   noise = const {shape=[]} 0.1
+                   model = MkConjugateGPR mk_gp length_scale noise
+                in fit model lbfgs failureData
 ```
 
 and we'll gather all the data and models in a `record`:
@@ -189,9 +197,10 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Tensor [1, 2] Double
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
-                 pof = failure >>> probabilityOfFeasibility (const 0.5)
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5) {s=_}
+                 pof = failure >>> probabilityOfFeasibility (const 0.5) {s=_}
                  acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, model) (failureData, failureModel)
+                 dataAndModel = Label (historicData, predict_latent model)
+                                      (failureData, predict_latent failureModel)
               in run acquisition dataAndModel
 ```

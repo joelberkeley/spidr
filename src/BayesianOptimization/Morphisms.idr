@@ -13,22 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module BayesianOptimization.Util
+module BayesianOptimization.Morphisms
 
 import public Data.Morphisms
 import Distribution
 import Tensor
 import Model
-
-||| Objective query points and either corresponding objective values or metadata.
-|||
-||| @samples The number of points in each of the feature and target data.
-||| @features The shape of the feature domain.
-||| @targets The shape of the target domain.
-public export 0
-Data : {0 samples : Nat} -> (0 features : Shape) -> (0 targets : Shape) -> Type
-Data features targets =
-  (Tensor (samples :: features) Double, Tensor (samples :: targets) Double)
 
 infix 9 >>>
 
@@ -39,6 +29,7 @@ export
 (>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
 f >>> g = Mor (uncurry g . f)
 
+||| Extract the underlying function from a `Morphism`.
 export
 run : (i ~> o) -> i -> o
 run = applyMor
