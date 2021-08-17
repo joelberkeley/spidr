@@ -29,8 +29,7 @@ import Util
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
 Empiric : Distribution targets marginal => (0 features : Shape) -> (0 out : Type) -> Type
-Empiric features out = (dataset : Dataset features targets) -> {auto prf : NonEmpty dataset}
-  -> ProbabilisticModel features {marginal} -> out
+Empiric features out = Dataset features targets -> ProbabilisticModel features {marginal} -> out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
@@ -62,7 +61,7 @@ expectedImprovement predict best at =
 ||| the observation value at each point.
 export
 expectedImprovementByModel : Empiric features {marginal=Gaussian [1]} $ Acquisition 1 features
-expectedImprovementByModel {prf=IsNonEmpty query_points _} (MkDataset query_points _) predict at =
+expectedImprovementByModel (MkDataset query_points _) predict at =
   let best = squeeze $ reduce_min 0 $ mean $ predict query_points
    in expectedImprovement predict best at
 

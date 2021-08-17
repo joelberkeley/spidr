@@ -94,9 +94,8 @@ export
 fit : ConjugateGPRegression features
   -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
   -> (dataset : Dataset features [1])
-  -> {auto prf : NonEmpty dataset}
   -> ConjugateGPRegression features
-fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) {prf=IsNonEmpty x y} =
+fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] Double -> Tensor [] Double
       objective params = let (noise, prior_params) = split 1 params
                           in log_marginal_likelihood (mk_prior prior_params)
