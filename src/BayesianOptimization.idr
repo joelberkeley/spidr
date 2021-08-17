@@ -20,5 +20,11 @@ limitations under the License.
 ||| points.
 module BayesianOptimization
 
+import public Data.Stream
+
 import public BayesianOptimization.Acquisition as BayesianOptimization
 import public BayesianOptimization.Morphisms as BayesianOptimization
+
+loop : i -> (i ~> points) -> (points -> i -> i) -> Stream i
+loop data_and_model acquisition update =
+    iterate (\dm => update (run acquisition dm) dm) data_and_model

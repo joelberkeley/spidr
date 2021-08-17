@@ -209,11 +209,6 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
 ## Iterative Bayesian optimization with infinite data types
 
 ```idris
-bayesLoop : i -> (i ~> points) -> (points -> i -> i) -> Stream i
-bayesLoop data_and_model acquisition update = iterate (\dm => update (run acquisition dm) dm) data_and_model
-```
-
-```idris
 objective : Tensor [1, 2] Double -> Tensor [1, 1] Double
 
 observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2]) -> (Dataset [2] [1], ConjugateGPRegression [2])
