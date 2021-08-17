@@ -220,7 +220,7 @@ mkPredict (d, gpr) = (d, predict_latent gpr)
 
 points : Stream (Dataset [2] [1], ConjugateGPRegression [2])
 points = let acquisition = map optimizer $ mkPredict >>> expectedImprovementByModel
-          in bayesLoop (historicData, model) acquisition observe
+          in loop (historicData, model) acquisition observe
 
 firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
 firstFive = take 5 points
