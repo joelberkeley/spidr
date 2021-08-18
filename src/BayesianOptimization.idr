@@ -21,6 +21,7 @@ limitations under the License.
 module BayesianOptimization
 
 import public Data.Stream
+import Tensor
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
 import public BayesianOptimization.Morphisms as BayesianOptimization
@@ -35,5 +36,6 @@ import public BayesianOptimization.Morphisms as BayesianOptimization
 ||| @observer A function which evaluates the optimization objective at the recommended points, then
 |||   updates the values (typically data and models).
 export
-loop : (tactic : i ~> points) -> (observer : points -> i -> i) -> i -> Stream i
-loop tactic update = iterate (\ii => update (run tactic ii) ii)
+loop : (tactic : i ~> Tensor shape dtype)
+  -> (observer : Tensor shape dtype -> i -> i) -> i -> Stream i
+loop tactic observer = iterate (\ii => observer (run tactic ii) ii)
