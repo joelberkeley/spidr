@@ -237,4 +237,4 @@ firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
 firstFive = take 5 iterations
 ```
 
-or use any other stopping condition we like (though we won't give an example here because spidr lacks the functionality to define stopping conditions based on `Tensor` data).
+or use any other stopping condition we like. However, we won't give an example here because spidr lacks the functionality to define conditionals based on `Tensor` data.
