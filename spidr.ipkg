@@ -8,6 +8,7 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
+  Data,
   Distribution,
   Error,
 
