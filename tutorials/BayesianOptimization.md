@@ -207,13 +207,13 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
 
 ## Iterative Bayesian optimization with infinite data types
 
-Once we've chosen some new points, we'll typically evaluate the objective function
+Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 
 ```idris
 objective : Tensor [n, 2] Double -> Tensor [n, 1] Double
 ```
 
-at these points. We can then update our historical data and models with these new data and repeat the whole process to find further points. How we update the data and models depends on how we chose to represent them. Let's look at the simple example of a pair of data and model. In this case, processing our new point can look as follows:
+at these points. We can then update our historical data and models with these new observations and repeat the whole process to find further points. How we update the data and models depends on how we chose to represent them. Suppose we used a `Pair` of data and model, then the update can look like
 
 ```idris
 observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2]) -> (Dataset [2] [1], ConjugateGPRegression [2])
@@ -221,7 +221,7 @@ observe point (dataset, model) = let new_data = MkDataset point (objective point
                                   in (concat dataset new_data, fit model lbfgs new_data)
 ```
 
-When we search for more points, we could choose to search a fixed number of times, or we could choose to repeat it until we find a point that's within some margin of error of a known optimum. Fundamentally, we don't want to assume a stopping condition. Indeed, we want to decouple stopping entirely from the definition of the iteration. A potentially-infinite sequence of values such as this is perfectly captured by the `Stream` data type, which is what spidr's `loop` function produces.
+When we search for more points, we could search a fixed number of times, or we could continue until we find a point that's within some margin of error of a known optimum. Crucially, stopping is a separate concern from the actual iteration, and by treating it as such, we allow users to choose their own stopping condition. This implies the iteration must produce a potentially-infinite sequence of values. The `Stream` data type is perfect for this, and is what spidr's `loop` function produces.
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
@@ -229,11 +229,11 @@ iterations = let tactic = map optimizer $ (map predict_latent) >>> expectedImpro
               in loop tactic observe (historicData, model)
 ```
 
-From this, we can take the first five results
+Given this `Stream`, we can take the first five results
 
 ```idris
 firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
 firstFive = take 5 iterations
 ```
 
-or use any other stopping condition we like. We won't give an example because spidr currently lacks the functionality to convert boolean `Tensor`s to Idris `Bool`s.
+or use any other stopping condition we like (though we won't give an example here because spidr lacks the functionality to define stopping conditions based on `Tensor` data).
