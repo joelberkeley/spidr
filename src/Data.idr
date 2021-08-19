@@ -26,8 +26,8 @@ import Tensor
 ||| @targets The shape of the target domain.
 public export
 data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
-  MkDataset : {s : _} -> Tensor (Vect.(::) (S s) features) Double
-           -> Tensor (Vect.(::) (S s) targets) Double
+  MkDataset : {s : _} -> Tensor (S s :: features) Double
+           -> Tensor (S s :: targets) Double
            -> Dataset features targets
 
 ||| Concatenate two datasets along their leading axis.
