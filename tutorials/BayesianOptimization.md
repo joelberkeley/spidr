@@ -224,16 +224,16 @@ observe point (dataset, model) = let new_data = MkDataset point (objective point
 When we search for more points, we could choose to search a fixed number of times, or we could choose to repeat it until we find a point that's within some margin of error of a known optimum. Fundamentally, we don't want to assume a stopping condition. Indeed, we want to decouple stopping entirely from the definition of the iteration. A potentially-infinite sequence of values such as this is perfectly captured by the `Stream` data type, which is what spidr's `loop` function produces.
 
 ```idris
-points : Stream (Dataset [2] [1], ConjugateGPRegression [2])
-points = let tactic = map optimizer $ (map predict_latent) >>> expectedImprovementByModel
-          in loop tactic observe (historicData, model)
+iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
+iterations = let tactic = map optimizer $ (map predict_latent) >>> expectedImprovementByModel
+              in loop tactic observe (historicData, model)
 ```
 
 From this, we can take the first five results
 
 ```idris
 firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
-firstFive = take 5 points
+firstFive = take 5 iterations
 ```
 
 or use any other stopping condition we like. We won't give an example because spidr currently lacks the functionality to convert boolean `Tensor`s to Idris `Bool`s.
