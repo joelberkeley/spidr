@@ -44,6 +44,7 @@ How we produce the new points from the data and models depends on the problem at
 <!-- idris
 import Tensor
 import BayesianOptimization
+import Data
 import Model
 import Model.GaussianProcess
 import Model.Kernel
