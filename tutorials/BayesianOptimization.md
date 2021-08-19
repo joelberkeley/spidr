@@ -214,7 +214,7 @@ Once we've chosen some new points, we'll typically evaluate the objective functi
 objective : Tensor [n, 2] Double -> Tensor [n, 1] Double
 ```
 
-at these points. We can then update our historical data and models with these new observations and repeat the whole process to find further points. How we update the data and models depends on how we chose to represent them. Suppose we used a `Pair` of data and model, then the update can look like
+at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
 
 ```idris
 observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2]) -> (Dataset [2] [1], ConjugateGPRegression [2])
@@ -222,7 +222,7 @@ observe point (dataset, model) = let new_data = MkDataset point (objective point
                                   in (concat dataset new_data, fit model lbfgs new_data)
 ```
 
-When we search for more points, we could search a fixed number of times, or we could continue until we find a point that's within some margin of error of a known optimum. Crucially, stopping is a separate concern from the actual iteration, and by treating it as such, we allow users to choose their own stopping condition. This implies the iteration must produce a potentially-infinite sequence of values. The `Stream` data type is perfect for this, and is what spidr's `loop` function produces.
+We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) Double` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
@@ -230,11 +230,11 @@ iterations = let tactic = map optimizer $ (map predict_latent) >>> expectedImpro
               in loop tactic observe (historicData, model)
 ```
 
-Given this `Stream`, we can take the first five results
+Given such a `Stream`, we can peruse the values in whatever way we like. We can simply take the first five iterations
 
 ```idris
 firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
 firstFive = take 5 iterations
 ```
 
-or use any other stopping condition we like. However, we won't give an example here because spidr lacks the functionality to define conditionals based on `Tensor` data.
+or use more complex stopping conditions as mentioned earlier. Unfortunately, we can't give an example of this because spidr lacks the functionality to define conditionals based on `Tensor` data.
