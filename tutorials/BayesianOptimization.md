@@ -217,7 +217,8 @@ objective : Tensor [n, 2] Double -> Tensor [n, 1] Double
 at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
 
 ```idris
-observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2]) -> (Dataset [2] [1], ConjugateGPRegression [2])
+observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2])
+                               -> (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let new_data = MkDataset point (objective point)
                                   in (concat dataset new_data, fit model lbfgs new_data)
 ```
