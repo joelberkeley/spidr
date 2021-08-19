@@ -16,7 +16,6 @@ limitations under the License.
 ||| This module contains definitions and utilities for datasets.
 module Data
 
-import Distribution
 import Tensor
 
 ||| Observed pairs of data points from feature and target domains. Data sets such as this are
