@@ -54,4 +54,4 @@ gridSearch : (density : Tensor [d] Integer) ->
 |||
 ||| @initial_points The points from which to start optimization.
 export
-lbfgs : forall n . (initial_points : Tensor [n] Double) -> Optimizer (Tensor [n] Double)
+lbfgs : (initial_points : Tensor [n] Double) -> Optimizer (Tensor [n] Double)

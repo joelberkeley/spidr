@@ -13,18 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains definitions and utilities for probabilistic models.
-module Model
+||| This module contains definitions and utilities for datasets.
+module Data
 
-import Distribution
 import Tensor
 
-||| A `ProbabilisticModel` is a mapping from a feature domain to a probability distribution over
-||| a target domain.
+||| Observed pairs of data points from feature and target domains. Data sets such as this are
+||| commonly used in supervised learning settings.
 |||
 ||| @features The shape of the feature domain.
 ||| @targets The shape of the target domain.
-||| @marginal The type of mulitvariate marginal distribution over the target domain.
-public export 0
-ProbabilisticModel : Distribution targets marginal => (0 features : Shape) -> Type
-ProbabilisticModel features = {n : _} -> Tensor (Vect.(::) (S n) features) Double -> marginal (S n)
+public export
+data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
+  MkDataset : {s : _} -> Tensor (S s :: features) Double
+           -> Tensor (S s :: targets) Double
+           -> Dataset features targets
+
+||| Concatenate two datasets along their leading axis.
+export
+concat : Dataset f t -> Dataset f t -> Dataset f t
+concat (MkDataset x y) (MkDataset x' y') = MkDataset (concat x x') (concat y y')

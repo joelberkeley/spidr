@@ -17,6 +17,7 @@ limitations under the License.
 module Model.GaussianProcess
 
 import Tensor
+import Data
 import Model
 import Model.Kernel
 import Model.MeanFunction

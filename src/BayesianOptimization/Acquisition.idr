@@ -18,6 +18,7 @@ module BayesianOptimization.Acquisition
 import public Data.Nat
 import Distribution
 import Tensor
+import Data
 import Model
 import Optimize
 import BayesianOptimization.Morphisms

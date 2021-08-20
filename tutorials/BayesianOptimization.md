@@ -44,13 +44,14 @@ How we produce the new points from the data and models depends on the problem at
 <!-- idris
 import Tensor
 import BayesianOptimization
+import Data
 import Model
 import Model.GaussianProcess
 import Model.Kernel
 import Model.MeanFunction
 import Distribution
 import Optimize
-import Util
+import Data.Stream
 -->
 ```idris
 historicData : Dataset [2] [1]
@@ -204,3 +205,39 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
                                       (failureData, predict_latent failureModel)
               in run acquisition dataAndModel
 ```
+
+## Iterative Bayesian optimization with infinite data types
+
+Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
+
+```idris
+objective : Tensor [n, 2] Double -> Tensor [n, 1] Double
+```
+
+at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
+
+```idris
+observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2])
+                               -> (Dataset [2] [1], ConjugateGPRegression [2])
+observe point (dataset, model) = let new_data = MkDataset point (objective point)
+                                  in (concat dataset new_data, fit model lbfgs new_data)
+```
+
+We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) Double` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
+
+```idris
+iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
+iterations = let tactic = map optimizer $ (map predict_latent) >>> expectedImprovementByModel
+              in loop tactic observe (historicData, model)
+```
+
+It's worth pausing at this point to look at how we use `predict_latent`. In earlier examples, we converted `ConjugateGPRegression`s to `ProbabilisticModel`s in the call to `run`, while in this loop example, we converted it in the implementation of `tactic`. Both are valid, but in the loop the acquisition function uses the `ProbabilisticModel`, while we train the `ConjugateGPRegression` itself on the data, so we must pass the latter to `loop`. If `ProbabilisticModel` were an interface rather than a type alias, we could have made a `ConjugateGPRegression` a `ProbabilisticModel` and there would be no need to be explicit. However, by being explicit like this, we can specify which `ProbabilisticModel` we pass to the acquisition function. For example, we could have used the observation predictions rather than the latent predictions. More generally, we can customize which model attributes we use in which part of the optimization tactic.
+
+Returning to the loop, we now have a `Stream`. We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
+
+```idris
+firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
+firstFive = take 5 iterations
+```
+
+or use more complex stopping conditions as mentioned earlier. Unfortunately, we can't give an example of this because spidr lacks the functionality to define conditionals based on `Tensor` data.
