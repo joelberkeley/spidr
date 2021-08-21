@@ -220,7 +220,7 @@ at these points. We can then update our historical data and models with these ne
 observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2])
                                -> (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let new_data = MkDataset point (objective point)
-                                  in (concat dataset new_data, fit model lbfgs new_data)
+                                  in (dataset <+> new_data, fit model lbfgs new_data)
 ```
 
 We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) Double` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
