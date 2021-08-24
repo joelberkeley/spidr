@@ -47,6 +47,8 @@ jobs:
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install bazelisk
+        pip install numpy wheel
+        pip install keras_preprocessing --no-deps
         git clone https://github.com/tensorflow/tensorflow.git
         cd tensorflow
         ./configure
