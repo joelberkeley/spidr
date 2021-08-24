@@ -39,6 +39,18 @@ jobs:
         g++ -shared -o libxla.so backend/xla.cpp
         idris2 --install spidr.ipkg
         ! (idris2 -p spidr test/XLA.idr -x test_add | grep -q FAIL)
+  xla:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    - run: |
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install bazelisk
+        git clone https://github.com/tensorflow/tensorflow.git
+        cd tensorflow
+        ./configure
+        bazel test -c opt //tensorflow/compiler/xla/tests:all_reduce_test
   tutorials:
     runs-on: ubuntu-latest
     steps:
