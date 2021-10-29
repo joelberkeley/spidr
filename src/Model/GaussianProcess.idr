@@ -81,11 +81,10 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
 
 ||| Construct a probabilistic model for the latent target values.
 export
-predict_latent : ConjugateGPRegression features
-  -> ProbabilisticModel features {marginal=Gaussian [1]}
-predict_latent (MkConjugateGPR mk_gp gp_params _) x =
-  let (MkGP meanf kernel) = mk_gp gp_params
-    in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
+ProbabilisticModel features [1] (Gaussian [1]) (ConjugateGPRegression features) where
+  marginalise (MkConjugateGPR mk_gp gp_params _) x =
+    let (MkGP meanf kernel) = mk_gp gp_params
+     in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
 
 ||| Fit the Gaussian process and noise to the specified data.
 export

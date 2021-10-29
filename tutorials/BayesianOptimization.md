@@ -80,8 +80,8 @@ optimizer : Optimizer $ Tensor [1, 2] F64
 optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.0, 1.0])
              in \f => broadcast . gs $ f . broadcast
 
-newPoint : Tensor [1, 2] F64
-newPoint = optimizer $ squeeze . mean . (predict_latent model)
+newPoint : Tensor [1, 2] F53
+newPoint = optimizer $ squeeze . mean . (marginalise model)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -118,12 +118,12 @@ In this case, our acquisition function depends on the model (which in turn depen
 In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
 
 ```idris
-modelMean : ProbabilisticModel [2] {marginal=Gaussian [1]} -> Acquisition 1 [2]
-modelMean predict = squeeze . mean . predict
+modelMean : ProbabilisticModel [2] [1] (Gaussian [1]) m => m -> Acquisition 1 [2]
+modelMean model = squeeze . mean . (marginalise model)
 
 newPoint' : Tensor [1, 2] F64
 newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
-             in run acquisition (predict_latent model)  -- `run` turns a `Morphism` into a function
+             in run acquisition model  -- `run` turns a `Morphism` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -205,8 +205,7 @@ newPoint'' : Tensor [1, 2] F64
 newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
                  pof = failure >>> probabilityOfFeasibility (const 0.5)
                  acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, predict_latent model)
-                                      (failureData, predict_latent failureModel)
+                 dataAndModel = Label (historicData, model) (failureData, failureModel)
               in run acquisition dataAndModel
 ```
 
@@ -231,7 +230,7 @@ We can repeat the above process indefinitely, and spidr provides a function `loo
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
-iterations = let tactic = map optimizer $ (map predict_latent) >>> expectedImprovementByModel
+iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel
               in loop tactic observe (historicData, model)
 ```
 
