@@ -236,7 +236,7 @@ It's worth pausing at this point to look at how we use `predict_latent`. In earl
 Returning to the loop, we now have a `Stream`. We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
 
 ```idris
-firstFive : List (Dataset [2] [1], ConjugateGPRegression [2])
+firstFive : Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])
 firstFive = take 5 iterations
 ```
 
