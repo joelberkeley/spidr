@@ -17,14 +17,12 @@ import XLA
 
 infix 0 ==?
 
-(==?) : Eq ty => ty -> ty -> IO ()
-x ==? y = printLn $ if x == y then "PASS" else "FAIL"
+assert : Bool -> IO ()
+assert x = if x then printLn "PASS" else printLn "FAIL"
 
 test_add : IO ()
 test_add = do let two = mkScalar 2
                   three = mkScalar 3
-                  five = add two three
-              cast five ==? 5.0
+              assert $ three > two
               delScalar two
               delScalar three
-              delScalar five

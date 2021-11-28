@@ -23,29 +23,37 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 
 export
 Scalar : Type
-Scalar = Struct "cScalar" [("x", Double)]
+Scalar = Struct "cBignum" [("x", Int)]
 
-%foreign (libxla "cScalar_new")
+%foreign (libxla "cBignum_new")
 export
-mkScalar : Double -> Scalar
+mkScalar : Int -> Scalar
 
-%foreign (libxla "cScalar_del")
+%foreign (libxla "cBignum_del")
 prim__delScalar : Scalar -> PrimIO ()
 
 export
 delScalar : Scalar -> IO ()
 delScalar = primIO . prim__delScalar
 
-%foreign (libxla "cScalar_add")
+%foreign (libxla "cBignum_add")
 export
 add : Scalar -> Scalar -> Scalar
 
-%foreign (libxla "cScalar_toDouble")
-toDouble : Scalar -> Double
+%foreign (libxla "cBignum_compare")
+prim__compare : Scalar -> Scalar -> Int
 
 export
-Cast Scalar Double where
-  cast = toDouble
+Eq Scalar where
+  x == y = if prim__compare x y == 0 then True else False
+
+export
+Ord Scalar where
+  compare x y = case prim__compare x y of
+                  -1 => LT
+                  0 => EQ
+                  1 => GT
+                  _ => LT
 
 ||| Scalar data types supported by XLA.
 public export
