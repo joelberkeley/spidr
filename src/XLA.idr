@@ -22,6 +22,10 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
 export
+err_xla : a -> b
+err_xla x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
+
+export
 Bignum : Type
 Bignum = Struct "c__Bignum" []
 
@@ -61,7 +65,7 @@ Ord Bignum where
                   -1 => LT
                   0 => EQ
                   1 => GT
-                  x => (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
+                  x => err_xla x
 
 ||| Scalar data types supported by XLA.
 public export
