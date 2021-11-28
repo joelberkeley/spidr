@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains (will contain) the Idris API to XLA.
+||| This module contains the Idris API to XLA.
 module XLA
 
 import System.FFI
@@ -29,26 +29,24 @@ Bignum = Struct "c__Bignum" []
 export
 mkBignum : Bignum
 
-%foreign (libxla "c__Bignum_del")
-prim__delete : Bignum -> PrimIO ()
-
 export
 delete : Bignum -> IO ()
-delete = primIO . prim__delete
-
-%foreign (libxla "c__Bignum_AssignUInt64")
-prim__assign : Bignum -> Int -> PrimIO ()
+delete = primIO . prim__delete where
+           %foreign (libxla "c__Bignum_del")
+           prim__delete : Bignum -> PrimIO ()
 
 export
 assign : Bignum -> Nat -> IO ()
-assign b x = primIO $ prim__assign b (cast x)
+assign b x = primIO $ prim__assign b (cast x) where
+               %foreign (libxla "c__Bignum_AssignUInt64")
+               prim__assign : Bignum -> Int -> PrimIO ()
 
-%foreign (libxla "c__Bignum_AddBignum")
-prim__c__Bignum_AddBignum : Bignum -> Bignum -> PrimIO ()
 
 export
 add : Bignum -> Bignum -> IO ()
-add x y = primIO $ prim__c__Bignum_AddBignum x y
+add x y = primIO $ prim__c__Bignum_AddBignum x y where
+            %foreign (libxla "c__Bignum_AddBignum")
+            prim__c__Bignum_AddBignum : Bignum -> Bignum -> PrimIO ()
 
 %foreign (libxla "c__Bignum_Compare")
 prim__compare : Bignum -> Bignum -> Int
