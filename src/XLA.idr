@@ -61,7 +61,7 @@ Ord Bignum where
                   -1 => LT
                   0 => EQ
                   1 => GT
-                  _ => LT  -- todo crash
+                  x => (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
 
 ||| Scalar data types supported by XLA.
 public export
