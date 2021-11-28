@@ -22,7 +22,7 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
 export
-errXLA : a -> b
+errXLA : Show a => a -> b
 errXLA x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
 
 export
@@ -33,24 +33,26 @@ Bignum = Struct "c__Bignum" []
 export
 mkBignum : Bignum
 
+%foreign (libxla "c__Bignum_del")
+prim__delete : Bignum -> PrimIO ()
+
 export
 delete : Bignum -> IO ()
-delete = primIO . prim__delete where
-           %foreign (libxla "c__Bignum_del")
-           prim__delete : Bignum -> PrimIO ()
+delete = primIO . prim__delete
+
+%foreign (libxla "c__Bignum_AssignUInt64")
+prim__assign : Bignum -> Int -> PrimIO ()
 
 export
 assign : Bignum -> Nat -> IO ()
-assign b x = primIO $ prim__assign b (cast x) where
-               %foreign (libxla "c__Bignum_AssignUInt64")
-               prim__assign : Bignum -> Int -> PrimIO ()
+assign b x = primIO $ prim__assign b (cast x)
 
+%foreign (libxla "c__Bignum_AddBignum")
+prim__c__Bignum_AddBignum : Bignum -> Bignum -> PrimIO ()
 
 export
 add : Bignum -> Bignum -> IO ()
-add x y = primIO $ prim__c__Bignum_AddBignum x y where
-            %foreign (libxla "c__Bignum_AddBignum")
-            prim__c__Bignum_AddBignum : Bignum -> Bignum -> PrimIO ()
+add x y = primIO $ prim__c__Bignum_AddBignum x y
 
 %foreign (libxla "c__Bignum_Compare")
 prim__compare : Bignum -> Bignum -> Int
