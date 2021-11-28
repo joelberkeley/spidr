@@ -16,31 +16,29 @@ limitations under the License.
 /* This file contains the pure C API to XLA. */
 #include <double-conversion/bignum.h>
 
+using namespace double_conversion;
+
 extern "C"
 {
-    struct cBignum;
+    struct c__Bignum;
 
-    using namespace double_conversion;
-
-    struct cBignum* cBignum_new(uint64_t x) {
-        Bignum* bn = new Bignum();
-        bn->AssignUInt64(x);
-        return reinterpret_cast<cBignum*>(bn);
+    struct c__Bignum* c__Bignum_Bignum() {
+        return reinterpret_cast<c__Bignum*>(new Bignum());
     }
 
-    void cBignum_del(struct cBignum* s) {
+    void c__Bignum_del(struct c__Bignum* s) {
         delete reinterpret_cast<Bignum*>(s);
     }
 
-    struct cBignum* cBignum_add(struct cBignum& s, struct cBignum& other) {
-        Bignum* sum;
-        sum->AddBignum(reinterpret_cast<Bignum&>(s));
-        sum->AddBignum(reinterpret_cast<Bignum&>(other));
-        // todo is this a dangling pointer?
-        return reinterpret_cast<cBignum*>(sum);
+    void c__Bignum_AssignUInt64(struct c__Bignum& s, uint64_t x) {
+        reinterpret_cast<Bignum&>(s).AssignUInt64(x);
     }
 
-    int cBignum_compare(struct cBignum& s, struct cBignum& other) {
+    void c__Bignum_AddBignum(struct c__Bignum& s, struct c__Bignum& other) {
+        reinterpret_cast<Bignum&>(s).AddBignum(reinterpret_cast<Bignum&>(other));
+    }
+
+    int c__Bignum_Compare(struct c__Bignum& s, struct c__Bignum& other) {
         return Bignum::Compare(
             reinterpret_cast<Bignum&>(s),
             reinterpret_cast<Bignum&>(other)

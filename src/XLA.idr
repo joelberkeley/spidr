@@ -22,38 +22,48 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
 export
-Scalar : Type
-Scalar = Struct "cBignum" [("x", Int)]
+Bignum : Type
+Bignum = Struct "c__Bignum" []
 
-%foreign (libxla "cBignum_new")
+%foreign (libxla "c__Bignum_Bignum")
 export
-mkScalar : Int -> Scalar
+mkBignum : Bignum
 
-%foreign (libxla "cBignum_del")
-prim__delScalar : Scalar -> PrimIO ()
-
-export
-delScalar : Scalar -> IO ()
-delScalar = primIO . prim__delScalar
-
-%foreign (libxla "cBignum_add")
-export
-add : Scalar -> Scalar -> Scalar
-
-%foreign (libxla "cBignum_compare")
-prim__compare : Scalar -> Scalar -> Int
+%foreign (libxla "c__Bignum_del")
+prim__delete : Bignum -> PrimIO ()
 
 export
-Eq Scalar where
+delete : Bignum -> IO ()
+delete = primIO . prim__delete
+
+%foreign (libxla "c__Bignum_AssignUInt64")
+prim__assign : Bignum -> Int -> PrimIO ()
+
+export
+assign : Bignum -> Nat -> IO ()
+assign b x = primIO $ prim__assign b (cast x)
+
+%foreign (libxla "c__Bignum_AddBignum")
+prim__c__Bignum_AddBignum : Bignum -> Bignum -> PrimIO ()
+
+export
+add : Bignum -> Bignum -> IO ()
+add x y = primIO $ prim__c__Bignum_AddBignum x y
+
+%foreign (libxla "c__Bignum_Compare")
+prim__compare : Bignum -> Bignum -> Int
+
+export
+Eq Bignum where
   x == y = if prim__compare x y == 0 then True else False
 
 export
-Ord Scalar where
+Ord Bignum where
   compare x y = case prim__compare x y of
                   -1 => LT
                   0 => EQ
                   1 => GT
-                  _ => LT
+                  _ => LT  -- todo crash
 
 ||| Scalar data types supported by XLA.
 public export

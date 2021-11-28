@@ -21,8 +21,10 @@ assert : Bool -> IO ()
 assert x = if x then printLn "PASS" else printLn "FAIL"
 
 test_add : IO ()
-test_add = do let two = mkScalar 2
-                  three = mkScalar 3
+test_add = do let two = mkBignum
+                  three = mkBignum
+              assign two 2
+              assign three 3
               assert $ three > two
-              delScalar two
-              delScalar three
+              delete two
+              delete three
