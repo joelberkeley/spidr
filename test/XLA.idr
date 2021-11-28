@@ -18,7 +18,7 @@ import XLA
 infix 0 ==?
 
 assert : Bool -> IO ()
-assert x = if x then printLn "PASS" else printLn "FAIL"
+assert x = printLn $ the String $ if x then "PASS" else "FAIL"
 
 test_add : IO ()
 test_add = do let two = mkBignum
