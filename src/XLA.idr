@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains (will contain) the Idris API to XLA.
+||| This module contains the Idris API to XLA.
 module XLA
 
 import System.FFI
@@ -21,31 +21,52 @@ import System.FFI
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
-export
-Scalar : Type
-Scalar = Struct "cScalar" [("x", Double)]
-
-%foreign (libxla "cScalar_new")
-export
-mkScalar : Double -> Scalar
-
-%foreign (libxla "cScalar_del")
-prim__delScalar : Scalar -> PrimIO ()
+xla_crash : Show a => a -> b
+xla_crash x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
 
 export
-delScalar : Scalar -> IO ()
-delScalar = primIO . prim__delScalar
+Bignum : Type
+Bignum = Struct "c__Bignum" []
 
-%foreign (libxla "cScalar_add")
+%foreign (libxla "c__Bignum_Bignum")
 export
-add : Scalar -> Scalar -> Scalar
+mkBignum : Bignum
 
-%foreign (libxla "cScalar_toDouble")
-toDouble : Scalar -> Double
+%foreign (libxla "c__Bignum_del")
+prim__delete : Bignum -> PrimIO ()
 
 export
-Cast Scalar Double where
-  cast = toDouble
+delete : Bignum -> IO ()
+delete = primIO . prim__delete
+
+%foreign (libxla "c__Bignum_AssignUInt64")
+prim__assign : Bignum -> Int -> PrimIO ()
+
+export
+assign : Bignum -> Nat -> IO ()
+assign b x = primIO $ prim__assign b (cast x)
+
+%foreign (libxla "c__Bignum_AddBignum")
+prim__c__Bignum_AddBignum : Bignum -> Bignum -> PrimIO ()
+
+export
+add : Bignum -> Bignum -> IO ()
+add x y = primIO $ prim__c__Bignum_AddBignum x y
+
+%foreign (libxla "c__Bignum_Compare")
+prim__compare : Bignum -> Bignum -> Int
+
+export
+Eq Bignum where
+  x == y = if prim__compare x y == 0 then True else False
+
+export
+Ord Bignum where
+  compare x y = case prim__compare x y of
+                  -1 => LT
+                  0 => EQ
+                  1 => GT
+                  x => xla_crash x
 
 ||| Scalar data types supported by XLA.
 public export

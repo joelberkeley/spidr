@@ -2,3 +2,4 @@ build/
 out/
 
 *.so
+backend/xla_extension
