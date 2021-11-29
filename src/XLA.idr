@@ -21,9 +21,8 @@ import System.FFI
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
-export
-errXLA : Show a => a -> b
-errXLA x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
+xla_crash : Show a => a -> b
+xla_crash x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
 
 export
 Bignum : Type
@@ -67,7 +66,7 @@ Ord Bignum where
                   -1 => LT
                   0 => EQ
                   1 => GT
-                  x => errXLA x
+                  x => xla_crash x
 
 ||| Scalar data types supported by XLA.
 public export
