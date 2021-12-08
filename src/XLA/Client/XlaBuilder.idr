@@ -59,7 +59,7 @@ namespace XlaOp
 
 %foreign (libxla "c__XlaBuilder_OpToString")
 export
-show : XlaBuilder -> XlaOp -> String
+opToString : XlaBuilder -> XlaOp -> String
 
 %foreign (libxla "c__Eq")
 export

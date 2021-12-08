@@ -25,7 +25,7 @@ test_add = do let builder = mkXlaBuilder
               let one = const builder 1
               let two = const builder 2
               let three = one + two
-              printLn (show builder (one + two == three))
+              putStrLn (opToString builder (one + two == three))
               delete one
               delete two
               delete three

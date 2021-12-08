@@ -16,6 +16,7 @@ limitations under the License.
 /* This file contains the pure C API to XLA. */
 // #include <stdio.h>
 #include <tensorflow/compiler/xla/client/xla_builder.h>
+// #include <stdlib.h>
 
 extern "C" {
     using namespace xla;
@@ -92,10 +93,7 @@ extern "C" {
     const char* c__XlaBuilder_OpToString(c__XlaBuilder* s, c__XlaOp* op) {
         auto s_ = reinterpret_cast<XlaBuilder*>(s);
         auto op_ = reinterpret_cast<XlaOp*>(op);
-        std::string op_str = s_->OpToString(*op_);
-        // todo what is string encoding? Idris requires UTF-8 https://idris2.readthedocs.io/en/latest/ffi/ffi.html#primitive-ffi-types
-        printf("%s\n", op_str.c_str());
-        return op_str.c_str();
+        return strdup(s_->OpToString(*op_).c_str());
     }
 
     /*
