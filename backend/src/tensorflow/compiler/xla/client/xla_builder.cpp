@@ -93,7 +93,11 @@ extern "C" {
     const char* c__XlaBuilder_OpToString(c__XlaBuilder* s, c__XlaOp* op) {
         auto s_ = reinterpret_cast<XlaBuilder*>(s);
         auto op_ = reinterpret_cast<XlaOp*>(op);
-        return strdup(s_->OpToString(*op_).c_str());
+        auto op_str = s_->OpToString(*op_);
+        char *res = NULL;
+        res = (char *) malloc(op_str.length() + 1);
+        strncpy(res, op_str.c_str(), op_str.length());
+        return res;
     }
 
     /*
