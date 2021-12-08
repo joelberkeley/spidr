@@ -22,10 +22,10 @@ assert x = printLn $ the String $ if x then "PASS" else "FAIL"
 
 test_add : IO ()
 test_add = do let builder = mkXlaBuilder
-              let one = const builder 1
-              let two = const builder 2
-              let three = one + two
-              putStrLn (opToString builder (one + two == three))
+              let one = const builder 2
+              let two = const builder 3
+              let three = const builder 5
+              eval builder (one + two == three)
               delete one
               delete two
               delete three

@@ -68,3 +68,10 @@ export
 %foreign (libxla "c__XlaOp_operator_add")
 export
 (+) : XlaOp -> XlaOp -> XlaOp
+
+%foreign (libxla "eval")
+prim__eval : XlaBuilder -> XlaOp -> PrimIO ()
+
+export
+eval : XlaBuilder -> XlaOp -> IO ()
+eval builder op = primIO $ prim__eval builder op

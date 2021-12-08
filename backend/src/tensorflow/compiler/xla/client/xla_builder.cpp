@@ -16,7 +16,7 @@ limitations under the License.
 /* This file contains the pure C API to XLA. */
 // #include <stdio.h>
 #include <tensorflow/compiler/xla/client/xla_builder.h>
-// #include <stdlib.h>
+#include <tensorflow/compiler/xla/client/value_inference.h>
 
 extern "C" {
     using namespace xla;
@@ -120,5 +120,26 @@ extern "C" {
         auto res = new XlaOp();
         *res = Eq(*lhs_, *rhs_);
         return reinterpret_cast<c__XlaOp*>(res);
+    }
+
+    /*
+     *
+     *
+     * Non-standard temporary utility functions
+     * 
+     * 
+     */
+
+    void eval (c__XlaBuilder* builder, c__XlaOp* op) {
+        auto op_ = reinterpret_cast<XlaOp*>(op);
+        auto builder_ = reinterpret_cast<XlaBuilder*>(builder);
+        ValueInferenceMode value_inf_mode;
+        auto value_inf = new ValueInference(builder_);
+        auto opt_literal_or = value_inf->AnalyzeConstant(*op_, value_inf_mode);
+        
+        if (opt_literal_or.ok()) {
+            // auto ints = absl::Span<const int64>(new int64[1], 1);
+            std::cout << opt_literal_or->GetValue()->ToString();
+        } else {}
     }
 }
