@@ -18,8 +18,7 @@ limitations under the License.
 
 using namespace double_conversion;
 
-extern "C"
-{
+extern "C" {
     struct c__Bignum;
 
     struct c__Bignum* c__Bignum_Bignum() {
