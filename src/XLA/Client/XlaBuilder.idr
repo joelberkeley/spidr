@@ -17,6 +17,7 @@ limitations under the License.
 module XLA.Client.XlaBuilder
 
 import XLA
+import Types
 import System.FFI
 
 libxla : String -> String
@@ -61,17 +62,13 @@ namespace XlaOp
 export
 opToString : XlaBuilder -> XlaOp -> String
 
-%foreign (libxla "c__Eq")
-export
-(==) : XlaOp -> XlaOp -> XlaOp
-
 %foreign (libxla "c__XlaOp_operator_add")
 export
 (+) : XlaOp -> XlaOp -> XlaOp
 
-%foreign (libxla "eval")
-prim__eval : XlaBuilder -> XlaOp -> PrimIO ()
+%foreign (libxla "eval_int32")
+prim__eval_int : XlaBuilder -> XlaOp -> Int  -- todo should this be IO Int?
 
 export
-eval : XlaBuilder -> XlaOp -> IO ()
-eval builder op = primIO $ prim__eval builder op
+eval_int : XlaBuilder -> XlaOp -> Array [] {dtype=Int}
+eval_int builder op = prim__eval_int builder op

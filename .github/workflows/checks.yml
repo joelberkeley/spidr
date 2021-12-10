@@ -30,7 +30,7 @@ jobs:
           -Ibackend/xla_extension/include/ \
           -Lbackend/xla_extension/lib/ \
           -o libxla.so \
-          backend/src/double-conversion/bignum.cpp backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
+          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
           -lxla_extension \
           -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg
@@ -48,11 +48,11 @@ jobs:
           -Ibackend/xla_extension/include/ \
           -Lbackend/xla_extension/lib/ \
           -o libxla.so \
-          backend/src/double-conversion/bignum.cpp backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
+          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
           -lxla_extension \
           -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg
-        ! (idris2 -p spidr test/XLA.idr -x test_add | grep -q FAIL)
+        ! (idris2 -p spidr test/XLA/Client/XlaBuilder.idr -x test | grep -q FAIL)
   tutorials:
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +66,7 @@ jobs:
           -Ibackend/xla_extension/include/ \
           -Lbackend/xla_extension/lib/ \
           -o libxla.so \
-          backend/src/double-conversion/bignum.cpp backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
+          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
           -lxla_extension \
           -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg

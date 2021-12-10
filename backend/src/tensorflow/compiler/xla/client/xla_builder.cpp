@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /* This file contains the pure C API to XLA. */
-// #include <stdio.h>
 #include <tensorflow/compiler/xla/client/xla_builder.h>
 #include <tensorflow/compiler/xla/client/value_inference.h>
 
@@ -125,21 +124,33 @@ extern "C" {
     /*
      *
      *
-     * Non-standard temporary utility functions
+     * Custom utility functions
+     * 
+     * Unlike the functions above, these are not just a minimal C layer round the XLA API
      * 
      * 
      */
 
-    void eval (c__XlaBuilder* builder, c__XlaOp* op) {
+    void* eval (c__XlaBuilder* builder, c__XlaOp* op) {
         auto op_ = reinterpret_cast<XlaOp*>(op);
         auto builder_ = reinterpret_cast<XlaBuilder*>(builder);
+
         ValueInferenceMode value_inf_mode;
-        auto value_inf = new ValueInference(builder_);
-        auto opt_literal_or = value_inf->AnalyzeConstant(*op_, value_inf_mode);
-        
-        if (opt_literal_or.ok()) {
-            // auto ints = absl::Span<const int64>(new int64[1], 1);
-            std::cout << opt_literal_or->GetValue()->ToString();
-        } else {}
+        Literal lit = (new ValueInference(builder_))
+            ->AnalyzeConstant(*op_, value_inf_mode)
+            ->GetValue()
+            ->Clone();  // todo we get memory errors if we don't do this. Not sure why.
+
+        auto size = lit.size_bytes();
+        auto data = lit.untyped_data();
+
+        void* res = malloc(size);;
+        memcpy(res, data, size);
+
+        return res;
+    }
+
+    int32 eval_int32(c__XlaBuilder* builder, c__XlaOp* op) {
+        return *(int32*) eval(builder, op);
     }
 }

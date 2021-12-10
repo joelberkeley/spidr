@@ -17,23 +17,11 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import public Data.Vect
-import Data.Nat
 import XLA
 import Error
+import public Types
 
 ----------------------------- core definitions ----------------------------
-
-||| Describes the shape of a `Tensor`. For example, a `Tensor` of `Double`s with contents
-||| `[[0, 1, 2], [3, 4, 5]]` has two elements in its outer-most axis, and each of those elements
-||| has three `Double`s in it, so this has shape [2, 3]. A `Tensor` can have axes of zero length,
-||| though the shape cannot be unambiguously inferred by visualising it. For example, `[[], []]`
-||| can have shape [2, 0], [2, 0, 5] or etc. A scalar `Tensor` has shape `[]`.
-|||
-||| The rank is the number of elements in the shape, or equivalently the number of axes.
-public export 0
-Shape : {0 rank: Nat} -> Type
-Shape = Vect rank Nat
 
 ||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`.
 export
@@ -59,17 +47,6 @@ ScalarLike Nat where
 export
 ScalarLike Bool where
   archType = BOOL
-
-||| An `Array shape` is either:
-||| 
-||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
-||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
-|||
-||| @shape The shape of this array.
-public export 0
-Array : ScalarLike dtype => (0 shape : Shape) -> Type
-Array {dtype} [] = dtype
-Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on

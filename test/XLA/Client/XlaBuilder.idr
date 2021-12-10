@@ -15,18 +15,30 @@ limitations under the License.
 --}
 import XLA.Client.XlaBuilder
 
-infix 0 ==?
+import Types
 
 assert : Bool -> IO ()
-assert x = printLn $ the String $ if x then "PASS" else "FAIL"
+assert x = putStrLn $ if x then "PASS" else "FAIL"
 
 test_add : IO ()
 test_add = do let builder = mkXlaBuilder
-              let one = const builder 2
-              let two = const builder 3
-              let three = const builder 5
-              eval builder (one + two == three)
+              let one = const builder 1
+              let two = const builder 2
+              let minus_seven = const builder (-7)
+              assert $ eval_int builder (one + two) == 3
+              assert $ eval_int builder (two + minus_seven) == -2
               delete one
               delete two
-              delete three
               delete builder
+
+
+test_opToString : IO ()
+test_opToString = do let builder = mkXlaBuilder
+                     let one = const builder 1
+                     assert $ opToString builder one == "constant, shape=[], metadata={:0}"
+                     delete one
+                     delete builder
+
+test : IO ()
+test = do test_add
+          test_opToString
