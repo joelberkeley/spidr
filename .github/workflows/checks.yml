@@ -26,7 +26,13 @@ jobs:
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-        g++ -shared -fPIC -Ibackend/xla_extension/include/ -Lbackend/xla_extension/lib/ -o libxla.so backend/src/double-conversion/bignum.cpp -lxla_extension -Wl,-rpath=backend/xla_extension/lib/
+        g++ -shared -fPIC \
+          -Ibackend/xla_extension/include/ \
+          -Lbackend/xla_extension/lib/ \
+          -o libxla.so \
+          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
+          -lxla_extension \
+          -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg
         res=0; for f in test/**.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
   test-ffi:
@@ -38,9 +44,15 @@ jobs:
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-        g++ -shared -fPIC -Ibackend/xla_extension/include/ -Lbackend/xla_extension/lib/ -o libxla.so backend/src/double-conversion/bignum.cpp -lxla_extension -Wl,-rpath=backend/xla_extension/lib/
+        g++ -shared -fPIC \
+          -Ibackend/xla_extension/include/ \
+          -Lbackend/xla_extension/lib/ \
+          -o libxla.so \
+          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
+          -lxla_extension \
+          -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg
-        ! (idris2 -p spidr test/XLA.idr -x test_add | grep -q FAIL)
+        ! (idris2 -p spidr test/XLA/Client/XlaBuilder.idr -x test | grep -q FAIL)
   tutorials:
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +62,12 @@ jobs:
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-        g++ -shared -fPIC -Ibackend/xla_extension/include/ -Lbackend/xla_extension/lib/ -o libxla.so backend/src/double-conversion/bignum.cpp -lxla_extension -Wl,-rpath=backend/xla_extension/lib/
+        g++ -shared -fPIC \
+          -Ibackend/xla_extension/include/ \
+          -Lbackend/xla_extension/lib/ \
+          -o libxla.so \
+          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
+          -lxla_extension \
+          -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg
         res=0; for f in tutorials/*.md; do idris2 --check "$f" || res=$?; done; $(exit $res)
