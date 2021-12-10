@@ -26,7 +26,7 @@ test_add = do let builder = mkXlaBuilder
               let two = const builder 2
               let minus_seven = const builder (-7)
               assert $ eval_int builder (one + two) == 3
-              assert $ eval_int builder (two + minus_seven) == -2
+              assert $ eval_int builder (two + minus_seven) == -5
               delete one
               delete two
               delete builder
