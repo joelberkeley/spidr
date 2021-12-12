@@ -65,9 +65,15 @@ extern "C" {
      */
 
     struct c__XlaOp;
+    struct c__XlaBuilder;
 
     void c__XlaOp_delete(c__XlaOp* s) {
         delete reinterpret_cast<XlaOp*>(s);
+    }
+
+    c__XlaBuilder& c__XlaOp_builder(c__XlaOp& op) {
+        auto& op_ = reinterpret_cast<XlaOp& >(op);
+        return reinterpret_cast<c__XlaBuilder&>(*op_.builder());
     }
 
     c__XlaOp* c__XlaOp_operator_neg(c__XlaOp& s) {
@@ -114,10 +120,9 @@ extern "C" {
      *
      */
 
-    struct c__XlaBuilder;
-
     c__XlaBuilder* c__XlaBuilder_new(const char* computation_name) {
         auto builder = new XlaBuilder(computation_name);
+        std::cout << "c__XlaBuilder_new " << builder << std::endl;
         return reinterpret_cast<c__XlaBuilder*>(builder);
     }
 

@@ -34,25 +34,7 @@ jobs:
           -lxla_extension \
           -Wl,-rpath=backend/xla_extension/lib/
         idris2 --install spidr.ipkg
-        res=0; for f in test/**.idr; do idris2 --check "$f" || res=$?; done; $(exit $res)
-  test-ffi:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-        g++ -shared -fPIC \
-          -Ibackend/xla_extension/include/ \
-          -Lbackend/xla_extension/lib/ \
-          -o libxla.so \
-          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
-          -lxla_extension \
-          -Wl,-rpath=backend/xla_extension/lib/
-        idris2 --install spidr.ipkg
-        ! (idris2 -p spidr test/XLA/Client/XlaBuilder.idr -x test | grep -q FAIL)
+        ! (idris2 -p spidr test/Tensor.idr -x test | grep -q FAIL)
   tutorials:
     runs-on: ubuntu-latest
     steps:

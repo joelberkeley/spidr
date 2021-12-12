@@ -98,3 +98,18 @@ test_det x = det x
 
 test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
 test_det_with_leading x = det x
+
+assert : Bool -> IO ()
+assert x = putStrLn $ if x then "PASS" else "FAIL"
+
+test_add : IO ()
+test_add = do sum <- eval (const' 1 ++ const' 2); assert $ sum == 3
+              sum <- eval (const' 3 ++ const' (-7)); assert $ sum == -4
+
+test_toString : IO ()
+test_toString = do str <- toString $ const' 1
+                   assert $ str == "constant, shape=[], metadata={:0}"
+
+test : IO ()
+test = do test_add
+          test_toString

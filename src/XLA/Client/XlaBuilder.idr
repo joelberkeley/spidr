@@ -32,25 +32,13 @@ libxla fname = "C:" ++ fname ++ ",libxla"
  -
  -}
 
-export
-XlaBuilder : Type
-XlaBuilder = Struct "c__XlaBuilder" []
+data XlaBuilder = MkXlaBuilder AnyPtr
 
 %foreign (libxla "c__XlaBuilder_new")
-export
-mkXlaBuilder : String -> XlaBuilder
+prim__mkXlaBuilder : String -> AnyPtr
 
-namespace XlaBuilder
-    %foreign (libxla "c__XlaBuilder_delete")
-    prim__delete : XlaBuilder -> PrimIO ()
-
-    export
-    delete : XlaBuilder -> IO ()
-    delete = primIO . prim__delete
-
-%foreign (libxla "c__XlaBuilder_name")
-export
-name : XlaBuilder -> String
+%foreign (libxla "c__XlaBuilder_delete")
+prim__delete_XlaBuilder : AnyPtr -> PrimIO ()
 
 {-
  -
@@ -58,41 +46,59 @@ name : XlaBuilder -> String
  -
  -}
 
-export
-XlaOp : Type
-XlaOp = Struct "c__XlaOp" []
+data XlaOp = MkXlaOp (IO GCAnyPtr)
+
+%foreign (libxla "c__XlaOp_delete")
+prim__delete_XlaOp : AnyPtr -> PrimIO ()
 
 %foreign (libxla "c__ConstantLiteral")
-constantLiteral : XlaBuilder -> Literal -> XlaOp
+constantLiteral : AnyPtr -> Literal -> AnyPtr
 
 export
-const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}} -> 
-    XlaBuilder -> Array shape {dtype=dtype} -> IO XlaOp
-const {dtype} {shape} builder arr =
+data Op = MkOp (XlaBuilder -> XlaOp)
+
+export
+const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}} -> Array shape {dtype=dtype} -> Op
+const {rank} {shape} arr = MkOp $ \(MkXlaBuilder builder_ptr) => MkXlaOp $
     do literal <- mkLiteral shape arr
-       let op = constantLiteral builder literal
+       let xlaop = constantLiteral builder_ptr literal
+       let op = onCollectAny xlaop $ primIO . prim__delete_XlaOp
        delete literal
-       pure op
-
-namespace XlaOp
-    %foreign (libxla "c__XlaOp_delete")
-    prim__delete : XlaOp -> PrimIO ()
-
-    export
-    delete : XlaOp -> IO ()
-    delete = primIO . prim__delete
-
-%foreign (libxla "eval")
-prim__eval : XlaOp -> PrimIO Literal
-
-export
-eval : XLAPrimitive dtype => {shape : _} -> XlaOp -> IO (Array shape {dtype=dtype})
-eval op = map (toArray shape) (primIO $ prim__eval op)
+       op
 
 %foreign (libxla "c__XlaBuilder_OpToString")
+prim__opToString : AnyPtr -> GCAnyPtr -> String
+
 export
-opToString : XlaBuilder -> XlaOp -> String
+opToString : Op -> IO String
+opToString (MkOp f) =
+  do let builder_ptr = prim__mkXlaBuilder ""
+         (MkXlaOp op_ptr) = f (MkXlaBuilder builder_ptr)
+     str <- pure $ prim__opToString builder_ptr !op_ptr
+     primIO $ prim__delete_XlaBuilder builder_ptr
+     pure str
+
+%foreign (libxla "eval")
+prim__eval : GCAnyPtr -> PrimIO Literal
+
+export
+eval : XLAPrimitive dtype => {shape : _} -> Op -> IO (Array shape {dtype=dtype})
+eval {shape} (MkOp builder_to_op) = 
+    do let builder_ptr = prim__mkXlaBuilder ""
+           (MkXlaOp op_ptr) = builder_to_op (MkXlaBuilder builder_ptr)
+       lit <- primIO $ prim__eval !op_ptr
+       let arr = toArray shape lit
+       delete lit
+       primIO $ prim__delete_XlaBuilder builder_ptr
+       pure arr
 
 %foreign (libxla "c__XlaOp_operator_add")
+prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
-(+) : XlaOp -> XlaOp -> XlaOp
+(+) : Op -> Op -> Op
+(MkOp l) + (MkOp r) = MkOp $ \builder => MkXlaOp $
+    do let (MkXlaOp l_op) = l builder
+           (MkXlaOp r_op) = r builder
+       res_ptr <- primIO $ prim__XlaOp_operator_add !l_op !r_op
+       onCollectAny res_ptr $ primIO . prim__delete_XlaOp
