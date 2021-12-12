@@ -20,8 +20,13 @@ import Types
 assert : Bool -> IO ()
 assert x = putStrLn $ if x then "PASS" else "FAIL"
 
+test_XlaBuilder_name : IO ()
+test_XlaBuilder_name = do assert $ name (mkXlaBuilder "foo") == "foo"
+                          assert $ name (mkXlaBuilder "-1") == "-1"
+                          assert $ name (mkXlaBuilder "") == ""
+
 test_add : IO ()
-test_add = do let builder = mkXlaBuilder
+test_add = do let builder = mkXlaBuilder "foo"
               let one = const builder 1
               let two = const builder 2
               let minus_seven = const builder (-7)
@@ -31,9 +36,8 @@ test_add = do let builder = mkXlaBuilder
               delete two
               delete builder
 
-
 test_opToString : IO ()
-test_opToString = do let builder = mkXlaBuilder
+test_opToString = do let builder = mkXlaBuilder "foo"
                      let one = const builder 1
                      assert $ opToString builder one == "constant, shape=[], metadata={:0}"
                      delete one
@@ -41,4 +45,5 @@ test_opToString = do let builder = mkXlaBuilder
 
 test : IO ()
 test = do test_add
+          test_XlaBuilder_name
           test_opToString
