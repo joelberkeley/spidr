@@ -17,6 +17,16 @@ limitations under the License.
 #include <tensorflow/compiler/xla/client/xla_builder.h>
 #include <tensorflow/compiler/xla/client/value_inference.h>
 
+// Return a pointer to a new, heap-allocated, null-terminated C string.
+const char* c_string_copy(std::string str) {
+    char *res = NULL;
+    auto len = str.length();
+    res = (char *) malloc(len + 1);
+    strncpy(res, str.c_str(), len);
+    res[len] = '\0';
+    return res;
+}
+
 extern "C" {
     using namespace xla;
 
@@ -80,8 +90,8 @@ extern "C" {
 
     struct c__XlaBuilder;
 
-    c__XlaBuilder* c__XlaBuilder_new() {
-        auto builder = new XlaBuilder("XlaBuilder");
+    c__XlaBuilder* c__XlaBuilder_new(const char* computation_name) {
+        auto builder = new XlaBuilder(computation_name);
         return reinterpret_cast<c__XlaBuilder*>(builder);
     }
 
@@ -89,14 +99,15 @@ extern "C" {
         delete reinterpret_cast<XlaBuilder*>(s);
     }
 
+    const char* c__XlaBuilder_name(c__XlaBuilder& s) {
+        return c_string_copy(reinterpret_cast<XlaBuilder&>(s).name());
+    }
+
     const char* c__XlaBuilder_OpToString(c__XlaBuilder& s, c__XlaOp& op) {
         auto& s_ = reinterpret_cast<XlaBuilder&>(s);
         auto& op_ = reinterpret_cast<XlaOp&>(op);
         auto op_str = s_.OpToString(op_);
-        char *res = NULL;
-        res = (char *) malloc(op_str.length() + 1);
-        strncpy(res, op_str.c_str(), op_str.length());
-        return res;
+        return c_string_copy(op_str);
     }
 
     /*

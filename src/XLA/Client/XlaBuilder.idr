@@ -32,7 +32,11 @@ XlaBuilder = Struct "c__XlaBuilder" []
 
 %foreign (libxla "c__XlaBuilder_new")
 export
-mkXlaBuilder : XlaBuilder
+mkXlaBuilder : String -> XlaBuilder
+
+%foreign (libxla "c__XlaBuilder_name")
+export
+name : XlaBuilder -> String
 
 namespace XlaBuilder
     %foreign (libxla "c__XlaBuilder_del")
