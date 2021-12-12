@@ -18,7 +18,7 @@ limitations under the License.
 #include <tensorflow/compiler/xla/client/value_inference.h>
 
 // Return a pointer to a new, heap-allocated, null-terminated C string.
-const char* string_copy(std::string str) {
+const char* c_string_copy(std::string str) {
     char *res = NULL;
     auto len = str.length();
     res = (char *) malloc(len + 1);
@@ -100,14 +100,14 @@ extern "C" {
     }
 
     const char* c__XlaBuilder_name(c__XlaBuilder& s) {
-        return string_copy(reinterpret_cast<XlaBuilder&>(s).name());
+        return c_string_copy(reinterpret_cast<XlaBuilder&>(s).name());
     }
 
     const char* c__XlaBuilder_OpToString(c__XlaBuilder& s, c__XlaOp& op) {
         auto& s_ = reinterpret_cast<XlaBuilder&>(s);
         auto& op_ = reinterpret_cast<XlaOp&>(op);
         auto op_str = s_.OpToString(op_);
-        return string_copy(op_str);
+        return c_string_copy(op_str);
     }
 
     /*
