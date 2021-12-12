@@ -26,53 +26,72 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 xla_crash : Show a => a -> b
 xla_crash x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
 
-export
-XlaBuilder : Type
-XlaBuilder = Struct "c__XlaBuilder" []
+%foreign (libxla "c__XlaBuilder_del")
+prim__delete_XlaBuilder : AnyPtr -> PrimIO ()
 
-%foreign (libxla "c__XlaBuilder_new")
+export
+data XlaBuilder : Type where
+    MkXlaBuilder : IO GCAnyPtr -> XlaBuilder
+
 export
 mkXlaBuilder : String -> XlaBuilder
+mkXlaBuilder computation_name = MkXlaBuilder $
+    onCollectAny (prim__mkXlaBuilder computation_name) $ \x => do putStrLn "finaliser delete in mkXlaBuilder"
+                                                                  primIO $ prim__delete_XlaBuilder x
+        where %foreign (libxla "c__XlaBuilder_new")
+              prim__mkXlaBuilder : String -> AnyPtr
 
 %foreign (libxla "c__XlaBuilder_name")
-export
-name : XlaBuilder -> String
-
-namespace XlaBuilder
-    %foreign (libxla "c__XlaBuilder_del")
-    prim__delete : XlaBuilder -> PrimIO ()
-
-    export
-    delete : XlaBuilder -> IO ()
-    delete = primIO . prim__delete
+prim__XlaBuilder_name : GCAnyPtr -> String
 
 export
-XlaOp : Type
-XlaOp = Struct "c__XlaOp" []
+name : XlaBuilder -> IO String
+name (MkXlaBuilder b) = pure $ prim__XlaBuilder_name !b
+
+export
+data XlaOp : Type where
+    MkXlaOp : IO GCAnyPtr -> XlaOp
+
+%foreign (libxla "c__XlaOp_del")
+prim__delete_XlaOp : AnyPtr -> PrimIO ()
+
+%foreign (libxla "c__XlaOp_builder")
+prim__XlaOp_builder : GCAnyPtr -> AnyPtr
 
 %foreign (libxla "c__ConstantR0")
+prim__const : GCAnyPtr -> Int -> AnyPtr
+
 export
 const : XlaBuilder -> Int -> XlaOp
+const (MkXlaBuilder builder_ptr) value =
+    MkXlaOp $ do builder_ptr <- builder_ptr
+                 onCollectAny (prim__const builder_ptr value) $ primIO . prim__delete_XlaOp
 
-namespace XlaOp
-    %foreign (libxla "c__XlaOp_del")
-    prim__delete : XlaOp -> PrimIO ()
-
-    export
-    delete : XlaOp -> IO ()
-    delete = primIO . prim__delete
-
+-- todo how to do we explain using AnyPtr here?
 %foreign (libxla "c__XlaBuilder_OpToString")
+prim__opToString : AnyPtr -> GCAnyPtr -> String
+
+-- note this XlaOp must be registered in some sense with this XlaBuilder, else this function
+-- errors. We can fix this by using the .builder() method on XlaOp.
 export
-opToString : XlaBuilder -> XlaOp -> String
+opToString : XlaOp -> IO String
+opToString op@(MkXlaOp op_ptr) =
+    do op_ptr <- op_ptr
+       pure $ prim__opToString (prim__XlaOp_builder op_ptr) op_ptr
 
 %foreign (libxla "c__XlaOp_operator_add")
+prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> AnyPtr
+
 export
 (+) : XlaOp -> XlaOp -> XlaOp
+(MkXlaOp l) + (MkXlaOp r) = MkXlaOp $
+    do l <- l
+       r <- r
+       onCollectAny (prim__XlaOp_operator_add l r) $ primIO . prim__delete_XlaOp
 
 %foreign (libxla "eval_int32")
-prim__eval_int : XlaOp -> PrimIO Int
+prim__eval_int : GCAnyPtr -> PrimIO Int
 
 export
 eval_int : XlaOp -> IO (Array [] {dtype=Int})
-eval_int op = primIO $ prim__eval_int op
+eval_int (MkXlaOp op_ptr) = primIO $ prim__eval_int !op_ptr

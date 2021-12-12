@@ -21,36 +21,22 @@ assert : Bool -> IO ()
 assert x = putStrLn $ if x then "PASS" else "FAIL"
 
 test_XlaBuilder_name : IO ()
-test_XlaBuilder_name = do assert $ name (mkXlaBuilder "foo") == "foo"
-                          assert $ name (mkXlaBuilder "-1") == "-1"
-                          assert $ name (mkXlaBuilder "") == ""
+test_XlaBuilder_name = do x <- name (mkXlaBuilder "foo"); assert $ x == "foo"
+                          x <- name (mkXlaBuilder "-1 "); assert $ x == "-1 "
+                          x <- name (mkXlaBuilder ""); assert $ x == ""
 
 test_add : IO ()
 test_add = do let b = mkXlaBuilder ""
-                  x = const b 1
-                  y = const b 2
-              sum <- eval_int (x + y)
-              assert $ sum == 3
-              delete b
-              delete x
-              delete y
+              sum <- eval_int (const b 1 + const b 2); assert $ sum == 3
               let b = mkXlaBuilder ""
-                  x = const b 3
-                  y = const b (-7)
-              sum <- eval_int (x + y)
-              assert $ sum == -4
-              delete b
-              delete x
-              delete y
+              sum <- eval_int (const b 3 + const b (-7)); assert $ sum == -4
 
 test_opToString : IO ()
-test_opToString = do let builder = mkXlaBuilder "foo"
-                     let one = const builder 1
-                     assert $ opToString builder one == "constant, shape=[], metadata={:0}"
-                     delete one
-                     delete builder
+test_opToString = do s <- opToString $ const (mkXlaBuilder "foo") 1
+                     assert $ s == "constant, shape=[], metadata={:0}"
 
 test : IO ()
-test = do test_add
+test = do pure ()
           test_XlaBuilder_name
+          test_add
           test_opToString
