@@ -148,12 +148,10 @@ extern "C" {
         XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
 
         XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
-
-        LocalClient* client(ClientLibrary::LocalClientOrDie());
         ExecutionProfile profile;
-        Literal lit = client->ExecuteAndTransfer(
-            computation, {}, nullptr, &profile
-        ).ConsumeValueOrDie();
+        Literal lit = ClientLibrary::LocalClientOrDie()
+            ->ExecuteAndTransfer(computation, {}, nullptr, &profile)
+            .ConsumeValueOrDie();
 
         int64 size = lit.size_bytes();
         void* res = malloc(size);;
