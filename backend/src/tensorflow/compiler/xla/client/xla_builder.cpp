@@ -62,7 +62,7 @@ extern "C" {
 
     c__XlaOp* c__XlaOp_operator_add(c__XlaOp& x, c__XlaOp& y) {
         auto res = new XlaOp();
-        *res = Add(reinterpret_cast<XlaOp&>(x), reinterpret_cast<XlaOp&>(y);
+        *res = Add(reinterpret_cast<XlaOp&>(x), reinterpret_cast<XlaOp&>(y));
         return reinterpret_cast<c__XlaOp*>(res);
     }
 
