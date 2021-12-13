@@ -15,7 +15,8 @@ limitations under the License.
 */
 /* This file contains the pure C API to XLA. */
 #include <tensorflow/compiler/xla/client/xla_builder.h>
-#include <tensorflow/compiler/xla/client/value_inference.h>
+#include <tensorflow/compiler/xla/client/local_client.h>
+#include <tensorflow/compiler/xla/client/client_library.h>
 
 // Return a pointer to a new, heap-allocated, null-terminated C string.
 const char* c_string_copy(std::string str) {
@@ -143,26 +144,23 @@ extern "C" {
      * 
      */
 
-    void* eval (c__XlaBuilder& builder, c__XlaOp& op) {
-        auto& op_ = reinterpret_cast<XlaOp&>(op);
-        auto& builder_ = reinterpret_cast<XlaBuilder&>(builder);
+    void* eval (c__XlaOp& op) {
+        XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
 
-        ValueInferenceMode value_inf_mode;
-        Literal lit = (new ValueInference(&builder_))
-            ->AnalyzeConstant(op_, value_inf_mode)
-            ->GetValue()
-            ->Clone();  // todo we get memory errors if we don't do this. Not sure why.
+        XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
+        ExecutionProfile profile;
+        Literal lit = ClientLibrary::LocalClientOrDie()
+            ->ExecuteAndTransfer(computation, {}, nullptr, &profile)
+            .ConsumeValueOrDie();
 
-        auto size = lit.size_bytes();
-        auto data = lit.untyped_data();
-
+        int64 size = lit.size_bytes();
         void* res = malloc(size);;
-        memcpy(res, data, size);
+        memcpy(res, lit.untyped_data(), size);
 
         return res;
     }
 
-    int32 eval_int32(c__XlaBuilder& builder, c__XlaOp& op) {
-        return *(int32*) eval(builder, op);
+    int32 eval_int32(c__XlaOp& op) {
+        return *(int32*) eval(op);
     }
 }

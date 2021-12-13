@@ -26,15 +26,22 @@ test_XlaBuilder_name = do assert $ name (mkXlaBuilder "foo") == "foo"
                           assert $ name (mkXlaBuilder "") == ""
 
 test_add : IO ()
-test_add = do let builder = mkXlaBuilder "foo"
-              let one = const builder 1
-              let two = const builder 2
-              let minus_seven = const builder (-7)
-              assert $ eval_int builder (one + two) == 3
-              assert $ eval_int builder (two + minus_seven) == -5
-              delete one
-              delete two
-              delete builder
+test_add = do let b = mkXlaBuilder ""
+                  x = const b 1
+                  y = const b 2
+              sum <- eval_int (x + y)
+              assert $ sum == 3
+              delete b
+              delete x
+              delete y
+              let b = mkXlaBuilder ""
+                  x = const b 3
+                  y = const b (-7)
+              sum <- eval_int (x + y)
+              assert $ sum == -4
+              delete b
+              delete x
+              delete y
 
 test_opToString : IO ()
 test_opToString = do let builder = mkXlaBuilder "foo"
