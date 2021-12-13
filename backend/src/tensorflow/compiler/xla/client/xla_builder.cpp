@@ -146,8 +146,9 @@ extern "C" {
 
     void* eval (c__XlaBuilder& builder, c__XlaOp& op) {
         XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
+        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
 
-        XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
+        XlaComputation computation = builder_.Build().ConsumeValueOrDie();
 
         LocalClient* client(ClientLibrary::LocalClientOrDie());
         ExecutionProfile profile;
@@ -155,11 +156,9 @@ extern "C" {
             computation, {}, nullptr, &profile
         ).ConsumeValueOrDie();
 
-        auto size = lit.size_bytes();
-        auto data = lit.untyped_data();
-
+        int64 size = lit.size_bytes();
         void* res = malloc(size);;
-        memcpy(res, data, size);
+        memcpy(res, lit.untyped_data(), size);
 
         return res;
     }
