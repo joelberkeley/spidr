@@ -53,6 +53,8 @@ extern "C" {
 
     c__XlaOp* c__XlaOp_operator_add(c__XlaOp& x, c__XlaOp& y) {
         auto res = new XlaOp();
+        // todo the (and presumably other functions) appears to modify the underlying XlaBuilder.
+        // how do we handle that? can we do it without IO?
         *res = reinterpret_cast<XlaOp&>(x) + reinterpret_cast<XlaOp&>(y);
         return reinterpret_cast<c__XlaOp*>(res);
     }
@@ -144,11 +146,10 @@ extern "C" {
      * 
      */
 
-    void* eval (c__XlaBuilder& builder, c__XlaOp& op) {
+    void* eval (c__XlaOp& op) {
         XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
-        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
 
-        XlaComputation computation = builder_.Build().ConsumeValueOrDie();
+        XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
 
         LocalClient* client(ClientLibrary::LocalClientOrDie());
         ExecutionProfile profile;
@@ -163,7 +164,7 @@ extern "C" {
         return res;
     }
 
-    int32 eval_int32(c__XlaBuilder& builder, c__XlaOp& op) {
-        return *(int32*) eval(builder, op);
+    int32 eval_int32(c__XlaOp& op) {
+        return *(int32*) eval(op);
     }
 }

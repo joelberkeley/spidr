@@ -71,8 +71,8 @@ export
 (+) : XlaOp -> XlaOp -> XlaOp
 
 %foreign (libxla "eval_int32")
-prim__eval_int : XlaBuilder -> XlaOp -> Int  -- todo should this be IO Int?
+prim__eval_int : XlaOp -> Int  -- todo should this be IO Int?
 
 export
-eval_int : XlaBuilder -> XlaOp -> Array [] {dtype=Int}
-eval_int builder op = prim__eval_int builder op
+eval_int : XlaOp -> Array [] {dtype=Int}
+eval_int op = prim__eval_int op
