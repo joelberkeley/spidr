@@ -29,14 +29,16 @@ test_add : IO ()
 test_add = do let b = mkXlaBuilder ""
                   x = const b 1
                   y = const b 2
-              assert $ eval_int (x + y) == 3
+              sum <- eval_int (x + y)
+              assert $ sum == 3
               delete b
               delete x
               delete y
               let b = mkXlaBuilder ""
                   x = const b 3
                   y = const b (-7)
-              assert $ eval_int (x + y) == -4
+              sum <- eval_int (x + y)
+              assert $ sum == -4
               delete b
               delete x
               delete y
