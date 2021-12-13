@@ -75,9 +75,7 @@ prim__opToString : AnyPtr -> GCAnyPtr -> String
 -- errors. We can fix this by using the .builder() method on XlaOp.
 export
 opToString : XlaOp -> IO String
-opToString op@(MkXlaOp op_ptr) =
-    do op_ptr <- op_ptr
-       pure $ prim__opToString (prim__XlaOp_builder op_ptr) op_ptr
+opToString (MkXlaOp op_ptr) = pure $ prim__opToString (prim__XlaOp_builder !op_ptr) !op_ptr
 
 %foreign (libxla "c__XlaOp_operator_add")
 prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> AnyPtr
