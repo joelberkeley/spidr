@@ -53,7 +53,7 @@ extern "C" {
 
     c__XlaOp* c__XlaOp_operator_add(c__XlaOp& x, c__XlaOp& y) {
         auto res = new XlaOp();
-        // todo the (and presumably other functions) appears to modify the underlying XlaBuilder.
+        // todo this (and presumably other functions) appears to modify the underlying XlaBuilder.
         // how do we handle that? can we do it without IO?
         *res = reinterpret_cast<XlaOp&>(x) + reinterpret_cast<XlaOp&>(y);
         return reinterpret_cast<c__XlaOp*>(res);
@@ -146,6 +146,8 @@ extern "C" {
      * 
      */
 
+    // todo we pass the XlaOp rather than the XlaBuilder so as to hide the fact that
+    // XlaBuilder is modified in Add etc. This feels hacky. What to do?
     void* eval (c__XlaOp& op) {
         XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
 
