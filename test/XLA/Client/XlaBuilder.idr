@@ -37,6 +37,6 @@ test_opToString = do s <- opToString $ const (mkXlaBuilder "foo") 1
 
 test : IO ()
 test = do pure ()
-          test_XlaBuilder_name
+          -- test_XlaBuilder_name
           test_add
-          test_opToString
+          -- test_opToString

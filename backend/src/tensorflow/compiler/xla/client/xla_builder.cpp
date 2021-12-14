@@ -106,7 +106,7 @@ extern "C" {
 
     void c__XlaBuilder_del(c__XlaBuilder* s) {
         std::cout << "c__XlaBuilder_del " << s << std::endl;
-        // delete reinterpret_cast<XlaBuilder*>(s);  // todo memory reference error here
+        delete reinterpret_cast<XlaBuilder*>(s);  // todo memory reference error here
     }
 
     const char* c__XlaBuilder_name(c__XlaBuilder& s) {
