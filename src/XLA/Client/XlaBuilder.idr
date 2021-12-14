@@ -70,9 +70,16 @@ opToString : XlaBuilder -> XlaOp -> String
 export
 (+) : XlaOp -> XlaOp -> XlaOp
 
-%foreign (libxla "eval_int32")
-prim__eval_int : XlaOp -> PrimIO Int
+%foreign (libxla "eval")
+prim__eval : XlaOp -> PrimIO AnyPtr
+
+index : AnyPtr -> a
+
+build_array : (shape : Shape) -> AnyPtr -> Array shape {dtype=dtype}
+build_array {dtype} shape x = build' [] shape where
+    build' : List Nat -> (s : Shape) -> Array s' {dtype=dtype}
+    build' pos 
 
 export
-eval_int : XlaOp -> IO (Array [] {dtype=Int})
-eval_int op = primIO $ prim__eval_int op
+eval_int : {shape : Shape} -> XlaOp -> IO (Array [] {dtype=Int})
+eval_int op = map (build_array [] {dtype=Int}) (primIO $ prim__eval op)
