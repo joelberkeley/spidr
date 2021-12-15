@@ -35,8 +35,8 @@ extern "C" {
      *
      *
      * XlaOp
-     * 
-     * 
+     *
+     *
      */
 
     struct c__XlaOp;
@@ -63,6 +63,7 @@ extern "C" {
     c__XlaOp* c__XlaOp_operator_add(c__XlaOp& x, c__XlaOp& y) {
         auto res = new XlaOp();
         *res = Add(reinterpret_cast<XlaOp&>(x), reinterpret_cast<XlaOp&>(y));
+        std::cout << "c__XlaOp_operator_add " << &x << " " << &y << " " << res << std::endl;
         return reinterpret_cast<c__XlaOp*>(res);
     }
 
@@ -94,8 +95,8 @@ extern "C" {
      *
      *
      * XlaBuilder
-     * 
-     * 
+     *
+     *
      */
 
     c__XlaBuilder* c__XlaBuilder_new(const char* computation_name) {
@@ -106,7 +107,7 @@ extern "C" {
 
     void c__XlaBuilder_del(c__XlaBuilder* s) {
         std::cout << "c__XlaBuilder_del " << s << std::endl;
-        delete reinterpret_cast<XlaBuilder*>(s);  // todo memory reference error here
+        // delete reinterpret_cast<XlaBuilder*>(s);  // todo memory reference error here
     }
 
     const char* c__XlaBuilder_name(c__XlaBuilder& s) {
@@ -124,14 +125,15 @@ extern "C" {
      *
      *
      * Free functions
-     * 
-     * 
+     *
+     *
      */
 
     c__XlaOp* c__ConstantR0(c__XlaBuilder& builder, int32 value) {
         auto& builder_ = reinterpret_cast<XlaBuilder&>(builder);
         auto res = new XlaOp();
         *res = ConstantR0(&builder_, value);
+        std::cout << "c__ConstantR0 " << res << std::endl;
         return reinterpret_cast<c__XlaOp*>(res);
     }
 
@@ -147,10 +149,10 @@ extern "C" {
      *
      *
      * Custom utility functions
-     * 
+     *
      * Unlike the functions above, these are not just a minimal C layer round the XLA API
-     * 
-     * 
+     *
+     *
      */
 
     void* eval (c__XlaOp& op) {

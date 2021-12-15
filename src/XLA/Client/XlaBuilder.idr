@@ -33,13 +33,33 @@ export
 data XlaBuilder : Type where
     MkXlaBuilder : IO GCAnyPtr -> XlaBuilder
 
+%foreign (libxla "c__XlaBuilder_new")
+prim__mkXlaBuilder : String -> AnyPtr
+
 export
 mkXlaBuilder : String -> XlaBuilder
 mkXlaBuilder computation_name = MkXlaBuilder $
-    onCollectAny (prim__mkXlaBuilder computation_name) $ \x => do putStrLn "finaliser delete in mkXlaBuilder"
+    onCollectAny (prim__mkXlaBuilder computation_name) $ \x => do putStrLn "finaliser in mkXlaBuilder"
                                                                   primIO $ prim__delete_XlaBuilder x
-        where %foreign (libxla "c__XlaBuilder_new")
-              prim__mkXlaBuilder : String -> AnyPtr
+
+
+export
+mkXlaBuilder' : String -> IO GCAnyPtr
+mkXlaBuilder' computation_name =
+    onCollectAny (prim__mkXlaBuilder computation_name) $ \x => do putStrLn "finaliser in mkXlaBuilder"
+                                                                  primIO $ prim__delete_XlaBuilder x
+
+export
+foo : IO ()
+foo = do let x = mkXlaBuilder' ""
+         _ <- x
+         _ <- x
+         _ <- x
+         _ <- x
+         _ <- x
+         _ <- x
+         _ <- x
+         pure ()
 
 %foreign (libxla "c__XlaBuilder_name")
 prim__XlaBuilder_name : GCAnyPtr -> String
@@ -64,15 +84,13 @@ prim__const : GCAnyPtr -> Int -> AnyPtr
 export
 const : XlaBuilder -> Int -> XlaOp
 const (MkXlaBuilder builder_ptr) value =
-    MkXlaOp $ do builder_ptr <- builder_ptr
-                 onCollectAny (prim__const builder_ptr value) $ primIO . prim__delete_XlaOp
+    MkXlaOp $ do b <- builder_ptr
+                 onCollectAny (prim__const b value) $ primIO . prim__delete_XlaOp
 
--- todo how to do we explain using AnyPtr here?
+-- todo how do we explain using AnyPtr here?
 %foreign (libxla "c__XlaBuilder_OpToString")
 prim__opToString : AnyPtr -> GCAnyPtr -> String
 
--- note this XlaOp must be registered in some sense with this XlaBuilder, else this function
--- errors. We can fix this by using the .builder() method on XlaOp.
 export
 opToString : XlaOp -> IO String
 opToString (MkXlaOp op_ptr) = pure $ prim__opToString (prim__XlaOp_builder !op_ptr) !op_ptr
@@ -83,9 +101,11 @@ prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> AnyPtr
 export
 (+) : XlaOp -> XlaOp -> XlaOp
 (MkXlaOp l) + (MkXlaOp r) = MkXlaOp $
-    do l <- l
-       r <- r
-       onCollectAny (prim__XlaOp_operator_add l r) $ primIO . prim__delete_XlaOp
+    -- removing either or both of these x <- y lines fixes the problem
+    do _ <- l
+       _ <- r
+       r
+--        onCollectAny (prim__XlaOp_operator_add l r) $ primIO . prim__delete_XlaOp
 
 %foreign (libxla "eval_int32")
 prim__eval_int : GCAnyPtr -> PrimIO Int
