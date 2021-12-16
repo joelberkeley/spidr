@@ -73,12 +73,30 @@ export
 %foreign (libxla "eval")
 prim__eval : XlaOp -> PrimIO AnyPtr
 
-index : AnyPtr -> a
+indexArray : AnyPtr -> AnyPtr
+
+indexU32 : AnyPtr -> Nat
+
+indexU64 : AnyPtr -> Nat
+
+indexI32 : AnyPtr -> Int
+
+indexI64 : AnyPtr -> Integer
+
+indexF32 : AnyPtr -> Double  -- hmmm
+
+indexF64 : AnyPtr -> Double
+
+rangeTo : (n : Nat) -> Vect n Nat
+rangeTo Z = []
+rangeTo (S n) = snoc (rangeTo n) (S n)
+
+points : Vect m (n ** Vect n Nat) => Array [] {dtype=Nat}
 
 build_array : (shape : Shape) -> AnyPtr -> Array shape {dtype=dtype}
-build_array {dtype} shape x = build' [] shape where
-    build' : List Nat -> (s : Shape) -> Array s' {dtype=dtype}
-    build' pos 
+build_array {dtype} shape x =
+    let axes = the (Vect _ (n ** Vect n Nat)) $ map (\n => (_ ** rangeTo n)) shape
+     in ?rhs
 
 export
 eval_int : {shape : Shape} -> XlaOp -> IO (Array [] {dtype=Int})
