@@ -26,8 +26,8 @@ test_XlaBuilder_name = do x <- name (mkXlaBuilder "foo"); assert $ x == "foo"
                           x <- name (mkXlaBuilder ""); assert $ x == ""
 
 test_add : IO ()
-test_add = do foo
-              -- sum <- eval_int (const b 1 + const b 2); assert $ sum == 2
+test_add = do let b = mkXlaBuilder ""
+              sum <- eval_int (const b 1 + const b 2); assert $ sum == 3
             --   let b = mkXlaBuilder ""
             --   sum <- eval_int (const b 3 + const b (-7)); assert $ sum == -4
 
@@ -37,6 +37,6 @@ test_opToString = do s <- opToString $ const (mkXlaBuilder "foo") 1
 
 test : IO ()
 test = do pure ()
-          -- test_XlaBuilder_name
+          test_XlaBuilder_name
           map (\_ => ()) test_add
-          -- test_opToString
+          test_opToString
