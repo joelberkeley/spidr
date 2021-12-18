@@ -153,6 +153,7 @@ extern "C" {
             ->ExecuteAndTransfer(computation, {}, nullptr, &profile)
             .ConsumeValueOrDie();
 
+        // todo is this a shallow copy when we need a deep copy?
         int64 size = lit.size_bytes();
         void* res = malloc(size);;
         memcpy(res, lit.untyped_data(), size);
