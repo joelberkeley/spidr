@@ -108,7 +108,7 @@ data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
 ||| ```idris
 ||| addOne : (1 v : Variable [] Double) -> Variable [] Double
 ||| addOne v = v += const {shape=[]} 1
-||| 
+|||
 ||| three : Tensor [] Double
 ||| three = var 2.0 $ \v => freeze $ addOne v
 ||| ```
@@ -148,7 +148,7 @@ export
 concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
-||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example, 
+||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
 ||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
@@ -265,7 +265,7 @@ namespace Squeezable
     Nest : Squeezable from to -> Squeezable (1 :: from) to
 
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
-||| 
+|||
 ||| ```idris
 ||| x : Tensor [2, 1, 3, 1] Double
 ||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
@@ -382,7 +382,7 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 ||| broadcast explicitly for shapes to be compatible.
 export
 (-) : Neg dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype 
+      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
 
 ||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.

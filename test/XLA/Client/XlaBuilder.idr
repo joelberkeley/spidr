@@ -29,16 +29,16 @@ test_add : IO ()
 test_add = do let b = mkXlaBuilder ""
                   x = const b 1
                   y = const b 2
-              sum <- eval_int (x + y)
-              assert $ sum == 3
+              sum <- eval {shape=[]} (x + y)
+              assert $ sum == (the Int $ 3)
               delete b
               delete x
               delete y
               let b = mkXlaBuilder ""
                   x = const b 3
                   y = const b (-7)
-              sum <- eval_int (x + y)
-              assert $ sum == -4
+              sum <- eval {shape=[]} (x + y)
+              assert $ sum == (the Int $ -4)
               delete b
               delete x
               delete y
@@ -50,7 +50,11 @@ test_opToString = do let builder = mkXlaBuilder "foo"
                      delete one
                      delete builder
 
+test_get_array : IO ()
+test_get_array = printLn $ build_array [2, 3] Double nums
+
 test : IO ()
 test = do test_add
           test_XlaBuilder_name
           test_opToString
+          test_get_array

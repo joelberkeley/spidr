@@ -35,8 +35,8 @@ extern "C" {
      *
      *
      * XlaOp
-     * 
-     * 
+     *
+     *
      */
 
     struct c__XlaOp;
@@ -85,8 +85,8 @@ extern "C" {
      *
      *
      * XlaBuilder
-     * 
-     * 
+     *
+     *
      */
 
     struct c__XlaBuilder;
@@ -115,8 +115,8 @@ extern "C" {
      *
      *
      * Free functions
-     * 
-     * 
+     *
+     *
      */
 
     c__XlaOp* c__ConstantR0(c__XlaBuilder& builder, int32 value) {
@@ -138,10 +138,10 @@ extern "C" {
      *
      *
      * Custom utility functions
-     * 
+     *
      * Unlike the functions above, these are not just a minimal C layer round the XLA API
-     * 
-     * 
+     *
+     *
      */
 
     void* eval (c__XlaOp& op) {
@@ -160,7 +160,40 @@ extern "C" {
         return res;
     }
 
-    int32 eval_int32(c__XlaOp& op) {
+    int32 eval_i32(c__XlaOp& op) {
         return *(int32*) eval(op);
+    }
+
+    double eval_f64(c__XlaOp& op) {
+        return *(double*) eval(op);
+    }
+
+    int32 index_i32(void* ptr, int32 idx) {
+        return ((int32*) ptr)[idx];
+    }
+
+    double index_f64(void* ptr, int32 idx) {
+        return ((double*) ptr)[idx];
+    }
+
+    void* index_void_ptr(void** ptr, int32 idx) {
+        return ptr[idx];
+    }
+
+    void* arr() {
+        double* first = new double[3];
+        double* second = new double[3];
+
+        first[0] = 0;
+        first[1] = 1;
+        first[2] = 2;
+        second[0] = 3;
+        second[1] = 4;
+        second[2] = 5;
+
+        double** array = new double*[2];
+        array[0] = first;
+        array[1] = second;
+        return array;
     }
 }

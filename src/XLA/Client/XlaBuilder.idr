@@ -70,34 +70,50 @@ opToString : XlaBuilder -> XlaOp -> String
 export
 (+) : XlaOp -> XlaOp -> XlaOp
 
-%foreign (libxla "eval")
-prim__eval : XlaOp -> PrimIO AnyPtr
+%foreign (libxla "eval_i32")
+prim__eval_i32 : XlaOp -> PrimIO Int
 
-indexArray : AnyPtr -> AnyPtr
+%foreign (libxla "eval_f64")
+prim__eval_f64 : XlaOp -> PrimIO Double
 
-indexU32 : AnyPtr -> Nat
+%foreign (libxla "eval_array")
+prim__eval_array : XlaOp -> PrimIO AnyPtr
 
-indexU64 : AnyPtr -> Nat
+%foreign (libxla "index_i32")
+indexI32 : AnyPtr -> Int -> Int
 
-indexI32 : AnyPtr -> Int
+%foreign (libxla "index_f64")
+indexF64 : AnyPtr -> Int -> Double
 
-indexI64 : AnyPtr -> Integer
+%foreign (libxla "index_void_ptr")
+indexArray : AnyPtr -> Int -> AnyPtr
 
-indexF32 : AnyPtr -> Double  -- hmmm
-
-indexF64 : AnyPtr -> Double
+export
+%foreign (libxla "arr")
+nums : AnyPtr
 
 rangeTo : (n : Nat) -> Vect n Nat
 rangeTo Z = []
 rangeTo (S n) = snoc (rangeTo n) (S n)
 
-points : Vect m (n ** Vect n Nat) => Array [] {dtype=Nat}
-
-build_array : (shape : Shape) -> AnyPtr -> Array shape {dtype=dtype}
-build_array {dtype} shape x =
-    let axes = the (Vect _ (n ** Vect n Nat)) $ map (\n => (_ ** rangeTo n)) shape
-     in ?rhs
+export
+build_array : (shape : Shape {rank=S _}) -> (dtype : Type) -> AnyPtr -> Array shape {dtype=dtype}
+build_array [n] dtype ptr = map (indexByType ptr . cast . pred) (rangeTo n) where
+    indexByType : AnyPtr -> Int -> dtype
+    indexByType = case dtype of
+        -- todo use interfaces rather than pattern matching on types, then can possibly erase
+        -- dtype
+        Int => indexI32
+        Double => indexF64
+        _ => ?rhs
+build_array (n :: r :: est) dtype ptr =
+    map ((build_array (r :: est) dtype) . (indexArray ptr . cast . pred)) (rangeTo n)
 
 export
-eval_int : {shape : Shape} -> XlaOp -> IO (Array [] {dtype=Int})
-eval_int op = map (build_array [] {dtype=Int}) (primIO $ prim__eval op)
+eval : {dtype : _} -> {shape : Shape} -> XlaOp -> IO (Array shape {dtype=dtype})
+eval {shape=[]} op = eval_scalar op where
+    eval_scalar : XlaOp -> IO dtype
+    eval_scalar = case dtype of
+        Int => primIO . prim__eval_i32
+        Double => primIO . prim__eval_f64
+eval {shape=n :: rest} op = map (build_array (n :: rest) dtype) (primIO $ prim__eval_array op)
