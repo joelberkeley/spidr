@@ -80,13 +80,13 @@ prim__eval_f64 : XlaOp -> PrimIO Double
 prim__eval_array : XlaOp -> PrimIO AnyPtr
 
 %foreign (libxla "index_i32")
-indexI32 : AnyPtr -> Int -> Int
+prim__indexI32 : AnyPtr -> Int -> Int
 
 %foreign (libxla "index_f64")
-indexF64 : AnyPtr -> Int -> Double
+prim__indexF64 : AnyPtr -> Int -> Double
 
 %foreign (libxla "index_void_ptr")
-indexArray : AnyPtr -> Int -> AnyPtr
+prim__indexArray : AnyPtr -> Int -> AnyPtr
 
 export
 %foreign (libxla "arr")
@@ -103,11 +103,11 @@ build_array [n] dtype ptr = map (indexByType ptr . cast . pred) (rangeTo n) wher
     indexByType = case dtype of
         -- todo use interfaces rather than pattern matching on types, then can possibly erase
         -- dtype
-        Int => indexI32
-        Double => indexF64
+        Int => prim__indexI32
+        Double => prim__indexF64
         _ => ?rhs
 build_array (n :: r :: est) dtype ptr =
-    map ((build_array (r :: est) dtype) . (indexArray ptr . cast . pred)) (rangeTo n)
+    map ((build_array (r :: est) dtype) . (prim__indexArray ptr . cast . pred)) (rangeTo n)
 
 export
 eval : {dtype : _} -> {shape : Shape} -> XlaOp -> IO (Array shape {dtype=dtype})
