@@ -74,50 +74,62 @@ prim__indexF64 : AnyPtr -> Int -> Double
 %foreign (libxla "index_void_ptr")
 prim__indexArray : AnyPtr -> Int -> AnyPtr
 
-rangeTo : (n : Nat) -> Vect n Nat
-rangeTo Z = []
-rangeTo (S n) = snoc (rangeTo n) (S n)
+indicesForLength : (n : Nat) -> Vect n Nat
+indicesForLength Z = []
+indicesForLength (S n) = snoc (indicesForLength n) n
 
 setElems : AnyPtr -> (shape : Shape {rank=S _}) -> (dtype : Type)
     -> Array shape {dtype=dtype} -> IO ()
-setElems array_ptr [n] dtype xs = foldr f (pure ()) (zip (rangeTo n) xs) where
-    f : (Nat, dtype) -> IO () -> IO ()
-    f (sidx, x) a = do a
-                       primIO $ setter array_ptr (cast $ pred sidx) x
-
+setElems array_ptr [n] dtype xs = foldl f (pure ()) (zip (indicesForLength n) xs) where
+    f : IO () -> (Nat, dtype) -> IO ()
+    f a (idx, x) = do a
+                      putStrLn $ "setElems.f " ++ show idx
+                      res <- primIO $ setter array_ptr (cast idx) x
+                      putStrLn $ "setElems.f' " ++ show idx
         where
         setter : AnyPtr -> Int -> dtype -> PrimIO ()
         setter = case dtype of
             Int => prim__array_set_I32
             Double => prim__array_set_F64
             _ => ?rhs'
-setElems array_ptr (n :: r :: est) dtype xs = foldr f (pure ()) (zip (rangeTo n) xs)
-
+setElems array_ptr (n :: r :: est) dtype xs = foldl ff (pure ()) (zip (indicesForLength n) xs)
     where
-    f : (Nat, Array (r :: est) {dtype=dtype}) -> IO () -> IO ()
-    f (sidx, x) a = do a
-                       setElems (prim__indexArray array_ptr (cast $ pred sidx)) (r :: est) dtype x
+    ff : IO () -> (Nat, Array (r :: est) {dtype=dtype}) -> IO ()
+    ff a (idx, x) = do a
+                       putStrLn $ "setElems.ff idx " ++ (show idx)
+                       setElems (prim__indexArray array_ptr (cast idx)) (r :: est) dtype x
 
-export
 putArray : {r : _} -> (shape : Shape {rank=S r}) -> (dtype : Type)
-    -> Array shape {dtype=dtype} -> IO AnyPtr
+    -> Array shape {dtype=dtype} -> IO (AnyPtr, AnyPtr)
 putArray {r} shape dtype xs = do
+    putStrLn "putArray ... allocate shape array"
     shape_ptr <- primIO (prim__allocShape $ cast (S r))
-    foldr (setDims shape_ptr) (pure ()) (zip (rangeTo (S r)) shape)
+    putStrLn "putArray ... populate shape array"
+    -- foldl (setDims shape_ptr) (pure ()) (zip (indicesForLength (S r)) shape)
+    setElems shape_ptr [S r] Int (map cast shape)
+    putStrLn "putArray ... allocate actual array"
     array_ptr <- primIO $ prim__allocIntArray shape_ptr
+    putStrLn "putArray ... populate actual array"
     setElems array_ptr shape dtype xs
-    pure array_ptr
-        where setDims : AnyPtr -> (Nat, Nat) -> IO () -> IO ()
-              setDims ptr (sidx, dim) acc =
-                 do acc
-                    primIO (prim__array_set_I32 ptr (cast $ pred sidx) (cast dim))
+    putStrLn "putArray ... return array pointer"
+    pure (shape_ptr, array_ptr)
+        -- where setDims : AnyPtr -> IO () -> (Nat, Nat) -> IO ()
+        --       setDims ptr acc (idx, dim) =
+        --          do acc
+        --             primIO (prim__array_set_I32 ptr (cast idx) (cast dim))
 
-%foreign (libxla "test_put")
-export
-test_put : AnyPtr -> PrimIO ()
+%foreign (libxla "constant")
+prim__const : XlaBuilder -> AnyPtr -> AnyPtr -> Int -> XlaOp
 
 export
-const : XlaBuilder -> Array shape -> XlaOp
+const : {r : _} -> {shape : Shape {rank=S r}} -> {dtype : _} -> XlaBuilder -> Array shape {dtype=dtype} -> IO XlaOp
+const {r} {dtype} {shape} builder arr =
+    do putStrLn "const ... construct C arrays"
+       (shape_ptr, arr_ptr) <- putArray shape dtype arr
+       putStrLn "const ... build XlaOp"
+       res <- pure $ prim__const builder arr_ptr shape_ptr (cast (S r))
+       putStrLn "const ... return XlaOp"
+       pure res
 
 namespace XlaOp
     %foreign (libxla "c__XlaOp_del")
@@ -141,12 +153,11 @@ prim__eval_i32 : XlaOp -> PrimIO Int
 %foreign (libxla "eval_f64")
 prim__eval_f64 : XlaOp -> PrimIO Double
 
-%foreign (libxla "eval_array")
+%foreign (libxla "eval")
 prim__eval_array : XlaOp -> PrimIO AnyPtr
 
-export
 getArray : (shape : Shape {rank=S _}) -> (dtype : Type) -> AnyPtr -> Array shape {dtype=dtype}
-getArray [n] dtype ptr = map (indexByType ptr . cast . pred) (rangeTo n) where
+getArray [n] dtype ptr = map (indexByType ptr . cast) (indicesForLength n) where
     indexByType : AnyPtr -> Int -> dtype
     indexByType = case dtype of
         -- todo use interfaces rather than pattern matching on types, then can possibly erase
@@ -155,7 +166,7 @@ getArray [n] dtype ptr = map (indexByType ptr . cast . pred) (rangeTo n) where
         Double => prim__indexF64
         _ => ?rhs
 getArray (n :: r :: est) dtype ptr =
-    map ((getArray (r :: est) dtype) . (prim__indexArray ptr . cast . pred)) (rangeTo n)
+    map ((getArray (r :: est) dtype) . (prim__indexArray ptr . cast)) (indicesForLength n)
 
 export
 eval : {dtype : _} -> {shape : Shape} -> XlaOp -> IO (Array shape {dtype=dtype})

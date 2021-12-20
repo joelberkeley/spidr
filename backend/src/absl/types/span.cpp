@@ -13,12 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <absl/types/span.cpp>
-#include <tensorflow/compiler/xla/literal_util.h>
+#include <absl/types/span.h>
 
 extern "C" {
-    struct c__Literal;
-
-    void c__Literal_Set(c__Span multi_index, const ShapeIndex& shape_index,
-           NativeT value);
+    struct c__Span;
 }
