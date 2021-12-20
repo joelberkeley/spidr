@@ -13,14 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "absl/types/span.h"
+#include "../../../../ffi.cpp"
+#include "../literal.cpp"
+
+#include <absl/types/span.h>
 #include <tensorflow/compiler/xla/array.h>
 #include <tensorflow/compiler/xla/client/client_library.h>
 #include <tensorflow/compiler/xla/client/local_client.h>
 #include <tensorflow/compiler/xla/client/xla_builder.h>
 #include <tensorflow/compiler/xla/literal_util.h>
 #include <tensorflow/compiler/xla/shape_util.h>
-#include "tensorflow/compiler/xla/xla_data.pb.h"
+#include <tensorflow/compiler/xla/xla_data.pb.h>
 
 // Return a pointer to a new, heap-allocated, null-terminated C string.
 const char* c_string_copy(std::string str) {
@@ -35,6 +38,96 @@ const char* c_string_copy(std::string str) {
 extern "C" {
     using namespace xla;
 
+    /*
+     *
+     *
+     * FFI
+     *
+     *
+     */
+
+    int* alloc_shape(int rank) {
+        std::cout << "alloc_shape ..." << std::endl;
+        std::cout << "rank " << rank << std::endl;
+        int* shape = new int[rank];
+        std::cout << "alloc_shape ... returning shape" << std::endl;
+        return shape;
+    }
+
+    // todo all types should be FFI-compatible primitives e.g. int, no?
+    void array_set_i32(int* arr, int idx, int value) {
+        std::cout << "array_set_i32 " << idx << " " << value << std::endl;
+
+        std::cout << "array before set: ";
+        for (int i = 0; i < idx; i++) {
+            std::cout << arr[i] << " ";
+        }
+        std::cout << std::endl;
+
+        arr[idx] = value;
+        std::cout << "indexing worked " << std::endl;
+        std::cout << "array after set: ";
+        for (int i = 0; i <= idx; i++) {
+            std::cout << arr[i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    void array_set_f64(double* arr, int idx, double value) {
+        arr[idx] = value;
+    }
+
+    void* array_alloc_i32(const int* shape, int rank) {
+        std::cout << "array_alloc_i32 ... " << std::endl;
+        std::cout << "rank " << rank << std::endl;
+        std::cout << "shape ";
+        for (int i = 0; i < rank; i++) {
+            std::cout << shape[i] << " ";
+        }
+        std::cout << std::endl;
+
+        if (rank == 1) {
+            std::cout << "array_alloc_i32 ... rank 1" << std::endl;
+            int* res = new int[shape[0]];
+            return res;
+        } else if (rank > 1) {
+            std::cout << "array_alloc_i32 ... rank " << rank << std::endl;
+            void** res = new void*[shape[0]];
+            int trailing_shape[rank - 1];
+            for (int i = 0; i < rank - 1; i++) {
+                trailing_shape[i] = shape[i + 1];
+            }
+            for (int i = 0; i < shape[0]; i++) {
+                res[i] = array_alloc_i32(trailing_shape, rank - 1);
+            }
+            return res;
+        } else {
+            std::cout << "Invalid system state: memory cannot be allocated for array with rank 0" << std::endl;
+            return NULL;
+        }
+    }
+
+    int index_i32(void* ptr, int idx) {
+        std::cout << "index_i32 ..." << std::endl;
+        std::cout << "ptr " << ptr << std::endl;
+        std::cout << "idx " << idx << std::endl;
+        auto res = ((int*) ptr)[idx];
+        std::cout << "index_void_ptr ... return int " << res << std::endl;
+        return res;
+    }
+
+    double index_f64(void* ptr, int idx) {
+        return ((double*) ptr)[idx];
+    }
+
+    void* index_void_ptr(void** ptr, int idx) {
+        std::cout << "index_void_ptr ..." << std::endl;
+        std::cout << "ptr " << ptr << std::endl;
+        std::cout << "idx " << idx << std::endl;
+        auto res = ptr[idx];
+        std::cout << "index_void_ptr ... return ptr " << res << std::endl;
+        return res;
+    }
     /*
      *
      *
@@ -137,20 +230,103 @@ extern "C" {
     /*
      *
      *
-     * Custom utility functions
-     *
-     * Unlike the functions above, these are not just a minimal C layer round the XLA API
+     * Literal
      *
      *
      */
 
-    void set_literal(
-        Literal& lit,
+    struct c__Literal;
+
+    int c__Literal_Get_int(c__Literal& lit, int* indices) {
+        Literal& lit_ = reinterpret_cast<Literal&>(lit);
+        int64 rank = lit_.shape().rank();
+        tensorflow::int64 indices64[rank];
+        for (int i = 0; i < rank; i++) {
+            indices64[i] = indices[i];
+        }
+        auto multi_index = absl::Span<const tensorflow::int64>(indices64, rank);
+        return lit_.Get<int>(multi_index);
+    }
+
+    static void write_literal_to_array_int_impl(
+        xla::Literal& lit,
+        void* arr,
+        int* shape,
+        int rank,
+        int num_remaining_dims,
+        int* current_indices
+    ) {
+        std::cout << "write_literal_to_array_int_impl ..." << std::endl;
+
+        for (int i = 0; i < shape[rank - num_remaining_dims]; i++) {
+            std::cout << "write_literal_to_array_int_impl ... i " << i << std::endl;
+            int new_current_indices[rank];
+            for (int j = 0; j < rank - num_remaining_dims; j++) {
+                new_current_indices[j] = current_indices[j];
+            }
+            new_current_indices[rank - num_remaining_dims] = i;
+
+            if (num_remaining_dims == 1) {
+                std::cout << "write_literal_to_array_int_impl ... get array element" << std::endl;
+                int res = c__Literal_Get_int(reinterpret_cast<c__Literal&>(lit), new_current_indices);
+                std::cout << "write_literal_to_array_int_impl ... write array element" << std::endl;
+                ((int*) arr)[i] = res;
+            } else {
+                std::cout << "write_literal_to_array_int_impl ... recurse" << std::endl;
+                write_literal_to_array_int_impl(
+                    lit,
+                    ((void**) arr)[i],
+                    shape,
+                    rank,
+                    num_remaining_dims - 1,
+                    new_current_indices
+                );
+            }
+        }
+    }
+
+    void* to_array_int(c__Literal& lit) {
+        std::cout << "to_array_int ..." << std::endl;
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        std::cout << "lit " << &lit_ << std::endl;
+
+        std::cout << "to_array_int ... get lit_shape" << std::endl;
+        Shape lit_shape = lit_.shape();
+        std::cout << "to_array_int ... get rank" << std::endl;
+        int64 rank = lit_shape.rank();
+        std::cout << "to_array_int rank " << rank << std::endl;
+
+        std::cout << "to_array_int ... get shape" << std::endl;
+        int shape[rank];
+        const int64* shape64 = lit_.shape().dimensions().data();
+        for (int i = 0; i < rank; i++) {
+            shape[i] = shape64[i];
+        }
+
+        std::cout << "to_array_int ... allocate array" << std::endl;
+        void* arr = array_alloc_i32(shape, rank);
+        int current_indices[rank] = {0};
+        std::cout << "to_array_int ... write to array" << std::endl;
+        write_literal_to_array_int_impl(lit_, arr, shape, rank, rank, current_indices);
+        std::cout << "to_array_int ... return array" << std::endl;
+        return arr;
+    }
+
+    int to_int(c__Literal& lit) {
+        return *(int*) reinterpret_cast<Literal&>(lit).untyped_data();
+    }
+
+    double to_double(c__Literal& lit) {
+        return *(double*) reinterpret_cast<Literal&>(lit).untyped_data();
+    }
+
+    static void write_array_to_literal_impl(
+        xla::Literal& lit,
         void* data,
         int* shape,
         int rank,
         int num_remaining_dims,
-        int64* current_indices
+        tensorflow::int64* current_indices
     ) {
         std::cout << "set_literal ..." << std::endl;
         std::cout << "rank " << rank << std::endl;
@@ -167,7 +343,7 @@ extern "C" {
         std::cout << std::endl;
 
         for (int i = 0; i < shape[rank - num_remaining_dims]; i++) {
-            int64 new_current_indices[rank];
+            tensorflow::int64 new_current_indices[rank];
             for (int j = 0; j < rank - num_remaining_dims; j++) {
                 new_current_indices[i] = current_indices[i];
             }
@@ -175,7 +351,7 @@ extern "C" {
             
             if (num_remaining_dims == 1) {
                 std::cout << "set_literal ... constructing multi_index" << std::endl;
-                auto multi_index = absl::Span<const int64>(new_current_indices, rank);
+                absl::Span<const tensorflow::int64> multi_index = absl::Span<const tensorflow::int64>(new_current_indices, rank);
 
                 std::cout << "set_literal ... new_current_indices" << std::endl;
                 for (int k = 0; k < rank; k++) {
@@ -188,7 +364,7 @@ extern "C" {
                 lit.Set(multi_index, ((int*) data)[i]);
                 std::cout << "set_literal ... returning" << std::endl;
             } else {
-                set_literal(
+                write_array_to_literal_impl(
                     lit,
                     ((void**) data)[i],
                     shape,
@@ -200,17 +376,50 @@ extern "C" {
         }
     }
 
-    c__XlaOp* constant(c__XlaBuilder& builder, void* data, int* shape, int rank) {
-        std::cout << "constant ..." << std::endl;
-
-        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
-
-        // std::cout << "constant rank: " << rank << std::endl;
-
+    c__Literal* array_to_literal(void* data, int* shape, int rank) {
         int64 shape64[rank];
         for (int i = 0; i < rank; i++) {
             shape64[i] = shape[i];
         }
+
+        const std::vector<bool> dynamic_dimensions(rank, false);
+
+        auto xla_shape = ShapeUtil::MakeShape(
+            PrimitiveType::S32,
+            absl::Span<const int64>(shape64, rank),
+            dynamic_dimensions
+        );
+
+        xla::Literal* lit = new xla::Literal(xla_shape, true);
+        tensorflow::int64 current_indices[rank] = {0};
+        write_array_to_literal_impl(*lit, data, shape, rank, rank, current_indices);
+
+        return reinterpret_cast<c__Literal*>(lit);
+    }
+
+    /*
+     *
+     *
+     * Custom utility functions
+     *
+     * Unlike the functions above, these are not just a minimal C layer round the XLA API
+     *
+     *
+     */
+
+    // c__XlaOp* constant(c__XlaBuilder& builder, void* data, int* shape, int rank) {
+    c__XlaOp* constant(c__XlaBuilder& builder, c__Literal& data) {
+        std::cout << "constant ..." << std::endl;
+
+        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
+        xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
+
+        // std::cout << "constant rank: " << rank << std::endl;
+
+            // int64 shape64[rank];
+            // for (int i = 0; i < rank; i++) {
+            //     shape64[i] = shape[i];
+            // }
         // int size = 1;
         // for (int i = 0; i < rank; i++) {
         //     size *= shape[i];
@@ -222,8 +431,6 @@ extern "C" {
 
         // auto array = Array<int32>(shape_);
 
-        std::cout << "constant ..." << std::endl;
-
         // bool dynamic_dimensions[rank];
         // for (int i = 0; i < rank; i++) {
         //     dynamic_dimensions[i] = false;
@@ -233,26 +440,26 @@ extern "C" {
         //     std::cout << shape[i] << " ";
         // }
         // std::cout << std::endl;;
-        const std::vector<bool> dynamic_dimensions(rank, false);
 
-        auto xla_shape = ShapeUtil::MakeShape(
-            PrimitiveType::S32,
-            absl::Span<const int64>(shape64, rank),
-            dynamic_dimensions
-        );
+            // const std::vector<bool> dynamic_dimensions(rank, false);
+
+            // auto xla_shape = ShapeUtil::MakeShape(
+            //     PrimitiveType::S32,
+            //     absl::Span<const int64>(shape64, rank),
+            //     dynamic_dimensions
+            // );
 
         // std::cout << "constant shape: " << xla_shape.ToString(true) << std::endl;
         // std::cout << "constant shape has_layout: " << xla_shape.has_layout() << std::endl;
         // std::cout << "constant shape DebugString:" << std::endl << xla_shape.DebugString() << std::endl;
 
-        std::cout << "constant ... constructing literal" << std::endl;
+            // std::cout << "constant ... constructing literal" << std::endl;
 
-        Literal lit = Literal(xla_shape, true);
+            // xla::Literal lit = xla::Literal(xla_shape, true);
 
-        std::cout << "constant ... populating literal" << std::endl;
+            // std::cout << "constant ... populating literal" << std::endl;
 
-        int64 current_index[rank] = {0};
-        set_literal(lit, data, shape, rank, rank, current_index);
+            // write_array_to_literal(lit, data, shape, rank);
 
         // switch (rank) {
         //     case 1:
@@ -277,7 +484,7 @@ extern "C" {
         // auto lit_data = (int*)lit.untyped_data();
         // std::cout << lit_data[0] << " " << lit_data[1] << " " << lit_data[2] << " " << std::endl;
         XlaOp* op = new XlaOp();
-        *op = ConstantLiteral(&builder_, lit);
+        *op = ConstantLiteral(&builder_, data_);
 
         // std::cout << "constant 5" << std::endl;
         // std::cout << "constant op: " << *op << std::endl;
@@ -287,110 +494,58 @@ extern "C" {
         return reinterpret_cast<c__XlaOp*>(op);
     }
 
-    int* alloc_shape(int rank) {
-        int* shape = new int[rank];
-        return shape;
-    }
-
-    // todo all types should be FFI-compatible primitives e.g. int, no?
-    void array_set_i32(int32* arr, int idx, int32 value) {
-        std::cout << "array_set_i32 " << idx << " " << value << std::endl;
-
-        std::cout << "array before set: ";
-        for (int i = 0; i < idx; i++) {
-            std::cout << arr[i] << " ";
-        }
-        std::cout << std::endl;
-
-        arr[idx] = value;
-        std::cout << "indexing worked " << std::endl;
-        std::cout << "array after set: ";
-        for (int i = 0; i <= idx; i++) {
-            std::cout << arr[i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    void array_set_f64(double* arr, int idx, double value) {
-        arr[idx] = value;
-    }
-
-    void* array_alloc_i32(int32* shape) {
-        size_t rank = sizeof(shape) / sizeof(shape[0]);
-
-        if (rank == 1) {
-            int32* res = new int32[shape[0]];
-            return res;
-        } else if (rank > 1) {
-            void** res = new void*[shape[0]];
-            int32 trailing_shape[rank - 1];
-            for (int i = 0; i < rank - 1; i++) {
-                trailing_shape[i] = shape[i + 1];
-            }
-            for (int i = 0; i < shape[0] - 1; i++) {
-                res[i] = array_alloc_i32(trailing_shape);
-            }
-            return res;
-        } else {
-            std::cout << "Invalid system state: memory cannot be allocated for array with rank 0" << std::endl;
-            return NULL;
-        }
-    }
-
-    void* eval(c__XlaOp& op) {
+    c__Literal* eval(c__XlaOp& op) {
         XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
 
         std::cout << "eval ... build op" << std::endl;
         // std::cout << "eval op handle " << op_ << std::endl;
         XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
         // std::cout << "eval 2" << std::endl;
-        ExecutionProfile profile;
+        // std::cout << "eval ... build literal" << std::endl;
+
+        // todo this next section copied from above - needs refactoring
+        // int64 shape64[rank];
+        // for (int i = 0; i < rank; i++) {
+        //     std::cout << "i = " << i << std::endl;
+        //     shape64[i] = shape[i];
+        // }
+
+        // std::cout << "eval ... build literal ... initialise dynamic_dimensions" << std::endl;
+
+        // const std::vector<bool> dynamic_dimensions(rank, false);
+
+        // std::cout << "eval ... build literal ... make shape" << std::endl;
+
+        // auto xla_shape = ShapeUtil::MakeShape(
+        //     PrimitiveType::S32,
+        //     absl::Span<const int64>(shape64, rank),
+        //     dynamic_dimensions
+        // );
+
+        // std::cout << "eval ... build literal ... instantiate literal" << std::endl;
+
+        
+
         std::cout << "eval ... run client" << std::endl;
+
+        ExecutionProfile profile;
         Literal lit = ClientLibrary::LocalClientOrDie()
             ->ExecuteAndTransfer(computation, {}, nullptr, &profile)
             .ConsumeValueOrDie();
 
+        xla::Literal* res = new xla::Literal(lit.shape(), true);
+        *res = lit.Clone();
+
         std::cout << "eval ... copy data" << std::endl;
         // todo is this a shallow copy when we need a deep copy?
-        int64 size = lit.size_bytes();
-        void* res = malloc(size);;
-        memcpy(res, lit.untyped_data(), size);
+        // int64 size = lit.size_bytes();
+        // void* res = malloc(size);;
+        // memcpy(res, lit.untyped_data(), size);
 
-        std::cout << lit << std::endl;
-        std::cout << "eval ... index column" << std::endl;
+        std::cout << *res << std::endl;
 
-        std::cout << "eval ... return data" << std::endl;
+        std::cout << "eval ... return data " << res << std::endl;
         // TODO create new array with lit contents (with lit.Get?) and return
-        return res;
-    }
-
-    int32 eval_i32(c__XlaOp& op) {
-        return *(int32*) eval(op);
-    }
-
-    double eval_f64(c__XlaOp& op) {
-        return *(double*) eval(op);
-    }
-
-    int32 index_i32(void* ptr, int idx) {
-        std::cout << "index_i32 ..." << std::endl;
-        std::cout << "ptr " << ptr << std::endl;
-        std::cout << "idx " << idx << std::endl;
-        auto res = ((int32*) ptr)[idx];
-        std::cout << "index_void_ptr ... return int " << res << std::endl;
-        return res;
-    }
-
-    double index_f64(void* ptr, int idx) {
-        return ((double*) ptr)[idx];
-    }
-
-    void* index_void_ptr(void** ptr, int idx) {
-        std::cout << "index_void_ptr ..." << std::endl;
-        std::cout << "ptr " << ptr << std::endl;
-        std::cout << "idx " << idx << std::endl;
-        auto res = ptr[idx];
-        std::cout << "index_void_ptr ... return ptr " << res << std::endl;
-        return res;
+        return reinterpret_cast<c__Literal*>(res);
     }
 }

@@ -61,7 +61,7 @@ test_add = do let b = mkXlaBuilder ""
               putStrLn "test_add ... add and evaluate (x + y)"
               sum <- eval {shape=[2, 3]} {dtype=Int} (x + y)
               putStrLn "test_add ... assert result"
-              assert $ sum == [[12, 20, 11], [-4, 3, 6]]
+              assert $ sum == [[12, 20, 12], [-4, 3, 6]]
               putStrLn "test_add ... done"
               -- assert $ sum == [12, 20, 12]
 

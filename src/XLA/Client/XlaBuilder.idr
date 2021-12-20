@@ -63,7 +63,7 @@ prim__array_set_I32 : AnyPtr -> Int -> Int -> PrimIO ()
 prim__array_set_F64 : AnyPtr -> Int -> Double -> PrimIO ()
 
 %foreign (libxla "array_alloc_i32")
-prim__allocIntArray : AnyPtr -> PrimIO AnyPtr
+prim__allocIntArray : AnyPtr -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "index_i32")
 prim__indexI32 : AnyPtr -> Int -> Int
@@ -73,6 +73,22 @@ prim__indexF64 : AnyPtr -> Int -> Double
 
 %foreign (libxla "index_void_ptr")
 prim__indexArray : AnyPtr -> Int -> AnyPtr
+
+export
+Literal : Type
+Literal = Struct "c__Literal" []
+
+%foreign (libxla "to_int")
+prim__to_int : Literal -> Int
+
+%foreign (libxla "to_double")
+prim__to_double : Literal -> Double
+
+%foreign (libxla "to_array_int")
+prim__to_array_int : Literal -> AnyPtr
+
+%foreign (libxla "array_to_literal")
+prim__array_int_to_literal : AnyPtr -> AnyPtr -> Int -> Literal
 
 indicesForLength : (n : Nat) -> Vect n Nat
 indicesForLength Z = []
@@ -108,7 +124,7 @@ putArray {r} shape dtype xs = do
     -- foldl (setDims shape_ptr) (pure ()) (zip (indicesForLength (S r)) shape)
     setElems shape_ptr [S r] Int (map cast shape)
     putStrLn "putArray ... allocate actual array"
-    array_ptr <- primIO $ prim__allocIntArray shape_ptr
+    array_ptr <- primIO $ prim__allocIntArray shape_ptr (cast (S r))
     putStrLn "putArray ... populate actual array"
     setElems array_ptr shape dtype xs
     putStrLn "putArray ... return array pointer"
@@ -119,7 +135,7 @@ putArray {r} shape dtype xs = do
         --             primIO (prim__array_set_I32 ptr (cast idx) (cast dim))
 
 %foreign (libxla "constant")
-prim__const : XlaBuilder -> AnyPtr -> AnyPtr -> Int -> XlaOp
+prim__const : XlaBuilder -> Literal -> XlaOp
 
 export
 const : {r : _} -> {shape : Shape {rank=S r}} -> {dtype : _} -> XlaBuilder -> Array shape {dtype=dtype} -> IO XlaOp
@@ -127,7 +143,7 @@ const {r} {dtype} {shape} builder arr =
     do putStrLn "const ... construct C arrays"
        (shape_ptr, arr_ptr) <- putArray shape dtype arr
        putStrLn "const ... build XlaOp"
-       res <- pure $ prim__const builder arr_ptr shape_ptr (cast (S r))
+       res <- pure $ prim__const builder $ prim__array_int_to_literal arr_ptr shape_ptr (cast (S r)) 
        putStrLn "const ... return XlaOp"
        pure res
 
@@ -147,14 +163,8 @@ opToString : XlaBuilder -> XlaOp -> String
 export
 (+) : XlaOp -> XlaOp -> XlaOp
 
-%foreign (libxla "eval_i32")
-prim__eval_i32 : XlaOp -> PrimIO Int
-
-%foreign (libxla "eval_f64")
-prim__eval_f64 : XlaOp -> PrimIO Double
-
 %foreign (libxla "eval")
-prim__eval_array : XlaOp -> PrimIO AnyPtr
+prim__eval : XlaOp -> PrimIO Literal
 
 getArray : (shape : Shape {rank=S _}) -> (dtype : Type) -> AnyPtr -> Array shape {dtype=dtype}
 getArray [n] dtype ptr = map (indexByType ptr . cast) (indicesForLength n) where
@@ -170,9 +180,9 @@ getArray (n :: r :: est) dtype ptr =
 
 export
 eval : {dtype : _} -> {shape : Shape} -> XlaOp -> IO (Array shape {dtype=dtype})
-eval {shape=[]} op = eval_scalar op where
-    eval_scalar : XlaOp -> IO dtype
-    eval_scalar = case dtype of
-        Int => primIO . prim__eval_i32
-        Double => primIO . prim__eval_f64
-eval {shape=n :: rest} op = map (getArray (n :: rest) dtype) (primIO $ prim__eval_array op)
+eval {shape} op = map (to_idris_type shape) (primIO $ prim__eval op) where
+    to_idris_type : (shape : Shape) -> Literal -> Array shape {dtype=dtype}
+    to_idris_type [] = case dtype of
+            Int => prim__to_int
+            Double => prim__to_double
+    to_idris_type (n :: rest) = (getArray (n :: rest) dtype) . prim__to_array_int
