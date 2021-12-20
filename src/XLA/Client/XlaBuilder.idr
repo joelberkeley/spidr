@@ -99,9 +99,7 @@ setElems : AnyPtr -> (shape : Shape {rank=S _}) -> (dtype : Type)
 setElems array_ptr [n] dtype xs = foldl f (pure ()) (zip (indicesForLength n) xs) where
     f : IO () -> (Nat, dtype) -> IO ()
     f a (idx, x) = do a
-                      putStrLn $ "setElems.f " ++ show idx
-                      res <- primIO $ setter array_ptr (cast idx) x
-                      putStrLn $ "setElems.f' " ++ show idx
+                      primIO $ setter array_ptr (cast idx) x
         where
         setter : AnyPtr -> Int -> dtype -> PrimIO ()
         setter = case dtype of
@@ -112,40 +110,26 @@ setElems array_ptr (n :: r :: est) dtype xs = foldl ff (pure ()) (zip (indicesFo
     where
     ff : IO () -> (Nat, Array (r :: est) {dtype=dtype}) -> IO ()
     ff a (idx, x) = do a
-                       putStrLn $ "setElems.ff idx " ++ (show idx)
                        setElems (prim__indexArray array_ptr (cast idx)) (r :: est) dtype x
 
 putArray : {r : _} -> (shape : Shape {rank=S r}) -> (dtype : Type)
     -> Array shape {dtype=dtype} -> IO (AnyPtr, AnyPtr)
 putArray {r} shape dtype xs = do
-    putStrLn "putArray ... allocate shape array"
     shape_ptr <- primIO (prim__allocShape $ cast (S r))
-    putStrLn "putArray ... populate shape array"
-    -- foldl (setDims shape_ptr) (pure ()) (zip (indicesForLength (S r)) shape)
     setElems shape_ptr [S r] Int (map cast shape)
-    putStrLn "putArray ... allocate actual array"
     array_ptr <- primIO $ prim__allocIntArray shape_ptr (cast (S r))
-    putStrLn "putArray ... populate actual array"
     setElems array_ptr shape dtype xs
-    putStrLn "putArray ... return array pointer"
     pure (shape_ptr, array_ptr)
-        -- where setDims : AnyPtr -> IO () -> (Nat, Nat) -> IO ()
-        --       setDims ptr acc (idx, dim) =
-        --          do acc
-        --             primIO (prim__array_set_I32 ptr (cast idx) (cast dim))
 
 %foreign (libxla "constant")
 prim__const : XlaBuilder -> Literal -> XlaOp
 
 export
-const : {r : _} -> {shape : Shape {rank=S r}} -> {dtype : _} -> XlaBuilder -> Array shape {dtype=dtype} -> IO XlaOp
+const : {r : _} -> {shape : Shape {rank=S r}} -> {dtype : _}
+    -> XlaBuilder -> Array shape {dtype=dtype} -> IO XlaOp
 const {r} {dtype} {shape} builder arr =
-    do putStrLn "const ... construct C arrays"
-       (shape_ptr, arr_ptr) <- putArray shape dtype arr
-       putStrLn "const ... build XlaOp"
-       res <- pure $ prim__const builder $ prim__array_int_to_literal arr_ptr shape_ptr (cast (S r)) 
-       putStrLn "const ... return XlaOp"
-       pure res
+    do (shape_ptr, arr_ptr) <- putArray shape dtype arr
+       pure $ prim__const builder $ prim__array_int_to_literal arr_ptr shape_ptr (cast (S r))
 
 namespace XlaOp
     %foreign (libxla "c__XlaOp_del")

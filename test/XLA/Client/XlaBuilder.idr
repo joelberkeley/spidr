@@ -52,18 +52,10 @@ assert x = putStrLn $ if x then "PASS" else "FAIL"
 
 test_add : IO ()
 test_add = do let b = mkXlaBuilder ""
-              putStrLn "test_add ... construct x"
               x <- XlaBuilder.const {shape=[2, 3]} {dtype=Int} b [[1, 15, 5], [-1, 7, 6]]
-              -- x <- XlaBuilder.const {shape=[3]} {dtype=Int} b [1, 15, 5]
-              putStrLn "test_add ... construct y"
               y <- XlaBuilder.const {shape=[2, 3]} {dtype=Int} b [[11, 5, 7], [-3, -4, 0]]
-              -- y <- XlaBuilder.const {shape=[3]} {dtype=Int} b [11, 5, 7]
-              putStrLn "test_add ... add and evaluate (x + y)"
               sum <- eval {shape=[2, 3]} {dtype=Int} (x + y)
-              putStrLn "test_add ... assert result"
               assert $ sum == [[12, 20, 12], [-4, 3, 6]]
-              putStrLn "test_add ... done"
-              -- assert $ sum == [12, 20, 12]
 
 test : IO ()
 test = do test_add
