@@ -16,6 +16,4 @@ limitations under the License.
 ||| This module contains the Idris API to XLA.
 module XLA
 
-||| Scalar data types supported by XLA.
-public export
-data ArchType = BOOL | U8 | U16 | U32 | U64 | I8 | I16 | I32 | I64 | F16 | F32 | F64
+import public XLA.XlaData

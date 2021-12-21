@@ -20,33 +20,9 @@ module Tensor
 import XLA
 import Error
 import public Types
+import public XLA.XlaData
 
 ----------------------------- core definitions ----------------------------
-
-||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`.
-export
-interface ScalarLike ty where
-  archType : ArchType
-
-export
-ScalarLike Double where
-  archType = F64
-
-export
-ScalarLike Int where
-  archType = U32
-
-export
-ScalarLike Integer where
-  archType = U64
-
-export
-ScalarLike Nat where
-  archType = I64
-
-export
-ScalarLike Bool where
-  archType = BOOL
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
