@@ -50,9 +50,6 @@ export
 XlaOp : Type
 XlaOp = Struct "c__XlaOp" []
 
--- %foreign (libxla "c__ConstantR0")
--- prim__constant_r0 : XlaBuilder -> Int -> XlaOp
-
 %foreign (libxla "alloc_shape")
 prim__allocShape : Int -> PrimIO (Ptr Int)
 
@@ -61,21 +58,6 @@ prim__free_shape : Ptr Int -> PrimIO ()
 
 %foreign (libxla "array_set_i32")
 prim__array_set_I32 : Ptr Int -> Int -> Int -> PrimIO ()
-
--- %foreign (libxla "array_set_f64")
--- prim__array_set_F64 : AnyPtr -> Int -> Double -> PrimIO ()
-
--- %foreign (libxla "array_alloc_i32")
--- prim__allocIntArray : AnyPtr -> Int -> PrimIO AnyPtr
-
--- %foreign (libxla "index_i32")
--- prim__indexI32 : AnyPtr -> Int -> Int
-
--- %foreign (libxla "index_f64")
--- prim__indexF64 : AnyPtr -> Int -> Double
-
--- %foreign (libxla "index_void_ptr")
--- prim__indexArray : AnyPtr -> Int -> AnyPtr
 
 export
 Literal : Type
@@ -103,12 +85,6 @@ to_int : Literal -> Int
 
 %foreign (libxla "to_double")
 to_double : Literal -> Double
-
--- %foreign (libxla "to_array_int")
--- prim__to_array_int : Literal -> AnyPtr
-
--- %foreign (libxla "array_to_literal")
--- prim__array_int_to_literal : AnyPtr -> AnyPtr -> Int -> Literal
 
 %foreign (libxla "c__Literal_new")
 prim__Literal_new : Ptr Int -> Int -> PrimIO Literal
@@ -185,18 +161,6 @@ export
 
 %foreign (libxla "eval")
 prim__eval : XlaOp -> PrimIO Literal
-
--- getArray : (shape : Shape {rank=S _}) -> (dtype : Type) -> AnyPtr -> Array shape {dtype=dtype}
--- getArray [n] dtype ptr = map (indexByType ptr . cast) (indicesForLength n) where
---     indexByType : AnyPtr -> Int -> dtype
---     indexByType = case dtype of
---         -- todo use interfaces rather than pattern matching on types, then can possibly erase
---         -- dtype
---         Int => prim__indexI32
---         Double => prim__indexF64
---         _ => ?rhs
--- getArray (n :: r :: est) dtype ptr =
---     map ((getArray (r :: est) dtype) . (prim__indexArray ptr . cast)) (indicesForLength n)
 
 toArray : (shape : Shape) -> (dtype : Type) -> Literal -> Array shape {dtype=dtype}
 toArray shape dtype lit = impl {shapesSum=Refl} shape [] where
