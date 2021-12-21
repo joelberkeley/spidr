@@ -33,6 +33,12 @@ test_add = do let b = mkXlaBuilder ""
               assert $ sum == [[12, 20, 12], [-4, 3, 6]]
               delete x
               delete y
+              x <- const {shape=[3, 1]} {dtype=Double} b [[1.8], [1.3], [4.0]]
+              y <- const {shape=[3, 1]} {dtype=Double} b [[-3.3], [0.0], [0.3]]
+              sum <- eval {shape=[3, 1]} {dtype=Double} (x + y)
+              assert $ sum == [[-1.5], [1.3], [4.3]]  -- TODO floating point error
+              delete x
+              delete y
               x <- const {shape=[]} {dtype=Int} b 3
               y <- const {shape=[]} {dtype=Int} b (-7)
               sum <- eval {shape=[]} {dtype=Int} (x + y)

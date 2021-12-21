@@ -39,7 +39,7 @@ export
 name : XlaBuilder -> String
 
 namespace XlaBuilder
-    %foreign (libxla "c__XlaBuilder_del")
+    %foreign (libxla "c__XlaBuilder_delete")
     prim__delete : XlaBuilder -> PrimIO ()
 
     export
@@ -56,8 +56,8 @@ prim__allocShape : Int -> PrimIO (Ptr Int)
 %foreign (libxla "free_shape")
 prim__free_shape : Ptr Int -> PrimIO ()
 
-%foreign (libxla "array_set_i32")
-prim__array_set_I32 : Ptr Int -> Int -> Int -> PrimIO ()
+%foreign (libxla "set_shape_idx")
+prim__set_shape_idx : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
 Literal : Type
@@ -74,6 +74,9 @@ namespace Literal
 %foreign (libxla "c__Literal_Set_int")
 prim__Literal_Set_int : Literal -> Ptr Int -> Int -> PrimIO ()
 
+%foreign (libxla "c__Literal_Set_double")
+prim__Literal_Set_double : Literal -> Ptr Int -> Double -> PrimIO ()
+
 %foreign (libxla "c__Literal_Get_int")
 Literal_Get_int : Literal -> Ptr Int -> Int
 
@@ -87,7 +90,7 @@ to_int : Literal -> Int
 to_double : Literal -> Double
 
 %foreign (libxla "c__Literal_new")
-prim__Literal_new : Ptr Int -> Int -> PrimIO Literal
+prim__Literal_new : Ptr Int -> Int -> Int -> PrimIO Literal
 
 indicesForLength : (n : Nat) -> Vect n Nat
 indicesForLength Z = []
@@ -101,7 +104,7 @@ mkShape {rank} xs = do
         writeElem : Ptr Int -> IO () -> (Nat, Nat) -> IO ()
         writeElem ptr prev_io (idx, x) = do
             prev_io
-            primIO $ prim__array_set_I32 ptr (cast idx) (cast x)
+            primIO $ prim__set_shape_idx ptr (cast idx) (cast x)
 
 populateLiteral : {rank : _} -> (shape : Shape {rank}) -> (dtype : Type)
     -> Literal -> Array shape {dtype=dtype} -> IO ()
@@ -110,9 +113,10 @@ populateLiteral {rank} shape dtype lit arr = impl {shapesSum=Refl} shape [] arr 
         -> {shapesSum : a + r = rank} -> Array rem_shape {dtype=dtype} -> IO ()
     impl {a} [] acc_indices x = do
         idx_ptr <- mkShape acc_indices
-        primIO $ case dtype of
-            Int => prim__Literal_Set_int lit idx_ptr x
-            _ => ?other_dtypes
+        let setter = case dtype of
+                Int => prim__Literal_Set_int
+                Double => prim__Literal_Set_double
+        primIO $ setter lit idx_ptr x
         primIO $ prim__free_shape idx_ptr
     impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
         foldl setArrays (pure ()) (zip (indicesForLength n) xs) where
@@ -122,11 +126,16 @@ populateLiteral {rank} shape dtype lit arr = impl {shapesSum=Refl} shape [] arr 
                 let shapesSum' = rewrite plusSuccRightSucc a r' in shapesSum
                 impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
 
+toXlaPrimitive : Type -> Int
+toXlaPrimitive Int = 4
+toXlaPrimitive Double = 12
+toXlaPrimitive _ = ?toXlaPrimitive'
+
 mkLiteral : {rank : _} -> (shape : Shape {rank}) -> (dtype : Type)
     -> Array shape {dtype=dtype} -> IO Literal
 mkLiteral {rank} shape dtype xs = do
     shape_ptr <- mkShape shape
-    literal_ptr <- primIO $ prim__Literal_new shape_ptr (cast rank)
+    literal_ptr <- primIO $ prim__Literal_new shape_ptr (cast rank) (toXlaPrimitive dtype)
     populateLiteral shape dtype literal_ptr xs
     primIO $ prim__free_shape shape_ptr
     pure literal_ptr
@@ -144,7 +153,7 @@ const {dtype} {shape} builder arr =
        pure op
 
 namespace XlaOp
-    %foreign (libxla "c__XlaOp_del")
+    %foreign (libxla "c__XlaOp_delete")
     prim__delete : XlaOp -> PrimIO ()
 
     export

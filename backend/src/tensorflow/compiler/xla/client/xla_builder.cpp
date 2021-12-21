@@ -52,7 +52,7 @@ extern "C" {
         return shape;
     }
 
-    void array_set_i32(int* arr, int idx, int value) {
+    void set_shape_idx(int* arr, int idx, int value) {
         arr[idx] = value;
     }
 
@@ -66,7 +66,7 @@ extern "C" {
 
     struct c__XlaOp;
 
-    void c__XlaOp_del(c__XlaOp* s) {
+    void c__XlaOp_delete(c__XlaOp* s) {
         delete reinterpret_cast<XlaOp*>(s);
     }
 
@@ -121,7 +121,7 @@ extern "C" {
         return reinterpret_cast<c__XlaBuilder*>(builder);
     }
 
-    void c__XlaBuilder_del(c__XlaBuilder* s) {
+    void c__XlaBuilder_delete(c__XlaBuilder* s) {
         delete reinterpret_cast<XlaBuilder*>(s);
     }
 
@@ -134,6 +134,94 @@ extern "C" {
         auto& op_ = reinterpret_cast<XlaOp&>(op);
         auto op_str = s_.OpToString(op_);
         return c_string_copy(op_str);
+    }
+
+    /*
+     *
+     *
+     * Literal
+     *
+     *
+     */
+
+    struct c__Literal;
+
+    // TODO pass shape as Shape not C array
+    c__Literal* c__Literal_new(int* shape, int rank, int primitive_type) {
+        int64 shape64[rank];
+        for (int i = 0; i < rank; i++) {
+            shape64[i] = shape[i];
+        }
+
+        const std::vector<bool> dynamic_dimensions(rank, false);
+
+        auto xla_shape = ShapeUtil::MakeShape(
+            (PrimitiveType) primitive_type,
+            absl::Span<const int64>(shape64, rank),
+            dynamic_dimensions
+        );
+
+        xla::Literal* lit = new xla::Literal(xla_shape, true);
+        return reinterpret_cast<c__Literal*>(lit);
+    }
+
+    void c__Literal_delete(c__Literal* lit) {
+        delete reinterpret_cast<Literal*>(lit);
+    }
+
+    absl::Span<const tensorflow::int64> multi_index(int* indices, int64 rank) {
+        tensorflow::int64 indices64[rank];
+        for (int i = 0; i < rank; i++) {
+            indices64[i] = indices[i];
+        }
+        return absl::Span<const tensorflow::int64>(indices64, rank);
+    }
+
+    int c__Literal_Get_int(
+        c__Literal& lit,
+        int* indices  // TODO should be a Span
+    ) {
+        Literal& lit_ = reinterpret_cast<Literal&>(lit);
+        int64 rank = lit_.shape().rank();
+        return lit_.Get<int>(multi_index(indices, rank));
+    }
+
+    double c__Literal_Get_double(
+        c__Literal& lit,
+        int* indices  // TODO should be a Span
+    ) {
+        Literal& lit_ = reinterpret_cast<Literal&>(lit);
+        int64 rank = lit_.shape().rank();
+        return lit_.Get<double>(multi_index(indices, rank));
+    }
+
+    // todo which is the correct way to Get and Set a scalar Literal?
+    int to_int(c__Literal& lit) {
+        return *(int*) reinterpret_cast<Literal&>(lit).untyped_data();
+    }
+
+    double to_double(c__Literal& lit) {
+        return *(double*) reinterpret_cast<Literal&>(lit).untyped_data();
+    }
+
+    void c__Literal_Set_int(
+        c__Literal& lit,
+        int* indices,  // TODO should be a Span
+        int value
+    ) {
+        Literal& lit_ = reinterpret_cast<Literal&>(lit);
+        int64 rank = lit_.shape().rank();
+        lit_.Set<int>(multi_index(indices, rank), value);
+    }
+
+    void c__Literal_Set_double(
+        c__Literal& lit,
+        int* indices,  // TODO should be a Span
+        double value
+    ) {
+        Literal& lit_ = reinterpret_cast<Literal&>(lit);
+        int64 rank = lit_.shape().rank();
+        lit_.Set<double>(multi_index(indices, rank), value);
     }
 
     /*
@@ -152,82 +240,12 @@ extern "C" {
         return reinterpret_cast<c__XlaOp*>(res);
     }
 
-    struct c__Literal;
-
     c__XlaOp* c__ConstantLiteral(c__XlaBuilder& builder, c__Literal& data) {
         XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
         xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
         XlaOp* op = new XlaOp();
         *op = ConstantLiteral(&builder_, data_);
         return reinterpret_cast<c__XlaOp*>(op);
-    }
-
-    /*
-     *
-     *
-     * Literal
-     *
-     *
-     */
-
-    void c__Literal_delete(c__Literal* lit) {
-        delete reinterpret_cast<Literal*>(lit);
-    }
-
-    int c__Literal_Get_int(
-        c__Literal& lit,
-        int* indices  // TODO should be a Span
-    ) {
-        Literal& lit_ = reinterpret_cast<Literal&>(lit);
-        int64 rank = lit_.shape().rank();
-        tensorflow::int64 indices64[rank];
-        for (int i = 0; i < rank; i++) {
-            indices64[i] = indices[i];
-        }
-        auto multi_index = absl::Span<const tensorflow::int64>(indices64, rank);
-        return lit_.Get<int>(multi_index);
-    }
-
-    void c__Literal_Set_int(
-        c__Literal& lit,
-        int* indices,  // TODO should be a Span
-        int value
-    ) {
-        Literal& lit_ = reinterpret_cast<Literal&>(lit);
-        int64 rank = lit_.shape().rank();
-        tensorflow::int64 indices64[rank];
-        for (int i = 0; i < rank; i++) {
-            indices64[i] = indices[i];
-        }
-
-        auto multi_index = absl::Span<const tensorflow::int64>(indices64, rank);
-        lit_.Set<int>(multi_index, value);
-    }
-
-    int to_int(c__Literal& lit) {
-        return *(int*) reinterpret_cast<Literal&>(lit).untyped_data();
-    }
-
-    double to_double(c__Literal& lit) {
-        return *(double*) reinterpret_cast<Literal&>(lit).untyped_data();
-    }
-
-    c__Literal* c__Literal_new(int* shape, int rank) {
-        int64 shape64[rank];
-        for (int i = 0; i < rank; i++) {
-            shape64[i] = shape[i];
-        }
-
-        const std::vector<bool> dynamic_dimensions(rank, false);
-
-        auto xla_shape = ShapeUtil::MakeShape(
-            PrimitiveType::S32,
-            absl::Span<const int64>(shape64, rank),
-            dynamic_dimensions
-        );
-
-        xla::Literal* lit = new xla::Literal(xla_shape, true);
-        return reinterpret_cast<c__Literal*>(lit);
     }
 
     /*
