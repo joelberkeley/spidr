@@ -37,13 +37,21 @@ test_add = do let b = mkXlaBuilder ""
               y <- const {shape=[]} {dtype=Int} b (-7)
               sum <- eval {shape=[]} {dtype=Int} (x + y)
               assert $ sum == -4
+              delete x
+              delete y
+              delete b
 
 test_opToString : IO ()
-test_opToString = do let builder = mkXlaBuilder "foo"
-                     one <- const {shape=[1]} {dtype=Int} builder [1]
-                     assert $ opToString builder one == "constant, shape=[1], metadata={:0}"
-                     delete one
-                     delete builder
+test_opToString = do let b = mkXlaBuilder ""
+                     x <- const {shape=[]} {dtype=Int} b 1
+                     assert $ opToString b x == "constant, shape=[], metadata={:0}"
+                     delete x
+                     x <- const {shape=[3]} {dtype=Int} b [1, 2, 3]
+                     assert $ opToString b x == "constant, shape=[3], metadata={:0}"
+                     delete x
+                     delete b
 
 test : IO ()
-test = do test_add
+test = do test_XlaBuilder_name
+          test_add
+          test_opToString

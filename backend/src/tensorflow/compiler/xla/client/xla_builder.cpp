@@ -43,6 +43,10 @@ extern "C" {
      *
      */
 
+    void free_shape(int* shape) {
+        free(shape);
+    }
+
     int* alloc_shape(int rank) {
         int* shape = new int[rank];
         return shape;
@@ -52,41 +56,42 @@ extern "C" {
         arr[idx] = value;
     }
 
-    void array_set_f64(double* arr, int idx, double value) {
-        arr[idx] = value;
-    }
+    // void array_set_f64(double* arr, int idx, double value) {
+    //     arr[idx] = value;
+    // }
 
-    void* array_alloc_i32(const int* shape, int rank) {
-        if (rank == 1) {
-            int* res = new int[shape[0]];
-            return res;
-        } else if (rank > 1) {
-            void** res = new void*[shape[0]];
-            int trailing_shape[rank - 1];
-            for (int i = 0; i < rank - 1; i++) {
-                trailing_shape[i] = shape[i + 1];
-            }
-            for (int i = 0; i < shape[0]; i++) {
-                res[i] = array_alloc_i32(trailing_shape, rank - 1);
-            }
-            return res;
-        } else {
-            std::cout << "Invalid system state: memory cannot be allocated for array with rank 0" << std::endl;
-            return NULL;
-        }
-    }
+    // void* array_alloc_i32(const int* shape, int rank) {
+    //     if (rank == 1) {
+    //         int* res = new int[shape[0]];
+    //         return res;
+    //     } else if (rank > 1) {
+    //         void** res = new void*[shape[0]];
+    //         int trailing_shape[rank - 1];
+    //         for (int i = 0; i < rank - 1; i++) {
+    //             trailing_shape[i] = shape[i + 1];
+    //         }
+    //         for (int i = 0; i < shape[0]; i++) {
+    //             res[i] = array_alloc_i32(trailing_shape, rank - 1);
+    //         }
+    //         return res;
+    //     } else {
+    //         std::cout << "Invalid system state: memory cannot be allocated for array with rank 0" << std::endl;
+    //         return NULL;
+    //     }
+    // }
 
-    int index_i32(void* ptr, int idx) {
-        return ((int*) ptr)[idx];;
-    }
+    // int index_i32(void* ptr, int idx) {
+    //     return ((int*) ptr)[idx];;
+    // }
 
-    double index_f64(void* ptr, int idx) {
-        return ((double*) ptr)[idx];
-    }
+    // double index_f64(void* ptr, int idx) {
+    //     return ((double*) ptr)[idx];
+    // }
 
-    void* index_void_ptr(void** ptr, int idx) {
-        return ptr[idx];
-    }
+    // void* index_void_ptr(void** ptr, int idx) {
+    //     return ptr[idx];
+    // }
+
     /*
      *
      *
@@ -201,6 +206,10 @@ extern "C" {
      *
      */
 
+    void c__Literal_delete(c__Literal* lit) {
+        delete reinterpret_cast<Literal*>(lit);
+    }
+
     int c__Literal_Get_int(
         c__Literal& lit,
         int* indices  // TODO should be a Span
@@ -231,54 +240,54 @@ extern "C" {
         lit_.Set<int>(multi_index, value);
     }
 
-    static void write_literal_to_array_int_impl(
-        xla::Literal& lit,
-        void* arr,
-        int* shape,
-        int rank,
-        int num_remaining_dims,
-        int* current_indices
-    ) {
-        for (int i = 0; i < shape[rank - num_remaining_dims]; i++) {
-            int new_current_indices[rank];
-            for (int j = 0; j < rank - num_remaining_dims; j++) {
-                new_current_indices[j] = current_indices[j];
-            }
-            new_current_indices[rank - num_remaining_dims] = i;
+    // static void write_literal_to_array_int_impl(
+    //     xla::Literal& lit,
+    //     void* arr,
+    //     int* shape,
+    //     int rank,
+    //     int num_remaining_dims,
+    //     int* current_indices
+    // ) {
+    //     for (int i = 0; i < shape[rank - num_remaining_dims]; i++) {
+    //         int new_current_indices[rank];
+    //         for (int j = 0; j < rank - num_remaining_dims; j++) {
+    //             new_current_indices[j] = current_indices[j];
+    //         }
+    //         new_current_indices[rank - num_remaining_dims] = i;
 
-            if (num_remaining_dims == 1) {
-                int res = c__Literal_Get_int(reinterpret_cast<c__Literal&>(lit), new_current_indices);
-                ((int*) arr)[i] = res;
-            } else {
-                write_literal_to_array_int_impl(
-                    lit,
-                    ((void**) arr)[i],
-                    shape,
-                    rank,
-                    num_remaining_dims - 1,
-                    new_current_indices
-                );
-            }
-        }
-    }
+    //         if (num_remaining_dims == 1) {
+    //             int res = c__Literal_Get_int(reinterpret_cast<c__Literal&>(lit), new_current_indices);
+    //             ((int*) arr)[i] = res;
+    //         } else {
+    //             write_literal_to_array_int_impl(
+    //                 lit,
+    //                 ((void**) arr)[i],
+    //                 shape,
+    //                 rank,
+    //                 num_remaining_dims - 1,
+    //                 new_current_indices
+    //             );
+    //         }
+    //     }
+    // }
 
-    void* to_array_int(c__Literal& lit) {
-        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+    // void* to_array_int(c__Literal& lit) {
+    //     xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
 
-        Shape lit_shape = lit_.shape();
-        int64 rank = lit_shape.rank();
+    //     Shape lit_shape = lit_.shape();
+    //     int64 rank = lit_shape.rank();
 
-        int shape[rank];
-        const int64* shape64 = lit_.shape().dimensions().data();
-        for (int i = 0; i < rank; i++) {
-            shape[i] = shape64[i];
-        }
+    //     int shape[rank];
+    //     const int64* shape64 = lit_.shape().dimensions().data();
+    //     for (int i = 0; i < rank; i++) {
+    //         shape[i] = shape64[i];
+    //     }
 
-        void* arr = array_alloc_i32(shape, rank);
-        int current_indices[rank] = {0};
-        write_literal_to_array_int_impl(lit_, arr, shape, rank, rank, current_indices);
-        return arr;
-    }
+    //     void* arr = array_alloc_i32(shape, rank);
+    //     int current_indices[rank] = {0};
+    //     write_literal_to_array_int_impl(lit_, arr, shape, rank, rank, current_indices);
+    //     return arr;
+    // }
 
     int to_int(c__Literal& lit) {
         return *(int*) reinterpret_cast<Literal&>(lit).untyped_data();
@@ -288,36 +297,36 @@ extern "C" {
         return *(double*) reinterpret_cast<Literal&>(lit).untyped_data();
     }
 
-    static void write_array_to_literal_impl(
-        xla::Literal& lit,
-        void* data,
-        int* shape,
-        int rank,
-        int num_remaining_dims,
-        tensorflow::int64* current_indices
-    ) {
-        for (int i = 0; i < shape[rank - num_remaining_dims]; i++) {
-            tensorflow::int64 new_current_indices[rank];
-            for (int j = 0; j < rank - num_remaining_dims; j++) {
-                new_current_indices[i] = current_indices[i];
-            }
-            new_current_indices[rank - num_remaining_dims] = i;
+    // static void write_array_to_literal_impl(
+    //     xla::Literal& lit,
+    //     void* data,
+    //     int* shape,
+    //     int rank,
+    //     int num_remaining_dims,
+    //     tensorflow::int64* current_indices
+    // ) {
+    //     for (int i = 0; i < shape[rank - num_remaining_dims]; i++) {
+    //         tensorflow::int64 new_current_indices[rank];
+    //         for (int j = 0; j < rank - num_remaining_dims; j++) {
+    //             new_current_indices[i] = current_indices[i];
+    //         }
+    //         new_current_indices[rank - num_remaining_dims] = i;
             
-            if (num_remaining_dims == 1) {
-                auto multi_index = absl::Span<const tensorflow::int64>(new_current_indices, rank);
-                lit.Set(multi_index, ((int*) data)[i]);
-            } else {
-                write_array_to_literal_impl(
-                    lit,
-                    ((void**) data)[i],
-                    shape,
-                    rank,
-                    num_remaining_dims - 1,
-                    new_current_indices
-                );
-            }
-        }
-    }
+    //         if (num_remaining_dims == 1) {
+    //             auto multi_index = absl::Span<const tensorflow::int64>(new_current_indices, rank);
+    //             lit.Set(multi_index, ((int*) data)[i]);
+    //         } else {
+    //             write_array_to_literal_impl(
+    //                 lit,
+    //                 ((void**) data)[i],
+    //                 shape,
+    //                 rank,
+    //                 num_remaining_dims - 1,
+    //                 new_current_indices
+    //             );
+    //         }
+    //     }
+    // }
 
     c__Literal* c__Literal_new(int* shape, int rank) {
         int64 shape64[rank];
@@ -337,15 +346,15 @@ extern "C" {
         return reinterpret_cast<c__Literal*>(lit);
     }
 
-    c__Literal* array_to_literal(void* data, int* shape, int rank) {
-        c__Literal* lit = c__Literal_new(shape, rank);
-        xla::Literal* lit_ = reinterpret_cast<xla::Literal*>(lit);
+    // c__Literal* array_to_literal(void* data, int* shape, int rank) {
+    //     c__Literal* lit = c__Literal_new(shape, rank);
+    //     xla::Literal* lit_ = reinterpret_cast<xla::Literal*>(lit);
 
-        tensorflow::int64 current_indices[rank] = {0};
-        write_array_to_literal_impl(*lit_, data, shape, rank, rank, current_indices);
+    //     tensorflow::int64 current_indices[rank] = {0};
+    //     write_array_to_literal_impl(*lit_, data, shape, rank, rank, current_indices);
 
-        return reinterpret_cast<c__Literal*>(lit);
-    }
+    //     return reinterpret_cast<c__Literal*>(lit);
+    // }
 
     /*
      *
