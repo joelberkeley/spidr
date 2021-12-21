@@ -183,6 +183,16 @@ extern "C" {
         return reinterpret_cast<c__XlaOp*>(res);
     }
 
+    struct c__Literal;
+
+    c__XlaOp* c__ConstantLiteral(c__XlaBuilder& builder, c__Literal& data) {
+        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
+        xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
+        XlaOp* op = new XlaOp();
+        *op = ConstantLiteral(&builder_, data_);
+        return reinterpret_cast<c__XlaOp*>(op);
+    }
+
     /*
      *
      *
@@ -191,9 +201,10 @@ extern "C" {
      *
      */
 
-    struct c__Literal;
-
-    int c__Literal_Get_int(c__Literal& lit, int* indices) {
+    int c__Literal_Get_int(
+        c__Literal& lit,
+        int* indices  // TODO should be a Span
+    ) {
         Literal& lit_ = reinterpret_cast<Literal&>(lit);
         int64 rank = lit_.shape().rank();
         tensorflow::int64 indices64[rank];
@@ -202,6 +213,22 @@ extern "C" {
         }
         auto multi_index = absl::Span<const tensorflow::int64>(indices64, rank);
         return lit_.Get<int>(multi_index);
+    }
+
+    void c__Literal_Set_int(
+        c__Literal& lit,
+        int* indices,  // TODO should be a Span
+        int value
+    ) {
+        Literal& lit_ = reinterpret_cast<Literal&>(lit);
+        int64 rank = lit_.shape().rank();
+        tensorflow::int64 indices64[rank];
+        for (int i = 0; i < rank; i++) {
+            indices64[i] = indices[i];
+        }
+
+        auto multi_index = absl::Span<const tensorflow::int64>(indices64, rank);
+        lit_.Set<int>(multi_index, value);
     }
 
     static void write_literal_to_array_int_impl(
@@ -292,7 +319,7 @@ extern "C" {
         }
     }
 
-    c__Literal* array_to_literal(void* data, int* shape, int rank) {
+    c__Literal* c__Literal_new(int* shape, int rank) {
         int64 shape64[rank];
         for (int i = 0; i < rank; i++) {
             shape64[i] = shape[i];
@@ -307,8 +334,15 @@ extern "C" {
         );
 
         xla::Literal* lit = new xla::Literal(xla_shape, true);
+        return reinterpret_cast<c__Literal*>(lit);
+    }
+
+    c__Literal* array_to_literal(void* data, int* shape, int rank) {
+        c__Literal* lit = c__Literal_new(shape, rank);
+        xla::Literal* lit_ = reinterpret_cast<xla::Literal*>(lit);
+
         tensorflow::int64 current_indices[rank] = {0};
-        write_array_to_literal_impl(*lit, data, shape, rank, rank, current_indices);
+        write_array_to_literal_impl(*lit_, data, shape, rank, rank, current_indices);
 
         return reinterpret_cast<c__Literal*>(lit);
     }
@@ -322,14 +356,6 @@ extern "C" {
      *
      *
      */
-
-    c__XlaOp* constant(c__XlaBuilder& builder, c__Literal& data) {
-        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
-        xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
-        XlaOp* op = new XlaOp();
-        *op = ConstantLiteral(&builder_, data_);
-        return reinterpret_cast<c__XlaOp*>(op);
-    }
 
     c__Literal* eval(c__XlaOp& op) {
         XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
