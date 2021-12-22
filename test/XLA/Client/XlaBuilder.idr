@@ -38,7 +38,9 @@ test_add = do let b = mkXlaBuilder ""
               x <- const {shape=[3, 1]} {dtype=Double} b [[1.8], [1.3], [4.0]]
               y <- const {shape=[3, 1]} {dtype=Double} b [[-3.3], [0.0], [0.3]]
               sum <- eval {shape=[3, 1]} {dtype=Double} (x + y)
-              assert $ sum == [[-1.5], [1.3], [4.3]]  -- TODO floating point error
+              assert $ abs (index 0 (index 0 sum) - (-1.5)) < 0.000001
+              assert $ abs (index 0 (index 1 sum) - 1.3) < 0.000001
+              assert $ abs (index 0 (index 2 sum) - 4.3) < 0.000001
               delete x
               delete y
               x <- const {shape=[]} {dtype=Int} b 3
