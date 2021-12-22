@@ -28,7 +28,6 @@ public export
 Literal : Type
 Literal = Struct "c__Literal" []
 
--- todo rename
 export
 interface XLAPrimitive dtype where
     primitiveType : PrimitiveType
