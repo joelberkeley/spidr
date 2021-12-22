@@ -64,12 +64,15 @@ test_add = do let b = mkXlaBuilder ""
 
 test_opToString : IO ()
 test_opToString = do let b = mkXlaBuilder ""
+
                      x <- const {shape=[]} {dtype=Int} b 1
                      assert $ opToString b x == "constant, shape=[], metadata={:0}"
                      delete x
-                     x <- const {shape=[3]} {dtype=Int} b [1, 2, 3]
+
+                     x <- const {shape=[3]} {dtype=Double} b [1.3, 2.0, -0.4]
                      assert $ opToString b x == "constant, shape=[3], metadata={:0}"
                      delete x
+
                      delete b
 
 test : IO ()
