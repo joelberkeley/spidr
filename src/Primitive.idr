@@ -18,7 +18,6 @@ module Primitive
 
 import XLA.Literal
 
--- todo are we sure this does what we think it does? maybe test it?
 ||| A `Primitive` is an Idris type for which there is a corresponding backend primitive type.
 export
 interface XLAPrimitive dtype => Primitive dtype where

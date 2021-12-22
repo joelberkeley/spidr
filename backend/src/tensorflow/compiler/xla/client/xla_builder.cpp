@@ -146,7 +146,6 @@ extern "C" {
 
     struct c__Literal;
 
-    // TODO pass shape as Shape not C array
     c__Literal* c__Literal_new(int* shape, int rank, int primitive_type) {
         int64 shape64[rank];
         for (int i = 0; i < rank; i++) {
@@ -177,48 +176,25 @@ extern "C" {
         return absl::Span<const tensorflow::int64>(indices64, rank);
     }
 
-    int c__Literal_Get_int(
-        c__Literal& lit,
-        int* indices  // TODO should be a Span
-    ) {
+    int c__Literal_Get_int(c__Literal& lit, int* indices) {
         Literal& lit_ = reinterpret_cast<Literal&>(lit);
         int64 rank = lit_.shape().rank();
         return lit_.Get<int>(multi_index(indices, rank));
     }
 
-    double c__Literal_Get_double(
-        c__Literal& lit,
-        int* indices  // TODO should be a Span
-    ) {
+    double c__Literal_Get_double(c__Literal& lit, int* indices) {
         Literal& lit_ = reinterpret_cast<Literal&>(lit);
         int64 rank = lit_.shape().rank();
         return lit_.Get<double>(multi_index(indices, rank));
     }
 
-    // todo which is the correct way to Get and Set a scalar Literal?
-    int to_int(c__Literal& lit) {
-        return *(int*) reinterpret_cast<Literal&>(lit).untyped_data();
-    }
-
-    double to_double(c__Literal& lit) {
-        return *(double*) reinterpret_cast<Literal&>(lit).untyped_data();
-    }
-
-    void c__Literal_Set_int(
-        c__Literal& lit,
-        int* indices,  // TODO should be a Span
-        int value
-    ) {
+    void c__Literal_Set_int(c__Literal& lit, int* indices, int value) {
         Literal& lit_ = reinterpret_cast<Literal&>(lit);
         int64 rank = lit_.shape().rank();
         lit_.Set<int>(multi_index(indices, rank), value);
     }
 
-    void c__Literal_Set_double(
-        c__Literal& lit,
-        int* indices,  // TODO should be a Span
-        double value
-    ) {
+    void c__Literal_Set_double(c__Literal& lit, int* indices, double value) {
         Literal& lit_ = reinterpret_cast<Literal&>(lit);
         int64 rank = lit_.shape().rank();
         lit_.Set<double>(multi_index(indices, rank), value);

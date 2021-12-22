@@ -103,7 +103,7 @@ toArray shape lit = impl {shapesSum=Refl} shape [] where
         -> {a : _} -> {shapesSum : a + r = rank}
         -> (accumulated_indices : Vect a Nat)
         -> Array remaining_shape {dtype=dtype}
-    impl [] acc = unsafePerformIO impl_io where  -- todo unsafePerformIO
+    impl [] acc = unsafePerformIO impl_io where
         impl_io : IO dtype
         impl_io = do
             idx_ptr <- mkShape acc
