@@ -36,7 +36,7 @@ interface XLAPrimitive dtype where
     get : Literal -> Ptr Int -> dtype
 
 %foreign (libxla "c__Literal_new")
-prim__Literal_new : Ptr Int -> Int -> Int -> PrimIO Literal
+prim__allocLiteral : Ptr Int -> Int -> Int -> PrimIO Literal
 
 %foreign (libxla "c__Literal_delete")
 prim__delete : Literal -> PrimIO ()
@@ -67,34 +67,34 @@ mkLiteral : {rank : _} -> (shape : Shape {rank}) -> XLAPrimitive dtype =>
     Array shape {dtype=dtype} -> IO Literal
 mkLiteral {rank} shape xs = do
     shape_ptr <- mkShape shape
-    literal <- primIO $ prim__Literal_new shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
+    literal <- primIO $ prim__allocLiteral shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
     populateLiteral shape literal xs
     freeShape shape_ptr
     pure literal
 
 %foreign (libxla "c__Literal_Set_double")
-prim__Literal_Set_double : Literal -> Ptr Int -> Double -> PrimIO ()
+prim__literalSetDouble : Literal -> Ptr Int -> Double -> PrimIO ()
 
 %foreign (libxla "c__Literal_Get_double")
-Literal_Get_double : Literal -> Ptr Int -> Double
+literalGetDouble : Literal -> Ptr Int -> Double
 
 export
 XLAPrimitive Double where
   primitiveType = F64
-  set = prim__Literal_Set_double
-  get = Literal_Get_double
+  set = prim__literalSetDouble
+  get = literalGetDouble
 
 %foreign (libxla "c__Literal_Set_int")
-prim__Literal_Set_int : Literal -> Ptr Int -> Int -> PrimIO ()
+prim__literalSetInt : Literal -> Ptr Int -> Int -> PrimIO ()
 
 %foreign (libxla "c__Literal_Get_int")
-Literal_Get_int : Literal -> Ptr Int -> Int
+literalGetInt : Literal -> Ptr Int -> Int
 
 export
 XLAPrimitive Int where
   primitiveType = S32
-  set = prim__Literal_Set_int
-  get = Literal_Get_int
+  set = prim__literalSetInt
+  get = literalGetInt
 
 export
 toArray : XLAPrimitive dtype => (shape : Shape) -> Literal -> Array shape {dtype=dtype}

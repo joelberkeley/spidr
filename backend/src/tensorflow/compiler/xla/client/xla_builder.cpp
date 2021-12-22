@@ -52,7 +52,7 @@ extern "C" {
         return shape;
     }
 
-    void set_shape_idx(int* arr, int idx, int value) {
+    void set_shape_dim(int* arr, int idx, int value) {
         arr[idx] = value;
     }
 

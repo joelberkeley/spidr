@@ -32,10 +32,10 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 prim__allocShape : Int -> PrimIO (Ptr Int)
 
 %foreign (libxla "free_shape")
-prim__free_shape : Ptr Int -> PrimIO ()
+prim__freeShape : Ptr Int -> PrimIO ()
 
-%foreign (libxla "set_shape_idx")
-prim__set_shape_idx : Ptr Int -> Int -> Int -> PrimIO ()
+%foreign (libxla "set_shape_dim")
+prim__setShapeDim : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
 mkShape : {rank : _} -> Shape {rank} -> IO (Ptr Int)
@@ -46,8 +46,8 @@ mkShape {rank} xs = do
         writeElem : Ptr Int -> IO () -> (Nat, Nat) -> IO ()
         writeElem ptr prev_io (idx, x) = do
             prev_io
-            primIO $ prim__set_shape_idx ptr (cast idx) (cast x)
+            primIO $ prim__setShapeDim ptr (cast idx) (cast x)
 
 export
 freeShape : Ptr Int -> IO ()
-freeShape = primIO . prim__free_shape
+freeShape = primIO . prim__freeShape
