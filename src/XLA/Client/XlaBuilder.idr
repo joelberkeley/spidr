@@ -62,7 +62,6 @@ export
 XlaOp : Type
 XlaOp = Struct "c__XlaOp" []
 
--- todo one solution to this is to make everything AnyPtr, which we'll do for the finalisers anyway
 %foreign (libxla "c__ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> XlaOp
 
