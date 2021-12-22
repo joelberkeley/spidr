@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <absl/types/span.h>
-#include <tensorflow/compiler/xla/array.h>
 #include <tensorflow/compiler/xla/client/client_library.h>
 #include <tensorflow/compiler/xla/client/local_client.h>
 #include <tensorflow/compiler/xla/client/xla_builder.h>
-#include <tensorflow/compiler/xla/literal_util.h>
+#include <tensorflow/compiler/xla/literal.h>
+#include <tensorflow/compiler/xla/shape.h>
 #include <tensorflow/compiler/xla/shape_util.h>
 #include <tensorflow/compiler/xla/xla_data.pb.h>
 
@@ -154,7 +154,7 @@ extern "C" {
 
         const std::vector<bool> dynamic_dimensions(rank, false);
 
-        auto xla_shape = ShapeUtil::MakeShape(
+        Shape xla_shape = ShapeUtil::MakeShape(
             (PrimitiveType) primitive_type,
             absl::Span<const int64>(shape64, rank),
             dynamic_dimensions
