@@ -21,7 +21,6 @@ import Error
 import public Primitive
 import public Types
 import XLA
-import XLA.Literal
 import XLA.XlaData
 
 ----------------------------- core definitions ----------------------------
