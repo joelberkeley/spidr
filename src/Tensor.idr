@@ -17,10 +17,12 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import XLA
 import Error
+import public Primitive
 import public Types
-import public XLA.XlaData
+import XLA
+import XLA.Literal
+import XLA.XlaData
 
 ----------------------------- core definitions ----------------------------
 
@@ -32,11 +34,11 @@ import public XLA.XlaData
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
+  MkTensor : Primitive dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
+const : Primitive dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 const = MkTensor
 
 ||| A mutable tensor. That is, a tensor that can be modified in-place.
@@ -77,7 +79,7 @@ const = MkTensor
 ||| @dtype The element type.
 export
 data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkVariable : ScalarLike dtype => Array shape {dtype=dtype} -> Variable shape dtype
+  MkVariable : Primitive dtype => Array shape {dtype=dtype} -> Variable shape dtype
 
 ||| Provides access to a linear `Variable` with initial contents `arr`. For example:
 |||
@@ -91,7 +93,7 @@ data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : ScalarLike dtype =>
+var : Primitive dtype =>
       Array shape {dtype=dtype} -> (1 f : (1 v : Variable shape dtype) -> a) -> a
 var arr f = f (MkVariable arr)
 

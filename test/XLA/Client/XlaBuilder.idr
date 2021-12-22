@@ -15,6 +15,7 @@ limitations under the License.
 --}
 import XLA.Client.XlaBuilder
 import XLA.XlaData
+import XLA.Literal
 
 import Types
 

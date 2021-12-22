@@ -13,17 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.XlaData
+||| This module defines supported primitive backend types and their interaction with Idris.
+module Primitive
 
-public export
-data PrimitiveType = PRED | S32 | S64 | U32 | U64 | F32 | F64
+import XLA.Literal
 
+-- todo are we sure this does what we think it does? maybe test it?
+||| A `Primitive` is an Idris type for which there is a corresponding backend primitive type.
 export
-Cast PrimitiveType Int where
-    cast PRED = 1
-    cast S32 = 4
-    cast S64 = 5
-    cast U32 = 8
-    cast U64 = 9
-    cast F32 = 11
-    cast F64 = 12
+interface XLAPrimitive dtype => Primitive dtype where
+
+export Primitive Int where
+export Primitive Double where
