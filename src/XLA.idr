@@ -15,5 +15,3 @@ limitations under the License.
 --}
 ||| This module contains the Idris API to XLA.
 module XLA
-
-import public XLA.XlaData
