@@ -29,12 +29,14 @@ test_XlaBuilder_name = do assert $ name (mkXlaBuilder "foo") == "foo"
 
 test_add : IO ()
 test_add = do let b = mkXlaBuilder ""
+
               x <- const {shape=[2, 3]} {dtype=Int} b [[1, 15, 5], [-1, 7, 6]]
               y <- const {shape=[2, 3]} {dtype=Int} b [[11, 5, 7], [-3, -4, 0]]
               sum <- eval {shape=[2, 3]} {dtype=Int} (x + y)
               assert $ sum == [[12, 20, 12], [-4, 3, 6]]
               delete x
               delete y
+
               x <- const {shape=[3, 1]} {dtype=Double} b [[1.8], [1.3], [4.0]]
               y <- const {shape=[3, 1]} {dtype=Double} b [[-3.3], [0.0], [0.3]]
               sum <- eval {shape=[3, 1]} {dtype=Double} (x + y)
@@ -43,12 +45,21 @@ test_add = do let b = mkXlaBuilder ""
               assert $ abs (index 0 (index 2 sum) - 4.3) < 0.000001
               delete x
               delete y
+
               x <- const {shape=[]} {dtype=Int} b 3
               y <- const {shape=[]} {dtype=Int} b (-7)
               sum <- eval {shape=[]} {dtype=Int} (x + y)
               assert $ sum == -4
               delete x
               delete y
+
+              x <- const {shape=[]} {dtype=Double} b 3.4
+              y <- const {shape=[]} {dtype=Double} b (-7.1)
+              sum <- eval {shape=[]} {dtype=Double} (x + y)
+              assert $ abs (sum - (-3.7)) < 0.000001
+              delete x
+              delete y
+
               delete b
 
 test_opToString : IO ()
