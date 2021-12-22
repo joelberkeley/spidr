@@ -17,36 +17,11 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import XLA
 import Error
+import public Primitive
 import public Types
 
 ----------------------------- core definitions ----------------------------
-
-||| A `ScalarLike` is any Idris type that can be represented as a scalar `Tensor`.
-export
-interface ScalarLike ty where
-  archType : ArchType
-
-export
-ScalarLike Double where
-  archType = F64
-
-export
-ScalarLike Int where
-  archType = U32
-
-export
-ScalarLike Integer where
-  archType = U64
-
-export
-ScalarLike Nat where
-  archType = I64
-
-export
-ScalarLike Bool where
-  archType = BOOL
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
@@ -56,11 +31,11 @@ ScalarLike Bool where
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
+  MkTensor : Primitive dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : ScalarLike dtype => Array shape {dtype=dtype} -> Tensor shape dtype
+const : Primitive dtype => Array shape {dtype=dtype} -> Tensor shape dtype
 const = MkTensor
 
 ||| A mutable tensor. That is, a tensor that can be modified in-place.
@@ -101,21 +76,21 @@ const = MkTensor
 ||| @dtype The element type.
 export
 data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkVariable : ScalarLike dtype => Array shape {dtype=dtype} -> Variable shape dtype
+  MkVariable : Primitive dtype => Array shape {dtype=dtype} -> Variable shape dtype
 
 ||| Provides access to a linear `Variable` with initial contents `arr`. For example:
 |||
 ||| ```idris
 ||| addOne : (1 v : Variable [] Double) -> Variable [] Double
 ||| addOne v = v += const {shape=[]} 1
-||| 
+|||
 ||| three : Tensor [] Double
 ||| three = var 2.0 $ \v => freeze $ addOne v
 ||| ```
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : ScalarLike dtype =>
+var : Primitive dtype =>
       Array shape {dtype=dtype} -> (1 f : (1 v : Variable shape dtype) -> a) -> a
 var arr f = f (MkVariable arr)
 
@@ -148,7 +123,7 @@ export
 concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
-||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example, 
+||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
 ||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
@@ -265,7 +240,7 @@ namespace Squeezable
     Nest : Squeezable from to -> Squeezable (1 :: from) to
 
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
-||| 
+|||
 ||| ```idris
 ||| x : Tensor [2, 1, 3, 1] Double
 ||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
@@ -382,7 +357,7 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 ||| broadcast explicitly for shapes to be compatible.
 export
 (-) : Neg dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype 
+      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
 
 ||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.

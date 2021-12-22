@@ -20,8 +20,12 @@ modules =
   Optimize,
   Tensor,
   Types,
+  Util,
   
   XLA,
+  XLA.FFI,
+  XLA.Literal,
+  XLA.XlaData,
   XLA.Client.XlaBuilder
 
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."

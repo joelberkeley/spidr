@@ -13,5 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This is the root module for the Idris API to XLA.
-module XLA
+module XLA.XlaData
+
+public export
+data PrimitiveType = PRED | S32 | S64 | U32 | U64 | F32 | F64
+
+export
+Cast PrimitiveType Int where
+    cast PRED = 1
+    cast S32 = 4
+    cast S64 = 5
+    cast U32 = 8
+    cast U64 = 9
+    cast F32 = 11
+    cast F64 = 12

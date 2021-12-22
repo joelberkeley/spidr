@@ -13,5 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This is the root module for the Idris API to XLA.
-module XLA
+||| This module defines supported primitive backend types and their interaction with Idris.
+module Primitive
+
+import XLA.Literal
+
+||| A `Primitive` is an Idris type for which there is a corresponding backend primitive type.
+export
+interface XLAPrimitive dtype => Primitive dtype where
+
+export Primitive Int where
+export Primitive Double where

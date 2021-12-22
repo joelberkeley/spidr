@@ -16,15 +16,21 @@ limitations under the License.
 ||| This module contains the Idris API to XLA.
 module XLA.Client.XlaBuilder
 
-import XLA
+import XLA.FFI
+import XLA.Literal
+import XLA.XlaData
 import Types
 import System.FFI
+import Util
 
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
-xla_crash : Show a => a -> b
-xla_crash x = (assert_total idris_crash) $ "Fatal: XLA C API produced unexpected value " ++ show x
+{-
+ -
+ - XlaBuilder
+ -
+ -}
 
 export
 XlaBuilder : Type
@@ -34,33 +40,54 @@ XlaBuilder = Struct "c__XlaBuilder" []
 export
 mkXlaBuilder : String -> XlaBuilder
 
-%foreign (libxla "c__XlaBuilder_name")
-export
-name : XlaBuilder -> String
-
 namespace XlaBuilder
-    %foreign (libxla "c__XlaBuilder_del")
+    %foreign (libxla "c__XlaBuilder_delete")
     prim__delete : XlaBuilder -> PrimIO ()
 
     export
     delete : XlaBuilder -> IO ()
     delete = primIO . prim__delete
 
+%foreign (libxla "c__XlaBuilder_name")
+export
+name : XlaBuilder -> String
+
+{-
+ -
+ - XlaOp
+ -
+ -}
+
 export
 XlaOp : Type
 XlaOp = Struct "c__XlaOp" []
 
-%foreign (libxla "c__ConstantR0")
+%foreign (libxla "c__ConstantLiteral")
+constantLiteral : XlaBuilder -> Literal -> XlaOp
+
 export
-const : XlaBuilder -> Int -> XlaOp
+const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}} -> 
+    XlaBuilder -> Array shape {dtype=dtype} -> IO XlaOp
+const {dtype} {shape} builder arr =
+    do literal <- mkLiteral shape arr
+       let op = constantLiteral builder literal
+       delete literal
+       pure op
 
 namespace XlaOp
-    %foreign (libxla "c__XlaOp_del")
+    %foreign (libxla "c__XlaOp_delete")
     prim__delete : XlaOp -> PrimIO ()
 
     export
     delete : XlaOp -> IO ()
     delete = primIO . prim__delete
+
+%foreign (libxla "eval")
+prim__eval : XlaOp -> PrimIO Literal
+
+export
+eval : XLAPrimitive dtype => {shape : _} -> XlaOp -> IO (Array shape {dtype=dtype})
+eval op = map (toArray shape) (primIO $ prim__eval op)
 
 %foreign (libxla "c__XlaBuilder_OpToString")
 export
@@ -69,10 +96,3 @@ opToString : XlaBuilder -> XlaOp -> String
 %foreign (libxla "c__XlaOp_operator_add")
 export
 (+) : XlaOp -> XlaOp -> XlaOp
-
-%foreign (libxla "eval_int32")
-prim__eval_int : XlaOp -> PrimIO Int
-
-export
-eval_int : XlaOp -> IO (Array [] {dtype=Int})
-eval_int op = primIO $ prim__eval_int op
