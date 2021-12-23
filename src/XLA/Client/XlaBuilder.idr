@@ -77,9 +77,9 @@ export
 opToString : RawTensor -> IO String
 opToString (MkRawTensor f) =
   do let builder = prim__mkXlaBuilder ""
-         str = pure $ prim__opToString builder !(f builder)
+         str = prim__opToString builder !(f builder)
      primIO $ prim__delete_XlaBuilder builder
-     str
+     pure str
 
 %foreign (libxla "eval")
 prim__eval : GCAnyPtr -> PrimIO Literal
