@@ -62,9 +62,9 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
                 impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
 
 export
-mkLiteral : {rank : _} -> (shape : Shape {rank}) -> XLAPrimitive dtype =>
-    Array shape {dtype=dtype} -> IO Literal
-mkLiteral {rank} shape xs = do
+mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
+    -> Array shape {dtype=dtype} -> IO Literal
+mkLiteral xs = do
     shape_ptr <- mkShape shape
     literal <- primIO $ prim__allocLiteral shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
     populateLiteral shape literal xs
@@ -96,8 +96,8 @@ XLAPrimitive Int where
   get = literalGetInt
 
 export
-toArray : XLAPrimitive dtype => (shape : Shape) -> Literal -> Array shape {dtype=dtype}
-toArray shape lit = impl {shapesSum=Refl} shape [] where
+toArray : XLAPrimitive dtype => {shape : Shape} -> Literal -> Array shape {dtype=dtype}
+toArray lit = impl {shapesSum=Refl} shape [] where
     impl : (remaining_shape : Vect r Nat)
         -> {a : _} -> {shapesSum : a + r = rank}
         -> (accumulated_indices : Vect a Nat)

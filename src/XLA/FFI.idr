@@ -39,7 +39,7 @@ prim__setShapeDim : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
 mkShape : {rank : _} -> Shape {rank} -> IO (Ptr Int)
-mkShape {rank} xs = do
+mkShape xs = do
     ptr <- primIO $ prim__allocShape (cast rank)
     foldl (writeElem ptr) (pure ()) (zip (range rank) xs)
     pure ptr where
