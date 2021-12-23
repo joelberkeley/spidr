@@ -49,7 +49,7 @@ eval (MkTensor raw) = eval raw
 ||| Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
-toString (MkTensor raw) = opToString raw
+toString (MkTensor raw) = toString raw
 
 ||| A mutable tensor. That is, a tensor that can be modified in-place.
 |||

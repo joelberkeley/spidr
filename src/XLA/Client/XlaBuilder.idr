@@ -28,6 +28,24 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 
 {-
  -
+ - XlaBuilder
+ -
+ -}
+
+XlaBuilder : Type
+XlaBuilder = Struct "c__XlaBuilder" []
+
+%foreign (libxla "c__XlaBuilder_delete")
+prim__delete_XlaBuilder : XlaBuilder -> PrimIO ()
+
+%foreign (libxla "c__XlaBuilder_new")
+prim__mkXlaBuilder : String -> PrimIO XlaBuilder
+
+%foreign (libxla "c__XlaBuilder_OpToString")
+prim__opToString : XlaBuilder -> GCAnyPtr -> String
+
+{-
+ -
  - XlaOp
  -
  -}
@@ -36,25 +54,10 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 prim__delete_XlaOp : AnyPtr -> PrimIO ()
 
 %foreign (libxla "c__ConstantLiteral")
-constantLiteral : AnyPtr -> Literal -> AnyPtr
+constantLiteral : XlaBuilder -> Literal -> AnyPtr
 
 %foreign (libxla "c__XlaOp_operator_add")
 prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
-
-{-
- -
- - XlaBuilder
- -
- -}
-
-%foreign (libxla "c__XlaBuilder_delete")
-prim__delete_XlaBuilder : AnyPtr -> PrimIO ()
-
-%foreign (libxla "c__XlaBuilder_new")
-prim__mkXlaBuilder : String -> AnyPtr
-
-%foreign (libxla "c__XlaBuilder_OpToString")
-prim__opToString : AnyPtr -> GCAnyPtr -> String
 
 {-
  -
@@ -62,7 +65,10 @@ prim__opToString : AnyPtr -> GCAnyPtr -> String
  -
  -}
 
-export data RawTensor = MkRawTensor (AnyPtr -> IO GCAnyPtr)
+-- todo should we instead be extracting the GCAnyPtr immediately we call onCollectAny? What happens
+-- in each case? Does it not garbage collect efficiently in one case? Or memory error?
+-- tbh I've no idea how I'd pull the IO out in any case
+export data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
 
 export
 const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
@@ -74,10 +80,10 @@ const arr = MkRawTensor $ \builder =>
        op
 
 export
-opToString : RawTensor -> IO String
-opToString (MkRawTensor f) =
-  do let builder = prim__mkXlaBuilder ""
-         str = prim__opToString builder !(f builder)
+toString : RawTensor -> IO String
+toString (MkRawTensor f) =
+  do builder <- primIO (prim__mkXlaBuilder "")
+     let str = prim__opToString builder !(f builder)
      primIO $ prim__delete_XlaBuilder builder
      pure str
 
@@ -87,7 +93,7 @@ prim__eval : GCAnyPtr -> PrimIO Literal
 export
 eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype})
 eval (MkRawTensor f) =
-    do let builder = prim__mkXlaBuilder ""
+    do builder <- primIO (prim__mkXlaBuilder "")
        lit <- primIO $ prim__eval !(f builder)
        let arr = toArray lit
        delete lit
