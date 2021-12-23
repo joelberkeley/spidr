@@ -65,7 +65,8 @@ prim__opToString : AnyPtr -> GCAnyPtr -> String
 export data RawTensor = MkRawTensor (AnyPtr -> IO GCAnyPtr)
 
 export
-const : XLAPrimitive dtype => {shape : _} -> Array shape {dtype} -> RawTensor
+const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
+    -> Array shape {dtype} -> RawTensor
 const arr = MkRawTensor $ \builder =>
     do literal <- mkLiteral arr
        let op = onCollectAny (constantLiteral builder literal) $ primIO . prim__delete_XlaOp

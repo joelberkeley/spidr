@@ -38,17 +38,17 @@ data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
 ||| Construct a `Tensor` from `Array` data.
 export
 const : Primitive dtype => {shape : _} -> Array shape {dtype} -> Tensor shape dtype
-const = MkTensor . const
+const xs = MkTensor $ const {rank=length shape} (rewrite lengthCorrect shape in xs)
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
 eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape {dtype}
-eval (MkTensor op) = eval op
+eval (MkTensor raw) = eval raw
 
 ||| Return a string representation of an unevaluated `Tensor`. Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
-toString (MkTensor op) = opToString op
+toString (MkTensor raw) = opToString raw
 
 ||| A mutable tensor. That is, a tensor that can be modified in-place.
 |||
@@ -357,7 +357,7 @@ export
 export
 (+) : Num dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
-(MkTensor l_op) + (MkTensor r_op) = MkTensor (l_op + r_op)
+(MkTensor ll) + (MkTensor rr) = MkTensor (ll + rr)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export

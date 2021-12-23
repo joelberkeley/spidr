@@ -62,13 +62,12 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
                 impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
 
 export
-mkLiteral : XLAPrimitive dtype => {shape : _} -> Array shape {dtype=dtype} -> IO Literal
-mkLiteral {shape} xs = do
+mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
+    -> Array shape {dtype=dtype} -> IO Literal
+mkLiteral xs = do
     shape_ptr <- mkShape shape
-    let primitive_type = primitiveType {dtype=dtype}
-    literal <- primIO $ prim__allocLiteral shape_ptr (cast $ length shape) (cast primitive_type)
-    populateLiteral {rank=length shape}
-        (rewrite lengthCorrect shape in shape) literal (rewrite lengthCorrect shape in xs)
+    literal <- primIO $ prim__allocLiteral shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
+    populateLiteral shape literal xs
     freeShape shape_ptr
     pure literal
 
@@ -97,7 +96,7 @@ XLAPrimitive Int where
   get = literalGetInt
 
 export
-toArray : XLAPrimitive dtype => {shape : _} -> Literal -> Array shape {dtype=dtype}
+toArray : XLAPrimitive dtype => {shape : Shape} -> Literal -> Array shape {dtype=dtype}
 toArray lit = impl {shapesSum=Refl} shape [] where
     impl : (remaining_shape : Vect r Nat)
         -> {a : _} -> {shapesSum : a + r = rank}
