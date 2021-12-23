@@ -45,7 +45,8 @@ export
 eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape {dtype}
 eval (MkTensor raw) = eval raw
 
-||| Return a string representation of an unevaluated `Tensor`. Useful for debugging.
+||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
+||| Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
 toString (MkTensor raw) = opToString raw
