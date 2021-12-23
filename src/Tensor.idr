@@ -40,10 +40,12 @@ export
 const : Primitive dtype => {shape : _} -> Array shape {dtype} -> Tensor shape dtype
 const = MkTensor . const
 
+||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
 eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape {dtype}
 eval (MkTensor op) = eval op
 
+||| Return a string representation of an operation. Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
 toString (MkTensor op) = opToString op
