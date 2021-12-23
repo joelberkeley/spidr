@@ -21,6 +21,7 @@ import Error
 import public Primitive
 import public Types
 import XLA.Client.XlaBuilder
+import XLA.Literal
 
 ----------------------------- core definitions ----------------------------
 
@@ -36,20 +37,15 @@ data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : Primitive dtype => Array shape {dtype=dtype} -> Tensor shape dtype
-
-||| Construct a `Tensor` from `Array` data.
-export
-const' : Array [] {dtype=Int} -> Tensor [] Int
-const' = MkTensor . const
+const : Primitive dtype => {rank : _} -> {shape : Shape {rank}} -> Array shape {dtype=dtype} -> Tensor shape dtype
+const = MkTensor . const
 
 export
-eval : {shape : _} -> {dtype : _} -> Tensor shape dtype -> IO $ Array shape {dtype=dtype}
-eval {shape=[]} {dtype=Int} (MkTensor op) = eval_int op
-eval _ = ?eval_rhs
+eval : {shape : _} -> {dtype : _} -> Primitive dtype => Tensor shape dtype -> IO $ Array shape {dtype=dtype}
+eval {shape} {dtype} (MkTensor op) = eval op
 
 export
-toString : Tensor [] Int -> IO String
+toString : Tensor shape dtype -> IO String
 toString (MkTensor op) = opToString op
 
 ||| A mutable tensor. That is, a tensor that can be modified in-place.
@@ -359,12 +355,7 @@ export
 export
 (+) : Num dtype =>
       Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
-
-export
-(++) : Num dtype => {l, r: _} ->
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
-(++) {l=[]} {r=[]} (MkTensor l_op) (MkTensor r_op) = MkTensor (l_op + r_op)
-(++) _ _ = ?add_rhs
+(MkTensor l_op) + (MkTensor r_op) = MkTensor (l_op + r_op)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
