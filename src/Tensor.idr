@@ -33,7 +33,7 @@ import XLA.Literal
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : Op -> Tensor shape dtype
+  MkTensor : RawTensor -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export

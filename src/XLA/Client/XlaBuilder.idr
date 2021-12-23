@@ -28,18 +28,6 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 
 {-
  -
- - XlaBuilder
- -
- -}
-
-%foreign (libxla "c__XlaBuilder_new")
-prim__mkXlaBuilder : String -> AnyPtr
-
-%foreign (libxla "c__XlaBuilder_delete")
-prim__delete_XlaBuilder : AnyPtr -> PrimIO ()
-
-{-
- -
  - XlaOp
  -
  -}
@@ -50,48 +38,63 @@ prim__delete_XlaOp : AnyPtr -> PrimIO ()
 %foreign (libxla "c__ConstantLiteral")
 constantLiteral : AnyPtr -> Literal -> AnyPtr
 
--- todo rename
-export
-data Op = MkOp (AnyPtr -> IO GCAnyPtr)
+%foreign (libxla "c__XlaOp_operator_add")
+prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
-export
-const : XLAPrimitive dtype => {shape : _} -> Array shape {dtype} -> Op
-const arr = MkOp $ \builder_ptr =>
-    do literal <- mkLiteral arr
-       let xlaop = constantLiteral builder_ptr literal
-       let op = onCollectAny xlaop $ primIO . prim__delete_XlaOp
-       delete literal
-       op
+{-
+ -
+ - XlaBuilder
+ -
+ -}
+
+%foreign (libxla "c__XlaBuilder_delete")
+prim__delete_XlaBuilder : AnyPtr -> PrimIO ()
+
+%foreign (libxla "c__XlaBuilder_new")
+prim__mkXlaBuilder : String -> AnyPtr
 
 %foreign (libxla "c__XlaBuilder_OpToString")
 prim__opToString : AnyPtr -> GCAnyPtr -> String
 
+{-
+ -
+ - XlaOp and XlaBuilder wrapper
+ -
+ -}
+
+export data RawTensor = MkRawTensor (AnyPtr -> IO GCAnyPtr)
+
 export
-opToString : Op -> IO String
-opToString (MkOp f) =
-  do let builder_ptr = prim__mkXlaBuilder ""
-     str <- pure $ prim__opToString builder_ptr !(f builder_ptr)
-     primIO $ prim__delete_XlaBuilder builder_ptr
-     pure str
+const : XLAPrimitive dtype => {shape : _} -> Array shape {dtype} -> RawTensor
+const arr = MkRawTensor $ \builder =>
+    do literal <- mkLiteral arr
+       let op = onCollectAny (constantLiteral builder literal) $ primIO . prim__delete_XlaOp
+       delete literal
+       op
+
+export
+opToString : RawTensor -> IO String
+opToString (MkRawTensor f) =
+  do let builder = prim__mkXlaBuilder ""
+         str = pure $ prim__opToString builder !(f builder)
+     primIO $ prim__delete_XlaBuilder builder
+     str
 
 %foreign (libxla "eval")
 prim__eval : GCAnyPtr -> PrimIO Literal
 
 export
-eval : XLAPrimitive dtype => {shape : _} -> Op -> IO (Array shape {dtype})
-eval (MkOp f) =
-    do let builder_ptr = prim__mkXlaBuilder ""
-       lit <- primIO $ prim__eval !(f builder_ptr)
+eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype})
+eval (MkRawTensor f) =
+    do let builder = prim__mkXlaBuilder ""
+       lit <- primIO $ prim__eval !(f builder)
        let arr = toArray lit
        delete lit
-       primIO $ prim__delete_XlaBuilder builder_ptr
+       primIO $ prim__delete_XlaBuilder builder
        pure arr
 
-%foreign (libxla "c__XlaOp_operator_add")
-prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
-
 export
-(+) : Op -> Op -> Op
-(MkOp l) + (MkOp r) = MkOp $ \builder =>
+(+) : RawTensor -> RawTensor -> RawTensor
+(MkRawTensor l) + (MkRawTensor r) = MkRawTensor $ \builder =>
     do new_op <- primIO $ prim__XlaOp_operator_add !(l builder) !(r builder)
        onCollectAny new_op $ primIO . prim__delete_XlaOp
