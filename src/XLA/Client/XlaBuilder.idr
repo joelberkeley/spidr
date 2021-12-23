@@ -38,6 +38,9 @@ XlaBuilder = Struct "c__XlaBuilder" []
 %foreign (libxla "c__XlaBuilder_delete")
 prim__delete_XlaBuilder : XlaBuilder -> PrimIO ()
 
+delete : XlaBuilder -> IO ()
+delete = primIO . prim__delete_XlaBuilder
+
 %foreign (libxla "c__XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO XlaBuilder
 
@@ -65,9 +68,6 @@ prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
  -
  -}
 
--- todo should we instead be extracting the GCAnyPtr immediately we call onCollectAny? What happens
--- in each case? Does it not garbage collect efficiently in one case? Or memory error?
--- tbh I've no idea how I'd pull the IO out in any case
 export data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
 
 export
@@ -75,16 +75,16 @@ const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
     -> Array shape {dtype} -> RawTensor
 const arr = MkRawTensor $ \builder =>
     do literal <- mkLiteral arr
-       let op = onCollectAny (constantLiteral builder literal) $ primIO . prim__delete_XlaOp
+       op <- onCollectAny (constantLiteral builder literal) $ primIO . prim__delete_XlaOp
        delete literal
-       op
+       pure op
 
 export
 toString : RawTensor -> IO String
 toString (MkRawTensor f) =
   do builder <- primIO (prim__mkXlaBuilder "")
      let str = prim__opToString builder !(f builder)
-     primIO $ prim__delete_XlaBuilder builder
+     delete builder
      pure str
 
 %foreign (libxla "eval")
@@ -97,11 +97,12 @@ eval (MkRawTensor f) =
        lit <- primIO $ prim__eval !(f builder)
        let arr = toArray lit
        delete lit
-       primIO $ prim__delete_XlaBuilder builder
+       delete builder
        pure arr
 
 export
 (+) : RawTensor -> RawTensor -> RawTensor
 (MkRawTensor l) + (MkRawTensor r) = MkRawTensor $ \builder =>
     do new_op <- primIO $ prim__XlaOp_operator_add !(l builder) !(r builder)
-       onCollectAny new_op $ primIO . prim__delete_XlaOp
+       op <- onCollectAny new_op $ primIO . prim__delete_XlaOp
+       pure op
