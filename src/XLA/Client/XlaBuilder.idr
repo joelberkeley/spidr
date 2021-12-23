@@ -79,7 +79,7 @@ prim__eval : GCAnyPtr -> PrimIO Literal
 
 export
 eval : XLAPrimitive dtype => {shape : _} -> Op -> IO (Array shape {dtype})
-eval {shape} (MkOp f) = 
+eval (MkOp f) =
     do let builder_ptr = prim__mkXlaBuilder ""
        lit <- primIO $ prim__eval !(f builder_ptr)
        let arr = toArray lit
