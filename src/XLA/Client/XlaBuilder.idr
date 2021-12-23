@@ -54,6 +54,7 @@ prim__delete_XlaOp : AnyPtr -> PrimIO ()
 %foreign (libxla "c__ConstantLiteral")
 constantLiteral : AnyPtr -> Literal -> AnyPtr
 
+-- todo rename
 export
 data Op = MkOp (XlaBuilder -> XlaOp)
 
