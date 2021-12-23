@@ -38,10 +38,10 @@ prim__freeShape : Ptr Int -> PrimIO ()
 prim__setShapeDim : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
-mkShape : {rank : _} -> Shape {rank} -> IO (Ptr Int)
-mkShape {rank} xs = do
-    ptr <- primIO $ prim__allocShape (cast rank)
-    foldl (writeElem ptr) (pure ()) (zip (range rank) xs)
+mkShape : Shape -> IO (Ptr Int)
+mkShape xs = do
+    ptr <- primIO $ prim__allocShape (cast $ length xs)
+    foldl (writeElem ptr) (pure ()) (zip (range $ length xs) $ rewrite lengthCorrect xs in xs)
     pure ptr where
         writeElem : Ptr Int -> IO () -> (Nat, Nat) -> IO ()
         writeElem ptr prev_io (idx, x) = do

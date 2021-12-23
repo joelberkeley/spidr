@@ -58,9 +58,9 @@ export
 data Op = MkOp (XlaBuilder -> XlaOp)
 
 export
-const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}} -> Array shape {dtype=dtype} -> Op
-const {rank} {shape} arr = MkOp $ \(MkXlaBuilder builder_ptr) => MkXlaOp $
-    do literal <- mkLiteral shape arr
+const : XLAPrimitive dtype => {shape : _} -> Array shape {dtype} -> Op
+const arr = MkOp $ \(MkXlaBuilder builder_ptr) => MkXlaOp $
+    do literal <- mkLiteral arr
        let xlaop = constantLiteral builder_ptr literal
        let op = onCollectAny xlaop $ primIO . prim__delete_XlaOp
        delete literal
@@ -82,12 +82,12 @@ opToString (MkOp f) =
 prim__eval : GCAnyPtr -> PrimIO Literal
 
 export
-eval : XLAPrimitive dtype => {shape : _} -> Op -> IO (Array shape {dtype=dtype})
+eval : XLAPrimitive dtype => {shape : _} -> Op -> IO (Array shape {dtype})
 eval {shape} (MkOp builder_to_op) = 
     do let builder_ptr = prim__mkXlaBuilder ""
            (MkXlaOp op_ptr) = builder_to_op (MkXlaBuilder builder_ptr)
        lit <- primIO $ prim__eval !op_ptr
-       let arr = toArray shape lit
+       let arr = toArray lit
        delete lit
        primIO $ prim__delete_XlaBuilder builder_ptr
        pure arr

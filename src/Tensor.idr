@@ -37,12 +37,12 @@ data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : Primitive dtype => {rank : _} -> {shape : Shape {rank}} -> Array shape {dtype=dtype} -> Tensor shape dtype
+const : Primitive dtype => {shape : _} -> Array shape {dtype} -> Tensor shape dtype
 const = MkTensor . const
 
 export
-eval : {shape : _} -> {dtype : _} -> Primitive dtype => Tensor shape dtype -> IO $ Array shape {dtype=dtype}
-eval {shape} {dtype} (MkTensor op) = eval op
+eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape {dtype}
+eval (MkTensor op) = eval op
 
 export
 toString : Tensor shape dtype -> IO String
