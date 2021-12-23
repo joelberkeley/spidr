@@ -128,8 +128,7 @@ test_add = do
 
 test_toString : IO ()
 test_toString = do
-    let x = const {shape=[]} {dtype=Int} 1
-    str <- toString x
+    str <- toString $ const {shape=[]} {dtype=Int} 1
     assert $ str == "constant, shape=[], metadata={:0}"
 
     let x = const {shape=[]} {dtype=Int} 1
@@ -142,8 +141,7 @@ test_toString = do
           constant, shape=[], metadata={:0}
         """
 
-    let x = const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
-    str <- toString x
+    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
     assert $ str == "constant, shape=[3], metadata={:0}"
 
 test : IO ()
