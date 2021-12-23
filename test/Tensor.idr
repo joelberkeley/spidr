@@ -104,26 +104,26 @@ assert x = putStrLn $ if x then "PASS" else "FAIL"
 
 test_add : IO ()
 test_add = do
-    let x = const {shape=[2, 3]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[2, 3]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    sum <- eval {shape=[2, 3]} (x + y)
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
+    sum <- eval (x + y)
     assert $ sum == [[12, 20, 12], [-4, 3, 6]]
 
-    let x = const {shape=[3, 1]} {dtype=Double} [[1.8], [1.3], [4.0]]
-        y = const {shape=[3, 1]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    sum <- eval {shape=[3, 1]} {dtype=Double} (x + y)
+    let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
+        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    sum <- eval (x + y)
     assert $ abs (index 0 (index 0 sum) - (-1.5)) < 0.000001
     assert $ abs (index 0 (index 1 sum) - 1.3) < 0.000001
     assert $ abs (index 0 (index 2 sum) - 4.3) < 0.000001
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
-    sum <- eval {shape=[]} {dtype=Int} (x + y)
+    sum <- eval (x + y)
     assert $ sum == -4
 
     let x = const {shape=[]} {dtype=Double} 3.4
         y = const {shape=[]} {dtype=Double} (-7.1)
-    sum <- eval {shape=[]} {dtype=Double} (x + y)
+    sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
 
 test_toString : IO ()
@@ -142,7 +142,7 @@ test_toString = do
           constant, shape=[], metadata={:0}
         """
 
-    let x = const {shape=[3]} {dtype=Double} [1.3, 2.0, -0.4]
+    let x = const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
     str <- toString x
     assert $ str == "constant, shape=[3], metadata={:0}"
 
