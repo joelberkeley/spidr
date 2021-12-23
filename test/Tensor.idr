@@ -102,6 +102,40 @@ test_det_with_leading x = det x
 assert : Bool -> IO ()
 assert x = putStrLn $ if x then "PASS" else "FAIL"
 
+test_eval : IO ()
+test_eval = do
+    x <- eval $ const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+    assert $ x == [[1, 15, 5], [-1, 7, 6]]
+
+    x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
+    assert $ abs (index 0 (index 0 x) - (-1.5)) < 0.000001
+    assert $ abs (index 0 (index 1 x) - 1.3) < 0.000001
+    assert $ abs (index 0 (index 2 x) - 4.3) < 0.000001
+
+    x <- eval $ const {shape=[]} {dtype=Int} 3
+    assert $ x == 3
+
+    x <- eval $ const {shape=[]} {dtype=Double} 3.4
+    assert $ abs (x - 3.4) < 0.000001
+
+test_toString : IO ()
+test_toString = do
+    str <- toString $ const {shape=[]} {dtype=Int} 1
+    assert $ str == "constant, shape=[], metadata={:0}"
+
+    let x = const {shape=[]} {dtype=Int} 1
+        y = const {shape=[]} {dtype=Int} 2
+    str <- toString (x + y)
+    assert $ str ==
+        """
+        add, shape=[], metadata={:0}
+          constant, shape=[], metadata={:0}
+          constant, shape=[], metadata={:0}
+        """
+
+    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
+    assert $ str == "constant, shape=[3], metadata={:0}"
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
@@ -125,24 +159,6 @@ test_add = do
         y = const {shape=[]} {dtype=Double} (-7.1)
     sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
-
-test_toString : IO ()
-test_toString = do
-    str <- toString $ const {shape=[]} {dtype=Int} 1
-    assert $ str == "constant, shape=[], metadata={:0}"
-
-    let x = const {shape=[]} {dtype=Int} 1
-        y = const {shape=[]} {dtype=Int} 2
-    str <- toString (x + y)
-    assert $ str ==
-        """
-        add, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-        """
-
-    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
-    assert $ str == "constant, shape=[3], metadata={:0}"
 
 test : IO ()
 test = do
