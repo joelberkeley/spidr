@@ -36,10 +36,10 @@ XlaBuilder : Type
 XlaBuilder = Struct "c__XlaBuilder" []
 
 %foreign (libxla "c__XlaBuilder_delete")
-prim__delete_XlaBuilder : XlaBuilder -> PrimIO ()
+prim__XlaBuilder_delete : XlaBuilder -> PrimIO ()
 
 delete : XlaBuilder -> IO ()
-delete = primIO . prim__delete_XlaBuilder
+delete = primIO . prim__XlaBuilder_delete
 
 %foreign (libxla "c__XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO XlaBuilder
