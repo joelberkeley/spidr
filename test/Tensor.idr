@@ -162,5 +162,6 @@ test_add = do
 
 test : IO ()
 test = do
-    test_add
+    test_eval
     test_toString
+    test_add
