@@ -122,7 +122,6 @@ extern "C" {
 
     c__XlaBuilder* c__XlaBuilder_new(const char* computation_name) {
         auto builder = new XlaBuilder(computation_name);
-        std::cout << "c__XlaBuilder_new " << builder << std::endl;
         return reinterpret_cast<c__XlaBuilder*>(builder);
     }
 
