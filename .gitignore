@@ -3,3 +3,5 @@ out/
 
 *.so
 backend/xla_extension
+
+.vscode

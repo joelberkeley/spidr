@@ -37,7 +37,7 @@ data GaussianProcess : (0 features : Shape) -> Type where
 posterior :
   GaussianProcess features
   -> Tensor [] Double
-  -> forall s . (Tensor ((S s) :: features) Double, Tensor [S s] Double)
+  -> {s : _} -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
   -> GaussianProcess features
 posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
   let l = cholesky (prior_kernel x_train x_train + diag {n=S s} noise)

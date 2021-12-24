@@ -136,6 +136,16 @@ test_toString = do
     str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
     assert $ str == "constant, shape=[3], metadata={:0}"
 
+test_broadcast : IO ()
+test_broadcast = do
+    let x = const {shape=[2, 3]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+    empty <- eval $ broadcast {to=[2, 0]} x
+    assert $ empty == [[], []]
+
+    let x = const {shape=[]} {dtype=Int} 1
+    x' <- eval (broadcast {to=[3]} x)
+    assert $ x' == [1, 1, 1]
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
@@ -160,8 +170,24 @@ test_add = do
     sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
 
+    let x = const {shape=[3]} {dtype=Int} [1, 15, 5]
+        y = const {shape=[]} {dtype=Int} 1
+    sum <- eval (x + y)
+    assert $ sum == [2, 16, 6]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[1, 3]} {dtype=Int} [[1, 2, 3]]
+    sum <- eval (x + y)
+    assert $ sum == [[2, 17, 8], [0, 9, 9]]
+
+    let x = const {shape=[3, 2, 4]} {dtype=Int} [[[0, 0, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0]]]
+        y = const {shape=[2, 1]} {dtype=Int} [[1], [2]]
+    sum <- eval (x + y)
+    assert $ sum == [[[1, 1, 1, 1], [2, 2, 2, 2]], [[1, 1, 1, 1], [2, 2, 2, 2]], [[1, 1, 1, 1], [2, 2, 2, 2]]]
+
 test : IO ()
 test = do
+    test_broadcast
     test_eval
     test_toString
     test_add

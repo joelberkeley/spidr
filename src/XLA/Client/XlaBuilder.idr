@@ -22,6 +22,7 @@ import XLA.XlaData
 import Types
 import System.FFI
 import Util
+import Data.Vect
 
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
@@ -99,6 +100,32 @@ eval (MkRawTensor f) =
        delete lit
        delete builder
        pure arr
+
+%foreign (libxla "Broadcast")
+prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
+
+export
+broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
+broadcast (MkRawTensor f) broadcast_sizes = MkRawTensor $ \builder =>
+    do broadcast_sizes_ptr <- mkShape broadcast_sizes
+       op_ptr <- primIO $ prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)
+       op <- onCollectAny op_ptr $ primIO . prim__XlaOp_delete
+       freeShape broadcast_sizes_ptr
+       pure op
+
+%foreign (libxla "BroadcastInDim")
+prim__broadcastInDim : GCAnyPtr -> Ptr Int -> Int -> Ptr Int -> Int -> PrimIO AnyPtr
+
+export
+broadcastInDim : {r : _} -> RawTensor -> Shape {rank=r} -> Shape {rank=r} -> RawTensor
+broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
+    do ods_ptr <- mkShape ods
+       bcd_ptr <- mkShape bcd
+       op_ptr <- primIO $ prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)
+       op <- onCollectAny op_ptr $ primIO . prim__XlaOp_delete
+       freeShape ods_ptr
+       freeShape bcd_ptr
+       pure op
 
 export
 (+) : RawTensor -> RawTensor -> RawTensor
