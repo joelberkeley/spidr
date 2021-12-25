@@ -33,8 +33,6 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
-    using namespace xla;
-
     /*
      *
      *
@@ -64,46 +62,46 @@ extern "C" {
      *
      */
 
-    struct c__XlaOp;
+    struct XlaOp;
 
-    void c__XlaOp_delete(c__XlaOp* s) {
-        delete reinterpret_cast<XlaOp*>(s);
+    void XlaOp_delete(XlaOp* s) {
+        delete reinterpret_cast<xla::XlaOp*>(s);
     }
 
-    c__XlaOp* c__XlaOp_operator_neg(c__XlaOp& s) {
-        auto res = new XlaOp();
-        *res = -reinterpret_cast<XlaOp&>(s);
-        return reinterpret_cast<c__XlaOp*>(res);
+    XlaOp* XlaOp_operator_neg(XlaOp& s) {
+        auto res = new xla::XlaOp();
+        *res = -reinterpret_cast<xla::XlaOp&>(s);
+        return reinterpret_cast<XlaOp*>(res);
     }
 
-    c__XlaOp* c__XlaOp_operator_add(c__XlaOp& x, c__XlaOp& y) {
-        auto res = new XlaOp();
-        *res = Add(reinterpret_cast<XlaOp&>(x), reinterpret_cast<XlaOp&>(y));
-        return reinterpret_cast<c__XlaOp*>(res);
+    XlaOp* XlaOp_operator_add(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = xla::Add(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        return reinterpret_cast<XlaOp*>(res);
     }
 
-    c__XlaOp* c__XlaOp_operator_sub(c__XlaOp& x, c__XlaOp& y) {
-        auto res = new XlaOp();
-        *res = reinterpret_cast<XlaOp&>(x) - reinterpret_cast<XlaOp&>(y);
-        return reinterpret_cast<c__XlaOp*>(res);
+    XlaOp* XlaOp_operator_sub(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = reinterpret_cast<xla::XlaOp&>(x) - reinterpret_cast<xla::XlaOp&>(y);
+        return reinterpret_cast<XlaOp*>(res);
     }
 
-    c__XlaOp* c__XlaOp_operator_mul(c__XlaOp& x, c__XlaOp& y) {
-        auto res = new XlaOp();
-        *res = reinterpret_cast<XlaOp&>(x) * reinterpret_cast<XlaOp&>(y);
-        return reinterpret_cast<c__XlaOp*>(res);
+    XlaOp* XlaOp_operator_mul(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = reinterpret_cast<xla::XlaOp&>(x) * reinterpret_cast<xla::XlaOp&>(y);
+        return reinterpret_cast<XlaOp*>(res);
     }
 
-    c__XlaOp* c__XlaOp_operator_div(c__XlaOp& x, c__XlaOp& y) {
-        auto res = new XlaOp();
-        *res = reinterpret_cast<XlaOp&>(x) / reinterpret_cast<XlaOp&>(y);
-        return reinterpret_cast<c__XlaOp*>(res);
+    XlaOp* XlaOp_operator_div(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = reinterpret_cast<xla::XlaOp&>(x) / reinterpret_cast<xla::XlaOp&>(y);
+        return reinterpret_cast<XlaOp*>(res);
     }
 
-    c__XlaOp* c__XlaOp_operator_mod(c__XlaOp& x, c__XlaOp& y) {
-        auto res = new XlaOp();
-        *res = reinterpret_cast<XlaOp&>(x) % reinterpret_cast<XlaOp&>(y);
-        return reinterpret_cast<c__XlaOp*>(res);
+    XlaOp* XlaOp_operator_mod(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = reinterpret_cast<xla::XlaOp&>(x) % reinterpret_cast<xla::XlaOp&>(y);
+        return reinterpret_cast<XlaOp*>(res);
     }
 
     /*
@@ -114,24 +112,24 @@ extern "C" {
      *
      */
 
-    struct c__XlaBuilder;
+    struct XlaBuilder;
 
-    c__XlaBuilder* c__XlaBuilder_new(const char* computation_name) {
-        auto builder = new XlaBuilder(computation_name);
-        return reinterpret_cast<c__XlaBuilder*>(builder);
+    XlaBuilder* XlaBuilder_new(const char* computation_name) {
+        auto builder = new xla::XlaBuilder(computation_name);
+        return reinterpret_cast<XlaBuilder*>(builder);
     }
 
-    void c__XlaBuilder_delete(c__XlaBuilder* s) {
-        delete reinterpret_cast<XlaBuilder*>(s);
+    void XlaBuilder_delete(XlaBuilder* s) {
+        delete reinterpret_cast<xla::XlaBuilder*>(s);
     }
 
-    const char* c__XlaBuilder_name(c__XlaBuilder& s) {
-        return c_string_copy(reinterpret_cast<XlaBuilder&>(s).name());
+    const char* XlaBuilder_name(XlaBuilder& s) {
+        return c_string_copy(reinterpret_cast<xla::XlaBuilder&>(s).name());
     }
 
-    const char* c__XlaBuilder_OpToString(c__XlaBuilder& s, c__XlaOp& op) {
-        auto& s_ = reinterpret_cast<XlaBuilder&>(s);
-        auto& op_ = reinterpret_cast<XlaOp&>(op);
+    const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {
+        auto& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
+        auto& op_ = reinterpret_cast<xla::XlaOp&>(op);
         auto op_str = s_.OpToString(op_);
         return c_string_copy(op_str);
     }
@@ -144,31 +142,31 @@ extern "C" {
      *
      */
 
-    struct c__Literal;
+    struct Literal;
 
-    c__Literal* c__Literal_new(int* shape, int rank, int primitive_type) {
-        int64 shape64[rank];
+    Literal* Literal_new(int* shape, int rank, int primitive_type) {
+        xla::int64 shape64[rank];
         for (int i = 0; i < rank; i++) {
             shape64[i] = shape[i];
         }
 
         const std::vector<bool> dynamic_dimensions(rank, false);
 
-        Shape xla_shape = ShapeUtil::MakeShape(
-            (PrimitiveType) primitive_type,
-            absl::Span<const int64>(shape64, rank),
+        xla::Shape xla_shape = xla::ShapeUtil::MakeShape(
+            (xla::PrimitiveType) primitive_type,
+            absl::Span<const xla::int64>(shape64, rank),
             dynamic_dimensions
         );
 
         xla::Literal* lit = new xla::Literal(xla_shape, true);
-        return reinterpret_cast<c__Literal*>(lit);
+        return reinterpret_cast<Literal*>(lit);
     }
 
-    void c__Literal_delete(c__Literal* lit) {
-        delete reinterpret_cast<Literal*>(lit);
+    void Literal_delete(Literal* lit) {
+        delete reinterpret_cast<xla::Literal*>(lit);
     }
 
-    absl::Span<const tensorflow::int64> multi_index(int* indices, int64 rank) {
+    absl::Span<const tensorflow::int64> multi_index(int* indices, xla::int64 rank) {
         tensorflow::int64 indices64[rank];
         for (int i = 0; i < rank; i++) {
             indices64[i] = indices[i];
@@ -176,27 +174,27 @@ extern "C" {
         return absl::Span<const tensorflow::int64>(indices64, rank);
     }
 
-    int c__Literal_Get_int(c__Literal& lit, int* indices) {
-        Literal& lit_ = reinterpret_cast<Literal&>(lit);
-        int64 rank = lit_.shape().rank();
+    int Literal_Get_int(Literal& lit, int* indices) {
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        xla::int64 rank = lit_.shape().rank();
         return lit_.Get<int>(multi_index(indices, rank));
     }
 
-    double c__Literal_Get_double(c__Literal& lit, int* indices) {
-        Literal& lit_ = reinterpret_cast<Literal&>(lit);
-        int64 rank = lit_.shape().rank();
+    double Literal_Get_double(Literal& lit, int* indices) {
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        xla::int64 rank = lit_.shape().rank();
         return lit_.Get<double>(multi_index(indices, rank));
     }
 
-    void c__Literal_Set_int(c__Literal& lit, int* indices, int value) {
-        Literal& lit_ = reinterpret_cast<Literal&>(lit);
-        int64 rank = lit_.shape().rank();
+    void Literal_Set_int(Literal& lit, int* indices, int value) {
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        xla::int64 rank = lit_.shape().rank();
         lit_.Set<int>(multi_index(indices, rank), value);
     }
 
-    void c__Literal_Set_double(c__Literal& lit, int* indices, double value) {
-        Literal& lit_ = reinterpret_cast<Literal&>(lit);
-        int64 rank = lit_.shape().rank();
+    void Literal_Set_double(Literal& lit, int* indices, double value) {
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        xla::int64 rank = lit_.shape().rank();
         lit_.Set<double>(multi_index(indices, rank), value);
     }
 
@@ -208,20 +206,20 @@ extern "C" {
      *
      */
 
-    c__XlaOp* c__Eq(c__XlaOp& lhs, c__XlaOp& rhs) {
-        auto& lhs_ = reinterpret_cast<XlaOp&>(lhs);
-        auto& rhs_ = reinterpret_cast<XlaOp&>(rhs);
-        auto res = new XlaOp();
+    XlaOp* Eq(XlaOp& lhs, XlaOp& rhs) {
+        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+        auto res = new xla::XlaOp();
         *res = Eq(lhs_, rhs_);
-        return reinterpret_cast<c__XlaOp*>(res);
+        return reinterpret_cast<XlaOp*>(res);
     }
 
-    c__XlaOp* c__ConstantLiteral(c__XlaBuilder& builder, c__Literal& data) {
-        XlaBuilder& builder_ = reinterpret_cast<XlaBuilder&>(builder);
+    XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
+        xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
         xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
-        XlaOp* op = new XlaOp();
+        xla::XlaOp* op = new xla::XlaOp();
         *op = ConstantLiteral(&builder_, data_);
-        return reinterpret_cast<c__XlaOp*>(op);
+        return reinterpret_cast<XlaOp*>(op);
     }
 
     /*
@@ -234,17 +232,17 @@ extern "C" {
      *
      */
 
-    c__Literal* eval(c__XlaOp& op) {
-        XlaOp& op_ = reinterpret_cast<XlaOp&>(op);
+    Literal* eval(XlaOp& op) {
+        xla::XlaOp& op_ = reinterpret_cast<xla::XlaOp&>(op);
 
-        XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
-        ExecutionProfile profile;
-        Literal lit = ClientLibrary::LocalClientOrDie()
+        xla::XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
+        xla::ExecutionProfile profile;
+        xla::Literal lit = xla::ClientLibrary::LocalClientOrDie()
             ->ExecuteAndTransfer(computation, {}, nullptr, &profile)
             .ConsumeValueOrDie();
 
         xla::Literal* res = new xla::Literal(lit.shape(), true);
         *res = lit.Clone();
-        return reinterpret_cast<c__Literal*>(res);
+        return reinterpret_cast<Literal*>(res);
     }
 }

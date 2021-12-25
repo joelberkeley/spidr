@@ -26,7 +26,7 @@ libxla fname = "C:" ++ fname ++ ",libxla"
 
 public export
 Literal : Type
-Literal = Struct "c__Literal" []
+Literal = Struct "Literal" []
 
 export
 interface XLAPrimitive dtype where
@@ -34,10 +34,10 @@ interface XLAPrimitive dtype where
     set : Literal -> Ptr Int -> dtype -> PrimIO ()
     get : Literal -> Ptr Int -> dtype
 
-%foreign (libxla "c__Literal_new")
+%foreign (libxla "Literal_new")
 prim__allocLiteral : Ptr Int -> Int -> Int -> PrimIO Literal
 
-%foreign (libxla "c__Literal_delete")
+%foreign (libxla "Literal_delete")
 prim__delete : Literal -> PrimIO ()
 
 export
@@ -71,10 +71,10 @@ mkLiteral xs = do
     freeShape shape_ptr
     pure literal
 
-%foreign (libxla "c__Literal_Set_double")
+%foreign (libxla "Literal_Set_double")
 prim__literalSetDouble : Literal -> Ptr Int -> Double -> PrimIO ()
 
-%foreign (libxla "c__Literal_Get_double")
+%foreign (libxla "Literal_Get_double")
 literalGetDouble : Literal -> Ptr Int -> Double
 
 export
@@ -83,10 +83,10 @@ XLAPrimitive Double where
   set = prim__literalSetDouble
   get = literalGetDouble
 
-%foreign (libxla "c__Literal_Set_int")
+%foreign (libxla "Literal_Set_int")
 prim__literalSetInt : Literal -> Ptr Int -> Int -> PrimIO ()
 
-%foreign (libxla "c__Literal_Get_int")
+%foreign (libxla "Literal_Get_int")
 literalGetInt : Literal -> Ptr Int -> Int
 
 export

@@ -33,18 +33,18 @@ libxla fname = "C:" ++ fname ++ ",libxla"
  -}
 
 XlaBuilder : Type
-XlaBuilder = Struct "c__XlaBuilder" []
+XlaBuilder = Struct "XlaBuilder" []
 
-%foreign (libxla "c__XlaBuilder_delete")
+%foreign (libxla "XlaBuilder_delete")
 prim__XlaBuilder_delete : XlaBuilder -> PrimIO ()
 
 delete : XlaBuilder -> IO ()
 delete = primIO . prim__XlaBuilder_delete
 
-%foreign (libxla "c__XlaBuilder_new")
+%foreign (libxla "XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO XlaBuilder
 
-%foreign (libxla "c__XlaBuilder_OpToString")
+%foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : XlaBuilder -> GCAnyPtr -> String
 
 {-
@@ -53,13 +53,13 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
  -
  -}
 
-%foreign (libxla "c__XlaOp_delete")
+%foreign (libxla "XlaOp_delete")
 prim__delete_XlaOp : AnyPtr -> PrimIO ()
 
-%foreign (libxla "c__ConstantLiteral")
+%foreign (libxla "ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> AnyPtr
 
-%foreign (libxla "c__XlaOp_operator_add")
+%foreign (libxla "XlaOp_operator_add")
 prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 {-
