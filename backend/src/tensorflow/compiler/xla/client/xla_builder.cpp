@@ -68,39 +68,39 @@ extern "C" {
         delete reinterpret_cast<xla::XlaOp*>(s);
     }
 
-    XlaOp* XlaOp_operator_neg(XlaOp& s) {
+    XlaOp* Neg(XlaOp& s) {
         auto res = new xla::XlaOp();
-        *res = -reinterpret_cast<xla::XlaOp&>(s);
+        *res = Neg(reinterpret_cast<xla::XlaOp&>(s));
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* XlaOp_operator_add(XlaOp& x, XlaOp& y) {
+    XlaOp* Add(XlaOp& x, XlaOp& y) {
         auto res = new xla::XlaOp();
-        *res = xla::Add(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        *res = Add(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* XlaOp_operator_sub(XlaOp& x, XlaOp& y) {
+    XlaOp* Sub(XlaOp& x, XlaOp& y) {
         auto res = new xla::XlaOp();
-        *res = reinterpret_cast<xla::XlaOp&>(x) - reinterpret_cast<xla::XlaOp&>(y);
+        *res = Sub(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* XlaOp_operator_mul(XlaOp& x, XlaOp& y) {
+    XlaOp* Mul(XlaOp& x, XlaOp& y) {
         auto res = new xla::XlaOp();
-        *res = reinterpret_cast<xla::XlaOp&>(x) * reinterpret_cast<xla::XlaOp&>(y);
+        *res = Mul(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* XlaOp_operator_div(XlaOp& x, XlaOp& y) {
+    XlaOp* Div(XlaOp& x, XlaOp& y) {
         auto res = new xla::XlaOp();
-        *res = reinterpret_cast<xla::XlaOp&>(x) / reinterpret_cast<xla::XlaOp&>(y);
+        *res = Div(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* XlaOp_operator_mod(XlaOp& x, XlaOp& y) {
+    XlaOp* Rem(XlaOp& x, XlaOp& y) {
         auto res = new xla::XlaOp();
-        *res = reinterpret_cast<xla::XlaOp&>(x) % reinterpret_cast<xla::XlaOp&>(y);
+        *res = Rem(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
         return reinterpret_cast<XlaOp*>(res);
     }
 
