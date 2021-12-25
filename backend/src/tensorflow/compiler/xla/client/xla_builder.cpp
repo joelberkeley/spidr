@@ -68,42 +68,6 @@ extern "C" {
         delete reinterpret_cast<xla::XlaOp*>(s);
     }
 
-    XlaOp* Neg(XlaOp& s) {
-        auto res = new xla::XlaOp();
-        *res = Neg(reinterpret_cast<xla::XlaOp&>(s));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Add(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Add(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Sub(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Sub(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Mul(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Mul(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Div(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Div(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Rem(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Rem(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
     /*
      *
      *
@@ -205,6 +169,42 @@ extern "C" {
      *
      *
      */
+
+    XlaOp* Neg(XlaOp& s) {
+        auto res = new xla::XlaOp();
+        *res = Neg(reinterpret_cast<xla::XlaOp&>(s));
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Add(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = Add(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Sub(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = Sub(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Mul(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = Mul(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Div(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = Div(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Rem(XlaOp& x, XlaOp& y) {
+        auto res = new xla::XlaOp();
+        *res = Rem(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
+        return reinterpret_cast<XlaOp*>(res);
+    }
 
     XlaOp* Eq(XlaOp& lhs, XlaOp& rhs) {
         auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
