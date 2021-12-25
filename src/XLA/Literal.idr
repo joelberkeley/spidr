@@ -38,11 +38,11 @@ interface XLAPrimitive dtype where
 prim__allocLiteral : Ptr Int -> Int -> Int -> PrimIO Literal
 
 %foreign (libxla "Literal_delete")
-prim__delete : Literal -> PrimIO ()
+prim__Literal_delete : Literal -> PrimIO ()
 
 export
 delete : Literal -> IO ()
-delete = primIO . prim__delete
+delete = primIO . prim__Literal_delete
 
 populateLiteral : {rank : _} -> (shape : Shape {rank}) -> XLAPrimitive dtype =>
     Literal -> Array shape {dtype=dtype} -> IO ()
