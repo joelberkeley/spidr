@@ -1,6 +1,6 @@
 # spidr
 
-**Note:** spidr is in very early development. It is not ready for use.
+**Note:** spidr is in early development. Many APIs have no implementation at this time.
 
 With spidr, we explore what is possible when we bring the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning utilities, libraries and frameworks; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
 
@@ -10,7 +10,7 @@ With spidr, we explore what is possible when we bring the latest developments in
   - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
 
-This is a tall order, so to keep the workload manageable we may choose to omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is spidr's distinctive feature.
+This is a tall order, so to keep the workload manageable we may omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is one of spidr's distinctive features.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
@@ -20,18 +20,15 @@ We use [semantic versioning](https://semver.org/).
 
 ## Installation
 
-**Note:** Most APIs in spidr have no implementation at this time. Only type checking is possible.
+First, obtain a release of spidr from the [releases page](https://github.com/joelberkeley/spidr/releases), and extract the downloaded archive.
 
-First install [Idris 2](https://github.com/edwinb/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Then clone this repository, and install spidr with
+Next obtain an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases). We have only tested against the Linux x86 CPU build. Other CPU builds may work. GPU and TPU builds are unlikely to work. Extract the archive into the `backend/` directory in the spidr release downloaded in the last step.
+
+Next, [install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Finally, in the spidr root directory, install spidr with
 ```bash
 idris2 --install spidr.ipkg
 ```
-Finally, in your Idris file `Foo.idr`, you can `import Tensor` etc. and run it in a REPL with
-```bash
-idris2 -p spidr Foo.idr
-```
-See `idris2 --help` for more build options.
 
 ## Contact
 
-To ask for new features or to report bugs, make a new GitHub issue. For any other questions or comments, private message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
+To ask for new features or to report bugs, make a new GitHub issue. For any other questions or comments, message @joelb on the [Idris community discord](https://discord.gg/YXmWC5yKYM).
