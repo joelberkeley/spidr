@@ -18,15 +18,16 @@ modules =
   Model.MeanFunction,
 
   Optimize,
+  Primitive,
   Tensor,
   Types,
   Util,
   
   XLA,
+  XLA.Client.XlaBuilder,
   XLA.FFI,
   XLA.Literal,
-  XLA.XlaData,
-  XLA.Client.XlaBuilder
+  XLA.XlaData
 
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."
 readme = "README.md"
