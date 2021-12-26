@@ -246,6 +246,11 @@ test_add = do
     sum <- eval (x + y)
     assert $ sum == [[19, 22, 28], [24, 30, 36]]
 
+    let x = const {shape=[2, 0]} {dtype=Int} [[], []]
+        y = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    sum <- eval (x + y)
+    assert $ sum == [[], []]
+
 test : IO ()
 test = do
     test_broadcast
