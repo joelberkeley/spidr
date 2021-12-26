@@ -138,13 +138,74 @@ test_toString = do
 
 test_broadcast : IO ()
 test_broadcast = do
-    let x = const {shape=[2, 3]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-    empty <- eval $ broadcast {to=[2, 0]} x
-    assert $ empty == [[], []]
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[]} x
+    assert $ broadcasted == 7
 
-    let x = const {shape=[]} {dtype=Int} 1
-    x' <- eval (broadcast {to=[3]} x)
-    assert $ x' == [1, 1, 1]
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[1]} x
+    assert $ broadcasted == [7]
+
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[2, 3]} x
+    assert $ broadcasted == [[7, 7, 7], [7, 7, 7]]
+
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[1, 1, 1]} x
+    assert $ broadcasted == [[[7]]]
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[0]} x
+    assert $ broadcasted == []
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[1]} x
+    assert $ broadcasted == [7]
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[3]} x
+    assert $ broadcasted == [7, 7, 7]
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[2, 3]} x
+    assert $ broadcasted == [[7, 7, 7], [7, 7, 7]]
+
+    let x = const {shape=[2]} {dtype=Int} [5, 7]
+    broadcasted <- eval $ broadcast {to=[2, 0]} x
+    assert $ broadcasted == [[], []]
+
+    let x = const {shape=[2]} {dtype=Int} [5, 7]
+    broadcasted <- eval $ broadcast {to=[3, 2]} x
+    assert $ broadcasted == [[5, 7], [5, 7], [5, 7]]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[2, 3]} x
+    assert $ broadcasted == [[2, 3, 5], [7, 11, 13]]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[2, 0]} x
+    assert $ broadcasted == [[], []]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[0, 3]} x
+    assert $ broadcasted == []
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[2, 2, 3]} x
+    assert $ broadcasted == [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
+
+    let x = const {shape=[2, 1, 3]} {dtype=Int} [[[2, 3, 5]], [[7, 11, 13]]]
+    broadcasted <- eval $ broadcast {to=[2, 2, 5, 3]} x
+    assert $ broadcasted == [
+        [
+            [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+            [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+        ],
+        [
+            [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+            [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+        ]
+    ]
 
 test_add : IO ()
 test_add = do
@@ -170,20 +231,20 @@ test_add = do
     sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
 
-    let x = const {shape=[3]} {dtype=Int} [1, 15, 5]
-        y = const {shape=[]} {dtype=Int} 1
+    let x = const {shape=[1]} {dtype=Int} [3]
+        y = const {shape=[]} {dtype=Int} 5
     sum <- eval (x + y)
-    assert $ sum == [2, 16, 6]
+    assert $ sum == [8]
 
-    let x = const {shape=[2, 3]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[1, 3]} {dtype=Int} [[1, 2, 3]]
+    let x = const {shape=[2]} {dtype=Int} [3, 5]
+        y = const {shape=[]} {dtype=Int} 7
     sum <- eval (x + y)
-    assert $ sum == [[2, 17, 8], [0, 9, 9]]
+    assert $ sum == [10, 12]
 
-    let x = const {shape=[3, 2, 4]} {dtype=Int} [[[0, 0, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0]]]
-        y = const {shape=[2, 1]} {dtype=Int} [[1], [2]]
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+        y = const {shape=[3]} {dtype=Int} [17, 19, 23]
     sum <- eval (x + y)
-    assert $ sum == [[[1, 1, 1, 1], [2, 2, 2, 2]], [[1, 1, 1, 1], [2, 2, 2, 2]], [[1, 1, 1, 1], [2, 2, 2, 2]]]
+    assert $ sum == [[19, 22, 28], [24, 30, 36]]
 
 test : IO ()
 test = do
