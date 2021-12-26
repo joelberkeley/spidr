@@ -20,11 +20,9 @@ We use [semantic versioning](https://semver.org/).
 
 ## Installation
 
-First, obtain a release of spidr from the [releases page](https://github.com/joelberkeley/spidr/releases), and extract the downloaded archive.
+First, obtain a release of spidr from the [releases page](https://github.com/joelberkeley/spidr/releases), and extract the downloaded archive. Next obtain an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases). Extract the archive into the `backend/` directory in the spidr release downloaded in the last step.
 
-Next obtain an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases). We have only tested against the Linux x86 CPU build. Other CPU builds may work. GPU and TPU builds are unlikely to work. Extract the archive into the `backend/` directory in the spidr release downloaded in the last step.
-
-Next, [install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Finally, in the spidr root directory, install spidr with
+[Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Finally, in the spidr root directory, install spidr with
 ```bash
 idris2 --install spidr.ipkg
 ```
