@@ -10,7 +10,7 @@ With spidr, we explore what is possible when we bring the latest developments in
   - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
 
-This is a tall order, so to keep the workload manageable we may omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is one of spidr's distinctive features.
+This is a tall order, so to keep the workload manageable we may omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is spidr's distinctive feature.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
