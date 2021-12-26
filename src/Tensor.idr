@@ -17,9 +17,14 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
+import Data.Vect
+import Data.Vect.Elem
+import Decidable.Equality
+
 import Error
 import public Primitive
 import public Types
+import Util
 import XLA.Client.XlaBuilder
 import XLA.Literal
 
@@ -214,6 +219,12 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
+empty : Primitive dtype => {shape : Shape} -> {auto isEmpty : Elem 0 shape} -> Tensor shape dtype
+empty = const (emptyArray shape) where
+  emptyArray : (shape : _) -> {auto isEmpty : Elem Z shape} -> Array shape
+  emptyArray {isEmpty = Here} (0 :: _) = []
+  emptyArray {isEmpty = (There _)} (d :: ds) = replicate d (emptyArray ds)
+
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
 ||| ```idris
@@ -228,7 +239,26 @@ namespace Broadcastable
 ||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
-broadcast : {auto 0 prf : Broadcastable from to} -> Tensor from dtype -> Tensor to dtype
+broadcast : Primitive dtype => {from : _} -> {to : _} -> {auto prf : Broadcastable from to}
+  -> Tensor from dtype -> Tensor to dtype
+broadcast xs = case (isElem 0 to, toList from == toList to) of
+  (Yes _, False) => empty
+  _ =>
+    let from_prf = lengthCorrect from
+        to_prf = lengthCorrect to in
+        rewrite sym to_prf in impl {fr=length from} {tr=length to} {tt=length to} []
+          (rewrite to_prf in to) (rewrite from_prf in xs)
+          {prf=rewrite to_prf in rewrite from_prf in prf}
+
+    where
+    impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
+      -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
+      -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
+    impl to_leading _ {prf=Same} (MkTensor raw) =
+      MkTensor $ if (length to_leading == 0) then raw else broadcast raw to_leading
+    impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor raw) =
+      MkTensor $ broadcast (broadcastInDim raw (th' :: tt') (range (S r))) to_leading
+    impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -356,9 +386,9 @@ export
 ||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
 ||| switch the arguments for shapes to be compatible.
 export
-(+) : Num dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
-(MkTensor ll) + (MkTensor rr) = MkTensor (ll + rr)
+(+) : (Primitive dtype, Num dtype) => {l : _} -> {r : _} ->
+      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
+(MkTensor ll_raw) + rr = let (MkTensor rr_raw) = broadcast {to=l} rr in MkTensor (ll_raw + rr_raw)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export

@@ -136,6 +136,77 @@ test_toString = do
     str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
     assert $ str == "constant, shape=[3], metadata={:0}"
 
+test_broadcast : IO ()
+test_broadcast = do
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[]} x
+    assert $ broadcasted == 7
+
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[1]} x
+    assert $ broadcasted == [7]
+
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[2, 3]} x
+    assert $ broadcasted == [[7, 7, 7], [7, 7, 7]]
+
+    let x = const {shape=[]} {dtype=Int} 7
+    broadcasted <- eval $ broadcast {to=[1, 1, 1]} x
+    assert $ broadcasted == [[[7]]]
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[0]} x
+    assert $ broadcasted == []
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[1]} x
+    assert $ broadcasted == [7]
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[3]} x
+    assert $ broadcasted == [7, 7, 7]
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    broadcasted <- eval $ broadcast {to=[2, 3]} x
+    assert $ broadcasted == [[7, 7, 7], [7, 7, 7]]
+
+    let x = const {shape=[2]} {dtype=Int} [5, 7]
+    broadcasted <- eval $ broadcast {to=[2, 0]} x
+    assert $ broadcasted == [[], []]
+
+    let x = const {shape=[2]} {dtype=Int} [5, 7]
+    broadcasted <- eval $ broadcast {to=[3, 2]} x
+    assert $ broadcasted == [[5, 7], [5, 7], [5, 7]]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[2, 3]} x
+    assert $ broadcasted == [[2, 3, 5], [7, 11, 13]]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[2, 0]} x
+    assert $ broadcasted == [[], []]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[0, 3]} x
+    assert $ broadcasted == []
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    broadcasted <- eval $ broadcast {to=[2, 2, 3]} x
+    assert $ broadcasted == [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
+
+    let x = const {shape=[2, 1, 3]} {dtype=Int} [[[2, 3, 5]], [[7, 11, 13]]]
+    broadcasted <- eval $ broadcast {to=[2, 2, 5, 3]} x
+    assert $ broadcasted == [
+        [
+            [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+            [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+        ],
+        [
+            [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+            [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+        ]
+    ]
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
@@ -160,8 +231,29 @@ test_add = do
     sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
 
+    let x = const {shape=[1]} {dtype=Int} [3]
+        y = const {shape=[]} {dtype=Int} 5
+    sum <- eval (x + y)
+    assert $ sum == [8]
+
+    let x = const {shape=[2]} {dtype=Int} [3, 5]
+        y = const {shape=[]} {dtype=Int} 7
+    sum <- eval (x + y)
+    assert $ sum == [10, 12]
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+        y = const {shape=[3]} {dtype=Int} [17, 19, 23]
+    sum <- eval (x + y)
+    assert $ sum == [[19, 22, 28], [24, 30, 36]]
+
+    let x = const {shape=[2, 0]} {dtype=Int} [[], []]
+        y = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    sum <- eval (x + y)
+    assert $ sum == [[], []]
+
 test : IO ()
 test = do
+    test_broadcast
     test_eval
     test_toString
     test_add

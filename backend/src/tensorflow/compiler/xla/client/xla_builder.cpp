@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <algorithm>
+
 #include <absl/types/span.h>
 #include <tensorflow/compiler/xla/client/client_library.h>
 #include <tensorflow/compiler/xla/client/local_client.h>
@@ -41,16 +43,16 @@ extern "C" {
      *
      */
 
-    void free_shape(int* shape) {
-        free(shape);
+    void free_int_array(int* arr) {
+        free(arr);
     }
 
-    int* alloc_shape(int rank) {
-        int* shape = new int[rank];
-        return shape;
+    int* alloc_int_array(int len) {
+        int* arr = new int[len];
+        return arr;
     }
 
-    void set_shape_dim(int* arr, int idx, int value) {
+    void set_array_int(int* arr, int idx, int value) {
         arr[idx] = value;
     }
 
@@ -110,9 +112,7 @@ extern "C" {
 
     Literal* Literal_new(int* shape, int rank, int primitive_type) {
         xla::int64 shape64[rank];
-        for (int i = 0; i < rank; i++) {
-            shape64[i] = shape[i];
-        }
+        std::copy(shape, shape + rank, shape64);
 
         const std::vector<bool> dynamic_dimensions(rank, false);
 
@@ -130,36 +130,36 @@ extern "C" {
         delete reinterpret_cast<xla::Literal*>(lit);
     }
 
-    absl::Span<const tensorflow::int64> multi_index(int* indices, xla::int64 rank) {
-        tensorflow::int64 indices64[rank];
-        for (int i = 0; i < rank; i++) {
-            indices64[i] = indices[i];
-        }
-        return absl::Span<const tensorflow::int64>(indices64, rank);
-    }
-
     int Literal_Get_int(Literal& lit, int* indices) {
         xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
         xla::int64 rank = lit_.shape().rank();
-        return lit_.Get<int>(multi_index(indices, rank));
+        xla::int64 multi_index[rank];
+        std::copy(indices, indices + rank, multi_index);
+        return lit_.Get<int>(absl::Span<const xla::int64>(multi_index, rank));
     }
 
     double Literal_Get_double(Literal& lit, int* indices) {
         xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
         xla::int64 rank = lit_.shape().rank();
-        return lit_.Get<double>(multi_index(indices, rank));
+        xla::int64 multi_index[rank];
+        std::copy(indices, indices + rank, multi_index);
+        return lit_.Get<double>(absl::Span<const xla::int64>(multi_index, rank));
     }
 
     void Literal_Set_int(Literal& lit, int* indices, int value) {
         xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
         xla::int64 rank = lit_.shape().rank();
-        lit_.Set<int>(multi_index(indices, rank), value);
+        xla::int64 multi_index[rank];
+        std::copy(indices, indices + rank, multi_index);
+        return lit_.Set<int>(absl::Span<const xla::int64>(multi_index, rank), value);
     }
 
     void Literal_Set_double(Literal& lit, int* indices, double value) {
         xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
         xla::int64 rank = lit_.shape().rank();
-        lit_.Set<double>(multi_index(indices, rank), value);
+        xla::int64 multi_index[rank];
+        std::copy(indices, indices + rank, multi_index);
+        return lit_.Set<double>(absl::Span<const xla::int64>(multi_index, rank), value);
     }
 
     /*
@@ -169,6 +169,33 @@ extern "C" {
      *
      *
      */
+
+    XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len) {
+        xla::XlaOp s_ = reinterpret_cast<xla::XlaOp&>(s);
+        xla::int64 bcs64[len];
+        std::copy(broadcast_sizes, broadcast_sizes + len, bcs64);
+        auto res = new xla::XlaOp();
+        *res = Broadcast(s_, absl::Span<const xla::int64>(bcs64, len));
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* BroadcastInDim(
+        XlaOp& s, int* out_dim_size, int ods_len, int* broadcast_dimensions, int bcd_len
+    ) {
+        xla::int64 ods64[ods_len];
+        std::copy(out_dim_size, out_dim_size + ods_len, ods64);
+
+        xla::int64 bcd64[bcd_len];
+        std::copy(broadcast_dimensions, broadcast_dimensions + bcd_len, bcd64);
+
+        auto res = new xla::XlaOp();
+        *res = BroadcastInDim(
+            reinterpret_cast<xla::XlaOp&>(s),
+            absl::Span<const xla::int64>(ods64, ods_len),
+            absl::Span<const xla::int64>(bcd64, bcd_len)
+        );
+        return reinterpret_cast<XlaOp*>(res);
+    }
 
     XlaOp* Neg(XlaOp& s) {
         auto res = new xla::XlaOp();

@@ -22,6 +22,7 @@ import XLA.XlaData
 import Types
 import System.FFI
 import Util
+import Data.Vect
 
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
@@ -56,6 +57,9 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
 %foreign (libxla "XlaOp_delete")
 prim__XlaOp_delete : AnyPtr -> PrimIO ()
 
+collectXlaOp : AnyPtr -> IO GCAnyPtr
+collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
+
 %foreign (libxla "ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> AnyPtr
 
@@ -75,7 +79,7 @@ const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
     -> Array shape {dtype} -> RawTensor
 const arr = MkRawTensor $ \builder =>
     do literal <- mkLiteral arr
-       op <- onCollectAny (constantLiteral builder literal) $ primIO . prim__XlaOp_delete
+       op <- collectXlaOp (constantLiteral builder literal)
        delete literal
        pure op
 
@@ -100,9 +104,34 @@ eval (MkRawTensor f) =
        delete builder
        pure arr
 
+%foreign (libxla "Broadcast")
+prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
+
+export
+broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
+broadcast (MkRawTensor f) broadcast_sizes = MkRawTensor $ \builder =>
+    do broadcast_sizes_ptr <- mkIntArray broadcast_sizes
+       op <- primIO $ prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)
+       op <- collectXlaOp op
+       free broadcast_sizes_ptr
+       pure op
+
+%foreign (libxla "BroadcastInDim")
+prim__broadcastInDim : GCAnyPtr -> Ptr Int -> Int -> Ptr Int -> Int -> PrimIO AnyPtr
+
+export
+broadcastInDim : {r : _} -> RawTensor -> Shape {rank=r} -> Shape {rank=r} -> RawTensor
+broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
+    do ods_ptr <- mkIntArray ods
+       bcd_ptr <- mkIntArray bcd
+       op <- primIO $ prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)
+       op <- collectXlaOp op
+       free ods_ptr
+       free bcd_ptr
+       pure op
+
 export
 (+) : RawTensor -> RawTensor -> RawTensor
 (MkRawTensor l) + (MkRawTensor r) = MkRawTensor $ \builder =>
-    do new_op <- primIO $ prim__add !(l builder) !(r builder)
-       op <- onCollectAny new_op $ primIO . prim__XlaOp_delete
-       pure op
+    do op <- primIO $ prim__add !(l builder) !(r builder)
+       collectXlaOp op

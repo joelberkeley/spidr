@@ -28,26 +28,26 @@ libxla fname = "C:" ++ fname ++ ",libxla"
  -
  -}
 
-%foreign (libxla "alloc_shape")
-prim__allocShape : Int -> PrimIO (Ptr Int)
+%foreign (libxla "alloc_int_array")
+prim__allocIntArray : Int -> PrimIO (Ptr Int)
 
-%foreign (libxla "free_shape")
-prim__freeShape : Ptr Int -> PrimIO ()
+%foreign (libxla "free_int_array")
+prim__freeIntArray : Ptr Int -> PrimIO ()
 
-%foreign (libxla "set_shape_dim")
-prim__setShapeDim : Ptr Int -> Int -> Int -> PrimIO ()
+%foreign (libxla "set_array_int")
+prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
-mkShape : {rank : _} -> Shape {rank} -> IO (Ptr Int)
-mkShape xs = do
-    ptr <- primIO $ prim__allocShape (cast rank)
+mkIntArray : {rank : _} -> Shape {rank} -> IO (Ptr Int)
+mkIntArray xs = do
+    ptr <- primIO $ prim__allocIntArray (cast rank)
     foldl (writeElem ptr) (pure ()) (zip (range rank) xs)
     pure ptr where
         writeElem : Ptr Int -> IO () -> (Nat, Nat) -> IO ()
         writeElem ptr prev_io (idx, x) = do
             prev_io
-            primIO $ prim__setShapeDim ptr (cast idx) (cast x)
+            primIO $ prim__setArrayInt ptr (cast idx) (cast x)
 
 export
-freeShape : Ptr Int -> IO ()
-freeShape = primIO . prim__freeShape
+free : Ptr Int -> IO ()
+free = primIO . prim__freeIntArray
