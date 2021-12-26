@@ -33,18 +33,18 @@ libxla fname = "C:" ++ fname ++ ",libxla"
  -}
 
 XlaBuilder : Type
-XlaBuilder = Struct "c__XlaBuilder" []
+XlaBuilder = Struct "XlaBuilder" []
 
-%foreign (libxla "c__XlaBuilder_delete")
+%foreign (libxla "XlaBuilder_delete")
 prim__XlaBuilder_delete : XlaBuilder -> PrimIO ()
 
 delete : XlaBuilder -> IO ()
 delete = primIO . prim__XlaBuilder_delete
 
-%foreign (libxla "c__XlaBuilder_new")
+%foreign (libxla "XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO XlaBuilder
 
-%foreign (libxla "c__XlaBuilder_OpToString")
+%foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : XlaBuilder -> GCAnyPtr -> String
 
 {-
@@ -53,14 +53,14 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
  -
  -}
 
-%foreign (libxla "c__XlaOp_delete")
-prim__delete_XlaOp : AnyPtr -> PrimIO ()
+%foreign (libxla "XlaOp_delete")
+prim__XlaOp_delete : AnyPtr -> PrimIO ()
 
-%foreign (libxla "c__ConstantLiteral")
+%foreign (libxla "ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> AnyPtr
 
-%foreign (libxla "c__XlaOp_operator_add")
-prim__XlaOp_operator_add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+%foreign (libxla "Add")
+prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 {-
  -
@@ -75,7 +75,7 @@ const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
     -> Array shape {dtype} -> RawTensor
 const arr = MkRawTensor $ \builder =>
     do literal <- mkLiteral arr
-       op <- onCollectAny (constantLiteral builder literal) $ primIO . prim__delete_XlaOp
+       op <- onCollectAny (constantLiteral builder literal) $ primIO . prim__XlaOp_delete
        delete literal
        pure op
 
@@ -103,6 +103,6 @@ eval (MkRawTensor f) =
 export
 (+) : RawTensor -> RawTensor -> RawTensor
 (MkRawTensor l) + (MkRawTensor r) = MkRawTensor $ \builder =>
-    do new_op <- primIO $ prim__XlaOp_operator_add !(l builder) !(r builder)
-       op <- onCollectAny new_op $ primIO . prim__delete_XlaOp
+    do new_op <- primIO $ prim__add !(l builder) !(r builder)
+       op <- onCollectAny new_op $ primIO . prim__XlaOp_delete
        pure op
