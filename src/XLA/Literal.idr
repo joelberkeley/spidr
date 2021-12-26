@@ -50,9 +50,9 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
     impl : {a : _} -> (rem_shape : Shape {rank=r}) -> (acc_indices : Shape {rank=a})
         -> {shapesSum : a + r = rank} -> Array rem_shape {dtype=dtype} -> IO ()
     impl {a} [] acc_indices x = do
-        idx_ptr <- mkShape acc_indices
+        idx_ptr <- mkIntArray acc_indices
         primIO $ set lit idx_ptr x
-        freeShape idx_ptr
+        free idx_ptr
     impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
         foldl setArrays (pure ()) (zip (range n) xs) where
             setArrays : IO () -> (Nat, Array rest {dtype=dtype}) -> IO ()
@@ -65,10 +65,10 @@ export
 mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
     -> Array shape {dtype=dtype} -> IO Literal
 mkLiteral xs = do
-    shape_ptr <- mkShape shape
+    shape_ptr <- mkIntArray shape
     literal <- primIO $ prim__allocLiteral shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
     populateLiteral shape literal xs
-    freeShape shape_ptr
+    free shape_ptr
     pure literal
 
 %foreign (libxla "Literal_Set_double")
@@ -105,8 +105,8 @@ toArray lit = impl {shapesSum=Refl} shape [] where
     impl [] acc = unsafePerformIO impl_io where
         impl_io : IO dtype
         impl_io = do
-            idx_ptr <- mkShape acc
+            idx_ptr <- mkIntArray acc
             let res = get lit idx_ptr
-            freeShape idx_ptr
+            free idx_ptr
             pure res
     impl (n :: rest) acc = map ((impl rest {shapesSum=Refl}) . (snoc acc)) (range n)

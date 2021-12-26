@@ -43,16 +43,16 @@ extern "C" {
      *
      */
 
-    void free_shape(int* shape) {
-        free(shape);
+    void free_int_array(int* arr) {
+        free(arr);
     }
 
-    int* alloc_shape(int rank) {
-        int* shape = new int[rank];
-        return shape;
+    int* alloc_int_array(int len) {
+        int* arr = new int[len];
+        return arr;
     }
 
-    void set_shape_dim(int* arr, int idx, int value) {
+    void set_array_int(int* arr, int idx, int value) {
         arr[idx] = value;
     }
 
