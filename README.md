@@ -22,16 +22,18 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
 
 ## Installation
 
-First, clone or download the spidr source code with the appropriate version tag. For example, for version 0.0.3
+* Clone or download the spidr source code with the appropriate version tag. For example, for version 0.0.3
 ```bash
 git clone --depth 1 --branch v0.0.3 https://github.com/joelberkeley/spidr.git
 ```
-Then download the pre-built XLA C interface from the [releases page](https://github.com/joelberkeley/spidr/releases)and place it in the project root. Then download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the whole archive into the `backend/` directory of the project root.
-
-[Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use. Finally, in the spidr root directory, install spidr with
+* Download the pre-built XLA C interface from the [releases page](https://github.com/joelberkeley/spidr/releases) and place it in the project root
+* Download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the whole archive into the `backend/` directory of the project root.
+* [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
+* In the spidr root directory, install spidr with
 ```bash
 idris2 --install spidr.ipkg
 ```
+You should now be able to import and run spidr.
 
 ## Contact
 
