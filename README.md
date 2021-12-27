@@ -18,6 +18,8 @@ spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [
 
 We use [semantic versioning](https://semver.org/).
 
+I'd like to thank the Idris community for their frequent guidance, the Numerical Elixir team for their XLA binaries, Secondmind colleagues for discussions around machine learning design, friends and family for their support, Google for XLA, and Github for hosting. There are many more I've not mentioned.
+
 ## Installation
 
 First, download and extract a release of spidr from the [releases page](https://github.com/joelberkeley/spidr/releases). Next download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the whole archive into the `backend/` directory of the spidr release.
