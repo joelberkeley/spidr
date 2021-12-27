@@ -18,7 +18,7 @@ spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [
 
 We use [semantic versioning](https://semver.org/).
 
-I'd like to thank the Idris community for their frequent guidance, the Numerical Elixir team for their XLA binaries, Secondmind colleagues for discussions around machine learning design, friends and family for their support, Google for XLA, and Github for hosting. There are many more I've not mentioned.
+I'd like to thank the Idris community for their frequent guidance and Idris itself, the Numerical Elixir team for their XLA binaries, Secondmind colleagues for discussions around machine learning design, friends and family for their support, Google for XLA, and Github for hosting. There are many more I've not mentioned.
 
 ## Installation
 
