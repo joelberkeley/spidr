@@ -82,7 +82,7 @@ ClosedFormDistribution [1] (Gaussian [1]) where
 
         denominator : Tensor [] Double
         denominator = (const {shape=[]} $ 2 * pi) ^ (const {shape=[]} $ cast (S d) / 2.0)
-                      * (det $ squeeze {to=[S d, S d]} cov) ^ (const {shape=[]} 0.5)
+                      *# (det $ squeeze {to=[S d, S d]} cov) ^ (const {shape=[]} 0.5)
 
      in (exp exponent) / denominator
 

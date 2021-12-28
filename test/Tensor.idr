@@ -361,6 +361,30 @@ test_add = do
     sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
 
+test_elementwise_multiplication : IO ()
+test_elementwise_multiplication = do
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
+    product <- eval (x *# y)
+    assert $ product == [[11, 75, 35], [3, -28, 0]]
+
+    let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
+        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    product <- eval (x *# y)
+    assert $ abs (index 0 (index 0 product) - (-1.8 * 3.3)) < 0.000001
+    assert $ abs (index 0 (index 1 product) - 0.0) < 0.000001
+    assert $ abs (index 0 (index 2 product) - 1.2) < 0.000001
+
+    let x = const {shape=[]} {dtype=Int} 3
+        y = const {shape=[]} {dtype=Int} (-7)
+    product <- eval (x *# y)
+    assert $ product == -21
+
+    let x = const {shape=[]} {dtype=Double} 3.4
+        y = const {shape=[]} {dtype=Double} (-7.1)
+    product <- eval (x *# y)
+    assert $ abs (product - (-3.4 * 7.1)) < 0.000001
+
 main : IO ()
 main = do
     test_const_eval
@@ -369,4 +393,5 @@ main = do
     test_elementwise_equality
     test_elementwise_inequality
     test_add
+    test_elementwise_multiplication
     putStrLn "Tests passed"
