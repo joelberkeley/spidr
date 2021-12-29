@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 import Data.Nat
+import System
+
 import Tensor
 
 test_can_construct_scalar : Tensor [] Double
@@ -100,7 +102,7 @@ test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
 test_det_with_leading x = det x
 
 assert : Bool -> IO ()
-assert x = putStrLn $ if x then "PASS" else "FAIL"
+assert x = if x then pure () else exitFailure
 
 test_const_eval : IO ()
 test_const_eval = do
@@ -259,8 +261,8 @@ test_add = do
     sum <- eval (x + y)
     assert $ sum == [[], []]
 
-test : IO ()
-test = do
+main : IO ()
+main = do
     test_const_eval
     test_toString
     test_broadcast
