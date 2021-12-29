@@ -21,8 +21,8 @@ import Util
 
 export
 enumerate : Vect n ty -> Vect n (Nat, ty)
-enumerate [] = []
-enumerate (x :: xs) = (length xs, x) :: enumerate xs
+enumerate xs = rewrite sym $ lengthCorrect xs in
+    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
