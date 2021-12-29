@@ -34,8 +34,6 @@ const char* c_string_copy(std::string str) {
     return res;
 }
 
-
-
 extern "C" {
     /*
      *
