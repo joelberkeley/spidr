@@ -267,4 +267,4 @@ main = do
     test_toString
     test_broadcast
     test_add
-    printLn "Tests passed"
+    putStrLn "Tests passed"
