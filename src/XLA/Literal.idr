@@ -53,13 +53,12 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
         idx_ptr <- mkIntArray acc_indices
         primIO $ set lit idx_ptr x
         free idx_ptr
-    impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
-        foldl setArrays (pure ()) (zip (range n) xs) where
-            setArrays : IO () -> (Nat, Array rest {dtype=dtype}) -> IO ()
-            setArrays prev_io (idx, xs') = do
-                prev_io
+    impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs = do
+        traverse_ setArrays (enumerate xs) where
+            setArrays : (Nat, Array rest {dtype=dtype}) -> IO ()
+            setArrays (idx, xs') =
                 let shapesSum' = rewrite plusSuccRightSucc a r' in shapesSum
-                impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
+                 in impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
 
 export
 mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
