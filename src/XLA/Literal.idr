@@ -71,6 +71,21 @@ mkLiteral xs = do
     free shape_ptr
     pure literal
 
+%foreign (libxla "Literal_Set_bool")
+prim__literalSetBool : Literal -> Ptr Int -> Int -> PrimIO ()
+
+%foreign (libxla "Literal_Get_bool")
+literalGetBool : Literal -> Ptr Int -> Int
+
+export
+XLAPrimitive Bool where
+  primitiveType = PRED
+  set lit idxs x = prim__literalSetBool lit idxs (if x then 1 else 0)
+  get lit idxs = case literalGetBool lit idxs of
+    0 => False
+    1 => True
+    x => (assert_total idris_crash) ("Expected 0 or 1 for boolean conversion, got " ++ show x)
+
 %foreign (libxla "Literal_Set_double")
 prim__literalSetDouble : Literal -> Ptr Int -> Double -> PrimIO ()
 

@@ -102,15 +102,23 @@ test_det_with_leading x = det x
 assert : Bool -> IO ()
 assert x = putStrLn $ if x then "PASS" else "FAIL"
 
-test_eval : IO ()
-test_eval = do
-    x <- eval $ const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-    assert $ x == [[1, 15, 5], [-1, 7, 6]]
+test_const_eval : IO ()
+test_const_eval = do
+    let x = [[True, False, False], [False, True, False]]
+    x' <- eval $ const {shape=[_, _]} {dtype=Bool} x
+    assert $ x' == x
+
+    let x =  [[1, 15, 5], [-1, 7, 6]]
+    x' <- eval $ const {shape=[_, _]} {dtype=Int} x
+    assert $ x' == x
 
     x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
     assert $ abs (index 0 (index 0 x) - (-1.5)) < 0.000001
     assert $ abs (index 0 (index 1 x) - 1.3) < 0.000001
     assert $ abs (index 0 (index 2 x) - 4.3) < 0.000001
+
+    x <- eval $ const {shape=[]} True
+    assert x
 
     x <- eval $ const {shape=[]} {dtype=Int} 3
     assert $ x == 3
@@ -253,7 +261,7 @@ test_add = do
 
 test : IO ()
 test = do
-    test_broadcast
-    test_eval
+    test_const_eval
     test_toString
+    test_broadcast
     test_add

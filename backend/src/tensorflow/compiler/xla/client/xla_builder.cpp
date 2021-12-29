@@ -146,12 +146,20 @@ extern "C" {
         return lit_.Get<double>(absl::Span<const xla::int64>(multi_index, rank));
     }
 
+    int Literal_Get_bool(Literal& lit, int* indices) {
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        xla::int64 rank = lit_.shape().rank();
+        xla::int64 multi_index[rank];
+        std::copy(indices, indices + rank, multi_index);
+        return (int) lit_.Get<bool>(absl::Span<const xla::int64>(multi_index, rank));
+    }
+
     void Literal_Set_int(Literal& lit, int* indices, int value) {
         xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
         xla::int64 rank = lit_.shape().rank();
         xla::int64 multi_index[rank];
         std::copy(indices, indices + rank, multi_index);
-        return lit_.Set<int>(absl::Span<const xla::int64>(multi_index, rank), value);
+        lit_.Set<int>(absl::Span<const xla::int64>(multi_index, rank), value);
     }
 
     void Literal_Set_double(Literal& lit, int* indices, double value) {
@@ -159,7 +167,15 @@ extern "C" {
         xla::int64 rank = lit_.shape().rank();
         xla::int64 multi_index[rank];
         std::copy(indices, indices + rank, multi_index);
-        return lit_.Set<double>(absl::Span<const xla::int64>(multi_index, rank), value);
+        lit_.Set<double>(absl::Span<const xla::int64>(multi_index, rank), value);
+    }
+
+    void Literal_Set_bool(Literal& lit, int* indices, int value) {
+        xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
+        xla::int64 rank = lit_.shape().rank();
+        xla::int64 multi_index[rank];
+        std::copy(indices, indices + rank, multi_index);
+        lit_.Set<bool>(absl::Span<const xla::int64>(multi_index, rank), (bool)value);
     }
 
     /*
