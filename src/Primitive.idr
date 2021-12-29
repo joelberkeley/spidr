@@ -22,5 +22,6 @@ import XLA.Literal
 export
 interface XLAPrimitive dtype => Primitive dtype where
 
+export Primitive Bool where
 export Primitive Int where
 export Primitive Double where
