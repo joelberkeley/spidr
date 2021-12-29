@@ -19,6 +19,11 @@ import Data.Vect
 import Types
 import Util
 
+export
+enumerate : Vect n ty -> Vect n (Nat, ty)
+enumerate [] = []
+enumerate (x :: xs) = (length xs, x) :: enumerate xs
+
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libxla"
 
@@ -38,15 +43,11 @@ prim__freeIntArray : Ptr Int -> PrimIO ()
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
-mkIntArray : {rank : _} -> Shape {rank} -> IO (Ptr Int)
+mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
 mkIntArray xs = do
-    ptr <- primIO $ prim__allocIntArray (cast rank)
-    foldl (writeElem ptr) (pure ()) (zip (range rank) xs)
-    pure ptr where
-        writeElem : Ptr Int -> IO () -> (Nat, Nat) -> IO ()
-        writeElem ptr prev_io (idx, x) = do
-            prev_io
-            primIO $ prim__setArrayInt ptr (cast idx) (cast x)
+    ptr <- primIO $ prim__allocIntArray (cast (length xs))
+    traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
+    pure ptr
 
 export
 free : Ptr Int -> IO ()
