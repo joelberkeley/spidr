@@ -53,7 +53,7 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
         idx_ptr <- mkIntArray acc_indices
         primIO $ set lit idx_ptr x
         free idx_ptr
-    impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs = do
+    impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
         traverse_ setArrays (enumerate xs) where
             setArrays : (Nat, Array rest {dtype=dtype}) -> IO ()
             setArrays (idx, xs') =
