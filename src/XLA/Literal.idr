@@ -84,7 +84,9 @@ XLAPrimitive Bool where
   get lit idxs = case literalGetBool lit idxs of
     0 => False
     1 => True
-    x => (assert_total idris_crash) ("Expected 0 or 1 for boolean conversion, got " ++ show x)
+    x => (assert_total idris_crash) (
+           "Internal error: expected 0 or 1 for boolean conversion, got " ++ show x
+         )
 
 %foreign (libxla "Literal_Set_double")
 prim__literalSetDouble : Literal -> Ptr Int -> Double -> PrimIO ()
