@@ -102,7 +102,9 @@ test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
 test_det_with_leading x = det x
 
 assert : Bool -> IO ()
-assert x = if x then pure () else exitFailure
+assert x = if x then pure () else do
+    putStrLn "Test failed"
+    exitFailure
 
 test_const_eval : IO ()
 test_const_eval = do
