@@ -219,6 +219,28 @@ test_broadcast = do
         ]
     ]
 
+test_elementwise_equality : IO ()
+test_elementwise_equality = do
+    -- todo we need property testing ... this is too demanding without it
+    let x = const {shape=[]} {dtype=Int} 0
+    eq <- eval (x ==# x)
+    assert eq
+
+    let x = const {shape=[]} {dtype=Int} 0
+        y = const {shape=[]} {dtype=Int} 1
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[]} {dtype=Int} 0
+        y = const {shape=[]} {dtype=Int} 1
+    eq <- eval (y ==# x)
+    assert (not eq)
+
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
+    eq <- eval (y ==# x)
+    assert $ eq == [[False, True, False], [False, True, True]]
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
@@ -248,5 +270,6 @@ main = do
     test_const_eval
     test_toString
     test_broadcast
+    test_elementwise_equality
     test_add
     putStrLn "Tests passed"
