@@ -85,7 +85,7 @@ XLAPrimitive Bool where
     0 => False
     1 => True
     x => (assert_total idris_crash) (
-           "Internal error: expected 0 or 1 for boolean conversion, got " ++ show x
+           "Internal error: expected 0 or 1 from XLA C API for boolean conversion, got " ++ show x
          )
 
 %foreign (libxla "Literal_Set_double")
