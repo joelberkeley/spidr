@@ -157,11 +157,6 @@ export
            n = last shape
         in Tensor (leading ++ [n, m]) dtype
 
-||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
-||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
-export
-fill : Primitive dtype => dtype -> Tensor shape dtype
-
 ||| Cast the tensor elements to a new data type.
 export
 cast_dtype : Cast dtype dtype' => Tensor shape dtype -> Tensor shape dtype'
@@ -300,6 +295,15 @@ namespace Squeezable
 ||| ```
 export
 squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
+
+||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
+||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
+export
+fill : {shape : _} -> Primitive dtype => dtype -> Tensor shape dtype
+fill = broadcast {prf=canBroadcastScalarToAny shape} . (const {shape=[]}) where
+  canBroadcastScalarToAny : (to : Shape) -> Broadcastable [] to
+  canBroadcastScalarToAny [] = Same
+  canBroadcastScalarToAny (_ :: xs) = Nest (canBroadcastScalarToAny xs)
 
 ----------------------------- numeric operations ----------------------------
 
