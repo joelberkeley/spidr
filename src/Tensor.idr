@@ -296,8 +296,17 @@ namespace Squeezable
 export
 squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
-||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
-||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
+||| A `Tensor` where every element has the specified value. For example,
+|||
+||| ```idris
+||| fives : Tensor [2, 3] Int
+||| fives = fill 5
+||| ```
+||| is equivalent to
+||| ```idris
+||| fives : Tensor [2, 3] Int
+||| fives = const [[5, 5, 5], [5, 5, 5]]
+||| ```
 export
 fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
 fill = broadcast {prf=canBroadcastScalarToAny shape} . (const {shape=[]}) where
