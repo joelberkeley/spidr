@@ -32,8 +32,12 @@ jobs:
         mv bazel.gpg /etc/apt/trusted.gpg.d/
         echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
 
-        idris2 --install spidr.ipkg
+        cd backend
+        bazel build //:xla
+        cd -
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
+
+        idris2 --install spidr.ipkg
         idris2 -p spidr test/Tensor.idr -o test
         ./build/exec/test
   tutorials:
