@@ -25,13 +25,9 @@ cc_library(
     deps = [":xla_extension_internal"],
 )
 
-cc_library(
+cc_binary(
     name = "xla",
+    linkshared = True,
     srcs = glob(["src/**/*.cpp"]),
-    linkopts = [
-        "-L/home/joel/git/joelberkeley/spidr/backend/xla_extension/lib",
-        "-lxla_extension",
-        "-Wl,-rpath=backend/xla_extension/lib/",
-    ],
     deps = [":xla_extension"],
 )
