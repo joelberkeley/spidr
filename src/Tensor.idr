@@ -318,49 +318,31 @@ fill = broadcast {prf=canBroadcastScalarToAny shape} . (const {shape=[]}) where
 
 ||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
 ||| `const [True, False]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
 (==) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
 ||| `const [False, True]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
 (/=) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `>=` for shapes to be compatible.
 export
 (<) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `<=` for shapes to be compatible.
 export
 (>) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is equivalent
 ||| to `const [True, True, False]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `>` for shapes to be compatible.
 export
 (<=) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `<` for shapes to be compatible.
 export
 (>=) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
@@ -393,9 +375,6 @@ export
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
 (+) : (Primitive dtype, Num dtype) => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor ll_raw) + (MkTensor rr_raw) = MkTensor (ll_raw + rr_raw)
@@ -406,9 +385,6 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| broadcast explicitly for shapes to be compatible.
 export
 (-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
@@ -416,23 +392,21 @@ infixl 9 *#, */
 
 ||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
-|||
-||| Note: The LHS can be broadcast to the shape of the RHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
+||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
+||| `const [6, 10]`.
 export
 (*) : Num dtype => Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
 
 ||| Elementwise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent to
 ||| `const [0.5, 0.6]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| broadcast explicitly for shapes to be compatible.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
+||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
+||| to `const [1.7, -2.8]`.
 export
 (/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 
@@ -443,9 +417,6 @@ infixr 9 ^
 ||| example, `const [2, 25, -9] / const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
 |||
 ||| Note: The first root is used.
-|||
-||| Note: `exponent` can be broadcast to the shape of `base`, but not vice versa. You may need to
-||| broadcast explicitly for shapes to be compatible.
 export
 (^) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
