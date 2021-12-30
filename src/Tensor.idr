@@ -388,9 +388,9 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 export
 (-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
-infixl 9 *#, */
+infixl 9 *#, /#
 
-||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
+||| Elementwise multiplication. For example, `const [2, 3] *# const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
@@ -400,7 +400,7 @@ export
 export
 (*) : Num dtype => Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
 
-||| Elementwise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent to
+||| Elementwise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent to
 ||| `const [0.5, 0.6]`.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
@@ -414,7 +414,7 @@ infixr 9 ^
 
 -- todo we don't support complex yet
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
-||| example, `const [2, 25, -9] / const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
+||| example, `const [2, 25, -9] ^ const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
 |||
 ||| Note: The first root is used.
 export
