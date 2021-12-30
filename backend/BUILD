@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cc_import(
-    name = "xla_extension_internal",
-    hdrs = glob(["xla_extension/include/**"]),
-    shared_library = "xla_extension/lib/libxla_extension.so",
-)
-
-# Note this cc_library indirection is a workaround to get the include statements working
 cc_library(
     name = "xla_extension",
     includes = ["xla_extension/include"],
-    deps = [":xla_extension_internal"],
+    hdrs = glob(["xla_extension/include/**"]),
+    srcs = ["xla_extension/lib/libxla_extension.so"],
 )
 
 cc_binary(
