@@ -26,14 +26,14 @@ jobs:
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-        g++ -shared -fPIC \
-          -Ibackend/xla_extension/include/ \
-          -Lbackend/xla_extension/lib/ \
-          -o libxla.so \
-          backend/src/tensorflow/compiler/xla/client/xla_builder.cpp \
-          -lxla_extension \
-          -Wl,-rpath=backend/xla_extension/lib/
+
+        apt install gnupg
+        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
+        mv bazel.gpg /etc/apt/trusted.gpg.d/
+        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+
         idris2 --install spidr.ipkg
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
         idris2 -p spidr test/Tensor.idr -o test
         ./build/exec/test
   tutorials:
