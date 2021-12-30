@@ -22,6 +22,6 @@ cc_library(
 cc_binary(
     name = "xla",
     linkshared = True,
-    srcs = glob(["src/**/*.cpp"]),
+    srcs = ["src/tensorflow/compiler/xla/client/xla_builder.cpp"],
     deps = [":xla_extension"],
 )
