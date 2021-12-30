@@ -299,7 +299,7 @@ squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtyp
 ||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
 ||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
 export
-fill : Primitive dtype => dtype -> {shape : _} -> Tensor shape dtype
+fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
 fill = broadcast {prf=canBroadcastScalarToAny shape} . (const {shape=[]}) where
   canBroadcastScalarToAny : (to : Shape) -> Broadcastable [] to
   canBroadcastScalarToAny [] = Same
