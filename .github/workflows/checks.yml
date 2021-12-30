@@ -27,10 +27,10 @@ jobs:
         brew install idris2
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
-        apt install gnupg
+        sudo apt install -y apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-        mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+        sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
+        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
 
         cd backend
         bazel build //:xla
