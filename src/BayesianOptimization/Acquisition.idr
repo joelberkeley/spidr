@@ -52,11 +52,10 @@ expectedImprovement : ProbabilisticModel features {marginal=Gaussian [1]} ->
                       (best : Tensor [] Double) -> Acquisition 1 features
 expectedImprovement predict best at =
   let marginal = predict at
-      pdf = pdf marginal $ broadcast {to=[_, 1]} best
-      variance = squeeze (variance marginal)
-      mean = squeeze (mean marginal)
-      cdf = cdf marginal $ broadcast {to=[_, 1]} best
-   in (best - mean) * cdf + variance * pdf
+      best' = broadcast {to=[_, 1]} best
+      pdf = pdf marginal best'
+      cdf = cdf marginal best'
+   in (best - squeeze (mean marginal)) * cdf + squeeze (variance marginal) * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
