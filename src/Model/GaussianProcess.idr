@@ -60,10 +60,8 @@ log_marginal_likelihood :
 log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + diag {n=S s} noise)
       alpha = l.T \\ (l \\ y)
-      n = const {shape=[]} $ cast (S s)
-      log2pi = log $ const {shape=[]} $ 2.0 * pi
-      two = const {shape=[]} 2
-   in - y @@ alpha / two - trace (log l) - n * log2pi / two
+      log2pi = log $ const $ 2.0 * pi
+   in - y @@ alpha / const 2 - trace (log l) - (const $ cast (S s)) * log2pi / const 2
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following

@@ -398,6 +398,7 @@ infixl 9 *#, /#
 ||| `const [8, 15]`.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(MkTensor l) *# (MkTensor r) = MkTensor (mul l r)
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.

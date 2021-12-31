@@ -78,11 +78,11 @@ ClosedFormDistribution [1] (Gaussian [1]) where
         diff = x - mean
 
         exponent : Tensor [] Double
-        exponent = - (squeeze $ diff.T @@ cov.T @@ diff) / (const {shape=[]} 2.0)
+        exponent = - (squeeze $ diff.T @@ cov.T @@ diff) / (const 2.0)
 
         denominator : Tensor [] Double
-        denominator = (const {shape=[]} $ 2 * pi) ^ (const {shape=[]} $ cast (S d) / 2.0)
-                      * (det $ squeeze {to=[S d, S d]} cov) ^ (const {shape=[]} 0.5)
+        denominator = (const $ 2 * pi) ^ (const $ cast (S d) / 2.0)
+                      * (det $ squeeze {to=[S d, S d]} cov) ^ const 0.5
 
      in (exp exponent) / denominator
 

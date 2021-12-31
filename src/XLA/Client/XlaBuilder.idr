@@ -75,6 +75,9 @@ prim__ne : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Mul")
+prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 {-
  -
  - XlaOp and XlaBuilder wrapper
@@ -152,3 +155,7 @@ ne = binOp prim__ne
 export
 add : RawTensor -> RawTensor -> RawTensor
 add = binOp prim__add
+
+export
+mul : RawTensor -> RawTensor -> RawTensor
+mul = binOp prim__mul
