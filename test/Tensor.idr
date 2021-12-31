@@ -219,6 +219,124 @@ test_broadcast = do
         ]
     ]
 
+test_elementwise_equality : IO ()
+test_elementwise_equality = do
+    let x = const {shape=[]} {dtype=Bool} True
+    eq <- eval (x ==# x)
+    assert eq
+
+    let x = const {shape=[]} {dtype=Bool} True
+        y = const {shape=[]} {dtype=Bool} False
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[_]} {dtype=Bool} [True, True, False]
+        y = const {shape=[_]} {dtype=Bool} [False, True, False]
+    eq <- eval (y ==# x)
+    assert $ eq == [False, True, True]
+
+    let x = const {shape=[]} {dtype=Int} 0
+    eq <- eval (x ==# x)
+    assert eq
+
+    let x = const {shape=[]} {dtype=Int} 0
+        y = const {shape=[]} {dtype=Int} 1
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[]} {dtype=Int} 0
+        y = const {shape=[]} {dtype=Int} 1
+    eq <- eval (y ==# x)
+    assert (not eq)
+
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} (-3)
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} (-3)
+    eq <- eval (y ==# x)
+    assert (not eq)
+
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
+    eq <- eval (y ==# x)
+    assert $ eq == [[False, True, False], [False, True, True]]
+
+    let x = const {shape=[]} {dtype=Double} 0.1
+    eq <- eval (x ==# x)
+    assert eq
+
+    let x = const {shape=[]} {dtype=Double} 0.1
+        y = const {shape=[]} {dtype=Double} 1.1
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+        y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
+    eq <- eval (y ==# x)
+    assert $ eq == [[False, True, False], [False, True, True]]
+
+test_elementwise_inequality : IO ()
+test_elementwise_inequality = do
+    let x = const {shape=[]} {dtype=Bool} True
+    neq <- eval (x /=# x)
+    assert (not neq)
+
+    let x = const {shape=[]} {dtype=Bool} True
+        y = const {shape=[]} {dtype=Bool} False
+    neq <- eval (x /=# y)
+    assert neq
+
+    let x = const {shape=[_]} {dtype=Bool} [True, True, False]
+        y = const {shape=[_]} {dtype=Bool} [False, True, False]
+    neq <- eval (y /=# x)
+    assert $ neq == [True, False, False]
+
+    let x = const {shape=[]} {dtype=Int} 0
+    neq <- eval (x /=# x)
+    assert (not neq)
+
+    let x = const {shape=[]} {dtype=Int} 0
+        y = const {shape=[]} {dtype=Int} 1
+    neq <- eval (x /=# y)
+    assert neq
+
+    let x = const {shape=[]} {dtype=Int} 0
+        y = const {shape=[]} {dtype=Int} 1
+    neq <- eval (y /=# x)
+    assert neq
+
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} (-3)
+    neq <- eval (x /=# y)
+    assert neq
+
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} (-3)
+    neq <- eval (y /=# x)
+    assert neq
+
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
+    neq <- eval (y /=# x)
+    assert $ neq == [[True, False, True], [True, False, False]]
+
+    let x = const {shape=[]} {dtype=Double} 0.1
+    neq <- eval (x /=# x)
+    assert (not neq)
+
+    let x = const {shape=[]} {dtype=Double} 0.1
+        y = const {shape=[]} {dtype=Double} 1.1
+    neq <- eval (x /=# y)
+    assert neq
+
+    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+        y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
+    neq <- eval (y /=# x)
+    assert $ neq == [[True, False, True], [True, False, False]]
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
@@ -248,5 +366,7 @@ main = do
     test_const_eval
     test_toString
     test_broadcast
+    test_elementwise_equality
+    test_elementwise_inequality
     test_add
     putStrLn "Tests passed"

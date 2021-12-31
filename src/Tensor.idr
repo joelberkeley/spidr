@@ -316,15 +316,19 @@ fill = broadcast {prf=scalarToAnyOk shape} . const where
 
 ----------------------------- numeric operations ----------------------------
 
-||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
+infix 6 ==#, /=#
+
+||| Element-wise equality. For example, `const [1, 2] ==# const [1, 3]` is equivalent to
 ||| `const [True, False]`.
 export
-(==) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(==#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(MkTensor l) ==# (MkTensor r) = MkTensor (eq l r)
 
-||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
+||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
-(/=) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
 
 ||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
@@ -376,8 +380,8 @@ export
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
 export
-(+) : (Primitive dtype, Num dtype) => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor ll_raw) + (MkTensor rr_raw) = MkTensor (ll_raw + rr_raw)
+(+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(MkTensor ll_raw) + (MkTensor rr_raw) = MkTensor (add ll_raw rr_raw)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export

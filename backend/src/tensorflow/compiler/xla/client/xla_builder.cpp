@@ -253,6 +253,14 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(res);
     }
 
+    XlaOp* Ne(XlaOp& lhs, XlaOp& rhs) {
+        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+        auto res = new xla::XlaOp();
+        *res = Ne(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
         xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
         xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);

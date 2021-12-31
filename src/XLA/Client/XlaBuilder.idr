@@ -63,6 +63,15 @@ collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
 %foreign (libxla "ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> AnyPtr
 
+%foreign (libxla "Broadcast")
+prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
+
+%foreign (libxla "Eq")
+prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Ne")
+prim__ne : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -104,9 +113,6 @@ eval (MkRawTensor f) =
        delete builder
        pure arr
 
-%foreign (libxla "Broadcast")
-prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
-
 export
 broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
 broadcast (MkRawTensor f) broadcast_sizes = MkRawTensor $ \builder =>
@@ -130,8 +136,19 @@ broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
        free bcd_ptr
        pure op
 
-export
-(+) : RawTensor -> RawTensor -> RawTensor
-(MkRawTensor l) + (MkRawTensor r) = MkRawTensor $ \builder =>
-    do op <- primIO $ prim__add !(l builder) !(r builder)
+binOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor -> RawTensor
+binOp f (MkRawTensor l) (MkRawTensor r) = MkRawTensor $ \builder =>
+    do op <- primIO $ f !(l builder) !(r builder)
        collectXlaOp op
+
+export
+eq : RawTensor -> RawTensor -> RawTensor
+eq = binOp prim__eq
+
+export
+ne : RawTensor -> RawTensor -> RawTensor
+ne = binOp prim__ne
+
+export
+add : RawTensor -> RawTensor -> RawTensor
+add = binOp prim__add
