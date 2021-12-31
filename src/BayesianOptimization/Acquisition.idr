@@ -86,7 +86,7 @@ negativeLowerConfidenceBound beta =
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right $ \_, predict, at =>
     let marginal = predict at
-     in squeeze $ mean marginal - (const {shape=[]} beta) * (variance marginal)
+     in squeeze $ mean marginal - const beta * variance marginal
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
