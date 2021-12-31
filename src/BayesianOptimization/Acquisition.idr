@@ -53,8 +53,8 @@ expectedImprovement : ProbabilisticModel features {marginal=Gaussian [1]} ->
 expectedImprovement predict best at =
   let marginal = predict at
       pdf = pdf marginal $ broadcast {to=[_, 1]} best
-      variance = squeeze {to=[]} $ variance marginal
-      mean = squeeze {to=[]} $ mean marginal
+      variance = squeeze (variance marginal)
+      mean = squeeze (mean marginal)
       cdf = cdf marginal $ broadcast {to=[_, 1]} best
    in (best - mean) * cdf + variance * pdf
 
