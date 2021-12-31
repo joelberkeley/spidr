@@ -136,19 +136,19 @@ broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
        free bcd_ptr
        pure op
 
-mkBinOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor -> RawTensor
-mkBinOp f (MkRawTensor l) (MkRawTensor r) = MkRawTensor $ \builder =>
+binOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor -> RawTensor
+binOp f (MkRawTensor l) (MkRawTensor r) = MkRawTensor $ \builder =>
     do op <- primIO $ f !(l builder) !(r builder)
        collectXlaOp op
 
 export
 eq : RawTensor -> RawTensor -> RawTensor
-eq = mkBinOp prim__eq
+eq = binOp prim__eq
 
 export
 neq : RawTensor -> RawTensor -> RawTensor
-neq = mkBinOp prim__neq
+neq = binOp prim__neq
 
 export
 add : RawTensor -> RawTensor -> RawTensor
-add = mkBinOp prim__add
+add = binOp prim__add
