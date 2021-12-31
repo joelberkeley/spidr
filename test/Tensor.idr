@@ -221,7 +221,20 @@ test_broadcast = do
 
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
-    -- todo we need property testing ... this is too demanding without it
+    let x = const {shape=[]} {dtype=Bool} True
+    eq <- eval (x ==# x)
+    assert eq
+
+    let x = const {shape=[]} {dtype=Bool} True
+        y = const {shape=[]} {dtype=Bool} False
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[_]} {dtype=Bool} [True, True, False]
+        y = const {shape=[_]} {dtype=Bool} [False, True, False]
+    eq <- eval (y ==# x)
+    assert $ eq == [False, True, True]
+
     let x = const {shape=[]} {dtype=Int} 0
     eq <- eval (x ==# x)
     assert eq
@@ -236,8 +249,32 @@ test_elementwise_equality = do
     eq <- eval (y ==# x)
     assert (not eq)
 
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} (-3)
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} (-3)
+    eq <- eval (y ==# x)
+    assert (not eq)
+
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
+    eq <- eval (y ==# x)
+    assert $ eq == [[False, True, False], [False, True, True]]
+
+    let x = const {shape=[]} {dtype=Double} 0.1
+    eq <- eval (x ==# x)
+    assert eq
+
+    let x = const {shape=[]} {dtype=Double} 0.1
+        y = const {shape=[]} {dtype=Double} 1.1
+    eq <- eval (x ==# y)
+    assert (not eq)
+
+    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+        y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
     eq <- eval (y ==# x)
     assert $ eq == [[False, True, False], [False, True, True]]
 
