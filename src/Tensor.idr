@@ -380,7 +380,7 @@ export
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
 export
-(+) : (Primitive dtype, Num dtype) => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor ll_raw) + (MkTensor rr_raw) = MkTensor (add ll_raw rr_raw)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
