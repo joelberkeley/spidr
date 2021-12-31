@@ -157,11 +157,6 @@ export
            n = last shape
         in Tensor (leading ++ [n, m]) dtype
 
-||| A `Tensor` where every element has the specified value. For example, `fill 5 [2, 3]` is
-||| equivalent to `const [[5, 5, 5], [5, 5, 5]]`.
-export
-fill : dtype -> Tensor shape dtype
-
 ||| Cast the tensor elements to a new data type.
 export
 cast_dtype : Cast dtype dtype' => Tensor shape dtype -> Tensor shape dtype'
@@ -301,57 +296,55 @@ namespace Squeezable
 export
 squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
+||| A `Tensor` where every element has the specified value. For example,
+|||
+||| ```idris
+||| fives : Tensor [2, 3] Int
+||| fives = fill 5
+||| ```
+||| is equivalent to
+||| ```idris
+||| fives : Tensor [2, 3] Int
+||| fives = const [[5, 5, 5], [5, 5, 5]]
+||| ```
+export
+fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
+fill = broadcast {prf=scalarToAnyOk shape} . const where
+  scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+  scalarToAnyOk [] = Same
+  scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
+
 ----------------------------- numeric operations ----------------------------
 
 ||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
 ||| `const [True, False]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
-(==) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
+(==) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
 ||| `const [False, True]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
-(/=) : Eq dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
+(/=) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `>=` for shapes to be compatible.
 export
-(<) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
+(<) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `<=` for shapes to be compatible.
 export
-(>) : Ord dtype => Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
+(>) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is equivalent
 ||| to `const [True, True, False]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `>` for shapes to be compatible.
 export
-(<=) : Ord dtype =>
-       Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
+(<=) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| use `<` for shapes to be compatible.
 export
-(>=) : Ord dtype =>
-       Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l Bool
+(>=) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -382,13 +375,9 @@ export
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
-(+) : (Primitive dtype, Num dtype) => {l : _} -> {r : _} ->
-      Tensor l dtype -> Tensor r dtype -> {auto _ : Broadcastable r l} -> Tensor l dtype
-(MkTensor ll_raw) + rr = let (MkTensor rr_raw) = broadcast {to=l} rr in MkTensor (ll_raw + rr_raw)
+(+) : (Primitive dtype, Num dtype) => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(MkTensor ll_raw) + (MkTensor rr_raw) = MkTensor (ll_raw + rr_raw)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
@@ -396,44 +385,40 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| broadcast explicitly for shapes to be compatible.
 export
-(-) : Neg dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
+(-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
-||| Elementwise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
+infixl 9 *#, /#
+
+||| Elementwise multiplication. For example, `const [2, 3] *# const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
-|||
-||| Note: The LHS can be broadcast to the shape of the RHS, but not vice versa. You may need to
-||| switch the arguments for shapes to be compatible.
 export
-(*) : Num dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable l r} -> Tensor r dtype
+(*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
-||| Elementwise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent to
-||| `const [0.5, 0.6]`.
-|||
-||| Note: The RHS can be broadcast to the shape of the LHS, but not vice versa. You may need to
-||| broadcast explicitly for shapes to be compatible.
+||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
+||| `const [6, 10]`.
 export
-(/) : Fractional dtype =>
-      Tensor l dtype -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Tensor l dtype
+(*) : Num dtype => Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
+
+||| Elementwise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent to
+||| `const [0.5, 0.6]`.
+export
+(/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+
+||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
+||| to `const [1.7, -2.8]`.
+export
+(/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 
 infixr 9 ^
 
 -- todo we don't support complex yet
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
-||| example, `const [2, 25, -9] / const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
+||| example, `const [2, 25, -9] ^ const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
 |||
 ||| Note: The first root is used.
-|||
-||| Note: `exponent` can be broadcast to the shape of `base`, but not vice versa. You may need to
-||| broadcast explicitly for shapes to be compatible.
 export
-(^) : Num dtype => (base : Tensor l dtype) -> (exponent : Tensor r dtype) ->
-      {auto 0 _ : Broadcastable r l} -> Tensor l dtype
+(^) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
 -- todo
 ||| The element-wise natural exponential.
@@ -457,23 +442,20 @@ infix 8 //=
 ||| Other than the fact that it works on a `Variable`, and mutates the value in-place, it works
 ||| exactly like `(+)` on a `Tensor`.
 export
-(+=) : Num dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
+(+=) : Num dtype => (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
 ||| Element-wise in-place subtraction. See `(+=)` and `(+)` for details.
 export
-(-=) : Neg dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
+(-=) : Neg dtype => (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
 ||| Element-wise in-place multiplication. See `(+=)` and `(*)` for details.
 export
-(*=) : Num dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
+(*=) : Num dtype => (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
 ||| Element-wise in-place division. See `(+=)` and `(/)` for details.
 export
 (//=) : Fractional dtype =>
-  (1 v : Variable l dtype) -> Tensor r dtype -> {auto 0 _ : Broadcastable r l} -> Variable l dtype
+        (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
 -- todo
 ||| The element-wise natural logarithm.

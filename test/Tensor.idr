@@ -243,26 +243,6 @@ test_add = do
     sum <- eval (x + y)
     assert $ abs (sum - (-3.7)) < 0.000001
 
-    let x = const {shape=[1]} {dtype=Int} [3]
-        y = const {shape=[]} {dtype=Int} 5
-    sum <- eval (x + y)
-    assert $ sum == [8]
-
-    let x = const {shape=[2]} {dtype=Int} [3, 5]
-        y = const {shape=[]} {dtype=Int} 7
-    sum <- eval (x + y)
-    assert $ sum == [10, 12]
-
-    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-        y = const {shape=[3]} {dtype=Int} [17, 19, 23]
-    sum <- eval (x + y)
-    assert $ sum == [[19, 22, 28], [24, 30, 36]]
-
-    let x = const {shape=[2, 0]} {dtype=Int} [[], []]
-        y = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    sum <- eval (x + y)
-    assert $ sum == [[], []]
-
 main : IO ()
 main = do
     test_const_eval

@@ -52,10 +52,11 @@ expectedImprovement : ProbabilisticModel features {marginal=Gaussian [1]} ->
                       (best : Tensor [] Double) -> Acquisition 1 features
 expectedImprovement predict best at =
   let marginal = predict at
-      pdf = pdf marginal $ broadcast {to=[_, 1]} best
-      variance = squeeze {to=[]} $ variance marginal
-      mean = squeeze {to=[]} $ mean marginal
-      cdf = cdf marginal $ broadcast {to=[_, 1]} best
+      best' = broadcast {to=[_, 1]} best
+      pdf = pdf marginal best'
+      cdf = cdf marginal best'
+      mean = squeeze (mean marginal)
+      variance = squeeze (variance marginal)
    in (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
@@ -86,7 +87,7 @@ negativeLowerConfidenceBound beta =
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right $ \_, predict, at =>
     let marginal = predict at
-     in squeeze $ mean marginal - (const {shape=[]} beta) * (variance marginal)
+     in squeeze $ mean marginal - const beta * variance marginal
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
