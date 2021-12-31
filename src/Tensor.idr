@@ -328,7 +328,7 @@ export
 ||| `const [False, True]`.
 export
 (/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) /=# (MkTensor r) = MkTensor (neq l r)
+(MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
 
 ||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.

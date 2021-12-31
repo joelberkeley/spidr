@@ -69,8 +69,8 @@ prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
-%foreign (libxla "Neq")
-prim__neq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+%foreign (libxla "Ne")
+prim__ne : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
@@ -146,8 +146,8 @@ eq : RawTensor -> RawTensor -> RawTensor
 eq = binOp prim__eq
 
 export
-neq : RawTensor -> RawTensor -> RawTensor
-neq = binOp prim__neq
+ne : RawTensor -> RawTensor -> RawTensor
+ne = binOp prim__ne
 
 export
 add : RawTensor -> RawTensor -> RawTensor
