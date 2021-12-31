@@ -55,7 +55,9 @@ expectedImprovement predict best at =
       best' = broadcast {to=[_, 1]} best
       pdf = pdf marginal best'
       cdf = cdf marginal best'
-   in (best - squeeze (mean marginal)) * cdf + squeeze (variance marginal) * pdf
+      mean = squeeze (mean marginal)
+      variance = squeeze (variance marginal)
+   in (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
