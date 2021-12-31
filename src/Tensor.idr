@@ -309,10 +309,10 @@ squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtyp
 ||| ```
 export
 fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
-fill = broadcast {prf=canBroadcastScalarToAny shape} . (const {shape=[]}) where
-  canBroadcastScalarToAny : (to : Shape) -> Broadcastable [] to
-  canBroadcastScalarToAny [] = Same
-  canBroadcastScalarToAny (_ :: xs) = Nest (canBroadcastScalarToAny xs)
+fill = broadcast {prf=scalarToAnyOk shape} . const where
+  scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+  scalarToAnyOk [] = Same
+  scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 
 ----------------------------- numeric operations ----------------------------
 
