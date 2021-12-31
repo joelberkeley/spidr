@@ -318,6 +318,8 @@ fill = broadcast {prf=scalarToAnyOk shape} . const where
 
 infix 6 ==#, /=#
 
+-- todo do we need the # in ==# ? We're not going to be implementing Eq for Tensor
+-- I don't think, so Tensor [] Bool is the only other thing that could use it.
 ||| Element-wise equality. For example, `const [1, 2] ==# const [1, 3]` is equivalent to
 ||| `const [True, False]`.
 export
