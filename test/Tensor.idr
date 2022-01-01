@@ -390,7 +390,7 @@ test_constant_multiplication = do
     let x = const {shape=[]} {dtype=Int} 2
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
     product <- eval (x * y)
-    assert $ product == [[22, 30, 14], [-6, -8, 0]]
+    assert $ product == [[22, 10, 14], [-6, -8, 0]]
 
     let x = const {shape=[]} {dtype=Double} 2.3
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
@@ -418,4 +418,5 @@ main = do
     test_elementwise_inequality
     test_add
     test_elementwise_multiplication
+    test_constant_multiplication
     putStrLn "Tests passed"
