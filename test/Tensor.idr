@@ -339,8 +339,41 @@ test_elementwise_inequality = do
 
 test_comparison : IO ()
 test_comparison = do
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[]} {dtype=Int} 3
+    gt <- eval (y ># x)
+    lt <- eval (y <# x)
+    ge <- eval (y >=# x)
+    le <- eval (y <=# x)
+    assert gt
+    assert (not lt)
+    assert ge
+    assert (not le)
+
+    let x = const {shape=[]} {dtype=Double} 3.3
+        y = const {shape=[]} {dtype=Double} 2.2
+    gt <- eval (y ># x)
+    lt <- eval (y <# x)
+    ge <- eval (y >=# x)
+    le <- eval (y <=# x)
+    assert (not gt)
+    assert lt
+    assert (not ge)
+    assert le
+
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
+    gt <- eval (y ># x)
+    lt <- eval (y <# x)
+    ge <- eval (y >=# x)
+    le <- eval (y <=# x)
+    assert (gt == [[False, True, False], [False, True, False]])
+    assert (lt == [[False, False, True], [True, False, False]])
+    assert (ge == [[True, True, False], [True, True, True]])
+    assert (le == [[True, False, True], [True, False, True]])
+
+    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+        y = const {shape=[_, _]} {dtype=Double} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
     gt <- eval (y ># x)
     lt <- eval (y <# x)
     ge <- eval (y >=# x)
