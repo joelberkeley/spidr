@@ -424,6 +424,12 @@ export
 export
 (/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 
+||| Element-wise absolute value. For example, `absE (const [-2, 3])` is equivalent to
+||| `const [2, 3]`.
+export
+absE : Abs dtype => Tensor shape dtype -> Tensor shape dtype
+absE (MkTensor raw) = MkTensor (abs raw)
+
 infixr 9 ^
 
 -- todo we don't support complex yet

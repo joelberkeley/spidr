@@ -90,6 +90,9 @@ prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Abs")
+prim__abs : GCAnyPtr -> PrimIO AnyPtr
+
 {-
  -
  - XlaOp and XlaBuilder wrapper
@@ -151,6 +154,11 @@ broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
        free bcd_ptr
        pure op
 
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor
+unaryOp f (MkRawTensor operand) = MkRawTensor $ \builder =>
+    do op <- primIO $ f !(operand builder)
+       collectXlaOp op
+
 binOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor -> RawTensor
 binOp f (MkRawTensor l) (MkRawTensor r) = MkRawTensor $ \builder =>
     do op <- primIO $ f !(l builder) !(r builder)
@@ -187,3 +195,7 @@ add = binOp prim__add
 export
 mul : RawTensor -> RawTensor -> RawTensor
 mul = binOp prim__mul
+
+export
+abs : RawTensor -> RawTensor
+abs = unaryOp prim__abs
