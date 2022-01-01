@@ -483,7 +483,7 @@ test_absE = do
         assertAbs : (Abs dtype, ApproxCompare dtype, Primitive dtype) => dtype -> IO ()
         assertAbs x = do
             let x' = const {shape=[]} {dtype=dtype} x
-            res <- eval (absE x)
+            res <- eval (absE x')
             assert $ res =~ abs x
 
 main : IO ()
