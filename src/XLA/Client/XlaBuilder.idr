@@ -72,6 +72,18 @@ prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Ne")
 prim__ne : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Ge")
+prim__ge : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Gt")
+prim__gt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Lt")
+prim__lt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Le")
+prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -151,6 +163,22 @@ eq = binOp prim__eq
 export
 ne : RawTensor -> RawTensor -> RawTensor
 ne = binOp prim__ne
+
+export
+ge : RawTensor -> RawTensor -> RawTensor
+ge = binOp prim__ge
+
+export
+gt : RawTensor -> RawTensor -> RawTensor
+gt = binOp prim__gt
+
+export
+lt : RawTensor -> RawTensor -> RawTensor
+lt = binOp prim__lt
+
+export
+le : RawTensor -> RawTensor -> RawTensor
+le = binOp prim__le
 
 export
 add : RawTensor -> RawTensor -> RawTensor

@@ -337,6 +337,19 @@ test_elementwise_inequality = do
     neq <- eval (y /=# x)
     assert $ neq == [[True, False, True], [True, False, False]]
 
+test_comparison : IO ()
+test_comparison = do
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
+        y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
+    gt <- eval (y ># x)
+    lt <- eval (y <# x)
+    ge <- eval (y >=# x)
+    le <- eval (y <=# x)
+    assert (gt == [[False, True, False], [False, True, False]])
+    assert (lt == [[False, False, True], [True, False, False]])
+    assert (ge == [[True, True, False], [True, True, True]])
+    assert (le == [[True, False, True], [True, False, True]])
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
