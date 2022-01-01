@@ -210,6 +210,12 @@ extern "C" {
     }
 }
 
+XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {
+    auto res = new xla::XlaOp();
+    *res = op(reinterpret_cast<xla::XlaOp&>(operand));
+    return reinterpret_cast<XlaOp*>(res);
+}
+
 XlaOp* binOp(
     std::function<xla::XlaOp(
         xla::XlaOp, xla::XlaOp, absl::Span<const xla::int64> broadcast_dimensions
@@ -231,18 +237,14 @@ extern "C" {
     XlaOp* Gt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Gt, lhs, rhs); }
     XlaOp* Lt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Lt, lhs, rhs); }
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Le, lhs, rhs); }
-
-    XlaOp* Neg(XlaOp& s) {
-        auto res = new xla::XlaOp();
-        *res = Neg(reinterpret_cast<xla::XlaOp&>(s));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Add, lhs, rhs); }
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Sub, lhs, rhs); }
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Div, lhs, rhs); }
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Rem, lhs, rhs); }
+
+    XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
+    XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
 
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
         xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
