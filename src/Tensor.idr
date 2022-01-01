@@ -255,6 +255,10 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
       MkTensor $ broadcast (broadcastInDim raw (th' :: tt') (range (S r))) to_leading
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
+scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+scalarToAnyOk [] = Same
+scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
+
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
@@ -309,10 +313,7 @@ squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtyp
 ||| ```
 export
 fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
-fill = broadcast {prf=scalarToAnyOk shape} . const where
-  scalarToAnyOk : (to : Shape) -> Broadcastable [] to
-  scalarToAnyOk [] = Same
-  scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
+fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- numeric operations ----------------------------
 
@@ -403,7 +404,9 @@ export
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
 export
-(*) : Num dtype => Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
+(*) : (Primitive dtype, Num dtype) => Tensor [] dtype -> {shape : _} -> Tensor shape dtype
+      -> Tensor shape dtype
+l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
 
 ||| Elementwise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent to
 ||| `const [0.5, 0.6]`.
