@@ -337,29 +337,26 @@ test_elementwise_inequality = do
     neq <- eval (y /=# x)
     assert $ neq == [[True, False, True], [True, False, False]]
 
+compareScalar : (Primitive dtype, Ord dtype) => (dtype, dtype) -> IO ()
+compareScalar (x, y) = do
+    let x' = const {shape=[]} {dtype=dtype} x
+        y' = const {shape=[]} {dtype=dtype} y
+    gt <- eval (y' ># x')
+    lt <- eval (y' <# x')
+    ge <- eval (y' >=# x')
+    le <- eval (y' <=# x')
+    assert $ gt == (y > x)
+    assert $ lt == (y < x)
+    assert $ ge == (y >= x)
+    assert $ le == (y <= x)
+
 test_comparison : IO ()
 test_comparison = do
-    let x = const {shape=[]} {dtype=Int} 2
-        y = const {shape=[]} {dtype=Int} 3
-    gt <- eval (y ># x)
-    lt <- eval (y <# x)
-    ge <- eval (y >=# x)
-    le <- eval (y <=# x)
-    assert gt
-    assert (not lt)
-    assert ge
-    assert (not le)
+    let cases : List Int := [-3, -1, 0, 1, 3]
+    traverse_ compareScalar [(x, y) | x <- cases, y <- cases]
 
-    let x = const {shape=[]} {dtype=Double} 3.3
-        y = const {shape=[]} {dtype=Double} 2.2
-    gt <- eval (y ># x)
-    lt <- eval (y <# x)
-    ge <- eval (y >=# x)
-    le <- eval (y <=# x)
-    assert (not gt)
-    assert lt
-    assert (not ge)
-    assert le
+    let cases : List Double := [-3.3, -1.1, -0.1, 0.0, 0.1, 3.3]
+    traverse_ compareScalar [(x, y) | x <- cases, y <- cases]
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
