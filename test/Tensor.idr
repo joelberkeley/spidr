@@ -385,6 +385,30 @@ test_elementwise_multiplication = do
     product <- eval (x *# y)
     assert $ abs (product - (-3.4 * 7.1)) < 0.000001
 
+test_constant_multiplication : IO ()
+test_constant_multiplication = do
+    let x = const {shape=[]} {dtype=Int} 2
+        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
+    product <- eval (x * y)
+    assert $ product == [[22, 30, 14], [-6, -8, 0]]
+
+    let x = const {shape=[]} {dtype=Double} 2.3
+        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    product <- eval (x * y)
+    assert $ abs (index 0 (index 0 product) - (-2.3 * 3.3)) < 0.000001
+    assert $ abs (index 0 (index 1 product) - 0.0) < 0.000001
+    assert $ abs (index 0 (index 2 product) - 0.69) < 0.000001
+
+    let x = const {shape=[]} {dtype=Int} 3
+        y = const {shape=[]} {dtype=Int} (-7)
+    product <- eval (x * y)
+    assert $ product == -21
+
+    let x = const {shape=[]} {dtype=Double} 3.4
+        y = const {shape=[]} {dtype=Double} (-7.1)
+    product <- eval (x * y)
+    assert $ abs (product - (-3.4 * 7.1)) < 0.000001
+
 main : IO ()
 main = do
     test_const_eval
