@@ -354,8 +354,8 @@ test_elementwise_inequality = do
     neq <- eval (y /=# x)
     assert $ neq == [[True, False, True], [True, False, False]]
 
-compareScalar : (Primitive dtype, Ord dtype) => (dtype, dtype) -> IO ()
-compareScalar (x, y) = do
+compareScalar : (Primitive dtype, Ord dtype) => dtype -> dtype -> IO ()
+compareScalar x y = do
     let x' = const {shape=[]} {dtype=dtype} x
         y' = const {shape=[]} {dtype=dtype} y
     gt <- eval (y' ># x')
@@ -369,8 +369,8 @@ compareScalar (x, y) = do
 
 test_comparison : IO ()
 test_comparison = do
-    traverse_ compareScalar [(x, y) | x <- ints, y <- ints]
-    traverse_ compareScalar [(x, y) | x <- doubles, y <- doubles]
+    sequence_ [compareScalar x y | x <- ints, y <- ints]
+    sequence_ [compareScalar x y | x <- doubles, y <- doubles]
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
@@ -417,6 +417,31 @@ test_add = do
         y = const {shape=[]} {dtype=Double} (-7.1)
     sum <- eval (x + y)
     assert $ sum =~ -3.7
+
+test_subtract : IO ()
+test_subtract = do
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
+    sum <- eval (x - y)
+    assert $ sum == [[-10, 10, -2], [2, 11, 6]]
+
+    let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
+        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    sum <- eval (x - y)
+    assert $ index 0 (index 0 sum) =~ 5.1
+    assert $ index 0 (index 1 sum) =~ 1.3
+    assert $ index 0 (index 2 sum) =~ 3.7
+
+    sequence_ [compareSub x y | x <- ints, y <- ints]
+    sequence_ [compareSub x y | x <- doubles, y <- doubles]
+
+    where
+        compareSub : (Neg dtype, Primitive dtype, ApproxCompare dtype) => dtype -> dtype -> IO ()
+        compareSub x y = do
+            let x' = const {shape=[]} {dtype=dtype} x
+                y' = const {shape=[]} {dtype=dtype} y
+            diff <- eval (x' - y')
+            assert $ diff =~ x - y
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -495,6 +520,7 @@ main = do
     test_elementwise_inequality
     test_comparison
     test_add
+    test_subtract
     test_elementwise_multiplication
     test_constant_multiplication
     test_absE

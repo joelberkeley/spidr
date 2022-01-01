@@ -87,6 +87,9 @@ prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Sub")
+prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -191,6 +194,10 @@ le = binOp prim__le
 export
 add : RawTensor -> RawTensor -> RawTensor
 add = binOp prim__add
+
+export
+sub : RawTensor -> RawTensor -> RawTensor
+sub = binOp prim__sub
 
 export
 mul : RawTensor -> RawTensor -> RawTensor

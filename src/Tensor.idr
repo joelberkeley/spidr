@@ -388,7 +388,7 @@ export
 ||| `const [4, 6]`.
 export
 (+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor ll_raw) + (MkTensor rr_raw) = MkTensor (add ll_raw rr_raw)
+(MkTensor l) + (MkTensor r) = MkTensor (add l r)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
@@ -398,6 +398,7 @@ negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 ||| `const [-1, 2]`.
 export
 (-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(MkTensor l) - (MkTensor r) = MkTensor (sub l r)
 
 infixl 9 *#, /#
 
