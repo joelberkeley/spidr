@@ -418,6 +418,31 @@ test_add = do
     sum <- eval (x + y)
     assert $ sum =~ -3.7
 
+test_subtract : IO ()
+test_subtract = do
+    let l = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+        r = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
+    sum <- eval (l - r)
+    assert $ sum == [[-10, 10, -2], [2, 11, 6]]
+
+    let l = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
+        r = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    sum <- eval (l - r)
+    assert $ index 0 (index 0 sum) =~ 5.1
+    assert $ index 0 (index 1 sum) =~ 1.3
+    assert $ index 0 (index 2 sum) =~ 3.7
+
+    sequence_ [compareSub l r | l <- ints, r <- ints]
+    sequence_ [compareSub l r | l <- doubles, r <- doubles]
+
+    where
+        compareSub : (Neg dtype, Primitive dtype, ApproxCompare dtype) => dtype -> dtype -> IO ()
+        compareSub l r = do
+            let l' = const {shape=[]} {dtype=dtype} l
+                r' = const {shape=[]} {dtype=dtype} r
+            diff <- eval (l' - r')
+            assert $ diff =~ l - r
+
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
@@ -495,6 +520,7 @@ main = do
     test_elementwise_inequality
     test_comparison
     test_add
+    test_subtract
     test_elementwise_multiplication
     test_constant_multiplication
     test_absE
