@@ -331,25 +331,31 @@ export
 (/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 (MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
 
-||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
+infix 6 <#, >#, <=#, >=#
+
+||| Element-wise less than. For example, `const [1, 2, 3] <# const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
 export
-(<) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(<#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(MkTensor l) <# (MkTensor r) = MkTensor (lt l r)
 
-||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
+||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
-(>) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(>#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(MkTensor l) ># (MkTensor r) = MkTensor (gt l r)
 
-||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is equivalent
-||| to `const [True, True, False]`.
+||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
+||| equivalent to `const [True, True, False]`.
 export
-(<=) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(<=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(MkTensor l) <=# (MkTensor r) = MkTensor (le l r)
 
-||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
+||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
-(>=) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(>=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(MkTensor l) >=# (MkTensor r) = MkTensor (ge l r)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@

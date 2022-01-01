@@ -208,6 +208,29 @@ extern "C" {
         );
         return reinterpret_cast<XlaOp*>(res);
     }
+}
+
+XlaOp* binOp(
+    std::function<xla::XlaOp(
+        xla::XlaOp, xla::XlaOp, absl::Span<const xla::int64> broadcast_dimensions
+    )> op,
+    XlaOp& lhs,
+    XlaOp& rhs
+) {
+    auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+    auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+    auto res = new xla::XlaOp();
+    *res = op(lhs_, rhs_, {});
+    return reinterpret_cast<XlaOp*>(res);
+}
+
+extern "C" {
+    XlaOp* Eq(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Eq, lhs, rhs); }
+    XlaOp* Ne(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Ne, lhs, rhs); }
+    XlaOp* Ge(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Ge, lhs, rhs); }
+    XlaOp* Gt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Gt, lhs, rhs); }
+    XlaOp* Lt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Lt, lhs, rhs); }
+    XlaOp* Le(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Le, lhs, rhs); }
 
     XlaOp* Neg(XlaOp& s) {
         auto res = new xla::XlaOp();
@@ -215,51 +238,11 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* Add(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Add(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Sub(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Sub(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Mul(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Mul(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Div(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Div(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Rem(XlaOp& x, XlaOp& y) {
-        auto res = new xla::XlaOp();
-        *res = Rem(reinterpret_cast<xla::XlaOp&>(x), reinterpret_cast<xla::XlaOp&>(y));
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Eq(XlaOp& lhs, XlaOp& rhs) {
-        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
-        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
-        auto res = new xla::XlaOp();
-        *res = Eq(lhs_, rhs_);
-        return reinterpret_cast<XlaOp*>(res);
-    }
-
-    XlaOp* Ne(XlaOp& lhs, XlaOp& rhs) {
-        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
-        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
-        auto res = new xla::XlaOp();
-        *res = Ne(lhs_, rhs_);
-        return reinterpret_cast<XlaOp*>(res);
-    }
+    XlaOp* Add(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Add, lhs, rhs); }
+    XlaOp* Sub(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Sub, lhs, rhs); }
+    XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }
+    XlaOp* Div(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Div, lhs, rhs); }
+    XlaOp* Rem(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Rem, lhs, rhs); }
 
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
         xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
