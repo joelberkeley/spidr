@@ -355,7 +355,7 @@ test_comparison = do
     let cases : List Int := [-3, -1, 0, 1, 3]
     traverse_ compareScalar [(x, y) | x <- cases, y <- cases]
 
-    let cases : List Double := [-3.3, -1.1, -0.1, 0.0, 0.1, 3.3]
+    let cases : List Double := [-3.3, -1.1, -0.1, 0.0, 0.1, 1.1, 3.3]
     traverse_ compareScalar [(x, y) | x <- cases, y <- cases]
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
@@ -366,7 +366,7 @@ test_comparison = do
     le <- eval (y <=# x)
     assert (gt == [[False, True, False], [False, True, False]])
     assert (lt == [[False, False, True], [True, False, False]])
-    assert (ge == [[True, True, False], [True, True, True]])
+    assert (ge == [[True, True, False], [False, True, True]])
     assert (le == [[True, False, True], [True, False, True]])
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
@@ -377,7 +377,7 @@ test_comparison = do
     le <- eval (y <=# x)
     assert (gt == [[False, True, False], [False, True, False]])
     assert (lt == [[False, False, True], [True, False, False]])
-    assert (ge == [[True, True, False], [True, True, True]])
+    assert (ge == [[True, True, False], [False, True, True]])
     assert (le == [[True, False, True], [True, False, True]])
 
 test_add : IO ()
@@ -459,6 +459,7 @@ main = do
     test_broadcast
     test_elementwise_equality
     test_elementwise_inequality
+    test_comparison
     test_add
     test_elementwise_multiplication
     test_constant_multiplication
