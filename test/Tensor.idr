@@ -354,8 +354,8 @@ test_elementwise_inequality = do
     neq <- eval (y /=# x)
     assert $ neq == [[True, False, True], [True, False, False]]
 
-compareScalar : (Primitive dtype, Ord dtype) => (dtype, dtype) -> IO ()
-compareScalar (x, y) = do
+compareScalar : (Primitive dtype, Ord dtype) => dtype -> dtype -> IO ()
+compareScalar x y = do
     let x' = const {shape=[]} {dtype=dtype} x
         y' = const {shape=[]} {dtype=dtype} y
     gt <- eval (y' ># x')
