@@ -18,11 +18,16 @@ import System
 
 import Tensor
 
-doubleTolerance : Double
-doubleTolerance = 0.00000001
+infix 6 =~
 
-withinTolerance : Double -> Double -> Bool
-withinTolerance x y = abs (x - y) < doubleTolerance
+interface ApproxCompare ty where
+    (=~) : ty -> ty -> Bool
+
+ApproxCompare Double where
+    x =~ y = abs (x - y) < 0.00000001
+
+ApproxCompare Int where
+    (=~) = (==)
 
 ints : List Int
 ints = [-3, -1, 0, 1, 3]
@@ -129,9 +134,9 @@ test_const_eval = do
     assert $ x' == x
 
     x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
-    assert $ abs (index 0 (index 0 x) - (-1.5)) < doubleTolerance
-    assert $ abs (index 0 (index 1 x) - 1.3) < doubleTolerance
-    assert $ abs (index 0 (index 2 x) - 4.3) < doubleTolerance
+    assert $ index 0 (index 0 x) =~ -1.5
+    assert $ index 0 (index 1 x) =~ 1.3
+    assert $ index 0 (index 2 x) =~ 4.3
 
     x <- eval $ const {shape=[]} True
     assert x
@@ -140,7 +145,7 @@ test_const_eval = do
     assert $ x == 3
 
     x <- eval $ const {shape=[]} {dtype=Double} 3.4
-    assert $ abs (x - 3.4) < doubleTolerance
+    assert $ x =~ 3.4
 
 test_toString : IO ()
 test_toString = do
@@ -399,9 +404,9 @@ test_add = do
     let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
     sum <- eval (x + y)
-    assert $ abs (index 0 (index 0 sum) - (-1.5)) < doubleTolerance
-    assert $ abs (index 0 (index 1 sum) - 1.3) < doubleTolerance
-    assert $ abs (index 0 (index 2 sum) - 4.3) < doubleTolerance
+    assert $ index 0 (index 0 sum) =~ -1.5
+    assert $ index 0 (index 1 sum) =~ 1.3
+    assert $ index 0 (index 2 sum) =~ 4.3
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
@@ -411,7 +416,7 @@ test_add = do
     let x = const {shape=[]} {dtype=Double} 3.4
         y = const {shape=[]} {dtype=Double} (-7.1)
     sum <- eval (x + y)
-    assert $ abs (sum - (-3.7)) < doubleTolerance
+    assert $ sum =~ -3.7
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -423,9 +428,9 @@ test_elementwise_multiplication = do
     let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
     product <- eval (x *# y)
-    assert $ abs (index 0 (index 0 product) - (-1.8 * 3.3)) < doubleTolerance
-    assert $ abs (index 0 (index 1 product) - 0.0) < doubleTolerance
-    assert $ abs (index 0 (index 2 product) - 1.2) < doubleTolerance
+    assert $ index 0 (index 0 product) =~ -1.8 * 3.3
+    assert $ index 0 (index 1 product) =~ 0.0
+    assert $ index 0 (index 2 product) =~ 1.2
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
@@ -435,7 +440,7 @@ test_elementwise_multiplication = do
     let x = const {shape=[]} {dtype=Double} 3.4
         y = const {shape=[]} {dtype=Double} (-7.1)
     product <- eval (x *# y)
-    assert $ abs (product - (-3.4 * 7.1)) < doubleTolerance
+    assert $ product =~ -3.4 * 7.1
 
 test_constant_multiplication : IO ()
 test_constant_multiplication = do
@@ -447,9 +452,9 @@ test_constant_multiplication = do
     let x = const {shape=[]} {dtype=Double} 2.3
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
     product <- eval (x * y)
-    assert $ abs (index 0 (index 0 product) - (-2.3 * 3.3)) < doubleTolerance
-    assert $ abs (index 0 (index 1 product) - 0.0) < doubleTolerance
-    assert $ abs (index 0 (index 2 product) - 0.69) < doubleTolerance
+    assert $ index 0 (index 0 product) =~ -2.3 * 3.3
+    assert $ index 0 (index 1 product) =~ 0.0
+    assert $ index 0 (index 2 product) =~ 0.69
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
@@ -459,7 +464,7 @@ test_constant_multiplication = do
     let x = const {shape=[]} {dtype=Double} 3.4
         y = const {shape=[]} {dtype=Double} (-7.1)
     product <- eval (x * y)
-    assert $ abs (product - (-3.4 * 7.1)) < doubleTolerance
+    assert $ product =~ -3.4 * 7.1
 
 test_absE : IO ()
 test_absE = do
@@ -469,17 +474,17 @@ test_absE = do
 
     let x = const {shape=[_]} {dtype=Double} [1.8, -1.3, 0.0]
     res <- eval (absE x)
-    traverse_ (assert . uncurry withinTolerance) (zip res [1.8, 1.3, 0.0])
+    traverse_ (assert . uncurry (=~)) (zip res [1.8, 1.3, 0.0])
 
     traverse_ assertAbs ints
     traverse_ assertAbs doubles
 
     where
-        assertAbs : (Primitive dtype, Eq dtype, Abs dtype) => dtype -> IO ()
+        assertAbs : (Abs dtype, ApproxCompare dtype, Primitive dtype) => dtype -> IO ()
         assertAbs x = do
             let x' = const {shape=[]} {dtype=dtype} x
-            res <- eval (absE x')
-            assert $ res == abs x
+            res <- eval (absE x)
+            assert $ res =~ abs x
 
 main : IO ()
 main = do
