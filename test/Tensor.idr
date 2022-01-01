@@ -469,7 +469,7 @@ test_absE = do
 
     let x = const {shape=[_]} {dtype=Double} [1.8, -1.3, 0.0]
     res <- eval (absE x)
-    traverse_ (assert . (uncurry withinTolerance)) (zip res [1.8, 1.3, 0.0])
+    traverse_ (assert . uncurry withinTolerance) (zip res [1.8, 1.3, 0.0])
 
     traverse_ assertAbs ints
     traverse_ assertAbs doubles
