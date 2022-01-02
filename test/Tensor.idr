@@ -221,62 +221,30 @@ test_T_with_leading x = x.T
 
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
-    let x = const {shape=[]} {dtype=Bool} True
-    eq <- eval (x ==# x)
-    assert eq
-
-    let x = const {shape=[]} {dtype=Bool} True
-        y = const {shape=[]} {dtype=Bool} False
-    eq <- eval (x ==# y)
-    assert (not eq)
-
     let x = const {shape=[_]} {dtype=Bool} [True, True, False]
         y = const {shape=[_]} {dtype=Bool} [False, True, False]
     eq <- eval (y ==# x)
     assert $ eq == [False, True, True]
-
-    let x = const {shape=[]} {dtype=Int} 0
-    eq <- eval (x ==# x)
-    assert eq
-
-    let x = const {shape=[]} {dtype=Int} 0
-        y = const {shape=[]} {dtype=Int} 1
-    eq <- eval (x ==# y)
-    assert (not eq)
-
-    let x = const {shape=[]} {dtype=Int} 0
-        y = const {shape=[]} {dtype=Int} 1
-    eq <- eval (y ==# x)
-    assert (not eq)
-
-    let x = const {shape=[]} {dtype=Int} 2
-        y = const {shape=[]} {dtype=Int} (-3)
-    eq <- eval (x ==# y)
-    assert (not eq)
-
-    let x = const {shape=[]} {dtype=Int} 2
-        y = const {shape=[]} {dtype=Int} (-3)
-    eq <- eval (y ==# x)
-    assert (not eq)
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
     eq <- eval (y ==# x)
     assert $ eq == [[False, True, False], [False, True, True]]
 
-    let x = const {shape=[]} {dtype=Double} 0.1
-    eq <- eval (x ==# x)
-    assert eq
-
-    let x = const {shape=[]} {dtype=Double} 0.1
-        y = const {shape=[]} {dtype=Double} 1.1
-    eq <- eval (x ==# y)
-    assert (not eq)
-
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
         y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
     eq <- eval (y ==# x)
     assert $ eq == [[False, True, False], [False, True, True]]
+
+    sequence_ [compareScalars x y | x <- bools, y <- bools]
+    sequence_ [compareScalars x y | x <- ints, y <- ints]
+    sequence_ [compareScalars x y | x <- doubles, y <- doubles]
+
+    where
+        compareScalars : (Primitive dtype, Eq dtype) => dtype -> dtype -> IO ()
+        compareScalars l r = do
+            actual <- eval {shape=[]} ((const l) ==# (const r))
+            assert (actual == (l == r))
 
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
@@ -304,25 +272,17 @@ test_comparison : IO ()
 test_comparison = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
-    gt <- eval (y ># x)
-    lt <- eval (y <# x)
-    ge <- eval (y >=# x)
-    le <- eval (y <=# x)
-    assert (gt == [[False, True, False], [False, True, False]])
-    assert (lt == [[False, False, True], [True, False, False]])
-    assert (ge == [[True, True, False], [False, True, True]])
-    assert (le == [[True, False, True], [True, False, True]])
+    assertEq (y ># x) (const [[False, True, False], [False, True, False]])
+    assertEq (y <# x) (const [[False, False, True], [True, False, False]])
+    assertEq (y >=# x) (const [[True, True, False], [False, True, True]])
+    assertEq (y <=# x) (const [[True, False, True], [True, False, True]])
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
         y = const {shape=[_, _]} {dtype=Double} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    gt <- eval (y ># x)
-    lt <- eval (y <# x)
-    ge <- eval (y >=# x)
-    le <- eval (y <=# x)
-    assert (gt == [[False, True, False], [False, True, False]])
-    assert (lt == [[False, False, True], [True, False, False]])
-    assert (ge == [[True, True, False], [False, True, True]])
-    assert (le == [[True, False, True], [True, False, True]])
+    assertEq (y ># x) (const [[False, True, False], [False, True, False]])
+    assertEq (y <# x) (const [[False, False, True], [True, False, False]])
+    assertEq (y >=# x) (const [[True, True, False], [False, True, True]])
+    assertEq (y <=# x) (const [[True, False, True], [True, False, True]])
 
     sequence_ [compareScalars l r | l <- ints, r <- ints]
     sequence_ [compareScalars l r | l <- doubles, r <- doubles]
@@ -367,6 +327,7 @@ test_add = do
 
 test_subtract : IO ()
 test_subtract = do
+    -- todo this test can't use assertApproxEq
     let l = const [[1, 15, 5], [-1, 7, 6]]
         r = const [[11, 5, 7], [-3, -4, 0]]
     assertEq (l - r) $ const {shape=[_, _]} {dtype=Int} [[-10, 10, -2], [2, 11, 6]]
@@ -375,12 +336,8 @@ test_subtract = do
         r = const [[-3.3], [0.0], [0.3]]
     assertApproxEq (l - r) $ const {shape=[3, 1]} {dtype=Double} [[5.1], [1.3], [3.7]]
 
-    sequence_ [compareSub l r | l <- ints, r <- ints]
-    sequence_ [compareSub l r | l <- doubles, r <- doubles]
-
-    where
-        compareSub : (ApproxEq dtype, Primitive dtype, Neg dtype) => dtype -> dtype -> IO ()
-        compareSub l r = assertApproxEq (const l - const r) $ const {shape=[]} (l - r)
+    sequence_ [assertEq (const l - const r) (const {shape=[]} (l - r)) | l <- ints, r <- ints]
+    sequence_ [assertApproxEq (const l - const r) (const {shape=[]} (l - r)) | l <- doubles, r <- doubles]
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -424,7 +381,10 @@ test_absE = do
     assert $ all (== True) (zipWith doubleApproxEq actual [1.8, 1.3, 0.0])
 
     traverse_ (\x => assertEq (absE (const {shape=[]} x)) (const (abs x))) ints
-    traverse_ (\x => eval (absE $ const {shape=[]} x) >>= assert . (doubleApproxEq (abs x))) doubles
+    traverse_ (\x => do
+            actual <- eval (absE $ const {shape=[]} x)
+            assert (doubleApproxEq actual (abs x))
+        ) doubles
 
 test_det : Tensor [3, 3] Double -> Tensor [] Double
 test_det x = det x
