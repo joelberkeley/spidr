@@ -299,18 +299,20 @@ test_tensor_contraction22 x y = x @@ y
 
 test_add : IO ()
 test_add = do
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    assertRelation (==#) (x + y) (const [[12, 20, 12], [-4, 3, 6]])
+    let x = const [[1, 15, 5], [-1, 7, 6]]
+        y = const [[11, 5, 7], [-3, -4, 0]]
+    assertRelation (==#) (x + y) (const {shape=[_, _]} {dtype=Int} [[12, 20, 12], [-4, 3, 6]])
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
     assertRelation fpEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
 
-    let x = const {shape=[]} {dtype=Int} 3
-        y = const {shape=[]} {dtype=Int} (-7)
-    assertRelation (==#) (x + y) (const (-4))
+    -- todo generalise
+    let x = const 3
+        y = const (-7)
+    assertRelation (==#) (x + y) (const {shape=[]} {dtype=Int} (-4))
 
+    -- todo generalise
     assertRelation fpEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
 
 test_subtract : IO ()
@@ -331,18 +333,20 @@ test_subtract = do
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    assertRelation (==#) (x *# y) (const [[11, 75, 35], [3, -28, 0]])
+    let x = const [[1, 15, 5], [-1, 7, 6]]
+        y = const [[11, 5, 7], [-3, -4, 0]]
+    assertRelation (==#) (x *# y) (const {shape=[_, _]} {dtype=Int} [[11, 75, 35], [3, -28, 0]])
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
-        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    assertRelation fpEq (x *# y) $ const {shape=[3, 1]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
+    let x = const [[1.8], [1.3], [4.0]]
+        y = const [[-3.3], [0.0], [0.3]]
+    assertRelation fpEq (x *# y) $ const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
+    -- todo generalise
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     assertRelation (==#) (x *# y) (const (-21))
 
+    -- todo generalise
     assertRelation fpEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_constant_multiplication : IO ()
@@ -351,14 +355,17 @@ test_constant_multiplication = do
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
     assertRelation (==#) (x * y) (const [[22, 10, 14], [-6, -8, 0]])
 
+    -- todo generalise
     let x = const 2.3
         y = const [[-3.3], [0.0], [0.3]]
     assertRelation fpEq (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
 
+    -- todo generalise
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     assertRelation (==#) (x * y) (const (-21))
 
+    -- todo generalise
     assertRelation fpEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_absE : IO ()
