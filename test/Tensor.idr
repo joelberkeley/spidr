@@ -21,6 +21,9 @@ import Tensor
 floatingPointTolerance : Double
 floatingPointTolerance = 0.00000001
 
+doubleApproxEq : Double -> Double -> Bool
+doubleApproxEq x y = abs (x - y) < floatingPointTolerance
+
 assert : Bool -> IO ()
 assert x = if x then pure () else do
     putStrLn "Test failed"
@@ -31,27 +34,31 @@ all' {shape = []} x = x
 all' {shape = (0 :: _)} [] = True
 all' {shape = ((S d) :: ds)} (x :: xs) = all' x && all' {shape=(d :: ds)} xs
 
+-- WARNING: This uses (==#), thus assuming it works, so we shouldn't use it to test (==#)
 assertEq : Eq dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> IO ()
 assertEq x y = do
     ok <- eval (x ==# y)
     assert (all' ok)
 
-infix 6 =~#
-
 interface ApproxEq dtype where
     -- todo why need rank?
-    (=~#) : {shape : _} -> Tensor {rank} shape dtype -> Tensor shape dtype -> Tensor shape Bool
+    approxEq : {shape : _} -> Tensor {rank} shape dtype -> Tensor shape dtype -> Tensor shape Bool
 
 ApproxEq Double where
-    x =~# y = absE (x - y) <# fill floatingPointTolerance
+    approxEq x y = absE (x - y) <# fill floatingPointTolerance
 
 ApproxEq Int where
-    (=~#) = (==#)
+    approxEq = (==#)
 
+-- WARNING: This uses a number of functions such as (-) absE (==#) (<#), thus assuming they work, so
+-- we shouldn't use it to test those functions.
 assertApproxEq : ApproxEq dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> IO ()
 assertApproxEq x y = do
-    ok <- eval (x =~# y)
+    ok <- eval (approxEq x y)
     assert (all' ok)
+
+bools : List Bool
+bools = [True, False]
 
 ints : List Int
 ints = [-3, -1, 0, 1, 3]
@@ -59,23 +66,105 @@ ints = [-3, -1, 0, 1, 3]
 doubles : List Double
 doubles = [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
 
-test_can_construct_scalar : Tensor [] Double
-test_can_construct_scalar = const 0.0
+test_const_eval : IO ()
+test_const_eval = do
+    let x = [[True, False, False], [False, True, False]]
+    x' <- eval $ const {shape=[_, _]} {dtype=Bool} x
+    assert $ x' == x
 
-test_can_construct_vector : Tensor [3] Double
-test_can_construct_vector = const [0.0, 1.0, -2.0]
+    let x =  [[1, 15, 5], [-1, 7, 6]]
+    x' <- eval $ const {shape=[_, _]} {dtype=Int} x
+    assert $ x' == x
 
-test_can_construct_matrix : Tensor [2, 3] Double
-test_can_construct_matrix = const [[0.0, -1.0, -2.0], [3.0, 4.0, 5.0]]
+    x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
+    assert $ doubleApproxEq (index 0 (index 0 x)) (-1.5)
+    assert $ doubleApproxEq (index 0 (index 1 x)) 1.3
+    assert $ doubleApproxEq (index 0 (index 2 x)) 4.3
 
-test_can_construct_int_matrix : Tensor [2, 3] Int
-test_can_construct_int_matrix = const [[0, -1, -2], [3, 4, 5]]
+    x <- eval $ const {shape=[]} True
+    assert x
 
-test_T : Tensor [2, 3] Double -> Tensor [3, 2] Double
-test_T x = x.T
+    x <- eval $ const {shape=[]} {dtype=Int} 3
+    assert $ x == 3
 
-test_T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
-test_T_with_leading x = x.T
+    x <- eval $ const {shape=[]} {dtype=Double} 3.4
+    assert $ doubleApproxEq x 3.4
+
+test_toString : IO ()
+test_toString = do
+    str <- toString $ const {shape=[]} {dtype=Int} 1
+    assert $ str == "constant, shape=[], metadata={:0}"
+
+    let x = const {shape=[]} {dtype=Int} 1
+        y = const {shape=[]} {dtype=Int} 2
+    str <- toString (x + y)
+    assert $ str ==
+        """
+        add, shape=[], metadata={:0}
+          constant, shape=[], metadata={:0}
+          constant, shape=[], metadata={:0}
+        """
+
+    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
+    assert $ str == "constant, shape=[3], metadata={:0}"
+
+test_broadcast : IO ()
+test_broadcast = do
+    let x = const {shape=[]} {dtype=Int} 7
+    assertEq (broadcast {to=[]} x) (const 7)
+
+    let x = const {shape=[]} {dtype=Int} 7
+    assertEq (broadcast {to=[1]} x) (const [7])
+
+    let x = const {shape=[]} {dtype=Int} 7
+    assertEq (broadcast {to=[2, 3]} x) (const [[7, 7, 7], [7, 7, 7]])
+
+    let x = const {shape=[]} {dtype=Int} 7
+    assertEq (broadcast {to=[1, 1, 1]} x) (const [[[7]]])
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    assertEq (broadcast {to=[0]} x) (const [])
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    assertEq (broadcast {to=[1]} x) (const [7])
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    assertEq (broadcast {to=[3]} x) (const [7, 7, 7])
+
+    let x = const {shape=[1]} {dtype=Int} [7]
+    assertEq (broadcast {to=[2, 3]} x) (const [[7, 7, 7], [7, 7, 7]])
+
+    let x = const {shape=[2]} {dtype=Int} [5, 7]
+    assertEq (broadcast {to=[2, 0]} x) (const [[], []])
+
+    let x = const {shape=[2]} {dtype=Int} [5, 7]
+    assertEq (broadcast {to=[3, 2]} x) (const [[5, 7], [5, 7], [5, 7]])
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    assertEq (broadcast {to=[2, 3]} x) (const [[2, 3, 5], [7, 11, 13]])
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    assertEq (broadcast {to=[2, 0]} x) (const [[], []])
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+    assertEq (broadcast {to=[0, 3]} x) (const [])
+
+    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
+        expected = const [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
+    assertEq (broadcast {to=[2, 2, 3]} x) expected
+
+    let x = const {shape=[2, 1, 3]} {dtype=Int} [[[2, 3, 5]], [[7, 11, 13]]]
+        expected = const [
+            [
+                [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+                [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+            ],
+            [
+                [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+                [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+            ]
+        ]
+    assertEq (broadcast {to=[2, 2, 5, 3]} x) expected
 
 test_dimbroadcastable : List (a ** b ** DimBroadcastable a b)
 test_dimbroadcastable = [
@@ -124,140 +213,11 @@ test_squeezable_can_flatten_only_ones = Nest (Nest Same)
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
 
-test_tensor_contraction11 : Tensor [4] Double -> Tensor [4] Double -> Tensor [] Double
-test_tensor_contraction11 x y = x @@ y
+test_T : Tensor [2, 3] Double -> Tensor [3, 2] Double
+test_T x = x.T
 
-test_tensor_contraction12 : Tensor [4] Double -> Tensor [4, 5] Double -> Tensor [5] Double
-test_tensor_contraction12 x y = x @@ y
-
-test_tensor_contraction21 : Tensor [3, 4] Double -> Tensor [4] Double -> Tensor [3] Double
-test_tensor_contraction21 x y = x @@ y
-
-test_tensor_contraction22 : Tensor [3, 4] Double -> Tensor [4, 5] Double -> Tensor [3, 5] Double
-test_tensor_contraction22 x y = x @@ y
-
-test_det : Tensor [3, 3] Double -> Tensor [] Double
-test_det x = det x
-
-test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
-test_det_with_leading x = det x
-
-test_const_eval : IO ()
-test_const_eval = do
-    let x = [[True, False, False], [False, True, False]]
-    x' <- eval $ const {shape=[_, _]} {dtype=Bool} x
-    assert $ x' == x
-
-    let x =  [[1, 15, 5], [-1, 7, 6]]
-    x' <- eval $ const {shape=[_, _]} {dtype=Int} x
-    assert $ x' == x
-
-    x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
-    assert $ doubleApproxEq (index 0 (index 0 x)) (-1.5)
-    assert $ doubleApproxEq (index 0 (index 1 x)) 1.3
-    assert $ doubleApproxEq (index 0 (index 2 x)) 4.3
-
-    x <- eval $ const {shape=[]} True
-    assert x
-
-    x <- eval $ const {shape=[]} {dtype=Int} 3
-    assert $ x == 3
-
-    x <- eval $ const {shape=[]} {dtype=Double} 3.4
-    assert $ doubleApproxEq x 3.4
-
-    where
-        doubleApproxEq : Double -> Double -> Bool
-        doubleApproxEq x y = abs (x - y) < floatingPointTolerance
-
-test_toString : IO ()
-test_toString = do
-    str <- toString $ const {shape=[]} {dtype=Int} 1
-    assert $ str == "constant, shape=[], metadata={:0}"
-
-    let x = const {shape=[]} {dtype=Int} 1
-        y = const {shape=[]} {dtype=Int} 2
-    str <- toString (x + y)
-    assert $ str ==
-        """
-        add, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-        """
-
-    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
-    assert $ str == "constant, shape=[3], metadata={:0}"
-
-test_broadcast : IO ()
-test_broadcast = do
-    let x = const {shape=[]} {dtype=Int} 7
-    broadcasted <- eval $ broadcast {to=[]} x
-    assert $ broadcasted == 7
-
-    let x = const {shape=[]} {dtype=Int} 7
-    broadcasted <- eval $ broadcast {to=[1]} x
-    assert $ broadcasted == [7]
-
-    let x = const {shape=[]} {dtype=Int} 7
-    broadcasted <- eval $ broadcast {to=[2, 3]} x
-    assert $ broadcasted == [[7, 7, 7], [7, 7, 7]]
-
-    let x = const {shape=[]} {dtype=Int} 7
-    broadcasted <- eval $ broadcast {to=[1, 1, 1]} x
-    assert $ broadcasted == [[[7]]]
-
-    let x = const {shape=[1]} {dtype=Int} [7]
-    broadcasted <- eval $ broadcast {to=[0]} x
-    assert $ broadcasted == []
-
-    let x = const {shape=[1]} {dtype=Int} [7]
-    broadcasted <- eval $ broadcast {to=[1]} x
-    assert $ broadcasted == [7]
-
-    let x = const {shape=[1]} {dtype=Int} [7]
-    broadcasted <- eval $ broadcast {to=[3]} x
-    assert $ broadcasted == [7, 7, 7]
-
-    let x = const {shape=[1]} {dtype=Int} [7]
-    broadcasted <- eval $ broadcast {to=[2, 3]} x
-    assert $ broadcasted == [[7, 7, 7], [7, 7, 7]]
-
-    let x = const {shape=[2]} {dtype=Int} [5, 7]
-    broadcasted <- eval $ broadcast {to=[2, 0]} x
-    assert $ broadcasted == [[], []]
-
-    let x = const {shape=[2]} {dtype=Int} [5, 7]
-    broadcasted <- eval $ broadcast {to=[3, 2]} x
-    assert $ broadcasted == [[5, 7], [5, 7], [5, 7]]
-
-    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    broadcasted <- eval $ broadcast {to=[2, 3]} x
-    assert $ broadcasted == [[2, 3, 5], [7, 11, 13]]
-
-    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    broadcasted <- eval $ broadcast {to=[2, 0]} x
-    assert $ broadcasted == [[], []]
-
-    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    broadcasted <- eval $ broadcast {to=[0, 3]} x
-    assert $ broadcasted == []
-
-    let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    broadcasted <- eval $ broadcast {to=[2, 2, 3]} x
-    assert $ broadcasted == [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
-
-    let x = const {shape=[2, 1, 3]} {dtype=Int} [[[2, 3, 5]], [[7, 11, 13]]]
-    broadcasted <- eval $ broadcast {to=[2, 2, 5, 3]} x
-    assert $ broadcasted == [
-        [
-            [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
-            [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
-        ],
-        [
-            [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
-            [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
-        ]
-    ]
+test_T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
+test_T_with_leading x = x.T
 
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
@@ -320,81 +280,28 @@ test_elementwise_equality = do
 
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
-    let x = const {shape=[]} {dtype=Bool} True
-    neq <- eval (x /=# x)
-    assert (not neq)
-
-    let x = const {shape=[]} {dtype=Bool} True
-        y = const {shape=[]} {dtype=Bool} False
-    neq <- eval (x /=# y)
-    assert neq
-
-    let x = const {shape=[_]} {dtype=Bool} [True, True, False]
-        y = const {shape=[_]} {dtype=Bool} [False, True, False]
-    neq <- eval (y /=# x)
-    assert $ neq == [True, False, False]
-
-    let x = const {shape=[]} {dtype=Int} 0
-    neq <- eval (x /=# x)
-    assert (not neq)
-
-    let x = const {shape=[]} {dtype=Int} 0
-        y = const {shape=[]} {dtype=Int} 1
-    neq <- eval (x /=# y)
-    assert neq
-
-    let x = const {shape=[]} {dtype=Int} 0
-        y = const {shape=[]} {dtype=Int} 1
-    neq <- eval (y /=# x)
-    assert neq
-
-    let x = const {shape=[]} {dtype=Int} 2
-        y = const {shape=[]} {dtype=Int} (-3)
-    neq <- eval (x /=# y)
-    assert neq
-
-    let x = const {shape=[]} {dtype=Int} 2
-        y = const {shape=[]} {dtype=Int} (-3)
-    neq <- eval (y /=# x)
-    assert neq
+    let x = const [True, True, False]
+        y = const [False, True, False]
+    assertEq (y /=# x) (const {shape=[_]} {dtype=Bool} [True, False, False])
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
-    neq <- eval (y /=# x)
-    assert $ neq == [[True, False, True], [True, False, False]]
-
-    let x = const {shape=[]} {dtype=Double} 0.1
-    neq <- eval (x /=# x)
-    assert (not neq)
-
-    let x = const {shape=[]} {dtype=Double} 0.1
-        y = const {shape=[]} {dtype=Double} 1.1
-    neq <- eval (x /=# y)
-    assert neq
+    assertEq (x /=# y) (const [[True, False, True], [True, False, False]])
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
         y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    neq <- eval (y /=# x)
-    assert $ neq == [[True, False, True], [True, False, False]]
+    assertEq (x /=# y) (const [[True, False, True], [True, False, False]])
 
-compareScalar : (Primitive dtype, Ord dtype) => dtype -> dtype -> IO ()
-compareScalar x y = do
-    let x' = const {shape=[]} {dtype=dtype} x
-        y' = const {shape=[]} {dtype=dtype} y
-    gt <- eval (y' ># x')
-    lt <- eval (y' <# x')
-    ge <- eval (y' >=# x')
-    le <- eval (y' <=# x')
-    assert $ gt == (y > x)
-    assert $ lt == (y < x)
-    assert $ ge == (y >= x)
-    assert $ le == (y <= x)
+    sequence_ [compareScalars l r | l <- bools, r <- bools]
+    sequence_ [compareScalars l r | l <- ints, r <- ints]
+    sequence_ [compareScalars l r | l <- doubles, r <- doubles]
+
+    where
+        compareScalars : (Primitive dtype, Eq dtype) => dtype -> dtype -> IO ()
+        compareScalars l r = assertEq ((const l) /=# (const r)) (const {shape=[]} (l /= r))
 
 test_comparison : IO ()
 test_comparison = do
-    sequence_ [compareScalar x y | x <- ints, y <- ints]
-    sequence_ [compareScalar x y | x <- doubles, y <- doubles]
-
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
     gt <- eval (y ># x)
@@ -417,12 +324,36 @@ test_comparison = do
     assert (ge == [[True, True, False], [False, True, True]])
     assert (le == [[True, False, True], [True, False, True]])
 
+    sequence_ [compareScalars l r | l <- ints, r <- ints]
+    sequence_ [compareScalars l r | l <- doubles, r <- doubles]
+
+    where
+        compareScalars : (Primitive dtype, Ord dtype) => dtype -> dtype -> IO ()
+        compareScalars l r = do
+            let l' = const l
+                r' = const r
+            assertEq (l' ># r') (const {shape=[]} (l > r))
+            assertEq (l' <# r') (const {shape=[]} (l < r))
+            assertEq (l' >=# r') (const {shape=[]} (l >= r))
+            assertEq (l' <=# r') (const {shape=[]} (l <= r))
+
+test_tensor_contraction11 : Tensor [4] Double -> Tensor [4] Double -> Tensor [] Double
+test_tensor_contraction11 x y = x @@ y
+
+test_tensor_contraction12 : Tensor [4] Double -> Tensor [4, 5] Double -> Tensor [5] Double
+test_tensor_contraction12 x y = x @@ y
+
+test_tensor_contraction21 : Tensor [3, 4] Double -> Tensor [4] Double -> Tensor [3] Double
+test_tensor_contraction21 x y = x @@ y
+
+test_tensor_contraction22 : Tensor [3, 4] Double -> Tensor [4, 5] Double -> Tensor [3, 5] Double
+test_tensor_contraction22 x y = x @@ y
+
 test_add : IO ()
 test_add = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    sum <- eval (x + y)
-    assert $ sum == [[12, 20, 12], [-4, 3, 6]]
+    assertEq (x + y) (const [[12, 20, 12], [-4, 3, 6]])
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
@@ -430,8 +361,7 @@ test_add = do
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
-    sum <- eval (x + y)
-    assert $ sum == -4
+    assertEq (x + y) (const (-4))
 
     assertApproxEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
 
@@ -456,8 +386,7 @@ test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    product <- eval (x *# y)
-    assert $ product == [[11, 75, 35], [3, -28, 0]]
+    assertEq (x *# y) (const [[11, 75, 35], [3, -28, 0]])
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
@@ -465,8 +394,7 @@ test_elementwise_multiplication = do
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
-    product <- eval (x *# y)
-    assert $ product == -21
+    assertEq (x *# y) (const (-21))
 
     assertApproxEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
@@ -474,9 +402,7 @@ test_constant_multiplication : IO ()
 test_constant_multiplication = do
     let x = const {shape=[]} {dtype=Int} 2
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-        product = x * y
-    ok <- eval (product ==# const [[22, 10, 14], [-6, -8, 0]])
-    assert (all' {shape=[2, 3]} ok)
+    assertEq (x * y) (const [[22, 10, 14], [-6, -8, 0]])
 
     let x = const 2.3
         y = const [[-3.3], [0.0], [0.3]]
@@ -484,26 +410,27 @@ test_constant_multiplication = do
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
-    product <- eval (x * y)
-    assert $ product == -21
+    assertEq (x * y) (const (-21))
 
     assertApproxEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_absE : IO ()
 test_absE = do
     let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
-    res <- eval (absE x)
-    assert $ res == [1, 0, 5]
+    assertEq (absE x) (const [1, 0, 5])
 
-    let x = const [1.8, -1.3, 0.0]
-    assertApproxEq (absE x) $ const {shape=[_]} {dtype=Double} [1.8, 1.3, 0.0]
+    let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
+    actual <- eval (absE x)
+    assert $ all (== True) (zipWith doubleApproxEq actual [1.8, 1.3, 0.0])
 
-    traverse_ assertAbs ints
-    traverse_ assertAbs doubles
+    traverse_ (\x => assertEq (absE (const {shape=[]} x)) (const (abs x))) ints
+    traverse_ (\x => eval (absE $ const {shape=[]} x) >>= assert . (doubleApproxEq (abs x))) doubles
 
-    where
-        assertAbs : (Abs dtype, ApproxEq dtype, Primitive dtype) => dtype -> IO ()
-        assertAbs x = assertApproxEq (absE $ const x) $ const {shape=[]} {dtype=dtype} (abs x)
+test_det : Tensor [3, 3] Double -> Tensor [] Double
+test_det x = det x
+
+test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
+test_det_with_leading x = det x
 
 main : IO ()
 main = do
