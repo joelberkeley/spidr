@@ -41,19 +41,10 @@ assertRelation prop x y = do
         arrayAll {shape = (0 :: _)} [] = True
         arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
 
-infix 6 =~#
-
-interface SufficientlyEq dtype where
-    -- todo why need rank?
-    (=~#) : {shape : _} -> Tensor {rank} shape dtype -> Tensor shape dtype -> Tensor shape Bool
-
 -- WARNING: This uses (-) (==#) (<#) and absE, and thus assumes they work, so
 -- we shouldn't use it to test those functions.
-SufficientlyEq Double where
-    x =~# y = absE (x - y) <# fill floatingPointTolerance
-
-SufficientlyEq Int where
-    (=~#) = (==#)
+fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
+fpEq x y = absE (x - y) <# fill floatingPointTolerance
 
 bools : List Bool
 bools = [True, False]
@@ -79,14 +70,12 @@ test_const_eval = do
     assert $ doubleSufficientlyEq (index 0 (index 1 x)) 1.3
     assert $ doubleSufficientlyEq (index 0 (index 2 x)) 4.3
 
-    x <- eval $ const {shape=[]} True
-    assert x
-
-    x <- eval $ const {shape=[]} {dtype=Int} 3
-    assert $ x == 3
-
-    x <- eval $ const {shape=[]} {dtype=Double} 3.4
-    assert $ doubleSufficientlyEq x 3.4
+    traverse_ (\x => do x' <- eval {shape=[]} (const x); assert (x == x')) bools
+    traverse_ (\x => do x' <- eval {shape=[]} (const x); assert (x == x')) ints
+    traverse_ (\x => do
+            x' <- eval {shape=[]} (const x)
+            assert (doubleSufficientlyEq x x')
+        ) doubles
 
 test_toString : IO ()
 test_toString = do
@@ -316,13 +305,13 @@ test_add = do
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
-    assertRelation (=~#) (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
+    assertRelation fpEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     assertRelation (==#) (x + y) (const (-4))
 
-    assertRelation (=~#) (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
+    assertRelation fpEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
 
 test_subtract : IO ()
 test_subtract = do
@@ -348,13 +337,13 @@ test_elementwise_multiplication = do
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    assertRelation (=~#) (x *# y) $ const {shape=[3, 1]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
+    assertRelation fpEq (x *# y) $ const {shape=[3, 1]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     assertRelation (==#) (x *# y) (const (-21))
 
-    assertRelation (=~#) (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
+    assertRelation fpEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_constant_multiplication : IO ()
 test_constant_multiplication = do
@@ -364,13 +353,13 @@ test_constant_multiplication = do
 
     let x = const 2.3
         y = const [[-3.3], [0.0], [0.3]]
-    assertRelation (=~#) (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
+    assertRelation fpEq (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     assertRelation (==#) (x * y) (const (-21))
 
-    assertRelation (=~#) (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
+    assertRelation fpEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_absE : IO ()
 test_absE = do
