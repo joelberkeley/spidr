@@ -18,16 +18,40 @@ import System
 
 import Tensor
 
-infix 6 =~
+floatingPointTolerance : Double
+floatingPointTolerance = 0.00000001
 
-interface ApproxCompare ty where
-    (=~) : ty -> ty -> Bool
+assert : Bool -> IO ()
+assert x = if x then pure () else do
+    putStrLn "Test failed"
+    exitFailure
 
-ApproxCompare Double where
-    x =~ y = abs (x - y) < 0.00000001
+all' : {shape : _} -> Array shape {dtype=Bool} -> Bool
+all' {shape = []} x = x
+all' {shape = (0 :: _)} [] = True
+all' {shape = ((S d) :: ds)} (x :: xs) = all' x && all' {shape=(d :: ds)} xs
 
-ApproxCompare Int where
-    (=~) = (==)
+assertEq : Eq dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> IO ()
+assertEq x y = do
+    ok <- eval (x ==# y)
+    assert (all' ok)
+
+infix 6 =~#
+
+interface ApproxEq dtype where
+    -- todo why need rank?
+    (=~#) : {shape : _} -> Tensor {rank} shape dtype -> Tensor shape dtype -> Tensor shape Bool
+
+ApproxEq Double where
+    x =~# y = absE (x - y) <# fill floatingPointTolerance
+
+ApproxEq Int where
+    (=~#) = (==#)
+
+assertApproxEq : ApproxEq dtype => {shape : _} -> Tensor shape dtype -> Tensor shape dtype -> IO ()
+assertApproxEq x y = do
+    ok <- eval (x =~# y)
+    assert (all' ok)
 
 ints : List Int
 ints = [-3, -1, 0, 1, 3]
@@ -118,11 +142,6 @@ test_det x = det x
 test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
 test_det_with_leading x = det x
 
-assert : Bool -> IO ()
-assert x = if x then pure () else do
-    putStrLn "Test failed"
-    exitFailure
-
 test_const_eval : IO ()
 test_const_eval = do
     let x = [[True, False, False], [False, True, False]]
@@ -134,9 +153,9 @@ test_const_eval = do
     assert $ x' == x
 
     x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
-    assert $ index 0 (index 0 x) =~ -1.5
-    assert $ index 0 (index 1 x) =~ 1.3
-    assert $ index 0 (index 2 x) =~ 4.3
+    assert $ doubleApproxEq (index 0 (index 0 x)) (-1.5)
+    assert $ doubleApproxEq (index 0 (index 1 x)) 1.3
+    assert $ doubleApproxEq (index 0 (index 2 x)) 4.3
 
     x <- eval $ const {shape=[]} True
     assert x
@@ -145,7 +164,11 @@ test_const_eval = do
     assert $ x == 3
 
     x <- eval $ const {shape=[]} {dtype=Double} 3.4
-    assert $ x =~ 3.4
+    assert $ doubleApproxEq x 3.4
+
+    where
+        doubleApproxEq : Double -> Double -> Bool
+        doubleApproxEq x y = abs (x - y) < floatingPointTolerance
 
 test_toString : IO ()
 test_toString = do
@@ -401,47 +424,33 @@ test_add = do
     sum <- eval (x + y)
     assert $ sum == [[12, 20, 12], [-4, 3, 6]]
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
-        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    sum <- eval (x + y)
-    assert $ index 0 (index 0 sum) =~ -1.5
-    assert $ index 0 (index 1 sum) =~ 1.3
-    assert $ index 0 (index 2 sum) =~ 4.3
+    let x = const [[1.8], [1.3], [4.0]]
+        y = const [[-3.3], [0.0], [0.3]]
+    assertApproxEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     sum <- eval (x + y)
     assert $ sum == -4
 
-    let x = const {shape=[]} {dtype=Double} 3.4
-        y = const {shape=[]} {dtype=Double} (-7.1)
-    sum <- eval (x + y)
-    assert $ sum =~ -3.7
+    assertApproxEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
 
 test_subtract : IO ()
 test_subtract = do
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    sum <- eval (x - y)
-    assert $ sum == [[-10, 10, -2], [2, 11, 6]]
+    let l = const [[1, 15, 5], [-1, 7, 6]]
+        r = const [[11, 5, 7], [-3, -4, 0]]
+    assertEq (l - r) $ const {shape=[_, _]} {dtype=Int} [[-10, 10, -2], [2, 11, 6]]
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
-        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    sum <- eval (x - y)
-    assert $ index 0 (index 0 sum) =~ 5.1
-    assert $ index 0 (index 1 sum) =~ 1.3
-    assert $ index 0 (index 2 sum) =~ 3.7
+    let l = const [[1.8], [1.3], [4.0]]
+        r = const [[-3.3], [0.0], [0.3]]
+    assertApproxEq (l - r) $ const {shape=[3, 1]} {dtype=Double} [[5.1], [1.3], [3.7]]
 
-    sequence_ [compareSub x y | x <- ints, y <- ints]
-    sequence_ [compareSub x y | x <- doubles, y <- doubles]
+    sequence_ [compareSub l r | l <- ints, r <- ints]
+    sequence_ [compareSub l r | l <- doubles, r <- doubles]
 
     where
-        compareSub : (Neg dtype, Primitive dtype, ApproxCompare dtype) => dtype -> dtype -> IO ()
-        compareSub x y = do
-            let x' = const {shape=[]} {dtype=dtype} x
-                y' = const {shape=[]} {dtype=dtype} y
-            diff <- eval (x' - y')
-            assert $ diff =~ x - y
+        compareSub : (ApproxEq dtype, Primitive dtype, Neg dtype) => dtype -> dtype -> IO ()
+        compareSub l r = assertApproxEq (const l - const r) $ const {shape=[]} (l - r)
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -452,44 +461,33 @@ test_elementwise_multiplication = do
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.8], [1.3], [4.0]]
         y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    product <- eval (x *# y)
-    assert $ index 0 (index 0 product) =~ -1.8 * 3.3
-    assert $ index 0 (index 1 product) =~ 0.0
-    assert $ index 0 (index 2 product) =~ 1.2
+    assertApproxEq (x *# y) $ const {shape=[3, 1]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     product <- eval (x *# y)
     assert $ product == -21
 
-    let x = const {shape=[]} {dtype=Double} 3.4
-        y = const {shape=[]} {dtype=Double} (-7.1)
-    product <- eval (x *# y)
-    assert $ product =~ -3.4 * 7.1
+    assertApproxEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_constant_multiplication : IO ()
 test_constant_multiplication = do
     let x = const {shape=[]} {dtype=Int} 2
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    product <- eval (x * y)
-    assert $ product == [[22, 10, 14], [-6, -8, 0]]
+        product = x * y
+    ok <- eval (product ==# const [[22, 10, 14], [-6, -8, 0]])
+    assert (all' {shape=[2, 3]} ok)
 
-    let x = const {shape=[]} {dtype=Double} 2.3
-        y = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
-    product <- eval (x * y)
-    assert $ index 0 (index 0 product) =~ -2.3 * 3.3
-    assert $ index 0 (index 1 product) =~ 0.0
-    assert $ index 0 (index 2 product) =~ 0.69
+    let x = const 2.3
+        y = const [[-3.3], [0.0], [0.3]]
+    assertApproxEq (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
 
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
     product <- eval (x * y)
     assert $ product == -21
 
-    let x = const {shape=[]} {dtype=Double} 3.4
-        y = const {shape=[]} {dtype=Double} (-7.1)
-    product <- eval (x * y)
-    assert $ product =~ -3.4 * 7.1
+    assertApproxEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_absE : IO ()
 test_absE = do
@@ -497,19 +495,15 @@ test_absE = do
     res <- eval (absE x)
     assert $ res == [1, 0, 5]
 
-    let x = const {shape=[_]} {dtype=Double} [1.8, -1.3, 0.0]
-    res <- eval (absE x)
-    traverse_ (assert . uncurry (=~)) (zip res [1.8, 1.3, 0.0])
+    let x = const [1.8, -1.3, 0.0]
+    assertApproxEq (absE x) $ const {shape=[_]} {dtype=Double} [1.8, 1.3, 0.0]
 
     traverse_ assertAbs ints
     traverse_ assertAbs doubles
 
     where
-        assertAbs : (Abs dtype, ApproxCompare dtype, Primitive dtype) => dtype -> IO ()
-        assertAbs x = do
-            let x' = const {shape=[]} {dtype=dtype} x
-            res <- eval (absE x')
-            assert $ res =~ abs x
+        assertAbs : (Abs dtype, ApproxEq dtype, Primitive dtype) => dtype -> IO ()
+        assertAbs x = assertApproxEq (absE $ const x) $ const {shape=[]} {dtype=dtype} (abs x)
 
 main : IO ()
 main = do
