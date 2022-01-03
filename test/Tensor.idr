@@ -302,13 +302,15 @@ test_add = do
         y = const [[-3.3], [0.0], [0.3]]
     assertAll $ fpEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
 
-    -- todo generalise
-    let x = const 3
-        y = const (-7)
-    assertAll $ x + y ==# const {shape=[]} {dtype=Int} (-4)
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll $ (const l + const r) ==# const {shape=[]} (l + r)
 
-    -- todo generalise
-    assertAll $ fpEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ assertAll $ fpEq (const l + const r) (const {shape=[]} (l + r))
 
 test_subtract : IO ()
 test_subtract = do
@@ -321,10 +323,17 @@ test_subtract = do
     diff <- eval {shape=[3]} {dtype=Double} (l - r)
     sequence_ (zipWith (assert .: doubleSufficientlyEq) diff [5.1, 1.3, 3.7])
 
-    sequence_ [assertAll $ const l - const r ==# const {shape=[]} (l - r)
-                | l <- ints, r <- ints]
-    sequence_ [do diff <- eval {shape=[]} (const l - const r)
-                  assert (doubleSufficientlyEq diff (l - r)) | l <- doubles, r <- doubles]
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll $ (const l - const r) ==# const {shape=[]} (l - r)
+
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ do
+            diff <- eval {shape=[]} (const l - const r)
+            assert (doubleSufficientlyEq diff (l - r))
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -336,32 +345,37 @@ test_elementwise_multiplication = do
         y = const [[-3.3], [0.0], [0.3]]
     assertAll $ fpEq (x *# y) $ const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
-    -- todo generalise
-    let x = const {shape=[]} {dtype=Int} 3
-        y = const {shape=[]} {dtype=Int} (-7)
-    assertAll $ x *# y ==# const (-21)
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll $ (const l *# const r) ==# const {shape=[]} (l * r)
 
-    -- todo generalise
-    assertAll $ fpEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ assertAll $ fpEq (const l *# const r) (const {shape=[]} (l * r))
 
 test_constant_multiplication : IO ()
 test_constant_multiplication = do
-    let x = const {shape=[]} {dtype=Int} 2
-        y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    assertAll $ x * y ==# const [[22, 10, 14], [-6, -8, 0]]
+    let r = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
+    sequence_ $ do
+        l <- ints
+        pure $ assertAll $ (const l) * r ==# const [[11 * l, 5 * l, 7 * l], [-3 * l, -4 * l, 0]]
 
-    -- todo generalise
-    let x = const 2.3
-        y = const [[-3.3], [0.0], [0.3]]
-    assertAll $ fpEq (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
+    let r = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    sequence_ $ do
+        l <- doubles
+        pure $ assertAll $ fpEq ((const l) * r) (const [[-3.3 * l], [0.0], [0.3 * l]])
 
-    -- todo generalise
-    let x = const {shape=[]} {dtype=Int} 3
-        y = const {shape=[]} {dtype=Int} (-7)
-    assertAll $ x * y ==# const (-21)
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll $ (const l * const r) ==# const {shape=[]} (l * r)
 
-    -- todo generalise
-    assertAll $ fpEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ assertAll $ fpEq (const l * const r) (const {shape=[]} (l * r))
 
 test_absE : IO ()
 test_absE = do
@@ -372,7 +386,10 @@ test_absE = do
     actual <- eval (absE x)
     sequence_ (zipWith (assert .: doubleSufficientlyEq) actual [1.8, 1.3, 0.0])
 
-    traverse_ (\x => assertAll $ absE (const {shape=[]} x) ==# const (abs x)) ints
+    sequence_ $ do
+        x <- ints
+        pure $ assertAll $ absE (const {shape=[]} x) ==# const (abs x)
+
     traverse_ (\x => do
             actual <- eval (absE $ const {shape=[]} x)
             assert (doubleSufficientlyEq actual (abs x))
