@@ -25,17 +25,12 @@ doubleSufficientlyEq : Double -> Double -> Bool
 doubleSufficientlyEq x y = abs (x - y) < floatingPointTolerance
 
 assert : Bool -> IO ()
-assert x = if x then pure () else do
+assert x = unless x $ do
     putStrLn "Test failed"
     exitFailure
 
-||| Assert an element-wise relation holds betweens two tensors.
-assertRelation : {shape : _} ->
-    (Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool)
-    -> Tensor shape dtype -> Tensor shape dtype -> IO ()
-assertRelation prop x y = do
-    satisfies_prop <- eval (prop x y)
-    assert (arrayAll satisfies_prop) where
+assertAll : {shape : _} -> Tensor shape Bool -> IO ()
+assertAll xs = assert (arrayAll !(eval xs)) where
         arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
         arrayAll {shape = []} x = x
         arrayAll {shape = (0 :: _)} [] = True
@@ -98,47 +93,47 @@ test_toString = do
 test_broadcast : IO ()
 test_broadcast = do
     let x = const {shape=[]} {dtype=Int} 7
-    assertRelation (==#) (broadcast {to=[]} x) (const 7)
+    assertAll $ broadcast {to=[]} x ==# const 7
 
     let x = const {shape=[]} {dtype=Int} 7
-    assertRelation (==#) (broadcast {to=[1]} x) (const [7])
+    assertAll $ broadcast {to=[1]} x ==# const [7]
 
     let x = const {shape=[]} {dtype=Int} 7
-    assertRelation (==#) (broadcast {to=[2, 3]} x) (const [[7, 7, 7], [7, 7, 7]])
+    assertAll $ broadcast {to=[2, 3]} x ==# const [[7, 7, 7], [7, 7, 7]]
 
     let x = const {shape=[]} {dtype=Int} 7
-    assertRelation (==#) (broadcast {to=[1, 1, 1]} x) (const [[[7]]])
+    assertAll $ broadcast {to=[1, 1, 1]} x ==# const [[[7]]]
 
     let x = const {shape=[1]} {dtype=Int} [7]
-    assertRelation (==#) (broadcast {to=[0]} x) (const [])
+    assertAll $ broadcast {to=[0]} x ==# const []
 
     let x = const {shape=[1]} {dtype=Int} [7]
-    assertRelation (==#) (broadcast {to=[1]} x) (const [7])
+    assertAll $ broadcast {to=[1]} x ==# const [7]
 
     let x = const {shape=[1]} {dtype=Int} [7]
-    assertRelation (==#) (broadcast {to=[3]} x) (const [7, 7, 7])
+    assertAll $ broadcast {to=[3]} x ==# const [7, 7, 7]
 
     let x = const {shape=[1]} {dtype=Int} [7]
-    assertRelation (==#) (broadcast {to=[2, 3]} x) (const [[7, 7, 7], [7, 7, 7]])
+    assertAll $ broadcast {to=[2, 3]} x ==# const [[7, 7, 7], [7, 7, 7]]
 
     let x = const {shape=[2]} {dtype=Int} [5, 7]
-    assertRelation (==#) (broadcast {to=[2, 0]} x) (const [[], []])
+    assertAll $ broadcast {to=[2, 0]} x ==# const [[], []]
 
     let x = const {shape=[2]} {dtype=Int} [5, 7]
-    assertRelation (==#) (broadcast {to=[3, 2]} x) (const [[5, 7], [5, 7], [5, 7]])
+    assertAll $ broadcast {to=[3, 2]} x ==# const [[5, 7], [5, 7], [5, 7]]
 
     let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    assertRelation (==#) (broadcast {to=[2, 3]} x) (const [[2, 3, 5], [7, 11, 13]])
+    assertAll $ broadcast {to=[2, 3]} x ==# const [[2, 3, 5], [7, 11, 13]]
 
     let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    assertRelation (==#) (broadcast {to=[2, 0]} x) (const [[], []])
+    assertAll $ broadcast {to=[2, 0]} x ==# const [[], []]
 
     let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
-    assertRelation (==#) (broadcast {to=[0, 3]} x) (const [])
+    assertAll $ broadcast {to=[0, 3]} x ==# const []
 
     let x = const {shape=[2, 3]} {dtype=Int} [[2, 3, 5], [7, 11, 13]]
         expected = const [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
-    assertRelation (==#) (broadcast {to=[2, 2, 3]} x) expected
+    assertAll $ broadcast {to=[2, 2, 3]} x ==# expected
 
     let x = const {shape=[2, 1, 3]} {dtype=Int} [[[2, 3, 5]], [[7, 11, 13]]]
         expected = const [
@@ -151,7 +146,7 @@ test_broadcast = do
                 [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
             ]
         ]
-    assertRelation (==#) (broadcast {to=[2, 2, 5, 3]} x) expected
+    assertAll $ broadcast {to=[2, 2, 5, 3]} x ==# expected
 
 test_dimbroadcastable : List (a ** b ** DimBroadcastable a b)
 test_dimbroadcastable = [
@@ -237,15 +232,15 @@ test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
     let x = const [True, True, False]
         y = const [False, True, False]
-    assertRelation (==#) (y /=# x) (const {shape=[_]} {dtype=Bool} [True, False, False])
+    assertAll $ (y /=# x) ==# const {shape=[_]} {dtype=Bool} [True, False, False]
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
-    assertRelation (==#) (x /=# y) (const [[True, False, True], [True, False, False]])
+    assertAll $ (x /=# y) ==# const [[True, False, True], [True, False, False]]
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
         y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    assertRelation (==#) (x /=# y) (const [[True, False, True], [True, False, False]])
+    assertAll $ (x /=# y) ==# const [[True, False, True], [True, False, False]]
 
     sequence_ [compareScalars l r | l <- bools, r <- bools]
     sequence_ [compareScalars l r | l <- ints, r <- ints]
@@ -254,23 +249,23 @@ test_elementwise_inequality = do
     where
         compareScalars : (Primitive dtype, Eq dtype) => dtype -> dtype -> IO ()
         compareScalars l r =
-            assertRelation (==#) ((const l) /=# (const r)) (const {shape=[]} (l /= r))
+            assertAll $ (const l /=# const r) ==# const {shape=[]} (l /= r)
 
 test_comparison : IO ()
 test_comparison = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         y = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
-    assertRelation (==#) (y ># x) (const [[False, True, False], [False, True, False]])
-    assertRelation (==#) (y <# x) (const [[False, False, True], [True, False, False]])
-    assertRelation (==#) (y >=# x) (const [[True, True, False], [False, True, True]])
-    assertRelation (==#) (y <=# x) (const [[True, False, True], [True, False, True]])
+    assertAll $ (y ># x) ==# const [[False, True, False], [False, True, False]]
+    assertAll $ (y <# x) ==# const [[False, False, True], [True, False, False]]
+    assertAll $ (y >=# x) ==# const [[True, True, False], [False, True, True]]
+    assertAll $ (y <=# x) ==# const [[True, False, True], [True, False, True]]
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
         y = const {shape=[_, _]} {dtype=Double} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    assertRelation (==#) (y ># x) (const [[False, True, False], [False, True, False]])
-    assertRelation (==#) (y <# x) (const [[False, False, True], [True, False, False]])
-    assertRelation (==#) (y >=# x) (const [[True, True, False], [False, True, True]])
-    assertRelation (==#) (y <=# x) (const [[True, False, True], [True, False, True]])
+    assertAll $ (y ># x) ==# const [[False, True, False], [False, True, False]]
+    assertAll $ (y <# x) ==# const [[False, False, True], [True, False, False]]
+    assertAll $ (y >=# x) ==# const [[True, True, False], [False, True, True]]
+    assertAll $ (y <=# x) ==# const [[True, False, True], [True, False, True]]
 
     sequence_ [compareScalars l r | l <- ints, r <- ints]
     sequence_ [compareScalars l r | l <- doubles, r <- doubles]
@@ -280,10 +275,10 @@ test_comparison = do
         compareScalars l r = do
             let l' = const l
                 r' = const r
-            assertRelation (==#) (l' ># r') (const {shape=[]} (l > r))
-            assertRelation (==#) (l' <# r') (const {shape=[]} (l < r))
-            assertRelation (==#) (l' >=# r') (const {shape=[]} (l >= r))
-            assertRelation (==#) (l' <=# r') (const {shape=[]} (l <= r))
+            assertAll $ (l' ># r') ==# const {shape=[]} (l > r)
+            assertAll $ (l' <# r') ==# const {shape=[]} (l < r)
+            assertAll $ (l' >=# r') ==# const {shape=[]} (l >= r)
+            assertAll $ (l' <=# r') ==# const {shape=[]} (l <= r)
 
 test_tensor_contraction11 : Tensor [4] Double -> Tensor [4] Double -> Tensor [] Double
 test_tensor_contraction11 x y = x @@ y
@@ -301,32 +296,32 @@ test_add : IO ()
 test_add = do
     let x = const [[1, 15, 5], [-1, 7, 6]]
         y = const [[11, 5, 7], [-3, -4, 0]]
-    assertRelation (==#) (x + y) (const {shape=[_, _]} {dtype=Int} [[12, 20, 12], [-4, 3, 6]])
+    assertAll $ x + y ==# const {shape=[_, _]} {dtype=Int} [[12, 20, 12], [-4, 3, 6]]
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
-    assertRelation fpEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
+    assertAll $ fpEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
 
     -- todo generalise
     let x = const 3
         y = const (-7)
-    assertRelation (==#) (x + y) (const {shape=[]} {dtype=Int} (-4))
+    assertAll $ x + y ==# const {shape=[]} {dtype=Int} (-4)
 
     -- todo generalise
-    assertRelation fpEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
+    assertAll $ fpEq (const 3.4 + const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.7)
 
 test_subtract : IO ()
 test_subtract = do
     let l = const [[1, 15, 5], [-1, 7, 6]]
         r = const [[11, 5, 7], [-3, -4, 0]]
-    assertRelation (==#) (l - r) $ const {shape=[_, _]} {dtype=Int} [[-10, 10, -2], [2, 11, 6]]
+    assertAll $ (l - r) ==# const {shape=[_, _]} {dtype=Int} [[-10, 10, -2], [2, 11, 6]]
 
     let l = const [1.8, 1.3, 4.0]
         r = const [-3.3, 0.0, 0.3]
     diff <- eval {shape=[3]} {dtype=Double} (l - r)
     sequence_ (zipWith (assert .: doubleSufficientlyEq) diff [5.1, 1.3, 3.7])
 
-    sequence_ [assertRelation (==#) (const l - const r) (const {shape=[]} (l - r))
+    sequence_ [assertAll $ const l - const r ==# const {shape=[]} (l - r)
                 | l <- ints, r <- ints]
     sequence_ [do diff <- eval {shape=[]} (const l - const r)
                   assert (doubleSufficientlyEq diff (l - r)) | l <- doubles, r <- doubles]
@@ -335,49 +330,49 @@ test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
     let x = const [[1, 15, 5], [-1, 7, 6]]
         y = const [[11, 5, 7], [-3, -4, 0]]
-    assertRelation (==#) (x *# y) (const {shape=[_, _]} {dtype=Int} [[11, 75, 35], [3, -28, 0]])
+    assertAll $ x *# y ==# const {shape=[_, _]} {dtype=Int} [[11, 75, 35], [3, -28, 0]]
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
-    assertRelation fpEq (x *# y) $ const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
+    assertAll $ fpEq (x *# y) $ const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
     -- todo generalise
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
-    assertRelation (==#) (x *# y) (const (-21))
+    assertAll $ x *# y ==# const (-21)
 
     -- todo generalise
-    assertRelation fpEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
+    assertAll $ fpEq (const 3.4 *# const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_constant_multiplication : IO ()
 test_constant_multiplication = do
     let x = const {shape=[]} {dtype=Int} 2
         y = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
-    assertRelation (==#) (x * y) (const [[22, 10, 14], [-6, -8, 0]])
+    assertAll $ x * y ==# const [[22, 10, 14], [-6, -8, 0]]
 
     -- todo generalise
     let x = const 2.3
         y = const [[-3.3], [0.0], [0.3]]
-    assertRelation fpEq (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
+    assertAll $ fpEq (x * y) $ const {shape=[_, _]} {dtype=Double} [[-7.59], [0.0], [0.69]]
 
     -- todo generalise
     let x = const {shape=[]} {dtype=Int} 3
         y = const {shape=[]} {dtype=Int} (-7)
-    assertRelation (==#) (x * y) (const (-21))
+    assertAll $ x * y ==# const (-21)
 
     -- todo generalise
-    assertRelation fpEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
+    assertAll $ fpEq (const 3.4 * const (-7.1)) $ const {shape=[]} {dtype=Double} (-3.4 * 7.1)
 
 test_absE : IO ()
 test_absE = do
     let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
-    assertRelation (==#) (absE x) (const [1, 0, 5])
+    assertAll $ absE x ==# const [1, 0, 5]
 
     let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
     actual <- eval (absE x)
-    assert $ all (== True) (zipWith doubleSufficientlyEq actual [1.8, 1.3, 0.0])
+    sequence_ (zipWith (assert .: doubleSufficientlyEq) actual [1.8, 1.3, 0.0])
 
-    traverse_ (\x => assertRelation (==#) (absE (const {shape=[]} x)) (const (abs x))) ints
+    traverse_ (\x => assertAll $ absE (const {shape=[]} x) ==# const (abs x)) ints
     traverse_ (\x => do
             actual <- eval (absE $ const {shape=[]} x)
             assert (doubleSufficientlyEq actual (abs x))
