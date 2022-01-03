@@ -203,19 +203,19 @@ test_T_with_leading x = x.T
 
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
-    let x = const {shape=[_]} {dtype=Bool} [True, True, False]
-        y = const {shape=[_]} {dtype=Bool} [False, True, False]
-    eq <- eval (y ==# x)
+    let x = const [True, True, False]
+        y = const [False, True, False]
+    eq <- eval {shape=[_]} {dtype=Bool} (y ==# x)
     assert $ eq == [False, True, True]
 
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
-    eq <- eval (y ==# x)
+    let x = const [[1, 15, 5], [-1, 7, 6]]
+        y = const [[2, 15, 3], [2, 7, 6]]
+    eq <- eval {shape=[_, _]} {dtype=Int} (y ==# x)
     assert $ eq == [[False, True, False], [False, True, True]]
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-        y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    eq <- eval (y ==# x)
+    let x = const [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+        y = const [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
+    eq <- eval {shape=[_, _]} {dtype=Double} (y ==# x)
     assert $ eq == [[False, True, False], [False, True, True]]
 
     sequence_ [compareScalars x y | x <- bools, y <- bools]
@@ -234,13 +234,15 @@ test_elementwise_inequality = do
         y = const [False, True, False]
     assertAll $ (y /=# x) ==# const {shape=[_]} {dtype=Bool} [True, False, False]
 
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
-    assertAll $ (x /=# y) ==# const [[True, False, True], [True, False, False]]
+    let x = const [[1, 15, 5], [-1, 7, 6]]
+        y = const [[2, 15, 3], [2, 7, 6]]
+    assertAll $ (x /=# y) ==#
+        const {shape=[_, _]} {dtype=Int}  [[True, False, True], [True, False, False]]
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-        y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    assertAll $ (x /=# y) ==# const [[True, False, True], [True, False, False]]
+    let x = const [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+        y = const [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
+    assertAll $ (x /=# y) ==#
+        const {shape=[_, _]} {dtype=Double} [[True, False, True], [True, False, False]]
 
     sequence_ [compareScalars l r | l <- bools, r <- bools]
     sequence_ [compareScalars l r | l <- ints, r <- ints]
