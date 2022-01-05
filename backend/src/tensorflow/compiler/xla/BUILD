@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cc_binary(
-    name = "root",
-    linkshared = True,
-    deps = [
-        "//src/tensorflow/compiler/xla:xla",
-        "//src/tensorflow/compiler/xla/client:client",
-    ],
+cc_library(
+    name = "xla",
+    srcs = ["literal.cpp"],
+    deps = ["@xla_extension//:xla_extension"],
+    visibility = ["//visibility:public"],
 )
