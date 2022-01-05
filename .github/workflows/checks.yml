@@ -34,7 +34,7 @@ jobs:
         sudo apt update && sudo apt install bazel
 
         cd backend
-        BAZEL_CXXOPTS='-std=c++14' bazel build //:root
+        BAZEL_CXXOPTS='-std=c++14' bazel build //:xla
         cd -
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
 

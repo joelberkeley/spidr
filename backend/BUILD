@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cc_binary(
-    name = "root",
+    name = "xla",
     linkshared = True,
     deps = [
         "//src/tensorflow/compiler/xla:xla",
