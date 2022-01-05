@@ -18,5 +18,6 @@ cc_binary(
     deps = [
         "//src/tensorflow/compiler/xla:xla",
         "//src/tensorflow/compiler/xla/client:client",
+        "//src:src",
     ],
 )

@@ -34,18 +34,6 @@ extern "C" {
     /*
      *
      *
-     * FFI
-     *
-     *
-     */
-
-    void free_int_array(int* arr);
-    int* alloc_int_array(int len);
-    void set_array_int(int* arr, int idx, int value);
-
-    /*
-     *
-     *
      * XlaOp
      *
      *
@@ -63,14 +51,18 @@ extern "C" {
      */
 
     struct XlaBuilder;
-
     XlaBuilder* XlaBuilder_new(const char* computation_name);
-
     void XlaBuilder_delete(XlaBuilder* s);
-
     const char* XlaBuilder_name(XlaBuilder& s);
-
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op);
+
+    /*
+     *
+     *
+     * Free functions
+     *
+     *
+     */
 
     XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len);
 
@@ -94,6 +86,16 @@ extern "C" {
     XlaOp* Abs(XlaOp& operand);
 
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data);
+
+    /*
+     *
+     *
+     * Custom utility functions
+     *
+     * Unlike the functions above, these are not just a minimal C layer round the XLA API
+     *
+     *
+     */
 
     Literal* eval(XlaOp& op);
 }

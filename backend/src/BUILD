@@ -13,13 +13,8 @@
 # limitations under the License.
 
 cc_library(
-    name = "client",
+    name = "src",
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
-    deps = [
-        "@xla_extension//:xla_extension",
-        "//src:src",
-        "//src/tensorflow/compiler/xla:xla",
-    ],
     visibility = ["//visibility:public"],
 )

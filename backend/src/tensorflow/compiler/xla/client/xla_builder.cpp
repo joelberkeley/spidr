@@ -24,63 +24,15 @@ limitations under the License.
 #include "tensorflow/compiler/xla/shape_util.h"
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
+#include "src/ffi.h"
 #include "src/tensorflow/compiler/xla/literal.h"
 
-// Return a pointer to a new, heap-allocated, null-terminated C string.
-const char* c_string_copy(std::string str) {
-    char *res = NULL;
-    auto len = str.length();
-    res = (char *) malloc(len + 1);
-    strncpy(res, str.c_str(), len);
-    res[len] = '\0';
-    return res;
-}
+#include "xla_builder.h"
 
 extern "C" {
-    /*
-     *
-     *
-     * FFI
-     *
-     *
-     */
-
-    void free_int_array(int* arr) {
-        free(arr);
-    }
-
-    int* alloc_int_array(int len) {
-        int* arr = new int[len];
-        return arr;
-    }
-
-    void set_array_int(int* arr, int idx, int value) {
-        arr[idx] = value;
-    }
-
-    /*
-     *
-     *
-     * XlaOp
-     *
-     *
-     */
-
-    struct XlaOp;
-
     void XlaOp_delete(XlaOp* s) {
         delete reinterpret_cast<xla::XlaOp*>(s);
     }
-
-    /*
-     *
-     *
-     * XlaBuilder
-     *
-     *
-     */
-
-    struct XlaBuilder;
 
     XlaBuilder* XlaBuilder_new(const char* computation_name) {
         auto builder = new xla::XlaBuilder(computation_name);
@@ -101,14 +53,6 @@ extern "C" {
         auto op_str = s_.OpToString(op_);
         return c_string_copy(op_str);
     }
-
-    /*
-     *
-     *
-     * Free functions
-     *
-     *
-     */
 
     XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len) {
         xla::XlaOp s_ = reinterpret_cast<xla::XlaOp&>(s);
@@ -181,16 +125,6 @@ extern "C" {
         *op = ConstantLiteral(&builder_, data_);
         return reinterpret_cast<XlaOp*>(op);
     }
-
-    /*
-     *
-     *
-     * Custom utility functions
-     *
-     * Unlike the functions above, these are not just a minimal C layer round the XLA API
-     *
-     *
-     */
 
     Literal* eval(XlaOp& op) {
         xla::XlaOp& op_ = reinterpret_cast<xla::XlaOp&>(op);

@@ -18,8 +18,6 @@ limitations under the License.
 #include "literal.h"
 
 extern "C" {
-    struct Literal;
-
     Literal* Literal_new(int* shape, int rank, int primitive_type) {
         xla::int64 shape64[rank];
         std::copy(shape, shape + rank, shape64);

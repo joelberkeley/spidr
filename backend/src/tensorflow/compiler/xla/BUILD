@@ -14,9 +14,8 @@
 
 cc_library(
     name = "xla",
-    srcs = ["literal.cpp"],
-    hdrs = ["literal.h"],
+    srcs = glob(["*.cpp"]),
+    hdrs = glob(["*.h"]),
     deps = ["@xla_extension//:xla_extension"],
-#    strip_include_prefix = "src",
     visibility = ["//visibility:public"],
 )
