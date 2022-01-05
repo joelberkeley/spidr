@@ -15,14 +15,16 @@ limitations under the License.
 */
 #include <algorithm>
 
-#include <absl/types/span.h>
-#include <tensorflow/compiler/xla/client/client_library.h>
-#include <tensorflow/compiler/xla/client/local_client.h>
-#include <tensorflow/compiler/xla/client/xla_builder.h>
-#include <tensorflow/compiler/xla/literal.h>
-#include <tensorflow/compiler/xla/shape.h>
-#include <tensorflow/compiler/xla/shape_util.h>
-#include <tensorflow/compiler/xla/xla_data.pb.h>
+#include "absl/types/span.h"
+#include "tensorflow/compiler/xla/client/client_library.h"
+#include "tensorflow/compiler/xla/client/local_client.h"
+#include "tensorflow/compiler/xla/client/xla_builder.h"
+#include "tensorflow/compiler/xla/literal.h"
+#include "tensorflow/compiler/xla/shape.h"
+#include "tensorflow/compiler/xla/shape_util.h"
+#include "tensorflow/compiler/xla/xla_data.pb.h"
+
+#include "src/tensorflow/compiler/xla/literal.h"
 
 // Return a pointer to a new, heap-allocated, null-terminated C string.
 const char* c_string_copy(std::string str) {
@@ -98,80 +100,6 @@ extern "C" {
         auto& op_ = reinterpret_cast<xla::XlaOp&>(op);
         auto op_str = s_.OpToString(op_);
         return c_string_copy(op_str);
-    }
-
-    /*
-     *
-     *
-     * Literal
-     *
-     *
-     */
-
-    struct Literal;
-
-    Literal* Literal_new(int* shape, int rank, int primitive_type) {
-        xla::int64 shape64[rank];
-        std::copy(shape, shape + rank, shape64);
-
-        const std::vector<bool> dynamic_dimensions(rank, false);
-
-        xla::Shape xla_shape = xla::ShapeUtil::MakeShape(
-            (xla::PrimitiveType) primitive_type,
-            absl::Span<const xla::int64>(shape64, rank),
-            dynamic_dimensions
-        );
-
-        xla::Literal* lit = new xla::Literal(xla_shape, true);
-        return reinterpret_cast<Literal*>(lit);
-    }
-
-    void Literal_delete(Literal* lit) {
-        delete reinterpret_cast<xla::Literal*>(lit);
-    }
-}
-
-template <typename NativeT>
-NativeT Literal_Get(Literal& lit, int* indices) {
-    xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
-    xla::int64 rank = lit_.shape().rank();
-    xla::int64 multi_index[rank];
-    std::copy(indices, indices + rank, multi_index);
-    return lit_.Get<NativeT>(absl::Span<const xla::int64>(multi_index, rank));
-};
-
-template <typename NativeT>
-void Literal_Set(Literal& lit, int* indices, NativeT value) {
-    xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
-    xla::int64 rank = lit_.shape().rank();
-    xla::int64 multi_index[rank];
-    std::copy(indices, indices + rank, multi_index);
-    lit_.Set<NativeT>(absl::Span<const xla::int64>(multi_index, rank), value);
-};
-
-extern "C" {
-    int Literal_Get_bool(Literal& lit, int* indices) {
-        return (int) Literal_Get<bool>(lit, indices);
-    }
-
-    int Literal_Get_int(Literal& lit, int* indices) {
-        return Literal_Get<int>(lit, indices);
-    }
-
-    double Literal_Get_double(Literal& lit, int* indices) {
-        return Literal_Get<double>(lit, indices);
-    }
-
-    void Literal_Set_bool(Literal& lit, int* indices, int value) {
-        Literal_Set<bool>(lit, indices, (bool) value);
-    }
-
-    void Literal_Set_int(Literal& lit, int* indices, int value) {
-        Literal_Set<int>(lit, indices, value);
-    }
-
-    void Literal_Set_double(Literal& lit, int* indices, double value) {
-        Literal_Set<double>(lit, indices, value);
     }
 
     /*

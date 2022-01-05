@@ -1,4 +1,4 @@
-# Copyright 2021 Joel Berkeley
+# Copyright 2022 Joel Berkeley
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 cc_library(
     name = "client",
     srcs = ["xla_builder.cpp"],
+    hdrs = ["xla_builder.h"],
     deps = ["@xla_extension//:xla_extension", "//src/tensorflow/compiler/xla:xla"],
+#    strip_include_prefix = "src",
     visibility = ["//visibility:public"],
 )
