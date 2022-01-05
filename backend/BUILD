@@ -13,15 +13,15 @@
 # limitations under the License.
 
 cc_binary(
-    name = "xla",
+    name = "c_xla_extension",
     linkshared = True,
     srcs = [
-        "//src/tensorflow/compiler/xla:xla_",
+        "//src/tensorflow/compiler/xla:xla",
         "//src/tensorflow/compiler/xla/client:client",
         "//src:src",
     ],
     deps = [
-        "//src/tensorflow/compiler/xla:xla_",
+        "//src/tensorflow/compiler/xla:xla",
         "//src/tensorflow/compiler/xla/client:client",
         "//src:src",
     ],

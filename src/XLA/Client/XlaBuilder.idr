@@ -25,7 +25,7 @@ import Util
 import Data.Vect
 
 libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libxla"
+libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 {-
  -

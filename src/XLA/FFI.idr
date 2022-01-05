@@ -25,7 +25,7 @@ enumerate xs = rewrite sym $ lengthCorrect xs in
     zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
 libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libxla"
+libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 {-
  -

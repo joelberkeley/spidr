@@ -19,7 +19,7 @@ cc_library(
     deps = [
         "@xla_extension//:xla_extension",
         "//src:src",
-        "//src/tensorflow/compiler/xla:xla_",
+        "//src/tensorflow/compiler/xla:xla",
     ],
     visibility = ["//visibility:public"],
 )
