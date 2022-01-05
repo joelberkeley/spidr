@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cc_library(
-    name = "xla",
+    name = "xla_",
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = ["@xla_extension//:xla_extension"],
