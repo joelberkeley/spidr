@@ -71,16 +71,4 @@ extern "C" {
     XlaOp* Abs(XlaOp& operand);
 
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data);
-
-    /*
-     *
-     *
-     * Custom utility functions
-     *
-     * Unlike the functions above, these are not just a minimal C layer round the XLA API
-     *
-     *
-     */
-
-    Literal* eval(XlaOp& op);
 }

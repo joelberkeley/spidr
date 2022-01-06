@@ -16,8 +16,6 @@ limitations under the License.
 #include <algorithm>
 
 #include "absl/types/span.h"
-#include "tensorflow/compiler/xla/client/client_library.h"
-#include "tensorflow/compiler/xla/client/local_client.h"
 #include "tensorflow/compiler/xla/client/xla_builder.h"
 #include "tensorflow/compiler/xla/literal.h"
 #include "tensorflow/compiler/xla/shape.h"
@@ -28,6 +26,7 @@ limitations under the License.
 #include "src/tensorflow/compiler/xla/literal.h"
 
 #include "xla_builder.h"
+#include "xla_computation.h"
 
 extern "C" {
     void XlaOp_delete(XlaOp* s) {
@@ -45,6 +44,13 @@ extern "C" {
 
     const char* XlaBuilder_name(XlaBuilder& s) {
         return c_string_copy(reinterpret_cast<xla::XlaBuilder&>(s).name());
+    }
+
+    XlaComputation* XlaBuilder_Build(XlaBuilder& s) {
+        xla::XlaBuilder& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
+        xla::XlaComputation* res = new xla::XlaComputation();
+        *res = s_.Build().ConsumeValueOrDie();
+        return reinterpret_cast<XlaComputation*>(res);
     }
 
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {
@@ -124,19 +130,5 @@ extern "C" {
         xla::XlaOp* op = new xla::XlaOp();
         *op = ConstantLiteral(&builder_, data_);
         return reinterpret_cast<XlaOp*>(op);
-    }
-
-    Literal* eval(XlaOp& op) {
-        xla::XlaOp& op_ = reinterpret_cast<xla::XlaOp&>(op);
-
-        xla::XlaComputation computation = op_.builder()->Build().ConsumeValueOrDie();
-        xla::ExecutionProfile profile;
-        xla::Literal lit = xla::ClientLibrary::LocalClientOrDie()
-            ->ExecuteAndTransfer(computation, {}, nullptr, &profile)
-            .ConsumeValueOrDie();
-
-        xla::Literal* res = new xla::Literal(lit.shape(), true);
-        *res = lit.Clone();
-        return reinterpret_cast<Literal*>(res);
     }
 }

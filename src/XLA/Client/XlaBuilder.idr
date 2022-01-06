@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the Idris API to XLA.
 module XLA.Client.XlaBuilder
 
+import XLA.Client.XlaComputation
 import XLA.FFI
 import XLA.Literal
 import XLA.XlaData
@@ -44,6 +44,9 @@ delete = primIO . prim__XlaBuilder_delete
 
 %foreign (libxla "XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO XlaBuilder
+
+%foreign (libxla "XlaBuilder_Build")
+prim__Build : XlaBuilder -> XlaComputation
 
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : XlaBuilder -> GCAnyPtr -> String
@@ -120,19 +123,6 @@ toString (MkRawTensor f) =
      let str = prim__opToString builder !(f builder)
      delete builder
      pure str
-
-%foreign (libxla "eval")
-prim__eval : GCAnyPtr -> PrimIO Literal
-
-export
-eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype})
-eval (MkRawTensor f) =
-    do builder <- primIO (prim__mkXlaBuilder "")
-       lit <- primIO $ prim__eval !(f builder)
-       let arr = toArray lit
-       delete lit
-       delete builder
-       pure arr
 
 export
 broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
