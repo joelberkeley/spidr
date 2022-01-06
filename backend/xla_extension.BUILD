@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-new_local_repository(
+cc_library(
     name = "xla_extension",
-    path = "xla_extension",
-    build_file = "xla_extension.BUILD",
+    includes = ["include"],
+    hdrs = glob(["include/**"]),
+    srcs = ["lib/libxla_extension.so"],
+    visibility = ["//visibility:public"],
 )

@@ -33,9 +33,7 @@ jobs:
         echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
         sudo apt update && sudo apt install bazel
 
-        cd backend
-        BAZEL_CXXOPTS='-std=c++14' bazel build //:xla
-        cd -
+        (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
 
         idris2 --install spidr.ipkg

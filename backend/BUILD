@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cc_library(
-    name = "xla_extension",
-    includes = ["xla_extension/include"],
-    hdrs = glob(["xla_extension/include/**"]),
-    srcs = ["xla_extension/lib/libxla_extension.so"],
-)
-
 cc_binary(
-    name = "xla",
+    name = "c_xla_extension",
     linkshared = True,
-    srcs = ["src/tensorflow/compiler/xla/client/xla_builder.cpp"],
-    deps = [":xla_extension"],
+    srcs = [
+        "//src/tensorflow/compiler/xla:xla",
+        "//src/tensorflow/compiler/xla/client:client",
+        "//src:src",
+    ],
+    deps = [
+        "//src/tensorflow/compiler/xla:xla",
+        "//src/tensorflow/compiler/xla/client:client",
+        "//src:src",
+    ],
 )
