@@ -15,6 +15,8 @@ limitations under the License.
 */
 #include "tensorflow/compiler/xla/literal.h"
 
+#include "src/tensorflow/compiler/xla/shape.h"
+
 #include "literal.h"
 #include "shape.h"
 

@@ -17,12 +17,12 @@ module XLA.Literal
 
 import System.FFI
 
-import Types
-import Util
-import XLA.XlaData
 import XLA.FFI
 import XLA.Shape
 import XLA.ShapeUtil
+import XLA.XlaData
+import Types
+import Util
 
 public export
 Literal : Type

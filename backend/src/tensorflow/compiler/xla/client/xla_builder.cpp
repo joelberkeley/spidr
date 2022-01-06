@@ -20,6 +20,7 @@ limitations under the License.
 #include "absl/types/span.h"
 #include "tensorflow/compiler/xla/client/xla_builder.h"
 #include "tensorflow/compiler/xla/literal.h"
+#include "tensorflow/compiler/xla/shape.h"
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
 #include "../literal.h"
@@ -65,6 +66,22 @@ extern "C" {
         auto& op_ = reinterpret_cast<xla::XlaOp&>(op);
         auto op_str = s_.OpToString(op_);
         return c_string_copy(op_str);
+    }
+
+    XlaOp* Parameter(XlaBuilder& builder, int parameter_number, Shape& shape, const char* name) {
+        xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
+        xla::Shape& shape_ = reinterpret_cast<xla::Shape&>(shape);
+        xla::XlaOp* parameter = new xla::XlaOp();
+        *parameter = xla::Parameter(&builder_, parameter_number, shape_, name);
+        return reinterpret_cast<XlaOp*>(parameter);
+    }
+
+    XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
+        xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
+        xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
+        xla::XlaOp* op = new xla::XlaOp();
+        *op = ConstantLiteral(&builder_, data_);
+        return reinterpret_cast<XlaOp*>(op);
     }
 
     XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len) {
@@ -130,12 +147,4 @@ extern "C" {
 
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
-
-    XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
-        xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
-        xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
-        xla::XlaOp* op = new xla::XlaOp();
-        *op = ConstantLiteral(&builder_, data_);
-        return reinterpret_cast<XlaOp*>(op);
-    }
 }

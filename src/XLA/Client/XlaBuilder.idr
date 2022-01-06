@@ -18,6 +18,7 @@ module XLA.Client.XlaBuilder
 import Data.Vect
 import System.FFI
 
+import XLA.Shape
 import XLA.Client.XlaComputation
 import XLA.FFI
 import XLA.Literal
@@ -63,6 +64,9 @@ prim__XlaOp_delete : AnyPtr -> PrimIO ()
 
 collectXlaOp : AnyPtr -> IO GCAnyPtr
 collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
+
+%foreign (libxla "Parameter")
+parameter : XlaBuilder -> Int -> Shape.Shape -> String -> AnyPtr
 
 %foreign (libxla "ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> AnyPtr
