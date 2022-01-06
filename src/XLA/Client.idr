@@ -28,8 +28,10 @@ eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype}
 eval (MkRawTensor f) = do
     builder <- primIO (prim__mkXlaBuilder "")
     _ <- f builder
-    lit <- primIO $ prim__execute (build builder)
+    let computation = build builder
+    delete builder
+    lit <- primIO $ prim__execute computation
+    delete computation
     let arr = toArray lit
     delete lit
-    delete builder
     pure arr
