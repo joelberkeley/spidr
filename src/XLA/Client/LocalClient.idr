@@ -1,4 +1,4 @@
-/*
+{--
 Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,30 +12,20 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include <cstring>
-#include <string>
+--}
+module XLA.Client.LocalClient
 
-extern "C" {
-    int sizeof_int() {
-        return sizeof(int);
-    }
+import XLA.Client.XlaComputation
+import XLA.Literal
+import System.FFI
 
-    void* empty_array() {
-        void* arr = new int[0];
-        return arr;
-    }
+libxla : String -> String
+libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
-    void set_array_int(int* arr, int idx, int value) {
-        arr[idx] = value;
-    }
-}
+public export
+LocalClient : Type
+LocalClient = Struct "LocalClient" []
 
-const char* c_string_copy(std::string str) {
-    char *res = NULL;
-    auto len = str.length();
-    res = (char *) malloc(len + 1);
-    strncpy(res, str.c_str(), len);
-    res[len] = '\0';
-    return res;
-}
+export
+%foreign (libxla "LocalClient_ExecuteAndTransfer")
+prim__executeAndTransfer : LocalClient -> XlaComputation -> AnyPtr -> Int -> PrimIO Literal

@@ -15,12 +15,13 @@ limitations under the License.
 --}
 module XLA.Client.ClientLibrary
 
-import XLA.Client.XlaComputation
-import XLA.Literal
 import System.FFI
+
+import XLA.Client.LocalClient
 
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
-ClientLibrary : Type
-ClientLibrary = Struct "ClientLibrary" []
+export
+%foreign (libxla "ClientLibrary_LocalClientOrDie")
+prim__localClientOrDie : PrimIO LocalClient

@@ -30,7 +30,3 @@ prim__XlaComputation_delete : XlaComputation -> PrimIO ()
 export
 delete : XlaComputation -> IO ()
 delete = primIO . prim__XlaComputation_delete
-
-export
-%foreign (libxla "execute")
-prim__execute : XlaComputation -> PrimIO Literal

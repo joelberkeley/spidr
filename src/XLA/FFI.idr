@@ -37,6 +37,10 @@ libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 %foreign (libxla "sizeof_int")
 sizeof_int : Int
 
+export
+%foreign (libxla "empty_array")
+emptyArray : PrimIO AnyPtr
+
 {-
  -
  - Array shape
