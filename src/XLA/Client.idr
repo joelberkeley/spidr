@@ -15,15 +15,20 @@ limitations under the License.
 --}
 module XLA.Client
 
+import System.FFI
+
+import XLA.Literal
 import XLA.Client.XlaBuilder
 import XLA.Client.XlaComputation
+
+import Types
 
 export
 eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype})
 eval (MkRawTensor f) =
     do builder <- primIO (prim__mkXlaBuilder "")
        _ <- f builder
-       lit <- primIO $ prim__execute (prim__Build builder)
+       lit <- primIO $ prim__execute (build builder)
        let arr = toArray lit
        delete lit
        delete builder

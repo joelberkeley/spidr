@@ -39,14 +39,17 @@ XlaBuilder = Struct "XlaBuilder" []
 %foreign (libxla "XlaBuilder_delete")
 prim__XlaBuilder_delete : XlaBuilder -> PrimIO ()
 
+export
 delete : XlaBuilder -> IO ()
 delete = primIO . prim__XlaBuilder_delete
 
+export
 %foreign (libxla "XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO XlaBuilder
 
+export
 %foreign (libxla "XlaBuilder_Build")
-prim__Build : XlaBuilder -> XlaComputation
+build : XlaBuilder -> XlaComputation
 
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : XlaBuilder -> GCAnyPtr -> String
@@ -105,7 +108,8 @@ prim__abs : GCAnyPtr -> PrimIO AnyPtr
  -
  -}
 
-export data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
+public export
+data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
 
 export
 const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}

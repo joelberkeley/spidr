@@ -26,6 +26,7 @@ import public Primitive
 import public Types
 import Util
 import XLA.Client.XlaBuilder
+import XLA.Client
 import XLA.Literal
 
 ----------------------------- core definitions ----------------------------
