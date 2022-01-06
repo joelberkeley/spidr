@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-extern "C" {
-    struct XlaComputation;
+#include "tensorflow/compiler/xla/client/global_data.h"
 
-    void XlaComputation_delete(XlaComputation* s);
+extern "C" {
+    struct GlobalData;
 }

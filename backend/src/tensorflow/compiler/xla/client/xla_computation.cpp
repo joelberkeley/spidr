@@ -13,28 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "tensorflow/compiler/xla/client/client_library.h"
-#include "tensorflow/compiler/xla/client/local_client.h"
 #include "tensorflow/compiler/xla/client/xla_computation.h"
-
-#include "src/tensorflow/compiler/xla/literal.h"
 
 #include "xla_computation.h"
 
 extern "C" {
     void XlaComputation_delete(XlaComputation* s) {
         delete reinterpret_cast<xla::XlaComputation*>(s);
-    }
-
-    Literal* execute(XlaComputation& computation) {
-        xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
-        xla::ExecutionProfile profile;
-        xla::Literal lit = xla::ClientLibrary::LocalClientOrDie()
-            ->ExecuteAndTransfer(computation_, {}, nullptr, &profile)
-            .ConsumeValueOrDie();
-
-        xla::Literal* res = new xla::Literal(lit.shape(), true);
-        *res = lit.Clone();
-        return reinterpret_cast<Literal*>(res);
     }
 }

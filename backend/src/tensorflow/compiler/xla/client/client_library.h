@@ -13,8 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-extern "C" {
-    struct XlaComputation;
+#include "tensorflow/compiler/xla/client/client_library.h"
+#include "tensorflow/compiler/xla/client/local_client.h"
 
-    void XlaComputation_delete(XlaComputation* s);
+#include "local_client.h"
+
+extern "C" {
+    struct ClientLibrary;
+
+    void ClientLibrary_DestroyLocalInstances();
+
+    LocalClient* ClientLibrary_LocalClientOrDie();
 }
