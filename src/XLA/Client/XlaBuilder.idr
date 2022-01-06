@@ -134,7 +134,7 @@ broadcast (MkRawTensor f) broadcast_sizes = MkRawTensor $ \builder =>
     do broadcast_sizes_ptr <- mkIntArray broadcast_sizes
        op <- primIO $ prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)
        op <- collectXlaOp op
-       free (prim__forgetPtr broadcast_sizes_ptr)
+       free broadcast_sizes_ptr
        pure op
 
 %foreign (libxla "BroadcastInDim")
@@ -147,8 +147,8 @@ broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
        bcd_ptr <- mkIntArray bcd
        op <- primIO $ prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)
        op <- collectXlaOp op
-       free (prim__forgetPtr ods_ptr)
-       free (prim__forgetPtr bcd_ptr)
+       free ods_ptr
+       free bcd_ptr
        pure op
 
 unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor

@@ -52,7 +52,7 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
     impl {a} [] acc_indices x = do
         idx_ptr <- mkIntArray acc_indices
         primIO $ set lit idx_ptr x
-        free (prim__forgetPtr idx_ptr)
+        free idx_ptr
     impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
         traverse_ setArrays (enumerate xs) where
             setArrays : (Nat, Array rest {dtype=dtype}) -> IO ()
@@ -67,7 +67,7 @@ mkLiteral xs = do
     shape_ptr <- mkIntArray shape
     literal <- primIO $ prim__allocLiteral shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
     populateLiteral shape literal xs
-    free (prim__forgetPtr shape_ptr)
+    free shape_ptr
     pure literal
 
 %foreign (libxla "Literal_Set_bool")
@@ -123,6 +123,6 @@ toArray lit = impl {shapesSum=Refl} shape [] where
         impl_io = do
             idx_ptr <- mkIntArray acc
             let res = get lit idx_ptr
-            free (prim__forgetPtr idx_ptr)
+            free idx_ptr
             pure res
     impl (n :: rest) acc = map ((impl rest {shapesSum=Refl}) . (snoc acc)) (range n)

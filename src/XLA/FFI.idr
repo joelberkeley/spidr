@@ -16,6 +16,8 @@ limitations under the License.
 module XLA.FFI
 
 import Data.Vect
+import System.FFI
+
 import Types
 import Util
 
@@ -23,6 +25,10 @@ export
 enumerate : Vect n ty -> Vect n (Nat, ty)
 enumerate xs = rewrite sym $ lengthCorrect xs in
     zip (range (length xs)) (rewrite lengthCorrect xs in xs)
+
+export
+free : Ptr t -> IO ()
+free = System.FFI.free . prim__forgetPtr
 
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
