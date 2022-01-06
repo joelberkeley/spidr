@@ -15,6 +15,8 @@ limitations under the License.
 */
 #include "src/tensorflow/compiler/xla/literal.h"
 
+#include "xla_computation.h"
+
 extern "C" {
     /*
      *
@@ -39,6 +41,7 @@ extern "C" {
     XlaBuilder* XlaBuilder_new(const char* computation_name);
     void XlaBuilder_delete(XlaBuilder* s);
     const char* XlaBuilder_name(XlaBuilder& s);
+    XlaComputation* XlaBuilder_Build(XlaBuilder& s);
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op);
 
     /*
