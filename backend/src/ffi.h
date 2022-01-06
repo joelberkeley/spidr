@@ -16,7 +16,6 @@ limitations under the License.
 #include <string>
 
 extern "C" {
-    void free_int_array(int* arr);
     int* alloc_int_array(int len);
     void set_array_int(int* arr, int idx, int value);
 }

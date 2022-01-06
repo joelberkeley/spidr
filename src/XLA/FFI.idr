@@ -36,9 +36,6 @@ libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 %foreign (libxla "alloc_int_array")
 prim__allocIntArray : Int -> PrimIO (Ptr Int)
 
-%foreign (libxla "free_int_array")
-prim__freeIntArray : Ptr Int -> PrimIO ()
-
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
@@ -48,7 +45,3 @@ mkIntArray xs = do
     ptr <- primIO $ prim__allocIntArray (cast (length xs))
     traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
     pure ptr
-
-export
-free : Ptr Int -> IO ()
-free = primIO . prim__freeIntArray
