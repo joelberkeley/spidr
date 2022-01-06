@@ -33,21 +33,25 @@ free = System.FFI.free . prim__forgetPtr
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
+%foreign (libxla "sizeof_int")
+sizeof_int : Int
+
 {-
  -
  - Array shape
  -
  -}
 
-%foreign (libxla "alloc_int_array")
-prim__allocIntArray : Int -> PrimIO (Ptr Int)
-
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
+
+setArrayInt : Ptr Int -> Int -> Int -> IO ()
+setArrayInt arr idx value = primIO $ prim__setArrayInt arr idx value
 
 export
 mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
 mkIntArray xs = do
-    ptr <- primIO $ prim__allocIntArray (cast (length xs))
-    traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
+    ptr <- malloc (cast (length xs) * sizeof_int)
+    let ptr = prim__castPtr ptr
+    traverse_ (\(idx, x) => setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
     pure ptr

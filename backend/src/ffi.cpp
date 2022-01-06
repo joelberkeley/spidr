@@ -17,9 +17,8 @@ limitations under the License.
 #include <string>
 
 extern "C" {
-    int* alloc_int_array(int len) {
-        int* arr = new int[len];
-        return arr;
+    int sizeof_int() {
+        return sizeof(int);
     }
 
     void set_array_int(int* arr, int idx, int value) {
