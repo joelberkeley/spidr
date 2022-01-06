@@ -27,7 +27,7 @@ extern "C" {
      *
      * Custom utility functions
      *
-     * Unlike the functions above, these are not just a minimal C layer round the XLA API
+     * These are not just a minimal C layer round the XLA API
      *
      *
      */
