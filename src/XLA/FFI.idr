@@ -45,13 +45,10 @@ sizeof_int : Int
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
-setArrayInt : Ptr Int -> Int -> Int -> IO ()
-setArrayInt arr idx value = primIO $ prim__setArrayInt arr idx value
-
 export
 mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
 mkIntArray xs = do
     ptr <- malloc (cast (length xs) * sizeof_int)
     let ptr = prim__castPtr ptr
-    traverse_ (\(idx, x) => setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
+    traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
     pure ptr
