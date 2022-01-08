@@ -18,9 +18,7 @@ module XLA.Client.ClientLibrary
 import System.FFI
 
 import XLA.Client.LocalClient
-
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
+import XLA.FFI
 
 export
 %foreign (libxla "ClientLibrary_LocalClientOrDie")

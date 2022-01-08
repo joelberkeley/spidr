@@ -15,12 +15,11 @@ limitations under the License.
 --}
 module XLA.Client.LocalClient
 
-import XLA.Client.XlaComputation
-import XLA.Literal
 import System.FFI
 
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
+import XLA.Client.XlaComputation
+import XLA.FFI
+import XLA.Literal
 
 public export
 LocalClient : Type
