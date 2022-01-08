@@ -18,10 +18,6 @@ limitations under the License.
 extern "C" {
     struct ClientLibrary;
 
-    void ClientLibrary_DestroyLocalInstances() {
-        xla::ClientLibrary::DestroyLocalInstances();
-    }
-
     LocalClient* ClientLibrary_LocalClientOrDie() {
         xla::LocalClient* client = xla::ClientLibrary::LocalClientOrDie();
         return reinterpret_cast<LocalClient*>(client);

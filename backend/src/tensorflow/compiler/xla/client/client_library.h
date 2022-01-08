@@ -21,7 +21,5 @@ limitations under the License.
 extern "C" {
     struct ClientLibrary;
 
-    void ClientLibrary_DestroyLocalInstances();
-
     LocalClient* ClientLibrary_LocalClientOrDie();
 }
