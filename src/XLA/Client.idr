@@ -34,8 +34,7 @@ eval (MkRawTensor f) = do
     let computation = build builder
     delete builder
     client <- primIO prim__localClientOrDie
-    global_data <- primIO emptyArray
-    lit <- primIO $ prim__executeAndTransfer client computation global_data 0
+    lit <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
     delete computation
     let arr = toArray lit
     delete lit

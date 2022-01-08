@@ -21,11 +21,6 @@ extern "C" {
         return sizeof(int);
     }
 
-    void* empty_array() {
-        void* arr = new int[0];
-        return arr;
-    }
-
     void set_array_int(int* arr, int idx, int value) {
         arr[idx] = value;
     }

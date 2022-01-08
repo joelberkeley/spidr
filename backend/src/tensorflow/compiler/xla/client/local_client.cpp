@@ -42,6 +42,8 @@ extern "C" {
         GlobalData** arguments,
         int arguments_len
     ) {
+        if (arguments == nullptr) { arguments = {}; }
+
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
         xla::GlobalData** arguments_ = reinterpret_cast<xla::GlobalData**>(arguments);
