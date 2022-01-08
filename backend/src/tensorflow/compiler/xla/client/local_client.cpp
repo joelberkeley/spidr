@@ -19,23 +19,6 @@ limitations under the License.
 #include "local_client.h"
 
 extern "C" {
-    GlobalData* LocalClient_TransferToServer(LocalClient& client, Literal& literal) {
-        xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
-        xla::Literal& literal_ = reinterpret_cast<xla::Literal&>(literal);
-        
-        std::unique_ptr<xla::GlobalData> global_data =
-            client_.TransferToServer(literal_).ConsumeValueOrDie();
-        
-        xla::GlobalData* global_data_non_stack =
-            new xla::GlobalData(client_.stub(), global_data->handle());
-        // todo this doesn't appear to be needed, but I would have thought it is, to avoid the
-        // stack GlobalData freeing its contents while the non-stack version still refers to it.
-        // std::vector<std::unique_ptr<xla::GlobalData>> to_release;
-        // to_release.push_back(std::move(global_data));
-        // xla::GlobalData::Release(to_release);
-        return reinterpret_cast<GlobalData*>(global_data_non_stack);
-    }
-
     Literal* LocalClient_ExecuteAndTransfer(
         LocalClient& client,
         XlaComputation& computation,
@@ -45,8 +28,8 @@ extern "C" {
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
         xla::GlobalData** arguments_ = reinterpret_cast<xla::GlobalData**>(arguments);
-        auto arguments_span = absl::Span<xla::GlobalData* const>(arguments_, arguments_len);
 
+        auto arguments_span = absl::Span<xla::GlobalData* const>(arguments_, arguments_len);
         xla::Literal lit = client_.ExecuteAndTransfer(computation_, arguments_span).ConsumeValueOrDie();
 
         xla::Literal* res = new xla::Literal(lit.shape(), true);
