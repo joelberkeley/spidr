@@ -16,6 +16,8 @@ limitations under the License.
 module XLA.FFI
 
 import Data.Vect
+import System.FFI
+
 import Types
 import Util
 
@@ -24,8 +26,15 @@ enumerate : Vect n ty -> Vect n (Nat, ty)
 enumerate xs = rewrite sym $ lengthCorrect xs in
     zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
+export
+free : Ptr t -> IO ()
+free = System.FFI.free . prim__forgetPtr
+
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
+
+%foreign (libxla "sizeof_int")
+sizeof_int : Int
 
 {-
  -
@@ -33,22 +42,13 @@ libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
  -
  -}
 
-%foreign (libxla "alloc_int_array")
-prim__allocIntArray : Int -> PrimIO (Ptr Int)
-
-%foreign (libxla "free_int_array")
-prim__freeIntArray : Ptr Int -> PrimIO ()
-
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
 mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
 mkIntArray xs = do
-    ptr <- primIO $ prim__allocIntArray (cast (length xs))
+    ptr <- malloc (cast (length xs) * sizeof_int)
+    let ptr = prim__castPtr ptr
     traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
     pure ptr
-
-export
-free : Ptr Int -> IO ()
-free = primIO . prim__freeIntArray
