@@ -13,29 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.Client
+module XLA.Client.ClientLibrary
 
 import System.FFI
 
-import XLA.Literal
-import XLA.FFI
-import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
-import XLA.Client.XlaBuilder
-import XLA.Client.XlaComputation
-
-import Types
+import XLA.FFI
 
 export
-eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype})
-eval (MkRawTensor f) = do
-    builder <- primIO (prim__mkXlaBuilder "")
-    _ <- f builder
-    let computation = build builder
-    delete builder
-    client <- primIO prim__localClientOrDie
-    lit <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-    delete computation
-    let arr = toArray lit
-    delete lit
-    pure arr
+%foreign (libxla "ClientLibrary_LocalClientOrDie")
+prim__localClientOrDie : PrimIO LocalClient

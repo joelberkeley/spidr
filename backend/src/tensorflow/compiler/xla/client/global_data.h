@@ -14,7 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 extern "C" {
-    struct XlaComputation;
-
-    void XlaComputation_delete(XlaComputation* s);
+    struct GlobalData;
 }
