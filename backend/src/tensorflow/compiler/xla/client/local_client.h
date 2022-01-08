@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "tensorflow/compiler/xla/client/local_client.h"
-
 #include "src/tensorflow/compiler/xla/literal.h"
 #include "global_data.h"
 #include "xla_computation.h"
