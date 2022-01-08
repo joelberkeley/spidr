@@ -30,6 +30,7 @@ export
 free : Ptr t -> IO ()
 free = System.FFI.free . prim__forgetPtr
 
+public export
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
