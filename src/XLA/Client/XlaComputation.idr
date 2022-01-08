@@ -17,10 +17,8 @@ module XLA.Client.XlaComputation
 
 import System.FFI
 
+import XLA.FFI
 import XLA.Literal
-
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 public export
 XlaComputation : Type

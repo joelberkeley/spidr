@@ -21,9 +21,6 @@ import XLA.FFI
 import Types
 import Util
 
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
-
 public export
 Literal : Type
 Literal = Struct "Literal" []

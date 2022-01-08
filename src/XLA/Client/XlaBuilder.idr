@@ -15,17 +15,15 @@ limitations under the License.
 --}
 module XLA.Client.XlaBuilder
 
+import Data.Vect
+import System.FFI
+
 import XLA.Client.XlaComputation
 import XLA.FFI
 import XLA.Literal
 import XLA.XlaData
 import Types
-import System.FFI
 import Util
-import Data.Vect
-
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 {-
  -
