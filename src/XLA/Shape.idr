@@ -1,4 +1,4 @@
-/*
+{--
 Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,21 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "shape.h"
+--}
+module XLA.Shape
 
-extern "C" {
-    struct Literal;
+import System.FFI
 
-    Literal* Literal_new(Shape& shape);
+libxla : String -> String
+libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
-    void Literal_delete(Literal* lit);
+public export
+Shape : Type
+Shape = Struct "Shape" []
 
-    int Literal_Get_bool(Literal& lit, int* indices);
-    int Literal_Get_int(Literal& lit, int* indices);
-    double Literal_Get_double(Literal& lit, int* indices);
+%foreign (libxla "Shape_delete")
+prim__delete : Shape -> PrimIO ()
 
-    void Literal_Set_bool(Literal& lit, int* indices, int value);
-    void Literal_Set_int(Literal& lit, int* indices, int value);
-    void Literal_Set_double(Literal& lit, int* indices, double value);
-}
+export
+delete : Shape -> IO ()
+delete = primIO . prim__delete

@@ -13,20 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "tensorflow/compiler/xla/shape.h"
+#include "tensorflow/compiler/xla/shape_util.h"
+
 #include "shape.h"
 
 extern "C" {
-    struct Literal;
+    Shape* MakeShape(int primitive_type, int* shape, int rank) {
+        xla::int64 shape64[rank];
+        std::copy(shape, shape + rank, shape64);
 
-    Literal* Literal_new(Shape& shape);
-
-    void Literal_delete(Literal* lit);
-
-    int Literal_Get_bool(Literal& lit, int* indices);
-    int Literal_Get_int(Literal& lit, int* indices);
-    double Literal_Get_double(Literal& lit, int* indices);
-
-    void Literal_Set_bool(Literal& lit, int* indices, int value);
-    void Literal_Set_int(Literal& lit, int* indices, int value);
-    void Literal_Set_double(Literal& lit, int* indices, double value);
+        xla::Shape* xla_shape = new xla::Shape();
+        *xla_shape = xla::ShapeUtil::MakeShape(
+            (xla::PrimitiveType) primitive_type,
+            absl::Span<const xla::int64>(shape64, rank)
+        );
+        return reinterpret_cast<Shape*>(xla_shape);
+    }
 }
