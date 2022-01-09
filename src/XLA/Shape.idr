@@ -17,8 +17,7 @@ module XLA.Shape
 
 import System.FFI
 
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
+import XLA.FFI
 
 public export
 Shape : Type

@@ -17,10 +17,8 @@ module XLA.ShapeUtil
 
 import System.FFI
 
+import XLA.FFI
 import XLA.Shape
-
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 export
 %foreign (libxla "MakeShape")
