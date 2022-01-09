@@ -20,6 +20,8 @@ limitations under the License.
 extern "C" {
     struct LocalClient;
 
+    GlobalData* LocalClient_TransferToServer(LocalClient& client, Literal& literal);
+
     Literal* LocalClient_ExecuteAndTransfer(
         LocalClient& client,
         XlaComputation& computation,

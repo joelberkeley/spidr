@@ -62,9 +62,11 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
 %foreign (libxla "XlaOp_delete")
 prim__XlaOp_delete : AnyPtr -> PrimIO ()
 
+export
 collectXlaOp : AnyPtr -> IO GCAnyPtr
 collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
 
+export
 %foreign (libxla "Parameter")
 parameter : XlaBuilder -> Int -> Shape.Shape -> String -> AnyPtr
 
@@ -92,6 +94,7 @@ prim__lt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Le")
 prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -101,6 +104,7 @@ prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 
