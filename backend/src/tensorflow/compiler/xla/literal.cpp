@@ -16,21 +16,12 @@ limitations under the License.
 #include "tensorflow/compiler/xla/literal.h"
 
 #include "literal.h"
+#include "shape.h"
 
 extern "C" {
-    Literal* Literal_new(int* shape, int rank, int primitive_type) {
-        xla::int64 shape64[rank];
-        std::copy(shape, shape + rank, shape64);
-
-        const std::vector<bool> dynamic_dimensions(rank, false);
-
-        xla::Shape xla_shape = xla::ShapeUtil::MakeShape(
-            (xla::PrimitiveType) primitive_type,
-            absl::Span<const xla::int64>(shape64, rank),
-            dynamic_dimensions
-        );
-
-        xla::Literal* lit = new xla::Literal(xla_shape, true);
+    Literal* Literal_new(Shape& shape) {
+        xla::Shape& shape_ = reinterpret_cast<xla::Shape&>(shape);
+        xla::Literal* lit = new xla::Literal(shape_, true);
         return reinterpret_cast<Literal*>(lit);
     }
 

@@ -16,10 +16,13 @@ limitations under the License.
 module XLA.Literal
 
 import System.FFI
-import XLA.XlaData
-import XLA.FFI
+
 import Types
 import Util
+import XLA.XlaData
+import XLA.FFI
+import XLA.Shape
+import XLA.ShapeUtil
 
 public export
 Literal : Type
@@ -32,7 +35,7 @@ interface XLAPrimitive dtype where
     get : Literal -> Ptr Int -> dtype
 
 %foreign (libxla "Literal_new")
-prim__allocLiteral : Ptr Int -> Int -> Int -> PrimIO Literal
+prim__allocLiteral : Shape.Shape -> PrimIO Literal
 
 %foreign (libxla "Literal_delete")
 prim__Literal_delete : Literal -> PrimIO ()
@@ -61,10 +64,12 @@ export
 mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
     -> Array shape {dtype=dtype} -> IO Literal
 mkLiteral xs = do
-    shape_ptr <- mkIntArray shape
-    literal <- primIO $ prim__allocLiteral shape_ptr (cast rank) (cast $ primitiveType {dtype=dtype})
+    c_shape <- mkIntArray shape
+    xla_shape <- primIO $ prim__mkShape (cast $ primitiveType {dtype=dtype}) c_shape (cast rank)
+    literal <- primIO $ prim__allocLiteral xla_shape
     populateLiteral shape literal xs
-    free shape_ptr
+    free c_shape
+    delete xla_shape
     pure literal
 
 %foreign (libxla "Literal_Set_bool")
@@ -109,7 +114,7 @@ XLAPrimitive Int where
   get = literalGetInt
 
 export
-toArray : XLAPrimitive dtype => {shape : Shape} -> Literal -> Array shape {dtype=dtype}
+toArray : XLAPrimitive dtype => {shape : Types.Shape} -> Literal -> Array shape {dtype=dtype}
 toArray lit = impl {shapesSum=Refl} shape [] where
     impl : (remaining_shape : Vect r Nat)
         -> {a : _} -> {shapesSum : a + r = rank}
