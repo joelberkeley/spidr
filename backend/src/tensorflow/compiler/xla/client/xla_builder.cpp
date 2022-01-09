@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <algorithm>
+#include <cstring>
+#include <string>
 
 #include "absl/types/span.h"
 #include "tensorflow/compiler/xla/client/xla_builder.h"
@@ -25,6 +27,15 @@ limitations under the License.
 
 #include "xla_builder.h"
 #include "xla_computation.h"
+
+const char* c_string_copy(std::string str) {
+    char *res = NULL;
+    auto len = str.length();
+    res = (char *) malloc(len + 1);
+    strncpy(res, str.c_str(), len);
+    res[len] = '\0';
+    return res;
+}
 
 extern "C" {
     void XlaOp_delete(XlaOp* s) {

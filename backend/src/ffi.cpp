@@ -13,9 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <cstring>
-#include <string>
-
 extern "C" {
     int sizeof_int() {
         return sizeof(int);
@@ -24,13 +21,4 @@ extern "C" {
     void set_array_int(int* arr, int idx, int value) {
         arr[idx] = value;
     }
-}
-
-const char* c_string_copy(std::string str) {
-    char *res = NULL;
-    auto len = str.length();
-    res = (char *) malloc(len + 1);
-    strncpy(res, str.c_str(), len);
-    res[len] = '\0';
-    return res;
 }
