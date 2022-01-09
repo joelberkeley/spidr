@@ -22,9 +22,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/literal.h"
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
-#include "src/ffi.h"
-#include "src/tensorflow/compiler/xla/literal.h"
-
+#include "../literal.h"
 #include "xla_builder.h"
 #include "xla_computation.h"
 
