@@ -38,6 +38,10 @@ libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 sizeof_int : Int
 
 export
+%foreign (libxla "sizeof_void_ptr")
+sizeof_voidPtr : Int
+
+export
 %foreign (libxla "set_array_ptr")
 prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
 

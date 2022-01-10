@@ -15,6 +15,7 @@ limitations under the License.
 --}
 import Data.Vect
 
+import System
 import System.FFI
 
 import XLA.Client.ClientLibrary
@@ -35,8 +36,8 @@ test_parameter_addition = do
     builder <- primIO (prim__mkXlaBuilder "")
     c_shape <- mkIntArray [2, 3]
     xla_shape <- primIO (prim__mkShape 4 c_shape 2)
-    let p0 = parameter builder 0 xla_shape "param0"
-        p1 = parameter builder 1 xla_shape "param1"
+    let p0 = parameter builder 0 xla_shape ""
+        p1 = parameter builder 1 xla_shape ""
     p0 <- collectXlaOp p0
     p1 <- collectXlaOp p1
     _ <- primIO (prim__add p0 p1)
@@ -45,12 +46,12 @@ test_parameter_addition = do
     client <- primIO prim__localClientOrDie
     gd0 <- primIO (prim__transferToServer client p0_lit)
     gd1 <- primIO (prim__transferToServer client p1_lit)
-    --am i allocating memory correctly for the GlobalData**?
-    gd_arr <- malloc 8
+    gd_arr <- malloc (2 * sizeof_voidPtr)
     primIO (prim__setArrayPtr gd_arr 0 gd0)
     primIO (prim__setArrayPtr gd_arr 1 gd1)
     lit <- primIO $ prim__executeAndTransfer client (build builder) gd_arr 2
-    printLn (toArray {shape=[2, 3]} {dtype=Int} lit)
+    let ok = toArray {shape=[2, 3]} {dtype=Int} lit == [[1, 2, 3], [2, 3, 4]]
+    unless ok exitFailure
 
 main : IO ()
 main = do
