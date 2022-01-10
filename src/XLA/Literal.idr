@@ -26,7 +26,11 @@ import XLA.ShapeUtil
 
 public export
 Literal : Type
-Literal = Struct "Literal" []
+Literal = AnyPtr
+
+-- export
+-- %foreign (libxla "sizeof_Literal")
+-- sizeofLiteral : Int
 
 export
 interface XLAPrimitive dtype where

@@ -65,25 +65,21 @@ extern "C" {
     Literal* LocalClient_ExecuteAndTransfer_parameter(
         LocalClient& client,
         XlaComputation& computation,
-        Literal& literal0,
-        Literal& literal1
+        Literal** literals,
+        int literals_len
     ) {
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
-        xla::Literal& lit0 = reinterpret_cast<xla::Literal&>(literal0);
-        xla::Literal& lit1 = reinterpret_cast<xla::Literal&>(literal1);
+        xla::Literal** literals_ = reinterpret_cast<xla::Literal**>(literals);
 
-        std::cout << lit0.ToString() << std::endl;
-        std::cout << lit1.ToString() << std::endl;
+        xla::GlobalData* arguments[literals_len];
+        for (int i = 0; i < literals_len; i++) {
+            arguments[i] = client_.TransferToServer(*(literals_[i])).ConsumeValueOrDie().release();
+        }
 
-        std::unique_ptr<xla::GlobalData> gd0 = client_.TransferToServer(lit0).ConsumeValueOrDie();
-        std::unique_ptr<xla::GlobalData> gd1 = client_.TransferToServer(lit1).ConsumeValueOrDie();
-
-        std::cout << gd0->handle().handle() << std::endl;
-        std::cout << gd1->handle().handle() << std::endl;
-
-        // auto arguments_span = absl::Span<xla::GlobalData* const>(global_data, 1);
-        xla::Literal lit = client_.ExecuteAndTransfer(computation_, {gd0.get(), gd1.get()}).ConsumeValueOrDie();
+        auto arguments_span = absl::Span<xla::GlobalData* const>(arguments, literals_len);
+        xla::Literal lit =
+            client_.ExecuteAndTransfer(computation_, arguments_span).ConsumeValueOrDie();
 
         xla::Literal* res = new xla::Literal(lit.shape(), true);
         *res = lit.Clone();

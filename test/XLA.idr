@@ -44,6 +44,9 @@ test_parameter_addition = do
     _ <- primIO (prim__add p0 p1)
     p0_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
     p1_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[1, 1, 1], [-1, -1, -1]]
+    literals <- malloc 8
+    primIO (prim__setArrayPtr literals 0 p0_lit)
+    primIO (prim__setArrayPtr literals 1 p1_lit)
     client <- primIO prim__localClientOrDie
     -- putStrLn "test_parameter_addition ... transferToServer"
     -- gd0 <- primIO (prim__transferToServer client p0_lit)
@@ -55,7 +58,7 @@ test_parameter_addition = do
     -- primIO (prim__setArrayPtr gd_arr 1 gd1)
     putStrLn "test_parameter_addition ... executeAndTransfer"
     -- lit <- primIO $ prim__executeAndTransfer client (build builder) gd_arr 2
-    lit <- primIO $ prim__executeAndTransferParameter client (build builder) p0_lit p1_lit
+    lit <- primIO $ prim__executeAndTransferParameter client (build builder) literals 2
     putStrLn "test_parameter_addition ... print result"
     printLn (toArray {shape=[2, 3]} {dtype=Int} lit)
 

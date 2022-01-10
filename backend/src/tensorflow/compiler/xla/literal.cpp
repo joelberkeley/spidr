@@ -19,6 +19,14 @@ limitations under the License.
 #include "shape.h"
 
 extern "C" {
+    // int sizeof_Literal() {
+    //     return sizeof(xla::Literal);
+    // }
+
+    // void set_array_Literal(Literal* arr, int idx, Literal* value) {
+    //     reinterpret_cast<xla::Literal*>(arr)[idx] = *reinterpret_cast<xla::Literal*>(value);
+    // }
+
     Literal* Literal_new(Shape& shape) {
         xla::Shape& shape_ = reinterpret_cast<xla::Shape&>(shape);
         xla::Literal* lit = new xla::Literal(shape_, true);
