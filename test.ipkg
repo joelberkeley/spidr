@@ -1,0 +1,14 @@
+package test
+
+depends = spidr
+opts = "--total"
+sourcedir = "test"
+
+executable = test
+main = Main
+
+modules =
+  Unit.TestTensor,
+
+  Main,
+  Util'

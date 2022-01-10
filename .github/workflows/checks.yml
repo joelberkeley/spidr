@@ -37,7 +37,7 @@ jobs:
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
 
         idris2 --install spidr.ipkg
-        idris2 -p spidr test/Tensor.idr -o test
+        idris2 --install test.ipkg
         ./build/exec/test
   tutorials:
     runs-on: ubuntu-latest
