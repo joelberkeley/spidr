@@ -24,13 +24,8 @@ extern "C" {
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::Literal& literal_ = reinterpret_cast<xla::Literal&>(literal);
 
-        // todo is .release() safe? If `.release()`-ing the `GlobalData` means nothing will free it,
-        // we can just, even should, return global_data instead of creating a new one.
         std::unique_ptr<xla::GlobalData> global_data =
             client_.TransferToServer(literal_).ConsumeValueOrDie();
-
-        // xla::GlobalData* global_data_non_stack =
-        //     new xla::GlobalData(client_.stub(), global_data->handle());
 
         return reinterpret_cast<GlobalData*>(global_data.release());
     }
