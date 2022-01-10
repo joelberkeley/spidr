@@ -32,7 +32,3 @@ prim__transferToServer : LocalClient -> Literal -> PrimIO AnyPtr
 export
 %foreign (libxla "LocalClient_ExecuteAndTransfer")
 prim__executeAndTransfer : LocalClient -> XlaComputation -> AnyPtr -> Int -> PrimIO Literal
-
-export
-%foreign (libxla "sample_harness")
-sampleHarness : PrimIO ()

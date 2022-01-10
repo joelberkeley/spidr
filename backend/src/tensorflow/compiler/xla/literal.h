@@ -18,8 +18,6 @@ limitations under the License.
 extern "C" {
     struct Literal;
 
-    int sizeof_Literal();
-
     Literal* Literal_new(Shape& shape);
 
     void Literal_delete(Literal* lit);

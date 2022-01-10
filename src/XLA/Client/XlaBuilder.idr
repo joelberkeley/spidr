@@ -104,7 +104,6 @@ prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
-export
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 

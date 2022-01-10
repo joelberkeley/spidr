@@ -28,10 +28,6 @@ public export
 Literal : Type
 Literal = AnyPtr
 
--- export
--- %foreign (libxla "sizeof_Literal")
--- sizeofLiteral : Int
-
 export
 interface XLAPrimitive dtype where
     primitiveType : PrimitiveType
