@@ -20,7 +20,7 @@ import System
 
 import Tensor
 
-import Util'
+import Utils
 
 export
 test_const_eval : IO ()

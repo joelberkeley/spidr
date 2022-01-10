@@ -11,4 +11,4 @@ modules =
   Unit.TestTensor,
 
   Main,
-  Util'
+  Utils
