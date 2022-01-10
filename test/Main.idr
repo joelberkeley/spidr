@@ -16,6 +16,7 @@ limitations under the License.
 module Main
 
 import Unit.TestTensor
+import Unit.TestXLA
 
 main : IO ()
 main = do
@@ -30,5 +31,7 @@ main = do
     test_elementwise_multiplication
     test_constant_multiplication
     test_absE
+
+    test_parameter_addition
 
     putStrLn "Tests passed"
