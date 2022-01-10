@@ -29,7 +29,7 @@ import XLA.ShapeUtil
 import XLA.XlaData
 import Types
 
-import Util'
+import Utils
 
 export
 test_parameter_addition : IO ()
