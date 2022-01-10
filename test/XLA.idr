@@ -33,7 +33,7 @@ import Types
 test_parameter_addition : IO ()
 test_parameter_addition = do
     builder <- primIO (prim__mkXlaBuilder "")
-    c_shape <- mkIntArray (the (Vect 2 Int) [2, 3])
+    c_shape <- mkIntArray [2, 3]
     xla_shape <- primIO (prim__mkShape 4 c_shape 2)
     let p0 = parameter builder 0 xla_shape "param0"
         p1 = parameter builder 1 xla_shape "param1"
