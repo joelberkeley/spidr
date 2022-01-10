@@ -45,7 +45,9 @@ extern "C" {
         xla::GlobalData** arguments_ = reinterpret_cast<xla::GlobalData**>(arguments);
 
         auto arguments_span = absl::Span<xla::GlobalData* const>(arguments_, arguments_len);
-        xla::Literal lit = client_.ExecuteAndTransfer(computation_, arguments_span).ConsumeValueOrDie();
+        xla::Literal lit = client_
+            .ExecuteAndTransfer(computation_, arguments_span)
+            .ConsumeValueOrDie();
 
         xla::Literal* res = new xla::Literal(lit.shape(), true);
         *res = lit.Clone();
