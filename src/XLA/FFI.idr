@@ -41,12 +41,12 @@ export
 %foreign (libxla "sizeof_void_ptr")
 sizeof_voidPtr : Int
 
+%foreign (libxla "set_array_int")
+prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
+
 export
 %foreign (libxla "set_array_ptr")
 prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
-
-%foreign (libxla "set_array_int")
-prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
 mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
