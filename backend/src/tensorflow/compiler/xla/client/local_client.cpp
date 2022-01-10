@@ -15,9 +15,6 @@ limitations under the License.
 */
 #include "absl/types/span.h"
 #include "tensorflow/compiler/xla/client/local_client.h"
-#include "tensorflow/compiler/xla/client/client_library.h"
-#include "tensorflow/compiler/xla/client/xla_builder.h"
-#include "tensorflow/compiler/xla/literal_util.h"
 
 #include "../literal.h"
 #include "local_client.h"
