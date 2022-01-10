@@ -13,43 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+module Unit.TestTensor
+
 import Data.Nat
 import System
 
 import Tensor
 
-floatingPointTolerance : Double
-floatingPointTolerance = 0.00000001
+import Utils
 
-doubleSufficientlyEq : Double -> Double -> Bool
-doubleSufficientlyEq x y = abs (x - y) < floatingPointTolerance
-
-assert : Bool -> IO ()
-assert x = unless x $ do
-    putStrLn "Test failed"
-    exitFailure
-
-assertAll : {shape : _} -> Tensor shape Bool -> IO ()
-assertAll xs = assert (arrayAll !(eval xs)) where
-        arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
-        arrayAll {shape = []} x = x
-        arrayAll {shape = (0 :: _)} [] = True
-        arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
-
--- WARNING: This uses (-) (==#) (<#) and absE, and thus assumes they work, so
--- we shouldn't use it to test those functions.
-fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
-fpEq x y = absE (x - y) <# fill floatingPointTolerance
-
-bools : List Bool
-bools = [True, False]
-
-ints : List Int
-ints = [-3, -1, 0, 1, 3]
-
-doubles : List Double
-doubles = [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
-
+export
 test_const_eval : IO ()
 test_const_eval = do
     let x = [[True, False, False], [False, True, False]]
@@ -72,6 +45,7 @@ test_const_eval = do
             assert (doubleSufficientlyEq x x')
         ) doubles
 
+export
 test_toString : IO ()
 test_toString = do
     str <- toString $ const {shape=[]} {dtype=Int} 1
@@ -90,6 +64,7 @@ test_toString = do
     str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
     assert $ str == "constant, shape=[3], metadata={:0}"
 
+export
 test_broadcast : IO ()
 test_broadcast = do
     let x = const {shape=[]} {dtype=Int} 7
@@ -201,6 +176,7 @@ test_T x = x.T
 test_T_with_leading : Tensor [2, 3, 5] Double -> Tensor [2, 5, 3] Double
 test_T_with_leading x = x.T
 
+export
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
     let x = const [True, True, False]
@@ -228,6 +204,7 @@ test_elementwise_equality = do
             actual <- eval {shape=[]} ((const l) ==# (const r))
             assert (actual == (l == r))
 
+export
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
     let x = const [True, True, False]
@@ -251,6 +228,7 @@ test_elementwise_inequality = do
         compareScalars l r =
             assertAll $ (const l /=# const r) ==# const {shape=[]} (l /= r)
 
+export
 test_comparison : IO ()
 test_comparison = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
@@ -292,6 +270,7 @@ test_tensor_contraction21 x y = x @@ y
 test_tensor_contraction22 : Tensor [3, 4] Double -> Tensor [4, 5] Double -> Tensor [3, 5] Double
 test_tensor_contraction22 x y = x @@ y
 
+export
 test_add : IO ()
 test_add = do
     let x = const [[1, 15, 5], [-1, 7, 6]]
@@ -312,6 +291,7 @@ test_add = do
         r <- doubles
         pure $ assertAll $ fpEq (const l + const r) (const {shape=[]} (l + r))
 
+export
 test_subtract : IO ()
 test_subtract = do
     let l = const [[1, 15, 5], [-1, 7, 6]]
@@ -335,6 +315,7 @@ test_subtract = do
             diff <- eval {shape=[]} (const l - const r)
             assert (doubleSufficientlyEq diff (l - r))
 
+export
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
     let x = const [[1, 15, 5], [-1, 7, 6]]
@@ -355,6 +336,7 @@ test_elementwise_multiplication = do
         r <- doubles
         pure $ assertAll $ fpEq (const l *# const r) (const {shape=[]} (l * r))
 
+export
 test_constant_multiplication : IO ()
 test_constant_multiplication = do
     let r = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
@@ -377,6 +359,7 @@ test_constant_multiplication = do
         r <- doubles
         pure $ assertAll $ fpEq (const l * const r) (const {shape=[]} (l * r))
 
+export
 test_absE : IO ()
 test_absE = do
     let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
@@ -400,18 +383,3 @@ test_det x = det x
 
 test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
 test_det_with_leading x = det x
-
-main : IO ()
-main = do
-    test_const_eval
-    test_toString
-    test_broadcast
-    test_elementwise_equality
-    test_elementwise_inequality
-    test_comparison
-    test_add
-    test_subtract
-    test_elementwise_multiplication
-    test_constant_multiplication
-    test_absE
-    putStrLn "Tests passed"
