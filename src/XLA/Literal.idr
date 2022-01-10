@@ -26,7 +26,7 @@ import XLA.ShapeUtil
 
 public export
 Literal : Type
-Literal = AnyPtr
+Literal = Struct "Literal" []
 
 export
 interface XLAPrimitive dtype where
