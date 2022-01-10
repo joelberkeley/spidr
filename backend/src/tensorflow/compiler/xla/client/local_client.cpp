@@ -16,7 +16,7 @@ limitations under the License.
 #include "absl/types/span.h"
 #include "tensorflow/compiler/xla/client/local_client.h"
 
-#include "src/tensorflow/compiler/xla/literal.h"
+#include "../literal.h"
 #include "local_client.h"
 
 extern "C" {

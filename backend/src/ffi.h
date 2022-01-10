@@ -13,12 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <string>
-
 extern "C" {
     int sizeof_int();
+
     void set_array_int(int* arr, int idx, int value);
 }
-
-// Return a pointer to a new, heap-allocated, null-terminated C string.
-const char* c_string_copy(std::string str);
