@@ -32,8 +32,6 @@ import Types
 
 test_parameter_addition : IO ()
 test_parameter_addition = do
-    -- primIO sampleHarness
-    
     builder <- primIO (prim__mkXlaBuilder "")
     c_shape <- mkIntArray (the (Vect 2 Int) [2, 3])
     xla_shape <- primIO (prim__mkShape 4 c_shape 2)
@@ -44,22 +42,14 @@ test_parameter_addition = do
     _ <- primIO (prim__add p0 p1)
     p0_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
     p1_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[1, 1, 1], [-1, -1, -1]]
-    literals <- malloc 8
-    primIO (prim__setArrayPtr literals 0 p0_lit)
-    primIO (prim__setArrayPtr literals 1 p1_lit)
     client <- primIO prim__localClientOrDie
-    -- putStrLn "test_parameter_addition ... transferToServer"
-    -- gd0 <- primIO (prim__transferToServer client p0_lit)
-    -- gd1 <- primIO (prim__transferToServer client p1_lit)
-    -- putStrLn "test_parameter_addition ... gather global data"
+    gd0 <- primIO (prim__transferToServer client p0_lit)
+    gd1 <- primIO (prim__transferToServer client p1_lit)
     --am i allocating memory correctly for the GlobalData**?
-    -- gd_arr <- malloc 8
-    -- primIO (prim__setArrayPtr gd_arr 0 gd0)
-    -- primIO (prim__setArrayPtr gd_arr 1 gd1)
-    putStrLn "test_parameter_addition ... executeAndTransfer"
-    -- lit <- primIO $ prim__executeAndTransfer client (build builder) gd_arr 2
-    lit <- primIO $ prim__executeAndTransferParameter client (build builder) literals 2
-    putStrLn "test_parameter_addition ... print result"
+    gd_arr <- malloc 8
+    primIO (prim__setArrayPtr gd_arr 0 gd0)
+    primIO (prim__setArrayPtr gd_arr 1 gd1)
+    lit <- primIO $ prim__executeAndTransfer client (build builder) gd_arr 2
     printLn (toArray {shape=[2, 3]} {dtype=Int} lit)
 
 main : IO ()

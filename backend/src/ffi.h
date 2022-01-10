@@ -17,4 +17,5 @@ extern "C" {
     int sizeof_int();
 
     void set_array_int(int* arr, int idx, int value);
+    void set_array_ptr(void** arr, int idx, void* value);
 }
