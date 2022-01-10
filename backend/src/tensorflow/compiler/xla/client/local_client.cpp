@@ -15,6 +15,9 @@ limitations under the License.
 */
 #include "absl/types/span.h"
 #include "tensorflow/compiler/xla/client/local_client.h"
+#include "tensorflow/compiler/xla/client/client_library.h"
+#include "tensorflow/compiler/xla/client/xla_builder.h"
+#include "tensorflow/compiler/xla/literal_util.h"
 
 #include "../literal.h"
 #include "local_client.h"
@@ -62,33 +65,79 @@ extern "C" {
     Literal* LocalClient_ExecuteAndTransfer_parameter(
         LocalClient& client,
         XlaComputation& computation,
-        Literal& literal0
-        // Literal& literal1
+        Literal& literal0,
+        Literal& literal1
     ) {
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
         xla::Literal& lit0 = reinterpret_cast<xla::Literal&>(literal0);
-        // xla::Literal& lit1 = reinterpret_cast<xla::Literal&>(literal1);
+        xla::Literal& lit1 = reinterpret_cast<xla::Literal&>(literal1);
 
         std::cout << lit0.ToString() << std::endl;
-        // std::cout << lit1.ToString() << std::endl;
+        std::cout << lit1.ToString() << std::endl;
 
-        xla::GlobalData* gd0 = client_.TransferToServer(lit0).ConsumeValueOrDie().get();
-        // xla::GlobalData* gd1 = client_.TransferToServer(lit1).ConsumeValueOrDie().get();
+        std::unique_ptr<xla::GlobalData> gd0 = client_.TransferToServer(lit0).ConsumeValueOrDie();
+        std::unique_ptr<xla::GlobalData> gd1 = client_.TransferToServer(lit1).ConsumeValueOrDie();
 
         std::cout << gd0->handle().handle() << std::endl;
-        // std::cout << gd1->handle().handle() << std::endl;
+        std::cout << gd1->handle().handle() << std::endl;
 
-        xla::GlobalData* global_data[1];
-
-        global_data[0] = gd0;
-        // global_data[1] = gd1;
-
-        auto arguments_span = absl::Span<xla::GlobalData* const>(global_data, 1);
-        xla::Literal lit = client_.ExecuteAndTransfer(computation_, arguments_span).ConsumeValueOrDie();
+        // auto arguments_span = absl::Span<xla::GlobalData* const>(global_data, 1);
+        xla::Literal lit = client_.ExecuteAndTransfer(computation_, {gd0.get(), gd1.get()}).ConsumeValueOrDie();
 
         xla::Literal* res = new xla::Literal(lit.shape(), true);
         *res = lit.Clone();
         return reinterpret_cast<Literal*>(res);
+    }
+}
+
+xla::GlobalData* sample_harness1(xla::LocalClient* client, xla::Literal& lit) {
+    auto global_data = client->TransferToServer(lit).ConsumeValueOrDie();
+
+    xla::GlobalData* global_data_non_stack =
+        new xla::GlobalData(client->stub(), global_data->handle());
+
+    std::vector<std::unique_ptr<xla::GlobalData>> to_release;
+    to_release.push_back(std::move(global_data));
+    xla::GlobalData::Release(std::move(to_release));
+    return global_data_non_stack;
+}
+
+extern "C" {
+    void sample_harness() {
+        xla::LocalClient* client(xla::ClientLibrary::LocalClientOrDie());
+
+        // Transfer parameters.
+        xla::Literal param0_literal =
+            xla::LiteralUtil::CreateR2<float>({{1.1f, 2.2f, 3.3f, 5.5f}});
+        xla::GlobalData* param0_data =
+            sample_harness1(client, param0_literal);
+
+        xla::Literal param1_literal = xla::LiteralUtil::CreateR2<float>(
+            {{3.1f, 4.2f, 7.3f, 9.5f}, {1.1f, 2.2f, 3.3f, 4.4f}});
+        xla::GlobalData* param1_data =
+            sample_harness1(client, param1_literal);
+
+        // Build computation.
+        xla::XlaBuilder builder("");
+        auto p0 = Parameter(&builder, 0, param0_literal.shape(), "param0");
+        auto p1 = Parameter(&builder, 1, param1_literal.shape(), "param1");
+        Add(p0, p1);
+
+        xla::StatusOr<xla::XlaComputation> computation_status = builder.Build();
+        xla::XlaComputation computation = computation_status.ConsumeValueOrDie();
+
+        // Execute and transfer result of computation.
+        xla::ExecutionProfile profile;
+        xla::StatusOr<xla::Literal> result = client->ExecuteAndTransfer(
+            computation,
+            /*arguments=*/{param0_data, param1_data},
+            /*execution_options=*/nullptr,
+            /*execution_profile=*/&profile);
+        xla::Literal actual = result.ConsumeValueOrDie();
+
+        LOG(INFO) << absl::StrFormat("computation took %dns",
+                                    profile.compute_time_ns());
+        LOG(INFO) << actual.ToString();
     }
 }
