@@ -46,6 +46,8 @@ test_parameter_addition = do
     client <- primIO prim__localClientOrDie
     gd0 <- primIO (prim__transferToServer client p0_lit)
     gd1 <- primIO (prim__transferToServer client p1_lit)
+    -- not convinced this is right yet. Could just have a sizeof_GlobalData function which is less
+    -- useful but safe
     gd_arr <- malloc (2 * sizeof_voidPtr)
     primIO (prim__setArrayPtr gd_arr 0 gd0)
     primIO (prim__setArrayPtr gd_arr 1 gd1)
