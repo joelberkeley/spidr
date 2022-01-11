@@ -43,12 +43,12 @@ data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : Primitive dtype => {shape : _} -> Array shape {dtype} -> Tensor shape dtype
+const : Primitive dtype => {shape : _} -> Array shape dtype -> Tensor shape dtype
 const xs = MkTensor $ const {rank=length shape} (rewrite lengthCorrect shape in xs)
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
-eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape {dtype}
+eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape dtype
 eval (MkTensor raw) = eval raw
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
@@ -95,7 +95,7 @@ toString (MkTensor raw) = toString raw
 ||| @dtype The element type.
 export
 data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkVariable : Primitive dtype => Array shape {dtype=dtype} -> Variable shape dtype
+  MkVariable : Primitive dtype => Array shape dtype -> Variable shape dtype
 
 ||| Provides access to a linear `Variable` with initial contents `arr`. For example:
 |||
@@ -110,7 +110,7 @@ data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
 var : Primitive dtype =>
-      Array shape {dtype=dtype} -> (1 f : (1 v : Variable shape dtype) -> a) -> a
+      Array shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
 var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
@@ -217,7 +217,7 @@ namespace Broadcastable
 
 empty : Primitive dtype => {shape : Shape} -> {auto isEmpty : Elem 0 shape} -> Tensor shape dtype
 empty = const (emptyArray shape) where
-  emptyArray : (shape : _) -> {auto isEmpty : Elem Z shape} -> Array shape
+  emptyArray : (shape : _) -> {auto isEmpty : Elem Z shape} -> Array shape dtype
   emptyArray {isEmpty = Here} (0 :: _) = []
   emptyArray {isEmpty = (There _)} (d :: ds) = replicate d (emptyArray ds)
 

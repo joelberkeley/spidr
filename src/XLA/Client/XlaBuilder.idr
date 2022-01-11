@@ -118,7 +118,7 @@ data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
 
 export
 const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
-    -> Array shape {dtype} -> RawTensor
+    -> Array shape dtype -> RawTensor
 const arr = MkRawTensor $ \builder =>
     do literal <- mkLiteral arr
        op <- collectXlaOp (constantLiteral builder literal)

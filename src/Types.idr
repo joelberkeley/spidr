@@ -30,13 +30,14 @@ public export 0
 Shape : {0 rank: Nat} -> Type
 Shape = Vect rank Nat
 
-||| An `Array shape` is either:
+||| An `Array shape dtype` is either:
 ||| 
-||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
+||| * a single value of type `dtype` (for `shape` `[]`), or
 ||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
 |||
-||| @shape The shape of this array.
+||| @shape The shape of the array.
+||| @dtype The type of elements of the array.
 public export 0
-Array : {0 dtype : Type} -> (0 shape : Shape) -> Type
-Array {dtype} [] = dtype
-Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
+Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
+Array [] dtype = dtype
+Array (d :: ds) dtype = Vect d (Array ds dtype)

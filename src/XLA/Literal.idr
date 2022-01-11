@@ -45,24 +45,24 @@ delete : Literal -> IO ()
 delete = primIO . prim__Literal_delete
 
 populateLiteral : {rank : _} -> (shape : Shape {rank}) -> XLAPrimitive dtype =>
-    Literal -> Array shape {dtype=dtype} -> IO ()
+    Literal -> Array shape dtype -> IO ()
 populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
     impl : {a : _} -> (rem_shape : Shape {rank=r}) -> (acc_indices : Shape {rank=a})
-        -> {shapesSum : a + r = rank} -> Array rem_shape {dtype=dtype} -> IO ()
+        -> {shapesSum : a + r = rank} -> Array rem_shape dtype -> IO ()
     impl {a} [] acc_indices x = do
         idx_ptr <- mkIntArray acc_indices
         primIO $ set lit idx_ptr x
         free idx_ptr
     impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
         traverse_ setArrays (enumerate xs) where
-            setArrays : (Nat, Array rest {dtype=dtype}) -> IO ()
+            setArrays : (Nat, Array rest dtype) -> IO ()
             setArrays (idx, xs') =
                 let shapesSum' = rewrite plusSuccRightSucc a r' in shapesSum
                  in impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
 
 export
 mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
-    -> Array shape {dtype=dtype} -> IO Literal
+    -> Array shape dtype -> IO Literal
 mkLiteral xs = do
     c_shape <- mkIntArray shape
     xla_shape <- primIO $ prim__mkShape (cast $ primitiveType {dtype=dtype}) c_shape (cast rank)
@@ -114,12 +114,12 @@ XLAPrimitive Int where
   get = literalGetInt
 
 export
-toArray : XLAPrimitive dtype => {shape : Types.Shape} -> Literal -> Array shape {dtype=dtype}
+toArray : XLAPrimitive dtype => {shape : Types.Shape} -> Literal -> Array shape dtype
 toArray lit = impl {shapesSum=Refl} shape [] where
     impl : (remaining_shape : Vect r Nat)
         -> {a : _} -> {shapesSum : a + r = rank}
         -> (accumulated_indices : Vect a Nat)
-        -> Array remaining_shape {dtype=dtype}
+        -> Array remaining_shape dtype
     impl [] acc = unsafePerformIO impl_io where
         impl_io : IO dtype
         impl_io = do
