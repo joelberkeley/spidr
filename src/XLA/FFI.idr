@@ -37,14 +37,16 @@ libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 %foreign (libxla "sizeof_int")
 sizeof_int : Int
 
-{-
- -
- - Array shape
- -
- -}
+export
+%foreign (libxla "sizeof_void_ptr")
+sizeof_voidPtr : Int
 
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
+
+export
+%foreign (libxla "set_array_ptr")
+prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
 
 export
 mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)

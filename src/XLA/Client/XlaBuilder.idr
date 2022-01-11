@@ -18,6 +18,7 @@ module XLA.Client.XlaBuilder
 import Data.Vect
 import System.FFI
 
+import XLA.Shape
 import XLA.Client.XlaComputation
 import XLA.FFI
 import XLA.Literal
@@ -61,8 +62,13 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
 %foreign (libxla "XlaOp_delete")
 prim__XlaOp_delete : AnyPtr -> PrimIO ()
 
+export
 collectXlaOp : AnyPtr -> IO GCAnyPtr
 collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
+
+export
+%foreign (libxla "Parameter")
+parameter : XlaBuilder -> Int -> Shape.Shape -> String -> AnyPtr
 
 %foreign (libxla "ConstantLiteral")
 constantLiteral : XlaBuilder -> Literal -> AnyPtr
@@ -88,6 +94,7 @@ prim__lt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Le")
 prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 

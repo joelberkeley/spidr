@@ -9,6 +9,7 @@ main = Main
 
 modules =
   Unit.TestTensor,
+  Unit.TestXLA,
 
   Main,
   Utils
