@@ -36,6 +36,7 @@ Shape = Vect rank Nat
 ||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
 |||
 ||| @shape The shape of this array.
+||| @dtype The type of elements of this array.
 public export 0
 Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
 Array [] dtype = dtype
