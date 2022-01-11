@@ -32,7 +32,7 @@ Shape = Vect rank Nat
 
 ||| An `Array shape` is either:
 ||| 
-||| * a single value of an implicitly inferred type `dtype` (for `shape` `[]`), or
+||| * a single value of type `dtype` (for `shape` `[]`), or
 ||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
 |||
 ||| @shape The shape of this array.
