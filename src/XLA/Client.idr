@@ -27,7 +27,7 @@ import XLA.Client.XlaComputation
 import Types
 
 export
-eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape {dtype})
+eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape dtype)
 eval (MkRawTensor f) = do
     builder <- primIO (prim__mkXlaBuilder "")
     _ <- f builder

@@ -37,6 +37,6 @@ Shape = Vect rank Nat
 |||
 ||| @shape The shape of this array.
 public export 0
-Array : {0 dtype : Type} -> (0 shape : Shape) -> Type
-Array {dtype} [] = dtype
-Array {dtype} (d :: ds) = Vect d (Array ds {dtype=dtype})
+Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
+Array [] dtype = dtype
+Array (d :: ds) dtype = Vect d (Array ds dtype)
