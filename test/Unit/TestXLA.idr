@@ -34,9 +34,6 @@ import Utils
 export
 test_parameter_addition : IO ()
 test_parameter_addition = do
-    -- todo free and delete
-
-    -- function definition
     builder <- primIO (prim__mkXlaBuilder "")
     c_shape <- mkIntArray [2, 3]
     xla_shape <- primIO (prim__mkShape (cast $ primitiveType {dtype=Int}) c_shape 2)
@@ -44,12 +41,13 @@ test_parameter_addition = do
     p1 <- collectXlaOp (parameter builder 1 xla_shape "")
     delete xla_shape
     free c_shape
-    _ <- primIO (prim__add p0 p1)
+    _ <- primIO (prim__add p0 p1) >>= collectXlaOp
+    let computation = build builder
+    delete builder
 
-    -- user code
     p0_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
     p1_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[1, 1, 1], [-1, -1, -1]]
-    -- in `eval`
+
     client <- primIO prim__localClientOrDie
     gd0 <- primIO (prim__transferToServer client p0_lit)
     gd1 <- primIO (prim__transferToServer client p1_lit)
@@ -58,7 +56,12 @@ test_parameter_addition = do
     gd_arr <- malloc (2 * sizeof_voidPtr)
     primIO (prim__setArrayPtr gd_arr 0 gd0)
     primIO (prim__setArrayPtr gd_arr 1 gd1)
-    lit <- primIO $ prim__executeAndTransfer client (build builder) gd_arr 2
+    lit <- primIO $ prim__executeAndTransfer client computation gd_arr 2
+    delete p0_lit
+    delete p1_lit
+    free gd0
+    free gd1
+    free gd_arr
 
-    -- user code
     assert (toArray {shape=[2, 3]} {dtype=Int} lit == [[1, 2, 3], [2, 3, 4]])
+    delete lit
