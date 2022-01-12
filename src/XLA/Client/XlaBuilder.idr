@@ -104,6 +104,9 @@ prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Div")
+prim__div : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "And")
 prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -215,6 +218,7 @@ mul : RawTensor -> RawTensor -> RawTensor
 mul = binOp prim__mul
 
 export
+<<<<<<< HEAD
 and : RawTensor -> RawTensor -> RawTensor
 and = binOp prim__and
 
@@ -225,6 +229,10 @@ or = binOp prim__or
 export
 not : RawTensor -> RawTensor
 not = unaryOp prim__not
+=======
+div : RawTensor -> RawTensor -> RawTensor
+div = binOp prim__div
+>>>>>>> implement element-wise division and division by a constant
 
 export
 abs : RawTensor -> RawTensor

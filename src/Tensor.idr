@@ -445,11 +445,14 @@ l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
 ||| to `const [0.5, 0.6]`.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(MkTensor l) /# (MkTensor r) = MkTensor (div l r)
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
 export
-(/) : Fractional dtype => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
+(/) : (Primitive dtype, Fractional dtype) => {shape : _} ->
+      Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
+l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 
 ||| Element-wise absolute value. For example, `absE (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.

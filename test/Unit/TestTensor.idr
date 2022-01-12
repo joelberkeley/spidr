@@ -417,6 +417,19 @@ test_elementwise_notEach = do
                notEach (const x) ==# const {shape=[]} (not x) | x <- bools]
 
 export
+test_elementwise_division : IO ()
+test_elementwise_division = do
+    let x = const [[3, 4, -5], [0, 0.3, 0]]
+        y = const [[1, -2.3, 0.2], [0.1, 0, 0]]
+        expected = const {shape=[_, _]} {dtype=Double} [[3, -4 / 2.3, -25], [0, 0.3 / 0, 0 / 0]]
+    assertAll $ fpEq (x /# y) expected
+
+    sequence_ $ do
+        l <- doubles ++ [1.0 / 0.0, 0.0 / 0.0, -1.0 / 0.0]
+        r <- doubles ++ [1.0 / 0.0, 0.0 / 0.0, -1.0 / 0.0]
+        pure $ assertAll $ fpEq (const l /# const r) (const {shape=[]} (l / r))
+
+export
 test_absE : IO ()
 test_absE = do
     let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
