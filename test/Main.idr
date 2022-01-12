@@ -30,6 +30,9 @@ main = do
     test_subtract
     test_elementwise_multiplication
     test_constant_multiplication
+    test_elementwise_and
+    test_elementwise_or
+    test_elementwise_notEach
     test_absE
     test_negate
 
