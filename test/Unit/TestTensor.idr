@@ -388,13 +388,8 @@ test_negate = do
         expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
     assertAll $ fpEq (-x) expected
 
-    sequence_ $ do
-        x <- ints
-        pure $ assertAll $ (- const x) ==# const {shape=[]} (-x)
-
-    sequence_ $ do
-        x <- doubles
-        pure $ assertAll $ fpEq (- const x) (const {shape=[]} (-x))
+    sequence_ [assertAll $ (- const x) ==# const {shape=[]} (-x) | x <- ints]
+    sequence_ [assertAll $ fpEq (- const x) (const {shape=[]} (-x)) | x <- doubles]
 
 test_det : Tensor [3, 3] Double -> Tensor [] Double
 test_det x = det x
