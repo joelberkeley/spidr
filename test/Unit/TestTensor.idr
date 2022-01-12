@@ -364,7 +364,7 @@ assertBooleanOpArray :
 assertBooleanOpArray op expected = do
     let l = const [[True, True], [False, False]]
         r = const [[True, False], [True, False]]
-    assertAll $ op l r ==# const {shape=[_, _]} expected
+    assertAll $ op l r ==# const expected
 
 assertBooleanOpScalar :
     (Tensor [] Bool -> Tensor [] Bool -> Tensor [] Bool) -> (Bool -> Lazy Bool -> Bool) -> IO ()
@@ -372,7 +372,7 @@ assertBooleanOpScalar tensor_op op =
     sequence_ $ do
         l <- bools
         r <- bools
-        pure $ assertAll $ tensor_op (const l) (const r) ==# const {shape=[]} (op l r)
+        pure $ assertAll $ tensor_op (const l) (const r) ==# const (op l r)
 
 export
 test_elementwise_and : IO ()
