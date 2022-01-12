@@ -110,9 +110,6 @@ prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Or")
 prim__or : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
-%foreign (libxla "Xor")
-prim__xor : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
-
 %foreign (libxla "Not")
 prim__not : GCAnyPtr -> PrimIO AnyPtr
 
@@ -224,10 +221,6 @@ and = binOp prim__and
 export
 or : RawTensor -> RawTensor -> RawTensor
 or = binOp prim__or
-
-export
-xor : RawTensor -> RawTensor -> RawTensor
-xor = binOp prim__xor
 
 export
 not : RawTensor -> RawTensor
