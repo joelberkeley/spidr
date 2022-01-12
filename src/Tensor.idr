@@ -376,7 +376,7 @@ export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
 (MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
 
-||| Element-wise boolean negation. For example, `not (const [True, False])` is equivalent to
+||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
 export
 notEach : Tensor shape Bool -> Tensor shape Bool
