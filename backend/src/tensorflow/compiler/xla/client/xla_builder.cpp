@@ -145,6 +145,6 @@ extern "C" {
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Div, lhs, rhs); }
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Rem, lhs, rhs); }
 
-    XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
+    XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 }

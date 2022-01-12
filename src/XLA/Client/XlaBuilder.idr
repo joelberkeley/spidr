@@ -107,6 +107,9 @@ prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Neg")
+prim__neg : GCAnyPtr -> PrimIO AnyPtr
+
 {-
  -
  - XlaOp and XlaBuilder wrapper
@@ -205,3 +208,7 @@ mul = binOp prim__mul
 export
 abs : RawTensor -> RawTensor
 abs = unaryOp prim__abs
+
+export
+neg : RawTensor -> RawTensor
+neg = unaryOp prim__neg

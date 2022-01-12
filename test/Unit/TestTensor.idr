@@ -378,6 +378,19 @@ test_absE = do
             assert (doubleSufficientlyEq actual (abs x))
         ) doubles
 
+export
+test_negate : IO ()
+test_negate = do
+    let x = const [[1, 15, -5], [-1, 7, 0]]
+    assertAll $ (-x) ==# const {shape=[_, _]} {dtype=Int} [[-1, -15, 5], [1, -7, 0]]
+
+    let x = const [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
+        expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
+    assertAll $ fpEq (-x) expected
+
+    sequence_ [assertAll $ (- const x) ==# const {shape=[]} (-x) | x <- ints]
+    sequence_ [assertAll $ fpEq (- const x) (const {shape=[]} (-x)) | x <- doubles]
+
 test_det : Tensor [3, 3] Double -> Tensor [] Double
 test_det x = det x
 

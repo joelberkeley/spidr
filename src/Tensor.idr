@@ -394,6 +394,7 @@ export
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
+negate (MkTensor raw) = MkTensor (neg raw)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
