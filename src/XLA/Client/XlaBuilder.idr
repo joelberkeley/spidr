@@ -104,6 +104,18 @@ prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "And")
+prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Or")
+prim__or : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Xor")
+prim__xor : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "Not")
+prim__not : GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 
@@ -204,6 +216,22 @@ sub = binOp prim__sub
 export
 mul : RawTensor -> RawTensor -> RawTensor
 mul = binOp prim__mul
+
+export
+and : RawTensor -> RawTensor -> RawTensor
+and = binOp prim__and
+
+export
+or : RawTensor -> RawTensor -> RawTensor
+or = binOp prim__or
+
+export
+xor : RawTensor -> RawTensor -> RawTensor
+xor = binOp prim__xor
+
+export
+not : RawTensor -> RawTensor
+not = unaryOp prim__not
 
 export
 abs : RawTensor -> RawTensor

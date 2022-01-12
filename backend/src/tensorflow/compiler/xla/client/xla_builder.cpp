@@ -145,6 +145,25 @@ extern "C" {
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Div, lhs, rhs); }
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Rem, lhs, rhs); }
 
+    XlaOp* And(XlaOp& lhs, XlaOp& rhs) {
+        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+        xla::XlaOp* res = new xla::XlaOp();
+        *res = xla::And(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Or(XlaOp& lhs, XlaOp& rhs) {
+        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+        xla::XlaOp* res = new xla::XlaOp();
+        *res = xla::Or(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(res);
+    }
+
+    XlaOp* Xor(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Xor, lhs, rhs); }
+    XlaOp* Not(XlaOp& operand) { return unaryOp(xla::Not, operand); }
+
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 }

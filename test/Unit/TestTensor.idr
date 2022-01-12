@@ -359,6 +359,39 @@ test_constant_multiplication = do
         r <- doubles
         pure $ assertAll $ fpEq (const l * const r) (const {shape=[]} (l * r))
 
+assertBooleanOpArray :
+    (Tensor [2, 2] Bool -> Tensor [2, 2] Bool -> Tensor [2, 2] Bool) -> Array [2, 2] Bool -> IO ()
+assertBooleanOpArray op expected = do
+    let l = const [[True, True], [False, False]]
+        r = const [[True, False], [True, False]]
+    assertAll $ l &&# r ==# const {shape=[_, _]} expected
+
+assertBooleanOpScalar :
+    (Tensor [] Bool -> Tensor [] Bool -> Tensor [] Bool) -> (Bool -> Lazy Bool -> Bool) -> IO ()
+assertBooleanOpScalar tensor_op op =
+    sequence_ $ do
+        l <- bools
+        r <- bools
+        pure $ assertAll $ tensor_op (const l) (const r) ==# const {shape=[]} (op l r)
+
+export
+test_elementwise_and : IO ()
+test_elementwise_and = do
+    assertBooleanOpArray (&&#) [[True, False], [False, False]]
+    assertBooleanOpScalar (&&#) (&&)
+
+export
+test_elementwise_or : IO ()
+test_elementwise_or = do
+    assertBooleanOpArray (||#) [[True, True], [True, False]]
+    assertBooleanOpScalar (||#) (||)
+
+export
+test_elementwise_xorEach : IO ()
+test_elementwise_xorEach = do
+    assertBooleanOpArray xorEach [[False, True], [True, False]]
+    assertBooleanOpScalar xorEach (\l, r => l /= r)
+
 export
 test_absE : IO ()
 test_absE = do

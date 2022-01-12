@@ -358,6 +358,31 @@ export
 (>=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
 (MkTensor l) >=# (MkTensor r) = MkTensor (ge l r)
 
+infixr 5 &&#
+
+||| Element-wise boolean and. For example,
+||| `const [True, True, False, False] &&# const [True, False, True, False]` is equivalent to
+||| `const [True, False, False, False]`.
+export
+(&&#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
+(MkTensor l) &&# (MkTensor r) = MkTensor (and l r)
+
+infixr 4 ||#
+
+||| Element-wise boolean or. For example,
+||| `const [True, True, False, False] ||# const [True, False, True, False]` is equivalent to
+||| `const [True, True, True, False]`.
+export
+(||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
+(MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
+
+||| Element-wise boolean xor. For example,
+||| `xorEach (const [True, True, False, False]) (const [True, False, True, False])` is equivalent to
+||| `const [False, True, True, False]`.
+export
+xorEach : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
+xorEach (MkTensor l) (MkTensor r) = MkTensor (xor l r)
+
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
@@ -404,7 +429,7 @@ export
 
 infixl 9 *#, /#
 
-||| Elementwise multiplication. For example, `const [2, 3] *# const [4, 5]` is equivalent to
+||| Element-wise multiplication. For example, `const [2, 3] *# const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
@@ -417,8 +442,8 @@ export
       -> Tensor shape dtype
 l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
 
-||| Elementwise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent to
-||| `const [0.5, 0.6]`.
+||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
+||| to `const [0.5, 0.6]`.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
