@@ -376,12 +376,11 @@ export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
 (MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
 
-||| Element-wise boolean xor. For example,
-||| `xorEach (const [True, True, False, False]) (const [True, False, True, False])` is equivalent to
-||| `const [False, True, True, False]`.
+||| Element-wise boolean negation. For example, `not (const [True, False])` is equivalent to
+||| `const [False, True]`.
 export
-xorEach : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
-xorEach (MkTensor l) (MkTensor r) = MkTensor (xor l r)
+notEach : Tensor shape Bool -> Tensor shape Bool
+notEach (MkTensor raw) = MkTensor (not raw)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@

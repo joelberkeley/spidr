@@ -67,14 +67,15 @@ extern "C" {
     XlaOp* Gt(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Lt(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs);
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs);
+
     XlaOp* And(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Or(XlaOp& lhs, XlaOp& rhs);
-    XlaOp* Xor(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Not(XlaOp& operand);
 
     XlaOp* Abs(XlaOp& operand);

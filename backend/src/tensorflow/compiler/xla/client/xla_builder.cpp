@@ -161,7 +161,6 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(res);
     }
 
-    XlaOp* Xor(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Xor, lhs, rhs); }
     XlaOp* Not(XlaOp& operand) { return unaryOp(xla::Not, operand); }
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
