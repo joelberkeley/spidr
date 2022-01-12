@@ -47,16 +47,29 @@ assert x = unless x $ do
 export
 assertAll : {shape : _} -> Tensor shape Bool -> IO ()
 assertAll xs = assert (arrayAll !(eval xs)) where
-        arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
-        arrayAll {shape = []} x = x
-        arrayAll {shape = (0 :: _)} [] = True
-        arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
+    arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
+    arrayAll {shape = []} x = x
+    arrayAll {shape = (0 :: _)} [] = True
+    arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
 
--- WARNING: This uses (-) (==#) (<#) and absE, and thus assumes they work, so
--- we shouldn't use it to test those functions.
+isNanEach : Tensor shape Double -> Tensor shape Bool
+isNanEach x = x /=# x
+
+-- WARNING: This uses a number of functions, and thus assumes they work, so
+-- we shouldn't use it to test them.
 export
 fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
-fpEq x y = absE (x - y) <# fill floatingPointTolerance
+fpEq x y =
+    let either_nan = isNanEach x ||# isNanEach y
+        both_nan = isNanEach x &&# isNanEach y
+        either_inf =
+            x ==# fill posInf
+            ||# x ==# fill negInf
+            ||# y ==# fill posInf
+            ||# y ==# fill negInf in
+    (either_nan &&# both_nan)
+    ||# (either_inf &&# x ==# y)
+    ||# (absE (x - y) <# fill floatingPointTolerance) where
 
 export
 bools : List Bool

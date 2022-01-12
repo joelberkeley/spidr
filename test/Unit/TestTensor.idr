@@ -347,7 +347,7 @@ test_constant_multiplication = do
     let r = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
     sequence_ $ do
         l <- doubles
-        pure $ assertAll $ fpEq ((const l) * r) (const [[-3.3 * l], [0.0], [0.3 * l]])
+        pure $ assertAll $ fpEq ((const l) * r) (const [[-3.3 * l], [0.0 * l], [0.3 * l]])
 
     sequence_ $ do
         l <- ints
