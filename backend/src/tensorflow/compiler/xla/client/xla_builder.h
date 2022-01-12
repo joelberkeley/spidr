@@ -73,6 +73,6 @@ extern "C" {
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs);
 
-    XlaOp* Neg(XlaOp& operand);
     XlaOp* Abs(XlaOp& operand);
+    XlaOp* Neg(XlaOp& operand);
 }

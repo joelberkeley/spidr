@@ -31,6 +31,7 @@ main = do
     test_elementwise_multiplication
     test_constant_multiplication
     test_absE
+    test_negate
 
     test_parameter_addition
 
