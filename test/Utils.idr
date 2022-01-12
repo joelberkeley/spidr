@@ -23,9 +23,20 @@ export
 floatingPointTolerance : Double
 floatingPointTolerance = 0.00000001
 
+isNan : Double -> Bool
+isNan x = x /= x
+
+nan, posInf, negInf : Double
+nan = 0.0 / 0.0
+posInf = 1.0 / 0.0
+negInf = - 1.0 / 0.0
+
 export
 doubleSufficientlyEq : Double -> Double -> Bool
-doubleSufficientlyEq x y = abs (x - y) < floatingPointTolerance
+doubleSufficientlyEq x y =
+    if isNan x || isNan y then isNan x && isNan y else
+    if x == posInf || x == negInf || y == posInf || y == negInf then x == y else
+    abs (x - y) < floatingPointTolerance
 
 export
 assert : Bool -> IO ()
@@ -57,4 +68,4 @@ ints = [-3, -1, 0, 1, 3]
 
 export
 doubles : List Double
-doubles = [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
+doubles = [negInf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, posInf, nan]
