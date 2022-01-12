@@ -368,11 +368,11 @@ assertBooleanOpArray op expected = do
 
 assertBooleanOpScalar :
     (Tensor [] Bool -> Tensor [] Bool -> Tensor [] Bool) -> (Bool -> Lazy Bool -> Bool) -> IO ()
-assertBooleanOpScalar tensor_op op =
+assertBooleanOpScalar tensor_op bool_op =
     sequence_ $ do
         l <- bools
         r <- bools
-        pure $ assertAll $ tensor_op (const l) (const r) ==# const (op l r)
+        pure $ assertAll $ tensor_op (const l) (const r) ==# const (bool_op l r)
 
 export
 test_elementwise_and : IO ()
