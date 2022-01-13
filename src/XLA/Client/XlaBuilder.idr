@@ -104,6 +104,9 @@ prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "Div")
+prim__div : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "And")
 prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -213,6 +216,10 @@ sub = binOp prim__sub
 export
 mul : RawTensor -> RawTensor -> RawTensor
 mul = binOp prim__mul
+
+export
+div : RawTensor -> RawTensor -> RawTensor
+div = binOp prim__div
 
 export
 and : RawTensor -> RawTensor -> RawTensor

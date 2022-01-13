@@ -34,7 +34,9 @@ main = do
     test_add
     test_subtract
     test_elementwise_multiplication
-    test_constant_multiplication
+    test_scalar_multiplication
+    test_elementwise_division
+    test_scalar_division
     test_elementwise_and
     test_elementwise_or
     test_elementwise_notEach
