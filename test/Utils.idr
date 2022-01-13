@@ -26,16 +26,15 @@ floatingPointTolerance = 0.00000001
 isNan : Double -> Bool
 isNan x = x /= x
 
-nan, posInf, negInf : Double
+nan, inf : Double
 nan = 0.0 / 0.0
-posInf = 1.0 / 0.0
-negInf = - 1.0 / 0.0
+inf = 1.0 / 0.0
 
 export
 doubleSufficientlyEq : Double -> Double -> Bool
 doubleSufficientlyEq x y =
     if isNan x || isNan y then isNan x && isNan y else
-    if x == posInf || x == negInf || y == posInf || y == negInf then x == y else
+    if x == inf || x == -inf || y == inf || y == -inf then x == y else
     abs (x - y) < floatingPointTolerance
 
 export
@@ -63,10 +62,10 @@ fpEq x y =
     let either_nan = isNanEach x ||# isNanEach y
         both_nan = isNanEach x &&# isNanEach y
         either_inf =
-            x ==# fill posInf
-            ||# x ==# fill negInf
-            ||# y ==# fill posInf
-            ||# y ==# fill negInf in
+            x ==# fill inf
+            ||# x ==# fill (-inf)
+            ||# y ==# fill inf
+            ||# y ==# fill (-inf) in
     (either_nan &&# both_nan)
     ||# (either_inf &&# x ==# y)
     ||# (absE (x - y) <# fill floatingPointTolerance) where
@@ -81,4 +80,4 @@ ints = [-3, -1, 0, 1, 3]
 
 export
 doubles : List Double
-doubles = [negInf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, posInf, nan]
+doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
