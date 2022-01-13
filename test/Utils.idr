@@ -40,8 +40,11 @@ sufficientlyEq x y =
     || x == y  -- inf
     || abs (x - y) < floatingPointTolerance  -- real
 
+appendFlipped : List (a, a) -> List (a, a)
+appendFlipped xs = xs ++ map (\(a, b) => (b, a)) xs
+
 sufficientlyEqCases : List (Double, Double)
-sufficientlyEqCases = [
+sufficientlyEqCases = appendFlipped [
     (0.0, 0.0),
     (0.0, floatingPointTolerance / 2),
     (0.0, - floatingPointTolerance / 2),
@@ -57,7 +60,7 @@ sufficientlyEqCases = [
 ]
 
 insufficientlyEqCases : List (Double, Double)
-insufficientlyEqCases = [
+insufficientlyEqCases = appendFlipped [
     (0.0, floatingPointTolerance * 2),
     (0.0, - floatingPointTolerance * 2),
     (1.1, 1.1 + floatingPointTolerance * 2),
@@ -111,11 +114,7 @@ test_sufficientlyEqEach = do
 
     sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const x) (const y)
                | (x, y) <- sufficientlyEqCases]
-    sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const y) (const x)
-               | (x, y) <- sufficientlyEqCases]
     sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
-               | (x, y) <- insufficientlyEqCases]
-    sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const y) (const x))
                | (x, y) <- insufficientlyEqCases]
 
 export
