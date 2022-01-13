@@ -40,14 +40,13 @@ sufficientlyEq x y =
     || x == y  -- inf
     || abs (x - y) < floatingPointTolerance  -- real
 
-appendFlipped : List (a, a) -> List (a, a)
-appendFlipped xs = xs ++ map (\(a, b) => (b, a)) xs
-
 sufficientlyEqCases : List (Double, Double)
-sufficientlyEqCases = appendFlipped [
+sufficientlyEqCases = [
     (0.0, 0.0),
     (0.0, floatingPointTolerance / 2),
+    (floatingPointTolerance / 2, 0.0),
     (0.0, - floatingPointTolerance / 2),
+    (- floatingPointTolerance / 2, 0.0),
     (1.1, 1.1),
     (1.1, 1.1 + floatingPointTolerance / 2),
     (1.1, 1.1 - floatingPointTolerance / 2),
@@ -60,26 +59,27 @@ sufficientlyEqCases = appendFlipped [
 ]
 
 insufficientlyEqCases : List (Double, Double)
-insufficientlyEqCases = appendFlipped [
-    (0.0, floatingPointTolerance * 2),
-    (0.0, - floatingPointTolerance * 2),
-    (1.1, 1.1 + floatingPointTolerance * 2),
-    (1.1, 1.1 - floatingPointTolerance * 2),
-    (-1.1, -1.1 + floatingPointTolerance * 2),
-    (-1.1, -1.1 - floatingPointTolerance * 2),
-    (0.0, inf),
-    (1.1, inf),
-    (-1.1, inf),
-    (0.0, -inf),
-    (1.1, -inf),
-    (-1.1, -inf),
-    (0.0, nan),
-    (1.1, nan),
-    (-1.1, nan),
-    (inf, -inf),
-    (inf, nan),
-    (-inf, nan)
-]
+insufficientlyEqCases =
+    let cases = [
+        (0.0, floatingPointTolerance * 2),
+        (0.0, - floatingPointTolerance * 2),
+        (1.1, 1.1 + floatingPointTolerance * 2),
+        (1.1, 1.1 - floatingPointTolerance * 2),
+        (-1.1, -1.1 + floatingPointTolerance * 2),
+        (-1.1, -1.1 - floatingPointTolerance * 2),
+        (0.0, inf),
+        (1.1, inf),
+        (-1.1, inf),
+        (0.0, -inf),
+        (1.1, -inf),
+        (-1.1, -inf),
+        (0.0, nan),
+        (1.1, nan),
+        (-1.1, nan),
+        (inf, -inf),
+        (inf, nan),
+        (-inf, nan)
+    ] in cases ++ map (\(x, y) => (y, x)) cases
 
 export
 test_sufficientlyEq : IO ()
