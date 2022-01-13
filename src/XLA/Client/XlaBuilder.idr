@@ -218,7 +218,10 @@ mul : RawTensor -> RawTensor -> RawTensor
 mul = binOp prim__mul
 
 export
-<<<<<<< HEAD
+div : RawTensor -> RawTensor -> RawTensor
+div = binOp prim__div
+
+export
 and : RawTensor -> RawTensor -> RawTensor
 and = binOp prim__and
 
@@ -229,10 +232,6 @@ or = binOp prim__or
 export
 not : RawTensor -> RawTensor
 not = unaryOp prim__not
-=======
-div : RawTensor -> RawTensor -> RawTensor
-div = binOp prim__div
->>>>>>> implement element-wise division and division by a constant
 
 export
 abs : RawTensor -> RawTensor

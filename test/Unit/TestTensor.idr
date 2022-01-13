@@ -356,8 +356,8 @@ test_elementwise_multiplication = do
             sufficientlyEqEach (const l *# const r) (const {shape=[]} (l * r))
 
 export
-test_constant_multiplication : IO ()
-test_constant_multiplication = do
+test_scalar_multiplication : IO ()
+test_scalar_multiplication = do
     let r = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
     sequence_ $ do
         l <- ints
@@ -422,12 +422,26 @@ test_elementwise_division = do
     let x = const [[3, 4, -5], [0, 0.3, 0]]
         y = const [[1, -2.3, 0.2], [0.1, 0, 0]]
         expected = const {shape=[_, _]} {dtype=Double} [[3, -4 / 2.3, -25], [0, 0.3 / 0, 0 / 0]]
-    assertAll $ fpEq (x /# y) expected
+    assertAll $ sufficientlyEqEach (x /# y) expected
 
     sequence_ $ do
-        l <- doubles ++ [1.0 / 0.0, 0.0 / 0.0, -1.0 / 0.0]
-        r <- doubles ++ [1.0 / 0.0, 0.0 / 0.0, -1.0 / 0.0]
-        pure $ assertAll $ fpEq (const l /# const r) (const {shape=[]} (l / r))
+        l <- doubles
+        r <- doubles
+        pure $ assertAll $ sufficientlyEqEach (const l /# const r) (const {shape=[]} (l / r))
+
+export
+test_scalar_division : IO ()
+test_scalar_division = do
+    let l = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
+    sequence_ $ do
+        r <- doubles
+        pure $ assertAll $
+            sufficientlyEqEach (l / const r) (const [[-3.3 / r], [0.0 / r], [0.3 / r]])
+
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ assertAll $ sufficientlyEqEach (const l / const r) (const {shape=[]} (l / r))
 
 export
 test_absE : IO ()
