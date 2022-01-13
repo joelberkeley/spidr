@@ -23,9 +23,6 @@ export
 floatingPointTolerance : Double
 floatingPointTolerance = 0.00000001
 
-isNan : Double -> Bool
-isNan x = x /= x
-
 nan, inf : Double
 nan = 0.0 / 0.0
 inf = 1.0 / 0.0
@@ -33,9 +30,9 @@ inf = 1.0 / 0.0
 export
 doubleSufficientlyEq : Double -> Double -> Bool
 doubleSufficientlyEq x y =
-    if isNan x || isNan y then isNan x && isNan y else
-    if x == inf || x == -inf || y == inf || y == -inf then x == y else
-    abs (x - y) < floatingPointTolerance
+    (x /= x && y /= y)  -- nan
+    || (x == y)  -- inf
+    || abs (x - y) < floatingPointTolerance  -- real
 
 export
 assert : Bool -> IO ()
@@ -51,24 +48,14 @@ assertAll xs = assert (arrayAll !(eval xs)) where
     arrayAll {shape = (0 :: _)} [] = True
     arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
 
-isNanEach : Tensor shape Double -> Tensor shape Bool
-isNanEach x = x /=# x
-
 -- WARNING: This uses a number of functions, and thus assumes they work, so
 -- we shouldn't use it to test them.
 export
 fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
 fpEq x y =
-    let either_nan = isNanEach x ||# isNanEach y
-        both_nan = isNanEach x &&# isNanEach y
-        either_inf =
-            x ==# fill inf
-            ||# x ==# fill (-inf)
-            ||# y ==# fill inf
-            ||# y ==# fill (-inf) in
-    (either_nan &&# both_nan)
-    ||# (either_inf &&# x ==# y)
-    ||# (absE (x - y) <# fill floatingPointTolerance) where
+    (x /=# x &&# y /=# y)  -- nan
+    ||# (x ==# y)  -- inf
+    ||# (absE (x - y) <# fill floatingPointTolerance)  -- real
 
 export
 bools : List Bool
