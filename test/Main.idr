@@ -18,8 +18,13 @@ module Main
 import Unit.TestTensor
 import Unit.TestXLA
 
+import Utils
+
 main : IO ()
 main = do
+    test_sufficientlyEq
+    test_sufficientlyEqEach
+
     test_const_eval
     test_toString
     test_broadcast

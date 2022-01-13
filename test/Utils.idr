@@ -20,14 +20,6 @@ import System
 import Tensor
 
 export
-floatingPointTolerance : Double
-floatingPointTolerance = 0.00000001
-
-export
-doubleSufficientlyEq : Double -> Double -> Bool
-doubleSufficientlyEq x y = abs (x - y) < floatingPointTolerance
-
-export
 assert : Bool -> IO ()
 assert x = unless x $ do
     putStrLn "Test failed"
@@ -36,16 +28,10 @@ assert x = unless x $ do
 export
 assertAll : {shape : _} -> Tensor shape Bool -> IO ()
 assertAll xs = assert (arrayAll !(eval xs)) where
-        arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
-        arrayAll {shape = []} x = x
-        arrayAll {shape = (0 :: _)} [] = True
-        arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
-
--- WARNING: This uses (-) (==#) (<#) and absE, and thus assumes they work, so
--- we shouldn't use it to test those functions.
-export
-fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
-fpEq x y = absE (x - y) <# fill floatingPointTolerance
+    arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
+    arrayAll {shape = []} x = x
+    arrayAll {shape = (0 :: _)} [] = True
+    arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
 
 export
 bools : List Bool
@@ -55,6 +41,90 @@ export
 ints : List Int
 ints = [-3, -1, 0, 1, 3]
 
+nan, inf : Double
+nan = 0.0 / 0.0
+inf = 1.0 / 0.0
+
 export
 doubles : List Double
-doubles = [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
+doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
+
+export
+floatingPointTolerance : Double
+floatingPointTolerance = 0.00000001
+
+export
+sufficientlyEq : Double -> Double -> Bool
+sufficientlyEq x y =
+    x /= x && y /= y  -- nan
+    || x == y  -- inf
+    || abs (x - y) < floatingPointTolerance  -- real
+
+sufficientlyEqCases : List (Double, Double)
+sufficientlyEqCases = [
+    (0.0, 0.0),
+    (0.0, floatingPointTolerance / 2),
+    (floatingPointTolerance / 2, 0.0),
+    (0.0, - floatingPointTolerance / 2),
+    (- floatingPointTolerance / 2, 0.0),
+    (1.1, 1.1),
+    (1.1, 1.1 + floatingPointTolerance / 2),
+    (1.1, 1.1 - floatingPointTolerance / 2),
+    (-1.1, -1.1),
+    (-1.1, -1.1 + floatingPointTolerance / 2),
+    (-1.1, -1.1 - floatingPointTolerance / 2),
+    (inf, inf),
+    (-inf, -inf),
+    (nan, nan)
+]
+
+insufficientlyEqCases : List (Double, Double)
+insufficientlyEqCases =
+    let cases = [
+        (0.0, floatingPointTolerance * 2),
+        (0.0, - floatingPointTolerance * 2),
+        (1.1, 1.1 + floatingPointTolerance * 2),
+        (1.1, 1.1 - floatingPointTolerance * 2),
+        (-1.1, -1.1 + floatingPointTolerance * 2),
+        (-1.1, -1.1 - floatingPointTolerance * 2),
+        (0.0, inf),
+        (1.1, inf),
+        (-1.1, inf),
+        (0.0, -inf),
+        (1.1, -inf),
+        (-1.1, -inf),
+        (0.0, nan),
+        (1.1, nan),
+        (-1.1, nan),
+        (inf, -inf),
+        (inf, nan),
+        (-inf, nan)
+    ] in cases ++ map (\(x, y) => (y, x)) cases
+
+export
+test_sufficientlyEq : IO ()
+test_sufficientlyEq = do
+    sequence_ [assert $ sufficientlyEq x y | (x, y) <- sufficientlyEqCases]
+    sequence_ [assert $ not (sufficientlyEq x y) | (x, y) <- insufficientlyEqCases]
+
+-- WARNING: This uses a number of functions, and thus assumes they work, so
+-- we shouldn't use it to test them.
+export
+sufficientlyEqEach : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
+sufficientlyEqEach x y =
+    x /=# x &&# y /=# y  -- nan
+    ||# x ==# y  -- inf
+    ||# absE (x - y) <# fill floatingPointTolerance  -- real
+
+export
+test_sufficientlyEqEach : IO ()
+test_sufficientlyEqEach = do
+    let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
+        y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
+    eq <- eval {shape=[_, _]} (sufficientlyEqEach x y)
+    assert (eq == [[False, True, True], [False, True, False]])
+
+    sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const x) (const y)
+               | (x, y) <- sufficientlyEqCases]
+    sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
+               | (x, y) <- insufficientlyEqCases]
