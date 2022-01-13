@@ -111,7 +111,11 @@ test_sufficientlyEqEach = do
 
     sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const x) (const y)
                | (x, y) <- sufficientlyEqCases]
+    sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const y) (const x)
+               | (x, y) <- sufficientlyEqCases]
     sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
+               | (x, y) <- insufficientlyEqCases]
+    sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const y) (const x))
                | (x, y) <- insufficientlyEqCases]
 
 export
