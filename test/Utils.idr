@@ -26,12 +26,32 @@ assert x = unless x $ do
     exitFailure
 
 export
-floatingPointTolerance : Double
-floatingPointTolerance = 0.00000001
+assertAll : {shape : _} -> Tensor shape Bool -> IO ()
+assertAll xs = assert (arrayAll !(eval xs)) where
+    arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
+    arrayAll {shape = []} x = x
+    arrayAll {shape = (0 :: _)} [] = True
+    arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
+
+export
+bools : List Bool
+bools = [True, False]
+
+export
+ints : List Int
+ints = [-3, -1, 0, 1, 3]
 
 nan, inf : Double
 nan = 0.0 / 0.0
 inf = 1.0 / 0.0
+
+export
+doubles : List Double
+doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
+
+export
+floatingPointTolerance : Double
+floatingPointTolerance = 0.00000001
 
 export
 sufficientlyEq : Double -> Double -> Bool
@@ -87,14 +107,6 @@ test_sufficientlyEq = do
     sequence_ [assert $ sufficientlyEq x y | (x, y) <- sufficientlyEqCases]
     sequence_ [assert $ not (sufficientlyEq x y) | (x, y) <- insufficientlyEqCases]
 
-export
-assertAll : {shape : _} -> Tensor shape Bool -> IO ()
-assertAll xs = assert (arrayAll !(eval xs)) where
-    arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
-    arrayAll {shape = []} x = x
-    arrayAll {shape = (0 :: _)} [] = True
-    arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
-
 -- WARNING: This uses a number of functions, and thus assumes they work, so
 -- we shouldn't use it to test them.
 export
@@ -116,15 +128,3 @@ test_sufficientlyEqEach = do
                | (x, y) <- sufficientlyEqCases]
     sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
                | (x, y) <- insufficientlyEqCases]
-
-export
-bools : List Bool
-bools = [True, False]
-
-export
-ints : List Int
-ints = [-3, -1, 0, 1, 3]
-
-export
-doubles : List Double
-doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
