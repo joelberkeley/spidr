@@ -55,7 +55,7 @@ fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape
 fpEq x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
-    ||# (absE (x - y) <# fill floatingPointTolerance)  -- real
+    ||# absE (x - y) <# fill floatingPointTolerance  -- real
 
 export
 bools : List Bool
