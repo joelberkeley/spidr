@@ -23,7 +23,7 @@ import Utils
 main : IO ()
 main = do
     test_sufficientlyEq
-    test_fpEq
+    test_sufficientlyEqEach
 
     test_const_eval
     test_toString
