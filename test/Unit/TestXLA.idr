@@ -61,5 +61,6 @@ test_parameter_addition = do
     free gd1
     free gd_arr
 
-    assert (toArray {shape=[2, 3]} {dtype=Int} lit == [[1, 2, 3], [2, 3, 4]])
+    let sum = toArray {shape=[2, 3]} {dtype=Int} lit
     delete lit
+    assert "array addition using Parameter" (sum == [[1, 2, 3], [2, 3, 4]])
