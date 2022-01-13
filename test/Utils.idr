@@ -20,6 +20,12 @@ import System
 import Tensor
 
 export
+assert : Bool -> IO ()
+assert x = unless x $ do
+    putStrLn "Test failed"
+    exitFailure
+
+export
 floatingPointTolerance : Double
 floatingPointTolerance = 0.00000001
 
@@ -28,17 +34,55 @@ nan = 0.0 / 0.0
 inf = 1.0 / 0.0
 
 export
-doubleSufficientlyEq : Double -> Double -> Bool
-doubleSufficientlyEq x y =
+sufficientlyEq : Double -> Double -> Bool
+sufficientlyEq x y =
     x /= x && y /= y  -- nan
     || x == y  -- inf
     || abs (x - y) < floatingPointTolerance  -- real
 
+sufficientlyEqCases : List (Double, Double)
+sufficientlyEqCases = [
+    (0.0, 0.0),
+    (0.0, floatingPointTolerance / 2),
+    (0.0, - floatingPointTolerance / 2),
+    (1.1, 1.1),
+    (1.1, 1.1 + floatingPointTolerance / 2),
+    (1.1, 1.1 - floatingPointTolerance / 2),
+    (-1.1, -1.1),
+    (-1.1, -1.1 + floatingPointTolerance / 2),
+    (-1.1, -1.1 - floatingPointTolerance / 2),
+    (inf, inf),
+    (-inf, -inf),
+    (nan, nan)
+]
+
+insufficientlyEqCases : List (Double, Double)
+insufficientlyEqCases = [
+    (0.0, floatingPointTolerance * 2),
+    (0.0, - floatingPointTolerance * 2),
+    (1.1, 1.1 + floatingPointTolerance * 2),
+    (1.1, 1.1 - floatingPointTolerance * 2),
+    (-1.1, -1.1 + floatingPointTolerance * 2),
+    (-1.1, -1.1 - floatingPointTolerance * 2),
+    (0.0, inf),
+    (1.1, inf),
+    (-1.1, inf),
+    (0.0, -inf),
+    (1.1, -inf),
+    (-1.1, -inf),
+    (0.0, nan),
+    (1.1, nan),
+    (-1.1, nan),
+    (inf, -inf),
+    (inf, nan),
+    (-inf, nan)
+]
+
 export
-assert : Bool -> IO ()
-assert x = unless x $ do
-    putStrLn "Test failed"
-    exitFailure
+test_sufficientlyEq : IO ()
+test_sufficientlyEq = do
+    sequence_ [assert $ sufficientlyEq x y | (x, y) <- sufficientlyEqCases]
+    sequence_ [assert $ not (sufficientlyEq x y) | (x, y) <- insufficientlyEqCases]
 
 export
 assertAll : {shape : _} -> Tensor shape Bool -> IO ()
@@ -51,11 +95,24 @@ assertAll xs = assert (arrayAll !(eval xs)) where
 -- WARNING: This uses a number of functions, and thus assumes they work, so
 -- we shouldn't use it to test them.
 export
-fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
-fpEq x y =
+sufficientlyEqEach : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
+sufficientlyEqEach x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
     ||# absE (x - y) <# fill floatingPointTolerance  -- real
+
+export
+test_sufficientlyEqEach : IO ()
+test_sufficientlyEqEach = do
+    let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
+        y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
+    eq <- eval {shape=[_, _]} (sufficientlyEqEach x y)
+    assert (eq == [[False, True, True], [False, True, False]])
+
+    sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const x) (const y)
+               | (x, y) <- sufficientlyEqCases]
+    sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
+               | (x, y) <- insufficientlyEqCases]
 
 export
 bools : List Bool

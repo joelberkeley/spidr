@@ -34,15 +34,15 @@ test_const_eval = do
     assert $ x' == x
 
     x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
-    assert $ doubleSufficientlyEq (index 0 (index 0 x)) (-1.5)
-    assert $ doubleSufficientlyEq (index 0 (index 1 x)) 1.3
-    assert $ doubleSufficientlyEq (index 0 (index 2 x)) 4.3
+    assert $ sufficientlyEq (index 0 (index 0 x)) (-1.5)
+    assert $ sufficientlyEq (index 0 (index 1 x)) 1.3
+    assert $ sufficientlyEq (index 0 (index 2 x)) 4.3
 
     traverse_ (\x => do x' <- eval {shape=[]} (const x); assert (x == x')) bools
     traverse_ (\x => do x' <- eval {shape=[]} (const x); assert (x == x')) ints
     traverse_ (\x => do
             x' <- eval {shape=[]} (const x)
-            assert (doubleSufficientlyEq x x')
+            assert (sufficientlyEq x x')
         ) doubles
 
 export
@@ -279,7 +279,8 @@ test_add = do
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
-    assertAll $ fpEq (x + y) $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
+    assertAll $ sufficientlyEqEach (x + y) $
+        const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
 
     sequence_ $ do
         l <- ints
@@ -289,7 +290,7 @@ test_add = do
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll $ fpEq (const l + const r) (const {shape=[]} (l + r))
+        pure $ assertAll $ sufficientlyEqEach (const l + const r) (const {shape=[]} (l + r))
 
 export
 test_subtract : IO ()
@@ -301,7 +302,7 @@ test_subtract = do
     let l = const [1.8, 1.3, 4.0]
         r = const [-3.3, 0.0, 0.3]
     diff <- eval {shape=[3]} {dtype=Double} (l - r)
-    sequence_ (zipWith (assert .: doubleSufficientlyEq) diff [5.1, 1.3, 3.7])
+    sequence_ (zipWith (assert .: sufficientlyEq) diff [5.1, 1.3, 3.7])
 
     sequence_ $ do
         l <- ints
@@ -313,7 +314,7 @@ test_subtract = do
         r <- doubles
         pure $ do
             diff <- eval {shape=[]} (const l - const r)
-            assert (doubleSufficientlyEq diff (l - r))
+            assert (sufficientlyEq diff (l - r))
 
 export
 test_elementwise_multiplication : IO ()
@@ -324,7 +325,8 @@ test_elementwise_multiplication = do
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
-    assertAll $ fpEq (x *# y) $ const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
+    assertAll $ sufficientlyEqEach (x *# y) $
+        const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
     sequence_ $ do
         l <- ints
@@ -334,7 +336,7 @@ test_elementwise_multiplication = do
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll $ fpEq (const l *# const r) (const {shape=[]} (l * r))
+        pure $ assertAll $ sufficientlyEqEach (const l *# const r) (const {shape=[]} (l * r))
 
 export
 test_constant_multiplication : IO ()
@@ -347,7 +349,8 @@ test_constant_multiplication = do
     let r = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
     sequence_ $ do
         l <- doubles
-        pure $ assertAll $ fpEq ((const l) * r) (const [[-3.3 * l], [0.0 * l], [0.3 * l]])
+        pure $ assertAll $
+            sufficientlyEqEach ((const l) * r) (const [[-3.3 * l], [0.0 * l], [0.3 * l]])
 
     sequence_ $ do
         l <- ints
@@ -357,7 +360,7 @@ test_constant_multiplication = do
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll $ fpEq (const l * const r) (const {shape=[]} (l * r))
+        pure $ assertAll $ sufficientlyEqEach (const l * const r) (const {shape=[]} (l * r))
 
 assertBooleanOpArray :
     (Tensor [2, 2] Bool -> Tensor [2, 2] Bool -> Tensor [2, 2] Bool) -> Array [2, 2] Bool -> IO ()
@@ -400,7 +403,7 @@ test_absE = do
 
     let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
     actual <- eval (absE x)
-    sequence_ (zipWith (assert .: doubleSufficientlyEq) actual [1.8, 1.3, 0.0])
+    sequence_ (zipWith (assert .: sufficientlyEq) actual [1.8, 1.3, 0.0])
 
     sequence_ $ do
         x <- ints
@@ -408,7 +411,7 @@ test_absE = do
 
     traverse_ (\x => do
             actual <- eval (absE $ const {shape=[]} x)
-            assert (doubleSufficientlyEq actual (abs x))
+            assert (sufficientlyEq actual (abs x))
         ) doubles
 
 export
@@ -419,10 +422,10 @@ test_negate = do
 
     let x = const [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
         expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
-    assertAll $ fpEq (-x) expected
+    assertAll $ sufficientlyEqEach (-x) expected
 
     sequence_ [assertAll $ (- const x) ==# const {shape=[]} (-x) | x <- ints]
-    sequence_ [assertAll $ fpEq (- const x) (const {shape=[]} (-x)) | x <- doubles]
+    sequence_ [assertAll $ sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
 
 test_det : Tensor [3, 3] Double -> Tensor [] Double
 test_det x = det x
