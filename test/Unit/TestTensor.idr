@@ -336,22 +336,24 @@ test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
     let x = const [[1, 15, 5], [-1, 7, 6]]
         y = const [[11, 5, 7], [-3, -4, 0]]
-    assertAll $ x *# y ==# const {shape=[_, _]} {dtype=Int} [[11, 75, 35], [3, -28, 0]]
+    assertAll "*# for int array" $
+        x *# y ==# const {shape=[_, _]} {dtype=Int} [[11, 75, 35], [3, -28, 0]]
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
-    assertAll $ sufficientlyEqEach (x *# y) $
+    assertAll "*# for double array" $ sufficientlyEqEach (x *# y) $
         const {shape=[_, _]} {dtype=Double} [[-1.8 * 3.3], [0.0], [1.2]]
 
     sequence_ $ do
         l <- ints
         r <- ints
-        pure $ assertAll $ (const l *# const r) ==# const {shape=[]} (l * r)
+        pure $ assertAll "*# for int scalar" $ (const l *# const r) ==# const {shape=[]} (l * r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll $ sufficientlyEqEach (const l *# const r) (const {shape=[]} (l * r))
+        pure $ assertAll "*# for double scalar" $
+            sufficientlyEqEach (const l *# const r) (const {shape=[]} (l * r))
 
 export
 test_constant_multiplication : IO ()
@@ -359,88 +361,95 @@ test_constant_multiplication = do
     let r = const {shape=[_, _]} {dtype=Int} [[11, 5, 7], [-3, -4, 0]]
     sequence_ $ do
         l <- ints
-        pure $ assertAll $ (const l) * r ==# const [[11 * l, 5 * l, 7 * l], [-3 * l, -4 * l, 0]]
+        pure $ assertAll "* for int array" $
+            (const l) * r ==# const [[11 * l, 5 * l, 7 * l], [-3 * l, -4 * l, 0]]
 
     let r = const {shape=[_, _]} {dtype=Double} [[-3.3], [0.0], [0.3]]
     sequence_ $ do
         l <- doubles
-        pure $ assertAll $
+        pure $ assertAll "* for double array" $
             sufficientlyEqEach ((const l) * r) (const [[-3.3 * l], [0.0 * l], [0.3 * l]])
 
     sequence_ $ do
         l <- ints
         r <- ints
-        pure $ assertAll $ (const l * const r) ==# const {shape=[]} (l * r)
+        pure $ assertAll "* for int scalar" $ (const l * const r) ==# const {shape=[]} (l * r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll $ sufficientlyEqEach (const l * const r) (const {shape=[]} (l * r))
+        pure $ assertAll "* for double array" $
+            sufficientlyEqEach (const l * const r) (const {shape=[]} (l * r))
 
-assertBooleanOpArray :
-    (Tensor [2, 2] Bool -> Tensor [2, 2] Bool -> Tensor [2, 2] Bool) -> Array [2, 2] Bool -> IO ()
-assertBooleanOpArray op expected = do
+assertBooleanOpArray : String -> (Tensor [2, 2] Bool -> Tensor [2, 2] Bool -> Tensor [2, 2] Bool)
+                       -> Array [2, 2] Bool -> IO ()
+assertBooleanOpArray name op expected = do
     let l = const [[True, True], [False, False]]
         r = const [[True, False], [True, False]]
-    assertAll $ op l r ==# const expected
+    assertAll name $ op l r ==# const expected
 
-assertBooleanOpScalar :
-    (Tensor [] Bool -> Tensor [] Bool -> Tensor [] Bool) -> (Bool -> Lazy Bool -> Bool) -> IO ()
-assertBooleanOpScalar tensor_op bool_op =
+assertBooleanOpScalar : String -> (Tensor [] Bool -> Tensor [] Bool -> Tensor [] Bool)
+                        -> (Bool -> Lazy Bool -> Bool) -> IO ()
+assertBooleanOpScalar name tensor_op bool_op =
     sequence_ $ do
         l <- bools
         r <- bools
-        pure $ assertAll $ tensor_op (const l) (const r) ==# const (bool_op l r)
+        pure $ assertAll name $ tensor_op (const l) (const r) ==# const (bool_op l r)
 
 export
 test_elementwise_and : IO ()
 test_elementwise_and = do
-    assertBooleanOpArray (&&#) [[True, False], [False, False]]
-    assertBooleanOpScalar (&&#) (&&)
+    assertBooleanOpArray "&&# for array" (&&#) [[True, False], [False, False]]
+    assertBooleanOpScalar "&&# for scalar" (&&#) (&&)
 
 export
 test_elementwise_or : IO ()
 test_elementwise_or = do
-    assertBooleanOpArray (||#) [[True, True], [True, False]]
-    assertBooleanOpScalar (||#) (||)
+    assertBooleanOpArray "||# for array" (||#) [[True, True], [True, False]]
+    assertBooleanOpScalar "||# for scalar" (||#) (||)
 
 export
 test_elementwise_notEach : IO ()
 test_elementwise_notEach = do
-    assertAll $ notEach (const [True, False]) ==# const {shape=[_]} [False, True]
-    sequence_ [assertAll $ notEach (const x) ==# const {shape=[]} (not x) | x <- bools]
+    assertAll "notEach for array" $
+        notEach (const [True, False]) ==# const {shape=[_]} [False, True]
+    sequence_ [assertAll "notEach for scalar" $
+               notEach (const x) ==# const {shape=[]} (not x) | x <- bools]
 
 export
 test_absE : IO ()
 test_absE = do
     let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
-    assertAll $ absE x ==# const [1, 0, 5]
+    assertAll "absE for int array" $ absE x ==# const [1, 0, 5]
 
     let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
     actual <- eval (absE x)
-    sequence_ (zipWith (assert .: sufficientlyEq) actual [1.8, 1.3, 0.0])
+    sequence_ (zipWith ((assert "absE for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
 
     sequence_ $ do
         x <- ints
-        pure $ assertAll $ absE (const {shape=[]} x) ==# const (abs x)
+        pure $ assertAll "absE for int scalar" $ absE (const {shape=[]} x) ==# const (abs x)
 
     traverse_ (\x => do
             actual <- eval (absE $ const {shape=[]} x)
-            assert (sufficientlyEq actual (abs x))
+            assert "absE for double scalar" (sufficientlyEq actual (abs x))
         ) doubles
 
 export
 test_negate : IO ()
 test_negate = do
     let x = const [[1, 15, -5], [-1, 7, 0]]
-    assertAll $ (-x) ==# const {shape=[_, _]} {dtype=Int} [[-1, -15, 5], [1, -7, 0]]
+    assertAll "negate for int array" $
+        (-x) ==# const {shape=[_, _]} {dtype=Int} [[-1, -15, 5], [1, -7, 0]]
 
     let x = const [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
         expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
-    assertAll $ sufficientlyEqEach (-x) expected
+    assertAll "negate for double array" $ sufficientlyEqEach (-x) expected
 
-    sequence_ [assertAll $ (- const x) ==# const {shape=[]} (-x) | x <- ints]
-    sequence_ [assertAll $ sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
+    sequence_ [assertAll "negate for int scalar" $
+               (- const x) ==# const {shape=[]} (-x) | x <- ints]
+    sequence_ [assertAll "negate for double scalar" $
+               sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
 
 test_det : Tensor [3, 3] Double -> Tensor [] Double
 test_det x = det x
