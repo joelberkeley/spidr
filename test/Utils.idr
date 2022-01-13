@@ -20,14 +20,14 @@ import System
 import Tensor
 
 export
-assert : Bool -> IO ()
-assert x = unless x $ do
-    putStrLn "Test failed"
+assert : String -> Bool -> IO ()
+assert name x = unless x $ do
+    putStrLn ("Test failed: " ++ name)
     exitFailure
 
 export
-assertAll : {shape : _} -> Tensor shape Bool -> IO ()
-assertAll xs = assert (arrayAll !(eval xs)) where
+assertAll : String -> {shape : _} -> Tensor shape Bool -> IO ()
+assertAll name xs = assert name (arrayAll !(eval xs)) where
     arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
     arrayAll {shape = []} x = x
     arrayAll {shape = (0 :: _)} [] = True
@@ -104,8 +104,10 @@ insufficientlyEqCases =
 export
 test_sufficientlyEq : IO ()
 test_sufficientlyEq = do
-    sequence_ [assert $ sufficientlyEq x y | (x, y) <- sufficientlyEqCases]
-    sequence_ [assert $ not (sufficientlyEq x y) | (x, y) <- insufficientlyEqCases]
+    sequence_ [assert "sufficientlyEq for suff. equal" $ sufficientlyEq x y
+               | (x, y) <- sufficientlyEqCases]
+    sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
+               | (x, y) <- insufficientlyEqCases]
 
 -- WARNING: This uses a number of functions, and thus assumes they work, so
 -- we shouldn't use it to test them.
@@ -122,9 +124,11 @@ test_sufficientlyEqEach = do
     let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
         y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
     eq <- eval {shape=[_, _]} (sufficientlyEqEach x y)
-    assert (eq == [[False, True, True], [False, True, False]])
+    assert "sufficientlyEqEach for array" (eq == [[False, True, True], [False, True, False]])
 
-    sequence_ [assertAll $ sufficientlyEqEach {shape=[]} (const x) (const y)
+    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
+               sufficientlyEqEach {shape=[]} (const x) (const y)
                | (x, y) <- sufficientlyEqCases]
-    sequence_ [assertAll $ notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
+    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
+               notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
                | (x, y) <- insufficientlyEqCases]
