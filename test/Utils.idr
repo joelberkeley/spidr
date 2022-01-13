@@ -30,8 +30,8 @@ inf = 1.0 / 0.0
 export
 doubleSufficientlyEq : Double -> Double -> Bool
 doubleSufficientlyEq x y =
-    (x /= x && y /= y)  -- nan
-    || (x == y)  -- inf
+    x /= x && y /= y  -- nan
+    || x == y  -- inf
     || abs (x - y) < floatingPointTolerance  -- real
 
 export
@@ -53,8 +53,8 @@ assertAll xs = assert (arrayAll !(eval xs)) where
 export
 fpEq : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
 fpEq x y =
-    (x /=# x &&# y /=# y)  -- nan
-    ||# (x ==# y)  -- inf
+    x /=# x &&# y /=# y  -- nan
+    ||# x ==# y  -- inf
     ||# (absE (x - y) <# fill floatingPointTolerance)  -- real
 
 export
