@@ -20,14 +20,14 @@ import System
 import Tensor
 
 export
-assert : Bool -> IO ()
-assert x = unless x $ do
-    putStrLn "Test failed"
+assert : String -> Bool -> IO ()
+assert name x = unless x $ do
+    putStrLn ("Test failed: " ++ name)
     exitFailure
 
 export
-assertAll : {shape : _} -> Tensor shape Bool -> IO ()
-assertAll xs = assert (arrayAll !(eval xs)) where
+assertAll : String -> {shape : _} -> Tensor shape Bool -> IO ()
+assertAll name xs = assert name (arrayAll !(eval xs)) where
     arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
     arrayAll {shape = []} x = x
     arrayAll {shape = (0 :: _)} [] = True
