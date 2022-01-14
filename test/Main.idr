@@ -40,7 +40,7 @@ main = do
     test_elementwise_and
     test_elementwise_or
     test_elementwise_notEach
-    test_absE
+    test_absEach
     test_negate
 
     test_parameter_addition

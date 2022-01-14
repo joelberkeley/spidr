@@ -116,7 +116,7 @@ sufficientlyEqEach : {shape : _} -> Tensor shape Double -> Tensor shape Double -
 sufficientlyEqEach x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
-    ||# absE (x - y) <# fill floatingPointTolerance  -- real
+    ||# absEach (x - y) <# fill floatingPointTolerance  -- real
 
 export
 test_sufficientlyEqEach : IO ()

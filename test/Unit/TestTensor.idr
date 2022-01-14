@@ -446,22 +446,22 @@ test_scalar_division = do
             sufficientlyEqEach (const l / const r) (const {shape=[]} (l / r))
 
 export
-test_absE : IO ()
-test_absE = do
+test_absEach : IO ()
+test_absEach = do
     let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
-    assertAll "absE for int array" $ absE x ==# const [1, 0, 5]
+    assertAll "absEach for int array" $ absEach x ==# const [1, 0, 5]
 
     let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
-    actual <- eval (absE x)
-    sequence_ (zipWith ((assert "absE for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
+    actual <- eval (absEach x)
+    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
 
     sequence_ $ do
         x <- ints
-        pure $ assertAll "absE for int scalar" $ absE (const {shape=[]} x) ==# const (abs x)
+        pure $ assertAll "absEach for int scalar" $ absEach (const {shape=[]} x) ==# const (abs x)
 
     traverse_ (\x => do
-            actual <- eval (absE $ const {shape=[]} x)
-            assert "absE for double scalar" (sufficientlyEq actual (abs x))
+            actual <- eval (absEach $ const {shape=[]} x)
+            assert "absEach for double scalar" (sufficientlyEq actual (abs x))
         ) doubles
 
 export
