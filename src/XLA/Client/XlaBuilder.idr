@@ -50,6 +50,7 @@ export
 %foreign (libxla "XlaBuilder_Build")
 build : XlaBuilder -> XlaComputation
 
+export
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : XlaBuilder -> GCAnyPtr -> String
 
@@ -59,8 +60,16 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
  -
  -}
 
+export
+%foreign (libxla "sizeof_XlaOp")
+sizeof_xlaOp : Int
+
 %foreign (libxla "XlaOp_delete")
 prim__XlaOp_delete : AnyPtr -> PrimIO ()
+
+export
+%foreign (libxla "XlaOp_Builder")
+builder : GCAnyPtr -> XlaBuilder
 
 export
 collectXlaOp : AnyPtr -> IO GCAnyPtr
@@ -70,8 +79,9 @@ export
 %foreign (libxla "Parameter")
 parameter : XlaBuilder -> Int -> Shape.Shape -> String -> AnyPtr
 
+export
 %foreign (libxla "ConstantLiteral")
-constantLiteral : XlaBuilder -> Literal -> AnyPtr
+constantLiteral : XlaBuilder -> GCAnyPtr -> AnyPtr
 
 %foreign (libxla "Broadcast")
 prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
@@ -93,6 +103,10 @@ prim__lt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "Le")
 prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Call")
+prim__call : XlaBuilder -> XlaComputation -> AnyPtr -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Add")
@@ -119,6 +133,7 @@ prim__not : GCAnyPtr -> PrimIO AnyPtr
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Neg")
 prim__neg : GCAnyPtr -> PrimIO AnyPtr
 
@@ -130,15 +145,6 @@ prim__neg : GCAnyPtr -> PrimIO AnyPtr
 
 public export
 data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
-
-export
-const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
-    -> Array shape dtype -> RawTensor
-const arr = MkRawTensor $ \builder =>
-    do literal <- mkLiteral arr
-       op <- collectXlaOp (constantLiteral builder literal)
-       delete literal
-       pure op
 
 export
 toString : RawTensor -> IO String

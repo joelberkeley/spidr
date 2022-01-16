@@ -26,6 +26,7 @@ extern "C" {
      */
 
     struct XlaOp;
+    int sizeof_XlaOp();
     void XlaOp_delete(XlaOp* s);
 
     /*
@@ -67,6 +68,10 @@ extern "C" {
     XlaOp* Gt(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Lt(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs);
+
+    XlaOp* Call(
+        XlaBuilder* builder, XlaComputation& computation, XlaOp* operands, int operands_len
+    );
 
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs);

@@ -23,24 +23,24 @@ import Utils
 main : IO ()
 main = do
     test_sufficientlyEq
-    test_sufficientlyEqEach
+    -- test_sufficientlyEqEach
 
     test_const_eval
     test_toString
-    test_broadcast
-    test_elementwise_equality
-    test_elementwise_inequality
-    test_comparison
-    test_add
-    test_subtract
-    test_elementwise_multiplication
-    test_scalar_multiplication
-    test_elementwise_division
-    test_scalar_division
-    test_elementwise_and
-    test_elementwise_or
-    test_elementwise_notEach
-    test_absEach
+    -- test_broadcast
+    -- test_elementwise_equality
+    -- test_elementwise_inequality
+    -- test_comparison
+    -- test_add
+    -- test_subtract
+    -- test_elementwise_multiplication
+    -- test_scalar_multiplication
+    -- test_elementwise_division
+    -- test_scalar_division
+    -- test_elementwise_and
+    -- test_elementwise_or
+    -- test_elementwise_notEach
+    -- test_absEach
     test_negate
 
     test_parameter_addition

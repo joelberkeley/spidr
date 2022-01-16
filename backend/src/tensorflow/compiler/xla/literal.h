@@ -22,6 +22,8 @@ extern "C" {
 
     void Literal_delete(Literal* lit);
 
+    const char* Literal_ToString(Literal* lit);
+
     int Literal_Get_bool(Literal& lit, int* indices);
     int Literal_Get_int(Literal& lit, int* indices);
     double Literal_Get_double(Literal& lit, int* indices);

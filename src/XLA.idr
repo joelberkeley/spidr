@@ -15,3 +15,10 @@ limitations under the License.
 --}
 ||| This is the root module for the Idris API to XLA.
 module XLA
+
+import public XLA.Client as XLA
+import public XLA.FFI as XLA
+import public XLA.Literal as XLA
+import public XLA.Shape as XLA
+import public XLA.ShapeUtil as XLA
+import public XLA.XlaData as XLA

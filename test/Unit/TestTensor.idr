@@ -53,18 +53,18 @@ test_toString = do
     str <- toString $ const {shape=[]} {dtype=Int} 1
     assert "toString for scalar Int" (str == "constant, shape=[], metadata={:0}")
 
-    let x = const {shape=[]} {dtype=Int} 1
-        y = const {shape=[]} {dtype=Int} 2
-    str <- toString (x + y)
-    assert "toString for scalar addition" $ str ==
-        """
-        add, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-        """
+    -- let x = const {shape=[]} {dtype=Int} 1
+    --     y = const {shape=[]} {dtype=Int} 2
+    -- str <- toString (x + y)
+    -- assert "toString for scalar addition" $ str ==
+    --     """
+    --     add, shape=[], metadata={:0}
+    --       constant, shape=[], metadata={:0}
+    --       constant, shape=[], metadata={:0}
+    --     """
 
-    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
-    assert "toString for vector Double" $ str == "constant, shape=[3], metadata={:0}"
+    -- str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
+    -- assert "toString for vector Double" $ str == "constant, shape=[3], metadata={:0}"
 
 export
 test_broadcast : IO ()
@@ -467,21 +467,22 @@ test_absEach = do
 export
 test_negate : IO ()
 test_negate = do
-    let x = const [[1, 15, -5], [-1, 7, 0]]
-    assertAll "negate for int array" $
-        (-x) ==# const {shape=[_, _]} {dtype=Int} [[-1, -15, 5], [1, -7, 0]]
+    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, -5], [-1, 7, 0]]
+    res <- eval {shape=[_, _]} {dtype=Int} (-x)
+    printLn res
 
-    let x = const [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
-        expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
-    assertAll "negate for double array" $ sufficientlyEqEach (-x) expected
+    -- let x = const {shape=[_, _]} {dtype=Double} [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
+    --     expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
+    -- res <- eval {shape=[_, _]} {dtype=Double} (-x)
+    -- printLn res
 
-    sequence_ [assertAll "negate for int scalar" $
-               (- const x) ==# const {shape=[]} (-x) | x <- ints]
-    sequence_ [assertAll "negate for double scalar" $
-               sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
+    -- sequence_ [assertAll "negate for int scalar" $
+    --            (- const x) ==# const {shape=[]} (-x) | x <- ints]
+    -- sequence_ [assertAll "negate for double scalar" $
+    --            sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
 
-test_det : Tensor [3, 3] Double -> Tensor [] Double
-test_det x = det x
+-- test_det : Tensor [3, 3] Double -> Tensor [] Double
+-- test_det x = det x
 
-test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
-test_det_with_leading x = det x
+-- test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
+-- test_det_with_leading x = det x

@@ -24,28 +24,24 @@ import XLA.FFI
 import XLA.Shape
 import XLA.ShapeUtil
 
-public export
-Literal : Type
-Literal = Struct "Literal" []
-
 export
 interface XLAPrimitive dtype where
     primitiveType : PrimitiveType
-    set : Literal -> Ptr Int -> dtype -> PrimIO ()
-    get : Literal -> Ptr Int -> dtype
+    set : GCAnyPtr -> Ptr Int -> dtype -> PrimIO ()
+    get : GCAnyPtr -> Ptr Int -> dtype
 
 %foreign (libxla "Literal_new")
-prim__allocLiteral : Shape.Shape -> PrimIO Literal
+prim__allocLiteral : Shape.Shape -> PrimIO AnyPtr
 
 %foreign (libxla "Literal_delete")
-prim__Literal_delete : Literal -> PrimIO ()
+prim__Literal_delete : AnyPtr -> PrimIO ()
 
 export
-delete : Literal -> IO ()
+delete : AnyPtr -> IO ()
 delete = primIO . prim__Literal_delete
 
 populateLiteral : {rank : _} -> (shape : Shape {rank}) -> XLAPrimitive dtype =>
-    Literal -> Array shape dtype -> IO ()
+    GCAnyPtr -> Array shape dtype -> IO ()
 populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
     impl : {a : _} -> (rem_shape : Shape {rank=r}) -> (acc_indices : Shape {rank=a})
         -> {shapesSum : a + r = rank} -> Array rem_shape dtype -> IO ()
@@ -62,21 +58,26 @@ populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
 
 export
 mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
-    -> Array shape dtype -> IO Literal
-mkLiteral xs = do
+    -> Array shape dtype -> GCAnyPtr
+mkLiteral xs = unsafePerformIO $ do
     c_shape <- mkIntArray shape
     xla_shape <- primIO $ prim__mkShape (cast $ primitiveType {dtype=dtype}) c_shape (cast rank)
     literal <- primIO $ prim__allocLiteral xla_shape
+    literal <- onCollectAny literal delete
     populateLiteral shape literal xs
     free c_shape
     delete xla_shape
     pure literal
 
+export
+%foreign (libxla "Literal_ToString")
+toString : GCAnyPtr -> String
+
 %foreign (libxla "Literal_Set_bool")
-prim__literalSetBool : Literal -> Ptr Int -> Int -> PrimIO ()
+prim__literalSetBool : GCAnyPtr -> Ptr Int -> Int -> PrimIO ()
 
 %foreign (libxla "Literal_Get_bool")
-literalGetBool : Literal -> Ptr Int -> Int
+literalGetBool : GCAnyPtr -> Ptr Int -> Int
 
 export
 XLAPrimitive Bool where
@@ -90,10 +91,10 @@ XLAPrimitive Bool where
          )
 
 %foreign (libxla "Literal_Set_double")
-prim__literalSetDouble : Literal -> Ptr Int -> Double -> PrimIO ()
+prim__literalSetDouble : GCAnyPtr -> Ptr Int -> Double -> PrimIO ()
 
 %foreign (libxla "Literal_Get_double")
-literalGetDouble : Literal -> Ptr Int -> Double
+literalGetDouble : GCAnyPtr -> Ptr Int -> Double
 
 export
 XLAPrimitive Double where
@@ -102,10 +103,10 @@ XLAPrimitive Double where
   get = literalGetDouble
 
 %foreign (libxla "Literal_Set_int")
-prim__literalSetInt : Literal -> Ptr Int -> Int -> PrimIO ()
+prim__literalSetInt : GCAnyPtr -> Ptr Int -> Int -> PrimIO ()
 
 %foreign (libxla "Literal_Get_int")
-literalGetInt : Literal -> Ptr Int -> Int
+literalGetInt : GCAnyPtr -> Ptr Int -> Int
 
 export
 XLAPrimitive Int where
@@ -114,7 +115,7 @@ XLAPrimitive Int where
   get = literalGetInt
 
 export
-toArray : XLAPrimitive dtype => {shape : Types.Shape} -> Literal -> Array shape dtype
+toArray : XLAPrimitive dtype => {shape : Types.Shape} -> GCAnyPtr -> Array shape dtype
 toArray lit = impl {shapesSum=Refl} shape [] where
     impl : (remaining_shape : Vect r Nat)
         -> {a : _} -> {shapesSum : a + r = rank}

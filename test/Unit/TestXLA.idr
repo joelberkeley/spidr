@@ -45,8 +45,8 @@ test_parameter_addition = do
     let computation = build builder
     delete builder
 
-    p0_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
-    p1_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[1, 1, 1], [-1, -1, -1]]
+    let p0_lit = mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
+        p1_lit = mkLiteral {shape=[2, 3]} {dtype=Int} [[1, 1, 1], [-1, -1, -1]]
 
     client <- primIO prim__localClientOrDie
     gd0 <- primIO (prim__transferToServer client p0_lit)
@@ -55,12 +55,10 @@ test_parameter_addition = do
     primIO (prim__setArrayPtr gd_arr 0 gd0)
     primIO (prim__setArrayPtr gd_arr 1 gd1)
     lit <- primIO $ prim__executeAndTransfer client computation gd_arr 2
-    delete p0_lit
-    delete p1_lit
+    lit' <- onCollectAny lit Literal.delete
     free gd0
     free gd1
     free gd_arr
 
-    let sum = toArray {shape=[2, 3]} {dtype=Int} lit
-    delete lit
+    let sum = toArray {shape=[2, 3]} {dtype=Int} lit'
     assert "array addition using Parameter" (sum == [[1, 2, 3], [2, 3, 4]])

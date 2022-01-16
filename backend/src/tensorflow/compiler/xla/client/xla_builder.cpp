@@ -37,8 +37,16 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
+    int sizeof_XlaOp() {
+        return sizeof(xla::XlaOp);
+    }
+
     void XlaOp_delete(XlaOp* s) {
         delete reinterpret_cast<xla::XlaOp*>(s);
+    }
+
+    XlaBuilder* XlaOp_Builder(XlaOp* op) {
+        return reinterpret_cast<XlaBuilder*>(reinterpret_cast<xla::XlaOp*>(op)->builder());
     }
 
     XlaBuilder* XlaBuilder_new(const char* computation_name) {
@@ -139,6 +147,19 @@ extern "C" {
     XlaOp* Gt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Gt, lhs, rhs); }
     XlaOp* Lt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Lt, lhs, rhs); }
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Le, lhs, rhs); }
+
+    XlaOp* Call(
+        XlaBuilder* builder, XlaComputation& computation, XlaOp* operands, int operands_len
+    ) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
+        auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+        auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
+        xla::XlaOp* res = new xla::XlaOp();
+        *res = xla::Call(builder_, computation_, operands_span);
+        return reinterpret_cast<XlaOp*>(res);
+    };
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Add, lhs, rhs); }
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Sub, lhs, rhs); }
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }

@@ -19,10 +19,10 @@ import System.FFI
 
 import XLA.Literal
 import XLA.FFI
-import XLA.Client.ClientLibrary
-import XLA.Client.LocalClient
-import XLA.Client.XlaBuilder
-import XLA.Client.XlaComputation
+import public XLA.Client.ClientLibrary as XLA.Client
+import public XLA.Client.LocalClient as XLA.Client
+import public XLA.Client.XlaBuilder as XLA.Client
+import public XLA.Client.XlaComputation as XLA.Client
 
 import Types
 
@@ -35,7 +35,7 @@ eval (MkRawTensor f) = do
     delete builder
     client <- primIO prim__localClientOrDie
     lit <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
+    lit <- onCollectAny lit delete
     delete computation
     let arr = toArray lit
-    delete lit
     pure arr

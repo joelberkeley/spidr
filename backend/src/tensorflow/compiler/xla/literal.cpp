@@ -28,6 +28,10 @@ extern "C" {
     void Literal_delete(Literal* lit) {
         delete reinterpret_cast<xla::Literal*>(lit);
     }
+
+    const char* Literal_ToString(Literal* lit) {
+        // return c_string_copy(reinterpret_cast<xla::Literal*>(lit));
+    }
 }
 
 template <typename NativeT>

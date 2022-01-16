@@ -20,6 +20,7 @@ module Tensor
 import Data.Vect
 import Data.Vect.Elem
 import Decidable.Equality
+import System.FFI
 
 import Error
 import public Primitive
@@ -27,7 +28,7 @@ import public Types
 import Util
 import XLA.Client.XlaBuilder
 import XLA.Client
-import XLA.Literal
+import XLA
 
 ----------------------------- core definitions ----------------------------
 
@@ -39,82 +40,72 @@ import XLA.Literal
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : RawTensor -> Tensor shape dtype
+  Literal : GCAnyPtr -> Tensor shape dtype
+  Operand : IO GCAnyPtr -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
 const : Primitive dtype => {shape : _} -> Array shape dtype -> Tensor shape dtype
-const xs = MkTensor $ const {rank=length shape} (rewrite lengthCorrect shape in xs)
+const xs = Literal $ mkLiteral {rank=length shape} (rewrite lengthCorrect shape in xs)
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
 eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape dtype
-eval (MkTensor raw) = eval raw
+eval (Literal lit) = pure $ toArray lit
+eval (Operand op) = do
+  -- todo this line seems REALLY wrong. How to get computation from op?
+  let computation = build (builder !op)
+  client <- primIO prim__localClientOrDie
+  lit <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
+  lit <- onCollectAny lit delete
+  delete computation
+  let arr = toArray lit
+  pure arr
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
-toString (MkTensor raw) = toString raw
+toString (Literal lit) = do
+  builder <- primIO (prim__mkXlaBuilder "toString")
+  op <- collectXlaOp (constantLiteral builder lit)
+  let str = prim__opToString builder op
+  delete builder
+  pure str
 
-||| A mutable tensor. That is, a tensor that can be modified in-place.
-|||
-||| We can do this in Idris with linearity. Linearity is offered by quantitative type theory*, which
-||| allows us to guarantee that a value is used at run time either never (erased), once (linear), or
-||| more. In-place mutation traditionally suffers from the problem that you have to reason about
-||| what state a value is in in a series of computations: whether it has been mutated and how. For
-||| example, in the following pseudo-code,
-|||
-||| ```
-||| a = 1
-||| a += 1
-||| b = f(a)
-||| ```
-|||
-||| We have to be aware of whether `a` was modified between its initialization and its use in the
-||| calculation of `b`. This problem is solved by simply defining a new variable, as
-|||
-||| ```
-||| a = 1
-||| a' = a + 1
-||| b = f(a')
-||| ```
-|||
-||| but this doesn't provide the same performance benefits of in-place mutation. The conundrum is
-||| (at least largely) solved with linear types, because you can require that the action of mutating
-||| a value "uses it up" such that the previous reference to it cannot be used any more. In the
-||| first example, the mutation `a += 1` would use up `a` and we wouldn't be able to use it in the
-||| construction of `b`, so the problem no longer exists.
-|||
-||| In order to ensure `Variable` is only used as a linear type, it is accessible only via the
-||| function `var`.
-|||
-||| *See http://www.type-driven.org.uk/edwinb
-|||
-||| @shape The `Variable` shape.
-||| @dtype The element type.
+toString (Operand op) = do
+  builder <- primIO (prim__mkXlaBuilder "toString")
+  let str = prim__opToString builder !op
+  delete builder
+  pure str
+
+||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
-data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkVariable : Primitive dtype => Array shape dtype -> Variable shape dtype
+negate : {shape : _} -> {dtype : _} -> Neg dtype => Tensor shape dtype -> Tensor shape dtype
+negate (Literal lit) = Operand $ do
+  -- the other option for the Literal case is that we store the literal and pass it to
+  -- ExecuteAndTransfer in eval. This would probably involve making an XlaComputation for both
+  -- branches. The SO question may answer how to do this.
+  builder <- primIO (prim__mkXlaBuilder "negate")
+  op <- collectXlaOp $ constantLiteral builder lit
+  primIO (prim__neg op) >>= collectXlaOp
+negate (Operand op) = Operand $ do
+  builder <- primIO (prim__mkXlaBuilder "negate")
+  c_shape <- mkIntArray shape
+  xla_shape <- primIO $ prim__mkShape 4 c_shape (cast $ length shape)
+  param <- collectXlaOp (parameter builder 0 xla_shape "")
+  _ <- primIO (prim__neg param) >>= collectXlaOp
+  let computation = build builder
+  delete xla_shape
+  free c_shape
 
-||| Provides access to a linear `Variable` with initial contents `arr`. For example:
-|||
-||| ```idris
-||| addOne : (1 v : Variable [] Double) -> Variable [] Double
-||| addOne v = v += const {shape=[]} 1
-|||
-||| three : Tensor [] Double
-||| three = var 2.0 $ \v => freeze $ addOne v
-||| ```
-|||
-||| @arr The initial contents of the `Variable`.
-||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : Primitive dtype =>
-      Array shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
-var arr f = f (MkVariable arr)
-
-||| Convert a `Variable` to a `Tensor`.
-freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
+  args <- malloc sizeof_xlaOp
+  op <- op
+  primIO (prim__setArrayPtr args 0 op)
+  op_res <- primIO (prim__call builder computation args 1)  -- todo this seems wrong wrt builder
+  free args
+  delete builder
+  collectXlaOp op_res
 
 ----------------------------- structural operations ----------------------------
 
@@ -187,7 +178,7 @@ namespace Broadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
   public export
-  data Broadcastable : (0 from : Shape) -> (0 to : Shape) -> Type where
+  data Broadcastable : (0 from : Types.Shape) -> (0 to : Types.Shape) -> Type where
     ||| Proof that a shape can be broadcast to itself. For example:
     |||
     ||| [] to []
@@ -215,7 +206,7 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
-empty : Primitive dtype => {shape : Shape} -> {auto isEmpty : Elem 0 shape} -> Tensor shape dtype
+empty : Primitive dtype => {shape : Types.Shape} -> {auto isEmpty : Elem 0 shape} -> Tensor shape dtype
 empty = const (emptyArray shape) where
   emptyArray : (shape : _) -> {auto isEmpty : Elem Z shape} -> Array shape dtype
   emptyArray {isEmpty = Here} (0 :: _) = []
@@ -237,26 +228,26 @@ empty = const (emptyArray shape) where
 export
 broadcast : Primitive dtype => {from : _} -> {to : _} -> {auto prf : Broadcastable from to}
   -> Tensor from dtype -> Tensor to dtype
-broadcast xs = case (isElem 0 to, toList from == toList to) of
-  (Yes _, False) => empty
-  _ =>
-    let from_prf = lengthCorrect from
-        to_prf = lengthCorrect to in
-        rewrite sym to_prf in impl {fr=length from} {tr=length to} {tt=length to} []
-          (rewrite to_prf in to) (rewrite from_prf in xs)
-          {prf=rewrite to_prf in rewrite from_prf in prf}
+-- broadcast xs = case (isElem 0 to, toList from == toList to) of
+--   (Yes _, False) => empty
+--   _ =>
+--     let from_prf = lengthCorrect from
+--         to_prf = lengthCorrect to in
+--         rewrite sym to_prf in impl {fr=length from} {tr=length to} {tt=length to} []
+--           (rewrite to_prf in to) (rewrite from_prf in xs)
+--           {prf=rewrite to_prf in rewrite from_prf in prf}
 
-    where
-    impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
-      -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
-      -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-    impl to_leading _ {prf=Same} (MkTensor raw) =
-      MkTensor $ if (length to_leading == 0) then raw else broadcast raw to_leading
-    impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor raw) =
-      MkTensor $ broadcast (broadcastInDim raw (th' :: tt') (range (S r))) to_leading
-    impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
+--     where
+--     impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
+--       -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
+--       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
+--     impl to_leading _ {prf=Same} (MkTensor raw) =
+--       MkTensor $ if (length to_leading == 0) then raw else broadcast raw to_leading
+--     impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor raw) =
+--       MkTensor $ broadcast (broadcastInDim raw (th' :: tt') (range (S r))) to_leading
+--     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
-scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+scalarToAnyOk : (to : Types.Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 
@@ -264,7 +255,7 @@ namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
-  data Squeezable : (0 from : Shape) -> (0 to : Shape) -> Type where
+  data Squeezable : (0 from : Types.Shape) -> (0 to : Types.Shape) -> Type where
     ||| Proof that a shape can be squeezed to itself. For example:
     |||
     ||| [] to []
@@ -324,13 +315,13 @@ infix 6 ==#, /=#
 ||| `const [True, False]`.
 export
 (==#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) ==# (MkTensor r) = MkTensor (eq l r)
+-- (MkTensor l) ==# (MkTensor r) = MkTensor (eq l r)
 
 ||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
 (/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
+-- (MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
 
 infix 6 <#, >#, <=#, >=#
 
@@ -338,25 +329,25 @@ infix 6 <#, >#, <=#, >=#
 ||| `const [True, False, False]`.
 export
 (<#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) <# (MkTensor r) = MkTensor (lt l r)
+-- (MkTensor l) <# (MkTensor r) = MkTensor (lt l r)
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
 (>#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) ># (MkTensor r) = MkTensor (gt l r)
+-- (MkTensor l) ># (MkTensor r) = MkTensor (gt l r)
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
 (<=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) <=# (MkTensor r) = MkTensor (le l r)
+-- (MkTensor l) <=# (MkTensor r) = MkTensor (le l r)
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
 (>=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) >=# (MkTensor r) = MkTensor (ge l r)
+-- (MkTensor l) >=# (MkTensor r) = MkTensor (ge l r)
 
 infixr 5 &&#
 
@@ -365,7 +356,7 @@ infixr 5 &&#
 ||| `const [True, False, False, False]`.
 export
 (&&#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
-(MkTensor l) &&# (MkTensor r) = MkTensor (and l r)
+-- (MkTensor l) &&# (MkTensor r) = MkTensor (and l r)
 
 infixr 4 ||#
 
@@ -374,13 +365,13 @@ infixr 4 ||#
 ||| `const [True, True, True, False]`.
 export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
-(MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
+-- (MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
 export
 notEach : Tensor shape Bool -> Tensor shape Bool
-notEach (MkTensor raw) = MkTensor (not raw)
+-- notEach (MkTensor raw) = MkTensor (not raw)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -413,18 +404,18 @@ export
 ||| `const [4, 6]`.
 export
 (+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) + (MkTensor r) = MkTensor (add l r)
+-- (MkTensor l) + (MkTensor r) = MkTensor (add l r)
 
-||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
-export
-negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate (MkTensor raw) = MkTensor (neg raw)
+-- ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
+-- export
+-- negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
+-- negate (MkTensor raw) = MkTensor (neg raw)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
 (-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) - (MkTensor r) = MkTensor (sub l r)
+-- (MkTensor l) - (MkTensor r) = MkTensor (sub l r)
 
 infixl 9 *#, /#
 
@@ -432,33 +423,33 @@ infixl 9 *#, /#
 ||| `const [8, 15]`.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) *# (MkTensor r) = MkTensor (mul l r)
+-- (MkTensor l) *# (MkTensor r) = MkTensor (mul l r)
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
 export
 (*) : (Primitive dtype, Num dtype) => Tensor [] dtype -> {shape : _} -> Tensor shape dtype
       -> Tensor shape dtype
-l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
+-- l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) /# (MkTensor r) = MkTensor (div l r)
+-- (MkTensor l) /# (MkTensor r) = MkTensor (div l r)
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
 export
 (/) : (Primitive dtype, Fractional dtype) => {shape : _} ->
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
-l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
+-- l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 
 ||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.
 export
 absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
-absEach (MkTensor raw) = MkTensor (abs raw)
+-- absEach (MkTensor raw) = MkTensor (abs raw)
 
 infixr 9 ^
 
@@ -474,38 +465,6 @@ export
 ||| The element-wise natural exponential.
 export
 exp : Tensor shape Double -> Tensor shape Double
-
-infix 8 +=
-infix 8 -=
-infix 8 *=
-infix 8 //=
-
-||| Element-wise in-place addition. It is in-place in the sense that the value in memory is mutated
-||| in-place. However, since the function is linear its `Variable`, you must still use the result to
-||| get the updated value. For example:
-|||
-||| ```idris
-||| addOne : (1 v : Variable [] Double) -> Variable [] Double
-||| addOne v = v += const {shape=[]} 1
-||| ```
-|||
-||| Other than the fact that it works on a `Variable`, and mutates the value in-place, it works
-||| exactly like `(+)` on a `Tensor`.
-export
-(+=) : Num dtype => (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
-
-||| Element-wise in-place subtraction. See `(+=)` and `(+)` for details.
-export
-(-=) : Neg dtype => (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
-
-||| Element-wise in-place multiplication. See `(+=)` and `(*)` for details.
-export
-(*=) : Num dtype => (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
-
-||| Element-wise in-place division. See `(+=)` and `(/)` for details.
-export
-(//=) : Fractional dtype =>
-        (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
 -- todo
 ||| The element-wise natural logarithm.

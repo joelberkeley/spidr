@@ -27,8 +27,8 @@ LocalClient = Struct "LocalClient" []
 
 export
 %foreign (libxla "LocalClient_TransferToServer")
-prim__transferToServer : LocalClient -> Literal -> PrimIO AnyPtr
+prim__transferToServer : LocalClient -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "LocalClient_ExecuteAndTransfer")
-prim__executeAndTransfer : LocalClient -> XlaComputation -> AnyPtr -> Int -> PrimIO Literal
+prim__executeAndTransfer : LocalClient -> XlaComputation -> AnyPtr -> Int -> PrimIO AnyPtr

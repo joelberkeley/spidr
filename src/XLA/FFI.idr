@@ -48,6 +48,11 @@ export
 %foreign (libxla "set_array_ptr")
 prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
 
+namespace GC
+    export
+    %foreign (libxla "set_array_ptr")
+    prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
+
 export
 mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
 mkIntArray xs = do
