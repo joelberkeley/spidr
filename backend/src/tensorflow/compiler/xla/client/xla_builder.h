@@ -42,6 +42,7 @@ extern "C" {
     void XlaBuilder_delete(XlaBuilder* s);
     const char* XlaBuilder_name(XlaBuilder& s);
     XlaComputation* XlaBuilder_Build(XlaBuilder& s);
+    const Shape* XlaBuilder_GetShapePtr(XlaBuilder& s, XlaOp& op);
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op);
 
     /*

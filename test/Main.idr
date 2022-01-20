@@ -18,6 +18,8 @@ module Main
 import Unit.TestTensor
 import Unit.TestXLA
 
+import XLA.Client.XlaBuilder
+
 import Utils
 
 main : IO ()
@@ -42,7 +44,7 @@ main = do
     -- test_elementwise_notEach
     -- test_absEach
     test_negate
-
-    test_parameter_addition
+    -- primIO test
+    -- test_parameter_addition
 
     putStrLn "Tests passed"

@@ -32,27 +32,34 @@ import Util
  -
  -}
 
-XlaBuilder : Type
-XlaBuilder = Struct "XlaBuilder" []
+namespace XlaBuilder
+    %foreign (libxla "XlaBuilder_delete")
+    prim__delete : AnyPtr -> PrimIO ()
 
-%foreign (libxla "XlaBuilder_delete")
-prim__XlaBuilder_delete : XlaBuilder -> PrimIO ()
+    export
+    delete : AnyPtr -> IO ()
+    delete = primIO . prim__delete
 
-export
-delete : XlaBuilder -> IO ()
-delete = primIO . prim__XlaBuilder_delete
-
-export
 %foreign (libxla "XlaBuilder_new")
-prim__mkXlaBuilder : String -> PrimIO XlaBuilder
+prim__mkXlaBuilder : String -> PrimIO AnyPtr
+
+export
+mkXlaBuilder : String -> IO GCAnyPtr
+mkXlaBuilder computation_name = do
+    builder <- primIO (prim__mkXlaBuilder computation_name)
+    onCollectAny builder XlaBuilder.delete
 
 export
 %foreign (libxla "XlaBuilder_Build")
-build : XlaBuilder -> XlaComputation
+build : GCAnyPtr -> XlaComputation
+
+export
+%foreign (libxla "XlaBuilder_GetShapePtr")
+getShapePtr : AnyPtr -> GCAnyPtr -> AnyPtr
 
 export
 %foreign (libxla "XlaBuilder_OpToString")
-prim__opToString : XlaBuilder -> GCAnyPtr -> String
+prim__opToString : GCAnyPtr -> GCAnyPtr -> String
 
 {-
  -
@@ -61,75 +68,101 @@ prim__opToString : XlaBuilder -> GCAnyPtr -> String
  -}
 
 export
+%foreign (libxla "test")
+test : PrimIO ()
+
+export
 %foreign (libxla "sizeof_XlaOp")
 sizeof_xlaOp : Int
+
+export
+%foreign (libxla "set_array_XlaOp")
+prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 %foreign (libxla "XlaOp_delete")
 prim__XlaOp_delete : AnyPtr -> PrimIO ()
 
 export
 %foreign (libxla "XlaOp_Builder")
-builder : GCAnyPtr -> XlaBuilder
+builder : GCAnyPtr -> AnyPtr
 
 export
 collectXlaOp : AnyPtr -> IO GCAnyPtr
 collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
 
 export
+%foreign (libxla "XlaOp_print")
+print : GCAnyPtr -> PrimIO ()
+
+export
 %foreign (libxla "Parameter")
-parameter : XlaBuilder -> Int -> Shape.Shape -> String -> AnyPtr
+parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> AnyPtr
 
 export
 %foreign (libxla "ConstantLiteral")
-constantLiteral : XlaBuilder -> GCAnyPtr -> AnyPtr
+constantLiteral : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
+export
 %foreign (libxla "Broadcast")
 prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Ne")
 prim__ne : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Ge")
 prim__ge : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Gt")
 prim__gt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Lt")
 prim__lt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Le")
 prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Call")
-prim__call : XlaBuilder -> XlaComputation -> AnyPtr -> Int -> PrimIO AnyPtr
+prim__call : GCAnyPtr -> XlaComputation -> AnyPtr -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Sub")
 prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Mul")
 prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Div")
 prim__div : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "And")
 prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Or")
 prim__or : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Not")
 prim__not : GCAnyPtr -> PrimIO AnyPtr
 
+export
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 
@@ -139,20 +172,12 @@ prim__neg : GCAnyPtr -> PrimIO AnyPtr
 
 {-
  -
- - XlaOp and XlaBuilder wrapper
+ - XlaOp and GCAnyPtr wrapper
  -
  -}
 
 public export
-data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
-
-export
-toString : RawTensor -> IO String
-toString (MkRawTensor f) =
-  do builder <- primIO (prim__mkXlaBuilder "")
-     let str = prim__opToString builder !(f builder)
-     delete builder
-     pure str
+data RawTensor = MkRawTensor (GCAnyPtr -> IO GCAnyPtr)
 
 export
 broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
@@ -176,73 +201,3 @@ broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
        free ods_ptr
        free bcd_ptr
        pure op
-
-unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor
-unaryOp f (MkRawTensor operand) = MkRawTensor $ \builder =>
-    do op <- primIO $ f !(operand builder)
-       collectXlaOp op
-
-binOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor -> RawTensor
-binOp f (MkRawTensor l) (MkRawTensor r) = MkRawTensor $ \builder =>
-    do op <- primIO $ f !(l builder) !(r builder)
-       collectXlaOp op
-
-export
-eq : RawTensor -> RawTensor -> RawTensor
-eq = binOp prim__eq
-
-export
-ne : RawTensor -> RawTensor -> RawTensor
-ne = binOp prim__ne
-
-export
-ge : RawTensor -> RawTensor -> RawTensor
-ge = binOp prim__ge
-
-export
-gt : RawTensor -> RawTensor -> RawTensor
-gt = binOp prim__gt
-
-export
-lt : RawTensor -> RawTensor -> RawTensor
-lt = binOp prim__lt
-
-export
-le : RawTensor -> RawTensor -> RawTensor
-le = binOp prim__le
-
-export
-add : RawTensor -> RawTensor -> RawTensor
-add = binOp prim__add
-
-export
-sub : RawTensor -> RawTensor -> RawTensor
-sub = binOp prim__sub
-
-export
-mul : RawTensor -> RawTensor -> RawTensor
-mul = binOp prim__mul
-
-export
-div : RawTensor -> RawTensor -> RawTensor
-div = binOp prim__div
-
-export
-and : RawTensor -> RawTensor -> RawTensor
-and = binOp prim__and
-
-export
-or : RawTensor -> RawTensor -> RawTensor
-or = binOp prim__or
-
-export
-not : RawTensor -> RawTensor
-not = unaryOp prim__not
-
-export
-abs : RawTensor -> RawTensor
-abs = unaryOp prim__abs
-
-export
-neg : RawTensor -> RawTensor
-neg = unaryOp prim__neg

@@ -24,17 +24,15 @@ import XLA.FFI
 import XLA.Shape
 import XLA.ShapeUtil
 
-export
-interface XLAPrimitive dtype where
-    primitiveType : PrimitiveType
-    set : GCAnyPtr -> Ptr Int -> dtype -> PrimIO ()
-    get : GCAnyPtr -> Ptr Int -> dtype
-
 %foreign (libxla "Literal_new")
-prim__allocLiteral : Shape.Shape -> PrimIO AnyPtr
+prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "Literal_delete")
 prim__Literal_delete : AnyPtr -> PrimIO ()
+
+export
+%foreign (libxla "Literal_shape")
+Literal_shape : GCAnyPtr -> AnyPtr
 
 export
 delete : AnyPtr -> IO ()
@@ -60,13 +58,10 @@ export
 mkLiteral : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
     -> Array shape dtype -> GCAnyPtr
 mkLiteral xs = unsafePerformIO $ do
-    c_shape <- mkIntArray shape
-    xla_shape <- primIO $ prim__mkShape (cast $ primitiveType {dtype=dtype}) c_shape (cast rank)
+    xla_shape <- mkShape {dtype=dtype} shape
     literal <- primIO $ prim__allocLiteral xla_shape
-    literal <- onCollectAny literal delete
+    literal <- onCollectAny literal Literal.delete
     populateLiteral shape literal xs
-    free c_shape
-    delete xla_shape
     pure literal
 
 export

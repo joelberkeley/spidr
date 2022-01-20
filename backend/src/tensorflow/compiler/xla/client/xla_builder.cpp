@@ -20,6 +20,8 @@ limitations under the License.
 #include "absl/types/span.h"
 #include "tensorflow/compiler/xla/client/xla_builder.h"
 #include "tensorflow/compiler/xla/literal.h"
+#include "tensorflow/compiler/xla/client/client_library.h"
+#include "tensorflow/compiler/xla/client/local_client.h"
 #include "tensorflow/compiler/xla/shape.h"
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
@@ -46,7 +48,18 @@ extern "C" {
     }
 
     XlaBuilder* XlaOp_Builder(XlaOp* op) {
-        return reinterpret_cast<XlaBuilder*>(reinterpret_cast<xla::XlaOp*>(op)->builder());
+        std::cout << "XlaOp_Builder ..." << std::endl;
+        auto builder = reinterpret_cast<xla::XlaOp*>(op)->builder();
+        std::cout << "XlaOp_Builder ... return" << std::endl;
+        return reinterpret_cast<XlaBuilder*>(builder);
+    }
+
+    void XlaOp_print(XlaOp& s) {
+        std::cout << reinterpret_cast<xla::XlaOp&>(s) << std::endl;
+    }
+
+    void set_array_XlaOp(XlaOp* arr, int idx, XlaOp& value) {
+        reinterpret_cast<xla::XlaOp*>(arr)[idx] = reinterpret_cast<xla::XlaOp&>(value);
     }
 
     XlaBuilder* XlaBuilder_new(const char* computation_name) {
@@ -67,6 +80,13 @@ extern "C" {
         xla::XlaComputation* res = new xla::XlaComputation();
         *res = s_.Build().ConsumeValueOrDie();
         return reinterpret_cast<XlaComputation*>(res);
+    }
+
+    const Shape* XlaBuilder_GetShapePtr(XlaBuilder& s, XlaOp& op) {
+        xla::XlaBuilder& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
+        xla::XlaOp& op_ = reinterpret_cast<xla::XlaOp&>(op);
+        const xla::Shape* shape_ptr = s_.GetShapePtr(op_).ConsumeValueOrDie();
+        return reinterpret_cast<const Shape*>(shape_ptr);
     }
 
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {
@@ -151,9 +171,15 @@ extern "C" {
     XlaOp* Call(
         XlaBuilder* builder, XlaComputation& computation, XlaOp* operands, int operands_len
     ) {
+        std::cout << "Call ... " << std::endl;
         auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
         auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+
+        std::cout << "Call ... print things" << std::endl;
+        std::cout << operands_[0] << std::endl;
+
+        std::cout << "Call ... make span" << std::endl;
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
         xla::XlaOp* res = new xla::XlaOp();
         *res = xla::Call(builder_, computation_, operands_span);
@@ -186,4 +212,22 @@ extern "C" {
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
+
+    void test() {
+        xla::XlaBuilder add_builder("Add");
+        auto one = xla::ConstantR0(&add_builder, 1);
+        auto two = xla::ConstantR0(&add_builder, 2);
+        auto sum = xla::Add(one, two);
+        add_builder.Build();
+
+        xla::XlaBuilder mul_builder("Mul");
+        auto three = xla::ConstantR0(&mul_builder, 3);
+        auto res = xla::Mul(three, sum);
+        auto computation = mul_builder.Build().ConsumeValueOrDie();
+
+        xla::ExecutionProfile profile;
+        xla::ClientLibrary::LocalClientOrDie()->ExecuteAndTransfer(
+            computation, absl::Span<xla::GlobalData * const>(), nullptr, nullptr
+        );
+    }
 }

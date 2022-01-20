@@ -31,7 +31,7 @@ test_const_eval = do
 
     let x =  [[1, 15, 5], [-1, 7, 6]]
     x' <- eval $ const {shape=[_, _]} {dtype=Int} x
-    assert "const eval returns original Int" (x' == x)
+    assert "const eval returns original Int" (x' == [[1, 15, 5], [-1, 7, 6]])
 
     let name = "const eval returns original Double"
     x <- eval $ const {shape=[_, _]} {dtype=Double} [[-1.5], [1.3], [4.3]]
@@ -63,8 +63,8 @@ test_toString = do
     --       constant, shape=[], metadata={:0}
     --     """
 
-    -- str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
-    -- assert "toString for vector Double" $ str == "constant, shape=[3], metadata={:0}"
+    str <- toString $ const {shape=[_]} {dtype=Double} [1.3, 2.0, -0.4]
+    assert "toString for vector Double" $ str == "constant, shape=[3], metadata={:0}"
 
 export
 test_broadcast : IO ()
@@ -215,16 +215,20 @@ test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
     let x = const [True, True, False]
         y = const [False, True, False]
-    assertAll "==# for boolean vector" $ (y /=# x) ==# const {shape=[_]} [True, False, False]
+    eval {shape=[_]} (y /=# x) >>= printLn
+    eval (const {shape=[_]} [True, False, False]) >>= printLn
+    eval (const {shape=[_]} [True, True, True] ==# (y /=# x)) >>= printLn
+    eval (const {shape=[_]} [True, False, False] ==# const {shape=[_]} [True, False, False]) >>= printLn
+    assertAll "/=# for boolean vector" $ (y /=# x) ==# const {shape=[_]} [True, False, False]
 
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
         y = const {shape=[_, _]} {dtype=Int} [[2, 15, 3], [2, 7, 6]]
-    assertAll "==# for integer matrix" $
+    assertAll "/=# for integer matrix" $
         (x /=# y) ==# const [[True, False, True], [True, False, False]]
 
     let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
         y = const {shape=[_, _]} {dtype=Double} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    assertAll "==# for double matrix" $
+    assertAll "/=# for double matrix" $
         (x /=# y) ==# const [[True, False, True], [True, False, False]]
 
     sequence_ [compareScalars l r | l <- bools, r <- bools]
@@ -467,22 +471,31 @@ test_absEach = do
 export
 test_negate : IO ()
 test_negate = do
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, -5], [-1, 7, 0]]
-    res <- eval {shape=[_, _]} {dtype=Int} (-x)
-    printLn res
+    let x = const {shape=[2, 3]} {dtype=Int} [[1, 15, -5], [-1, 7, 0]]
+    putStrLn "test_negate ..."
+    let neg = (-x)
+    putStrLn "test_negate ... define expected"
+    -- res <- eval {shape=[2, 3]} {dtype=Int} neg
+    -- assert "" $ res == [[-1, -15, 5], [1, -7, 0]]
+    let expected = const {shape=[_, _]} {dtype=Int} [[-1, -15, 5], [1, -7, 0]]
+    putStrLn "test_negate ... define isOK"
+    let isOK = neg ==# expected
+    assertAll "negate for int array" isOK
 
-    -- let x = const {shape=[_, _]} {dtype=Double} [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
+    -- res <- eval {shape=[2, 3]} {dtype=Int} (-x)
+    -- assert "" $ res == [[-1, -15, 5], [1, -7, 0]]
+
+    -- let x = const [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
     --     expected = const {shape=[_, _]} {dtype=Double} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
-    -- res <- eval {shape=[_, _]} {dtype=Double} (-x)
-    -- printLn res
+    -- assertAll "negate for double array" $ sufficientlyEqEach (-x) expected
 
     -- sequence_ [assertAll "negate for int scalar" $
     --            (- const x) ==# const {shape=[]} (-x) | x <- ints]
     -- sequence_ [assertAll "negate for double scalar" $
     --            sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
 
--- test_det : Tensor [3, 3] Double -> Tensor [] Double
--- test_det x = det x
+test_det : Tensor [3, 3] Double -> Tensor [] Double
+test_det x = det x
 
--- test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
--- test_det_with_leading x = det x
+test_det_with_leading : Tensor [2, 3, 3] Double -> Tensor [2] Double
+test_det_with_leading x = det x

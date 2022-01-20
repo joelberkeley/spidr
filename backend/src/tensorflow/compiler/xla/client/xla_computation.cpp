@@ -16,9 +16,16 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/xla_computation.h"
 
 #include "xla_computation.h"
+#include "../shape.h"
 
 extern "C" {
     void XlaComputation_delete(XlaComputation* s) {
         delete reinterpret_cast<xla::XlaComputation*>(s);
+    }
+
+    Shape* XlaComputation_shape(XlaComputation& s) {
+        xla::XlaComputation& comp = reinterpret_cast<xla::XlaComputation&>(s);
+        auto res = new xla::Shape(comp.GetProgramShape().ConsumeValueOrDie().result());
+        return reinterpret_cast<Shape*>(res);
     }
 }

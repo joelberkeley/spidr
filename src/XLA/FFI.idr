@@ -22,11 +22,6 @@ import Types
 import Util
 
 export
-enumerate : Vect n ty -> Vect n (Nat, ty)
-enumerate xs = rewrite sym $ lengthCorrect xs in
-    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
-
-export
 free : Ptr t -> IO ()
 free = System.FFI.free . prim__forgetPtr
 
@@ -48,7 +43,7 @@ export
 %foreign (libxla "set_array_ptr")
 prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
 
-namespace GC
+namespace GCAnyPtr
     export
     %foreign (libxla "set_array_ptr")
     prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()

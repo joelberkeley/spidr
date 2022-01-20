@@ -34,16 +34,12 @@ import Utils
 export
 test_parameter_addition : IO ()
 test_parameter_addition = do
-    builder <- primIO (prim__mkXlaBuilder "")
-    c_shape <- mkIntArray [2, 3]
-    xla_shape <- primIO (prim__mkShape (cast $ primitiveType {dtype=Int}) c_shape 2)
+    builder <- mkXlaBuilder ""
+    xla_shape <- mkShape {dtype=Int} [2, 3]
     p0 <- collectXlaOp (parameter builder 0 xla_shape "")
     p1 <- collectXlaOp (parameter builder 1 xla_shape "")
-    delete xla_shape
-    free c_shape
     _ <- primIO (prim__add p0 p1) >>= collectXlaOp
     let computation = build builder
-    delete builder
 
     let p0_lit = mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
         p1_lit = mkLiteral {shape=[2, 3]} {dtype=Int} [[1, 1, 1], [-1, -1, -1]]

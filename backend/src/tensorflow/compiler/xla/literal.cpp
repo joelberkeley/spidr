@@ -29,6 +29,12 @@ extern "C" {
         delete reinterpret_cast<xla::Literal*>(lit);
     }
 
+    const Shape* Literal_shape(Literal& s) {
+        xla::Literal& s_ = reinterpret_cast<xla::Literal&>(s);
+        xla::Shape* shape = new xla::Shape(s_.shape());
+        return reinterpret_cast<Shape*>(shape);
+    }
+
     const char* Literal_ToString(Literal* lit) {
         // return c_string_copy(reinterpret_cast<xla::Literal*>(lit));
     }

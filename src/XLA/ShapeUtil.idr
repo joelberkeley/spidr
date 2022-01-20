@@ -19,7 +19,18 @@ import System.FFI
 
 import XLA.FFI
 import XLA.Shape
+import XLA.XlaData
+import Types
 
 export
 %foreign (libxla "MakeShape")
-prim__mkShape : Int -> Ptr Int -> Int -> PrimIO Shape
+prim__mkShape : Int -> Ptr Int -> Int -> PrimIO AnyPtr
+
+export
+mkShape : XLAPrimitive dtype => Shape -> IO GCAnyPtr
+mkShape {dtype} shape = do
+  c_shape <- mkIntArray shape
+  let dtype_enum = cast $ primitiveType {dtype=dtype}
+  xla_shape <- primIO $ prim__mkShape dtype_enum c_shape (cast $ length shape)
+  free c_shape
+  onCollectAny xla_shape delete

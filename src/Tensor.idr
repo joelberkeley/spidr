@@ -41,71 +41,137 @@ import XLA
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
   Literal : GCAnyPtr -> Tensor shape dtype
-  Operand : IO GCAnyPtr -> Tensor shape dtype
+  Operand : IO (XlaComputation, GCAnyPtr) -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
 const : Primitive dtype => {shape : _} -> Array shape dtype -> Tensor shape dtype
-const xs = Literal $ mkLiteral {rank=length shape} (rewrite lengthCorrect shape in xs)
+const xs = Literal $ mkLiteral {dtype=dtype} {rank=length shape} (rewrite lengthCorrect shape in xs)
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
 eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape dtype
-eval (Literal lit) = pure $ toArray lit
-eval (Operand op) = do
-  -- todo this line seems REALLY wrong. How to get computation from op?
-  let computation = build (builder !op)
+eval (Literal lit) = pure $ toArray {dtype=dtype} lit
+eval (Operand {shape} comp_op) = do
+  putStrLn "eval ..."
+  (computation, _) <- comp_op
+  -- let args = []
+  putStrLn "eval ... get client"
   client <- primIO prim__localClientOrDie
+  -- global_data <- traverse (primIO . (prim__transferToServer client)) args
+  -- let arg_count = cast (length args)
+  -- -- move these lines to a function for making void arrays?
+  -- global_data_arr <- malloc (sizeof_voidPtr * arg_count)
+  -- traverse_ (\(i, gd) =>
+  --            primIO (prim__setArrayPtr global_data_arr (cast i) gd)) (enumerate global_data)
+  putStrLn "eval ... execute and transfer"
   lit <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-  lit <- onCollectAny lit delete
+  lit <- onCollectAny lit Literal.delete
   delete computation
-  let arr = toArray lit
-  pure arr
+  pure (toArray {dtype=dtype} lit)
+
+noop_delete : AnyPtr -> IO ()
+noop_delete _ = pure ()
+
+toXlaOp : GCAnyPtr -> Tensor shape dtype -> IO GCAnyPtr
+toXlaOp builder (Literal lit) = collectXlaOp (constantLiteral builder lit)
+toXlaOp _ (Operand comp_op) = map snd comp_op
+
+shapePtr : Tensor shape dtype -> IO GCAnyPtr
+shapePtr (Literal lit) = onCollectAny (Literal_shape lit) Shape.delete
+shapePtr (Operand x) = do
+  putStrLn "shapePtr ..."
+  (comp, _) <- x
+  putStrLn "shapePtr ... get builder"
+  -- primIO $ print op
+  -- let builder = builder op
+  putStrLn "shapePtr ... collect builder"
+  -- builder <- onCollectAny builder XlaBuilder.delete
+  putStrLn "shapePtr ... get shape"
+  -- let shape = getShapePtr builder op
+  putStrLn "shapePtr ... collect shape"
+  res <- onCollectAny (resultShape comp) Shape.delete
+  putStrLn "shapePtr ... return"
+  pure res
+
+-- getShape : Tensor shape dtype -> List Nat
+-- getShape (Literal {shape} _) = toList shape
+-- getShape (Operand {shape} _) = toList shape
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
-toString (Literal lit) = do
-  builder <- primIO (prim__mkXlaBuilder "toString")
-  op <- collectXlaOp (constantLiteral builder lit)
-  let str = prim__opToString builder op
-  delete builder
-  pure str
+toString xs = do
+  builder <- mkXlaBuilder "toString"
+  pure $ prim__opToString builder !(toXlaOp builder xs)
 
-toString (Operand op) = do
-  builder <- primIO (prim__mkXlaBuilder "toString")
-  let str = prim__opToString builder !op
-  delete builder
-  pure str
+unaryOp : String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
+unaryOp name f x = Operand $ do
+  -- builder <- mkXlaBuilder name
+  -- x <- toXlaOp builder x
+  -- res <- primIO (f x) >>= collectXlaOp
+  -- pure (build builder, res)
 
-||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
-export
-negate : {shape : _} -> {dtype : _} -> Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate (Literal lit) = Operand $ do
-  -- the other option for the Literal case is that we store the literal and pass it to
-  -- ExecuteAndTransfer in eval. This would probably involve making an XlaComputation for both
-  -- branches. The SO question may answer how to do this.
-  builder <- primIO (prim__mkXlaBuilder "negate")
-  op <- collectXlaOp $ constantLiteral builder lit
-  primIO (prim__neg op) >>= collectXlaOp
-negate (Operand op) = Operand $ do
-  builder <- primIO (prim__mkXlaBuilder "negate")
-  c_shape <- mkIntArray shape
-  xla_shape <- primIO $ prim__mkShape 4 c_shape (cast $ length shape)
-  param <- collectXlaOp (parameter builder 0 xla_shape "")
-  _ <- primIO (prim__neg param) >>= collectXlaOp
+  builder <- mkXlaBuilder name
+  x_shape <- shapePtr x
+  -- putStrLn "unaryOp ... make parameter"
+  xp <- collectXlaOp (parameter builder 0 x_shape "")
+  -- putStrLn "unaryOp ... run f"
+  _ <- primIO (f xp) >>= collectXlaOp
+  -- putStrLn "unaryOp ... build computation"
   let computation = build builder
-  delete xla_shape
-  free c_shape
-
+  -- putStrLn "unaryOp ... make second builder"
+  builder' <- mkXlaBuilder (name ++ "'")
+  x' <- case x of
+    (Literal lit) => collectXlaOp (constantLiteral builder' lit)
+    (Operand comp_op) => map snd comp_op
+  -- putStrLn "unaryOp ... malloc args"
   args <- malloc sizeof_xlaOp
-  op <- op
-  primIO (prim__setArrayPtr args 0 op)
-  op_res <- primIO (prim__call builder computation args 1)  -- todo this seems wrong wrt builder
-  free args
-  delete builder
-  collectXlaOp op_res
+  -- putStrLn "unaryOp ... set args"
+  primIO (prim__setArrayXlaOp args 0 x')
+  -- putStrLn "unaryOp ... prim__call"
+  res <- primIO (prim__call builder' computation args 1) >>= collectXlaOp
+  -- putStrLn "unaryOp ... build builder'"
+  let computation' = build builder'
+  -- putStrLn "unaryOp ... return"
+  pure (computation', res)
+
+binaryOp : String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
+           -> Tensor shape a -> Tensor shape b -> Tensor shape c
+binaryOp name f x y = Operand $ do
+  -- builder <- mkXlaBuilder name
+  -- x' <- toXlaOp builder x
+  -- y' <- toXlaOp builder y
+  -- res <- primIO (f x' y') >>= collectXlaOp
+  -- pure (build builder, res)
+
+  putStrLn "binaryOp ... make builder"
+  -- (toString x) >>= putStrLn
+  -- (toString y) >>= putStrLn
+  builder <- mkXlaBuilder name
+  putStrLn "binaryOp ... get shapes"
+  x_shape <- shapePtr x
+  y_shape <- shapePtr y
+  putStrLn "binaryOp ... make parameters"
+  xp <- collectXlaOp (parameter builder 0 x_shape "")
+  yp <- collectXlaOp (parameter builder 1 y_shape "")
+  primIO $ print xp
+  primIO $ print yp
+  _ <- primIO (f xp yp) >>= collectXlaOp
+  putStrLn "binaryOp ... build computation"
+  let computation = build builder
+  builder' <- mkXlaBuilder (name ++ "'")
+  x' <- toXlaOp builder' x
+  y' <- toXlaOp builder' y
+  primIO $ print x'
+  primIO $ print y'
+  putStrLn "binaryOp ... malloc args"
+  args <- malloc (2 * sizeof_xlaOp)
+  primIO (prim__setArrayXlaOp args 0 x')
+  primIO (prim__setArrayXlaOp args 1 y')
+  res <- primIO (prim__call builder' computation args 2) >>= collectXlaOp
+  pure (build builder', res)
 
 ----------------------------- structural operations ----------------------------
 
@@ -315,13 +381,13 @@ infix 6 ==#, /=#
 ||| `const [True, False]`.
 export
 (==#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
--- (MkTensor l) ==# (MkTensor r) = MkTensor (eq l r)
+(==#) = binaryOp "==#" prim__eq
 
 ||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
 (/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
--- (MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
+(/=#) = binaryOp "/=#" prim__ne
 
 infix 6 <#, >#, <=#, >=#
 
@@ -329,25 +395,25 @@ infix 6 <#, >#, <=#, >=#
 ||| `const [True, False, False]`.
 export
 (<#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
--- (MkTensor l) <# (MkTensor r) = MkTensor (lt l r)
+(<#) = binaryOp "<#" prim__lt
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
 (>#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
--- (MkTensor l) ># (MkTensor r) = MkTensor (gt l r)
+(>#) = binaryOp ">#" prim__gt
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
 (<=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
--- (MkTensor l) <=# (MkTensor r) = MkTensor (le l r)
+(<=#) = binaryOp "<=#" prim__le
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
 (>=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
--- (MkTensor l) >=# (MkTensor r) = MkTensor (ge l r)
+(>=#) = binaryOp ">=#" prim__ge
 
 infixr 5 &&#
 
@@ -356,7 +422,7 @@ infixr 5 &&#
 ||| `const [True, False, False, False]`.
 export
 (&&#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
--- (MkTensor l) &&# (MkTensor r) = MkTensor (and l r)
+(&&#) = binaryOp "&&#" prim__and
 
 infixr 4 ||#
 
@@ -365,13 +431,13 @@ infixr 4 ||#
 ||| `const [True, True, True, False]`.
 export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
--- (MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
+(||#) = binaryOp "||#" prim__or
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
 export
 notEach : Tensor shape Bool -> Tensor shape Bool
--- notEach (MkTensor raw) = MkTensor (not raw)
+notEach = unaryOp "notEach" prim__not
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -404,18 +470,18 @@ export
 ||| `const [4, 6]`.
 export
 (+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
--- (MkTensor l) + (MkTensor r) = MkTensor (add l r)
+(+) = binaryOp "+" prim__add
 
--- ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
--- export
--- negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
--- negate (MkTensor raw) = MkTensor (neg raw)
+||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
+export
+negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
+negate = unaryOp "negate" prim__neg
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
 (-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
--- (MkTensor l) - (MkTensor r) = MkTensor (sub l r)
+(-) = binaryOp "-" prim__sub
 
 infixl 9 *#, /#
 
@@ -423,33 +489,33 @@ infixl 9 *#, /#
 ||| `const [8, 15]`.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
--- (MkTensor l) *# (MkTensor r) = MkTensor (mul l r)
+(*#) = binaryOp "*#" prim__mul
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
 export
 (*) : (Primitive dtype, Num dtype) => Tensor [] dtype -> {shape : _} -> Tensor shape dtype
       -> Tensor shape dtype
--- l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
+l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
--- (MkTensor l) /# (MkTensor r) = MkTensor (div l r)
+(/#) = binaryOp "/#" prim__div
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
 export
 (/) : (Primitive dtype, Fractional dtype) => {shape : _} ->
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
--- l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
+l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 
 ||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.
 export
 absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
--- absEach (MkTensor raw) = MkTensor (abs raw)
+absEach = unaryOp "absEach" prim__abs
 
 infixr 9 ^
 

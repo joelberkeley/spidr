@@ -25,3 +25,13 @@ export
 range : (n : Nat) -> Vect n Nat
 range Z = []
 range (S n) = snoc (range n) n
+
+export
+enumerate : Vect n ty -> Vect n (Nat, ty)
+enumerate xs = rewrite sym $ lengthCorrect xs in
+    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
+
+namespace List
+    export
+    enumerate : List a -> List (Nat, a)
+    enumerate xs = toList (enumerate (fromList xs))
