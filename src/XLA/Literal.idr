@@ -39,10 +39,7 @@ populateLiteral : {rank : _} -> (shape : Shape {rank}) -> XLAPrimitive dtype =>
 populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
     impl : {a : _} -> (rem_shape : Shape {rank=r}) -> (acc_indices : Shape {rank=a})
         -> {shapesSum : a + r = rank} -> Array rem_shape dtype -> IO ()
-    impl {a} [] acc_indices x = do
-        idx_ptr <- mkIntArray acc_indices
-        primIO $ set lit idx_ptr x
-        free idx_ptr
+    impl {a} [] acc_indices x = primIO $ set lit !(mkIntArray acc_indices) x
     impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
         traverse_ setArrays (enumerate xs) where
             setArrays : (Nat, Array rest dtype) -> IO ()
@@ -61,10 +58,10 @@ mkLiteral xs = do
     pure literal
 
 %foreign (libxla "Literal_Set_bool")
-prim__literalSetBool : GCAnyPtr -> Ptr Int -> Int -> PrimIO ()
+prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 
 %foreign (libxla "Literal_Get_bool")
-literalGetBool : GCAnyPtr -> Ptr Int -> Int
+literalGetBool : GCAnyPtr -> GCPtr Int -> Int
 
 export
 XLAPrimitive Bool where
@@ -78,10 +75,10 @@ XLAPrimitive Bool where
          )
 
 %foreign (libxla "Literal_Set_double")
-prim__literalSetDouble : GCAnyPtr -> Ptr Int -> Double -> PrimIO ()
+prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()
 
 %foreign (libxla "Literal_Get_double")
-literalGetDouble : GCAnyPtr -> Ptr Int -> Double
+literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
 
 export
 XLAPrimitive Double where
@@ -90,10 +87,10 @@ XLAPrimitive Double where
   get = literalGetDouble
 
 %foreign (libxla "Literal_Set_int")
-prim__literalSetInt : GCAnyPtr -> Ptr Int -> Int -> PrimIO ()
+prim__literalSetInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 
 %foreign (libxla "Literal_Get_int")
-literalGetInt : GCAnyPtr -> Ptr Int -> Int
+literalGetInt : GCAnyPtr -> GCPtr Int -> Int
 
 export
 XLAPrimitive Int where
@@ -108,11 +105,6 @@ toArray lit = impl {shapesSum=Refl} shape [] where
         -> {a : _} -> {shapesSum : a + r = rank}
         -> (accumulated_indices : Vect a Nat)
         -> Array remaining_shape dtype
-    impl [] acc = unsafePerformIO impl_io where
-        impl_io : IO dtype
-        impl_io = do
-            idx_ptr <- mkIntArray acc
-            let res = get lit idx_ptr
-            free idx_ptr
-            pure res
+    -- maybe it's always OK to unsafePerformIO creating int array
+    impl [] acc = unsafePerformIO $ map (get lit) (mkIntArray acc)
     impl (n :: rest) acc = map ((impl rest {shapesSum=Refl}) . (snoc acc)) (range n)

@@ -23,12 +23,11 @@ import XLA.Shape
 import XLA.XlaData
 
 %foreign (libxla "MakeShape")
-prim__mkShape : Int -> Ptr Int -> Int -> PrimIO AnyPtr
+prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 mkShape : XLAPrimitive dtype => Shape -> IO GCAnyPtr
 mkShape shape = do
-  c_shape <- mkIntArray shape
-  shape_ptr <- primIO $ prim__mkShape (cast (primitiveType {dtype})) c_shape (cast (length shape))
-  free c_shape
+  let dtype_enum = cast (primitiveType {dtype})
+  shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))
   onCollectAny shape_ptr Shape.delete

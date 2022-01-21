@@ -32,5 +32,5 @@ Cast PrimitiveType Int where
 public export
 interface XLAPrimitive dtype where
     primitiveType : PrimitiveType
-    set : GCAnyPtr -> Ptr Int -> dtype -> PrimIO ()
-    get : GCAnyPtr -> Ptr Int -> dtype
+    set : GCAnyPtr -> GCPtr Int -> dtype -> PrimIO ()
+    get : GCAnyPtr -> GCPtr Int -> dtype

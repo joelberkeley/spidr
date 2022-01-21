@@ -54,9 +54,9 @@ namespace GCAnyPtr
     prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
-mkIntArray : Cast ty Int => Vect n ty -> IO (Ptr Int)
+mkIntArray : Cast ty Int => Vect n ty -> IO (GCPtr Int)
 mkIntArray xs = do
     ptr <- malloc (cast (length xs) * sizeof_int)
     let ptr = prim__castPtr ptr
     traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
-    pure ptr
+    onCollect ptr free

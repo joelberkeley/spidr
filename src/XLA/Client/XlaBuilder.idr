@@ -80,7 +80,7 @@ parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> AnyPtr
 constantLiteral : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
 %foreign (libxla "Broadcast")
-prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
+prim__broadcast : GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
@@ -154,24 +154,17 @@ export
 broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
 broadcast (MkRawTensor f) broadcast_sizes = MkRawTensor $ \builder =>
     do broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-       op <- primIO $ prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)
-       op <- collectXlaOp op
-       free broadcast_sizes_ptr
-       pure op
+       primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)) >>= collectXlaOp
 
 %foreign (libxla "BroadcastInDim")
-prim__broadcastInDim : GCAnyPtr -> Ptr Int -> Int -> Ptr Int -> Int -> PrimIO AnyPtr
+prim__broadcastInDim : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 broadcastInDim : {r : _} -> RawTensor -> Shape {rank=r} -> Shape {rank=r} -> RawTensor
 broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
     do ods_ptr <- mkIntArray ods
        bcd_ptr <- mkIntArray bcd
-       op <- primIO $ prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)
-       op <- collectXlaOp op
-       free ods_ptr
-       free bcd_ptr
-       pure op
+       primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)) >>= collectXlaOp
 
 unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor
 unaryOp f (MkRawTensor operand) = MkRawTensor $ \builder =>
