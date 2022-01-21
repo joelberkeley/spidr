@@ -23,7 +23,6 @@ import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
 import XLA.Client.XlaComputation
-import XLA.XlaData
 
 import Types
 
