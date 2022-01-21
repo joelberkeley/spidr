@@ -24,6 +24,11 @@ import XLA.FFI
 import XLA.Shape
 import XLA.ShapeUtil
 
+export
+interface ShapePrimitive dtype => XLAPrimitive dtype where
+    set : GCAnyPtr -> GCPtr Int -> dtype -> PrimIO ()
+    get : GCAnyPtr -> GCPtr Int -> dtype
+
 %foreign (libxla "Literal_new")
 prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 
@@ -65,7 +70,6 @@ literalGetBool : GCAnyPtr -> GCPtr Int -> Int
 
 export
 XLAPrimitive Bool where
-  primitiveType = PRED
   set lit idxs x = prim__literalSetBool lit idxs (if x then 1 else 0)
   get lit idxs = case literalGetBool lit idxs of
     0 => False
@@ -82,7 +86,6 @@ literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
 
 export
 XLAPrimitive Double where
-  primitiveType = F64
   set = prim__literalSetDouble
   get = literalGetDouble
 
@@ -94,7 +97,6 @@ literalGetInt : GCAnyPtr -> GCPtr Int -> Int
 
 export
 XLAPrimitive Int where
-  primitiveType = S32
   set = prim__literalSetInt
   get = literalGetInt
 
