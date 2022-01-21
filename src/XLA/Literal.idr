@@ -105,6 +105,5 @@ toArray lit = impl {shapesSum=Refl} shape [] where
         -> {a : _} -> {shapesSum : a + r = rank}
         -> (accumulated_indices : Vect a Nat)
         -> Array remaining_shape dtype
-    -- maybe it's always OK to unsafePerformIO creating int array
     impl [] acc = unsafePerformIO $ map (get lit) (mkIntArray acc)
     impl (n :: rest) acc = map ((impl rest {shapesSum=Refl}) . (snoc acc)) (range n)
