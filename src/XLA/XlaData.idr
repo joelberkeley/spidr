@@ -27,3 +27,10 @@ Cast PrimitiveType Int where
     cast U64 = 9
     cast F32 = 11
     cast F64 = 12
+
+-- todo we don't want this to be public do we?
+public export
+interface XLAPrimitive dtype where
+    primitiveType : PrimitiveType
+    set : GCAnyPtr -> Ptr Int -> dtype -> PrimIO ()
+    get : GCAnyPtr -> Ptr Int -> dtype

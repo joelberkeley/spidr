@@ -28,6 +28,7 @@ import Util
 import XLA.Client.XlaBuilder
 import XLA.Client
 import XLA.Literal
+import XLA.XlaData
 
 ----------------------------- core definitions ----------------------------
 

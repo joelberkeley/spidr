@@ -18,15 +18,10 @@ module XLA.Client.XlaComputation
 import System.FFI
 
 import XLA.FFI
-import XLA.Literal
-
-public export
-XlaComputation : Type
-XlaComputation = Struct "XlaComputation" []
 
 %foreign (libxla "XlaComputation_delete")
-prim__XlaComputation_delete : XlaComputation -> PrimIO ()
+prim__delete : AnyPtr -> PrimIO ()
 
 export
-delete : XlaComputation -> IO ()
-delete = primIO . prim__XlaComputation_delete
+delete : AnyPtr -> IO ()
+delete = primIO . prim__delete

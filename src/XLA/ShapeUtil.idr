@@ -17,9 +17,18 @@ module XLA.ShapeUtil
 
 import System.FFI
 
+import Types
 import XLA.FFI
 import XLA.Shape
+import XLA.XlaData
+
+%foreign (libxla "MakeShape")
+prim__mkShape : Int -> Ptr Int -> Int -> PrimIO AnyPtr
 
 export
-%foreign (libxla "MakeShape")
-prim__mkShape : Int -> Ptr Int -> Int -> PrimIO Shape
+mkShape : XLAPrimitive dtype => Shape -> IO GCAnyPtr
+mkShape shape = do
+  c_shape <- mkIntArray shape
+  shape_ptr <- primIO $ prim__mkShape (cast (primitiveType {dtype})) c_shape (cast (length shape))
+  free c_shape
+  onCollectAny shape_ptr Shape.delete

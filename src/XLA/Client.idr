@@ -23,19 +23,16 @@ import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
 import XLA.Client.XlaComputation
+import XLA.XlaData
 
 import Types
 
 export
 eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape dtype)
 eval (MkRawTensor f) = do
-    builder <- primIO (prim__mkXlaBuilder "")
+    builder <- prim__mkXlaBuilder ""
     _ <- f builder
-    let computation = build builder
-    delete builder
+    computation <- prim__build builder
     client <- primIO prim__localClientOrDie
-    lit <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-    delete computation
-    let arr = toArray lit
-    delete lit
-    pure arr
+    lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
+    pure (toArray lit)

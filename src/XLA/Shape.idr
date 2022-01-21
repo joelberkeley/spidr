@@ -19,13 +19,9 @@ import System.FFI
 
 import XLA.FFI
 
-public export
-Shape : Type
-Shape = Struct "Shape" []
-
 %foreign (libxla "Shape_delete")
-prim__delete : Shape -> PrimIO ()
+prim__delete : AnyPtr -> PrimIO ()
 
 export
-delete : Shape -> IO ()
+delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
