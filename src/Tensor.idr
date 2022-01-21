@@ -22,6 +22,8 @@ import Data.Vect.Elem
 import Decidable.Equality
 import System.FFI
 
+import System.FFI
+
 import Error
 import public Primitive
 import public Types
@@ -31,6 +33,7 @@ import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
 import XLA.FFI
 import XLA.Literal
+import XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
 
@@ -345,6 +348,33 @@ export
 fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
 fill = broadcast {prf=scalarToAnyOk shape} . const
 
+----------------------------- generic operations ----------------------------
+
+||| Apply a scalar function to each element in a `Tensor`. For example, `map abs (const [-2, 0, 3])`
+||| is equivalent to `const [2, 0, 3]`.
+export
+map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
+      -> {shape : _} -> Tensor shape a -> Tensor shape b
+map f (MkTensor mkOp) = MkTensor $ \builder => do
+  sub_builder <- prim__createSubBuilder builder "computation"
+  param_shape <- mkShape {dtype=a} []  -- this function might not work for rank 0
+  let param = MkTensor $ \b => collectXlaOp (parameter b 0 param_shape "")
+      (MkTensor mkOp') = f param
+  _ <- mkOp' sub_builder
+  computation <- prim__build sub_builder
+  operands <- malloc sizeOfXlaOp
+  primIO (prim__setArrayXlaOp operands 0 !(to_op builder))
+  let rank = length shape
+  dimensions <- mkIntArray (range rank)
+  op <- primIO (prim__map
+      builder
+      operands 1
+      computation
+      dimensions rank
+      prim__getNullAnyPtr 0
+    )
+  onCollectAny op XlaOp.delete
+
 ----------------------------- numeric operations ----------------------------
 
 unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> XlaOpFactory -> XlaOpFactory
@@ -416,11 +446,10 @@ export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
 (MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
 
-||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
-||| `const [False, True]`.
+||| Element-wise boolean negation. For example, `not (const True)` is equivalent to `const False`.
 export
-notEach : Tensor shape Bool -> Tensor shape Bool
-notEach (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
+not : Tensor [] Bool -> Tensor [] Bool
+not (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -455,9 +484,9 @@ export
 (+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
 
-||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
+||| Element-wise negation. For example, `- const 2` is equivalent to `const (-2)`.
 export
-negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
+negate : Neg dtype => Tensor [] dtype -> Tensor [] dtype
 negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
@@ -494,11 +523,17 @@ export
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 
-||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
-||| `const [2, 3]`.
+-- todo it's probably inefficient to `map abs` rather than `absEach`, but the API's perhaps
+-- more consistent with scalar `abs`. What to do? Perhaps an `Elementwise` module for faster but
+-- less principled* APIs? We'd like just one consistent API that works as fast as possible, but
+-- maybe that's not possible.
+--
+-- *Is there a tensor API where element-wise ops are principled and fast?
+||| Element-wise absolute value. For example, `abs (const (-2))` is equivalent to
+||| `const 2`.
 export
-absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
-absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+abs : Abs dtype => Tensor [] dtype -> Tensor [] dtype
+abs (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
 
 infixr 9 ^
 

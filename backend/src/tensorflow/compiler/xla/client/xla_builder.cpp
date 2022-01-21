@@ -37,6 +37,14 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
+    int sizeof_XlaOp() {
+        return sizeof(xla::XlaOp);
+    }
+
+    void set_array_XlaOp(XlaOp* arr, int idx, XlaOp* op) {
+        reinterpret_cast<xla::XlaOp*>(arr)[idx] = *reinterpret_cast<xla::XlaOp*>(op);
+    }
+
     void XlaOp_delete(XlaOp* s) {
         delete reinterpret_cast<xla::XlaOp*>(s);
     }
@@ -52,6 +60,12 @@ extern "C" {
 
     const char* XlaBuilder_name(XlaBuilder& s) {
         return c_string_copy(reinterpret_cast<xla::XlaBuilder&>(s).name());
+    }
+
+    XlaBuilder* CreateSubBuilder(XlaBuilder& s, const char* computation_name) {
+        xla::XlaBuilder& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
+        std::unique_ptr<xla::XlaBuilder> sub_builder = s_.CreateSubBuilder(computation_name);
+        return reinterpret_cast<XlaBuilder*>(sub_builder.release());
     }
 
     XlaComputation* XlaBuilder_Build(XlaBuilder& s) {
@@ -165,4 +179,31 @@ extern "C" {
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
+
+    XlaOp* Map(
+        XlaBuilder* builder,
+        XlaOp* operands,
+        int operands_len,
+        XlaComputation& computation,
+        int* dimensions,
+        int dimensions_len,
+        XlaOp* static_operands,
+        int static_operands_len
+    ) {
+        xla::XlaBuilder* builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        xla::XlaOp* operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+        xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
+        xla::XlaOp* static_operands_ = reinterpret_cast<xla::XlaOp*>(static_operands);
+
+        xla::int64 dimensions64[dimensions_len];
+        std::copy(dimensions, dimensions + dimensions_len, dimensions64);
+
+        auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
+        auto dimensions_span = absl::Span<const xla::int64>(dimensions64, dimensions_len);
+        auto static_operands_span = absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
+
+        xla::XlaOp* res = new xla::XlaOp();
+        *res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
+        return reinterpret_cast<XlaOp*>(res);
+    }
 }

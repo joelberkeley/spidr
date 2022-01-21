@@ -49,6 +49,15 @@ prim__mkXlaBuilder computation_name = do
   builder <- primIO (prim__mkXlaBuilderImpl computation_name)
   onCollectAny builder XlaBuilder.delete
 
+%foreign (libxla "CreateSubBuilder")
+prim__createSubBuilderImpl : GCAnyPtr -> String -> PrimIO AnyPtr
+
+export
+prim__createSubBuilder : GCAnyPtr -> String -> IO GCAnyPtr
+prim__createSubBuilder builder computation_name = do
+  sub_builder <- primIO (prim__createSubBuilderImpl builder computation_name)
+  onCollectAny sub_builder XlaBuilder.delete
+
 %foreign (libxla "XlaBuilder_Build")
 prim__buildImpl : GCAnyPtr -> AnyPtr
 
@@ -73,6 +82,14 @@ namespace XlaOp
   export
   delete : AnyPtr -> IO ()
   delete = primIO . prim__delete
+
+export
+%foreign (libxla "sizeof_XlaOp")
+sizeOfXlaOp : Int
+
+export
+%foreign (libxla "set_array_XlaOp")
+prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
 %foreign (libxla "Parameter")
@@ -149,3 +166,8 @@ prim__abs : GCAnyPtr -> PrimIO AnyPtr
 export
 %foreign (libxla "Neg")
 prim__neg : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Map")
+prim__map : GCAnyPtr -> AnyPtr -> Int -> GCAnyPtr
+            -> Ptr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr
