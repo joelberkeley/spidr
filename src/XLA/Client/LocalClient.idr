@@ -18,7 +18,6 @@ module XLA.Client.LocalClient
 import System.FFI
 
 import XLA.Client.XlaComputation
-import XLA.Client.GlobalData
 import XLA.FFI
 import XLA.Literal
 
