@@ -41,20 +41,20 @@ namespace XlaBuilder
   delete = primIO . prim__delete
 
 %foreign (libxla "XlaBuilder_new")
-prim__mkXlaBuilder' : String -> PrimIO AnyPtr
+prim__mkXlaBuilderImpl : String -> PrimIO AnyPtr
 
 export
 prim__mkXlaBuilder : String -> IO GCAnyPtr
 prim__mkXlaBuilder computation_name = do
-  builder <- primIO (prim__mkXlaBuilder' computation_name)
+  builder <- primIO (prim__mkXlaBuilderImpl computation_name)
   onCollectAny builder XlaBuilder.delete
 
 %foreign (libxla "XlaBuilder_Build")
-prim__build' : GCAnyPtr -> AnyPtr
+prim__buildImpl : GCAnyPtr -> AnyPtr
 
 export
 prim__build : GCAnyPtr -> IO GCAnyPtr
-prim__build builder = onCollectAny (prim__build' builder) XlaComputation.delete
+prim__build builder = onCollectAny (prim__buildImpl builder) XlaComputation.delete
 
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : GCAnyPtr -> GCAnyPtr -> String
