@@ -17,7 +17,6 @@ limitations under the License.
 module Primitive
 
 import XLA.Literal
-import XLA.XlaData
 
 ||| A `Primitive` is an Idris type for which there is a corresponding backend primitive type.
 export
