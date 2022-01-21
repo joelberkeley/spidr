@@ -484,9 +484,9 @@ export
 (+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
 
-||| Element-wise negation. For example, `- const 2` is equivalent to `const (-2)`.
+||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
-negate : Neg dtype => Tensor [] dtype -> Tensor [] dtype
+negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
 negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
