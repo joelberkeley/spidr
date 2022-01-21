@@ -25,10 +25,20 @@ public export
 LocalClient : Type
 LocalClient = Struct "LocalClient" []
 
-export
 %foreign (libxla "LocalClient_TransferToServer")
-prim__transferToServer : LocalClient -> Literal -> PrimIO AnyPtr
+prim__transferToServerImpl : LocalClient -> GCAnyPtr -> PrimIO AnyPtr
 
 export
+prim__transferToServer : LocalClient -> GCAnyPtr -> IO GCAnyPtr
+prim__transferToServer client literal = do
+  global_data <- primIO (prim__transferToServerImpl client literal)
+  onCollectAny global_data free
+
 %foreign (libxla "LocalClient_ExecuteAndTransfer")
-prim__executeAndTransfer : LocalClient -> XlaComputation -> AnyPtr -> Int -> PrimIO Literal
+prim__executeAndTransferImpl : LocalClient -> GCAnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr
+
+export
+prim__executeAndTransfer : LocalClient -> GCAnyPtr -> AnyPtr -> Int -> IO GCAnyPtr
+prim__executeAndTransfer client computation arguments arguments_len = do
+  literal <- primIO (prim__executeAndTransferImpl client computation arguments arguments_len)
+  onCollectAny literal Literal.delete

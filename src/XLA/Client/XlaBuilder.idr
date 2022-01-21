@@ -32,26 +32,32 @@ import Util
  -
  -}
 
-XlaBuilder : Type
-XlaBuilder = Struct "XlaBuilder" []
+namespace XlaBuilder
+  %foreign (libxla "XlaBuilder_delete")
+  prim__delete : AnyPtr -> PrimIO ()
 
-%foreign (libxla "XlaBuilder_delete")
-prim__XlaBuilder_delete : XlaBuilder -> PrimIO ()
+  export
+  delete : AnyPtr -> IO ()
+  delete = primIO . prim__delete
 
-export
-delete : XlaBuilder -> IO ()
-delete = primIO . prim__XlaBuilder_delete
-
-export
 %foreign (libxla "XlaBuilder_new")
-prim__mkXlaBuilder : String -> PrimIO XlaBuilder
+prim__mkXlaBuilderImpl : String -> PrimIO AnyPtr
 
 export
+prim__mkXlaBuilder : String -> IO GCAnyPtr
+prim__mkXlaBuilder computation_name = do
+  builder <- primIO (prim__mkXlaBuilderImpl computation_name)
+  onCollectAny builder XlaBuilder.delete
+
 %foreign (libxla "XlaBuilder_Build")
-build : XlaBuilder -> XlaComputation
+prim__buildImpl : GCAnyPtr -> AnyPtr
+
+export
+prim__build : GCAnyPtr -> IO GCAnyPtr
+prim__build builder = onCollectAny (prim__buildImpl builder) XlaComputation.delete
 
 %foreign (libxla "XlaBuilder_OpToString")
-prim__opToString : XlaBuilder -> GCAnyPtr -> String
+prim__opToString : GCAnyPtr -> GCAnyPtr -> String
 
 {-
  -
@@ -68,13 +74,13 @@ collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
 
 export
 %foreign (libxla "Parameter")
-parameter : XlaBuilder -> Int -> Shape.Shape -> String -> AnyPtr
+parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> AnyPtr
 
 %foreign (libxla "ConstantLiteral")
-constantLiteral : XlaBuilder -> Literal -> AnyPtr
+constantLiteral : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
 %foreign (libxla "Broadcast")
-prim__broadcast : GCAnyPtr -> Ptr Int -> Int -> PrimIO AnyPtr
+prim__broadcast : GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
@@ -129,47 +135,36 @@ prim__neg : GCAnyPtr -> PrimIO AnyPtr
  -}
 
 public export
-data RawTensor = MkRawTensor (XlaBuilder -> IO GCAnyPtr)
+data RawTensor = MkRawTensor (GCAnyPtr -> IO GCAnyPtr)
 
 export
 const : XLAPrimitive dtype => {rank : _} -> {shape : Shape {rank}}
-    -> Array shape dtype -> RawTensor
-const arr = MkRawTensor $ \builder =>
-    do literal <- mkLiteral arr
-       op <- collectXlaOp (constantLiteral builder literal)
-       delete literal
-       pure op
+        -> Array shape dtype -> RawTensor
+const arr = MkRawTensor $ \builder => do
+  literal <- mkLiteral arr
+  collectXlaOp (constantLiteral builder literal)
 
 export
 toString : RawTensor -> IO String
-toString (MkRawTensor f) =
-  do builder <- primIO (prim__mkXlaBuilder "")
-     let str = prim__opToString builder !(f builder)
-     delete builder
-     pure str
+toString (MkRawTensor f) = do
+  builder <- prim__mkXlaBuilder ""
+  pure (prim__opToString builder !(f builder))
 
 export
 broadcast : {n : _} -> RawTensor -> Vect n Nat -> RawTensor
 broadcast (MkRawTensor f) broadcast_sizes = MkRawTensor $ \builder =>
     do broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-       op <- primIO $ prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)
-       op <- collectXlaOp op
-       free broadcast_sizes_ptr
-       pure op
+       primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)) >>= collectXlaOp
 
 %foreign (libxla "BroadcastInDim")
-prim__broadcastInDim : GCAnyPtr -> Ptr Int -> Int -> Ptr Int -> Int -> PrimIO AnyPtr
+prim__broadcastInDim : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 broadcastInDim : {r : _} -> RawTensor -> Shape {rank=r} -> Shape {rank=r} -> RawTensor
 broadcastInDim (MkRawTensor f) ods bcd = MkRawTensor $ \builder =>
     do ods_ptr <- mkIntArray ods
        bcd_ptr <- mkIntArray bcd
-       op <- primIO $ prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)
-       op <- collectXlaOp op
-       free ods_ptr
-       free bcd_ptr
-       pure op
+       primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)) >>= collectXlaOp
 
 unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> RawTensor -> RawTensor
 unaryOp f (MkRawTensor operand) = MkRawTensor $ \builder =>

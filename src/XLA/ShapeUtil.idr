@@ -17,9 +17,33 @@ module XLA.ShapeUtil
 
 import System.FFI
 
+import Types
 import XLA.FFI
 import XLA.Shape
+import XLA.XlaData
 
 export
+interface ShapePrimitive dtype where
+    primitiveType : PrimitiveType
+
+export
+ShapePrimitive Bool where
+    primitiveType = PRED
+
+export
+ShapePrimitive Int where
+    primitiveType = S32
+
+export
+ShapePrimitive Double where
+    primitiveType = F64
+
 %foreign (libxla "MakeShape")
-prim__mkShape : Int -> Ptr Int -> Int -> PrimIO Shape
+prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
+export
+mkShape : ShapePrimitive dtype => Shape -> IO GCAnyPtr
+mkShape shape = do
+  let dtype_enum = cast (primitiveType {dtype})
+  shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))
+  onCollectAny shape_ptr Shape.delete
