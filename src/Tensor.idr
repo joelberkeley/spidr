@@ -34,8 +34,8 @@ import XLA.Literal
 
 ----------------------------- core definitions ----------------------------
 
-OpFromBuilder : Type
-OpFromBuilder = GCAnyPtr -> IO GCAnyPtr
+BuilderIndependentXlaOp : Type
+BuilderIndependentXlaOp = GCAnyPtr -> IO GCAnyPtr
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
@@ -45,7 +45,7 @@ OpFromBuilder = GCAnyPtr -> IO GCAnyPtr
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : OpFromBuilder -> Tensor shape dtype
+  MkTensor : BuilderIndependentXlaOp -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
@@ -263,13 +263,14 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
           {prf=rewrite to_prf in rewrite from_prf in prf}
 
     where
-    broadcast : {n : _} -> OpFromBuilder -> Vect n Nat -> OpFromBuilder
-    broadcast f broadcast_sizes builder = do
+    broadcast : {n : _} -> Vect n Nat -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
+    broadcast broadcast_sizes f builder = do
       broadcast_sizes_ptr <- mkIntArray broadcast_sizes
       primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)) >>= collectXlaOp
 
-    broadcastInDim : {r : _} -> OpFromBuilder -> Shape {rank=r} -> Shape {rank=r} -> OpFromBuilder
-    broadcastInDim f ods bcd builder = do
+    broadcastInDim : {r : _} -> Shape {rank=r} -> Shape {rank=r}
+                     -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
+    broadcastInDim ods bcd f builder = do
       ods_ptr <- mkIntArray ods
       bcd_ptr <- mkIntArray bcd
       primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)) >>= collectXlaOp
@@ -278,9 +279,9 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
       -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
     impl to_leading _ {prf=Same} (MkTensor mkOp) =
-      MkTensor $ if (length to_leading == 0) then mkOp else broadcast mkOp to_leading
+      MkTensor $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
     impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
-      MkTensor $ broadcast (broadcastInDim mkOp (th' :: tt') (range (S r))) to_leading
+      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (S r)) mkOp)
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
@@ -345,11 +346,11 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> OpFromBuilder -> OpFromBuilder
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
 unaryOp prim_operator mkOp builder = primIO (prim_operator !(mkOp builder)) >>= collectXlaOp
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> OpFromBuilder -> OpFromBuilder -> OpFromBuilder
+           -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
 binaryOp prim_operator mkLeft mkRight builder =
   primIO (prim_operator !(mkLeft builder) !(mkRight builder)) >>= collectXlaOp
 
