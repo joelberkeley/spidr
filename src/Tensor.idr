@@ -35,7 +35,7 @@ import XLA.Literal
 ----------------------------- core definitions ----------------------------
 
 AbstractXlaOp : Type
-AbstractXlaOp = GCAnyPtr -> IO GCAnyPtr
+AbstractXlaOp = (builder : GCAnyPtr) -> IO GCAnyPtr
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
