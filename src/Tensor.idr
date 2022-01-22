@@ -34,8 +34,8 @@ import XLA.Literal
 
 ----------------------------- core definitions ----------------------------
 
-BuilderIndependentXlaOp : Type
-BuilderIndependentXlaOp = GCAnyPtr -> IO GCAnyPtr
+AbstractXlaOp : Type
+AbstractXlaOp = GCAnyPtr -> IO GCAnyPtr
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
@@ -45,7 +45,7 @@ BuilderIndependentXlaOp = GCAnyPtr -> IO GCAnyPtr
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : BuilderIndependentXlaOp -> Tensor shape dtype
+  MkTensor : AbstractXlaOp -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
@@ -263,13 +263,12 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
           {prf=rewrite to_prf in rewrite from_prf in prf}
 
     where
-    broadcast : {n : _} -> Vect n Nat -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
+    broadcast : {n : _} -> Vect n Nat -> AbstractXlaOp -> AbstractXlaOp
     broadcast broadcast_sizes f builder = do
       broadcast_sizes_ptr <- mkIntArray broadcast_sizes
       primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)) >>= collectXlaOp
 
-    broadcastInDim : {r : _} -> Shape {rank=r} -> Shape {rank=r}
-                     -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
+    broadcastInDim : {r : _} -> Shape {rank=r} -> Shape {rank=r} -> AbstractXlaOp -> AbstractXlaOp
     broadcastInDim ods bcd f builder = do
       ods_ptr <- mkIntArray ods
       bcd_ptr <- mkIntArray bcd
@@ -346,11 +345,11 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> AbstractXlaOp -> AbstractXlaOp
 unaryOp prim_operator mkOp builder = primIO (prim_operator !(mkOp builder)) >>= collectXlaOp
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp -> BuilderIndependentXlaOp
+           -> AbstractXlaOp -> AbstractXlaOp -> AbstractXlaOp
 binaryOp prim_operator mkLeft mkRight builder =
   primIO (prim_operator !(mkLeft builder) !(mkRight builder)) >>= collectXlaOp
 
