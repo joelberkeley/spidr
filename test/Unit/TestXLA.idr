@@ -36,9 +36,10 @@ test_parameter_addition : IO ()
 test_parameter_addition = do
     builder <- prim__mkXlaBuilder ""
     xla_shape <- mkShape {dtype=Int} [2, 3]
-    p0 <- collectXlaOp (parameter builder 0 xla_shape "")
-    p1 <- collectXlaOp (parameter builder 1 xla_shape "")
-    _ <- primIO (prim__add p0 p1) >>= collectXlaOp
+    p0 <- onCollectAny (parameter builder 0 xla_shape "") XlaOp.delete
+    p1 <- onCollectAny (parameter builder 1 xla_shape "") XlaOp.delete
+    sum <- primIO (prim__add p0 p1)
+    _ <- onCollectAny sum XlaOp.delete
     computation <- prim__build builder
 
     p0_lit <- mkLiteral {shape=[2, 3]} {dtype=Int} [[0, 1, 2], [3, 4, 5]]
