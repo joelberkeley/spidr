@@ -52,7 +52,7 @@ export
 const : Primitive dtype => {shape : _} -> Array shape dtype -> Tensor shape dtype
 const xs = MkTensor $ \builder => do
   lit <- mkLiteral {rank=length shape} (rewrite lengthCorrect shape in xs)
-  collectXlaOp (constantLiteral builder lit)
+  onCollectAny (constantLiteral builder lit) XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
@@ -266,13 +266,15 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
     broadcast : {n : _} -> Vect n Nat -> XlaOpFactory -> XlaOpFactory
     broadcast broadcast_sizes f builder = do
       broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-      primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)) >>= collectXlaOp
+      op <- primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n))
+      onCollectAny op XlaOp.delete
 
     broadcastInDim : {r : _} -> Shape {rank=r} -> Shape {rank=r} -> XlaOpFactory -> XlaOpFactory
     broadcastInDim ods bcd f builder = do
       ods_ptr <- mkIntArray ods
       bcd_ptr <- mkIntArray bcd
-      primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)) >>= collectXlaOp
+      op <- primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r))
+      onCollectAny op XlaOp.delete
 
     impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
       -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
@@ -346,12 +348,15 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ----------------------------- numeric operations ----------------------------
 
 unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> XlaOpFactory -> XlaOpFactory
-unaryOp prim_operator mkOp builder = primIO (prim_operator !(mkOp builder)) >>= collectXlaOp
+unaryOp prim_operator mkOp builder = do
+  op <- primIO (prim_operator !(mkOp builder))
+  onCollectAny op XlaOp.delete
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
            -> XlaOpFactory -> XlaOpFactory -> XlaOpFactory
-binaryOp prim_operator mkLeft mkRight builder =
-  primIO (prim_operator !(mkLeft builder) !(mkRight builder)) >>= collectXlaOp
+binaryOp prim_operator mkLeft mkRight builder = do
+  op <- primIO (prim_operator !(mkLeft builder) !(mkRight builder))
+  onCollectAny op XlaOp.delete
 
 infix 6 ==#, /=#
 

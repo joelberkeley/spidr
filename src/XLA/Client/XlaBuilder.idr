@@ -66,12 +66,13 @@ prim__opToString : GCAnyPtr -> GCAnyPtr -> String
  -
  -}
 
-%foreign (libxla "XlaOp_delete")
-prim__XlaOp_delete : AnyPtr -> PrimIO ()
+namespace XlaOp
+  %foreign (libxla "XlaOp_delete")
+  prim__delete : AnyPtr -> PrimIO ()
 
-export
-collectXlaOp : AnyPtr -> IO GCAnyPtr
-collectXlaOp op = onCollectAny op $ primIO . prim__XlaOp_delete
+  export
+  delete : AnyPtr -> IO ()
+  delete = primIO . prim__delete
 
 export
 %foreign (libxla "Parameter")
