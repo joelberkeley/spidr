@@ -14,24 +14,3 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 module XLA.Client
-
-import System.FFI
-
-import XLA.Literal
-import XLA.FFI
-import XLA.Client.ClientLibrary
-import XLA.Client.LocalClient
-import XLA.Client.XlaBuilder
-import XLA.Client.XlaComputation
-
-import Types
-
-export
-eval : XLAPrimitive dtype => {shape : _} -> RawTensor -> IO (Array shape dtype)
-eval (MkRawTensor f) = do
-    builder <- prim__mkXlaBuilder ""
-    _ <- f builder
-    computation <- prim__build builder
-    client <- primIO prim__localClientOrDie
-    lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-    pure (toArray lit)

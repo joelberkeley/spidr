@@ -20,16 +20,22 @@ module Tensor
 import Data.Vect
 import Data.Vect.Elem
 import Decidable.Equality
+import System.FFI
 
 import Error
 import public Primitive
 import public Types
 import Util
+import XLA.Client.ClientLibrary
+import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
-import XLA.Client
+import XLA.FFI
 import XLA.Literal
 
 ----------------------------- core definitions ----------------------------
+
+OpFromBuilder : Type
+OpFromBuilder = GCAnyPtr -> IO GCAnyPtr
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
@@ -39,23 +45,33 @@ import XLA.Literal
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
-  MkTensor : RawTensor -> Tensor shape dtype
+  MkTensor : OpFromBuilder -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
 const : Primitive dtype => {shape : _} -> Array shape dtype -> Tensor shape dtype
-const xs = MkTensor $ const {rank=length shape} (rewrite lengthCorrect shape in xs)
+const xs = MkTensor $ \builder => do
+  lit <- mkLiteral {rank=length shape} (rewrite lengthCorrect shape in xs)
+  collectXlaOp (constantLiteral builder lit)
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
 eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape dtype
-eval (MkTensor raw) = eval raw
+eval (MkTensor mkOp) = do
+  builder <- prim__mkXlaBuilder ""
+  _ <- mkOp builder
+  computation <- prim__build builder
+  client <- primIO prim__localClientOrDie
+  lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
+  pure (toArray lit)
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
-toString (MkTensor raw) = toString raw
+toString (MkTensor f) = do
+  builder <- prim__mkXlaBuilder ""
+  pure (prim__opToString builder !(f builder))
 
 ||| A mutable tensor. That is, a tensor that can be modified in-place.
 |||
@@ -247,6 +263,17 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
           {prf=rewrite to_prf in rewrite from_prf in prf}
 
     where
+    broadcast : {n : _} -> OpFromBuilder -> Vect n Nat -> OpFromBuilder
+    broadcast f broadcast_sizes builder = do
+      broadcast_sizes_ptr <- mkIntArray broadcast_sizes
+      primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n)) >>= collectXlaOp
+
+    broadcastInDim : {r : _} -> OpFromBuilder -> Shape {rank=r} -> Shape {rank=r} -> OpFromBuilder
+    broadcastInDim f ods bcd builder = do
+      ods_ptr <- mkIntArray ods
+      bcd_ptr <- mkIntArray bcd
+      primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r)) >>= collectXlaOp
+
     impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
       -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
@@ -318,19 +345,27 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- numeric operations ----------------------------
 
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> OpFromBuilder -> OpFromBuilder
+unaryOp prim_operator mkOp builder = primIO (prim_operator !(mkOp builder)) >>= collectXlaOp
+
+binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
+           -> OpFromBuilder -> OpFromBuilder -> OpFromBuilder
+binaryOp prim_operator mkLeft mkRight builder =
+  primIO (prim_operator !(mkLeft builder) !(mkRight builder)) >>= collectXlaOp
+
 infix 6 ==#, /=#
 
 ||| Element-wise equality. For example, `const [1, 2] ==# const [1, 3]` is equivalent to
 ||| `const [True, False]`.
 export
 (==#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) ==# (MkTensor r) = MkTensor (eq l r)
+(MkTensor l) ==# (MkTensor r) = MkTensor (binaryOp prim__eq l r)
 
 ||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
 (/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) /=# (MkTensor r) = MkTensor (ne l r)
+(MkTensor l) /=# (MkTensor r) = MkTensor (binaryOp prim__ne l r)
 
 infix 6 <#, >#, <=#, >=#
 
@@ -338,25 +373,25 @@ infix 6 <#, >#, <=#, >=#
 ||| `const [True, False, False]`.
 export
 (<#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) <# (MkTensor r) = MkTensor (lt l r)
+(MkTensor l) <# (MkTensor r) = MkTensor (binaryOp prim__lt l r)
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
 (>#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) ># (MkTensor r) = MkTensor (gt l r)
+(MkTensor l) ># (MkTensor r) = MkTensor (binaryOp prim__gt l r)
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
 (<=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) <=# (MkTensor r) = MkTensor (le l r)
+(MkTensor l) <=# (MkTensor r) = MkTensor (binaryOp prim__le l r)
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
 (>=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
-(MkTensor l) >=# (MkTensor r) = MkTensor (ge l r)
+(MkTensor l) >=# (MkTensor r) = MkTensor (binaryOp prim__ge l r)
 
 infixr 5 &&#
 
@@ -365,7 +400,7 @@ infixr 5 &&#
 ||| `const [True, False, False, False]`.
 export
 (&&#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
-(MkTensor l) &&# (MkTensor r) = MkTensor (and l r)
+(MkTensor l) &&# (MkTensor r) = MkTensor (binaryOp prim__and l r)
 
 infixr 4 ||#
 
@@ -374,13 +409,13 @@ infixr 4 ||#
 ||| `const [True, True, True, False]`.
 export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
-(MkTensor l) ||# (MkTensor r) = MkTensor (or l r)
+(MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
 export
 notEach : Tensor shape Bool -> Tensor shape Bool
-notEach (MkTensor raw) = MkTensor (not raw)
+notEach (MkTensor raw) = MkTensor (unaryOp prim__not raw)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -413,18 +448,18 @@ export
 ||| `const [4, 6]`.
 export
 (+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) + (MkTensor r) = MkTensor (add l r)
+(MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate (MkTensor raw) = MkTensor (neg raw)
+negate (MkTensor raw) = MkTensor (unaryOp prim__neg raw)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
 (-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) - (MkTensor r) = MkTensor (sub l r)
+(MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
 
 infixl 9 *#, /#
 
@@ -432,7 +467,7 @@ infixl 9 *#, /#
 ||| `const [8, 15]`.
 export
 (*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) *# (MkTensor r) = MkTensor (mul l r)
+(MkTensor l) *# (MkTensor r) = MkTensor (binaryOp prim__mul l r)
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
@@ -445,7 +480,7 @@ l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
 ||| to `const [0.5, 0.6]`.
 export
 (/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) /# (MkTensor r) = MkTensor (div l r)
+(MkTensor l) /# (MkTensor r) = MkTensor (binaryOp prim__div l r)
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
@@ -458,7 +493,7 @@ l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 ||| `const [2, 3]`.
 export
 absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
-absEach (MkTensor raw) = MkTensor (abs raw)
+absEach (MkTensor raw) = MkTensor (unaryOp prim__abs raw)
 
 infixr 9 ^
 
