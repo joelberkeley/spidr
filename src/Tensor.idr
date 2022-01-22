@@ -277,10 +277,10 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
     impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
       -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-    impl to_leading _ {prf=Same} (MkTensor raw) =
-      MkTensor $ if (length to_leading == 0) then raw else broadcast raw to_leading
-    impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor raw) =
-      MkTensor $ broadcast (broadcastInDim raw (th' :: tt') (range (S r))) to_leading
+    impl to_leading _ {prf=Same} (MkTensor mkOp) =
+      MkTensor $ if (length to_leading == 0) then mkOp else broadcast mkOp to_leading
+    impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
+      MkTensor $ broadcast (broadcastInDim mkOp (th' :: tt') (range (S r))) to_leading
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
@@ -415,7 +415,7 @@ export
 ||| `const [False, True]`.
 export
 notEach : Tensor shape Bool -> Tensor shape Bool
-notEach (MkTensor raw) = MkTensor (unaryOp prim__not raw)
+notEach (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -453,7 +453,7 @@ export
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate (MkTensor raw) = MkTensor (unaryOp prim__neg raw)
+negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
@@ -493,7 +493,7 @@ l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 ||| `const [2, 3]`.
 export
 absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
-absEach (MkTensor raw) = MkTensor (unaryOp prim__abs raw)
+absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
 
 infixr 9 ^
 
