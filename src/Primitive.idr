@@ -16,12 +16,15 @@ limitations under the License.
 ||| This module defines supported primitive backend types and their interaction with Idris.
 module Primitive
 
+import public XLA.XlaData
 import XLA.Literal
 
-||| A `Primitive` is an Idris type for which there is a corresponding backend primitive type.
+||| A `PrimitiveRW a b` constitutes proof that we can read and write between a backend primitive
+||| type `dtype` and an Idris type `idr`.
 export
-interface XLAPrimitive dtype => Primitive dtype where
+interface LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
 
-export Primitive Bool where
-export Primitive Int where
-export Primitive Double where
+export PrimitiveRW PRED Bool where
+export PrimitiveRW S32 Int where
+export PrimitiveRW U32 Nat where
+export PrimitiveRW F64 Double where

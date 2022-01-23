@@ -40,7 +40,7 @@ Empiric features out = Dataset features targets -> ProbabilisticModel features {
 ||| @features The shape of the feature domain.
 public export 0
 Acquisition : (0 batch_size : Nat) -> {auto 0 _ : GT batch_size 0} -> (0 features : Shape) -> Type
-Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tensor [] Double
+Acquisition batch_size features = Tensor (batch_size :: features) F64 -> Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -49,7 +49,7 @@ Acquisition batch_size features = Tensor (batch_size :: features) Double -> Tens
 ||| @best The current best observation.
 export
 expectedImprovement : ProbabilisticModel features {marginal=Gaussian [1]} ->
-                      (best : Tensor [] Double) -> Acquisition 1 features
+                      (best : Tensor [] F64) -> Acquisition 1 features
 expectedImprovement predict best at =
   let marginal = predict at
       best' = broadcast {to=[_, 1]} best
@@ -70,7 +70,7 @@ expectedImprovementByModel (MkDataset query_points _) predict at =
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] Double) -> ClosedFormDistribution [1] d =>
+probabilityOfFeasibility : (limit : Tensor [] F64) -> ClosedFormDistribution [1] d =>
                            Empiric features {marginal=d} $ Acquisition 1 features
 probabilityOfFeasibility limit _ predict at = cdf (predict at) $ broadcast {to=[_, 1]} limit
 
@@ -94,5 +94,5 @@ negativeLowerConfidenceBound beta =
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
 export
-expectedConstrainedImprovement : (limit : Tensor [] Double) ->
+expectedConstrainedImprovement : (limit : Tensor [] F64) ->
   Empiric features {marginal=Gaussian [1]} $ (Acquisition 1 features -> Acquisition 1 features)

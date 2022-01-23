@@ -27,4 +27,4 @@ import Tensor
 ||| @marginal The type of mulitvariate marginal distribution over the target domain.
 public export 0
 ProbabilisticModel : Distribution targets marginal => (0 features : Shape) -> Type
-ProbabilisticModel features = {n : _} -> Tensor (Vect.(::) (S n) features) Double -> marginal (S n)
+ProbabilisticModel features = {n : _} -> Tensor (Vect.(::) (S n) features) F64 -> marginal (S n)

@@ -41,7 +41,7 @@ We can represent choosing candidate optima visually:
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) Double` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
 
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
@@ -76,11 +76,11 @@ model = let mk_gp = \len => MkGP zero (matern52 (const {shape=[]} 1.0) $ squeeze
 then optimize over the marginal mean
 
 ```idris
-optimizer : Optimizer $ Tensor [1, 2] Double
+optimizer : Optimizer $ Tensor [1, 2] F64
 optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.0, 1.0])
              in \f => broadcast . gs $ f . broadcast
 
-newPoint : Tensor [1, 2] Double
+newPoint : Tensor [1, 2] F64
 newPoint = optimizer $ squeeze . mean . (predict_latent model)
 ```
 
@@ -121,7 +121,7 @@ In the above example, we constructed the acquisition function from our model, th
 modelMean : ProbabilisticModel [2] {marginal=Gaussian [1]} -> Acquisition 1 [2]
 modelMean predict = squeeze . mean . predict
 
-newPoint' : Tensor [1, 2] Double
+newPoint' : Tensor [1, 2] F64
 newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
              in run acquisition (predict_latent model)  -- `run` turns a `Morphism` into a function
 ```
@@ -201,7 +201,7 @@ record Labelled o f where
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to extract the respective data and model. Putting it all together, here's our empirical point:
 
 ```idris
-newPoint'' : Tensor [1, 2] Double
+newPoint'' : Tensor [1, 2] F64
 newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
                  pof = failure >>> probabilityOfFeasibility (const 0.5)
                  acquisition = map optimizer (eci <*> pof)
@@ -215,19 +215,19 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
 Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 
 ```idris
-objective : Tensor [n, 2] Double -> Tensor [n, 1] Double
+objective : Tensor [n, 2] F64 -> Tensor [n, 1] F64
 ```
 
 at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
 
 ```idris
-observe : Tensor [1, 2] Double -> (Dataset [2] [1], ConjugateGPRegression [2])
+observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
                                -> (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let new_data = MkDataset point (objective point)
                                   in (dataset <+> new_data, fit model lbfgs new_data)
 ```
 
-We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) Double` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
+We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) F64` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])

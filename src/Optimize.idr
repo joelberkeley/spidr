@@ -29,7 +29,7 @@ import Tensor
 ||| @domain The type of the domain over which to find the optimizer.
 public export 0
 Optimizer : {default id 0 m : Type -> Type} -> (0 domain : Type) -> Type
-Optimizer a = (a -> m $ Tensor [] Double) -> m a
+Optimizer a = (a -> m $ Tensor [] F64) -> m a
 
 ||| Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search
 ||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
@@ -38,10 +38,10 @@ Optimizer a = (a -> m $ Tensor [] Double) -> m a
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
 export
-gridSearch : (density : Tensor [d] Int) ->
-             (lower : Tensor [d] Double) ->
-             (upper : Tensor [d] Double) ->
-             Optimizer (Tensor [d] Double)
+gridSearch : (density : Tensor [d] U32) ->
+             (lower : Tensor [d] F64) ->
+             (upper : Tensor [d] F64) ->
+             Optimizer (Tensor [d] F64)
 
 ||| The limited-memory BFGS (L-BFGS) optimization tactic, see
 |||
@@ -54,4 +54,4 @@ gridSearch : (density : Tensor [d] Int) ->
 |||
 ||| @initial_points The points from which to start optimization.
 export
-lbfgs : (initial_points : Tensor [n] Double) -> Optimizer (Tensor [n] Double)
+lbfgs : (initial_points : Tensor [n] F64) -> Optimizer (Tensor [n] F64)

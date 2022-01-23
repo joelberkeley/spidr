@@ -36,8 +36,8 @@ data GaussianProcess : (0 features : Shape) -> Type where
 
 posterior :
   GaussianProcess features
-  -> Tensor [] Double
-  -> {s : _} -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
+  -> Tensor [] F64
+  -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
   -> GaussianProcess features
 posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
   let l = cholesky (prior_kernel x_train x_train + diag {n=S s} noise)
@@ -54,14 +54,14 @@ posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
 
 log_marginal_likelihood :
   GaussianProcess features
-  -> Tensor [] Double
-  -> {s : _} -> (Tensor ((S s) :: features) Double, Tensor [S s] Double)
-  -> Tensor [] Double
+  -> Tensor [] F64
+  -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
+  -> Tensor [] F64
 log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + diag {n=S s} noise)
       alpha = l.T \\ (l \\ y)
       log2pi = log $ const $ 2.0 * pi
-   in - y @@ alpha / const 2 - trace (log l) - (const $ cast (S s)) * log2pi / const 2
+   in - y @@ alpha / const 2.0 - trace (log l) - (const $ cast (S s)) * log2pi / const 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following
@@ -76,8 +76,8 @@ log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
 ||| Pattern Recognition and Machine Learning, Christopher M. Bishop
 public export
 data ConjugateGPRegression : (0 features : Shape) -> Type where
-  MkConjugateGPR : (Tensor [p] Double -> GaussianProcess features) -> Tensor [p] Double
-                   -> Tensor [] Double -> ConjugateGPRegression features
+  MkConjugateGPR : (Tensor [p] F64 -> GaussianProcess features) -> Tensor [p] F64
+                   -> Tensor [] F64 -> ConjugateGPRegression features
 
 ||| Construct a probabilistic model for the latent target values.
 export
@@ -90,18 +90,18 @@ predict_latent (MkConjugateGPR mk_gp gp_params _) x =
 ||| Fit the Gaussian process and noise to the specified data.
 export
 fit : ConjugateGPRegression features
-  -> (forall n . Tensor [n] Double -> Optimizer $ Tensor [n] Double)
+  -> (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
   -> ConjugateGPRegression features
 fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
-  let objective : Tensor [S p] Double -> Tensor [] Double
+  let objective : Tensor [S p] F64 -> Tensor [] F64
       objective params = let (noise, prior_params) = split 1 params
                           in log_marginal_likelihood (mk_prior prior_params)
                              (squeeze noise) (x, squeeze y)
 
       (noise, gp_params) := split 1 $ optimizer (concat (expand 0 noise) gp_params) objective
 
-      mk_posterior : Tensor [p] Double -> GaussianProcess features
+      mk_posterior : Tensor [p] F64 -> GaussianProcess features
       mk_posterior params' = posterior (mk_prior params') (squeeze noise) (x, squeeze y)
 
     in MkConjugateGPR mk_posterior gp_params (squeeze noise)
