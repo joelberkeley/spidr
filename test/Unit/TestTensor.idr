@@ -188,8 +188,9 @@ test_map = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
     assertAll "map for Int array" $ map absEach x ==# absEach x
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-    assertAll "map for Double array" $ map absEach x ==# absEach x
+    let x = const {shape=[_, _]} {dtype=Double} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
+    assertAll "map for Double array" $
+        map (const 1 /) x ==# const [[1.0, 0.4, 1 / 0.0], [-1.25, -10, 0.2]]
 
     sequence_ $ do
         x <- ints

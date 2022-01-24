@@ -350,8 +350,8 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- generic operations ----------------------------
 
-||| Apply a scalar function to each element in a `Tensor`. For example, `map abs (const [-2, 0, 3])`
-||| is equivalent to `const [2, 0, 3]`.
+||| Apply a scalar function to each element in a `Tensor`. For example
+||| `map (const 1 /) (const [-2, 0, 0.4])` is equivalent to `const [-0.5, 0, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
       -> {shape : _} -> Tensor shape a -> Tensor shape b
