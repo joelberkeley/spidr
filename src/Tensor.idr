@@ -350,8 +350,14 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- generic operations ----------------------------
 
-||| Apply a scalar function to each element in a `Tensor`. For example
-||| `map (const 1 /) (const [-2, 0.4])` is equivalent to `const [-0.5, 2.5]`.
+||| Lift a function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
+||| For example,
+||| ```idris
+||| recipEach : Tensor shape Double -> Tensor shape Double
+||| recipEach = map (const 1 /)
+||| ```
+||| is the element-wise reciprocal function such that `recip (const [-2, 0.4])` is equivalent to
+||| `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
       -> {shape : _} -> Tensor shape a -> Tensor shape b
