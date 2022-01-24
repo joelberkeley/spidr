@@ -170,4 +170,4 @@ prim__neg : GCAnyPtr -> PrimIO AnyPtr
 export
 %foreign (libxla "Map")
 prim__map : GCAnyPtr -> AnyPtr -> Int -> GCAnyPtr
-            -> Ptr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr
+            -> GCPtr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr

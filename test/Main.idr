@@ -28,6 +28,7 @@ main = do
     test_const_eval
     test_toString
     test_broadcast
+    test_map
     test_elementwise_equality
     test_elementwise_inequality
     test_comparison
