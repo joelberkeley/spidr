@@ -186,7 +186,7 @@ export
 test_map : IO ()
 test_map = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-4, -5, -6]]
-    assertAll "map for Int array" $ map abs x ==# const {dtype=Int} ([[1, 2, 3], [4, 5, 6]])
+    assertAll "map for Int array" $ map absEach x ==# absEach x
 
 export
 test_elementwise_equality : IO ()
@@ -417,10 +417,10 @@ test_elementwise_or = do
 export
 test_elementwise_notEach : IO ()
 test_elementwise_notEach = do
-    -- assertAll "not for array" $
-    --     not (const [True, False]) ==# const {shape=[_]} [False, True]
+    assertAll "notEach for array" $
+        notEach (const [True, False]) ==# const {shape=[_]} [False, True]
     sequence_ [assertAll "not for scalar" $
-               not (const x) ==# const {shape=[]} (not x) | x <- bools]
+               notEach (const x) ==# const {shape=[]} (not x) | x <- bools]
 
 export
 test_elementwise_division : IO ()
@@ -454,20 +454,20 @@ test_scalar_division = do
 export
 test_absEach : IO ()
 test_absEach = do
-    -- let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
-    -- assertAll "abs for int array" $ abs x ==# const [1, 0, 5]
+    let x = const {shape=[_]} {dtype=Int} [1, 0, -5]
+    assertAll "absEach for int array" $ absEach x ==# const [1, 0, 5]
 
-    -- let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
-    -- actual <- eval (abs x)
-    -- sequence_ (zipWith ((assert "abs for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
+    let x = const {shape=[3]} {dtype=Double} [1.8, -1.3, 0.0]
+    actual <- eval (absEach x)
+    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
 
     sequence_ $ do
         x <- ints
-        pure $ assertAll "abs for int scalar" $ abs (const {shape=[]} x) ==# const (abs x)
+        pure $ assertAll "absEach for int scalar" $ absEach (const {shape=[]} x) ==# const (abs x)
 
     traverse_ (\x => do
-            actual <- eval (abs $ const {shape=[]} x)
-            assert "abs for double scalar" (sufficientlyEq actual (abs x))
+            actual <- eval (absEach $ const {shape=[]} x)
+            assert "absEach for double scalar" (sufficientlyEq actual (abs x))
         ) doubles
 
 export

@@ -116,7 +116,7 @@ sufficientlyEqEach : {shape : _} -> Tensor shape Double -> Tensor shape Double -
 sufficientlyEqEach x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
-    ||# map abs (x - y) <# fill floatingPointTolerance  -- real
+    ||# absEach (x - y) <# fill floatingPointTolerance  -- real
 
 export
 test_sufficientlyEqEach : IO ()
@@ -130,5 +130,5 @@ test_sufficientlyEqEach = do
                sufficientlyEqEach {shape=[]} (const x) (const y)
                | (x, y) <- sufficientlyEqCases]
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-               map not (sufficientlyEqEach {shape=[]} (const x) (const y))
+               notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
                | (x, y) <- insufficientlyEqCases]

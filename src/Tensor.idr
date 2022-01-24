@@ -446,10 +446,11 @@ export
 (||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
 (MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
 
-||| Element-wise boolean negation. For example, `not (const True)` is equivalent to `const False`.
+||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
+||| `const [False, True]`.
 export
-not : Tensor [] Bool -> Tensor [] Bool
-not (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
+notEach : Tensor shape Bool -> Tensor shape Bool
+notEach (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -523,17 +524,11 @@ export
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
 
--- todo it's probably inefficient to `map abs` rather than `absEach`, but the API's perhaps
--- more consistent with scalar `abs`. What to do? Perhaps an `Elementwise` module for faster but
--- less principled* APIs? We'd like just one consistent API that works as fast as possible, but
--- maybe that's not possible.
---
--- *Is there a tensor API where element-wise ops are principled and fast?
-||| Element-wise absolute value. For example, `abs (const (-2))` is equivalent to
-||| `const 2`.
+||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
+||| `const [2, 3]`.
 export
-abs : Abs dtype => Tensor [] dtype -> Tensor [] dtype
-abs (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
+absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
 
 infixr 9 ^
 
