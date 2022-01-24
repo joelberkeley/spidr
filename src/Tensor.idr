@@ -357,12 +357,12 @@ map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
       -> {shape : _} -> Tensor shape a -> Tensor shape b
 map f (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
-  param_shape <- mkShape {dtype=a} []  -- this function might not work for rank 0
+  param_shape <- mkShape {dtype=a} []
   let param = MkTensor $ \b => onCollectAny (parameter b 0 param_shape "") XlaOp.delete
       (MkTensor mkOp') = f param
   _ <- mkOp' sub_builder
   computation <- prim__build sub_builder
-  operands <- malloc sizeOfXlaOp
+  operands <- malloc sizeOfXlaOp  -- todo free
   primIO (prim__setArrayXlaOp operands 0 !(mkOp builder))
   let rank = length shape
   dimensions <- mkIntArray (range rank)
