@@ -186,7 +186,7 @@ export
 test_map : IO ()
 test_map = do
     let x = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-4, -5, -6]]
-    assertAll "map abs for Int array" $ map abs x ==# const {dtype=Int} ([[1, 2, 3], [4, 5, 6]])
+    assertAll "map for Int array" $ map abs x ==# const {dtype=Int} ([[1, 2, 3], [4, 5, 6]])
 
 export
 test_elementwise_equality : IO ()
