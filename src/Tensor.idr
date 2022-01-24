@@ -22,6 +22,8 @@ import Data.Vect.Elem
 import Decidable.Equality
 import System.FFI
 
+import System.FFI
+
 import Error
 import public Primitive
 import public Types
@@ -31,6 +33,7 @@ import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
 import XLA.FFI
 import XLA.Literal
+import XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
 
@@ -344,6 +347,40 @@ squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtyp
 export
 fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
 fill = broadcast {prf=scalarToAnyOk shape} . const
+
+----------------------------- generic operations ----------------------------
+
+||| Lift a function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
+||| For example,
+||| ```idris
+||| recipEach : Tensor shape Double -> Tensor shape Double
+||| recipEach = map (const 1 /)
+||| ```
+||| is the element-wise reciprocal function such that `recipEach (const [-2, 0.4])` is equivalent to
+||| `const [-0.5, 2.5]`.
+export
+map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
+      -> {shape : _} -> Tensor shape a -> Tensor shape b
+map f (MkTensor mkOp) = MkTensor $ \builder => do
+  sub_builder <- prim__createSubBuilder builder "computation"
+  param_shape <- mkShape {dtype=a} []
+  let param = MkTensor $ \b => onCollectAny (parameter b 0 param_shape "") XlaOp.delete
+      (MkTensor mkOp') = f param
+  _ <- mkOp' sub_builder
+  computation <- prim__build sub_builder
+  operands <- malloc sizeOfXlaOp
+  primIO (prim__setArrayXlaOp operands 0 !(mkOp builder))
+  let rank = length shape
+  dimensions <- mkIntArray (range rank)
+  op <- primIO (prim__map
+      builder
+      operands 1
+      computation
+      dimensions (cast rank)
+      prim__getNullAnyPtr 0
+    )
+  free operands
+  onCollectAny op XlaOp.delete
 
 ----------------------------- numeric operations ----------------------------
 

@@ -26,6 +26,8 @@ extern "C" {
      */
 
     struct XlaOp;
+    int sizeof_XlaOp();
+    void set_array_XlaOp(XlaOp* arr, int idx, XlaOp* op);
     void XlaOp_delete(XlaOp* s);
 
     /*
@@ -40,6 +42,7 @@ extern "C" {
     XlaBuilder* XlaBuilder_new(const char* computation_name);
     void XlaBuilder_delete(XlaBuilder* s);
     const char* XlaBuilder_name(XlaBuilder& s);
+    XlaBuilder* CreateSubBuilder(XlaBuilder& s, const char* computation_name);
     XlaComputation* XlaBuilder_Build(XlaBuilder& s);
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op);
 
@@ -80,4 +83,15 @@ extern "C" {
 
     XlaOp* Abs(XlaOp& operand);
     XlaOp* Neg(XlaOp& operand);
+
+    XlaOp* Map(
+        XlaBuilder* builder,
+        XlaOp* operands,
+        int operands_len,
+        XlaComputation& computation,
+        int* dimensions,
+        int dimensions_len,
+        XlaOp* static_operands,
+        int static_operands_len
+    );
 }
