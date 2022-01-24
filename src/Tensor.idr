@@ -539,7 +539,6 @@ absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
 
 infixr 9 ^
 
--- todo we don't support complex yet
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
 ||| example, `const [2, 25, -9] ^ const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
 |||
@@ -547,7 +546,6 @@ infixr 9 ^
 export
 (^) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
--- todo
 ||| The element-wise natural exponential.
 export
 exp : Tensor shape Double -> Tensor shape Double
@@ -584,7 +582,6 @@ export
 (//=) : Fractional dtype =>
         (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
--- todo
 ||| The element-wise natural logarithm.
 export
 log : Tensor shape Double -> Tensor shape Double
