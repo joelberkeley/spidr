@@ -204,6 +204,13 @@ test_map = do
             sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
 
 export
+test_apply : IO ()
+test_apply = do
+    let l = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
+        r = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
+    assertAll "apply for Double array" $ apply (<#) l r ==# (l <# r)
+
+export
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
     let x = const {shape=[_]} {dtype=PRED} [True, True, False]

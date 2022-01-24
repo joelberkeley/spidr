@@ -350,7 +350,7 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- generic operations ----------------------------
 
-||| Lift a function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
+||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
 ||| recipEach : Tensor shape Double -> Tensor shape Double
@@ -375,6 +375,39 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO (prim__map
       builder
       operands 1
+      computation
+      dimensions (cast rank)
+      prim__getNullAnyPtr 0
+    )
+  free operands
+  onCollectAny op XlaOp.delete
+
+||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
+||| For example,
+||| ```idris
+||| ...
+||| ```
+||| is ...
+export
+apply : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
+      -> {shape : _} -> Tensor shape a -> Tensor shape b -> Tensor shape c
+apply f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
+  sub_builder <- prim__createSubBuilder builder "computation"
+  shapeL <- mkShape {dtype=a} []
+  shapeR <- mkShape {dtype=b} []
+  let paramL = MkTensor $ \b => onCollectAny (parameter b 0 shapeL "") XlaOp.delete
+      paramR = MkTensor $ \b => onCollectAny (parameter b 1 shapeR "") XlaOp.delete
+      (MkTensor mkOp') = f paramL paramR
+  _ <- mkOp' sub_builder
+  computation <- prim__build sub_builder
+  operands <- malloc (2 * sizeOfXlaOp)
+  primIO (prim__setArrayXlaOp operands 0 !(mkOpL builder))
+  primIO (prim__setArrayXlaOp operands 1 !(mkOpR builder))
+  let rank = length shape
+  dimensions <- mkIntArray (range rank)
+  op <- primIO (prim__map
+      builder
+      operands 2
       computation
       dimensions (cast rank)
       prim__getNullAnyPtr 0
