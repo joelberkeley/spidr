@@ -186,21 +186,21 @@ test_T_with_leading x = x.T
 export
 test_map : IO ()
 test_map = do
-    let x = const {shape=[_, _]} {dtype=Int} [[1, 15, 5], [-1, 7, 6]]
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
     assertAll "map for Int array" $ map absEach x ==# absEach x
 
-    let x = const {shape=[_, _]} {dtype=Double} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
+    let x = const {shape=[_, _]} {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
     assertAll "map for Double array" $
         map (const 1 /) x ==# const [[1.0, 0.4, 1 / 0.0], [-1.25, -10, 0.2]]
 
     sequence_ $ do
         x <- ints
-        let x = const {shape=[]} x
+        let x = const {shape=[]} {dtype=S32} x
         pure $ assertAll "map for int scalar" $ map (+ const 1) x ==# x + const 1
 
     sequence_ $ do
         x <- doubles
-        let x = const {shape=[]} x
+        let x = const {shape=[]} {dtype=F64} x
         pure $ assertAll "map for double scalar" $
             sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
 
