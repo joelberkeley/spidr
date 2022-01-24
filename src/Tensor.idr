@@ -362,7 +362,7 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
       (MkTensor mkOp') = f param
   _ <- mkOp' sub_builder
   computation <- prim__build sub_builder
-  operands <- malloc sizeOfXlaOp  -- todo free
+  operands <- malloc sizeOfXlaOp
   primIO (prim__setArrayXlaOp operands 0 !(mkOp builder))
   let rank = length shape
   dimensions <- mkIntArray (range rank)
@@ -373,6 +373,7 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
       dimensions (cast rank)
       prim__getNullAnyPtr 0
     )
+  free operands
   onCollectAny op XlaOp.delete
 
 ----------------------------- numeric operations ----------------------------
