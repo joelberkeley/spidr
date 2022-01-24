@@ -356,7 +356,7 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| recipEach : Tensor shape Double -> Tensor shape Double
 ||| recipEach = map (const 1 /)
 ||| ```
-||| is the element-wise reciprocal function such that `recip (const [-2, 0.4])` is equivalent to
+||| is the element-wise reciprocal function such that `recipEach (const [-2, 0.4])` is equivalent to
 ||| `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
