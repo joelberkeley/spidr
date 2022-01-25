@@ -516,7 +516,7 @@ export
 export
 (*) : Num ty => PrimitiveRW dtype ty => Tensor [] dtype -> {shape : _} -> Tensor shape dtype
       -> Tensor shape dtype
-l * r = (*#) {ty} (broadcast {prf=scalarToAnyOk shape} l) r
+l * r = broadcast {prf=scalarToAnyOk shape} l *# r
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
@@ -529,7 +529,7 @@ export
 export
 (/) : Fractional ty => PrimitiveRW dtype ty => {shape : _} ->
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
-l / r = (/#) {ty} l (broadcast {prf=scalarToAnyOk shape} r)
+l / r = l /# broadcast {prf=scalarToAnyOk shape} r
 
 ||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.

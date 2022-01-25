@@ -25,7 +25,7 @@ import XLA.Shape
 import XLA.ShapeUtil
 
 export
-interface Primitive dtype => LiteralPrimitiveRW dtype ty | ty where
+interface Primitive dtype => LiteralPrimitiveRW dtype ty where
     set : GCAnyPtr -> GCPtr Int -> ty -> PrimIO ()
     get : GCAnyPtr -> GCPtr Int -> ty
 

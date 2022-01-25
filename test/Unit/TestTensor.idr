@@ -19,7 +19,6 @@ import Data.Nat
 import System
 
 import Tensor
-import XLA.XlaData
 
 import Utils
 
