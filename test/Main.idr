@@ -29,7 +29,7 @@ main = do
     test_toString
     test_broadcast
     test_map
-    test_apply
+    test_map2
     test_elementwise_equality
     test_elementwise_inequality
     test_comparison

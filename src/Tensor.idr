@@ -389,9 +389,9 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
 ||| ```
 ||| is ...
 export
-apply : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
+map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
       -> {shape : _} -> Tensor shape a -> Tensor shape b -> Tensor shape c
-apply f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
+map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   shapeL <- mkShape {dtype=a} []
   shapeR <- mkShape {dtype=b} []

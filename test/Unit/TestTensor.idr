@@ -204,22 +204,22 @@ test_map = do
             sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
 
 export
-test_apply : IO ()
-test_apply = do
+test_map2 : IO ()
+test_map2 = do
     let l = const {shape=[_, _]} {dtype=Int} [[1, 2, 3], [-1, -2, -3]]
         r = const {shape=[_, _]} {dtype=Int} [[1, 4, 2], [-2, -1, -3]]
-    assertAll "apply for Int array" $ apply (<#) l r ==# (l <# r)
+    assertAll "map2 for Int array" $ map2 (<#) l r ==# (l <# r)
 
     let l = const {shape=[_, _]} {dtype=Double} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
         r = const {shape=[_, _]} {dtype=Double} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    assertAll "apply for Double matrix" $ apply (<#) l r ==# (l <# r)
+    assertAll "map2 for Double matrix" $ map2 (<#) l r ==# (l <# r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
         let l' = const {shape=[]} {dtype=Double} l
             r' = const {shape=[]} {dtype=Double} r
-        pure $ assertAll "apply for Double scalars" $ apply (>#) l' r' ==# (l' ># r')
+        pure $ assertAll "map2 for Double scalars" $ map2 (>#) l' r' ==# (l' ># r')
 
 export
 test_elementwise_equality : IO ()
