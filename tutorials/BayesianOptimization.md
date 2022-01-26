@@ -19,7 +19,7 @@ In this tutorial on design in Bayesian optimization, we'll look at how we can us
 
 ## A Bayesian optimization refresher
 
-In function optimization, we look to find optima of an _objective function_. For functions whose value and gradient are cheap to evaluate there are a number of well established techniques, such as Adam. For functions that are expensive to evaluate and whose gradient may be unknown, however, these techniques can be infeasible. Bayesian optimization approaches such problems by placing a _surrogate_ model over historic function evaluations, substituting model evaluations for objective function evaluations. We evaluate the function at a new point, where  of value is introduced for function values, which typically balances exploration and exploitation in a search for the objective function optima. We can represent this visually:
+In function optimization, we look to find optima of an _objective function_. For functions whose value and gradient are cheap to evaluate there are a number of well established techniques, such as Adam. For functions that are expensive to evaluate and whose gradient may be unknown, however, these techniques can be infeasible. Bayesian optimization approaches such problems by placing a probabilistic model over historic function evaluations, and substituting objective function evaluations with model evaluations . We evaluate the function at a new point, where  of value is introduced for function values, which typically balances exploration and exploitation in a search for the objective function optima. We can represent this visually:
 
 <pre>
 +-----------------------+
