@@ -45,8 +45,8 @@ extern "C" {
             .ExecuteAndTransfer(computation_, arguments_span)
             .ConsumeValueOrDie();
 
-        xla::Literal* res = new xla::Literal(lit.shape(), true);
-        *res = lit.Clone();
+        xla::Literal* res = new xla::Literal(lit.shape(), false);
+        res->MoveFrom(std::move(lit));
         return reinterpret_cast<Literal*>(res);
     }
 }

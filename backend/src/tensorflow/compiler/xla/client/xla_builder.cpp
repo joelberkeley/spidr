@@ -70,9 +70,9 @@ extern "C" {
 
     XlaComputation* XlaBuilder_Build(XlaBuilder& s) {
         xla::XlaBuilder& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
-        xla::XlaComputation* res = new xla::XlaComputation();
-        *res = s_.Build().ConsumeValueOrDie();
-        return reinterpret_cast<XlaComputation*>(res);
+        xla::XlaComputation computation = s_.Build().ConsumeValueOrDie();
+        xla::XlaComputation* non_stack = new xla::XlaComputation(std::move(computation));
+        return reinterpret_cast<XlaComputation*>(non_stack);
     }
 
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {
@@ -85,26 +85,23 @@ extern "C" {
     XlaOp* Parameter(XlaBuilder& builder, int parameter_number, Shape& shape, const char* name) {
         xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
         xla::Shape& shape_ = reinterpret_cast<xla::Shape&>(shape);
-        xla::XlaOp* parameter = new xla::XlaOp();
-        *parameter = xla::Parameter(&builder_, parameter_number, shape_, name);
-        return reinterpret_cast<XlaOp*>(parameter);
+        xla::XlaOp parameter = xla::Parameter(&builder_, parameter_number, shape_, name);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(parameter));
     }
 
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data) {
         xla::XlaBuilder& builder_ = reinterpret_cast<xla::XlaBuilder&>(builder);
         xla::Literal& data_ = reinterpret_cast<xla::Literal&>(data);
-        xla::XlaOp* op = new xla::XlaOp();
-        *op = ConstantLiteral(&builder_, data_);
-        return reinterpret_cast<XlaOp*>(op);
+        xla::XlaOp op = ConstantLiteral(&builder_, data_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(op));
     }
 
     XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len) {
         xla::XlaOp s_ = reinterpret_cast<xla::XlaOp&>(s);
         xla::int64 bcs64[len];
         std::copy(broadcast_sizes, broadcast_sizes + len, bcs64);
-        auto res = new xla::XlaOp();
-        *res = Broadcast(s_, absl::Span<const xla::int64>(bcs64, len));
-        return reinterpret_cast<XlaOp*>(res);
+        xla::XlaOp res = Broadcast(s_, absl::Span<const xla::int64>(bcs64, len));
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
     XlaOp* BroadcastInDim(
@@ -116,20 +113,18 @@ extern "C" {
         xla::int64 bcd64[bcd_len];
         std::copy(broadcast_dimensions, broadcast_dimensions + bcd_len, bcd64);
 
-        auto res = new xla::XlaOp();
-        *res = BroadcastInDim(
+        xla::XlaOp res = BroadcastInDim(
             reinterpret_cast<xla::XlaOp&>(s),
             absl::Span<const xla::int64>(ods64, ods_len),
             absl::Span<const xla::int64>(bcd64, bcd_len)
         );
-        return reinterpret_cast<XlaOp*>(res);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {
-    auto res = new xla::XlaOp();
-    *res = op(reinterpret_cast<xla::XlaOp&>(operand));
-    return reinterpret_cast<XlaOp*>(res);
+    xla::XlaOp res = op(reinterpret_cast<xla::XlaOp&>(operand));
+    return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
 }
 
 XlaOp* binOp(
@@ -141,9 +136,8 @@ XlaOp* binOp(
 ) {
     auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
     auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
-    auto res = new xla::XlaOp();
-    *res = op(lhs_, rhs_, {});
-    return reinterpret_cast<XlaOp*>(res);
+    xla::XlaOp res = op(lhs_, rhs_, {});
+    return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
 }
 
 extern "C" {
@@ -162,17 +156,15 @@ extern "C" {
     XlaOp* And(XlaOp& lhs, XlaOp& rhs) {
         auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
         auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
-        xla::XlaOp* res = new xla::XlaOp();
-        *res = xla::And(lhs_, rhs_);
-        return reinterpret_cast<XlaOp*>(res);
+        xla::XlaOp res = xla::And(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
     XlaOp* Or(XlaOp& lhs, XlaOp& rhs) {
         auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
         auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
-        xla::XlaOp* res = new xla::XlaOp();
-        *res = xla::Or(lhs_, rhs_);
-        return reinterpret_cast<XlaOp*>(res);
+        xla::XlaOp res = xla::Or(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
     XlaOp* Not(XlaOp& operand) { return unaryOp(xla::Not, operand); }
@@ -202,8 +194,7 @@ extern "C" {
         auto dimensions_span = absl::Span<const xla::int64>(dimensions64, dimensions_len);
         auto static_operands_span = absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
 
-        xla::XlaOp* res = new xla::XlaOp();
-        *res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
-        return reinterpret_cast<XlaOp*>(res);
+        xla::XlaOp res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }
