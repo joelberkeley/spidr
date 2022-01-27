@@ -15,11 +15,11 @@ limitations under the License.
 -->
 # Design: Bayesian optimization
 
-In this tutorial on design in Bayesian optimization, we'll look at how we can use historic data on a black-box objective function to predict what inputs are likely to optimize said function. We'll detail the architecture of spidr's Bayesian optimization functionality as we go.
+In this tutorial, we look at the design of spidr's Bayesian optimization functionality - functionality that uses historic data to optimize a black-box objective function.
 
 ## A Bayesian optimization refresher
 
-In function optimization, we look to find optima of an _objective function_. Techniques such as Adam excel at optimizing functions whose value and gradient are cheap to evaluate, but when function evaluations are expensive and the gradient is unknown, these techniques can be infeasible. Bayesian optimization approaches such problems by placing a probabilistic model over historic function evaluations, and substituting objective function evaluations with model evaluations. Model evaluations are cheap, and the gradients are known, but unlike the objective function which produces exact values (neglecting noise), a probabilistic model produces a predictive distribution, so we also need a way to decide, given the predictive distribution at a given point, whether it's worth evaluating the function at that point. This mapping can balance exploration and exploitation in the search for the objective optima.
+In function optimization, we look to find optima of an _objective function_. Techniques such as Adam excel at optimizing functions whose value and gradient are cheap to evaluate, but when function evaluations are expensive and the gradient is unknown, these techniques can be infeasible. In Bayesian optimization we approach such problems by placing a probabilistic model over historic function evaluations, and substituting objective function evaluations with model evaluations. Model evaluations are cheap, and the gradients are known, but unlike the objective function which produces exact values (neglecting noise), a probabilistic model produces a predictive distribution. We must therefore include a method that allows us choose candidate optima from the predictive distribution. This mapping from distribution to a notion of optimality can balance exploration and exploitation in the search for the objective optima.
 
 ## Bayesian optimization design
 
