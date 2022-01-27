@@ -15,7 +15,7 @@ limitations under the License.
 -->
 # Design: Bayesian optimization
 
-In this tutorial on design in Bayesian optimization, we'll look at how we can use historic data on a black-box objective function to predict what inputs are likely to optimize a black-box function. We'll detail the architecture of spidr's Bayesian optimization functionality as we go.
+In this tutorial on design in Bayesian optimization, we'll look at how we can use historic data on a black-box objective function to predict what inputs are likely to optimize said function. We'll detail the architecture of spidr's Bayesian optimization functionality as we go.
 
 ## A Bayesian optimization refresher
 
