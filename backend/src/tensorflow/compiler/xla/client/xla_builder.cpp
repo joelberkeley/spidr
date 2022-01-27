@@ -70,8 +70,9 @@ extern "C" {
 
     XlaComputation* XlaBuilder_Build(XlaBuilder& s) {
         xla::XlaBuilder& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
-        xla::XlaComputation* res = new xla::XlaComputation(s_.Build().ConsumeValueOrDie());
-        return reinterpret_cast<XlaComputation*>(res);
+        xla::XlaComputation computation = s_.Build().ConsumeValueOrDie();
+        xla::XlaComputation* non_stack = new xla::XlaComputation(std::move(computation));
+        return reinterpret_cast<XlaComputation*>(non_stack);
     }
 
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {
