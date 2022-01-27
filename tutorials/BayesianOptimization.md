@@ -23,7 +23,7 @@ In function optimization, we look to find optima of an _objective function_. Tec
 
 ## Bayesian optimization design
 
-We can represent choosing a new point visually:
+We can represent choosing candidate optima visually:
 
 <pre>
 +-----------------------+
