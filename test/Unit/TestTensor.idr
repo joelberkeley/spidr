@@ -204,6 +204,30 @@ test_map = do
             sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
 
 export
+test_map2 : IO ()
+test_map2 = do
+    let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
+        r = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
+    assertAll "map2 for Int array" $ map2 (+) l r ==# (l + r)
+
+    let l = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+        r = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
+    assertAll "map2 for Double matrix" $ sufficientlyEqEach (map2 (+) l r) (l + r)
+
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        let l' = const {shape=[]} {dtype=F64} l
+            r' = const {shape=[]} {dtype=F64} r
+        pure $ assertAll "map2 for Double scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
+
+    sequence_ $ do
+        l <- doubles
+        let l' = const {shape=[]} {dtype=F64} l
+        pure $ assertAll "map2 for Double scalars with repeated argument" $
+            sufficientlyEqEach (map2 (+) l' l') (l' + l')
+
+export
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
     let x = const {shape=[_]} {dtype=PRED} [True, True, False]
