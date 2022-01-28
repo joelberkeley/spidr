@@ -221,6 +221,12 @@ test_map2 = do
             r' = const {shape=[]} {dtype=F64} r
         pure $ assertAll "map2 for Double scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
 
+    sequence_ $ do
+        l <- doubles
+        let l' = const {shape=[]} {dtype=F64} l
+        pure $ assertAll "map2 for Double scalars with repeated argument" $
+            sufficientlyEqEach (map2 (+) l' l') (l' + l')
+
 export
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
