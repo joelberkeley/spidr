@@ -13,17 +13,54 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| This module contains Idris types that represent primitive types supported by the XLA backend.
+||| These Idris types have no values (at least not Idris values). Instead they carry metadata that
+||| allows us to manage memory layouts in the backend.
 module XLA.XlaData
 
-public export
-data PrimitiveType = PRED | S32 | S64 | U32 | U64 | F32 | F64
+||| A `Primitive` is an Idris representation of a primitive type supported by the XLA backend.
+export
+interface Primitive dtype where
+  xlaIdentifier : Int
+
+export data PRED : Type where
 
 export
-Cast PrimitiveType Int where
-    cast PRED = 1
-    cast S32 = 4
-    cast S64 = 5
-    cast U32 = 8
-    cast U64 = 9
-    cast F32 = 11
-    cast F64 = 12
+Primitive PRED where
+  xlaIdentifier = 1
+
+export data S32 : Type where
+
+export
+Primitive S32 where
+  xlaIdentifier = 4
+
+export data S64 : Type where
+
+export
+Primitive S64 where
+  xlaIdentifier = 5
+
+export data U32 : Type where
+
+export
+Primitive U32 where
+  xlaIdentifier = 8
+
+export data U64 : Type where
+
+export
+Primitive U64 where
+  xlaIdentifier = 9
+
+export data F32 : Type where
+
+export
+Primitive F32 where
+  xlaIdentifier = 11
+
+export data F64 : Type where
+
+export
+Primitive F64 where
+  xlaIdentifier = 12

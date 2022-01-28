@@ -52,21 +52,21 @@ data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : Primitive dtype => {shape : _} -> Array shape dtype -> Tensor shape dtype
+const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype
 const xs = MkTensor $ \builder => do
-  lit <- mkLiteral {rank=length shape} (rewrite lengthCorrect shape in xs)
+  lit <- mkLiteral {dtype} {rank=length shape} (rewrite lengthCorrect shape in xs)
   onCollectAny (constantLiteral builder lit) XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
-eval : Primitive dtype => {shape : _} -> Tensor shape dtype -> IO $ Array shape dtype
+eval : PrimitiveRW dtype ty => {shape : _} -> Tensor shape dtype -> IO $ Array shape ty
 eval (MkTensor mkOp) = do
   builder <- prim__mkXlaBuilder ""
   _ <- mkOp builder
   computation <- prim__build builder
   client <- primIO prim__localClientOrDie
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-  pure (toArray lit)
+  pure (toArray {dtype} lit)
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
@@ -114,22 +114,21 @@ toString (MkTensor f) = do
 ||| @dtype The element type.
 export
 data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkVariable : Primitive dtype => Array shape dtype -> Variable shape dtype
+  MkVariable : Array shape ty -> Variable shape dtype
 
 ||| Provides access to a linear `Variable` with initial contents `arr`. For example:
 |||
 ||| ```idris
-||| addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| addOne : (1 v : Variable [] F64) -> Variable [] F64
 ||| addOne v = v += const {shape=[]} 1
 |||
-||| three : Tensor [] Double
+||| three : Tensor [] F64
 ||| three = var 2.0 $ \v => freeze $ addOne v
 ||| ```
 |||
 ||| @arr The initial contents of the `Variable`.
 ||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : Primitive dtype =>
-      Array shape dtype -> (1 f : (1 v : Variable shape dtype) -> a) -> a
+var : PrimitiveRW dtype ty => Array shape ty -> (1 f : (1 v : Variable shape dtype) -> a) -> a
 var arr f = f (MkVariable arr)
 
 ||| Convert a `Variable` to a `Tensor`.
@@ -182,10 +181,10 @@ export
 cast_dtype : Cast dtype dtype' => Tensor shape dtype -> Tensor shape dtype'
 
 ||| Construct a diagonal tensor from the specified value, where all off-diagonal elements are zero.
-||| For example, `the (Tensor [2, 2] Double) (diag 3)` is equivalent to
+||| For example, `the (Tensor [2, 2] F64) (diag 3)` is equivalent to
 ||| `const [[3.0, 0.0], [0.0, 3.0]]`.
 export
-diag : Num dtype => Tensor [] dtype -> Tensor [n, n] dtype
+diag : Num ty => PrimitiveRW dtype ty => Tensor [] dtype -> Tensor [n, n] dtype
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -235,22 +234,23 @@ namespace Broadcastable
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
 empty : Primitive dtype => {shape : Shape} -> {auto isEmpty : Elem 0 shape} -> Tensor shape dtype
-empty = const (emptyArray shape) where
-  emptyArray : (shape : _) -> {auto isEmpty : Elem Z shape} -> Array shape dtype
-  emptyArray {isEmpty = Here} (0 :: _) = []
-  emptyArray {isEmpty = (There _)} (d :: ds) = replicate d (emptyArray ds)
+empty = MkTensor $ \builder => do
+  xla_shape <- mkShape {dtype} shape
+  literal <- primIO $ prim__allocLiteral xla_shape
+  literal <- onCollectAny literal Literal.delete
+  onCollectAny (constantLiteral builder literal) XlaOp.delete
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
 ||| ```idris
-||| x : Tensor [2, 3] Double
+||| x : Tensor [2, 3] S32
 ||| x = broadcast (const [4, 5, 6])
 ||| ```
 |||
 ||| is equivalent to
 |||
 ||| ```idris
-||| x : Tensor [2, 3] Double
+||| x : Tensor [2, 3] S32
 ||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
@@ -317,17 +317,17 @@ namespace Squeezable
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
 |||
 ||| ```idris
-||| x : Tensor [2, 1, 3, 1] Double
+||| x : Tensor [2, 1, 3, 1] S32
 ||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
 |||
-||| y : Tensor [2, 1, 3] Double
+||| y : Tensor [2, 1, 3] S32
 ||| y = squeeze x
 ||| ```
 |||
 ||| is equivalent to
 |||
 ||| ```idris
-||| y : Tensor [2, 1, 3] Double
+||| y : Tensor [2, 1, 3] S32
 ||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
 ||| ```
 export
@@ -345,7 +345,7 @@ squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtyp
 ||| fives = const [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
-fill : Primitive dtype => {shape : _} -> dtype -> Tensor shape dtype
+fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
 fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- generic operations ----------------------------
@@ -400,13 +400,15 @@ infix 6 ==#, /=#
 ||| Element-wise equality. For example, `const [1, 2] ==# const [1, 3]` is equivalent to
 ||| `const [True, False]`.
 export
-(==#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(==#) : Eq ty => PrimitiveRW dtype ty =>
+        Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (MkTensor l) ==# (MkTensor r) = MkTensor (binaryOp prim__eq l r)
 
 ||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
-(/=#) : Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(/=#) : Eq ty => PrimitiveRW dtype ty =>
+        Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (MkTensor l) /=# (MkTensor r) = MkTensor (binaryOp prim__ne l r)
 
 infix 6 <#, >#, <=#, >=#
@@ -414,25 +416,29 @@ infix 6 <#, >#, <=#, >=#
 ||| Element-wise less than. For example, `const [1, 2, 3] <# const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
 export
-(<#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(<#) : Ord ty => PrimitiveRW dtype ty =>
+       Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (MkTensor l) <# (MkTensor r) = MkTensor (binaryOp prim__lt l r)
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
-(>#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(>#) : Ord ty => PrimitiveRW dtype ty =>
+       Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (MkTensor l) ># (MkTensor r) = MkTensor (binaryOp prim__gt l r)
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
-(<=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(<=#) : Ord ty => PrimitiveRW dtype ty =>
+        Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (MkTensor l) <=# (MkTensor r) = MkTensor (binaryOp prim__le l r)
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
-(>=#) : Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape Bool
+(>=#) : Ord ty => PrimitiveRW dtype ty =>
+        Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (MkTensor l) >=# (MkTensor r) = MkTensor (binaryOp prim__ge l r)
 
 infixr 5 &&#
@@ -441,7 +447,7 @@ infixr 5 &&#
 ||| `const [True, True, False, False] &&# const [True, False, True, False]` is equivalent to
 ||| `const [True, False, False, False]`.
 export
-(&&#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
+(&&#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
 (MkTensor l) &&# (MkTensor r) = MkTensor (binaryOp prim__and l r)
 
 infixr 4 ||#
@@ -450,13 +456,13 @@ infixr 4 ||#
 ||| `const [True, True, False, False] ||# const [True, False, True, False]` is equivalent to
 ||| `const [True, True, True, False]`.
 export
-(||#) : Tensor shape Bool -> Tensor shape Bool -> Tensor shape Bool
+(||#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
 (MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
 export
-notEach : Tensor shape Bool -> Tensor shape Bool
+notEach : Tensor shape PRED -> Tensor shape PRED
 notEach (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
@@ -466,41 +472,43 @@ infixl 9 @@
 ||| the first axis of the last tensor. For example:
 |||
 ||| ```idris
-||| x : Tensor [2, 3] Double
+||| x : Tensor [2, 3] S32
 ||| x = const [[-1, -2, -3], [0, 1, 2]]
 |||
-||| y : Tensor [3, 1] Double
+||| y : Tensor [3, 1] S32
 ||| y = const [[4, 0, 5]]
 |||
-||| z : Tensor [2, 1] Double
+||| z : Tensor [2, 1] S32
 ||| z = x @@ y
 ||| ```
 |||
 ||| is equivalent to
 |||
 ||| ```idris
-||| z : Tensor [2, 1] Double
+||| z : Tensor [2, 1] S32
 ||| z = const [-19, 10]
 ||| ```
 export
-(@@) : Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
+(@@) : Num ty => PrimitiveRW dtype ty => Tensor l dtype -> Tensor (S n :: tail') dtype ->
        {auto 0 _ : last l = S n} -> Tensor (init l ++ tail') dtype
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
 export
-(+) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(+) : Num ty => PrimitiveRW dtype ty =>
+      Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
-negate : Neg dtype => Tensor shape dtype -> Tensor shape dtype
+negate : Neg ty => PrimitiveRW dtype ty => Tensor shape dtype -> Tensor shape dtype
 negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
-(-) : Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(-) : Neg ty => PrimitiveRW dtype ty =>
+      Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
 
 infixl 9 *#, /#
@@ -508,33 +516,35 @@ infixl 9 *#, /#
 ||| Element-wise multiplication. For example, `const [2, 3] *# const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
-(*#) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(*#) : Num ty => PrimitiveRW dtype ty =>
+       Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) *# (MkTensor r) = MkTensor (binaryOp prim__mul l r)
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
 export
-(*) : (Primitive dtype, Num dtype) => Tensor [] dtype -> {shape : _} -> Tensor shape dtype
-      -> Tensor shape dtype
-l * r = (broadcast {prf=scalarToAnyOk shape} l) *# r
+(*) : Num ty => PrimitiveRW dtype ty =>
+      Tensor [] dtype -> {shape : _} -> Tensor shape dtype -> Tensor shape dtype
+l * r = broadcast {prf=scalarToAnyOk shape} l *# r
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
 export
-(/#) : Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(/#) : Fractional ty => PrimitiveRW dtype ty =>
+       Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) /# (MkTensor r) = MkTensor (binaryOp prim__div l r)
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
 export
-(/) : (Primitive dtype, Fractional dtype) => {shape : _} ->
+(/) : Fractional ty => PrimitiveRW dtype ty => {shape : _} ->
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
-l / r = l /# (broadcast {prf=scalarToAnyOk shape} r)
+l / r = l /# broadcast {prf=scalarToAnyOk shape} r
 
 ||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.
 export
-absEach : Abs dtype => Tensor shape dtype -> Tensor shape dtype
+absEach : Abs ty => PrimitiveRW dtype ty => Tensor shape dtype -> Tensor shape dtype
 absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
 
 infixr 9 ^
@@ -544,11 +554,12 @@ infixr 9 ^
 |||
 ||| Note: The first root is used.
 export
-(^) : Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(^) : Num ty => PrimitiveRW dtype ty =>
+      Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
 ||| The element-wise natural exponential.
 export
-exp : Tensor shape Double -> Tensor shape Double
+exp : Tensor shape F64 -> Tensor shape F64
 
 infix 8 +=
 infix 8 -=
@@ -560,7 +571,7 @@ infix 8 //=
 ||| get the updated value. For example:
 |||
 ||| ```idris
-||| addOne : (1 v : Variable [] Double) -> Variable [] Double
+||| addOne : (1 v : Variable [] F64) -> Variable [] F64
 ||| addOne v = v += const {shape=[]} 1
 ||| ```
 |||
@@ -584,20 +595,22 @@ export
 
 ||| The element-wise natural logarithm.
 export
-log : Tensor shape Double -> Tensor shape Double
+log : Tensor shape F64 -> Tensor shape F64
 
 ||| Reduce a `Tensor` along the specified `axis` to the smallest element along that axis, removing
 ||| the axis in the process. For example, `reduce_min 1 $ const [[-1, 5, 10], [4, 5, 6]]` is
 ||| equivalent to `const [-1, 5, 6]`.
 export
-reduce_min : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
+reduce_min : Num ty => PrimitiveRW dtype ty =>
+  (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
   {auto 0 _ : IsSucc $ index axis shape} -> Tensor (deleteAt axis shape) dtype
 
 ||| Reduce a `Tensor` along the specified `axis` to the sum of its components, removing the axis in
 ||| the process. For example, `reduce_sum 1 $ const [[-1, 2, 3], [4, 5, -6]]` is equivalent to
 ||| `const [3, 7, -3]`.
 export
-reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
+reduce_sum : Num ty => PrimitiveRW dtype ty =>
+  (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
   {auto 0 _ : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
 
 ---------------------------- other ----------------------------------
@@ -605,7 +618,7 @@ reduce_sum : Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : forall shape, dtype . Neg dtype => Tensor shape dtype ->
+det : forall shape, dtype . PrimitiveRW dtype ty => Neg ty => Tensor shape dtype ->
       let leading = init (init shape)
           m = last (init shape)
           n = last shape
@@ -633,13 +646,13 @@ Error SingularMatrixError where
 ||| The inverse of a matrix. For example, `inverse $ const [[1, 2], [3, 4]]` is equivalent to
 ||| `const [[-2, -1], [-1.5, -0.5]]`.
 export
-inverse : Tensor [S n, S n] Double -> Either SingularMatrixError $ Tensor [S n, S n] Double
+inverse : Tensor [S n, S n] F64 -> Either SingularMatrixError $ Tensor [S n, S n] F64
 
 ||| The product of all elements along the diagonal of a matrix. For example,
 ||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
 export
-trace_product : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+trace_product : Num ty => PrimitiveRW dtype ty => Tensor [S n, S n] dtype -> Tensor [] dtype
 
 ||| Sum the elements along the diagonal of the input.
 export
-trace : Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+trace : Num ty => PrimitiveRW dtype ty => Tensor [S n, S n] dtype -> Tensor [] dtype

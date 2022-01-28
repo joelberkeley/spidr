@@ -28,14 +28,14 @@ import Tensor
 public export
 interface Distribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) | dist where
   ||| The mean of the distribution.
-  mean : dist dim -> Tensor (dim :: event) Double
+  mean : dist dim -> Tensor (dim :: event) F64
 
   ||| The covariance, or correlation, between sub-events.
-  cov : dist dim -> Tensor (dim :: dim :: event) Double
+  cov : dist dim -> Tensor (dim :: dim :: event) F64
 
 ||| The variance of a single random variable.
 export
-variance : Distribution event dist => dist 1 -> Tensor (1 :: event) Double
+variance : Distribution event dist => dist 1 -> Tensor (1 :: event) F64
 variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
@@ -48,11 +48,11 @@ public export
 interface Distribution event dist =>
   ClosedFormDistribution (0 event : Shape) (0 dist : (0 dim : Nat) -> Type) where
     ||| The probability density function of the distribution at the specified point.
-    pdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
+    pdf : dist (S d) -> Tensor (S d :: event) F64 -> Tensor [] F64
 
     ||| The cumulative distribution function of the distribution at the specified point (that is,
     ||| the probability the random variable takes a value less than or equal to the given point).
-    cdf : dist (S d) -> Tensor (S d :: event) Double -> Tensor [] Double
+    cdf : dist (S d) -> Tensor (S d :: event) F64 -> Tensor [] F64
 
 ||| A joint Gaussian distribution.
 |||
@@ -62,8 +62,8 @@ public export
 data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
-  MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) Double) ->
-               (cov : Tensor (S d :: S d :: event) Double) ->
+  MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) F64) ->
+               (cov : Tensor (S d :: S d :: event) F64) ->
                Gaussian event (S d)
 
 export
@@ -74,13 +74,13 @@ Distribution event (Gaussian event) where
 export
 ClosedFormDistribution [1] (Gaussian [1]) where
   pdf (MkGaussian {d} mean cov) x =
-    let diff : Tensor [S d, 1] Double
+    let diff : Tensor [S d, 1] F64
         diff = x - mean
 
-        exponent : Tensor [] Double
+        exponent : Tensor [] F64
         exponent = - (squeeze $ diff.T @@ cov.T @@ diff) / (const 2.0)
 
-        denominator : Tensor [] Double
+        denominator : Tensor [] F64
         denominator = (const $ 2 * pi) ^ (const $ cast (S d) / 2.0)
                       * (det $ squeeze {to=[S d, S d]} cov) ^ const 0.5
 

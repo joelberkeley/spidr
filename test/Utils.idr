@@ -26,9 +26,9 @@ assert name x = unless x $ do
     exitFailure
 
 export
-assertAll : String -> {shape : _} -> Tensor shape Bool -> IO ()
+assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
 assertAll name xs = assert name (arrayAll !(eval xs)) where
-    arrayAll : {shape : _} -> Array shape {dtype=Bool} -> Bool
+    arrayAll : {shape : _} -> Array shape Bool -> Bool
     arrayAll {shape = []} x = x
     arrayAll {shape = (0 :: _)} [] = True
     arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
@@ -112,7 +112,7 @@ test_sufficientlyEq = do
 -- WARNING: This uses a number of functions, and thus assumes they work, so
 -- we shouldn't use it to test them.
 export
-sufficientlyEqEach : {shape : _} -> Tensor shape Double -> Tensor shape Double -> Tensor shape Bool
+sufficientlyEqEach : {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
 sufficientlyEqEach x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
