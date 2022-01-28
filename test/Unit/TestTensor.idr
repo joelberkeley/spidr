@@ -208,18 +208,18 @@ test_map2 : IO ()
 test_map2 = do
     let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
         r = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-    assertAll "map2 for Int array" $ map2 (<#) l r ==# (l <# r)
+    assertAll "map2 for Int array" $ map2 (+) l r ==# (l + r)
 
     let l = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
         r = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    assertAll "map2 for Double matrix" $ map2 (<#) l r ==# (l <# r)
+    assertAll "map2 for Double matrix" $ sufficientlyEqEach (map2 (+) l r) (l + r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
         let l' = const {shape=[]} {dtype=F64} l
             r' = const {shape=[]} {dtype=F64} r
-        pure $ assertAll "map2 for Double scalars" $ map2 (>#) l' r' ==# (l' ># r')
+        pure $ assertAll "map2 for Double scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
 
 export
 test_elementwise_equality : IO ()
