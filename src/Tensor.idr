@@ -353,11 +353,11 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| recipEach : Tensor shape F64 -> Tensor shape F64
-||| recipEach = map (const 1 /)
+||| recip : Tensor [] F64 -> Tensor [] F64
+||| recip = (const 1 /)
 ||| ```
-||| is the element-wise reciprocal function such that `recipEach (const [-2, 0.4])` is equivalent to
-||| `const [-0.5, 2.5]`.
+||| can be lifted to an element-wise reciprocal function as `map recip (const [-2, 0.4])`, which is
+||| equivalent to `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b)
       -> {shape : _} -> Tensor shape a -> Tensor shape b
@@ -388,8 +388,9 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
 ||| addRecipLeft : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
 ||| addRecipLeft x y = x + const 1 / y
 ||| ```
-||| is the element-wise reciprocal function such that
-||| `map2 addRecipLeft (const [3.0, -3.0]) (const [-2, 0.4])` is equivalent to `const [2.5, -0.5]`.
+||| can be lifted to an element-wise function as
+||| `map2 addRecipLeft (const [3.0, -3.0]) (const [-2, 0.4])`, which is equivalent to
+||| `const [2.5, -0.5]`.
 export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
       -> {shape : _} -> Tensor shape a -> Tensor shape b -> Tensor shape c
