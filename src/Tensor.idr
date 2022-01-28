@@ -386,7 +386,7 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
 ||| For example,
 ||| ```idris
 ||| addRecipLeft : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
-||| addRecipLeft x, y = x + const 1 / y
+||| addRecipLeft x y = x + const 1 / y
 ||| ```
 ||| is the element-wise reciprocal function such that
 ||| `map2 addRecipLeft (const [3.0, -3.0]) (const [-2, 0.4])` is equivalent to `const [2.5, -0.5]`.
