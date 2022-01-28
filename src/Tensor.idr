@@ -385,11 +385,11 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| addRecipLeft : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
-||| addRecipLeft x y = x + const 1 / y
+||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
+||| addRecip x y = x + const 1 / y
 ||| ```
 ||| can be lifted to an element-wise function as
-||| `map2 addRecipLeft (const [3.0, -3.0]) (const [-2, 0.4])`, which is equivalent to
+||| `map2 addRecip (const [3.0, -3.0]) (const [-2, 0.4])`, which is equivalent to
 ||| `const [2.5, -0.5]`.
 export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
