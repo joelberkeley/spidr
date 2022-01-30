@@ -692,3 +692,96 @@ trace_product : Num ty => PrimitiveRW dtype ty => Tensor [S n, S n] dtype -> Ten
 ||| Sum the elements along the diagonal of the input.
 export
 trace : Num ty => PrimitiveRW dtype ty => Tensor [S n, S n] dtype -> Tensor [] dtype
+
+addUntyped : Tensor [] a -> Tensor [] b -> Tensor [] c
+addUntyped (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__add l r)
+
+export
+Num (Tensor [] U32) where
+  (+) = addUntyped
+  (MkTensor l) * (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+  fromInteger = const . fromInteger
+
+export
+Num (Tensor [] U64) where
+  (+) = addUntyped
+  (MkTensor l) * (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+  fromInteger = const . fromInteger
+
+export
+Num (Tensor [] S32) where
+  (+) = addUntyped
+  (MkTensor l) * (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+  fromInteger = const . fromInteger
+
+export
+Num (Tensor [] S64) where
+  (+) = addUntyped
+  (MkTensor l) * (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+  fromInteger = const . fromInteger
+
+export
+Num (Tensor [] F32) where
+  (+) = addUntyped
+  (MkTensor l) * (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+  fromInteger = const . fromInteger
+
+export
+Num (Tensor [] F64) where
+  (MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
+  (MkTensor l) * (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+  fromInteger = const . fromInteger
+
+export
+FromDouble (Tensor [] F32) where
+  fromDouble = const . fromDouble
+
+export
+FromDouble (Tensor [] F64) where
+  fromDouble = const . fromDouble
+
+export
+Neg (Tensor [] S32) where
+  negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
+  (MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
+
+export
+Neg (Tensor [] S64) where
+  negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
+  (MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
+
+export
+Neg (Tensor [] F32) where
+  negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
+  (MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
+
+export
+Neg (Tensor [] F64) where
+  negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
+  (MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
+
+export
+Abs (Tensor [] S32) where
+  abs (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+
+export
+Abs (Tensor [] S64) where
+  abs (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+
+export
+Abs (Tensor [] F32) where
+  abs (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+
+export
+Abs (Tensor [] F64) where
+  abs (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+
+export
+Fractional (Tensor [] F32) where
+  (MkTensor l) / (MkTensor r) = MkTensor (binaryOp prim__div l r)
+  recip = (1 /)
+
+export
+Fractional (Tensor [] F64) where
+  (MkTensor l) / (MkTensor r) = MkTensor (binaryOp prim__div l r)
+  recip = (1 /)

@@ -86,6 +86,11 @@ prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()
 literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
 
 export
+LiteralPrimitiveRW F32 Double where
+  set = prim__literalSetDouble
+  get = literalGetDouble
+
+export
 LiteralPrimitiveRW F64 Double where
   set = prim__literalSetDouble
   get = literalGetDouble
@@ -102,7 +107,17 @@ LiteralPrimitiveRW S32 Int where
   get = literalGetInt
 
 export
+LiteralPrimitiveRW S64 Int where
+  set = prim__literalSetInt
+  get = literalGetInt
+
+export
 LiteralPrimitiveRW U32 Nat where
+  set lit idx x = prim__literalSetInt lit idx (cast x)
+  get = cast .: literalGetInt
+
+export
+LiteralPrimitiveRW U64 Nat where
   set lit idx x = prim__literalSetInt lit idx (cast x)
   get = cast .: literalGetInt
 

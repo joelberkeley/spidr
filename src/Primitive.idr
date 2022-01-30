@@ -26,5 +26,8 @@ interface LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
 
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where
+export PrimitiveRW S64 Int where
 export PrimitiveRW U32 Nat where
+export PrimitiveRW U64 Nat where
+export PrimitiveRW F32 Double where
 export PrimitiveRW F64 Double where

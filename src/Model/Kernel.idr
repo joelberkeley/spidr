@@ -66,8 +66,7 @@ rbf length_scale x x' = exp (- scaled_l2_norm length_scale x x' / const 2.0)
 ||| @amplitude The amplitude `\sigma`.
 ||| @length_scale The length scale `l`.
 export
-matern52 : (amplitude : Tensor [] F64) -> (length_scale : Tensor [] F64)
-           -> {d : _} -> Kernel [S d]
-matern52 amp len x x' = let d2 = const 5.0 * scaled_l2_norm len x x'
+matern52 : (amplitude : Tensor [] F64) -> (length_scale : Tensor [] F64) -> {d : _} -> Kernel [S d]
+matern52 amp len x x' = let d2 = 5.0 * scaled_l2_norm len x x'
                             d = d2 ^ fill 0.5
-                         in (amp ^ const 2.0) * (d2 / fill 3.0 + d + fill 1.0) *# exp (- d)
+                         in (amp ^ const 2.0) * (d2 / 3.0 + d + fill 1.0) *# exp (- d)
