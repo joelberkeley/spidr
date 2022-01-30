@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module defines supported primitive backend types and their interaction with Idris.
+|||
+||| The module contains a number of interfaces (`Primitive.Num`, `Primitive.Eq` etc.). These
+||| indicate what operations can be performed on primitive data in the backend. They are entirely
+||| distinct from the Idris interfaces `Prelude.Num` etc. but carry largely the same meaning.
+||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
 import public XLA.XlaData
