@@ -30,6 +30,7 @@ main = do
     test_broadcast
     test_map
     test_map2
+    test_reduce
     test_elementwise_equality
     test_elementwise_inequality
     test_comparison

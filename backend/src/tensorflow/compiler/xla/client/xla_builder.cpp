@@ -171,6 +171,29 @@ extern "C" {
 
     XlaOp* Not(XlaOp& operand) { return unaryOp(xla::Not, operand); }
 
+    XlaOp* Reduce(
+        XlaOp& operand,
+        XlaOp& init_value,
+        const XlaComputation& computation,
+        int* dimensions_to_reduce,
+        int dimensions_to_reduce_len
+    ) {
+        xla::int64 dimensions_to_reduce64[dimensions_to_reduce_len];
+        std::copy(
+            dimensions_to_reduce,
+            dimensions_to_reduce + dimensions_to_reduce_len,
+            dimensions_to_reduce64
+        );
+
+        xla::XlaOp res = xla::Reduce(
+            reinterpret_cast<xla::XlaOp&>(operand),
+            reinterpret_cast<xla::XlaOp&>(init_value),
+            reinterpret_cast<const xla::XlaComputation&>(computation),
+            absl::Span<const xla::int64>(dimensions_to_reduce64, dimensions_to_reduce_len)
+        );
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 

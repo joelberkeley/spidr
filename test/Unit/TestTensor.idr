@@ -186,21 +186,21 @@ export
 test_map : IO ()
 test_map = do
     let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-    assertAll "map for Int array" $ map absEach x ==# absEach x
+    assertAll "map for S32 array" $ map absEach x ==# absEach x
 
     let x = const {shape=[_, _]} {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
-    assertAll "map for Double array" $
+    assertAll "map for F64 array" $
         map (const 1 /) x ==# const [[1.0, 0.4, 1 / 0.0], [-1.25, -10, 0.2]]
 
     sequence_ $ do
         x <- ints
         let x = const {shape=[]} {dtype=S32} x
-        pure $ assertAll "map for int scalar" $ map (+ const 1) x ==# x + const 1
+        pure $ assertAll "map for S32 scalar" $ map (+ const 1) x ==# x + const 1
 
     sequence_ $ do
         x <- doubles
         let x = const {shape=[]} {dtype=F64} x
-        pure $ assertAll "map for double scalar" $
+        pure $ assertAll "map for F64 scalar" $
             sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
 
 export
@@ -208,24 +208,36 @@ test_map2 : IO ()
 test_map2 = do
     let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
         r = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-    assertAll "map2 for Int array" $ map2 (+) l r ==# (l + r)
+    assertAll "map2 for S32 array" $ map2 (+) l r ==# (l + r)
 
     let l = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
         r = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    assertAll "map2 for Double matrix" $ sufficientlyEqEach (map2 (+) l r) (l + r)
+    assertAll "map2 for F64 matrix" $ sufficientlyEqEach (map2 (+) l r) (l + r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
         let l' = const {shape=[]} {dtype=F64} l
             r' = const {shape=[]} {dtype=F64} r
-        pure $ assertAll "map2 for Double scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
+        pure $ assertAll "map2 for F64 scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
 
     sequence_ $ do
         l <- doubles
         let l' = const {shape=[]} {dtype=F64} l
-        pure $ assertAll "map2 for Double scalars with repeated argument" $
+        pure $ assertAll "map2 for F64 scalars with repeated argument" $
             sufficientlyEqEach (map2 (+) l' l') (l' + l')
+
+export
+test_reduce : IO ()
+test_reduce = do
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+    assertAll "reduce for F64 array" $ sufficientlyEqEach (reduce @{Sum} 1 x) (const [6.6, -6.6])
+
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+    assertAll "reduce for F64 array" $ sufficientlyEqEach (reduce @{Sum} 0 x) (const [0, 0, 0])
+
+    let x = const {shape=[_, _]} {dtype=PRED} [[True, False, True], [True, False, False]]
+    assertAll "reduce for PRED array" $ reduce @{All} 1 x ==# const [False, False]
 
 export
 test_elementwise_equality : IO ()
