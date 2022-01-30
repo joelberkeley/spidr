@@ -19,6 +19,51 @@ module Primitive
 import public XLA.XlaData
 import XLA.Literal
 
+%hide Prelude.Num
+%hide Prelude.Neg
+%hide Prelude.Abs
+%hide Prelude.Fractional
+
+export interface Num dtype where a_ : Nat
+export interface Num dtype => Neg dtype where
+export interface Num dtype => Abs dtype where
+export interface Num dtype => Fractional dtype where
+
+export Num U32 where a_ = 0
+export Num U64 where a_ = 0
+export Num S32 where a_ = 0
+export Num S64 where a_ = 0
+export Num F32 where a_ = 0
+export Num F64 where a_ = 0
+
+export Neg S32 where
+export Neg S64 where
+export Neg F32 where
+export Neg F64 where
+
+export Abs S32 where
+export Abs S64 where
+export Abs F32 where
+export Abs F64 where
+
+export Fractional F32 where
+export Fractional F64 where
+
+%hide Prelude.Eq
+%hide Prelude.Ord
+
+export interface Eq dtype where b_ : Nat
+export interface Eq dtype => Ord dtype where
+
+export Primitive dtype => Eq dtype where b_ = 0
+
+export Ord U32 where
+export Ord U64 where
+export Ord S32 where
+export Ord S64 where
+export Ord F32 where
+export Ord F64 where
+
 ||| A `PrimitiveRW a b` constitutes proof that we can read and write between a backend primitive
 ||| type `dtype` and an Idris type `idr`.
 export
