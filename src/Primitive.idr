@@ -24,11 +24,7 @@ import XLA.Literal
 %hide Prelude.Abs
 %hide Prelude.Fractional
 
-export
-interface Num dtype where
-  a_ : Nat
-  a_ = 0
-
+export interface Num (dtype : Type) where
 export interface Num dtype => Neg dtype where
 export interface Num dtype => Abs dtype where
 export interface Num dtype => Fractional dtype where
@@ -56,11 +52,7 @@ export Fractional F64 where
 %hide Prelude.Eq
 %hide Prelude.Ord
 
-export
-interface Eq dtype where
-  b_ : Nat
-  b_ = 0
-
+export interface Eq (dtype : Type) where
 export interface Eq dtype => Ord dtype where
 
 export Eq PRED where
