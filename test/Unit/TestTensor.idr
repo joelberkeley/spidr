@@ -250,7 +250,8 @@ test_elementwise_equality = do
     sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
 
     where
-        compareScalars : Primitive dtype => PrimitiveRW dtype ty => Eq ty => ty -> ty -> IO ()
+        compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
+                         => Primitive.Eq dtype => ty -> ty -> IO ()
         compareScalars l r = do
             actual <- eval {shape=[]} ((const {dtype} l) ==# (const {dtype} r))
             assert "==# for scalars" (actual == (l == r))
@@ -277,7 +278,8 @@ test_elementwise_inequality = do
     sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
     where
-        compareScalars : Primitive dtype => Eq ty => PrimitiveRW dtype ty => ty -> ty -> IO ()
+        compareScalars : Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
+                         => PrimitiveRW dtype ty => ty -> ty -> IO ()
         compareScalars l r =
             assertAll "/=# for scalars" $ (const {dtype} l /=# const r) ==# const {shape=[]} (l /= r)
 
@@ -306,7 +308,8 @@ test_comparison = do
     sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
     where
-        compareScalars : Ord ty => PrimitiveRW dtype ty => Primitive dtype => ty -> ty -> IO ()
+        compareScalars : Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
+                         => Primitive dtype => ty -> ty -> IO ()
         compareScalars l r = do
             let l' = const {dtype} l
                 r' = const {dtype} r

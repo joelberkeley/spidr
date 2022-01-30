@@ -14,10 +14,66 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module defines supported primitive backend types and their interaction with Idris.
+|||
+||| The module contains a number of interfaces (`Primitive.Num`, `Primitive.Eq` etc.). These
+||| indicate what operations can be performed on primitive data in the backend. They are entirely
+||| distinct from the Idris interfaces `Prelude.Num` etc. but carry largely the same meaning.
+||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
 import public XLA.XlaData
 import XLA.Literal
+
+%hide Prelude.Num
+%hide Prelude.Neg
+%hide Prelude.Abs
+%hide Prelude.Fractional
+
+export interface Num (dtype : Type) where
+export interface Num dtype => Neg dtype where
+export interface Num dtype => Abs dtype where
+export interface Num dtype => Fractional dtype where
+
+export Num U32 where
+export Num U64 where
+export Num S32 where
+export Num S64 where
+export Num F32 where
+export Num F64 where
+
+export Neg S32 where
+export Neg S64 where
+export Neg F32 where
+export Neg F64 where
+
+export Abs S32 where
+export Abs S64 where
+export Abs F32 where
+export Abs F64 where
+
+export Fractional F32 where
+export Fractional F64 where
+
+%hide Prelude.Eq
+%hide Prelude.Ord
+
+export interface Eq (dtype : Type) where
+export interface Eq dtype => Ord dtype where
+
+export Eq PRED where
+export Eq U32 where
+export Eq U64 where
+export Eq S32 where
+export Eq S64 where
+export Eq F32 where
+export Eq F64 where
+
+export Ord U32 where
+export Ord U64 where
+export Ord S32 where
+export Ord S64 where
+export Ord F32 where
+export Ord F64 where
 
 ||| A `PrimitiveRW a b` constitutes proof that we can read and write between a backend primitive
 ||| type `dtype` and an Idris type `idr`.
