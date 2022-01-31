@@ -83,13 +83,19 @@ namespace XlaOp
   delete : AnyPtr -> IO ()
   delete = primIO . prim__delete
 
-export
 %foreign (libxla "sizeof_XlaOp")
 sizeOfXlaOp : Int
 
-export
 %foreign (libxla "set_array_XlaOp")
 prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
+
+export
+mkXlaOpArray : List GCAnyPtr -> IO GCAnyPtr
+mkXlaOpArray ops = do
+  arr <- malloc (cast (length ops) * sizeOfXlaOp)
+  traverse_ (\(idx, op) =>
+    primIO $ prim__setArrayXlaOp arr (cast idx) op) (enumerate (fromList ops))
+  onCollectAny arr free
 
 export
 %foreign (libxla "Parameter")
@@ -169,5 +175,5 @@ prim__neg : GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Map")
-prim__map : GCAnyPtr -> AnyPtr -> Int -> GCAnyPtr
+prim__map : GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr
             -> GCPtr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr

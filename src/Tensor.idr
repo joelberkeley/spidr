@@ -372,8 +372,7 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
   (MkTensor mkOp') <- [| f (parameter 0 "" [] {dtype=a}) |]
   _ <- mkOp' sub_builder
   computation <- prim__build sub_builder
-  operands <- malloc sizeOfXlaOp
-  primIO (prim__setArrayXlaOp operands 0 !(mkOp builder))
+  operands <- mkXlaOpArray [!(mkOp builder)]
   let rank = length shape
   dimensions <- mkIntArray (range rank)
   op <- primIO (prim__map
@@ -383,7 +382,6 @@ map f (MkTensor mkOp) = MkTensor $ \builder => do
       dimensions (cast rank)
       prim__getNullAnyPtr 0
     )
-  free operands
   onCollectAny op XlaOp.delete
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
@@ -403,9 +401,7 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   (MkTensor mkOp') <- [| f (parameter 0 "" [] {dtype=a}) (parameter 1 "" [] {dtype=b}) |]
   _ <- mkOp' sub_builder
   computation <- prim__build sub_builder
-  operands <- malloc (2 * sizeOfXlaOp)
-  primIO (prim__setArrayXlaOp operands 0 !(mkOpL builder))
-  primIO (prim__setArrayXlaOp operands 1 !(mkOpR builder))
+  operands <- mkXlaOpArray [!(mkOpL builder), !(mkOpR builder)]
   let rank = length shape
   dimensions <- mkIntArray (range rank)
   op <- primIO (prim__map
@@ -415,7 +411,6 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
       dimensions (cast rank)
       prim__getNullAnyPtr 0
     )
-  free operands
   onCollectAny op XlaOp.delete
 
 ----------------------------- numeric operations ----------------------------
