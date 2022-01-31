@@ -581,6 +581,18 @@ export
 export
 exp : Tensor shape F64 -> Tensor shape F64
 
+||| The element-wise minimum of the first argument compared to the second. For example,
+||| `minEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
+export
+minEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+minEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__min l r)
+
+||| The element-wise maximum of the first argument compared to the second. For example,
+||| `maxEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
+export
+maxEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+maxEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__max l r)
+
 infix 8 +=
 infix 8 -=
 infix 8 *=

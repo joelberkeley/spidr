@@ -154,6 +154,14 @@ export
 prim__div : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Max")
+prim__max : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Min")
+prim__min : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "And")
 prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 

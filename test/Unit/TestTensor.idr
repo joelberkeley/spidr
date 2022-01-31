@@ -513,6 +513,16 @@ test_absEach = do
         ) doubles
 
 export
+test_minEach : IO ()
+test_minEach = do
+    pure ()
+
+export
+test_maxEach : IO ()
+test_minEach = do
+    pure ()
+
+export
 test_negate : IO ()
 test_negate = do
     let x = const [[1, 15, -5], [-1, 7, 0]]
