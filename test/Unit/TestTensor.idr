@@ -501,11 +501,13 @@ test_absEach = do
 
     let x = const {shape=[3]} {dtype=F64} [1.8, -1.3, 0.0]
     actual <- eval (absEach x)
-    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
+    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq)
+        actual [1.8, 1.3, 0.0])
 
     sequence_ $ do
         x <- ints
-        pure $ assertAll "absEach for int scalar" $ absEach (const {shape=[]} {dtype=S32} x) ==# const (abs x)
+        pure $ assertAll "absEach for int scalar" $
+            absEach (const {shape=[]} {dtype=S32} x) ==# const (abs x)
 
     traverse_ (\x => do
             actual <- eval (absEach $ const {shape=[]} {dtype=F64} x)
@@ -515,12 +517,16 @@ test_absEach = do
 export
 test_minEach : IO ()
 test_minEach = do
-    pure ()
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
+        y = const {shape=[_, _]} {dtype=S32} [[2, 1, -1], [-2,  0, 0]]
+    assertAll "minEach for S32 array" $ minEach x y ==# const [[1, 1, -2], [-2, -1, 0]]
 
 export
 test_maxEach : IO ()
-test_minEach = do
-    pure ()
+test_maxEach = do
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
+        y = const {shape=[_, _]} {dtype=S32} [[2, 1, -1], [-2,  0, 0]]
+    assertAll "maxEach for S32 array" $ maxEach x y ==# const [[2, 2, -1], [-1, 0, 1]]
 
 export
 test_negate : IO ()
