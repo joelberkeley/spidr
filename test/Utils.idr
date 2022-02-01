@@ -47,7 +47,7 @@ inf = 1.0 / 0.0
 
 export
 doubles : List Double
-doubles = [-nan, -inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
+doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
 
 export
 floatingPointTolerance : Double
