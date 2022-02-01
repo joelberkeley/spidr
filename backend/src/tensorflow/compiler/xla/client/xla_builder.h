@@ -76,7 +76,8 @@ extern "C" {
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs);
-
+    XlaOp* Max(XlaOp& lhs, XlaOp& rhs);
+    XlaOp* Min(XlaOp& lhs, XlaOp& rhs);
     XlaOp* And(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Or(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Not(XlaOp& operand);

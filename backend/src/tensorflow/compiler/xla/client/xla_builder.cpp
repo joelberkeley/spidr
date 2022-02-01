@@ -152,6 +152,8 @@ extern "C" {
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }
     XlaOp* Div(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Div, lhs, rhs); }
     XlaOp* Rem(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Rem, lhs, rhs); }
+    XlaOp* Max(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Max, lhs, rhs); }
+    XlaOp* Min(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Min, lhs, rhs); }
 
     XlaOp* And(XlaOp& lhs, XlaOp& rhs) {
         auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);

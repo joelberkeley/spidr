@@ -43,6 +43,8 @@ main = do
     test_elementwise_or
     test_elementwise_notEach
     test_absEach
+    test_minEach
+    test_maxEach
     test_negate
 
     test_parameter_addition

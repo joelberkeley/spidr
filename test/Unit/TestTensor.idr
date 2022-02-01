@@ -395,7 +395,8 @@ test_elementwise_multiplication = do
     sequence_ $ do
         l <- ints
         r <- ints
-        pure $ assertAll "*# for int scalar" $ (const l *# const r) ==# const {shape=[]} {dtype=S32} (l * r)
+        pure $ assertAll "*# for int scalar" $
+            (const l *# const r) ==# const {shape=[]} {dtype=S32} (l * r)
 
     sequence_ $ do
         l <- doubles
@@ -421,7 +422,8 @@ test_scalar_multiplication = do
     sequence_ $ do
         l <- ints
         r <- ints
-        pure $ assertAll "* for int scalar" $ (const l * const r) ==# const {shape=[]} {dtype=S32} (l * r)
+        pure $ assertAll "* for int scalar" $
+            (const l * const r) ==# const {shape=[]} {dtype=S32} (l * r)
 
     sequence_ $ do
         l <- doubles
@@ -501,16 +503,72 @@ test_absEach = do
 
     let x = const {shape=[3]} {dtype=F64} [1.8, -1.3, 0.0]
     actual <- eval (absEach x)
-    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
+    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq)
+        actual [1.8, 1.3, 0.0])
 
     sequence_ $ do
         x <- ints
-        pure $ assertAll "absEach for int scalar" $ absEach (const {shape=[]} {dtype=S32} x) ==# const (abs x)
+        pure $ assertAll "absEach for int scalar" $
+            absEach (const {shape=[]} {dtype=S32} x) ==# const (abs x)
 
     traverse_ (\x => do
             actual <- eval (absEach $ const {shape=[]} {dtype=F64} x)
             assert "absEach for double scalar" (sufficientlyEq actual (abs x))
         ) doubles
+
+export
+test_minEach : IO ()
+test_minEach = do
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
+        y = const {shape=[_, _]} {dtype=S32} [[2, 1, -1], [-2,  0, 0]]
+    assertAll "minEach for S32 array" $ minEach x y ==# const [[1, 1, -2], [-2, -1, 0]]
+
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+        y = const {shape=[_, _]} {dtype=F64} [[2.0, 1.2, -1.1], [-2.3,  0.0, 0.0]]
+    assertAll "minEach for F64 array" $ minEach x y ==# const [[1.1, 1.2, -2.0], [-2.3, -1.0, 0.0]]
+
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll ("minEach for S32 scalars " ++ show (l, r)) $
+            minEach (const l) (const r) ==# const {shape=[]} {dtype=S32} (min l r)
+
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ assertAll ("minEach for F64 scalars " ++ show (l, r)) $
+            sufficientlyEqEach (minEach (const l) (const r)) (const {shape=[]} (minDouble l r))
+
+        where
+        minDouble : Double -> Double -> Double
+        minDouble x y = if (x /= x) then x else if (y /= y) then y else min x y
+
+export
+test_maxEach : IO ()
+test_maxEach = do
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
+        y = const {shape=[_, _]} {dtype=S32} [[2, 1, -1], [-2,  0, 0]]
+    assertAll "maxEach for S32 array" $ maxEach x y ==# const [[2, 2, -1], [-1, 0, 1]]
+
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+        y = const {shape=[_, _]} {dtype=F64} [[2.0, 1.2, -1.1], [-2.3,  0.0, 0.0]]
+    assertAll "maxEach for F64 array" $ maxEach x y ==# const [[2.0, 2.1, -1.1], [-1.3, 0.0, 1.0]]
+
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll ("maxEach for S32 scalars " ++ show (l, r)) $
+            maxEach (const l) (const r) ==# const {shape=[]} {dtype=S32} (max l r)
+
+    sequence_ $ do
+        l <- doubles
+        r <- doubles
+        pure $ assertAll ("maxEach for F64 scalars " ++ show (l, r)) $
+            sufficientlyEqEach (maxEach (const l) (const r)) (const {shape=[]} (maxDouble l r))
+
+        where
+        maxDouble : Double -> Double -> Double
+        maxDouble x y = if (x /= x) then x else if (y /= y) then y else max x y
 
 export
 test_negate : IO ()
