@@ -530,14 +530,18 @@ test_minEach = do
     sequence_ $ do
         l <- ints
         r <- ints
-        pure $ assertAll "minEach for S32 scalar" $
+        pure $ assertAll ("minEach for S32 scalars " ++ show (l, r)) $
             minEach (const l) (const r) ==# const {shape=[]} {dtype=S32} (min l r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll "minEach for F64 scalar" $
-            sufficientlyEqEach (minEach (const l) (const r)) (const {shape=[]} (min l r))
+        pure $ assertAll ("minEach for F64 scalars " ++ show (l, r)) $
+            sufficientlyEqEach (minEach (const l) (const r)) (const {shape=[]} (minDouble l r))
+
+        where
+        minDouble : Double -> Double -> Double
+        minDouble x y = if (x /= x) then x else if (y /= y) then y else min x y
 
 export
 test_maxEach : IO ()
@@ -553,14 +557,18 @@ test_maxEach = do
     sequence_ $ do
         l <- ints
         r <- ints
-        pure $ assertAll "maxEach for S32 scalar" $
+        pure $ assertAll ("maxEach for S32 scalars " ++ show (l, r)) $
             maxEach (const l) (const r) ==# const {shape=[]} {dtype=S32} (max l r)
 
     sequence_ $ do
         l <- doubles
         r <- doubles
-        pure $ assertAll "maxEach for F64 scalar" $
-            sufficientlyEqEach (maxEach (const l) (const r)) (const {shape=[]} (max l r))
+        pure $ assertAll ("maxEach for F64 scalars " ++ show (l, r)) $
+            sufficientlyEqEach (maxEach (const l) (const r)) (const {shape=[]} (maxDouble l r))
+
+        where
+        maxDouble : Double -> Double -> Double
+        maxDouble x y = if (x /= x) then x else if (y /= y) then y else max x y
 
 export
 test_negate : IO ()
