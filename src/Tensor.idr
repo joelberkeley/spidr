@@ -475,6 +475,16 @@ export
 (&&#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
 (MkTensor l) &&# (MkTensor r) = MkTensor (binaryOp prim__and l r)
 
+namespace Semigroup
+  export
+  [All] Semigroup (Tensor shape PRED) where
+      (<+>) = (&&#)
+
+namespace Monoid
+  export
+  [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
+      neutral = fill True
+
 infixr 4 ||#
 
 ||| Element-wise boolean or. For example,
@@ -483,6 +493,16 @@ infixr 4 ||#
 export
 (||#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
 (MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
+
+namespace Semigroup
+  export
+  [Any] Semigroup (Tensor shape PRED) where
+      (<+>) = (||#)
+
+namespace Monoid
+  export
+  [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
+      neutral = fill False
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
@@ -523,6 +543,17 @@ export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
 
+namespace Semigroup
+  export
+  [Sum] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
+      (<+>) = (+)
+
+namespace Monoid
+  export
+  [Sum] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
+    Monoid (Tensor shape dtype) using Semigroup.Sum where
+      neutral = fill 0
+
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
@@ -548,6 +579,17 @@ export
 (*) : Primitive dtype => Primitive.Num dtype =>
       Tensor [] dtype -> {shape : _} -> Tensor shape dtype -> Tensor shape dtype
 l * r = broadcast {prf=scalarToAnyOk shape} l *# r
+
+namespace Semigroup
+  export
+  [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
+      (<+>) = (*#)
+
+namespace Monoid
+  export
+  [Prod] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
+    Monoid (Tensor shape dtype) using Semigroup.Prod where
+      neutral = fill 1
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
@@ -587,11 +629,37 @@ export
 minEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 minEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__min l r)
 
+namespace Semigroup
+  export
+  [Min] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
+    (<+>) = min
+
+namespace Monoid
+  export
+  -- we can define an interface which captures the maximum and minimum of each numeric type, then
+  -- `fill` that value. This would mean we can define `Min` and `Max` for all numeric primitives
+  [Min] {shape : _} -> PrimitiveRW dtype Double =>
+        Primitive.Fractional dtype => Primitive.Ord dtype => 
+    Monoid (Tensor shape dtype) using Semigroup.Min where
+      neutral = fill (1.0 / 0.0)
+
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `maxEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
 export
 maxEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 maxEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__max l r)
+
+namespace Semigroup
+  export
+  [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
+    (<+>) = max
+
+namespace Monoid
+  export
+  [Max] {shape : _} -> PrimitiveRW dtype Double =>
+        Primitive.Fractional dtype => Primitive.Ord dtype => 
+    Monoid (Tensor shape dtype) using Semigroup.Max where
+      neutral = fill (- 1.0 / 0.0)
 
 infix 8 +=
 infix 8 -=
