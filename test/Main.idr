@@ -34,17 +34,23 @@ main = do
     test_elementwise_inequality
     test_comparison
     test_add
+    test_Sum
     test_subtract
     test_elementwise_multiplication
     test_scalar_multiplication
+    test_Prod
     test_elementwise_division
     test_scalar_division
     test_elementwise_and
+    test_All
     test_elementwise_or
+    test_Any
     test_elementwise_notEach
     test_absEach
     test_minEach
+    test_Min
     test_maxEach
+    test_Max
     test_negate
 
     test_parameter_addition

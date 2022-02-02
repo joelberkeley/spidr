@@ -355,6 +355,13 @@ test_add = do
             sufficientlyEqEach (const l + const r) (const {shape=[]} (l + r))
 
 export
+test_Sum : IO ()
+test_Sum = do
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+    assertAll "Sum neutral is neutral right" $ (<+>) @{Sum} x (neutral @{Sum}) ==# x
+    assertAll "Sum neutral is neutral left" $ (<+>) @{Sum} (neutral @{Sum}) x ==# x
+
+export
 test_subtract : IO ()
 test_subtract = do
     let l = const [[1, 15, 5], [-1, 7, 6]]
@@ -431,6 +438,13 @@ test_scalar_multiplication = do
         pure $ assertAll "* for double array" $
             sufficientlyEqEach (const l * const r) (const {shape=[]} (l * r))
 
+export
+test_Prod : IO ()
+test_Prod = do
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+    assertAll "Prod neutral is neutral right" $ (<+>) @{Prod} x (neutral @{Prod}) ==# x
+    assertAll "Prod neutral is neutral left" $ (<+>) @{Prod} (neutral @{Prod}) x ==# x
+
 assertBooleanOpArray : String -> (Tensor [2, 2] PRED -> Tensor [2, 2] PRED -> Tensor [2, 2] PRED)
                        -> Array [2, 2] Bool -> IO ()
 assertBooleanOpArray name op expected = do
@@ -453,10 +467,24 @@ test_elementwise_and = do
     assertBooleanOpScalar "&&# for scalar" (&&#) (&&)
 
 export
+test_All : IO ()
+test_All = do
+    let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
+    assertAll "All neutral is neutral right" $ (<+>) @{All} x (neutral @{All}) ==# x
+    assertAll "All neutral is neutral left" $ (<+>) @{All} (neutral @{All}) x ==# x
+
+export
 test_elementwise_or : IO ()
 test_elementwise_or = do
     assertBooleanOpArray "||# for array" (||#) [[True, True], [True, False]]
     assertBooleanOpScalar "||# for scalar" (||#) (||)
+
+export
+test_Any : IO ()
+test_Any = do
+    let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
+    assertAll "Any neutral is neutral right" $ (<+>) @{Any} x (neutral @{Any}) ==# x
+    assertAll "Any neutral is neutral left" $ (<+>) @{Any} (neutral @{Any}) x ==# x
 
 export
 test_elementwise_notEach : IO ()
@@ -544,6 +572,13 @@ test_minEach = do
         minDouble x y = if (x /= x) then x else if (y /= y) then y else min x y
 
 export
+test_Min : IO ()
+test_Min = do
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+    assertAll "Min neutral is neutral right" $ (<+>) @{Min} x (neutral @{Min}) ==# x
+    assertAll "Min neutral is neutral left" $ (<+>) @{Min} (neutral @{Min}) x ==# x
+
+export
 test_maxEach : IO ()
 test_maxEach = do
     let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
@@ -569,6 +604,13 @@ test_maxEach = do
         where
         maxDouble : Double -> Double -> Double
         maxDouble x y = if (x /= x) then x else if (y /= y) then y else max x y
+
+export
+test_Max : IO ()
+test_Max = do
+    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+    assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) ==# x
+    assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x ==# x
 
 export
 test_negate : IO ()
