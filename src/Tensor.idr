@@ -414,6 +414,12 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   onCollectAny op XlaOp.delete
 
 -- support multiple axes in this PR or another?
+||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
+||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
+||| `const [3, 5, 7]` and `reduce @{Sum} 1 x` to `const [3, 12]`.
+|||
+||| @reducer How to combine pairs of elements.
+||| @axis The axis along which to reduce elements.
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Fin (S r))
   -> {shape : _} -> Tensor {rank=S r} shape dtype -> Tensor (deleteAt axis shape) dtype
