@@ -636,8 +636,6 @@ namespace Semigroup
 
 namespace Monoid
   export
-  -- we can define an interface which captures the maximum and minimum of each numeric type, then
-  -- `fill` that value. This would mean we can define `Min` and `Max` for all numeric primitives
   [Min] {shape : _} -> PrimitiveRW dtype Double =>
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Min where
