@@ -632,7 +632,7 @@ minEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__min l r)
 namespace Semigroup
   export
   [Min] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = min
+    (<+>) = minEach
 
 namespace Monoid
   export
@@ -652,7 +652,7 @@ maxEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__max l r)
 namespace Semigroup
   export
   [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = max
+    (<+>) = maxEach
 
 namespace Monoid
   export
