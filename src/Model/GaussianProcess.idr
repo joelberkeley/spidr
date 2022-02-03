@@ -85,14 +85,14 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
 
 ||| A probabilistic model from feature values to a distribution over latent target values.
 export
-[Latent] ProbabilisticModel features [1] (Gaussian [1]) (ConjugateGPRegression features) where
+[Latent] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise (MkConjugateGPR mk_gp gp_params _) x =
     let (MkGP meanf kernel) = mk_gp gp_params
      in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
 
 ||| A probabilistic model from feature values to a distribution over observed target values.
 export
-[Observed] ProbabilisticModel features [1] (Gaussian [1]) (ConjugateGPRegression features) where
+[Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise cgpr@(MkConjugateGPR _ _ noise) x =
     let (MkGaussian latent_mean latent_cov) = marginalise @{Latent} cgpr x
      in MkGaussian latent_mean (latent_cov + (broadcast $ expand 2 (diag {n = S n} noise)))

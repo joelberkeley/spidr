@@ -29,8 +29,8 @@ import Error
 ||| @features The shape of the feature domain.
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
-Empiric : Distribution targets marginal => (0 features : Shape) -> (0 out : Type) -> Type
-Empiric features out =
+Empiric : Distribution {rank} marginal => (0 features : Shape) -> (0 targets : Shape {rank}) -> (0 out : Type) -> Type
+Empiric features targets out =
   {0 model : _} -> ProbabilisticModel features targets marginal model =>
   Dataset features targets -> model -> out
 
@@ -50,30 +50,30 @@ Acquisition batch_size features = Tensor (batch_size :: features) F64 -> Tensor 
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : ProbabilisticModel features [1] (Gaussian [1]) m => m ->
+expectedImprovement : ProbabilisticModel features [1] Gaussian m => m ->
                       (best : Tensor [] F64) -> Acquisition 1 features
 expectedImprovement model best at =
   let marginal = marginalise model at
       best' = broadcast {to=[_, 1]} best
       pdf = pdf marginal best'
       cdf = cdf marginal best'
-      mean = squeeze (mean marginal)
-      variance = squeeze (variance marginal)
+      mean = squeeze (mean {event=[1]} {dim=1} marginal)
+      variance = squeeze (variance {event=[1]} marginal)
    in (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
-expectedImprovementByModel : Empiric features {marginal=Gaussian [1]} $ Acquisition 1 features
+expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
 expectedImprovementByModel (MkDataset query_points _) model at =
-  let best = squeeze $ reduce @{Min} 0 $ mean $ marginalise model query_points
+  let best = squeeze $ reduce @{Min} 0 $ mean {event=[1]} $ marginalise model query_points
    in expectedImprovement model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
 probabilityOfFeasibility : (limit : Tensor [] F64) -> ClosedFormDistribution [1] d =>
-                           Empiric features {marginal=d} $ Acquisition 1 features
+                           Empiric features [1] {marginal=d} $ Acquisition 1 features
 probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadcast {to=[_, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
@@ -83,13 +83,13 @@ probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadca
 |||   `Nothing`.
 export
 negativeLowerConfidenceBound : (beta : Double) ->
-  Either ValueError $ Empiric features {marginal=Gaussian [1]} $ Acquisition 1 features
+  Either ValueError $ Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
 negativeLowerConfidenceBound beta =
   if beta < 0
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right $ \_, model, at =>
     let marginal = marginalise model at
-     in squeeze $ mean marginal - const beta * variance marginal
+     in squeeze $ mean {event=[1]} marginal - const beta * variance {event=[1]} marginal
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
@@ -97,4 +97,4 @@ negativeLowerConfidenceBound beta =
 ||| whether specified points in the input space satisfy the constraint.
 export
 expectedConstrainedImprovement : (limit : Tensor [] F64) ->
-  Empiric features {marginal=Gaussian [1]} $ (Acquisition 1 features -> Acquisition 1 features)
+  Empiric features [1] {marginal=Gaussian} $ (Acquisition 1 features -> Acquisition 1 features)

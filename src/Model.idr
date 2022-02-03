@@ -26,12 +26,12 @@ import Tensor
 ||| @targets The shape of the target domain.
 ||| @marginal The type of mulitvariate marginal distribution over the target domain.
 public export
-interface Distribution targets marginal =>
+interface Distribution marginal =>
   ProbabilisticModel
     (0 features : Shape)
     -- we really don't like having to write targets twice. how to approach? change Distribution?
-    (0 targets : Shape)
-    (0 marginal : (0 dim : Nat) -> Type)
+    (0 targets : Shape {rank})
+    (0 marginal : (0 event : Shape {rank}) -> (0 dim : Nat) -> Type)
     model | model
     where
-      marginalise : model -> {n : Nat} -> Tensor (Vect.(::) (S n) features) F64 -> marginal (S n)
+      marginalise : model -> {n : Nat} -> Tensor (Vect.(::) (S n) features) F64 -> marginal targets (S n)

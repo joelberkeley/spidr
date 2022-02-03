@@ -81,7 +81,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Tensor [1, 2] F64
-newPoint = optimizer $ squeeze . mean . (marginalise @{Latent} model)
+newPoint = optimizer $ squeeze . mean {event=[1]} . (marginalise @{Latent} model)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -120,7 +120,7 @@ In the above example, we constructed the acquisition function from our model, th
 ```idris
 -- does this need to be ProbabilisticModel as before?
 modelMean : ConjugateGPRegression [2] -> Acquisition 1 [2]
-modelMean model = squeeze . mean . (marginalise @{Latent} model)
+modelMean model = squeeze . mean {event=[1]} . (marginalise @{Latent} model)
 
 newPoint' : Tensor [1, 2] F64
 newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
