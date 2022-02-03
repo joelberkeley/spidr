@@ -27,5 +27,10 @@ import Tensor
 ||| @marginal The type of mulitvariate marginal distribution over the target domain.
 public export
 interface Distribution targets marginal =>
-    ProbabilisticModel (0 features : Shape) (0 targets : Shape) (0 marginal : (0 dim : Nat) -> Type) m | m where
-  marginalise : m -> {n : _} -> Tensor (Vect.(::) (S n) features) F64 -> marginal (S n)
+  ProbabilisticModel
+    (0 features : Shape)
+    (0 targets : Shape)
+    (0 marginal : (0 dim : Nat) -> Type)
+    model | model
+    where
+      marginalise : model -> {n : Nat} -> Tensor (Vect.(::) (S n) features) F64 -> marginal (S n)

@@ -30,7 +30,9 @@ import Error
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
 Empiric : Distribution targets marginal => (0 features : Shape) -> (0 out : Type) -> Type
-Empiric features out = {0 m : _} -> ProbabilisticModel features targets marginal m => Dataset features targets -> m -> out
+Empiric features out =
+  {0 m : _} -> ProbabilisticModel features targets marginal m =>
+  Dataset features targets -> m -> out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
