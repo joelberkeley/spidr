@@ -235,9 +235,7 @@ iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{La
               in loop tactic observe (historicData, model)
 ```
 
-It's worth pausing at this point to look at how we use `predict_latent`. In earlier examples, we converted `ConjugateGPRegression`s to `ProbabilisticModel`s in the call to `run`, while in this loop example, we converted it in the implementation of `tactic`. Both are valid, but in the loop the acquisition function uses the `ProbabilisticModel`, while we train the `ConjugateGPRegression` itself on the data, so we must pass the latter to `loop`. If `ProbabilisticModel` were an interface rather than a type alias, we could have made a `ConjugateGPRegression` a `ProbabilisticModel` and there would be no need to be explicit. However, by being explicit like this, we can specify which `ProbabilisticModel` we pass to the acquisition function. For example, we could have used the observation predictions rather than the latent predictions. More generally, we can customize which model attributes we use in which part of the optimization tactic.
-
-Returning to the loop, we now have a `Stream`. We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
+We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
 
 ```idris
 firstFive : Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])

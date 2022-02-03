@@ -31,8 +31,8 @@ import Error
 public export 0
 Empiric : Distribution targets marginal => (0 features : Shape) -> (0 out : Type) -> Type
 Empiric features out =
-  {0 m : _} -> ProbabilisticModel features targets marginal m =>
-  Dataset features targets -> m -> out
+  {0 model : _} -> ProbabilisticModel features targets marginal model =>
+  Dataset features targets -> model -> out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
