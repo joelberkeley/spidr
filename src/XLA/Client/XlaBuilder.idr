@@ -174,6 +174,10 @@ export
 prim__not : GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Reduce")
+prim__reduce : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Abs")
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 

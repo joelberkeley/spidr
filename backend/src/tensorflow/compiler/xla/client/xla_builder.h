@@ -82,6 +82,14 @@ extern "C" {
     XlaOp* Or(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Not(XlaOp& operand);
 
+    XlaOp* Reduce(
+        XlaOp& operand,
+        XlaOp& init_value,
+        const XlaComputation& computation,
+        int* dimensions_to_reduce,
+        int dimensions_to_reduce_len
+    );
+
     XlaOp* Abs(XlaOp& operand);
     XlaOp* Neg(XlaOp& operand);
 

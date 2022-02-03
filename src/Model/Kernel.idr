@@ -36,7 +36,7 @@ scaled_l2_norm : Tensor [] F64 -> {d, n, n' : _}
  -> Tensor [n', S d] F64
  -> Tensor [n, n'] F64
 scaled_l2_norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
-                           in reduce_sum 2 $ ((xs - broadcast (expand 0 x')) / len) ^ fill 2.0
+                           in reduce @{Sum} 2 $ ((xs - broadcast (expand 0 x')) / len) ^ fill 2.0
 
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
 |||

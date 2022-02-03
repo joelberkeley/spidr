@@ -413,6 +413,29 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
     )
   onCollectAny op XlaOp.delete
 
+||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
+||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
+||| `const [3, 5, 7]` and `reduce @{Sum} 1 x` to `const [3, 12]`.
+|||
+||| @reducer How to reduce elements along the given `axis`.
+||| @axis The axis along which to reduce elements.
+export
+reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Fin (S r))
+  -> {shape : _} -> Tensor {rank=S r} shape dtype -> Tensor (deleteAt axis shape) dtype
+reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
+  sub_builder <- prim__createSubBuilder builder "computation"
+  (MkTensor mkOp') <- [| (parameter 0 "" [] {dtype}) <+> (parameter 1 "" [] {dtype}) |]
+  _ <- mkOp' sub_builder
+  let (MkTensor mk_init_value) = neutral @{reducer}
+  op <- primIO (prim__reduce
+      !(mkOp builder)
+      !(mk_init_value builder)
+      !(prim__build sub_builder)
+      !(mkIntArray [finToNat axis])
+      1
+    )
+  onCollectAny op XlaOp.delete
+
 ----------------------------- numeric operations ----------------------------
 
 unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> XlaOpFactory -> XlaOpFactory
@@ -697,20 +720,6 @@ export
 ||| The element-wise natural logarithm.
 export
 log : Tensor shape F64 -> Tensor shape F64
-
-||| Reduce a `Tensor` along the specified `axis` to the smallest element along that axis, removing
-||| the axis in the process. For example, `reduce_min 1 $ const [[-1, 5, 10], [4, 5, 6]]` is
-||| equivalent to `const [-1, 5, 6]`.
-export
-reduce_min : Primitive.Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
-  {auto 0 _ : IsSucc $ index axis shape} -> Tensor (deleteAt axis shape) dtype
-
-||| Reduce a `Tensor` along the specified `axis` to the sum of its components, removing the axis in
-||| the process. For example, `reduce_sum 1 $ const [[-1, 2, 3], [4, 5, -6]]` is equivalent to
-||| `const [3, 7, -3]`.
-export
-reduce_sum : Primitive.Num dtype => (axis : Fin (S r)) -> Tensor {rank=S r} shape dtype ->
-  {auto 0 _ : IsSucc $ index axis shape} ->  Tensor (deleteAt axis shape) dtype
 
 ---------------------------- other ----------------------------------
 
