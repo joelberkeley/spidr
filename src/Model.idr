@@ -29,6 +29,7 @@ public export
 interface Distribution targets marginal =>
   ProbabilisticModel
     (0 features : Shape)
+    -- we really don't like having to write targets twice. how to approach? change Distribution?
     (0 targets : Shape)
     (0 marginal : (0 dim : Nat) -> Type)
     model | model
