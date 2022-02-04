@@ -27,12 +27,13 @@ import Error
 ||| An `Empiric` constructs values from historic data and the model over that data.
 |||
 ||| @features The shape of the feature domain.
+||| @targets The shape of the target domain.
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
-Empiric : Distribution {rank} marginal => (0 features : Shape) -> (0 targets : Shape {rank}) -> (0 out : Type) -> Type
-Empiric features targets out =
-  {0 model : _} -> ProbabilisticModel features targets marginal model =>
-  Dataset features targets -> model -> out
+Empiric : Distribution {rank} marginal => (0 features : Shape) -> (0 targets : Shape {rank})
+          -> (0 out : Type) -> Type
+Empiric features targets out = {0 model : _}
+  -> ProbabilisticModel features targets marginal model => Dataset features targets -> model -> out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
