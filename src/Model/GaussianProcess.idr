@@ -93,8 +93,8 @@ export
 ||| A probabilistic model from feature values to a distribution over observed target values.
 export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
-  marginalise cgpr@(MkConjugateGPR _ _ noise) x =
-    let (MkGaussian latent_mean latent_cov) = marginalise @{Latent} cgpr x
+  marginalise gpr@(MkConjugateGPR _ _ noise) x =
+    let (MkGaussian latent_mean latent_cov) = marginalise @{Latent} gpr x
      in MkGaussian latent_mean (latent_cov + (broadcast $ expand 2 (diag {n = S n} noise)))
 
 ||| Fit the Gaussian process and noise to the specified data.
