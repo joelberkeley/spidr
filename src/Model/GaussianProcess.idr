@@ -76,7 +76,10 @@ log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
 ||| Pattern Recognition and Machine Learning, Christopher M. Bishop
 public export
 data ConjugateGPRegression : (0 features : Shape) -> Type where
-  ||| todo
+  ||| @gp_from_hyperparameters Constructs a Gaussian process from the hyperparameters (presented as
+  |||   a vector)
+  ||| @hyperparameters The hyperparameters (excluding noise) presented as a vector.
+  ||| @noise The likehood amplitude, or observation noise.
   MkConjugateGPR :
     (gp_from_hyperparameters : Tensor [p] F64 -> GaussianProcess features)
     -> (hyperparameters : Tensor [p] F64)

@@ -51,7 +51,7 @@ Acquisition batch_size features = Tensor (batch_size :: features) F64 -> Tensor 
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : ProbabilisticModel features [1] Gaussian m => m ->
+expectedImprovement : ProbabilisticModel features [1] Gaussian m => (model : m) ->
                       (best : Tensor [] F64) -> Acquisition 1 features
 expectedImprovement model best at =
   let marginal = marginalise model at
