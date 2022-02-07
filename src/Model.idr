@@ -30,4 +30,5 @@ interface Distribution marginal =>
   ProbabilisticModel (0 features : Shape) (0 targets : Shape {rank})
     (0 marginal : (0 event : Shape {rank}) -> (0 dim : Nat) -> Type) model | model
   where
-    marginalise : model -> {n : _} -> Tensor (Vect.(::) (S n) features) F64 -> marginal targets (S n)
+    ||| Return the marginal distribution over the target domain at the specified feature values.
+    marginalise : model -> {n : _} -> Tensor ((S n) :: features) F64 -> marginal targets (S n)
