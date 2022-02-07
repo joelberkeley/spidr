@@ -81,7 +81,7 @@ optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Tensor [1, 2] F64
-newPoint = optimizer $ squeeze . mean . (predict_latent model)
+newPoint = optimizer $ squeeze . mean {event=[1]} . (marginalise @{Latent} model)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -118,12 +118,12 @@ In this case, our acquisition function depends on the model (which in turn depen
 In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
 
 ```idris
-modelMean : ProbabilisticModel [2] {marginal=Gaussian [1]} -> Acquisition 1 [2]
-modelMean predict = squeeze . mean . predict
+modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
+modelMean model = squeeze . mean {event=[1]} . (marginalise model)
 
 newPoint' : Tensor [1, 2] F64
-newPoint' = let acquisition = map optimizer (Mor modelMean)  -- `Mor` makes a `Morphism`
-             in run acquisition (predict_latent model)  -- `run` turns a `Morphism` into a function
+newPoint' = let acquisition = map optimizer (Mor (modelMean @{Latent}))  -- `Mor` makes a `Morphism`
+             in run acquisition model  -- `run` turns a `Morphism` into a function
 ```
 
 ## Combining empirical values with `Applicative`
@@ -202,11 +202,10 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement (const 0.5)
-                 pof = failure >>> probabilityOfFeasibility (const 0.5)
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} (const 0.5)
+                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} (const 0.5)
                  acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, predict_latent model)
-                                      (failureData, predict_latent failureModel)
+                 dataAndModel = Label (historicData, model) (failureData, failureModel)
               in run acquisition dataAndModel
 ```
 
@@ -231,13 +230,11 @@ We can repeat the above process indefinitely, and spidr provides a function `loo
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
-iterations = let tactic = map optimizer $ (map predict_latent) >>> expectedImprovementByModel
+iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{Latent}
               in loop tactic observe (historicData, model)
 ```
 
-It's worth pausing at this point to look at how we use `predict_latent`. In earlier examples, we converted `ConjugateGPRegression`s to `ProbabilisticModel`s in the call to `run`, while in this loop example, we converted it in the implementation of `tactic`. Both are valid, but in the loop the acquisition function uses the `ProbabilisticModel`, while we train the `ConjugateGPRegression` itself on the data, so we must pass the latter to `loop`. If `ProbabilisticModel` were an interface rather than a type alias, we could have made a `ConjugateGPRegression` a `ProbabilisticModel` and there would be no need to be explicit. However, by being explicit like this, we can specify which `ProbabilisticModel` we pass to the acquisition function. For example, we could have used the observation predictions rather than the latent predictions. More generally, we can customize which model attributes we use in which part of the optimization tactic.
-
-Returning to the loop, we now have a `Stream`. We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
+We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
 
 ```idris
 firstFive : Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])
