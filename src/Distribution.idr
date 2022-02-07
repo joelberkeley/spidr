@@ -43,7 +43,8 @@ variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 ||| approximation). Every sub-event is assumed to have the same shape.
 |||
 ||| @event The shape of each sub-event.
-||| @dist Constructs the distribution from the number of events in the distribution.
+||| @dist Constructs the distribution from the shape of each sub-event and the number of events in
+|||   the distribution.
 public export
 interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape {rank})
