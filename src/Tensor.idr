@@ -32,7 +32,7 @@ import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
 import XLA.FFI
-import XLA.Literal
+import public XLA.Literal
 import XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
@@ -288,6 +288,7 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
       MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (S r)) mkOp)
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
+public export
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
@@ -333,20 +334,21 @@ namespace Squeezable
 export
 squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
--- ||| A `Tensor` where every element has the specified value. For example,
--- |||
--- ||| ```idris
--- ||| fives : Tensor [2, 3] Int
--- ||| fives = fill 5
--- ||| ```
--- ||| is equivalent to
--- ||| ```idris
--- ||| fives : Tensor [2, 3] Int
--- ||| fives = const [[5, 5, 5], [5, 5, 5]]
--- ||| ```
--- export
--- fill : {auto 0 _ : Broadcastable from to} -> PrimitiveRW dtype ty => {shape : _} -> Array from ty -> Tensor to dtype
--- fill = broadcast . const
+||| A `Tensor` where every element has the specified value. For example,
+|||
+||| ```idris
+||| fives : Tensor [2, 3] Int
+||| fives = fill 5
+||| ```
+||| is equivalent to
+||| ```idris
+||| fives : Tensor [2, 3] Int
+||| fives = const [[5, 5, 5], [5, 5, 5]]
+||| ```
+export
+fill : PrimitiveRW dtype ty => {to : _} -> {auto prf : Broadcastable (shape_ {dtype} {ty}) to}
+       -> ty -> Tensor to dtype
+fill = broadcast . const
 
 ----------------------------- generic operations ----------------------------
 
@@ -506,7 +508,7 @@ namespace Semigroup
 namespace Monoid
   export
   [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
-      neutral = broadcast {prf=scalarToAnyOk shape} (the (Tensor [] PRED) $ const True)
+      neutral = ?nall -- broadcast {prf=scalarToAnyOk shape} (const True)
 
 infixr 4 ||#
 
@@ -525,7 +527,7 @@ namespace Semigroup
 namespace Monoid
   export
   [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
-      neutral = broadcast {prf=scalarToAnyOk shape} (const False)
+      neutral = ?nany -- broadcast {prf=scalarToAnyOk shape} (const False)
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
@@ -575,7 +577,7 @@ namespace Monoid
   export
   [Sum] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Sum where
-      neutral = broadcast {prf=scalarToAnyOk shape} (const 0)
+      neutral = ?nsum -- broadcast {prf=scalarToAnyOk shape} (const 0)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
@@ -612,7 +614,7 @@ namespace Monoid
   export
   [Prod] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Prod where
-      neutral = broadcast {prf=scalarToAnyOk shape} (const 1)
+      neutral = ?nprod -- broadcast {prf=scalarToAnyOk shape} (const 1)
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
@@ -662,7 +664,7 @@ namespace Monoid
   [Min] {shape : _} -> PrimitiveRW dtype Double =>
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Min where
-      neutral = broadcast {prf=scalarToAnyOk shape} (const (1.0 / 0.0))
+      neutral = ?nmin -- broadcast {prf=scalarToAnyOk shape} (const (1.0 / 0.0))
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `maxEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
@@ -680,7 +682,7 @@ namespace Monoid
   [Max] {shape : _} -> PrimitiveRW dtype Double =>
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
-      neutral = broadcast {prf=scalarToAnyOk shape} (const (- 1.0 / 0.0))
+      neutral = ?nmax -- broadcast {prf=scalarToAnyOk shape} (const (- 1.0 / 0.0))
 
 infix 8 +=
 infix 8 -=

@@ -27,11 +27,11 @@ assert name x = unless x $ do
 
 export
 assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
-assertAll name xs = assert name (arrayAll !(eval xs)) where
-    arrayAll : {shape : _} -> Array shape Bool -> Bool
-    arrayAll {shape = []} x = x
-    arrayAll {shape = (0 :: _)} [] = True
-    arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
+-- assertAll name xs = assert name (arrayAll !(eval xs)) where
+--     arrayAll : {shape : _} -> Array shape Bool -> Bool
+--     arrayAll {shape = []} x = x
+--     arrayAll {shape = (0 :: _)} [] = True
+--     arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
 
 export
 bools : List Bool
@@ -116,15 +116,16 @@ sufficientlyEqEach : {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> Tens
 sufficientlyEqEach x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
-    ||# absEach (x - y) <# fill floatingPointTolerance  -- real
+    ||# absEach (x - y) <# fill {prf=scalarToAnyOk shape} floatingPointTolerance  -- real
 
 export
 test_sufficientlyEqEach : IO ()
 test_sufficientlyEqEach = do
-    let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
-        y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
-    eq <- eval {shape=[_, _]} (sufficientlyEqEach x y)
-    assert "sufficientlyEqEach for array" (eq == [[False, True, True], [False, True, False]])
+    let x = const {ty=Array [2, 3] Double} [[0.0, 1.1, inf], [-inf, nan, -1.1]]
+        y = const {ty=Array [2, 3] Double} [[0.1, 1.1, inf], [inf, nan, 1.1]]
+    eq <- eval {ty=Array [2, 3] Bool} (sufficientlyEqEach x y)
+    printLn eq
+    -- assert "sufficientlyEqEach for array" (eq == [[False, True, True], [False, True, False]])
 
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
                sufficientlyEqEach {shape=[]} (const x) (const y)

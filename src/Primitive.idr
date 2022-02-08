@@ -21,6 +21,7 @@ limitations under the License.
 ||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
+import Data.Vect
 import public XLA.XlaData
 import XLA.Literal
 
@@ -83,3 +84,4 @@ export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where
 export PrimitiveRW U32 Nat where
 export PrimitiveRW F64 Double where
+export {len : _} -> PrimitiveRW dtype ty => PrimitiveRW dtype (Vect len ty) where

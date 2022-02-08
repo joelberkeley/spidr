@@ -26,27 +26,27 @@ export
 test_const_eval : IO ()
 test_const_eval = do
     let x = [[True, False, False], [False, True, False]]
-    x' <- eval $ const {shape=[_, _]} {dtype=PRED} x
+    x' <- eval $ const x
     assert "const eval returns original Bool" (x' == x)
 
-    let x =  [[1, 15, 5], [-1, 7, 6]]
-    x' <- eval $ const {shape=[_, _]} {dtype=S32} x
-    assert "const eval returns original Int" (x' == x)
+    x' <- eval $ const [[1, 15, 5], [-1, 7, 6]]
+    assert "const eval returns original Int" (x' == [[1, 15, 5], [-1, 7, 6]])
 
     let name = "const eval returns original Double"
-    x <- eval $ const {shape=[_, _]} {dtype=F64} [[-1.5], [1.3], [4.3]]
+    x <- eval $ const {ty=Array [_, _] Double} [[-1.5], [1.3], [4.3]]
     assert name $ sufficientlyEq (index 0 (index 0 x)) (-1.5)
     assert name $ sufficientlyEq (index 0 (index 1 x)) 1.3
     assert name $ sufficientlyEq (index 0 (index 2 x)) 4.3
 
     let name = "const eval returns original scalar"
-    traverse_ (\x => do x' <- eval {shape=[]} {dtype=PRED} (const x); assert name (x == x')) bools
-    traverse_ (\x => do x' <- eval {shape=[]} {dtype=S32} (const x); assert name (x == x')) ints
+    traverse_ (\x => do x' <- eval (const x); assert name (x == x')) bools
+    traverse_ (\x => do x' <- eval (const x); assert name (x == x')) ints
     traverse_ (\x => do
-            x' <- eval {shape=[]} {dtype=F64} (const x)
+            x' <- eval (const x)
             assert name (sufficientlyEq x x')
         ) doubles
 
+{-
 export
 test_toString : IO ()
 test_toString = do
@@ -645,3 +645,4 @@ test_det x = det x
 
 test_det_with_leading : Tensor [2, 3, 3] F64 -> Tensor [2] F64
 test_det_with_leading x = det x
+-}

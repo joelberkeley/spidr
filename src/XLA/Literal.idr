@@ -25,7 +25,7 @@ import XLA.Shape
 import XLA.ShapeUtil
 import XLA.XlaData
 
-export
+public export
 interface Primitive dtype => LiteralRW dtype ty where
   rank_ : Nat
   shape_ : Shape {rank=rank_}
