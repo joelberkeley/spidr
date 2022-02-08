@@ -26,6 +26,10 @@ enumerate : Vect n ty -> Vect n (Nat, ty)
 enumerate xs = rewrite sym $ lengthCorrect xs in
     zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
+-- namespace List
+--     enumerate : List ty -> List (Nat, ty)
+--     enumerate xs = toList (enumerate (fromList xs))
+
 export
 free : Ptr t -> IO ()
 free = System.FFI.free . prim__forgetPtr
@@ -60,3 +64,8 @@ mkIntArray xs = do
     let ptr = prim__castPtr ptr
     traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
     onCollect ptr free
+
+namespace List
+    export
+    mkIntArray : Cast ty Int => List ty -> IO (GCPtr Int)
+    mkIntArray xs = mkIntArray (fromList xs)

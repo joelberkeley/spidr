@@ -23,11 +23,21 @@ import XLA.XlaData
 import XLA.FFI
 import XLA.Shape
 import XLA.ShapeUtil
+import XLA.XlaData
 
 export
-interface Primitive dtype => LiteralPrimitiveRW dtype ty where
-    set : GCAnyPtr -> GCPtr Int -> ty -> PrimIO ()
-    get : GCAnyPtr -> GCPtr Int -> ty
+interface Primitive dtype => LiteralRW dtype ty where
+  rank_ : Nat
+  shape_ : Shape {rank=rank_}
+  set : GCAnyPtr -> List Nat -> ty -> IO ()
+  get : GCAnyPtr -> List Nat -> ty
+
+export
+{len : Nat} -> LiteralRW dtype ty => LiteralRW dtype (Vect len ty) where
+  rank_ = S (rank_ {dtype} {ty})
+  shape_ = len :: shape_ {ty}
+  set lit idxs xs = traverse_ (\(idx, x) => set {dtype} lit (idxs ++ [idx]) x) (enumerate xs)
+  get lit idxs = map (\idx => get {dtype} lit (idxs ++ [idx])) (range len)
 
 export
 %foreign (libxla "Literal_new")
@@ -40,28 +50,14 @@ export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__Literal_delete
 
-populateLiteral : {rank : _} -> (shape : Shape {rank}) -> LiteralPrimitiveRW dtype ty =>
-    GCAnyPtr -> Array shape ty -> IO ()
-populateLiteral {rank} shape lit arr = impl {shapesSum=Refl} shape [] arr where
-    impl : {a : _} -> (rem_shape : Shape {rank=r}) -> (acc_indices : Shape {rank=a})
-        -> {shapesSum : a + r = rank} -> Array rem_shape ty -> IO ()
-    impl {a} [] acc_indices x = primIO $ set {dtype} lit !(mkIntArray acc_indices) x
-    impl {shapesSum} {r=S r'} {a} (n :: rest) acc_indices xs =
-        traverse_ setArrays (enumerate xs) where
-            setArrays : (Nat, Array rest ty) -> IO ()
-            setArrays (idx, xs') =
-                let shapesSum' = rewrite plusSuccRightSucc a r' in shapesSum
-                 in impl {shapesSum=shapesSum'} rest (snoc acc_indices idx) xs'
-
 export
-mkLiteral : LiteralPrimitiveRW dtype ty => {rank : _} -> {shape : Shape {rank}}
-            -> Array shape ty -> IO GCAnyPtr
+mkLiteral : LiteralRW dtype ty => ty -> IO GCAnyPtr
 mkLiteral xs = do
-    xla_shape <- mkShape {dtype} shape
-    literal <- primIO $ prim__allocLiteral xla_shape
-    literal <- onCollectAny literal Literal.delete
-    populateLiteral {dtype} shape literal xs
-    pure literal
+  xla_shape <- mkShape {dtype} (shape_ {dtype} {ty})
+  literal <- primIO $ prim__allocLiteral xla_shape
+  literal <- onCollectAny literal Literal.delete
+  set {dtype} literal [] xs
+  pure literal
 
 %foreign (libxla "Literal_Set_bool")
 prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
@@ -70,9 +66,12 @@ prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 literalGetBool : GCAnyPtr -> GCPtr Int -> Int
 
 export
-LiteralPrimitiveRW PRED Bool where
-  set lit idxs x = prim__literalSetBool lit idxs (if x then 1 else 0)
-  get lit idxs = case literalGetBool lit idxs of
+LiteralRW PRED Bool where
+  -- dtype_ = PRED
+  rank_ = 0
+  shape_ = []
+  set lit idxs x = primIO $ prim__literalSetBool lit !(mkIntArray idxs) (if x then 1 else 0)
+  get lit idxs = case literalGetBool lit (unsafePerformIO $ mkIntArray idxs) of
     0 => False
     1 => True
     x => (assert_total idris_crash) (
@@ -86,9 +85,12 @@ prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()
 literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
 
 export
-LiteralPrimitiveRW F64 Double where
-  set = prim__literalSetDouble
-  get = literalGetDouble
+LiteralRW F64 Double where
+  -- dtype_ = F64
+  rank_ = 0
+  shape_ = []
+  set lit idxs x = primIO (prim__literalSetDouble lit !(mkIntArray idxs) x)
+  get lit idxs = literalGetDouble lit (unsafePerformIO $ mkIntArray idxs)
 
 %foreign (libxla "Literal_Set_int")
 prim__literalSetInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
@@ -97,21 +99,21 @@ prim__literalSetInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 literalGetInt : GCAnyPtr -> GCPtr Int -> Int
 
 export
-LiteralPrimitiveRW S32 Int where
-  set = prim__literalSetInt
-  get = literalGetInt
+LiteralRW S32 Int where
+  -- dtype_ = S32
+  rank_ = 0
+  shape_ = []
+  set lit idxs x = primIO $ prim__literalSetInt lit (unsafePerformIO $ mkIntArray idxs) x
+  get lit idxs = literalGetInt lit (unsafePerformIO $ mkIntArray idxs)
 
 export
-LiteralPrimitiveRW U32 Nat where
-  set lit idx x = prim__literalSetInt lit idx (cast x)
-  get = cast .: literalGetInt
+LiteralRW U32 Nat where
+  -- dtype_ = U32
+  rank_ = 0
+  shape_ = []
+  set lit idxs x = primIO $ prim__literalSetInt lit (unsafePerformIO $ mkIntArray idxs) (cast x)
+  get lit idxs = cast (literalGetInt lit (unsafePerformIO $ mkIntArray idxs))
 
 export
-toArray : LiteralPrimitiveRW dtype ty => {shape : Shape} -> GCAnyPtr -> Array shape ty
-toArray lit = impl {shapesSum=Refl} shape [] where
-    impl : (remaining_shape : Vect r Nat)
-        -> {a : _} -> {shapesSum : a + r = rank}
-        -> (accumulated_indices : Vect a Nat)
-        -> Array remaining_shape ty
-    impl [] acc = unsafePerformIO $ map (get {dtype} lit) (mkIntArray acc)
-    impl (n :: rest) acc = map ((impl rest {shapesSum=Refl}) . (snoc acc)) (range n)
+toArray : LiteralRW dtype ty => {shape : Shape} -> GCAnyPtr -> ty
+toArray lit = get {dtype} lit (toList shape)

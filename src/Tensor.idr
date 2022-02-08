@@ -52,21 +52,21 @@ data Tensor : (0 shape : Shape {rank}) -> (0 dtype : Type) -> Type where
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype
+const : PrimitiveRW dtype ty => ty -> Tensor (shape_ {dtype} {ty}) dtype
 const xs = MkTensor $ \builder => do
-  lit <- mkLiteral {dtype} {rank=length shape} (rewrite lengthCorrect shape in xs)
+  lit <- mkLiteral {dtype} xs
   onCollectAny (constantLiteral builder lit) XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
-eval : PrimitiveRW dtype ty => {shape : _} -> Tensor shape dtype -> IO $ Array shape ty
+eval : {shape : _} -> PrimitiveRW dtype (Array shape ty) => Tensor shape dtype -> IO $ Array shape ty
 eval (MkTensor mkOp) = do
   builder <- prim__mkXlaBuilder ""
   _ <- mkOp builder
   computation <- prim__build builder
   client <- primIO prim__localClientOrDie
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-  pure (toArray {dtype} lit)
+  pure (toArray {shape} {dtype} lit)
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
@@ -244,7 +244,7 @@ empty = MkTensor $ \builder => do
 |||
 ||| ```idris
 ||| x : Tensor [2, 3] S32
-||| x = broadcast (const [4, 5, 6])
+||| x = broadcast {prf=scalarToAnyOk} (const [4, 5, 6])
 ||| ```
 |||
 ||| is equivalent to
@@ -333,20 +333,20 @@ namespace Squeezable
 export
 squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
-||| A `Tensor` where every element has the specified value. For example,
-|||
-||| ```idris
-||| fives : Tensor [2, 3] Int
-||| fives = fill 5
-||| ```
-||| is equivalent to
-||| ```idris
-||| fives : Tensor [2, 3] Int
-||| fives = const [[5, 5, 5], [5, 5, 5]]
-||| ```
-export
-fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
-fill = broadcast {prf=scalarToAnyOk shape} . const
+-- ||| A `Tensor` where every element has the specified value. For example,
+-- |||
+-- ||| ```idris
+-- ||| fives : Tensor [2, 3] Int
+-- ||| fives = fill 5
+-- ||| ```
+-- ||| is equivalent to
+-- ||| ```idris
+-- ||| fives : Tensor [2, 3] Int
+-- ||| fives = const [[5, 5, 5], [5, 5, 5]]
+-- ||| ```
+-- export
+-- fill : {auto 0 _ : Broadcastable from to} -> PrimitiveRW dtype ty => {shape : _} -> Array from ty -> Tensor to dtype
+-- fill = broadcast . const
 
 ----------------------------- generic operations ----------------------------
 
@@ -431,7 +431,7 @@ reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
       !(mkOp builder)
       !(mk_init_value builder)
       !(prim__build sub_builder)
-      !(mkIntArray [finToNat axis])
+      !(List.mkIntArray [finToNat axis])
       1
     )
   onCollectAny op XlaOp.delete
@@ -506,7 +506,7 @@ namespace Semigroup
 namespace Monoid
   export
   [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
-      neutral = fill True
+      neutral = broadcast {prf=scalarToAnyOk shape} (the (Tensor [] PRED) $ const True)
 
 infixr 4 ||#
 
@@ -525,7 +525,7 @@ namespace Semigroup
 namespace Monoid
   export
   [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
-      neutral = fill False
+      neutral = broadcast {prf=scalarToAnyOk shape} (const False)
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
@@ -575,7 +575,7 @@ namespace Monoid
   export
   [Sum] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Sum where
-      neutral = fill 0
+      neutral = broadcast {prf=scalarToAnyOk shape} (const 0)
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
@@ -612,7 +612,7 @@ namespace Monoid
   export
   [Prod] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Prod where
-      neutral = fill 1
+      neutral = broadcast {prf=scalarToAnyOk shape} (const 1)
 
 ||| Element-wise floating point division. For example, `const [2, 3] /# const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
@@ -662,7 +662,7 @@ namespace Monoid
   [Min] {shape : _} -> PrimitiveRW dtype Double =>
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Min where
-      neutral = fill (1.0 / 0.0)
+      neutral = broadcast {prf=scalarToAnyOk shape} (const (1.0 / 0.0))
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `maxEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
@@ -680,7 +680,7 @@ namespace Monoid
   [Max] {shape : _} -> PrimitiveRW dtype Double =>
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
-      neutral = fill (- 1.0 / 0.0)
+      neutral = broadcast {prf=scalarToAnyOk shape} (const (- 1.0 / 0.0))
 
 infix 8 +=
 infix 8 -=
