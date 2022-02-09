@@ -30,8 +30,7 @@ import Error
 ||| @targets The shape of the target domain.
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
-Empiric : Distribution {rank} marginal => (0 features : Shape) -> (0 targets : Shape {rank})
-          -> (0 out : Type) -> Type
+Empiric : Distribution marginal => (0 features, targets : Shape) -> (0 out : Type) -> Type
 Empiric features targets out = {0 model : _}
   -> ProbabilisticModel features targets marginal model => Dataset features targets -> model -> out
 

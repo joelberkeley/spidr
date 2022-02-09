@@ -26,6 +26,11 @@ enumerate : Vect n ty -> Vect n (Nat, ty)
 enumerate xs = rewrite sym $ lengthCorrect xs in
     zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
+namespace List
+    export
+    enumerate : List ty -> List (Nat, ty)
+    enumerate xs = toList (enumerate (fromList xs))
+
 export
 free : Ptr t -> IO ()
 free = System.FFI.free . prim__forgetPtr
@@ -54,7 +59,7 @@ namespace GCAnyPtr
     prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
-mkIntArray : Cast ty Int => Vect n ty -> IO (GCPtr Int)
+mkIntArray : Cast ty Int => List ty -> IO (GCPtr Int)
 mkIntArray xs = do
     ptr <- malloc (cast (length xs) * sizeof_int)
     let ptr = prim__castPtr ptr

@@ -27,8 +27,8 @@ import public Data.Vect
 |||
 ||| The rank is the number of elements in the shape, or equivalently the number of axes.
 public export 0
-Shape : {0 rank: Nat} -> Type
-Shape = Vect rank Nat
+Shape : Type
+Shape = List Nat
 
 ||| An `Array shape dtype` is either:
 ||| 

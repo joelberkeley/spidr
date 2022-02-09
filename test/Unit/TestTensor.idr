@@ -142,16 +142,14 @@ test_dimbroadcastable = [
     (3 ** 0 ** Zero)
 ]
 
-test_broadcastable : List (
-    fr ** tr ** from : Shape {rank=fr} ** to : Shape {rank=tr} ** Broadcastable from to
-)
+test_broadcastable : List (from : Shape ** to : Shape ** Broadcastable from to)
 test_broadcastable = [
-    (_ ** _ ** [] ** [] ** Same),
-    (_ ** _ ** [3, 2, 5] ** [3, 2, 5] ** Same),
-    (_ ** _ ** [] ** [3, 2, 5] ** Nest $ Nest $ Nest Same),
-    (_ ** _ ** [3, 1, 5] ** [3, 7, 5] ** Match $ Match Same),
-    (_ ** _ ** [3, 2, 5] ** [1, 3, 2, 5] ** Nest Same),
-    (_ ** _ ** [3, 2, 5] ** [7, 3, 2, 5] ** Nest Same)
+    ([] ** [] ** Same),
+    ([3, 2, 5] ** [3, 2, 5] ** Same),
+    ([] ** [3, 2, 5] ** Nest $ Nest $ Nest Same),
+    ([3, 1, 5] ** [3, 7, 5] ** Match $ Match Same),
+    ([3, 2, 5] ** [1, 3, 2, 5] ** Nest Same),
+    ([3, 2, 5] ** [7, 3, 2, 5] ** Nest Same)
 ]
 
 test_broadcastable_cannot_reduce_rank0 : Broadcastable [5] [] -> Void

@@ -17,8 +17,8 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import Data.Vect
-import Data.Vect.Elem
+import public Data.List
+import public Data.List.Elem
 import Decidable.Equality
 import System.FFI
 
@@ -54,7 +54,7 @@ data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
 export
 const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype
 const xs = MkTensor $ \builder => do
-  lit <- mkLiteral {dtype} {rank=length shape} (rewrite lengthCorrect shape in xs)
+  lit <- mkLiteral {dtype} xs
   onCollectAny (constantLiteral builder lit) XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
@@ -159,14 +159,25 @@ split : (idx : Nat) -> Tensor ((idx + rest) :: tl) dtype
 export
 concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
 
+namespace List
+  public export
+  data LengthGTE : Nat -> List a -> Type where
+    Zero : (xs : List a) -> LengthGTE Z xs
+    More : LengthGTE n xs -> (x : a) -> LengthGTE (S n) (x :: xs)
+
+public export
+insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : LengthGTE idx xs} -> List a
+insertAt {prf=Zero xs} Z xs x = x :: xs
+insertAt {prf=More prf' y} (S n) (y :: ys) x = y :: (insertAt n ys x)
+
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
 ||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
-expand :
-  (axis : Nat) -> forall shape . {auto 0 _ : (length shape) `GT` axis} -> Tensor shape dtype ->
-  Tensor ((take axis shape) ++ 1 :: (drop axis shape)) dtype
+expand : forall shape .
+  (axis : Nat) -> {auto 0 _ : LengthGTE axis shape} -> Tensor shape dtype ->
+  Tensor (insertAt axis shape 1) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
@@ -260,34 +271,31 @@ broadcast : Primitive dtype => {from : _} -> {to : _} -> {auto prf : Broadcastab
   -> Tensor from dtype -> Tensor to dtype
 broadcast xs = case (isElem 0 to, toList from == toList to) of
   (Yes _, False) => empty
-  _ =>
-    let from_prf = lengthCorrect from
-        to_prf = lengthCorrect to in
-        rewrite sym to_prf in impl {fr=length from} {tr=length to} {tt=length to} []
-          (rewrite to_prf in to) (rewrite from_prf in xs)
-          {prf=rewrite to_prf in rewrite from_prf in prf}
+  _ => impl [] to xs
 
     where
-    broadcast : {n : _} -> Vect n Nat -> XlaOpFactory -> XlaOpFactory
+    broadcast : List Nat -> XlaOpFactory -> XlaOpFactory
     broadcast broadcast_sizes f builder = do
       broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-      op <- primIO (prim__broadcast !(f builder) broadcast_sizes_ptr (cast n))
+      op <- primIO (
+          prim__broadcast !(f builder) broadcast_sizes_ptr (cast $ length broadcast_sizes)
+        )
       onCollectAny op XlaOp.delete
 
-    broadcastInDim : {r : _} -> Shape {rank=r} -> Shape {rank=r} -> XlaOpFactory -> XlaOpFactory
+    broadcastInDim : Shape -> Shape -> XlaOpFactory -> XlaOpFactory
     broadcastInDim ods bcd f builder = do
       ods_ptr <- mkIntArray ods
       bcd_ptr <- mkIntArray bcd
-      op <- primIO (prim__broadcastInDim !(f builder) ods_ptr (cast r) bcd_ptr (cast r))
+      let len = cast (length ods)
+      op <- primIO (prim__broadcastInDim !(f builder) ods_ptr len bcd_ptr len)
       onCollectAny op XlaOp.delete
 
-    impl : {fr, tr : _} -> {from : Shape {rank=fr}} -> {to : Shape {rank=tr}}
-      -> {tl, tt : _} -> (to_leading : Vect tl Nat) -> (to_trailing : Vect tt Nat)
+    impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
     impl to_leading _ {prf=Same} (MkTensor mkOp) =
       MkTensor $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
-    impl {fr = (S r)} to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
-      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (S r)) mkOp)
+    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
+      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
@@ -415,6 +423,12 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
     )
   onCollectAny op XlaOp.delete
 
+public export
+deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : LengthGTE (S idx) xs} -> List a
+deleteAt {prf=Zero _} _ _ impossible
+deleteAt {prf=More _ x} Z (_ :: xs) = xs
+deleteAt {prf=More _ x} (S n) (x :: xs) = x :: deleteAt n xs
+
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
 ||| `const [3, 5, 7]` and `reduce @{Sum} 1 x` to `const [3, 12]`.
@@ -422,8 +436,8 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
 export
-reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Fin (S r))
-  -> {shape : _} -> Tensor {rank=S r} shape dtype -> Tensor (deleteAt axis shape) dtype
+reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) -> {shape : _} ->
+  LengthGTE (S axis) shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   (MkTensor mkOp') <- [| (parameter 0 "" [] {dtype}) <+> (parameter 1 "" [] {dtype}) |]
@@ -433,7 +447,7 @@ reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
       !(mkOp builder)
       !(mk_init_value builder)
       !(prim__build sub_builder)
-      !(mkIntArray [finToNat axis])
+      !(mkIntArray [axis])
       1
     )
   onCollectAny op XlaOp.delete
@@ -559,7 +573,7 @@ infixl 9 @@
 ||| z = const [-19, 10]
 ||| ```
 export
-(@@) : Primitive.Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype ->
+(@@) : Primitive.Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype -> NonEmpty l =>
        {auto 0 _ : last l = S n} -> Tensor (init l ++ tail') dtype
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
@@ -728,7 +742,8 @@ log : Tensor shape F64 -> Tensor shape F64
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : forall shape, dtype . Primitive.Neg dtype => Tensor shape dtype ->
+det : forall shape, dtype . Primitive.Neg dtype => Tensor shape dtype -> NonEmpty shape =>
+      NonEmpty (init shape) =>
       let leading = init (init shape)
           m = last (init shape)
           n = last shape

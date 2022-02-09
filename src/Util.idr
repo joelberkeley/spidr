@@ -25,3 +25,8 @@ export
 range : (n : Nat) -> Vect n Nat
 range Z = []
 range (S n) = snoc (range n) n
+
+namespace List
+  export
+  range : (n : Nat) -> List Nat
+  range n = toList (Util.range n)
