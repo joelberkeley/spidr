@@ -159,14 +159,8 @@ split : (idx : Nat) -> Tensor ((idx + rest) :: tl) dtype
 export
 concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
 
-namespace List
-  public export
-  data LengthGTE : Nat -> List a -> Type where
-    Zero : (xs : List a) -> LengthGTE Z xs
-    More : LengthGTE n xs -> (x : a) -> LengthGTE (S n) (x :: xs)
-
 public export
-insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : LengthGTE idx xs} -> List a
+insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : InBounds idx xs} -> List a
 insertAt {prf=Zero xs} Z xs x = x :: xs
 insertAt {prf=More prf' y} (S n) (y :: ys) x = y :: (insertAt n ys x)
 
@@ -176,7 +170,7 @@ insertAt {prf=More prf' y} (S n) (y :: ys) x = y :: (insertAt n ys x)
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand : forall shape .
-  (axis : Nat) -> {auto 0 _ : LengthGTE axis shape} -> Tensor shape dtype ->
+  (axis : Nat) -> {auto 0 _ : InBounds axis shape} -> Tensor shape dtype ->
   Tensor (insertAt axis shape 1) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
@@ -424,7 +418,7 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   onCollectAny op XlaOp.delete
 
 public export
-deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : LengthGTE (S idx) xs} -> List a
+deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : InBounds (S idx) xs} -> List a
 deleteAt {prf=Zero _} _ _ impossible
 deleteAt {prf=More _ x} Z (_ :: xs) = xs
 deleteAt {prf=More _ x} (S n) (x :: xs) = x :: deleteAt n xs
@@ -437,7 +431,7 @@ deleteAt {prf=More _ x} (S n) (x :: xs) = x :: deleteAt n xs
 ||| @axis The axis along which to reduce elements.
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) -> {shape : _} ->
-  LengthGTE (S axis) shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
+  InBounds (S axis) shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   (MkTensor mkOp') <- [| (parameter 0 "" [] {dtype}) <+> (parameter 1 "" [] {dtype}) |]
