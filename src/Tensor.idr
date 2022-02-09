@@ -164,9 +164,8 @@ concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: 
 ||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
-expand : forall shape .
-  (axis : Nat) -> {auto 0 _ : LengthGTE axis shape} -> Tensor shape dtype ->
-  Tensor (insertAt axis shape 1) dtype
+expand : (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
+         -> Tensor (insertAt axis shape 1) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
@@ -420,7 +419,7 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
 ||| @axis The axis along which to reduce elements.
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) -> {shape : _} ->
-  LengthGTE (S axis) shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
+  axis `LT` length shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   (MkTensor mkOp') <- [| (parameter 0 "" [] {dtype}) <+> (parameter 1 "" [] {dtype}) |]
