@@ -27,7 +27,7 @@ import System.FFI
 import Error
 import public Primitive
 import public Types
-import Util
+import public Util
 import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
