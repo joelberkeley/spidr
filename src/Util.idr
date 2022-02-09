@@ -18,15 +18,19 @@ module Util
 
 import Data.Vect
 
-||| All numbers from `0` to `n - 1` inclusive, in increasing order.
-|||
-||| @n The (exclusive) limit of the range.
-export
-range : (n : Nat) -> Vect n Nat
-range Z = []
-range (S n) = snoc (range n) n
+namespace Vect
+  ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
+  |||
+  ||| @n The (exclusive) limit of the range.
+  export
+  range : (n : Nat) -> Vect n Nat
+  range Z = []
+  range (S n) = snoc (range n) n
 
 namespace List
+  ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
+  |||
+  ||| @n The (exclusive) limit of the range.
   export
   range : (n : Nat) -> List Nat
   range n = toList (Util.range n)

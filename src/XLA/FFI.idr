@@ -21,10 +21,11 @@ import System.FFI
 import Types
 import Util
 
-export
-enumerate : Vect n ty -> Vect n (Nat, ty)
-enumerate xs = rewrite sym $ lengthCorrect xs in
-    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
+namespace Vect
+    export
+    enumerate : Vect n ty -> Vect n (Nat, ty)
+    enumerate xs = rewrite sym $ lengthCorrect xs in
+        zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
 namespace List
     export
