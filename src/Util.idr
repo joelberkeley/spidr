@@ -34,7 +34,7 @@ namespace List
   ||| @n The (exclusive) limit of the range.
   export
   range : (n : Nat) -> List Nat
-  range = toList . Vect.range
+  range n = toList (Vect.range n)
 
   ||| Insert a value in a list. For example, `insertAt 1 [6, 7, 8] 9` is `[6, 9, 7, 8]`, and
   ||| `insertAt 3 [6, 7, 8] 9` is `[6, 7, 8, 9]`.
