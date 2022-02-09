@@ -165,7 +165,7 @@ concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: 
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand : (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
-         -> Tensor (insertAt axis shape 1) dtype
+         -> Tensor (insertAt axis 1 shape) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.

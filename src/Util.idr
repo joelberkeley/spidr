@@ -16,8 +16,8 @@ limitations under the License.
 ||| This module contains general library utilities.
 module Util
 
-import Data.Vect
-import Data.Nat
+import public Data.Vect
+import public Data.Nat
 
 namespace Vect
   ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
@@ -36,22 +36,22 @@ namespace List
   range : (n : Nat) -> List Nat
   range n = toList (Vect.range n)
 
-||| Insert a value in a list. For example, `insertAt 1 [6, 7, 8] 9` is `[6, 9, 7, 8]`, and
-||| `insertAt 3 [6, 7, 8] 9` is `[6, 7, 8, 9]`.
-|||
-||| @idx The index of the value in the resulting list.
-||| @xs The list to insert the value into.
-||| @x The value to insert.
-public export
-insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : idx `LTE` length xs} -> List a
-insertAt Z xs x = x :: xs
-insertAt {prf=LTESucc _} (S n) (y :: ys) x = y :: (insertAt n ys x)
+  ||| Insert a value in a list. For example, `insertAt 1 [6, 7, 8] 9` is `[6, 9, 7, 8]`, and
+  ||| `insertAt 3 [6, 7, 8] 9` is `[6, 7, 8, 9]`.
+  |||
+  ||| @idx The index of the value in the resulting list.
+  ||| @xs The list to insert the value into.
+  ||| @x The value to insert.
+  public export
+  insertAt : (idx : Nat) -> (x : a) -> (xs : List a) -> {auto prf : idx `LTE` length xs} -> List a
+  insertAt Z x xs = x :: xs
+  insertAt {prf=LTESucc _} (S n) x (y :: ys) = y :: (insertAt n x ys)
 
-||| Delete a value from a list. For example, `deleteAt 1 [3, 4, 5]` is `[3, 5]`.
-|||
-||| @idx The index of the value to delete.
-||| @xs The list to delete the value from.
-public export
-deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : idx `LT` length xs} -> List a
-deleteAt Z (_ :: xs) = xs
-deleteAt {prf=LTESucc _} (S n) (x :: xs) = x :: (deleteAt n xs)
+  ||| Delete a value from a list. For example, `deleteAt 1 [3, 4, 5]` is `[3, 5]`.
+  |||
+  ||| @idx The index of the value to delete.
+  ||| @xs The list to delete the value from.
+  public export
+  deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : idx `LT` length xs} -> List a
+  deleteAt Z (_ :: xs) = xs
+  deleteAt {prf=LTESucc _} (S n) (x :: xs) = x :: (deleteAt n xs)

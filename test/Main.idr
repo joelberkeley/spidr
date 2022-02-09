@@ -16,6 +16,7 @@ limitations under the License.
 module Main
 
 import Unit.TestTensor
+import Unit.TestUtil
 import Unit.TestXLA
 
 import Utils
@@ -53,6 +54,9 @@ main = do
     test_maxEach
     test_Max
     test_negate
+
+    test_insertAt
+    test_deleteAt
 
     test_parameter_addition
 
