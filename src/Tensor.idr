@@ -162,13 +162,13 @@ concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: 
 namespace List
   public export
   data LengthGTE : Nat -> List a -> Type where
-    Zero : (xs : List a) -> LengthGTE Z xs
-    More : LengthGTE n xs -> (x : a) -> LengthGTE (S n) (x :: xs)
+    Zero : LengthGTE Z xs
+    More : LengthGTE n xs -> LengthGTE (S n) (x :: xs)
 
 public export
 insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : LengthGTE idx xs} -> List a
-insertAt {prf=Zero xs} Z xs x = x :: xs
-insertAt {prf=More prf' y} (S n) (y :: ys) x = y :: (insertAt n ys x)
+insertAt {prf=Zero} Z xs x = x :: xs
+insertAt {prf=More prf'} (S n) (y :: ys) x = y :: (insertAt n ys x)
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -425,9 +425,9 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
 
 public export
 deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : LengthGTE (S idx) xs} -> List a
-deleteAt {prf=Zero _} _ _ impossible
-deleteAt {prf=More _ x} Z (_ :: xs) = xs
-deleteAt {prf=More _ x} (S n) (x :: xs) = x :: deleteAt n xs
+deleteAt {prf=Zero} _ _ impossible
+deleteAt {prf=More _} Z (_ :: xs) = xs
+deleteAt {prf=More _} (S n) (x :: xs) = x :: deleteAt n xs
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
