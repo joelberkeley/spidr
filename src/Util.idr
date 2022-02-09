@@ -33,4 +33,4 @@ namespace List
   ||| @n The (exclusive) limit of the range.
   export
   range : (n : Nat) -> List Nat
-  range n = toList (Util.range n)
+  range n = toList (Vect.range n)
