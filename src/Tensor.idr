@@ -159,10 +159,16 @@ split : (idx : Nat) -> Tensor ((idx + rest) :: tl) dtype
 export
 concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
 
+namespace List
+  public export
+  data LengthGTE : Nat -> List a -> Type where
+    Zero : (xs : List a) -> LengthGTE Z xs
+    More : LengthGTE n xs -> (x : a) -> LengthGTE (S n) (x :: xs)
+
 public export
-insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : InBounds idx xs} -> List a
-insertAt {prf=InFirst} Z xs x = x :: xs
-insertAt {prf=InLater prf'} (S n) (y :: ys) x = y :: (insertAt n ys x)
+insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : LengthGTE idx xs} -> List a
+insertAt {prf=Zero xs} Z xs x = x :: xs
+insertAt {prf=More prf' y} (S n) (y :: ys) x = y :: (insertAt n ys x)
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -170,7 +176,7 @@ insertAt {prf=InLater prf'} (S n) (y :: ys) x = y :: (insertAt n ys x)
 ||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand : forall shape .
-  (axis : Nat) -> {auto 0 _ : InBounds axis shape} -> Tensor shape dtype ->
+  (axis : Nat) -> {auto 0 _ : LengthGTE axis shape} -> Tensor shape dtype ->
   Tensor (insertAt axis shape 1) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
@@ -418,10 +424,10 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   onCollectAny op XlaOp.delete
 
 public export
-deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : InBounds (S idx) xs} -> List a
-deleteAt {prf=InFirst} _ _ impossible
-deleteAt {prf=InLater _} Z (_ :: xs) = xs
-deleteAt {prf=InLater _} (S n) (x :: xs) = x :: deleteAt n xs
+deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : LengthGTE (S idx) xs} -> List a
+deleteAt {prf=Zero _} _ _ impossible
+deleteAt {prf=More _ x} Z (_ :: xs) = xs
+deleteAt {prf=More _ x} (S n) (x :: xs) = x :: deleteAt n xs
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
@@ -431,7 +437,7 @@ deleteAt {prf=InLater _} (S n) (x :: xs) = x :: deleteAt n xs
 ||| @axis The axis along which to reduce elements.
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) -> {shape : _} ->
-  InBounds (S axis) shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
+  LengthGTE (S axis) shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   (MkTensor mkOp') <- [| (parameter 0 "" [] {dtype}) <+> (parameter 1 "" [] {dtype}) |]
