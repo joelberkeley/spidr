@@ -168,7 +168,7 @@ namespace List
 public export
 insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : LengthGTE idx xs} -> List a
 insertAt {prf=Zero} Z xs x = x :: xs
-insertAt {prf=More prf'} (S n) (y :: ys) x = y :: (insertAt n ys x)
+insertAt {prf=More _} (S n) (y :: ys) x = y :: (insertAt n ys x)
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -573,8 +573,8 @@ infixl 9 @@
 ||| z = const [-19, 10]
 ||| ```
 export
-(@@) : Primitive.Num dtype => Tensor l dtype -> Tensor (S n :: tail') dtype -> NonEmpty l =>
-       {auto 0 _ : last l = S n} -> Tensor (init l ++ tail') dtype
+(@@) : Primitive.Num dtype => Tensor l dtype -> Tensor (S n :: tl) dtype -> NonEmpty l =>
+       {auto 0 _ : last l = S n} -> Tensor (init l ++ tl) dtype
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
