@@ -36,7 +36,8 @@ namespace List
   range : (n : Nat) -> List Nat
   range n = toList (Vect.range n)
 
-||| Insert a value in a list.
+||| Insert a value in a list. For example, `insertAt 1 [6, 7, 8] 9` is `[6, 9, 7, 8]`, and
+||| `insertAt 3 [6, 7, 8] 9` is `[6, 7, 8, 9]`.
 |||
 ||| @idx The index of the value in the resulting list.
 ||| @xs The list to insert the value into.
@@ -46,7 +47,7 @@ insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : idx `LTE` leng
 insertAt Z xs x = x :: xs
 insertAt {prf=LTESucc _} (S n) (y :: ys) x = y :: (insertAt n ys x)
 
-||| Delete a value from a list.
+||| Delete a value from a list. For example, `deleteAt 1 [3, 4, 5]` is `[3, 5]`.
 |||
 ||| @idx The index of the value to delete.
 ||| @xs The list to delete the value from.
