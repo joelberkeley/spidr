@@ -46,7 +46,7 @@ insertAt : (idx : Nat) -> (xs : List a) -> (x : a) -> {auto prf : idx `LTE` leng
 insertAt Z xs x = x :: xs
 insertAt {prf=LTESucc _} (S n) (y :: ys) x = y :: (insertAt n ys x)
 
-||| Insert a value from a list by index.
+||| Delete a value from a list.
 |||
 ||| @idx The index of the value to delete.
 ||| @xs The list to delete the value from.
