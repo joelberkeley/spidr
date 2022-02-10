@@ -27,7 +27,7 @@ import Tensor
 ||| @marginal The type of mulitvariate marginal distribution over the target domain.
 public export
 interface Distribution marginal =>
-  ProbabilisticModel (0 features : Shape) (0 targets : Shape)
+  ProbabilisticModel (0 features, targets : Shape)
     (0 marginal : (0 event : Shape) -> (0 dim : Nat) -> Type) model | model
   where
     ||| Return the marginal distribution over the target domain at the specified feature values.
