@@ -44,7 +44,7 @@ namespace List
   ||| @xs The list to insert the value into.
   ||| @x The value to insert.
   public export
-  insertAt : (idx : Nat) -> (x : a) -> (xs : List a) -> {auto prf : idx `LTE` length xs} -> List a
+  insertAt : (idx : Nat) -> (x : a) -> (xs : List a) -> {auto 0 prf : idx `LTE` length xs} -> List a
   insertAt Z x xs = x :: xs
   insertAt {prf=LTESucc _} (S n) x (y :: ys) = y :: (insertAt n x ys)
 
@@ -53,6 +53,6 @@ namespace List
   ||| @idx The index of the value to delete.
   ||| @xs The list to delete the value from.
   public export
-  deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : InBounds idx xs} -> List a
+  deleteAt : (idx : Nat) -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   deleteAt {prf=InFirst} Z (_ :: xs) = xs
   deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs
