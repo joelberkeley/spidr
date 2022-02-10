@@ -55,6 +55,8 @@ main = do
     test_Max
     test_negate
 
+    Vect.test_range
+    List.test_range
     test_insertAt
     test_deleteAt
 

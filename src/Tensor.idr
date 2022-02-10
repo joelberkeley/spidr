@@ -170,8 +170,7 @@ expand : (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export
-(.T) : forall shape, dtype . {auto 0 _ : NonEmpty shape} -> {auto 0 _ : NonEmpty (init shape)} ->
-       Tensor shape dtype ->
+(.T) : forall shape, dtype . NonEmpty shape => NonEmpty (init shape) => Tensor shape dtype ->
        let leading = init (init shape)
            m = last (init shape)
            n = last shape
@@ -223,8 +222,8 @@ namespace Broadcastable
     ||| [2, 3] to [2, 3]
     ||| [2, 1] to [2, 3]
     ||| [2, 1] to [2, 0]
-    Match : forall from, to . {auto 0 _ : length from = length to}
-            -> {auto 0 _ : DimBroadcastable f t}
+    Match : forall from, to . length from = length to
+            => {auto 0 _ : DimBroadcastable f t}
             -> Broadcastable from to
             -> Broadcastable (f :: from) (t :: to)
 
@@ -418,7 +417,7 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
 export
-reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) -> {shape : _} ->
+reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) ->
   InBounds axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
@@ -724,8 +723,8 @@ log : Tensor shape F64 -> Tensor shape F64
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : forall shape, dtype . Primitive.Neg dtype => Tensor shape dtype -> NonEmpty shape =>
-      NonEmpty (init shape) =>
+det : forall shape, dtype . Primitive.Neg dtype => NonEmpty shape => NonEmpty (init shape)
+      => Tensor shape dtype ->
       let leading = init (init shape)
           m = last (init shape)
           n = last shape

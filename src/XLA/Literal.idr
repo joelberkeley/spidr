@@ -109,4 +109,4 @@ toArray lit = impl shape [] where
         -> (accumulated_indices : List Nat)
         -> Array remaining_shape ty
     impl [] acc = unsafePerformIO $ map (get {dtype} lit) (mkIntArray acc)
-    impl (n :: rest) acc = map ((impl rest) . (\x => acc ++ [x])) (range n)
+    impl (n :: rest) acc = map ((impl rest) . (snoc acc)) (range n)
