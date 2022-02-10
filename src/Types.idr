@@ -24,11 +24,9 @@ import public Data.Vect
 ||| has three `Double`s in it, so this has shape [2, 3]. A `Tensor` can have axes of zero length,
 ||| though the shape cannot be unambiguously inferred by visualising it. For example, `[[], []]`
 ||| can have shape [2, 0], [2, 0, 5] or etc. A scalar `Tensor` has shape `[]`.
-|||
-||| The rank is the number of elements in the shape, or equivalently the number of axes.
 public export 0
-Shape : {0 rank: Nat} -> Type
-Shape = Vect rank Nat
+Shape : Type
+Shape = List Nat
 
 ||| An `Array shape dtype` is either:
 ||| 

@@ -26,7 +26,7 @@ import Tensor
 ||| @dist Constructs the distribution from the shape of each sub-event and the number of events in
 |||   the distribution.
 public export
-interface Distribution (0 dist : (0 event : Shape {rank}) -> (0 dim : Nat) -> Type) where
+interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
   ||| The mean of the distribution.
   mean : dist event dim -> Tensor (dim :: event) F64
 
@@ -47,8 +47,8 @@ variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 |||   the distribution.
 public export
 interface Distribution dist  =>
-  ClosedFormDistribution (0 event : Shape {rank})
-    (0 dist : (0 event : Shape {rank}) -> (0 dim : Nat) -> Type) where
+  ClosedFormDistribution (0 event : Shape)
+    (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| The probability density function of the distribution at the specified point.
       pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tensor [] F64
 
