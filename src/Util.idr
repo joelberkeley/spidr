@@ -16,8 +16,9 @@ limitations under the License.
 ||| This module contains general library utilities.
 module Util
 
-import public Data.Vect
+import public Data.List
 import public Data.Nat
+import public Data.Vect
 
 namespace Vect
   ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
@@ -52,6 +53,6 @@ namespace List
   ||| @idx The index of the value to delete.
   ||| @xs The list to delete the value from.
   public export
-  deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : idx `LT` length xs} -> List a
-  deleteAt Z (_ :: xs) = xs
-  deleteAt {prf=LTESucc _} (S n) (x :: xs) = x :: (deleteAt n xs)
+  deleteAt : (idx : Nat) -> (xs : List a) -> {auto prf : InBounds idx xs} -> List a
+  deleteAt {prf=InFirst} Z (_ :: xs) = xs
+  deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs

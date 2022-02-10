@@ -419,7 +419,7 @@ map2 f (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
 ||| @axis The axis along which to reduce elements.
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) -> {shape : _} ->
-  axis `LT` length shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
+  InBounds axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   (MkTensor mkOp') <- [| (parameter 0 "" [] {dtype}) <+> (parameter 1 "" [] {dtype}) |]
