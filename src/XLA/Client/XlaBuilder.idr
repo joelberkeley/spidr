@@ -182,6 +182,14 @@ export
 prim__abs : GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Exp")
+prim__exp : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Log")
+prim__log : GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Neg")
 prim__neg : GCAnyPtr -> PrimIO AnyPtr
 

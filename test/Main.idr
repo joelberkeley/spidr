@@ -49,11 +49,13 @@ main = do
     test_Any
     test_elementwise_notEach
     test_absEach
+    test_negate
+    test_expEach
+    test_logEach
     test_minEach
     test_Min
     test_maxEach
     test_Max
-    test_negate
 
     Vect.test_range
     List.test_range
