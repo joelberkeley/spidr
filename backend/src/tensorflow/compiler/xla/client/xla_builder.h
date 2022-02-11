@@ -92,7 +92,14 @@ extern "C" {
 
     XlaOp* Abs(XlaOp& operand);
     XlaOp* Exp(XlaOp& operand);
+    XlaOp* Floor(XlaOp& operand);
+    XlaOp* Ceil(XlaOp& operand);
     XlaOp* Log(XlaOp& operand);
+    XlaOp* Logistic(XlaOp& operand);
+    XlaOp* Cos(XlaOp& operand);
+    XlaOp* Sin(XlaOp& operand);
+    XlaOp* Tanh(XlaOp& operand);
+    XlaOp* Sqrt(XlaOp& operand);
     XlaOp* Neg(XlaOp& operand);
 
     XlaOp* Map(

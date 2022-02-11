@@ -188,7 +188,7 @@ test_map = do
 
     let x = const {shape=[_, _]} {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
     assertAll "map for F64 array" $
-        map (const 1 /) x ==# const [[1.0, 0.4, 1 / 0.0], [-1.25, -10, 0.2]]
+        map (const 1 /) x ==# const [[1.0, 0.4, inf], [-1.25, -10, 0.2]]
 
     sequence_ $ do
         x <- ints
@@ -509,7 +509,7 @@ test_elementwise_division : IO ()
 test_elementwise_division = do
     let x = const [[3, 4, -5], [0, 0.3, 0]]
         y = const [[1, -2.3, 0.2], [0.1, 0, 0]]
-        expected = const {shape=[_, _]} {dtype=F64} [[3, -4 / 2.3, -25], [0, 0.3 / 0, 0 / 0]]
+        expected = const {shape=[_, _]} {dtype=F64} [[3, -4 / 2.3, -25], [0, inf, nan]]
     assertAll "/# for array" $ sufficientlyEqEach (x /# y) expected
 
     sequence_ $ do
@@ -554,15 +554,17 @@ test_absEach = do
             assert "absEach for double scalar" (sufficientlyEq actual (abs x))
         ) doubles
 
-testUnary : String -> (Double -> Double)
-            -> (forall shape . Tensor shape F64 -> Tensor shape F64) -> IO ()
-testUnary name f_native f_tensor = do
+testElementwiseUnaryDouble : String -> (Double -> Double)
+    -> (forall shape . Tensor shape F64 -> Tensor shape F64) -> IO ()
+testElementwiseUnaryDouble name f_native f_tensor = do
     let x = [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
         expected = const {shape=[_, _]} {dtype=F64} (map (map f_native) x)
+    eval {shape=[2, 3]} (f_tensor (const x)) >>= printLn
+    eval expected >>= printLn
     assertAll (name ++ " for double array") $ sufficientlyEqEach (f_tensor (const x)) expected
 
     sequence_
-        [assertAll (name ++ " for double scalar") $ sufficientlyEqEach
+        [assertAll (name ++ " for double scalar " ++ show x) $ sufficientlyEqEach
             (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles]
 
 export
@@ -575,15 +577,23 @@ test_negate = do
     sequence_ [assertAll "negate for int scalar" $
                (- const {dtype=S32} x) ==# const {shape=[]} (-x) | x <- ints]
 
-    testUnary "negate" negate negate
+    testElementwiseUnaryDouble "negate" negate negate
 
 export
-test_expEach : IO ()
-test_expEach = testUnary "expEach" exp expEach
-
-export
-test_logEach : IO ()
-test_logEach = testUnary "logEach" log logEach
+testElementwiseUnaryDoubleCases : IO ()
+testElementwiseUnaryDoubleCases = do
+    testElementwiseUnaryDouble "expEach" exp expEach
+    testElementwiseUnaryDouble "floorEach" floor floorEach
+    testElementwiseUnaryDouble "ceilEach" ceiling ceilEach
+    testElementwiseUnaryDouble "logEach" log logEach
+    testElementwiseUnaryDouble "logisticEach" (\x => 1 / (1 + exp (-x))) logisticEach
+    testElementwiseUnaryDouble "sinEach" sin sinEach
+    testElementwiseUnaryDouble "cosEach" cos cosEach
+    testElementwiseUnaryDouble "tanhEach" (\x =>
+        if x == -inf then -1.0
+        else if x == inf then 1.0
+        else tanh x) tanhEach
+    testElementwiseUnaryDouble "sqrtEach" sqrt sqrtEach
 
 export
 test_minEach : IO ()

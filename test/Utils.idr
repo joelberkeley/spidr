@@ -41,6 +41,7 @@ export
 ints : List Int
 ints = [-3, -1, 0, 1, 3]
 
+export
 nan, inf : Double
 nan = 0.0 / 0.0
 inf = 1.0 / 0.0

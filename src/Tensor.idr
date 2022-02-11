@@ -377,8 +377,8 @@ reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> XlaOpFactory -> XlaOpFactory
-unaryOp prim_operator mkOp builder = do
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape dtype -> Tensor shape dtype
+unaryOp prim_operator (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkOp builder))
   onCollectAny op XlaOp.delete
 
@@ -470,7 +470,7 @@ namespace Monoid
 ||| `const [False, True]`.
 export
 notEach : Tensor shape PRED -> Tensor shape PRED
-notEach (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
+notEach = unaryOp prim__not
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -519,7 +519,7 @@ namespace Monoid
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
+negate = unaryOp prim__neg
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
@@ -570,19 +570,56 @@ l / r = l /# broadcast {prf=scalarToAnyOk shape} r
 ||| `const [2, 3]`.
 export
 absEach : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+absEach = unaryOp prim__abs
 
 ||| The element-wise natural exponential. For example, `expEach (const [-1, 0, 2])` is equivalent to
 ||| `const [1 / euler, 1, pow euler 2]`.
 export
 expEach : Tensor shape F64 -> Tensor shape F64
-expEach (MkTensor mkOp) = MkTensor (unaryOp prim__exp mkOp)
+expEach = unaryOp prim__exp
+
+||| The element-wise floor function. For example,
+||| `floorEach (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
+||| `const [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
+export
+floorEach : Tensor shape F64 -> Tensor shape F64
+floorEach = unaryOp prim__floor
+
+||| The element-wise ceiling. For example,
+export
+ceilEach : Tensor shape F64 -> Tensor shape F64
+ceilEach = unaryOp prim__ceil
 
 ||| The element-wise natural logarithm. For example, `logEach (const [-1, 0, euler])` is equivalent
 ||| to `const [nan, -inf, 1]`.
 export
 logEach : Tensor shape F64 -> Tensor shape F64
-logEach (MkTensor mkOp) = MkTensor (unaryOp prim__log mkOp)
+logEach = unaryOp prim__log
+
+||| The element-wise 
+export
+logisticEach : Tensor shape F64 -> Tensor shape F64
+logisticEach = unaryOp prim__logistic
+
+||| The element-wise 
+export
+sinEach : Tensor shape F64 -> Tensor shape F64
+sinEach = unaryOp prim__sin
+
+||| The element-wise 
+export
+cosEach : Tensor shape F64 -> Tensor shape F64
+cosEach = unaryOp prim__cos
+
+||| The element-wise 
+export
+tanhEach : Tensor shape F64 -> Tensor shape F64
+tanhEach = unaryOp prim__tanh
+
+||| The element-wise 
+export
+sqrtEach : Tensor shape F64 -> Tensor shape F64
+sqrtEach = unaryOp prim__sqrt
 
 infixr 9 ^
 

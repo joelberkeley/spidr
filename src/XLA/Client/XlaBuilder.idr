@@ -186,8 +186,36 @@ export
 prim__exp : GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Floor")
+prim__floor : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Ceil")
+prim__ceil : GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Log")
 prim__log : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Logistic")
+prim__logistic : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Cos")
+prim__cos : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Sin")
+prim__sin : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Tanh")
+prim__tanh : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Sqrt")
+prim__sqrt : GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Neg")
