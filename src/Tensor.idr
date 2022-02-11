@@ -572,6 +572,18 @@ export
 absEach : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
 absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
 
+||| The element-wise natural exponential. For example, `expEach (const [-1, 0, 2])` is equivalent to
+||| `const [1 / euler, 1, pow euler 2]`.
+export
+expEach : Tensor shape F64 -> Tensor shape F64
+expEach (MkTensor mkOp) = MkTensor (unaryOp prim__exp mkOp)
+
+||| The element-wise natural logarithm. For example, `logEach (const [-1, 0, euler])` is equivalent
+||| to `const [nan, -inf, 1]`.
+export
+logEach : Tensor shape F64 -> Tensor shape F64
+logEach (MkTensor mkOp) = MkTensor (unaryOp prim__log mkOp)
+
 infixr 9 ^
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
@@ -580,10 +592,6 @@ infixr 9 ^
 ||| Note: The first root is used.
 export
 (^) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-
-||| The element-wise natural exponential.
-export
-exp : Tensor shape F64 -> Tensor shape F64
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `minEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
@@ -620,10 +628,6 @@ namespace Monoid
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
-
-||| The element-wise natural logarithm.
-export
-log : Tensor shape F64 -> Tensor shape F64
 
 ---------------------------- other ----------------------------------
 

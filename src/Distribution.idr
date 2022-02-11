@@ -86,6 +86,6 @@ ClosedFormDistribution [1] Gaussian where
         denominator = (const $ 2 * pi) ^ (const $ cast (S d) / 2.0)
                       * (det $ squeeze {to=[S d, S d]} cov) ^ const 0.5
 
-     in (exp exponent) / denominator
+     in (expEach exponent) / denominator
 
   cdf (MkGaussian mean cov) x = ?cdf_rhs

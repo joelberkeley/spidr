@@ -554,6 +554,37 @@ test_absEach = do
             assert "absEach for double scalar" (sufficientlyEq actual (abs x))
         ) doubles
 
+testUnary : String -> (Double -> Double)
+            -> (forall shape . Tensor shape F64 -> Tensor shape F64) -> IO ()
+testUnary name f_native f_tensor = do
+    let x = [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
+        expected = const {shape=[_, _]} {dtype=F64} (map (map f_native) x)
+    assertAll (name ++ " for double array") $ sufficientlyEqEach (f_tensor (const x)) expected
+
+    sequence_
+        [assertAll (name ++ " for double scalar") $ sufficientlyEqEach
+            (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles]
+
+export
+test_negate : IO ()
+test_negate = do
+    let x = const [[1, 15, -5], [-1, 7, 0]]
+    assertAll "negate for int array" $
+        (-x) ==# const {shape=[_, _]} {dtype=S32} [[-1, -15, 5], [1, -7, 0]]
+
+    sequence_ [assertAll "negate for int scalar" $
+               (- const {dtype=S32} x) ==# const {shape=[]} (-x) | x <- ints]
+
+    testUnary "negate" negate negate
+
+export
+test_expEach : IO ()
+test_expEach = testUnary "expEach" exp expEach
+
+export
+test_logEach : IO ()
+test_logEach = testUnary "logEach" log logEach
+
 export
 test_minEach : IO ()
 test_minEach = do
@@ -621,22 +652,6 @@ test_Max = do
     let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
     assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) ==# x
     assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x ==# x
-
-export
-test_negate : IO ()
-test_negate = do
-    let x = const [[1, 15, -5], [-1, 7, 0]]
-    assertAll "negate for int array" $
-        (-x) ==# const {shape=[_, _]} {dtype=S32} [[-1, -15, 5], [1, -7, 0]]
-
-    let x = const [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
-        expected = const {shape=[_, _]} {dtype=F64} [[-1.3, -1.5, 5.2], [1.1, -7.0, 0.0]]
-    assertAll "negate for double array" $ sufficientlyEqEach (-x) expected
-
-    sequence_ [assertAll "negate for int scalar" $
-               (- const {dtype=S32} x) ==# const {shape=[]} (-x) | x <- ints]
-    sequence_ [assertAll "negate for double scalar" $
-               sufficientlyEqEach (- const x) (const {shape=[]} (-x)) | x <- doubles]
 
 test_det : Tensor [3, 3] F64 -> Tensor [] F64
 test_det x = det x

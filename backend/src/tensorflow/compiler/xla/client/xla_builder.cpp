@@ -195,6 +195,8 @@ extern "C" {
     }
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
+    XlaOp* Exp(XlaOp& operand) { return unaryOp(xla::Exp, operand); }
+    XlaOp* Log(XlaOp& operand) { return unaryOp(xla::Log, operand); }
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 
     XlaOp* Map(

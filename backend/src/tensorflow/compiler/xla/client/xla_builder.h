@@ -91,6 +91,8 @@ extern "C" {
     );
 
     XlaOp* Abs(XlaOp& operand);
+    XlaOp* Exp(XlaOp& operand);
+    XlaOp* Log(XlaOp& operand);
     XlaOp* Neg(XlaOp& operand);
 
     XlaOp* Map(
