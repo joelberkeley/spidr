@@ -76,64 +76,6 @@ toString (MkTensor f) = do
   builder <- prim__mkXlaBuilder ""
   pure (prim__opToString builder !(f builder))
 
-||| A mutable tensor. That is, a tensor that can be modified in-place.
-|||
-||| We can do this in Idris with linearity. Linearity is offered by quantitative type theory*, which
-||| allows us to guarantee that a value is used at run time either never (erased), once (linear), or
-||| more. In-place mutation traditionally suffers from the problem that you have to reason about
-||| what state a value is in in a series of computations: whether it has been mutated and how. For
-||| example, in the following pseudo-code,
-|||
-||| ```
-||| a = 1
-||| a += 1
-||| b = f(a)
-||| ```
-|||
-||| We have to be aware of whether `a` was modified between its initialization and its use in the
-||| calculation of `b`. This problem is solved by simply defining a new variable, as
-|||
-||| ```
-||| a = 1
-||| a' = a + 1
-||| b = f(a')
-||| ```
-|||
-||| but this doesn't provide the same performance benefits of in-place mutation. The conundrum is
-||| (at least largely) solved with linear types, because you can require that the action of mutating
-||| a value "uses it up" such that the previous reference to it cannot be used any more. In the
-||| first example, the mutation `a += 1` would use up `a` and we wouldn't be able to use it in the
-||| construction of `b`, so the problem no longer exists.
-|||
-||| In order to ensure `Variable` is only used as a linear type, it is accessible only via the
-||| function `var`.
-|||
-||| *See http://www.type-driven.org.uk/edwinb
-|||
-||| @shape The `Variable` shape.
-||| @dtype The element type.
-export
-data Variable : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkVariable : Array shape ty -> Variable shape dtype
-
-||| Provides access to a linear `Variable` with initial contents `arr`. For example:
-|||
-||| ```idris
-||| addOne : (1 v : Variable [] F64) -> Variable [] F64
-||| addOne v = v += const {shape=[]} 1
-|||
-||| three : Tensor [] F64
-||| three = var 2.0 $ \v => freeze $ addOne v
-||| ```
-|||
-||| @arr The initial contents of the `Variable`.
-||| @f A function which uses the `Variable`. The return value of `f` is returned by `var`.
-var : PrimitiveRW dtype ty => Array shape ty -> (1 f : (1 v : Variable shape dtype) -> a) -> a
-var arr f = f (MkVariable arr)
-
-||| Convert a `Variable` to a `Tensor`.
-freeze : (1 _ : Variable shape dtype) -> Tensor shape dtype
-
 ----------------------------- structural operations ----------------------------
 
 ||| Get the `idx`-th row from a tensor. For example, `index 1 $ const [[1, 2], [3, 4], [5, 6]]`
@@ -678,41 +620,6 @@ namespace Monoid
         Primitive.Fractional dtype => Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
-
-infix 8 +=
-infix 8 -=
-infix 8 *=
-infix 8 //=
-
-||| Element-wise in-place addition. It is in-place in the sense that the value in memory is mutated
-||| in-place. However, since the function is linear its `Variable`, you must still use the result to
-||| get the updated value. For example:
-|||
-||| ```idris
-||| addOne : (1 v : Variable [] F64) -> Variable [] F64
-||| addOne v = v += const {shape=[]} 1
-||| ```
-|||
-||| Other than the fact that it works on a `Variable`, and mutates the value in-place, it works
-||| exactly like `(+)` on a `Tensor`.
-export
-(+=) : Primitive.Num dtype =>
-       (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
-
-||| Element-wise in-place subtraction. See `(+=)` and `(+)` for details.
-export
-(-=) : Primitive.Neg dtype =>
-       (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
-
-||| Element-wise in-place multiplication. See `(+=)` and `(*)` for details.
-export
-(*=) : Primitive.Num dtype =>
-       (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
-
-||| Element-wise in-place division. See `(+=)` and `(/)` for details.
-export
-(//=) : Primitive.Fractional dtype =>
-        (1 v : Variable shape dtype) -> Tensor shape dtype -> Variable shape dtype
 
 ||| The element-wise natural logarithm.
 export
