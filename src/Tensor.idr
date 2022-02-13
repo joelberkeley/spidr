@@ -619,7 +619,7 @@ tanhEach : Tensor shape F64 -> Tensor shape F64
 tanhEach = unaryOp prim__tanh
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
-||| For example, `sqrtEach (const [0, 6.25])` is equivalent to `const [0, 2.5]`.
+||| For example, `sqrtEach (const [0, 9])` is equivalent to `const [0, 3]`.
 export
 sqrtEach : Tensor shape F64 -> Tensor shape F64
 sqrtEach = unaryOp prim__sqrt
