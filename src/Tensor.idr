@@ -593,7 +593,7 @@ ceilEach : Tensor shape F64 -> Tensor shape F64
 ceilEach = unaryOp prim__ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
-||| `logEach (const [euler, euler * euler])` is equivalent to `const [1.0, 2.0]`.
+||| `logEach (const [1 / euler, 1, euler * euler])` is equivalent to `const [-1, 0, 2]`.
 export
 logEach : Tensor shape F64 -> Tensor shape F64
 logEach = unaryOp prim__log
