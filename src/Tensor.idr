@@ -592,9 +592,8 @@ export
 ceilEach : Tensor shape F64 -> Tensor shape F64
 ceilEach = unaryOp prim__ceil
 
--- todo what about log of negatives?
-||| The element-wise natural logarithm. For example, `logEach (const [-1, 0, euler])` is equivalent
-||| to `const [nan, -inf, 1]`.
+||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
+||| `logEach (const [euler, euler * euler])` is equivalent to `const [1.0, 2.0]`.
 export
 logEach : Tensor shape F64 -> Tensor shape F64
 logEach = unaryOp prim__log
@@ -619,8 +618,8 @@ export
 tanhEach : Tensor shape F64 -> Tensor shape F64
 tanhEach = unaryOp prim__tanh
 
--- todo what about sqrt of negatives?
-||| The element-wise square root.
+||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
+||| For example, `sqrtEach (const [0, 6.25])` is equivalent to `const [0, 2.5]`.
 export
 sqrtEach : Tensor shape F64 -> Tensor shape F64
 sqrtEach = unaryOp prim__sqrt
