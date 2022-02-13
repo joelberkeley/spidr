@@ -383,7 +383,7 @@ unaryOp prim_operator (MkTensor mkOp) = MkTensor $ \builder => do
   onCollectAny op XlaOp.delete
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> Tensor shape dtyp -> Tensor shape dtyp -> Tensor shape dtyp
+           -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 binaryOp prim_operator (MkTensor mkLeft) (MkTensor mkRight) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkLeft builder) !(mkRight builder))
   onCollectAny op XlaOp.delete
