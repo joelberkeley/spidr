@@ -579,6 +579,12 @@ test_negate = do
 
     testElementwiseUnaryDouble "negate" negate negate
 
+tanh' : Double -> Double
+tanh' x =
+    if x == -inf then -1.0
+    else if x == inf then 1.0
+    else tanh x
+
 export
 testElementwiseUnaryDoubleCases : IO ()
 testElementwiseUnaryDoubleCases = do
@@ -589,10 +595,7 @@ testElementwiseUnaryDoubleCases = do
     testElementwiseUnaryDouble "logisticEach" (\x => 1 / (1 + exp (-x))) logisticEach
     testElementwiseUnaryDouble "sinEach" sin sinEach
     testElementwiseUnaryDouble "cosEach" cos cosEach
-    testElementwiseUnaryDouble "tanhEach" (\x =>
-        if x == -inf then -1.0
-        else if x == inf then 1.0
-        else tanh x) tanhEach
+    testElementwiseUnaryDouble "tanhEach" tanh' tanhEach
     testElementwiseUnaryDouble "sqrtEach" sqrt sqrtEach
 
 export
