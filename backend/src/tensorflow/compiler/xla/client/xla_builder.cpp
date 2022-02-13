@@ -196,7 +196,14 @@ extern "C" {
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
     XlaOp* Exp(XlaOp& operand) { return unaryOp(xla::Exp, operand); }
+    XlaOp* Floor(XlaOp& operand) { return unaryOp(xla::Floor, operand); }
+    XlaOp* Ceil(XlaOp& operand) { return unaryOp(xla::Ceil, operand); }
     XlaOp* Log(XlaOp& operand) { return unaryOp(xla::Log, operand); }
+    XlaOp* Logistic(XlaOp& operand) { return unaryOp(xla::Logistic, operand); }
+    XlaOp* Cos(XlaOp& operand) { return unaryOp(xla::Cos, operand); }
+    XlaOp* Sin(XlaOp& operand) { return unaryOp(xla::Sin, operand); }
+    XlaOp* Tanh(XlaOp& operand) { return unaryOp(xla::Tanh, operand); }
+    XlaOp* Sqrt(XlaOp& operand) { return unaryOp(xla::Sqrt, operand); }
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 
     XlaOp* Map(

@@ -50,8 +50,7 @@ main = do
     test_elementwise_notEach
     test_absEach
     test_negate
-    test_expEach
-    test_logEach
+    testElementwiseUnaryDoubleCases
     test_minEach
     test_Min
     test_maxEach

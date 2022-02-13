@@ -377,14 +377,14 @@ reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> XlaOpFactory -> XlaOpFactory
-unaryOp prim_operator mkOp builder = do
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
+unaryOp prim_operator (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkOp builder))
   onCollectAny op XlaOp.delete
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> XlaOpFactory -> XlaOpFactory -> XlaOpFactory
-binaryOp prim_operator mkLeft mkRight builder = do
+           -> Tensor shape a -> Tensor shape b -> Tensor shape c
+binaryOp prim_operator (MkTensor mkLeft) (MkTensor mkRight) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkLeft builder) !(mkRight builder))
   onCollectAny op XlaOp.delete
 
@@ -394,13 +394,13 @@ infix 6 ==#, /=#
 ||| `const [True, False]`.
 export
 (==#) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) ==# (MkTensor r) = MkTensor (binaryOp prim__eq l r)
+(==#) = binaryOp prim__eq
 
 ||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
 (/=#) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) /=# (MkTensor r) = MkTensor (binaryOp prim__ne l r)
+(/=#) = binaryOp prim__ne
 
 infix 6 <#, >#, <=#, >=#
 
@@ -408,25 +408,25 @@ infix 6 <#, >#, <=#, >=#
 ||| `const [True, False, False]`.
 export
 (<#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) <# (MkTensor r) = MkTensor (binaryOp prim__lt l r)
+(<#) = binaryOp prim__lt
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
 (>#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) ># (MkTensor r) = MkTensor (binaryOp prim__gt l r)
+(>#) = binaryOp prim__gt
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
 (<=#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) <=# (MkTensor r) = MkTensor (binaryOp prim__le l r)
+(<=#) = binaryOp prim__le
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
 (>=#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) >=# (MkTensor r) = MkTensor (binaryOp prim__ge l r)
+(>=#) = binaryOp prim__ge
 
 infixr 5 &&#
 
@@ -435,7 +435,7 @@ infixr 5 &&#
 ||| `const [True, False, False, False]`.
 export
 (&&#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(MkTensor l) &&# (MkTensor r) = MkTensor (binaryOp prim__and l r)
+(&&#) = binaryOp prim__and
 
 namespace Semigroup
   export
@@ -454,7 +454,7 @@ infixr 4 ||#
 ||| `const [True, True, True, False]`.
 export
 (||#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
+(||#) = binaryOp prim__or
 
 namespace Semigroup
   export
@@ -470,7 +470,7 @@ namespace Monoid
 ||| `const [False, True]`.
 export
 notEach : Tensor shape PRED -> Tensor shape PRED
-notEach (MkTensor mkOp) = MkTensor (unaryOp prim__not mkOp)
+notEach = unaryOp prim__not
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -503,7 +503,7 @@ export
 ||| `const [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
+(+) = binaryOp prim__add
 
 namespace Semigroup
   export
@@ -519,13 +519,13 @@ namespace Monoid
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate (MkTensor mkOp) = MkTensor (unaryOp prim__neg mkOp)
+negate = unaryOp prim__neg
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
+(-) = binaryOp prim__sub
 
 infixl 9 *#, /#
 
@@ -533,7 +533,7 @@ infixl 9 *#, /#
 ||| `const [8, 15]`.
 export
 (*#) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) *# (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+(*#) = binaryOp prim__mul
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
@@ -557,7 +557,7 @@ namespace Monoid
 ||| to `const [0.5, 0.6]`.
 export
 (/#) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) /# (MkTensor r) = MkTensor (binaryOp prim__div l r)
+(/#) = binaryOp prim__div
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
@@ -570,19 +570,59 @@ l / r = l /# broadcast {prf=scalarToAnyOk shape} r
 ||| `const [2, 3]`.
 export
 absEach : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-absEach (MkTensor mkOp) = MkTensor (unaryOp prim__abs mkOp)
+absEach = unaryOp prim__abs
 
 ||| The element-wise natural exponential. For example, `expEach (const [-1, 0, 2])` is equivalent to
 ||| `const [1 / euler, 1, pow euler 2]`.
 export
 expEach : Tensor shape F64 -> Tensor shape F64
-expEach (MkTensor mkOp) = MkTensor (unaryOp prim__exp mkOp)
+expEach = unaryOp prim__exp
 
-||| The element-wise natural logarithm. For example, `logEach (const [-1, 0, euler])` is equivalent
-||| to `const [nan, -inf, 1]`.
+||| The element-wise floor function. For example,
+||| `floorEach (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
+||| `const [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
+export
+floorEach : Tensor shape F64 -> Tensor shape F64
+floorEach = unaryOp prim__floor
+
+||| The element-wise ceiling function. For example,
+||| `ceilEach (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
+||| `const [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
+export
+ceilEach : Tensor shape F64 -> Tensor shape F64
+ceilEach = unaryOp prim__ceil
+
+||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
+||| `logEach (const [1 / euler, 1, euler * euler])` is equivalent to `const [-1, 0, 2]`.
 export
 logEach : Tensor shape F64 -> Tensor shape F64
-logEach (MkTensor mkOp) = MkTensor (unaryOp prim__log mkOp)
+logEach = unaryOp prim__log
+
+||| The element-wise logistic function equivalent to `1 /# 1 + expEach (-x)`.
+export
+logisticEach : Tensor shape F64 -> Tensor shape F64
+logisticEach = unaryOp prim__logistic
+
+||| The element-wise sine.
+export
+sinEach : Tensor shape F64 -> Tensor shape F64
+sinEach = unaryOp prim__sin
+
+||| The element-wise cosine.
+export
+cosEach : Tensor shape F64 -> Tensor shape F64
+cosEach = unaryOp prim__cos
+
+||| The element-wise hyperbolic tangent.
+export
+tanhEach : Tensor shape F64 -> Tensor shape F64
+tanhEach = unaryOp prim__tanh
+
+||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
+||| For example, `sqrtEach (const [0, 9])` is equivalent to `const [0, 3]`.
+export
+sqrtEach : Tensor shape F64 -> Tensor shape F64
+sqrtEach = unaryOp prim__sqrt
 
 infixr 9 ^
 
@@ -597,7 +637,7 @@ export
 ||| `minEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
 export
 minEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-minEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__min l r)
+minEach = binaryOp prim__min
 
 namespace Semigroup
   export
@@ -615,7 +655,7 @@ namespace Monoid
 ||| `maxEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
 export
 maxEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-maxEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__max l r)
+maxEach = binaryOp prim__max
 
 namespace Semigroup
   export
