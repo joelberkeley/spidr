@@ -383,8 +383,8 @@ unaryOp prim_operator (MkTensor mkOp) = MkTensor $ \builder => do
   onCollectAny op XlaOp.delete
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> XlaOpFactory -> XlaOpFactory -> XlaOpFactory
-binaryOp prim_operator mkLeft mkRight builder = do
+           -> Tensor shape dtyp -> Tensor shape dtyp -> Tensor shape dtyp
+binaryOp prim_operator (MkTensor mkLeft) (MkTensor mkRight) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkLeft builder) !(mkRight builder))
   onCollectAny op XlaOp.delete
 
@@ -394,13 +394,13 @@ infix 6 ==#, /=#
 ||| `const [True, False]`.
 export
 (==#) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) ==# (MkTensor r) = MkTensor (binaryOp prim__eq l r)
+(==#) = binaryOp prim__eq
 
 ||| Element-wise inequality. For example, `const [1, 2] /=# const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
 (/=#) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) /=# (MkTensor r) = MkTensor (binaryOp prim__ne l r)
+(/=#) = binaryOp prim__ne
 
 infix 6 <#, >#, <=#, >=#
 
@@ -408,25 +408,25 @@ infix 6 <#, >#, <=#, >=#
 ||| `const [True, False, False]`.
 export
 (<#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) <# (MkTensor r) = MkTensor (binaryOp prim__lt l r)
+(<#) = binaryOp prim__lt
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] ># const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
 (>#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) ># (MkTensor r) = MkTensor (binaryOp prim__gt l r)
+(>#) = binaryOp prim__gt
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <=# const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
 (<=#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) <=# (MkTensor r) = MkTensor (binaryOp prim__le l r)
+(<=#) = binaryOp prim__le
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >=# const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
 (>=#) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(MkTensor l) >=# (MkTensor r) = MkTensor (binaryOp prim__ge l r)
+(>=#) = binaryOp prim__ge
 
 infixr 5 &&#
 
@@ -435,7 +435,7 @@ infixr 5 &&#
 ||| `const [True, False, False, False]`.
 export
 (&&#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(MkTensor l) &&# (MkTensor r) = MkTensor (binaryOp prim__and l r)
+(&&#) = binaryOp prim__and
 
 namespace Semigroup
   export
@@ -454,7 +454,7 @@ infixr 4 ||#
 ||| `const [True, True, True, False]`.
 export
 (||#) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(MkTensor l) ||# (MkTensor r) = MkTensor (binaryOp prim__or l r)
+(||#) = binaryOp prim__or
 
 namespace Semigroup
   export
@@ -503,7 +503,7 @@ export
 ||| `const [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) + (MkTensor r) = MkTensor (binaryOp prim__add l r)
+(+) = binaryOp prim__add
 
 namespace Semigroup
   export
@@ -525,7 +525,7 @@ negate = unaryOp prim__neg
 ||| `const [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) - (MkTensor r) = MkTensor (binaryOp prim__sub l r)
+(-) = binaryOp prim__sub
 
 infixl 9 *#, /#
 
@@ -533,7 +533,7 @@ infixl 9 *#, /#
 ||| `const [8, 15]`.
 export
 (*#) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) *# (MkTensor r) = MkTensor (binaryOp prim__mul l r)
+(*#) = binaryOp prim__mul
 
 ||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
 ||| `const [6, 10]`.
@@ -557,7 +557,7 @@ namespace Monoid
 ||| to `const [0.5, 0.6]`.
 export
 (/#) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(MkTensor l) /# (MkTensor r) = MkTensor (binaryOp prim__div l r)
+(/#) = binaryOp prim__div
 
 ||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
 ||| to `const [1.7, -2.8]`.
@@ -637,7 +637,7 @@ export
 ||| `minEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
 export
 minEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-minEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__min l r)
+minEach = binaryOp prim__min
 
 namespace Semigroup
   export
@@ -655,7 +655,7 @@ namespace Monoid
 ||| `maxEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
 export
 maxEach : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-maxEach (MkTensor l) (MkTensor r) = MkTensor (binaryOp prim__max l r)
+maxEach = binaryOp prim__max
 
 namespace Semigroup
   export
