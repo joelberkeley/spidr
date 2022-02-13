@@ -585,38 +585,42 @@ export
 floorEach : Tensor shape F64 -> Tensor shape F64
 floorEach = unaryOp prim__floor
 
-||| The element-wise ceiling. For example,
+||| The element-wise ceiling function. For example,
+||| `ceilEach (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
+||| `const [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceilEach : Tensor shape F64 -> Tensor shape F64
 ceilEach = unaryOp prim__ceil
 
+-- todo what about log of negatives?
 ||| The element-wise natural logarithm. For example, `logEach (const [-1, 0, euler])` is equivalent
 ||| to `const [nan, -inf, 1]`.
 export
 logEach : Tensor shape F64 -> Tensor shape F64
 logEach = unaryOp prim__log
 
-||| The element-wise 
+||| The element-wise logistic function equivalent to `1 /# 1 + expEach (-x)`.
 export
 logisticEach : Tensor shape F64 -> Tensor shape F64
 logisticEach = unaryOp prim__logistic
 
-||| The element-wise 
+||| The element-wise sine.
 export
 sinEach : Tensor shape F64 -> Tensor shape F64
 sinEach = unaryOp prim__sin
 
-||| The element-wise 
+||| The element-wise cosine.
 export
 cosEach : Tensor shape F64 -> Tensor shape F64
 cosEach = unaryOp prim__cos
 
-||| The element-wise 
+||| The element-wise hyperbolic tangent.
 export
 tanhEach : Tensor shape F64 -> Tensor shape F64
 tanhEach = unaryOp prim__tanh
 
-||| The element-wise 
+-- todo what about sqrt of negatives?
+||| The element-wise square root.
 export
 sqrtEach : Tensor shape F64 -> Tensor shape F64
 sqrtEach = unaryOp prim__sqrt
