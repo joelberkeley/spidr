@@ -705,11 +705,6 @@ Error SingularMatrixError where
 export
 inverse : Tensor [S n, S n] F64 -> Either SingularMatrixError $ Tensor [S n, S n] F64
 
-||| The product of all elements along the diagonal of a matrix. For example,
-||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
-export
-trace_product : Primitive.Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
-
 ||| Sum the elements along the diagonal of the input.
 export
 trace : Primitive.Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
