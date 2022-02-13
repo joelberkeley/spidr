@@ -377,13 +377,13 @@ reduce axis (MkTensor mkOp) = MkTensor $ \builder => do
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> Tensor s d -> Tensor s' d'
+unaryOp : (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
 unaryOp prim_operator (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkOp builder))
   onCollectAny op XlaOp.delete
 
 binaryOp : (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> Tensor s d -> Tensor s' d' -> Tensor s'' d''
+           -> Tensor shape a -> Tensor shape b -> Tensor shape c
 binaryOp prim_operator (MkTensor mkLeft) (MkTensor mkRight) = MkTensor $ \builder => do
   op <- primIO (prim_operator !(mkLeft builder) !(mkRight builder))
   onCollectAny op XlaOp.delete
