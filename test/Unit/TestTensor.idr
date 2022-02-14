@@ -341,22 +341,32 @@ test_tensor_contraction22 : Tensor [3, 4] F64 -> Tensor [4, 5] F64 -> Tensor [3,
 test_tensor_contraction22 x y = x @@ y
 
 export
+testElementwiseBinaryS32 : String -> (Int -> Int -> Int)
+    -> (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) -> IO ()
+testElementwiseBinaryS32 name f_native f_tensor = do
+    let x = [[1, 15, 5], [-1, 7, 6]]
+        y = [[11, 5, 7], [-3, -4, 0]]
+        expected = const {shape=[2, 3]} {dtype=S32} $ [
+                [f_native 1 11, f_native 15 5, f_native 5 7],
+                [f_native (-1) (-3), f_native 7 (-4), f_native 6 0]
+            ]
+    assertAll (name ++ " for int array") $ f_tensor (const x) (const y) ==# expected
+
+    sequence_ $ do
+        l <- ints
+        r <- ints
+        pure $ assertAll (name ++ " for scalar S32") $
+            f_tensor (const l) (const r) ==# const {shape=[]} {dtype=S32} (f_native l r)
+
+export
 test_add : IO ()
 test_add = do
-    let x = const [[1, 15, 5], [-1, 7, 6]]
-        y = const [[11, 5, 7], [-3, -4, 0]]
-    assertAll "+ for S32 matrix" $
-        x + y ==# const {shape=[_, _]} {dtype=S32} [[12, 20, 12], [-4, 3, 6]]
+    testElementwiseBinaryS32 "+" (+) (+)
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
     assertAll "+ for F64 matrix" $ sufficientlyEqEach (x + y) $
         const {shape=[_, _]} {dtype=F64} [[-1.5], [1.3], [4.3]]
-
-    sequence_ $ do
-        l <- ints
-        r <- ints
-        pure $ assertAll "+ for scalar S32" $ (const l + const r) ==# const {shape=[]} {dtype=S32} (l + r)
 
     sequence_ $ do
         l <- doubles
@@ -399,21 +409,12 @@ test_subtract = do
 export
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
-    let x = const [[1, 15, 5], [-1, 7, 6]]
-        y = const [[11, 5, 7], [-3, -4, 0]]
-    assertAll "*# for int array" $
-        x *# y ==# const {shape=[_, _]} {dtype=S32} [[11, 75, 35], [3, -28, 0]]
+    testElementwiseBinaryS32 "*" (*) (*#)
 
     let x = const [[1.8], [1.3], [4.0]]
         y = const [[-3.3], [0.0], [0.3]]
     assertAll "*# for double array" $ sufficientlyEqEach (x *# y) $
         const {shape=[_, _]} {dtype=F64} [[-1.8 * 3.3], [0.0], [1.2]]
-
-    sequence_ $ do
-        l <- ints
-        r <- ints
-        pure $ assertAll "*# for int scalar" $
-            (const l *# const r) ==# const {shape=[]} {dtype=S32} (l * r)
 
     sequence_ $ do
         l <- doubles
@@ -559,9 +560,8 @@ testElementwiseUnaryDouble : String -> (Double -> Double)
 testElementwiseUnaryDouble name f_native f_tensor = do
     let x = [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
         expected = const {shape=[_, _]} {dtype=F64} (map (map f_native) x)
-    eval {shape=[2, 3]} (f_tensor (const x)) >>= printLn
-    eval expected >>= printLn
-    assertAll (name ++ " for double array") $ sufficientlyEqEach (f_tensor (const x)) expected
+    assertAll (name ++ " for double array") $
+        sufficientlyEqEach (f_tensor (const x)) expected
 
     sequence_
         [assertAll (name ++ " for double scalar " ++ show x) $ sufficientlyEqEach
@@ -601,19 +601,11 @@ testElementwiseUnaryDoubleCases = do
 export
 test_minEach : IO ()
 test_minEach = do
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
-        y = const {shape=[_, _]} {dtype=S32} [[2, 1, -1], [-2,  0, 0]]
-    assertAll "minEach for S32 array" $ minEach x y ==# const [[1, 1, -2], [-2, -1, 0]]
+    testElementwiseBinaryS32 "minEach" min minEach
 
     let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
         y = const {shape=[_, _]} {dtype=F64} [[2.0, 1.2, -1.1], [-2.3,  0.0, 0.0]]
     assertAll "minEach for F64 array" $ minEach x y ==# const [[1.1, 1.2, -2.0], [-2.3, -1.0, 0.0]]
-
-    sequence_ $ do
-        l <- ints
-        r <- ints
-        pure $ assertAll ("minEach for S32 scalars " ++ show (l, r)) $
-            minEach (const l) (const r) ==# const {shape=[]} {dtype=S32} (min l r)
 
     sequence_ $ do
         l <- doubles
@@ -635,19 +627,11 @@ test_Min = do
 export
 test_maxEach : IO ()
 test_maxEach = do
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, -2], [-1, -1, 1]]
-        y = const {shape=[_, _]} {dtype=S32} [[2, 1, -1], [-2,  0, 0]]
-    assertAll "maxEach for S32 array" $ maxEach x y ==# const [[2, 2, -1], [-1, 0, 1]]
+    testElementwiseBinaryS32 "maxEach" max maxEach
 
     let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
         y = const {shape=[_, _]} {dtype=F64} [[2.0, 1.2, -1.1], [-2.3,  0.0, 0.0]]
     assertAll "maxEach for F64 array" $ maxEach x y ==# const [[2.0, 2.1, -1.1], [-1.3, 0.0, 1.0]]
-
-    sequence_ $ do
-        l <- ints
-        r <- ints
-        pure $ assertAll ("maxEach for S32 scalars " ++ show (l, r)) $
-            maxEach (const l) (const r) ==# const {shape=[]} {dtype=S32} (max l r)
 
     sequence_ $ do
         l <- doubles
