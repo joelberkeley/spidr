@@ -691,19 +691,10 @@ infix 9 \\
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
-||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
-||| singular.
-export
-data SingularMatrixError = MkSingularMatrixError String
-
-export
-Error SingularMatrixError where
-  format (MkSingularMatrixError msg) = msg
-
 ||| The inverse of a matrix. For example, `inverse $ const [[1, 2], [3, 4]]` is equivalent to
 ||| `const [[-2, -1], [-1.5, -0.5]]`.
 export
-inverse : Tensor [S n, S n] F64 -> Either SingularMatrixError $ Tensor [S n, S n] F64
+inverse : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 
 ||| Sum the elements along the diagonal of the input.
 export
