@@ -691,24 +691,10 @@ infix 9 \\
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
-||| Indicates an operation was impossible (at the attempted precision) due to a matrix being
-||| singular.
-export
-data SingularMatrixError = MkSingularMatrixError String
-
-export
-Error SingularMatrixError where
-  format (MkSingularMatrixError msg) = msg
-
 ||| The inverse of a matrix. For example, `inverse $ const [[1, 2], [3, 4]]` is equivalent to
 ||| `const [[-2, -1], [-1.5, -0.5]]`.
 export
-inverse : Tensor [S n, S n] F64 -> Either SingularMatrixError $ Tensor [S n, S n] F64
-
-||| The product of all elements along the diagonal of a matrix. For example,
-||| `trace_product $ const [[2, 3], [4, 5]]` is equivalent to `const 10`.
-export
-trace_product : Primitive.Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+inverse : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 
 ||| Sum the elements along the diagonal of the input.
 export
