@@ -78,12 +78,17 @@ toString (MkTensor f) = do
 
 ----------------------------- structural operations ----------------------------
 
-||| Get the `idx`-th row from a tensor. For example, `index 1 $ const [[1, 2], [3, 4], [5, 6]]`
-||| is equivalent to `const [3, 4]`.
+||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
+||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
+||| `index 1 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [2, 4, 6]`.
 |||
-||| @idx The row to fetch.
+||| @axis The axis to index.
+||| @idx Where along the specified `axis` to fetch elements.
 export
-index : (idx : Nat) -> {auto 0 prf : GT d idx} -> Tensor (d :: ds) dtype -> Tensor ds dtype
+index : (axis, idx : Nat) -> Tensor shape dtype -> idx `LT` index axis shape
+        => Tensor (deleteAt axis shape) dtype
+index axis idx (MkTensor mkOp) = MkTensor $ \builder => do
+  ...
 
 ||| Split a `Tensor` along the first axis at the specified index. For example,
 ||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
