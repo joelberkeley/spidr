@@ -35,7 +35,7 @@ interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) whe
 
 ||| The variance of a single random variable.
 export
-variance : Distribution dist => dist event 1 -> Tensor (1 :: event) F64
+variance : {event : _} -> Distribution dist => dist event 1 -> Tensor (1 :: event) F64
 variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density

@@ -214,7 +214,7 @@ test_squeeze : IO ()
 test_squeeze = do
     let x = const {shape=[1, 1]} {dtype=S32} [[3]]
         squeezed = const {shape=[]} {dtype=S32} 3
-    assertAll "squeeze can flatten only ones" $ expand 0 x ==# squeezed
+    assertAll "squeeze can flatten only ones" $ squeeze x ==# squeezed
 
     let x = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
     assertAll "squeeze can no-op" $ squeeze x ==# x
@@ -222,8 +222,9 @@ test_squeeze = do
     let squeezed = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
     assertAll "squeeze can remove dim from array" $ squeeze x ==# squeezed
 
-    let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} 0
-    assertAll "squeeze can remove many dims from array" $ squeeze x ==# fill {shape=[3, 2, 5]} 0
+    let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
+    assertAll "squeeze can remove many dims from array" $
+        squeeze x ==# fill {shape=[3, 2, 5]} {dtype=S32} 0
 
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
