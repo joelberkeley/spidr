@@ -85,7 +85,7 @@ toString (MkTensor f) = do
 ||| @axis The axis to index.
 ||| @idx Where along the specified `axis` to fetch elements.
 export
-index : {shape : _} -> (axis : Nat) -> InBounds axis shape => (idx : Nat) ->
+index : {shape : _} -> (axis, idx : Nat) -> InBounds axis shape =>
         idx `LT` index axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 index axis idx (MkTensor mkOp) = MkTensor $ \builder => do
   op <- mkOp builder
