@@ -28,6 +28,7 @@ main = do
 
     test_const_eval
     test_toString
+    test_reshape
     test_index
     test_broadcast
     test_map

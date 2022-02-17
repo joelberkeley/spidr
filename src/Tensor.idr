@@ -78,6 +78,19 @@ toString (MkTensor f) = do
 
 ----------------------------- structural operations ----------------------------
 
+reshapeImpl : (from, to : Shape) -> GCAnyPtr -> IO GCAnyPtr
+reshapeImpl from to op = do
+  dim_order <- mkIntArray (range (length from))
+  cto <- mkIntArray to
+  reshaped <- primIO $ prim__reshape op dim_order (cast (length from)) cto (cast (length to))
+  onCollectAny reshaped XlaOp.delete
+
+||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (const [3, 4])` is equivalent to
+||| `const [[3], [4]]`. The output can have a different rank to the input.
+export
+reshape : {from, to : _} -> product from = product to => Tensor from dtype -> Tensor to dtype
+reshape (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)  
+
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
 ||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
 ||| `index 1 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [2, 4, 6]`.
@@ -94,11 +107,7 @@ index axis idx (MkTensor mkOp) = MkTensor $ \builder => do
   stop <- mkIntArray (replaceAt axis (S idx) shape)
   strides <- mkIntArray (replicate rank 1)
   sliced <- primIO $ prim__slice op start (cast rank) stop (cast rank) strides (cast rank)
-  sliced <- onCollectAny sliced XlaOp.delete
-  dim_order <- mkIntArray (range (length shape))
-  new_shape <- mkIntArray (deleteAt axis shape)
-  reshaped <- primIO $ prim__reshape sliced dim_order (cast rank) new_shape (cast rank - 1)
-  onCollectAny reshaped XlaOp.delete
+  reshapeImpl shape (deleteAt axis shape) !(onCollectAny sliced XlaOp.delete)
 
 ||| Split a `Tensor` along the first axis at the specified index. For example,
 ||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
