@@ -86,7 +86,7 @@ reshapeImpl from to op = do
   onCollectAny reshaped XlaOp.delete
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (const [3, 4])` is equivalent to
-||| `const [[3], [4]]`.
+||| `const [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape : {from, to : _} -> product from = product to => Tensor from dtype -> Tensor to dtype
 reshape (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)  
