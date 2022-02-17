@@ -101,6 +101,48 @@ expand : (axis : Nat) -> {shape : _} -> axis `LTE` length shape => Tensor shape 
 expand axis (MkTensor mkOp) = MkTensor $ \builder =>
   reshapeImpl shape (insertAt axis 1 shape) !(mkOp builder)
 
+namespace Squeezable
+  ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
+  ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
+  public export
+  data Squeezable : (0 from : Shape) -> (0 to : Shape) -> Type where
+    ||| Proof that a shape can be squeezed to itself. For example:
+    |||
+    ||| [] to []
+    ||| [3, 4] to [3, 4]
+    Same : Squeezable x x
+
+    ||| Proof that any dimensions (including those of length 1) can be preserved in the process of
+    ||| squeezing. For example:
+    |||
+    ||| ...
+    Match : Squeezable from to -> Squeezable (x :: from) (x :: to)
+
+    ||| Proof that any dimensions of length one can be squeezed out. For example:
+    |||
+    ||| [1, 3, 1, 1, 4] to [3, 4]
+    Nest : Squeezable from to -> Squeezable (1 :: from) to
+
+||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
+|||
+||| ```idris
+||| x : Tensor [2, 1, 3, 1] S32
+||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
+|||
+||| y : Tensor [2, 1, 3] S32
+||| y = squeeze x
+||| ```
+|||
+||| is equivalent to
+|||
+||| ```idris
+||| y : Tensor [2, 1, 3] S32
+||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
+||| ```
+export
+squeeze : {from, to : _} -> Squeezable from to => Tensor from dtype -> Tensor to dtype
+squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)
+
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
 ||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
 ||| `index 1 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [2, 4, 6]`.
@@ -256,47 +298,6 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
-
-namespace Squeezable
-  ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
-  ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
-  public export
-  data Squeezable : (0 from : Shape) -> (0 to : Shape) -> Type where
-    ||| Proof that a shape can be squeezed to itself. For example:
-    |||
-    ||| [] to []
-    ||| [3, 4] to [3, 4]
-    Same : Squeezable x x
-
-    ||| Proof that any dimensions (including those of length 1) can be preserved in the process of
-    ||| squeezing. For example:
-    |||
-    ||| ...
-    Match : Squeezable from to -> Squeezable (x :: from) (x :: to)
-
-    ||| Proof that any dimensions of length one can be squeezed out. For example:
-    |||
-    ||| [1, 3, 1, 1, 4] to [3, 4]
-    Nest : Squeezable from to -> Squeezable (1 :: from) to
-
-||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
-|||
-||| ```idris
-||| x : Tensor [2, 1, 3, 1] S32
-||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
-|||
-||| y : Tensor [2, 1, 3] S32
-||| y = squeeze x
-||| ```
-|||
-||| is equivalent to
-|||
-||| ```idris
-||| y : Tensor [2, 1, 3] S32
-||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
-||| ```
-export
-squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
 
 ||| A `Tensor` where every element has the specified value. For example,
 |||

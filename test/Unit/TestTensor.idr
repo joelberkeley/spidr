@@ -209,14 +209,22 @@ test_broadcastable_cannot_stack_dimension_gt_one : Broadcastable [3, 2] [3, 7] -
 test_broadcastable_cannot_stack_dimension_gt_one (Match Same) impossible
 test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
 
-test_squeezable_can_noop : Squeezable [3, 2, 5] [3, 2, 5]
-test_squeezable_can_noop = Same
+export
+test_squeeze : IO ()
+test_squeeze = do
+    let x = const {shape=[1, 1]} {dtype=S32} [[3]]
+        squeezed = const {shape=[]} {dtype=S32} 3
+    assertAll "squeeze can flatten only ones" $ squeeze x ==# squeezed
 
-test_squeezable_can_remove_ones : Squeezable [1, 3, 1, 1, 2, 5, 1] [3, 2, 5]
-test_squeezable_can_remove_ones = Nest (Match (Nest (Nest (Match (Match (Nest Same))))))
+    let x = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+    assertAll "squeeze can no-op" $ squeeze x ==# x
 
-test_squeezable_can_flatten_only_ones : Squeezable [1, 1] []
-test_squeezable_can_flatten_only_ones = Nest (Nest Same)
+    let squeezed = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+    assertAll "squeeze can remove dim from array" $ squeeze x ==# squeezed
+
+    let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
+    assertAll "squeeze can remove many dims from array" $
+        squeeze x ==# fill {shape=[3, 2, 5]} {dtype=S32} 0
 
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
