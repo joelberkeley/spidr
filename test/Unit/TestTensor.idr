@@ -103,6 +103,17 @@ test_index = do
     assertAll "index array 1 2" $ index 1 2 x ==# const [5, 8]
 
 export
+test_expand : IO ()
+test_expand = do
+    let x = const {shape=[]} {dtype=S32} 3
+        expected = const {shape=[1]} {dtype=S32} [3]
+    assertAll "expand add dims scalar" $ expand 0 x ==# expected
+
+    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+        with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+    assertAll "expand add dimension array" $ expand 1 x ==# with_extra_dim
+
+export
 test_broadcast : IO ()
 test_broadcast = do
     let x = const {shape=[]} {dtype=S32} 7

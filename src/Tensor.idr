@@ -89,7 +89,17 @@ reshapeImpl from to op = do
 ||| `const [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape : {from, to : _} -> product from = product to => Tensor from dtype -> Tensor to dtype
-reshape (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)  
+reshape (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)
+
+||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
+||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
+||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
+||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
+export
+expand : (axis : Nat) -> {shape : _} -> axis `LTE` length shape => Tensor shape dtype
+         -> Tensor (insertAt axis 1 shape) dtype
+expand axis (MkTensor mkOp) = MkTensor $ \builder =>
+  reshapeImpl shape (insertAt axis 1 shape) !(mkOp builder)
 
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
 ||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
@@ -124,14 +134,6 @@ split : (idx : Nat) -> Tensor ((idx + rest) :: tl) dtype
 ||| `const [[1, 2], [3, 4], [5, 6]]`.
 export
 concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
-
-||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
-||| specified axis in the new `Tensor` (as opposed to the original `Tensor`). For example,
-||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
-||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
-export
-expand : (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
-         -> Tensor (insertAt axis 1 shape) dtype
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
