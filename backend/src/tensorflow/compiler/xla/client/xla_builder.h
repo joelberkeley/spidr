@@ -65,7 +65,7 @@ extern "C" {
     );
 
     XlaOp* Reshape(
-        XlaOp& operand, int* dimensions, int dimensions_len, *int new_sizes, int new_sizes_len
+        XlaOp& operand, int* dimensions, int dimensions_len, int* new_sizes, int new_sizes_len
     );
 
     XlaOp* Slice(

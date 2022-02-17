@@ -56,3 +56,13 @@ namespace List
   deleteAt : (idx : Nat) -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   deleteAt {prf=InFirst} Z (_ :: xs) = xs
   deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs
+
+  ||| Replace an element in a list. For example, `replaceAt 2 6 [1, 2, 3, 4]` is `[1, 2, 6, 4]`.
+  |||
+  ||| @idx The index of the value to replace.
+  ||| @x The value to insert.
+  ||| @xs The list in which to replace an element.
+  public export
+  replaceAt : (idx : Nat) -> a -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
+  replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
+  replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs

@@ -67,6 +67,21 @@ test_toString = do
     assert "toString for vector F64" $ str == "constant, shape=[3], metadata={:0}"
 
 export
+test_index : IO ()
+test_index = do
+    let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
+    assertAll "index vector 0" $ index 0 0 x ==# const 3
+    assertAll "index vector 1" $ index 0 1 x ==# const 4
+    assertAll "index vector 2" $ index 0 2 x ==# const 5
+
+    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+    assertAll "index array 0 0" $ index 0 0 x ==# const [3, 4, 5]
+    assertAll "index array 0 1" $ index 0 1 x ==# const [6, 7, 8]
+    assertAll "index array 1 0" $ index 1 0 x ==# const [3, 6]
+    assertAll "index array 1 1" $ index 1 1 x ==# const [4, 7]
+    assertAll "index array 1 2" $ index 1 2 x ==# const [5, 8]
+
+export
 test_broadcast : IO ()
 test_broadcast = do
     let x = const {shape=[]} {dtype=S32} 7
