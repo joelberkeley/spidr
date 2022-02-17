@@ -32,6 +32,7 @@ main = do
     test_index
     test_expand
     test_broadcast
+    test_squeeze
     test_map
     test_map2
     test_reduce
