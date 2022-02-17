@@ -67,6 +67,27 @@ test_toString = do
     assert "toString for vector F64" $ str == "constant, shape=[3], metadata={:0}"
 
 export
+test_reshape : IO ()
+test_reshape = do
+    let x = const {shape=[]} {dtype=S32} 3
+        expected = const {shape=[1]} {dtype=S32} [3]
+    assertAll "reshape add dims scalar" $ reshape x ==# expected
+
+    let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
+        flipped = const {shape=[3, 1]} {dtype=S32} [[3], [4], [5]]
+    assertAll "reshape flip dims vector" $ reshape x ==# flipped
+
+    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+        flipped = const {shape=[3, 2]} {dtype=S32} [[3, 4], [5, 6], [7, 8]]
+    assertAll "reshape flip dims array" $ reshape x ==# flipped
+
+    let with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+    assertAll "reshape add dimension array" $ reshape x ==# with_extra_dim
+
+    let flattened = const {shape=[6]} {dtype=S32} [3, 4, 5, 6, 7, 8]
+    assertAll "reshape as flatten array" $ reshape x ==# flattened
+
+export
 test_index : IO ()
 test_index = do
     let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
