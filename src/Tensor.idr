@@ -100,8 +100,6 @@ index axis idx (MkTensor mkOp) = MkTensor $ \builder => do
   reshaped <- primIO $ prim__reshape sliced dim_order (cast rank) new_shape (cast rank - 1)
   onCollectAny reshaped XlaOp.delete
 
-replicateLength : (n : Nat) -> a -> List.length (replicate n a) = n
-
 ||| Split a `Tensor` along the first axis at the specified index. For example,
 ||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `(const [[1, 2]], const [[3, 4], [5, 6]])`.
