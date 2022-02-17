@@ -296,7 +296,8 @@ namespace Squeezable
 ||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
 ||| ```
 export
-squeeze : {auto 0 _ : Squeezable from to} -> Tensor from dtype -> Tensor to dtype
+squeeze : Squeezable from to => Tensor from dtype -> Tensor to dtype
+squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)
 
 ||| A `Tensor` where every element has the specified value. For example,
 |||
