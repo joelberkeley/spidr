@@ -30,6 +30,7 @@ main = do
     test_toString
     test_reshape
     test_index
+    test_expand
     test_broadcast
     test_map
     test_map2
