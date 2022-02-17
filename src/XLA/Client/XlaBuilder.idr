@@ -114,6 +114,14 @@ export
 prim__broadcastInDim : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Reshape")
+prim__reshape : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Slice")
+prim__slice : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 

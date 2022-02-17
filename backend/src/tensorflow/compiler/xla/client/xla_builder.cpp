@@ -120,6 +120,56 @@ extern "C" {
         );
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
+
+    XlaOp* Reshape(
+        XlaOp& operand, int* dimensions, int dimensions_len, int* new_sizes, int new_sizes_len
+    ) {
+        auto operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+
+        xla::int64 dimensions64[dimensions_len];
+        std::copy(dimensions, dimensions + dimensions_len, dimensions64);
+
+        xla::int64 new_sizes64[new_sizes_len];
+        std::copy(new_sizes, new_sizes + new_sizes_len, new_sizes64);
+
+        xla::XlaOp res = xla::Reshape(
+            operand_,
+            absl::Span<const xla::int64>(dimensions64, dimensions_len),
+            absl::Span<const xla::int64>(new_sizes64, new_sizes_len)
+        );
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* Slice(
+        XlaOp& operand,
+        int* start_indices,
+        int start_indices_len,
+        int* limit_indices,
+        int limit_indices_len,
+        int* strides,
+        int strides_len
+    ) {
+        auto operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+
+        xla::int64 start_indices64[start_indices_len];
+        std::copy(start_indices, start_indices + start_indices_len, start_indices64);
+
+        xla::int64 limit_indices64[limit_indices_len];
+        std::copy(limit_indices, limit_indices + limit_indices_len, limit_indices64);
+
+        xla::int64 strides64[strides_len];
+        std::copy(strides, strides + strides_len, strides64);
+
+        xla::XlaOp res = xla::Slice(
+            operand_,
+            absl::Span<const xla::int64>(start_indices64, start_indices_len),
+            absl::Span<const xla::int64>(limit_indices64, limit_indices_len),
+            absl::Span<const xla::int64>(strides64, strides_len)
+        );
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {

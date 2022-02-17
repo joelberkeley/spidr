@@ -49,3 +49,11 @@ namespace List
     assert "deleteAt can delete from middle" $ (List.deleteAt 1 [6, 7, 8]) == [6, 8]
     assert "deleteAt can delete from end" $ (List.deleteAt 2 [6, 7, 8]) == [6, 7]
     assert "deleteAt for length one list" $ (List.deleteAt 0 [6]) == []
+
+  export
+  test_replaceAt : IO ()
+  test_replaceAt = do
+    assert "replaceAt can replace at front" $ (List.replaceAt 0 5 [6, 7, 8]) == [5, 7, 8]
+    assert "replaceAt can replace at middle" $ (List.replaceAt 1 5 [6, 7, 8]) == [6, 5, 8]
+    assert "replaceAt can replace at end" $ (List.replaceAt 2 5 [6, 7, 8]) == [6, 7, 5]
+    assert "replaceAt for length one list" $ (List.replaceAt 0 5 [6]) == [5]

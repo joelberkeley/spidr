@@ -64,6 +64,20 @@ extern "C" {
         XlaOp& s, int* out_dim_size, int ods_len, int* broadcast_dimensions, int bcd_len
     );
 
+    XlaOp* Reshape(
+        XlaOp& operand, int* dimensions, int dimensions_len, int* new_sizes, int new_sizes_len
+    );
+
+    XlaOp* Slice(
+        XlaOp& operand,
+        int* start_indices,
+        int start_indices_len,
+        int* limit_indices,
+        int limit_indices_len,
+        int* strides,
+        int strides_len
+    );
+
     XlaOp* Eq(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ne(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ge(XlaOp& lhs, XlaOp& rhs);
