@@ -143,6 +143,59 @@ export
 squeeze : {from, to : _} -> Squeezable from to => Tensor from dtype -> Tensor to dtype
 squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)
 
+||| Take a slice from a single `Tensor` axis. For example, for
+||| ```
+||| x : Tensor [5, 6] S32
+||| x = const [
+|||       [ 0,  1,  2,  3,  4,  5],
+|||       [ 6,  7,  8,  9, 10, 11],
+|||       [12, 13, 14, 15, 16, 17],
+|||       [18, 19, 20, 21, 22, 23],
+|||       [24, 25, 26, 27, 28, 29]
+|||     ]
+||| ```
+||| `slice 0 1 3 x` is equivalent to
+||| ```
+||| y : Tensor [2, 6] S32
+||| y = const [
+|||       [ 6,  7,  8,  9, 10, 11],
+|||       [12, 13, 14, 15, 16, 17]
+|||     ]
+||| ```
+||| and `slice 1 0 4 x` to
+||| ```
+||| z : Tensor [5, 6] S32
+||| z = const [
+|||       [ 0,  1,  2,  3],
+|||       [ 6,  7,  8,  9],
+|||       [12, 13, 14, 15],
+|||       [18, 19, 20, 21],
+|||       [24, 25, 26, 27]
+|||     ]
+||| ```
+||| Equal bounds will result in an empty array. For example, `slice 1 2 2 xs` is equivalent to
+||| `const [[], [], [], [], []]`.
+|||
+||| @axis The `Tensor` axis to slice.
+||| @from The inclusive lower bound of the slice along the specified `axis`.
+||| @to The exclusive upper bound of the slice along the specified `axis`.
+export
+slice : {shape : _} -> (axis : Nat) -> InBounds axis shape => (from, to : Nat)
+        -> from `LTE` to => from `LT` index axis shape => to `LTE` index axis shape
+        => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
+slice axis from to (MkTensor mkOp) = MkTensor $ \builder => do
+  op <- mkOp builder
+  let rank = length shape
+  start <- mkIntArray (replicate axis 0 ++ [from] ++ replicate (rank `minus` axis) 0)
+  stop <- mkIntArray (replaceAt axis to shape)
+  strides <- mkIntArray (replicate rank 1)
+  sliced <- primIO $ prim__slice op start (cast rank) stop (cast rank) strides (cast rank)
+  onCollectAny sliced XlaOp.delete
+
+lteSelf : (x : Nat) -> LTE x x
+lteSelf Z = LTEZero
+lteSelf (S k) = LTESucc (lteSelf k)
+
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
 ||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
 ||| `index 1 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [2, 4, 6]`.
@@ -152,14 +205,9 @@ squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp buil
 export
 index : {shape : _} -> (axis, idx : Nat) -> InBounds axis shape =>
         idx `LT` index axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
-index axis idx (MkTensor mkOp) = MkTensor $ \builder => do
-  op <- mkOp builder
-  let rank = length shape
-  start <- mkIntArray (replicate axis 0 ++ [idx] ++ replicate (rank `minus` axis) 0)
-  stop <- mkIntArray (replaceAt axis (S idx) shape)
-  strides <- mkIntArray (replicate rank 1)
-  sliced <- primIO $ prim__slice op start (cast rank) stop (cast rank) strides (cast rank)
-  reshapeImpl shape (deleteAt axis shape) !(onCollectAny sliced XlaOp.delete)
+index axis idx xs@(MkTensor mkOp) =
+  let (MkTensor mkSliced) = slice @{%search} @{lteSuccRight (lteSelf idx)} axis idx (S idx) xs
+   in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
 ||| Split a `Tensor` along the first axis at the specified index. For example,
 ||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to

@@ -88,6 +88,26 @@ test_reshape = do
     assertAll "reshape as flatten array" $ reshape x ==# flattened
 
 export
+test_slice : IO ()
+test_slice = do
+    let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
+    assertAll "slice vector 0 0" $ slice 0 0 0 x ==# const []
+    assertAll "slice vector 0 1" $ slice 0 0 1 x ==# const [3]
+    assertAll "slice vector 0 2" $ slice 0 0 2 x ==# const [3, 4]
+    assertAll "slice vector 0 3" $ slice 0 0 3 x ==# const [3, 4, 5]
+    assertAll "slice vector 1 1" $ slice 0 1 1 x ==# const []
+    assertAll "slice vector 1 2" $ slice 0 1 2 x ==# const [4]
+    assertAll "slice vector 1 3" $ slice 0 1 3 x ==# const [4, 5]
+    assertAll "slice vector 2 2" $ slice 0 2 2 x ==# const []
+    assertAll "slice vector 2 2" $ slice 0 2 3 x ==# const [5]
+
+    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+    assertAll "slice array 0 0 1" $ slice 0 0 1 x ==# const [[3, 4, 5]]
+    assertAll "slice array 0 1 1" $ slice 0 1 1 x ==# const []
+    assertAll "slice array 1 2 2" $ slice 1 2 2 x ==# const [[], []]
+    assertAll "slice array 1 1 3" $ slice 1 1 3 x ==# const [[4, 5], [7, 8]]
+
+export
 test_index : IO ()
 test_index = do
     let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
