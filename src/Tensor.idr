@@ -144,7 +144,6 @@ squeeze : {from, to : _} -> Squeezable from to => Tensor from dtype -> Tensor to
 squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp builder)
 
 ||| Take a slice from a single `Tensor` axis. For example, for
-|||
 ||| ```
 ||| x : Tensor [5, 6] S32
 ||| x = const [
