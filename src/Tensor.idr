@@ -180,8 +180,8 @@ squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp buil
 ||| @from The inclusive lower bound of the slice along the specified `axis`.
 ||| @to The exclusive upper bound of the slice along the specified `axis`.
 export
-slice : {shape : _} -> (axis : Nat) -> (inBounds : InBounds axis shape) => (from, to : Nat)
-        -> (fromLTEto : from `LTE` to) => (toLTEdim : to `LTE` index axis shape)
+slice : {shape : _} -> (axis : Nat) -> InBounds axis shape => (from, to : Nat)
+        -> from `LTE` to => (boundsFitAxis : to `LTE` index axis shape)
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor mkOp) = MkTensor $ \builder => do
   op <- mkOp builder
@@ -219,7 +219,7 @@ split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape => idx `LTE` ind
           )
 split axis idx xs = (
     rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
-    slice axis idx {toLTEdim=reflexive {ty=Nat}} (index axis shape) xs
+    slice axis idx {boundsFitAxis=reflexive {ty=Nat}} (index axis shape) xs
   )
 
 ||| Concatenate two `Tensor`s along their first axis. For example,
