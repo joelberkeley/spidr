@@ -80,8 +80,8 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
   |||   a vector)
   ||| @hyperparameters The hyperparameters (excluding noise) presented as a vector.
   ||| @noise The likehood amplitude, or observation noise.
-  MkConjugateGPR : {p : _} ->
-    (gp_from_hyperparameters : Tensor [p] F64 -> GaussianProcess features)
+  MkConjugateGPR : {p : _}
+    -> (gp_from_hyperparameters : Tensor [p] F64 -> GaussianProcess features)
     -> (hyperparameters : Tensor [p] F64)
     -> (noise : Tensor [] F64)
     -> ConjugateGPRegression features
