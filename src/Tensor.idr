@@ -210,8 +210,9 @@ index axis idx xs@(MkTensor mkOp) =
 ||| `(const [[1, 2], [3, 4]], const [[5, 6]])`, and `split 1 1 const [[1, 2], [3, 4], [5, 6]]` to
 ||| `(const [[1], [3], [5]], const [[2], [4], [6]])`.
 |||
-||| @idx The index of the row at which to split the `Tensor`. The row with index `idx` in
-|||   the input `Tensor` will appear in the result as the first row in the second `Tensor`.
+||| @axis The axis on which to split.
+||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
+|||   index will appear in the right-hand `Tensor`.
 export
 split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape => idx `LTE` index axis shape
         => Tensor shape dtype -> (
