@@ -205,9 +205,10 @@ index axis idx xs@(MkTensor mkOp) =
   let (MkTensor mkSliced) = slice @{%search} @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
    in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
-||| Split a `Tensor` along the first axis at the specified index. For example,
-||| `split 1 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
-||| `(const [[1, 2]], const [[3, 4], [5, 6]])`.
+||| Split a `Tensor` along a given axis at the specified index. For example,
+||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
+||| `(const [[1, 2], [3, 4]], const [[5, 6]])`, and `split 1 1 const [[1, 2], [3, 4], [5, 6]]` to
+||| `(const [[1], [3], [5]], const [[2], [4], [6]])`.
 |||
 ||| @idx The index of the row at which to split the `Tensor`. The row with index `idx` in
 |||   the input `Tensor` will appear in the result as the first row in the second `Tensor`.
