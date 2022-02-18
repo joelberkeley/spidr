@@ -180,8 +180,8 @@ squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp buil
 ||| @from The inclusive lower bound of the slice along the specified `axis`.
 ||| @to The exclusive upper bound of the slice along the specified `axis`.
 export
-slice : {shape : _} -> (axis : Nat) -> InBounds axis shape => (from, to : Nat)
-        -> from `LTE` to => (isWithinAxis : to `LTE` index axis shape)
+slice : {shape : _} -> (axis, from, to : Nat) -> InBounds axis shape
+        => from `LTE` to => (isWithinAxis : to `LTE` index axis shape)
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor mkOp) = MkTensor $ \builder => do
   op <- mkOp builder
