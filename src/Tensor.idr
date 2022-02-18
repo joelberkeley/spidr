@@ -180,8 +180,8 @@ squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp buil
 ||| @from The inclusive lower bound of the slice along the specified `axis`.
 ||| @to The exclusive upper bound of the slice along the specified `axis`.
 export
-slice : {shape : _} -> (axis : Nat) -> InBounds axis shape => (from, to : Nat)
-        -> from `LTE` to => from `LT` index axis shape => to `LTE` index axis shape
+slice : {shape : _} -> (axis : Nat) -> (inBounds : InBounds axis shape) => (from, to : Nat)
+        -> (fromLTEto : from `LTE` to) => (toLTEdim : to `LTE` index axis shape)
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor mkOp) = MkTensor $ \builder => do
   op <- mkOp builder
@@ -191,10 +191,6 @@ slice axis from to (MkTensor mkOp) = MkTensor $ \builder => do
   strides <- mkIntArray (replicate rank 1)
   sliced <- primIO $ prim__slice op start (cast rank) stop (cast rank) strides (cast rank)
   onCollectAny sliced XlaOp.delete
-
-lteSelf : (x : Nat) -> LTE x x
-lteSelf Z = LTEZero
-lteSelf (S k) = LTESucc (lteSelf k)
 
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
 ||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
@@ -206,7 +202,7 @@ export
 index : {shape : _} -> (axis, idx : Nat) -> InBounds axis shape =>
         idx `LT` index axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 index axis idx xs@(MkTensor mkOp) =
-  let (MkTensor mkSliced) = slice @{%search} @{lteSuccRight (lteSelf idx)} axis idx (S idx) xs
+  let (MkTensor mkSliced) = slice @{%search} @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
    in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
 ||| Split a `Tensor` along the first axis at the specified index. For example,
@@ -216,8 +212,15 @@ index axis idx xs@(MkTensor mkOp) =
 ||| @idx The index of the row at which to split the `Tensor`. The row with index `idx` in
 |||   the input `Tensor` will appear in the result as the first row in the second `Tensor`.
 export
-split : (idx : Nat) -> Tensor ((idx + rest) :: tl) dtype
-  -> (Tensor (idx :: tl) dtype, Tensor (rest :: tl) dtype)
+split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape => idx `LTE` index axis shape
+        => Tensor shape dtype -> (
+            Tensor (replaceAt axis idx shape) dtype,
+            Tensor (replaceAt axis (index axis shape `minus` idx) shape) dtype
+          )
+split axis idx xs = (
+    rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
+    slice axis idx {toLTEdim=reflexive {ty=Nat}} (index axis shape) xs
+  )
 
 ||| Concatenate two `Tensor`s along their first axis. For example,
 ||| `concat (const [[1, 2], [3, 4]]) (const [[5, 6]])` is equivalent to
