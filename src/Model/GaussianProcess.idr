@@ -40,7 +40,7 @@ posterior :
   -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
   -> GaussianProcess features
 posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
-  let l = cholesky (prior_kernel x_train x_train + diag {n=S s} noise)
+  let l = cholesky (prior_kernel x_train x_train + noise * identity)
       alpha = l.T \\ (l \\ y_train)
 
       posterior_meanf : MeanFunction features
@@ -58,7 +58,7 @@ log_marginal_likelihood :
   -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
   -> Tensor [] F64
 log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
-  let l = cholesky (kernel x x + diag {n=S s} noise)
+  let l = cholesky (kernel x x + noise * identity)
       alpha = l.T \\ (l \\ y)
       log2pi = logEach $ const $ 2.0 * pi
    in - y @@ alpha / const 2.0 - trace (logEach l) - (const $ cast (S s)) * log2pi / const 2.0
@@ -98,7 +98,7 @@ export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise gpr@(MkConjugateGPR _ _ noise) x =
     let (MkGaussian latent_mean latent_cov) = marginalise @{Latent} gpr x
-     in MkGaussian latent_mean (latent_cov + (broadcast $ expand 2 (diag {n = S n} noise)))
+     in MkGaussian latent_mean (latent_cov + (broadcast $ expand 2 (noise * identity {n = S n})))
 
 ||| Fit the Gaussian process and noise to the specified data.
 export
