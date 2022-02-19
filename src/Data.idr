@@ -31,6 +31,6 @@ data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
 
 ||| Concatenate two datasets along their leading axis.
 export
--- todo why do i need `targets` to be in scope?
-{targets : _} -> Semigroup (Dataset features targets) where
-  (MkDataset x y) <+> (MkDataset x' y') = MkDataset (concat 0 x x') (concat 0 y y')
+Semigroup (Dataset features targets) where
+  (MkDataset {s=s} x y) <+> (MkDataset {s=s'} x' y') =
+    MkDataset {s=s + S s'} (concat 0 x x') (concat 0 y y')
