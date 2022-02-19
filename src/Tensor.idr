@@ -232,11 +232,17 @@ split @{_} @{sums} axis idx xs =
         rewrite sums' in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
       )
 
-||| Concatenate two `Tensor`s along their first axis. For example,
-||| `concat (const [[1, 2], [3, 4]]) (const [[5, 6]])` is equivalent to
+||| Concatenate two `Tensor`s along the specfied `axis`. For example,
+||| `concat 0 (const [[1, 2], [3, 4]]) (const [[5, 6]])` is equivalent to
 ||| `const [[1, 2], [3, 4], [5, 6]]`.
 export
-concat : Tensor (n :: tl) dtype -> Tensor (m :: tl) dtype -> Tensor ((n + m) :: tl) dtype
+concat : (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
+         -> (InBounds axis s, InBounds axis s') => deleteAt axis s = deleteAt axis s'
+         => Tensor (replaceAt axis (index axis s + index axis s') s) dtype
+concat axis (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
+  ops <- mkXlaOpArray [!(mkOpL builder), !(mkOpR builder)]
+  res <- primIO $ prim__concatInDim builder ops 2 (cast axis)
+  onCollectAny res XlaOp.delete
 
 ||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.

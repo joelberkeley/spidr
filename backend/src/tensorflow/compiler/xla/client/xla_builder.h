@@ -78,6 +78,8 @@ extern "C" {
         int strides_len
     );
 
+    XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
+
     XlaOp* Eq(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ne(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ge(XlaOp& lhs, XlaOp& rhs);
