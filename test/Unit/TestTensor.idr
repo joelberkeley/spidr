@@ -174,6 +174,57 @@ test_split = do
     assertAll "split array 1 3 right" $ r ==# const [[], []]
 
 export
+test_concat : IO ()
+test_concat = do
+    let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
+
+    let l = const {shape=[0]} []
+        r = const {shape=[3]} [3, 4, 5]
+    assertAll "concat vector" $ concat 0 l r ==# vector
+
+    let l = const {shape=[1]} [3]
+        r = const {shape=[2]} [4, 5]
+    assertAll "concat vector" $ concat 0 l r ==# vector
+
+    let l = const {shape=[2]} [3, 4]
+        r = const {shape=[1]} [5]
+    assertAll "concat vector" $ concat 0 l r ==# vector
+
+    let l = const {shape=[3]} [3, 4, 5]
+        r = const {shape=[0]} []
+    assertAll "concat vector" $ concat 0 l r ==# vector
+
+    let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+
+    let l = const {shape=[0, 3]} []
+        r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+    assertAll "concat array 0" $ concat 0 l r ==# arr
+
+    let l = const {shape=[1, 3]} [[3, 4, 5]]
+        r = const {shape=[1, 3]} [[6, 7, 8]]
+    assertAll "concat array 0" $ concat 0 l r ==# arr
+
+    let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+        r = const {shape=[0, 3]} []
+    assertAll "concat array 0" $ concat 0 l r ==# arr
+
+    let l = const {shape=[2, 0]} [[], []]
+        r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
+
+    let l = const {shape=[2, 1]} [[3], [6]]
+        r = const {shape=[2, 2]} [[4, 5], [7, 8]]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
+
+    let l = const {shape=[2, 2]} [[3, 4], [6, 7]]
+        r = const {shape=[2, 1]} [[5], [8]]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
+
+    let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+        r = const {shape=[2, 0]} [[], []]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
+
+export
 test_expand : IO ()
 test_expand = do
     let x = const {shape=[]} {dtype=S32} 3

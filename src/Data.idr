@@ -32,4 +32,5 @@ data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
 ||| Concatenate two datasets along their leading axis.
 export
 Semigroup (Dataset features targets) where
-  (MkDataset x y) <+> (MkDataset x' y') = MkDataset (concat x x') (concat y y')
+  (MkDataset {s=s} x y) <+> (MkDataset {s=s'} x' y') =
+    MkDataset {s=s + S s'} (concat 0 x x') (concat 0 y y')

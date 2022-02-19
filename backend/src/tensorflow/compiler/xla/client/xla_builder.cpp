@@ -170,6 +170,16 @@ extern "C" {
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
+
+    XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+        auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
+
+        xla::XlaOp res = xla::ConcatInDim(builder_, operands_span, (xla::int64) dimension);
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {

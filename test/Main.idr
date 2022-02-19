@@ -29,7 +29,10 @@ main = do
     test_const_eval
     test_toString
     test_reshape
+    test_slice
     test_index
+    test_split
+    test_concat
     test_expand
     test_broadcast
     test_squeeze
