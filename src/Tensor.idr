@@ -205,8 +205,6 @@ index axis idx xs@(MkTensor mkOp) =
   let (MkTensor mkSliced) = slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
    in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
-plusLTE : (0 a, b, c : Nat) -> a + b = c => a `LTE` c
-
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `(const [[1, 2], [3, 4]], const [[5, 6]])`, and `split 1 1 const [[1, 2], [3, 4], [5, 6]]` to
@@ -223,7 +221,7 @@ split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape
             Tensor (replaceAt axis remaining shape) dtype
           )
 split @{_} @{sums} axis idx xs =
-  let isWithinAxis : LTE idx (index axis shape) := plusLTE idx remaining (index axis shape)
+  let isWithinAxis : LTE idx (index axis shape) := rewrite sym sums in lteAddRight idx {m=remaining}
       foo : (minus (index axis shape) idx = remaining) := rewrite sym sums in minusPlus idx in (
     rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
     rewrite sym foo in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
