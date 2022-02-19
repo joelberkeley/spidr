@@ -254,10 +254,6 @@ export
            n = last shape
         in Tensor (leading ++ [n, m]) dtype
 
-||| Cast the tensor elements to a new data type.
-export
-cast_dtype : Cast dtype dtype' => Tensor shape dtype -> Tensor shape dtype'
-
 ||| Construct a diagonal tensor from the specified value, where all off-diagonal elements are zero.
 ||| For example, `the (Tensor [2, 2] F64) (diag 3)` is equivalent to
 ||| `const [[3.0, 0.0], [0.0, 3.0]]`.
@@ -785,11 +781,6 @@ infix 9 \\
 ||| Find `Y` from `A` and `X` s.t. `X = AY` where `A` is a lower triangular matrix.
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
-
-||| The inverse of a matrix. For example, `inverse $ const [[1, 2], [3, 4]]` is equivalent to
-||| `const [[-2, -1], [-1.5, -0.5]]`.
-export
-inverse : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 
 ||| Sum the elements along the diagonal of the input.
 export
