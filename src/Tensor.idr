@@ -180,8 +180,8 @@ squeeze (MkTensor mkOp) = MkTensor $ \builder => reshapeImpl from to !(mkOp buil
 ||| @from The inclusive lower bound of the slice along the specified `axis`.
 ||| @to The exclusive upper bound of the slice along the specified `axis`.
 export
-slice : {shape : _} -> (axis, from, to : Nat) -> InBounds axis shape
-        => from `LTE` to => (isWithinAxis : to `LTE` index axis shape)
+slice : {shape : _} -> (axis, from, to : Nat)
+        -> from `LTE` to => InBounds axis shape => (isWithinAxis : to `LTE` index axis shape)
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor mkOp) = MkTensor $ \builder => do
   op <- mkOp builder
@@ -202,10 +202,10 @@ export
 index : {shape : _} -> (axis, idx : Nat) -> InBounds axis shape =>
         idx `LT` index axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 index axis idx xs@(MkTensor mkOp) =
-  let (MkTensor mkSliced) = slice @{%search} @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
+  let (MkTensor mkSliced) = slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
    in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
-addPreservesLTE : (0 a, b, c : Nat) -> a + b = c => a `LTE` c
+plusLTE : (0 a, b, c : Nat) -> a + b = c => a `LTE` c
 
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
@@ -222,9 +222,11 @@ split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape
             Tensor (replaceAt axis idx shape) dtype,
             Tensor (replaceAt axis remaining shape) dtype
           )
-split @{_} @{sums} axis idx xs = (
-    rewrite sym $ minusZeroRight idx in slice axis 0 idx {isWithinAxis=addPreservesLTE idx remaining (index axis shape)} xs,
-    rewrite sym $ minusPlus idx {n=remaining} in rewrite sums in slice axis idx @{%search} @{rewrite sym sums in lteAddRight idx {m=remaining}} @{reflexive {ty=Nat}} (index axis shape) xs
+split @{_} @{sums} axis idx xs =
+  let isWithinAxis : LTE idx (index axis shape) := plusLTE idx remaining (index axis shape)
+      foo : (minus (index axis shape) idx = remaining) := rewrite sym sums in minusPlus idx in (
+    rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
+    rewrite sym foo in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
   )
 
 ||| Concatenate two `Tensor`s along their first axis. For example,
