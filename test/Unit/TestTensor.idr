@@ -123,6 +123,57 @@ test_index = do
     assertAll "index array 1 2" $ index 1 2 x ==# const [5, 8]
 
 export
+test_split : IO ()
+test_split = do
+    let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
+
+    let (l, r) = split 0 0 vector
+    assertAll "split vector 0 left" $ l ==# const []
+    assertAll "split vector 0 right" $ r ==# const [3, 4, 5]
+
+    let (l, r) = split 0 1 vector
+    assertAll "split vector 1 left" $ l ==# const [3]
+    assertAll "split vector 1 right" $ r ==# const [4, 5]
+
+    let (l, r) = split 0 2 vector
+    assertAll "split vector 2 left" $ l ==# const [3, 4]
+    assertAll "split vector 2 right" $ r ==# const [5]
+
+    let (l, r) = split 0 3 vector
+    assertAll "split vector 3 left" $ l ==# const [3, 4, 5]
+    assertAll "split vector 3 right" $ r ==# const []
+
+    let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+
+    let (l, r) = split 0 0 arr
+    assertAll "split array 0 0 left" $ l ==# const []
+    assertAll "split array 0 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
+
+    let (l, r) = split 0 1 arr
+    assertAll "split array 0 1 left" $ l ==# const [[3, 4, 5]]
+    assertAll "split array 0 1 right" $ r ==# const [[6, 7, 8]]
+
+    let (l, r) = split 0 2 arr
+    assertAll "split array 0 2 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
+    assertAll "split array 0 2 right" $ r ==# const []
+
+    let (l, r) = split 1 0 arr
+    assertAll "split array 1 0 left" $ l ==# const [[], []]
+    assertAll "split array 1 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
+
+    let (l, r) = split 1 1 arr
+    assertAll "split array 1 1 left" $ l ==# const [[3], [6]]
+    assertAll "split array 1 1 right" $ r ==# const [[4, 5], [7, 8]]
+
+    let (l, r) = split 1 2 arr
+    assertAll "split array 1 2 left" $ l ==# const [[3, 4], [6, 7]]
+    assertAll "split array 1 2 right" $ r ==# const [[5], [8]]
+
+    let (l, r) = split 1 3 arr
+    assertAll "split array 1 3 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
+    assertAll "split array 1 3 right" $ r ==# const [[], []]
+
+export
 test_expand : IO ()
 test_expand = do
     let x = const {shape=[]} {dtype=S32} 3
