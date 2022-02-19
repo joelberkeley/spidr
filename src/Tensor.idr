@@ -216,15 +216,15 @@ addPreservesLTE : (0 a, b, c : Nat) -> a + b = c => a `LTE` c
 ||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
 |||   index will appear in the right-hand `Tensor`.
 export
-split : (axis, first : Nat) -> {shape : _} -> InBounds axis shape
-        => first + second = index axis shape => Tensor shape dtype
+split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape
+        => idx + remaining = index axis shape => Tensor shape dtype
         -> (
-            Tensor (replaceAt axis first shape) dtype,
-            Tensor (replaceAt axis second shape) dtype
+            Tensor (replaceAt axis idx shape) dtype,
+            Tensor (replaceAt axis remaining shape) dtype
           )
-split @{_} @{sums} axis first xs = (
-    rewrite sym $ minusZeroRight first in slice axis 0 first {isWithinAxis=addPreservesLTE first second (index axis shape)} xs,
-    rewrite sym $ minusPlus first {n=second} in rewrite sums in slice axis first @{%search} @{rewrite sym sums in lteAddRight first {m=second}} @{reflexive {ty=Nat}} (index axis shape) xs
+split @{_} @{sums} axis idx xs = (
+    rewrite sym $ minusZeroRight idx in slice axis 0 idx {isWithinAxis=addPreservesLTE idx remaining (index axis shape)} xs,
+    rewrite sym $ minusPlus idx {n=remaining} in rewrite sums in slice axis idx @{%search} @{rewrite sym sums in lteAddRight idx {m=remaining}} @{reflexive {ty=Nat}} (index axis shape) xs
   )
 
 ||| Concatenate two `Tensor`s along their first axis. For example,
