@@ -233,7 +233,8 @@ split @{_} @{sums} axis idx xs =
       )
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
-||| `concat 0 (const [[1, 2], [3, 4]]) (const [[5, 6]])` is equivalent to
+||| `concat 0 (const [[1, 2], [3, 4]]) (const [[5, 6]])` and
+||| `concat 1 (const [[3], [6]]) const ([[4, 5], [7, 8]])` are both equivalent to
 ||| `const [[1, 2], [3, 4], [5, 6]]`.
 export
 concat : (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
