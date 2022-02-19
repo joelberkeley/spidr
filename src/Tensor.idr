@@ -205,6 +205,8 @@ index axis idx xs@(MkTensor mkOp) =
   let (MkTensor mkSliced) = slice @{%search} @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
    in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
+addPreservesLTE : (0 a, b, c : Nat) -> a + b = c => a `LTE` c
+
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
 ||| `(const [[1, 2], [3, 4]], const [[5, 6]])`, and `split 1 1 const [[1, 2], [3, 4], [5, 6]]` to
@@ -214,14 +216,15 @@ index axis idx xs@(MkTensor mkOp) =
 ||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
 |||   index will appear in the right-hand `Tensor`.
 export
-split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape => idx `LTE` index axis shape
-        => Tensor shape dtype -> (
-            Tensor (replaceAt axis idx shape) dtype,
-            Tensor (replaceAt axis (index axis shape `minus` idx) shape) dtype
+split : (axis, first : Nat) -> {shape : _} -> InBounds axis shape
+        => first + second = index axis shape => Tensor shape dtype
+        -> (
+            Tensor (replaceAt axis first shape) dtype,
+            Tensor (replaceAt axis second shape) dtype
           )
-split axis idx xs = (
-    rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
-    slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
+split @{_} @{sums} axis first xs = (
+    rewrite sym $ minusZeroRight first in slice axis 0 first {isWithinAxis=addPreservesLTE first second (index axis shape)} xs,
+    rewrite sym $ minusPlus first {n=second} in rewrite sums in slice axis first @{%search} @{rewrite sym sums in lteAddRight first {m=second}} @{reflexive {ty=Nat}} (index axis shape) xs
   )
 
 ||| Concatenate two `Tensor`s along their first axis. For example,

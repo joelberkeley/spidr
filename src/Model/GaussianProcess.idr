@@ -109,7 +109,6 @@ fit : ConjugateGPRegression features
 fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] F64 -> Tensor [] F64
       objective params = let (noise, prior_params) = split 0 1 params
-                             prior_params = rewrite sym (minusZeroRight p) in prior_params
                           in log_marginal_likelihood (mk_prior prior_params)
                              (squeeze noise) (x, squeeze y)
 
@@ -118,4 +117,4 @@ fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
       mk_posterior : Tensor [p] F64 -> GaussianProcess features
       mk_posterior params' = posterior (mk_prior params') (squeeze noise) (x, squeeze y)
 
-    in MkConjugateGPR mk_posterior (rewrite sym (minusZeroRight p) in gp_params) (squeeze noise)
+    in MkConjugateGPR mk_posterior gp_params (squeeze noise)
