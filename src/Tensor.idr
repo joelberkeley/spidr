@@ -28,6 +28,7 @@ import Error
 import public Primitive
 import public Types
 import public Util
+import XLA.Client.Lib.Matrix
 import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
 import XLA.Client.XlaBuilder
@@ -254,11 +255,23 @@ export
            n = last shape
         in Tensor (leading ++ [n, m]) dtype
 
-||| Construct a diagonal tensor from the specified value, where all off-diagonal elements are zero.
-||| For example, `the (Tensor [2, 2] F64) (diag 3)` is equivalent to
-||| `const [[3.0, 0.0], [0.0, 3.0]]`.
+||| The identity tensor, with inferred shape and element type. For example,
+||| ```
+||| x : Tensor [2, 2] S32
+||| x = identity
+||| ```
+||| is equivalent to
+||| ```
+||| x : Tensor [2, 2] S32
+||| x = [[1, 0],
+|||      [0, 1]]
+||| ```
 export
-diag : Primitive.Num dtype => Tensor [] dtype -> Tensor [n, n] dtype
+identity : (Primitive.Num dtype, Primitive dtype) => {n : _} -> Tensor [n, n] dtype
+identity = MkTensor $ \builder => do
+  let n = cast n
+  op <- primIO $ prim__identityMatrix builder (xlaIdentifier {dtype}) n n
+  onCollectAny op XlaOp.delete
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.

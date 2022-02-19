@@ -33,6 +33,7 @@ main = do
     test_index
     test_split
     test_concat
+    test_identity
     test_expand
     test_broadcast
     test_squeeze

@@ -225,6 +225,21 @@ test_concat = do
     assertAll "concat array 1" $ concat 1 l r ==# arr
 
 export
+test_identity : IO ()
+test_identity = do
+    assertAll "identity 0 S32" $ identity ==# const {dtype=S32} []
+    assertAll "identity 1 S32" $ identity ==# const {dtype=S32} [[1]]
+    assertAll "identity 2 S32" $ identity ==# const {dtype=S32} [[1, 0], [0, 1]]
+    assertAll "identity 4 S32" $
+        identity ==# const {dtype=S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+
+    assertAll "identity 0 F64" $ identity ==# const {dtype=F64} []
+    assertAll "identity 1 F64" $ identity ==# const {dtype=F64} [[1]]
+    assertAll "identity 2 F64" $ identity ==# const {dtype=F64} [[1, 0], [0, 1]]
+    assertAll "identity 4 F64" $
+        identity ==# const {dtype=F64} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+
+export
 test_expand : IO ()
 test_expand = do
     let x = const {shape=[]} {dtype=S32} 3
