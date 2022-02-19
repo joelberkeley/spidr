@@ -80,8 +80,8 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
   |||   a vector)
   ||| @hyperparameters The hyperparameters (excluding noise) presented as a vector.
   ||| @noise The likehood amplitude, or observation noise.
-  MkConjugateGPR :
-    (gp_from_hyperparameters : Tensor [p] F64 -> GaussianProcess features)
+  MkConjugateGPR : {p : _}
+    -> (gp_from_hyperparameters : Tensor [p] F64 -> GaussianProcess features)
     -> (hyperparameters : Tensor [p] F64)
     -> (noise : Tensor [] F64)
     -> ConjugateGPRegression features
@@ -108,11 +108,11 @@ fit : ConjugateGPRegression features
   -> ConjugateGPRegression features
 fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] F64 -> Tensor [] F64
-      objective params = let (noise, prior_params) = split 1 params
+      objective params = let (noise, prior_params) = split 0 1 params
                           in log_marginal_likelihood (mk_prior prior_params)
                              (squeeze noise) (x, squeeze y)
 
-      (noise, gp_params) := split 1 $ optimizer (concat (expand 0 noise) gp_params) objective
+      (noise, gp_params) := split 0 1 $ optimizer (concat (expand 0 noise) gp_params) objective
 
       mk_posterior : Tensor [p] F64 -> GaussianProcess features
       mk_posterior params' = posterior (mk_prior params') (squeeze noise) (x, squeeze y)
