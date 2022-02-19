@@ -180,49 +180,49 @@ test_concat = do
 
     let l = const {shape=[0]} []
         r = const {shape=[3]} [3, 4, 5]
-    assertAll "concat vector 0" $ concat 0 l r ==# vector
+    assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let (l, r) = split 0 1 vector
-    assertAll "split vector 1 left" $ l ==# const [3]
-    assertAll "split vector 1 right" $ r ==# const [4, 5]
+    let l = const {shape=[1]} [3]
+        r = const {shape=[2]} [4, 5]
+    assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let (l, r) = split 0 2 vector
-    assertAll "split vector 2 left" $ l ==# const [3, 4]
-    assertAll "split vector 2 right" $ r ==# const [5]
+    let l = const {shape=[2]} [3, 4]
+        r = const {shape=[1]} [5]
+    assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let (l, r) = split 0 3 vector
-    assertAll "split vector 3 left" $ l ==# const [3, 4, 5]
-    assertAll "split vector 3 right" $ r ==# const []
+    let l = const {shape=[3]} [3, 4, 5]
+        r = const {shape=[0]} []
+    assertAll "concat vector" $ concat 0 l r ==# vector
 
     let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
-    let (l, r) = split 0 0 arr
-    assertAll "split array 0 0 left" $ l ==# const []
-    assertAll "split array 0 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
+    let l = const {shape=[0, 3]} []
+        r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+    assertAll "concat array 0" $ concat 0 l r ==# arr
 
-    let (l, r) = split 0 1 arr
-    assertAll "split array 0 1 left" $ l ==# const [[3, 4, 5]]
-    assertAll "split array 0 1 right" $ r ==# const [[6, 7, 8]]
+    let l = const {shape=[1, 3]} [[3, 4, 5]]
+        r = const {shape=[1, 3]} [[6, 7, 8]]
+    assertAll "concat array 0" $ concat 0 l r ==# arr
 
-    let (l, r) = split 0 2 arr
-    assertAll "split array 0 2 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
-    assertAll "split array 0 2 right" $ r ==# const []
+    let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+        r = const {shape=[0, 3]} []
+    assertAll "concat array 0" $ concat 0 l r ==# arr
 
-    let (l, r) = split 1 0 arr
-    assertAll "split array 1 0 left" $ l ==# const [[], []]
-    assertAll "split array 1 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
+    let l = const {shape=[2, 0]} [[], []]
+        r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
 
-    let (l, r) = split 1 1 arr
-    assertAll "split array 1 1 left" $ l ==# const [[3], [6]]
-    assertAll "split array 1 1 right" $ r ==# const [[4, 5], [7, 8]]
+    let l = const {shape=[2, 1]} [[3], [6]]
+        r = const {shape=[2, 2]} [[4, 5], [7, 8]]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
 
-    let (l, r) = split 1 2 arr
-    assertAll "split array 1 2 left" $ l ==# const [[3, 4], [6, 7]]
-    assertAll "split array 1 2 right" $ r ==# const [[5], [8]]
+    let l = const {shape=[2, 2]} [[3, 4], [6, 7]]
+        r = const {shape=[2, 1]} [[5], [8]]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
 
-    let (l, r) = split 1 3 arr
-    assertAll "split array 1 3 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
-    assertAll "split array 1 3 right" $ r ==# const [[], []]
+    let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+        r = const {shape=[2, 0]} [[], []]
+    assertAll "concat array 1" $ concat 1 l r ==# arr
 
 export
 test_expand : IO ()
