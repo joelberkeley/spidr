@@ -221,11 +221,16 @@ split : (axis, idx : Nat) -> {shape : _} -> InBounds axis shape
             Tensor (replaceAt axis remaining shape) dtype
           )
 split @{_} @{sums} axis idx xs =
-  let isWithinAxis : LTE idx (index axis shape) := rewrite sym sums in lteAddRight idx {m=remaining}
-      foo : (minus (index axis shape) idx = remaining) := rewrite sym sums in minusPlus idx in (
-    rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
-    rewrite sym foo in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
-  )
+  let %hint
+      isWithinAxis : LTE idx (index axis shape)
+      isWithinAxis = rewrite sym sums in lteAddRight idx
+
+      sums' : remaining = minus (index axis shape) idx
+      sums' = rewrite sym sums in sym (minusPlus idx)
+   in (
+        rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
+        rewrite sums' in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
+      )
 
 ||| Concatenate two `Tensor`s along their first axis. For example,
 ||| `concat (const [[1, 2], [3, 4]]) (const [[5, 6]])` is equivalent to
