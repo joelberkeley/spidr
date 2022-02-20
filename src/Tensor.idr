@@ -580,8 +580,8 @@ notEach = unaryOp prim__not
 infixl 9 @@
 
 namespace Matrix
-  ||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
-  ||| the first axis of the last tensor. For example:
+  ||| Matrix multiplication with a tensor of any rank. The tensors are contracted along the last
+  ||| axis of the first tensor and the first axis of the last tensor. For example:
   |||
   ||| ```idris
   ||| x : Tensor [2, 3] S32
