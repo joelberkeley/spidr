@@ -807,8 +807,14 @@ cholesky (MkTensor mkOp) = MkTensor $ \builder => do
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : Tensor [S n, S n] F64 -> Tensor [] F64
-det x = let chol = cholesky x in reduce @{Prod} 0 (reduce @{Prod} 1 (chol *# identity))
+det : {n : _} -> Tensor [S n, S n] F64 -> Tensor [] F64
+det x =
+  let (MkTensor mkOp) = cholesky x
+      sqrt_eigen : Tensor [S n] F64 := MkTensor $ \builder => do
+        op <- primIO $ prim__getMatrixDiagonal !(mkOp builder)
+        onCollectAny op XlaOp.delete
+      sqrt_det = reduce @{Prod} 0 sqrt_eigen
+   in sqrt_det * sqrt_det
 
 infix 9 \\
 
