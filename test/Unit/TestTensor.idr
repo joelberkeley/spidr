@@ -832,6 +832,26 @@ test_Max = do
     assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) ==# x
     assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x ==# x
 
+export
+test_cholesky : IO ()
+test_cholesky = do
+    let x = const {shape=[_, _]} {dtype=F64} [[1, 0], [2, 0]]
+        expected = const [[nan, nan], [nan, nan]]
+    assertAll "cholesky zero determinant" $ sufficientlyEqEach (cholesky x) expected
+
+    -- example generated with tensorflow
+    let x = const {shape=[_, _]} {dtype=F64} [
+                    [ 2.236123  ,  0.70387983,  2.8447943 ],
+                    [ 0.7059226 ,  2.661426  , -0.8714733 ],
+                    [ 1.3730898 ,  1.4064665 ,  2.7474475 ]
+                ]
+        expected = const [
+                    [1.4953672 , 0.0       , 0.0       ],
+                    [0.47207308, 1.5615932 , 0.0       ],
+                    [0.9182292 , 0.6230785 , 1.2312902 ]
+                ]
+    assertAll "cholesky" $ sufficientlyEqEach 0.000001 (cholesky x) expected
+
 test_det : Tensor [3, 3] F64 -> Tensor [] F64
 test_det x = det x
 

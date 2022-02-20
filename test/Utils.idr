@@ -110,14 +110,21 @@ test_sufficientlyEq = do
     sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
                | (x, y) <- insufficientlyEqCases]
 
--- WARNING: This uses a number of functions, and thus assumes they work, so
--- we shouldn't use it to test them.
-export
-sufficientlyEqEach : {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
-sufficientlyEqEach x y =
-    x /=# x &&# y /=# y  -- nan
-    ||# x ==# y  -- inf
-    ||# absEach (x - y) <# fill floatingPointTolerance  -- real
+namespace ExplicitTolerance
+    -- WARNING: This uses a number of functions, and thus assumes they work, so
+    -- we shouldn't use it to test them.
+    export
+    sufficientlyEqEach : Double -> {shape : _}
+                         -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
+    sufficientlyEqEach tol x y =
+        x /=# x &&# y /=# y  -- nan
+        ||# x ==# y  -- inf
+        ||# absEach (x - y) <# fill tol  -- real
+
+namespace DefaultTolerance
+    export
+    sufficientlyEqEach : {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
+    sufficientlyEqEach = sufficientlyEqEach floatingPointTolerance
 
 export
 test_sufficientlyEqEach : IO ()
