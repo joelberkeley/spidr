@@ -207,6 +207,14 @@ extern "C" {
     XlaOp* Gt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Gt, lhs, rhs); }
     XlaOp* Lt(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Lt, lhs, rhs); }
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Le, lhs, rhs); }
+
+    XlaOp* Dot(XlaOp& lhs, XlaOp& rhs) {
+        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+        xla::XlaOp res = xla::Dot(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Add, lhs, rhs); }
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Sub, lhs, rhs); }
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }

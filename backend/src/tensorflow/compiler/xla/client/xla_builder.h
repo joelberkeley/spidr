@@ -87,6 +87,8 @@ extern "C" {
     XlaOp* Lt(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs);
 
+    XlaOp* Dot(XlaOp& lhs, XlaOp& rhs);
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs);

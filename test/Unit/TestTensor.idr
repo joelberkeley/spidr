@@ -572,6 +572,22 @@ namespace F64
                 sufficientlyEqEach (f_tensor (const l) (const r)) $
                     const {shape=[]} {dtype=F64} (f_native l r)
 
+namespace Vector
+    export
+    test_dot : IO ()
+    test_dot = do
+        let vect = const {shape=[3]} {dtype=S32} [-2, 0, 1]
+            x = const {shape=[3, 2]} {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
+        assertAll "vector dot" $ vect @@ x ==# const [-7, -2]
+
+namespace Matrix
+    export
+    test_dot : IO ()
+    test_dot = do
+        let matrix = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+            x = const {shape=[3, 2]} {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
+        assertAll "matrix dot" $ matrix @@ x ==# const [[ -7,  -2], [  8, -11]]
+
 export
 test_add : IO ()
 test_add = do

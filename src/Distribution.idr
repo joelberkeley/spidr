@@ -80,7 +80,9 @@ ClosedFormDistribution [1] Gaussian where
         diff = x - mean
 
         exponent : Tensor [] F64
-        exponent = - (squeeze $ diff.T @@ cov.T @@ diff) / (const 2.0)
+        exponent =
+          let diff = squeeze {to=[S d]} diff
+           in - (diff @@ squeeze cov @@ diff) / (const 2.0)
 
         denominator : Tensor [] F64
         denominator = (const $ 2 * pi) ^ (const $ cast (S d) / 2.0)

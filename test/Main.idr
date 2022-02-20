@@ -43,6 +43,8 @@ main = do
     test_elementwise_equality
     test_elementwise_inequality
     test_comparison
+    Vector.test_dot
+    Matrix.test_dot
     test_add
     test_Sum
     test_subtract
