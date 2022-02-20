@@ -65,6 +65,7 @@ main = do
     test_Min
     test_maxEach
     test_Max
+    test_trace
 
     Vect.test_range
     List.test_range
