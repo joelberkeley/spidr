@@ -793,6 +793,12 @@ namespace Monoid
 
 ---------------------------- other ----------------------------------
 
+||| Cholesky decomposition. Finds the lower triangular matrix `L` from `X` s.t. `X = L @@ L.T`.
+export
+cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
+cholesky (MkTensor mkOp) = MkTensor $ \builder => do
+  
+
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
@@ -808,10 +814,6 @@ export
 cholesky : Tensor [S n, S n] dtype -> Tensor [S n, S n] dtype
 
 infix 9 \\
-
-||| Find `Y` from `A` and `X` s.t. `X = AY` where `A` is a lower triangular matrix.
-export
-(\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
