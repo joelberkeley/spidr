@@ -807,12 +807,8 @@ cholesky (MkTensor mkOp) = MkTensor $ \builder => do
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
-det : forall shape, dtype . Primitive.Neg dtype => NonEmpty shape => NonEmpty (init shape)
-      => Tensor shape dtype ->
-      let leading = init (init shape)
-          m = last (init shape)
-          n = last shape
-       in {auto 0 isSquare : m = n} -> {auto 0 nonEmpty : IsSucc m} -> Tensor leading dtype
+det : Tensor [S n, S n] F64 -> Tensor [] F64
+det x = let chol = cholesky x in reduce @{Prod} 0 (reduce @{Prod} 1 (chol *# identity))
 
 infix 9 \\
 
