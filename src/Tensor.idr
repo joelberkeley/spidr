@@ -579,6 +579,35 @@ notEach = unaryOp prim__not
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
+namespace Vector
+  ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
+  ||| the right-hand side tensor. For example:
+  |||
+  ||| ```idris
+  ||| x : Tensor [3] S32
+  ||| x = [0, 1, 2]
+  |||
+  ||| y : Tensor [3, 2] S32
+  ||| y = const [[-1, -2], [-3, 0], [1, 2]]
+  |||
+  ||| z : Tensor [2] S32
+  ||| z = x @@ y
+  ||| ```
+  |||
+  ||| is equivalent to
+  |||
+  ||| ```idris
+  ||| z : Tensor [2] S32
+  ||| z = const [-1, 4]
+  ||| ```
+  |||
+  ||| **WARNING** Not well tested
+  export
+  (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
+  (MkTensor mkOpL) @@ (MkTensor mkOpR) = MkTensor $ \builder => do
+    op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
+    onCollectAny op XlaOp.delete
+
 namespace Matrix
   ||| Matrix multiplication with a tensor of any rank. The tensors are contracted along the last
   ||| axis of the first tensor and the first axis of the last tensor. For example:
@@ -604,36 +633,7 @@ namespace Matrix
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [n, S m] dtype -> Tensor (S m :: tl) dtype
-         -> Tensor (n :: tl) dtype
-  (MkTensor mkOpL) @@ (MkTensor mkOpR) = MkTensor $ \builder => do
-    op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
-    onCollectAny op XlaOp.delete
-
-namespace Vector
-  ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
-  ||| the right-hand side tensor. For example:
-  |||
-  ||| ```idris
-  ||| x : Tensor [3] S32
-  ||| x = [0, 1, 2]
-  |||
-  ||| y : Tensor [3, 2] S32
-  ||| y = const [[-1, -2], [-3, 0], [1, 2]]
-  |||
-  ||| z : Tensor [2] S32
-  ||| z = x @@ y
-  ||| ```
-  |||
-  ||| is equivalent to
-  |||
-  ||| ```idris
-  ||| z : Tensor [2] S32
-  ||| z = const [-1, 4]
-  ||| ```
-  |||
-  ||| **WARNING** Not well tested
-  export
-  (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor (S m :: tl) dtype -> Tensor tl dtype
+         -> length tl `LTE` 1 => Tensor (n :: tl) dtype
   (MkTensor mkOpL) @@ (MkTensor mkOpR) = MkTensor $ \builder => do
     op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
     onCollectAny op XlaOp.delete

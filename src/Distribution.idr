@@ -78,15 +78,14 @@ ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =
     let diff : Tensor [S d, 1] F64
         diff = x - mean
+        
+        cov : Tensor [S d, S d] F64 := squeeze cov
 
         exponent : Tensor [] F64
-        exponent =
-          let diff = squeeze {to=[S d]} diff
-           in - (diff @@ squeeze cov @@ diff) / (const 2.0)
+        exponent = - squeeze (diff.T @@ cov @@ diff) / (const 2.0)
 
         denominator : Tensor [] F64
-        denominator = (const $ 2 * pi) ^ (const $ cast (S d) / 2.0)
-                      * (det $ squeeze {to=[S d, S d]} cov) ^ const 0.5
+        denominator = (const $ 2 * pi) ^ (const $ cast (S d) / 2.0) * (det cov) ^ const 0.5
 
      in (expEach exponent) / denominator
 
