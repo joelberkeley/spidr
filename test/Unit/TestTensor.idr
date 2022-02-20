@@ -837,3 +837,8 @@ test_det x = det x
 
 test_det_with_leading : Tensor [2, 3, 3] F64 -> Tensor [2] F64
 test_det_with_leading x = det x
+
+export
+test_trace : IO ()
+test_trace = do
+    assertAll "trace" $ trace (const {dtype=S32} [[-1, 5], [1, 4]]) ==# const 3

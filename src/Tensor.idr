@@ -813,6 +813,9 @@ infix 9 \\
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
 
-||| Sum the elements along the diagonal of the input.
+||| Sum the elements along the diagonal of the input. For example,
+||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
 export
-trace : Primitive.Num dtype => Tensor [S n, S n] dtype -> Tensor [] dtype
+trace : (Primitive.Num dtype, Prelude.Num a) => PrimitiveRW dtype a => {n : _}
+        -> Tensor [S n, S n] dtype -> Tensor [] dtype
+trace x = reduce @{Sum} 0 (reduce @{Sum} 1 (x *# identity))
