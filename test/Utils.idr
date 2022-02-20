@@ -114,7 +114,7 @@ test_sufficientlyEq = do
 -- we shouldn't use it to test them.
 export
 sufficientlyEqEach : {default floatingPointTolerance tol : Double} -> {shape : _}
-                        -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
+                     -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
 sufficientlyEqEach x y =
     x /=# x &&# y /=# y  -- nan
     ||# x ==# y  -- inf
