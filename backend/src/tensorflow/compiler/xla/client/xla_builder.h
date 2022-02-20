@@ -88,6 +88,7 @@ extern "C" {
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs);
 
     XlaOp* Dot(XlaOp& lhs, XlaOp& rhs);
+    XlaOp* Cholesky(XlaOp& a, int lower);
 
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs);
