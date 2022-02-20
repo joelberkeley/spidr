@@ -520,18 +520,6 @@ test_comparison = do
             assertAll ">=# for scalars" $ (l' >=# r') ==# const {shape=[]} {dtype=PRED} (l >= r)
             assertAll "<=# for scalars" $ (l' <=# r') ==# const {shape=[]} {dtype=PRED} (l <= r)
 
-test_tensor_contraction11 : Tensor [4] F64 -> Tensor [4] F64 -> Tensor [] F64
-test_tensor_contraction11 x y = x @@ y
-
-test_tensor_contraction12 : Tensor [4] F64 -> Tensor [4, 5] F64 -> Tensor [5] F64
-test_tensor_contraction12 x y = x @@ y
-
-test_tensor_contraction21 : Tensor [3, 4] F64 -> Tensor [4] F64 -> Tensor [3] F64
-test_tensor_contraction21 x y = x @@ y
-
-test_tensor_contraction22 : Tensor [3, 4] F64 -> Tensor [4, 5] F64 -> Tensor [3, 5] F64
-test_tensor_contraction22 x y = x @@ y
-
 namespace S32
     export
     testElementwiseBinary : String -> (Int -> Int -> Int)
@@ -571,6 +559,26 @@ namespace F64
             pure $ assertAll (name ++ " for F64 scalar " ++ show l ++ " " ++ show r) $
                 sufficientlyEqEach (f_tensor (const l) (const r)) $
                     const {shape=[]} {dtype=F64} (f_native l r)
+
+namespace Vector
+    export
+    test_dot : IO ()
+    test_dot = do
+        let l = const {shape=[3]} {dtype=S32} [-2, 0, 1]
+            r = const {shape=[3]} {dtype=S32} [3, 1, 2]
+        assertAll "vector dot" $ l @@ r ==# const (-4)
+
+namespace Matrix
+    export
+    test_dot : IO ()
+    test_dot = do
+        let l = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+            r = const {shape=[3]} {dtype=S32} [3, 3, -1]
+        assertAll "matrix dot vector" $ l @@ r ==# const [-7, 8]
+
+        let l = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+            r = const {shape=[3, 2]} {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
+        assertAll "matrix dot matrix" $ l @@ r ==# const [[ -7,  -2], [  8, -11]]
 
 export
 test_add : IO ()

@@ -579,29 +579,47 @@ notEach = unaryOp prim__not
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
-||| Matrix multiplication. The tensors are contracted along the last axis of the first tensor and
-||| the first axis of the last tensor. For example:
-|||
-||| ```idris
-||| x : Tensor [2, 3] S32
-||| x = const [[-1, -2, -3], [0, 1, 2]]
-|||
-||| y : Tensor [3, 1] S32
-||| y = const [[4, 0, 5]]
-|||
-||| z : Tensor [2, 1] S32
-||| z = x @@ y
-||| ```
-|||
-||| is equivalent to
-|||
-||| ```idris
-||| z : Tensor [2, 1] S32
-||| z = const [-19, 10]
-||| ```
-export
-(@@) : Primitive.Num dtype => Tensor l dtype -> Tensor (S n :: tl) dtype -> NonEmpty l =>
-       {auto 0 _ : last l = S n} -> Tensor (init l ++ tl) dtype
+namespace Vector
+  ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
+  ||| the right-hand side tensor. For example `const [0, 1, 2] @@ const [-1, -3, -1]` is equivalent
+  ||| to `const -1`.
+  |||
+  ||| **WARNING** Not well tested
+  export
+  (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
+  (MkTensor mkOpL) @@ (MkTensor mkOpR) = MkTensor $ \builder => do
+    op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
+    onCollectAny op XlaOp.delete
+
+namespace Matrix
+  ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
+  ||| and the first axis of the last. For example:
+  |||
+  ||| ```idris
+  ||| x : Tensor [2, 3] S32
+  ||| x = const [[-1, -2, -3], [0, 1, 2]]
+  |||
+  ||| y : Tensor [3, 1] S32
+  ||| y = const [[4, 0, 5]]
+  |||
+  ||| z : Tensor [2, 1] S32
+  ||| z = x @@ y
+  ||| ```
+  |||
+  ||| is equivalent to
+  |||
+  ||| ```idris
+  ||| z : Tensor [2, 1] S32
+  ||| z = const [-19, 10]
+  ||| ```
+  |||
+  ||| **WARNING** Not well tested
+  export
+  (@@) : Primitive.Num dtype => Tensor [n, S m] dtype -> Tensor (S m :: tl) dtype
+         -> length tl `LTE` 1 => Tensor (n :: tl) dtype
+  (MkTensor mkOpL) @@ (MkTensor mkOpR) = MkTensor $ \builder => do
+    op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
+    onCollectAny op XlaOp.delete
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
