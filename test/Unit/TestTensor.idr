@@ -850,7 +850,7 @@ test_cholesky = do
                     [0.47207308, 1.5615932 , 0.0       ],
                     [0.9182292 , 0.6230785 , 1.2312902 ]
                 ]
-    assertAll "cholesky" $ sufficientlyEqEach 0.000001 (cholesky x) expected
+    assertAll "cholesky" $ sufficientlyEqEach {tol=0.000001} (cholesky x) expected
 
 test_det : Tensor [3, 3] F64 -> Tensor [] F64
 test_det x = det x
