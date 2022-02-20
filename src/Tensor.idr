@@ -581,25 +581,8 @@ infixl 9 @@
 
 namespace Vector
   ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
-  ||| the right-hand side tensor. For example:
-  |||
-  ||| ```idris
-  ||| x : Tensor [3] S32
-  ||| x = [0, 1, 2]
-  |||
-  ||| y : Tensor [3, 2] S32
-  ||| y = const [[-1, -2], [-3, 0], [1, 2]]
-  |||
-  ||| z : Tensor [2] S32
-  ||| z = x @@ y
-  ||| ```
-  |||
-  ||| is equivalent to
-  |||
-  ||| ```idris
-  ||| z : Tensor [2] S32
-  ||| z = const [-1, 4]
-  ||| ```
+  ||| the right-hand side tensor. For example `const [0, 1, 2] @@ const [-1, -3, -1]` is equivalent
+  ||| to `const -1`.
   |||
   ||| **WARNING** Not well tested
   export
@@ -609,8 +592,8 @@ namespace Vector
     onCollectAny op XlaOp.delete
 
 namespace Matrix
-  ||| Matrix multiplication with a tensor of any rank. The tensors are contracted along the last
-  ||| axis of the first tensor and the first axis of the last tensor. For example:
+  ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
+  ||| and the first axis of the last. For example:
   |||
   ||| ```idris
   ||| x : Tensor [2, 3] S32
