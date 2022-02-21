@@ -890,18 +890,18 @@ test_triangularsolve = do
             ]
         actual = a \\ b
         expected = const {shape=[_, _]} [
-                             [ 0.52820396,  0.43452972],
-                             [ 0.79913783, -0.10254406],
-                             [ 1.8257918 ,  2.7147462 ]
-                         ]
+                        [ 0.52820396,  0.43452972],
+                        [ 0.79913783, -0.10254406],
+                        [ 1.8257918 ,  2.7147462 ]
+                    ]
     assertAll #"(\\) result"# $ sufficientlyEqEach {tol=0.000001} actual expected
     assertAll #"(\\) is invertible with (@@)"# $ sufficientlyEqEach {tol=0.000001} (a @@ actual) b
 
     let a = const {shape=[_, _]} [[1, 2], [3, 4]]
+        a_lt = const {shape=[_, _]} [[1, 0], [3, 4]]
         b = const {shape=[_]} [5, 6]
-        actual = a \\ b
-        expected = const {shape=[_]} [nan, nan]
-    assertAll #"(\\)"# $ sufficientlyEqEach actual expected
+    assertAll #"(\\) upper triangular elements are ignored"# $
+        sufficientlyEqEach (a \\ b) (a_lt \\ b)
 
 export
 test_trace : IO ()
