@@ -127,7 +127,7 @@ extern "C" {
 
     XlaOp* Neg(XlaOp& operand);
 
-    XlaOp* Transpose(XlaOp& operand, int* permutation, int len);
+    XlaOp* Transpose(XlaOp& operand, int* permutation, int rank);
 
     XlaOp* Map(
         XlaBuilder* builder,
