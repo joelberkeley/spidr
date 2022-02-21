@@ -876,6 +876,34 @@ test_det_with_leading : Tensor [2, 3, 3] F64 -> Tensor [2] F64
 test_det_with_leading x = det x
 
 export
+test_triangularsolve : IO ()
+test_triangularsolve = do
+    let a = const {shape=[_, _]} [
+                [0.8578532 , 0.0       , 0.0       ],
+                [0.2481904 , 0.9885198 , 0.0       ],
+                [0.59390426, 0.14998078, 0.19468737]
+            ]
+        b = const {shape=[_, _]} [
+                [0.45312142, 0.37276268],
+                [0.9210588 , 0.00647926],
+                [0.7890165 , 0.77121615]
+            ]
+        actual = a \\ b
+        expected = const {shape=[_, _]} [
+                        [ 0.52820396,  0.43452972],
+                        [ 0.79913783, -0.10254406],
+                        [ 1.8257918 ,  2.7147462 ]
+                    ]
+    assertAll #"(\\) result"# $ sufficientlyEqEach {tol=0.000001} actual expected
+    assertAll #"(\\) is invertible with (@@)"# $ sufficientlyEqEach {tol=0.000001} (a @@ actual) b
+
+    let a = const {shape=[_, _]} [[1, 2], [3, 4]]
+        a_lt = const {shape=[_, _]} [[1, 0], [3, 4]]
+        b = const {shape=[_]} [5, 6]
+    assertAll #"(\\) upper triangular elements are ignored"# $
+        sufficientlyEqEach (a \\ b) (a_lt \\ b)
+
+export
 test_trace : IO ()
 test_trace = do
     assertAll "trace" $ trace (const {dtype=S32} [[-1, 5], [1, 4]]) ==# const 3
