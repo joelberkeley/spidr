@@ -84,5 +84,4 @@ ClosedFormDistribution [1] Gaussian where
         denominator = (const (2 * pi) ^# (const $ cast (S d) / 2.0)) * cov_sqrt_det
      in expEach exponent / denominator
 
-  ||| **NOTE** This function is not yet implemented.
   cdf (MkGaussian mean cov) x = ?cdf_rhs
