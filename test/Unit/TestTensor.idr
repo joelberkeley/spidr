@@ -879,7 +879,8 @@ export
 test_triangularsolve : IO ()
 test_triangularsolve = do
     let a = const {shape=[_, _]} [
-                [0.8578532 , 0.0, 0.0], [0.2481904 , 0.9885198 , 0.0        ],
+                [0.8578532 , 0.0       , 0.0       ],
+                [0.2481904 , 0.9885198 , 0.0       ],
                 [0.59390426, 0.14998078, 0.19468737]
             ]
         b = const {shape=[_, _]} [
@@ -894,6 +895,12 @@ test_triangularsolve = do
                              [ 1.8257918 ,  2.7147462 ]
                          ]
     assertAll #"(\\)"# $ sufficientlyEqEach {tol=0.000001} actual expected
+
+    let a = const {shape=[_, _]} [[1, 2], [3, 4]]
+        b = const {shape=[_]} [5, 6]
+        actual = a \\ b
+        expected = const {shape=[_]} [nan, nan]
+    assertAll #"(\\)"# $ sufficientlyEqEach actual expected
 
 export
 test_trace : IO ()
