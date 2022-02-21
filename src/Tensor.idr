@@ -804,17 +804,18 @@ cholesky (MkTensor mkOp) = MkTensor $ \builder => do
   res <- primIO $ prim__cholesky !(mkOp builder) 1
   onCollectAny res XlaOp.delete
 
+diag : Tensor [m, m] a -> Tensor [m] a
+diag (MkTensor mkOp) = MkTensor $ \builder => do
+  op <- primIO $ prim__getMatrixDiagonal !(mkOp builder)
+  onCollectAny op XlaOp.delete
+
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
 det : {n : _} -> Tensor [S n, S n] F64 -> Tensor [] F64
-det x =
-  let (MkTensor mkOp) = cholesky x
-      sqrt_eigen : Tensor [S n] F64 := MkTensor $ \builder => do
-        op <- primIO $ prim__getMatrixDiagonal !(mkOp builder)
-        onCollectAny op XlaOp.delete
-      sqrt_det = reduce @{Prod} 0 sqrt_eigen
-   in sqrt_det * sqrt_det
+-- cholesky is only valid on symmetric matrices. Use LU decomposition
+-- see https://github.com/elixir-nx/nx/blob/v0.1.0/nx/lib/nx/lin_alg.ex#L1120
+det x = let sqrt_det = reduce @{Prod} 0 (diag (cholesky x)) in sqrt_det * sqrt_det
 
 infix 9 \\
 

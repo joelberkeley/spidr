@@ -887,7 +887,6 @@ test_det = do
                     [ 1.3730898 ,  1.4064665 ,  2.7474475 ]
                 ]
         expected = const 9.312717
-    eval (det x) >>= printLn
     assertAll "det" $ sufficientlyEqEach {tol=0.00001} (det x) expected
 
 export
