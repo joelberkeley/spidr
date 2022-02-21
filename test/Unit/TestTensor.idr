@@ -728,6 +728,23 @@ test_scalar_division = do
             sufficientlyEqEach (const l / const r) (const {shape=[]} (l / r))
 
 export
+test_pow : IO ()
+test_pow = do
+    let x = [[3, 4, -5], [0, 0.3, 0]]
+        y = [[1, -2.3, 0.2], [0.1, 0, 2]]
+        expected = const {shape=[2, 3]} {dtype=F64} $ [
+                [pow 3 1, pow 4 (-2.3), pow (-5) 0.2],
+                [pow 0 0.1, pow 0.3 0, pow 0 2]
+            ]
+    assertAll ("^# for F64 array") $ sufficientlyEqEach ((const x) ^# (const y)) expected
+
+    sequence_ $ do
+        l <- the (List Double) [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
+        r <- the (List Double) [-3.4, -1.1, -0.1, 0.1, 1.1, 3.4]
+        pure $ assertAll ("^# for F64 scalar " ++ show l ++ " " ++ show r) $
+            sufficientlyEqEach ((const l) ^# (const r)) $ const {shape=[]} {dtype=F64} (pow l r)
+
+export
 test_absEach : IO ()
 test_absEach = do
     let x = const {shape=[_]} {dtype=S32} [1, 0, -5]

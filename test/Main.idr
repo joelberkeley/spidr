@@ -53,6 +53,7 @@ main = do
     test_Prod
     test_elementwise_division
     test_scalar_division
+    test_pow
     test_elementwise_and
     test_All
     test_elementwise_or

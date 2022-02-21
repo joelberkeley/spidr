@@ -278,6 +278,9 @@ extern "C" {
     XlaOp* Sin(XlaOp& operand) { return unaryOp(xla::Sin, operand); }
     XlaOp* Tanh(XlaOp& operand) { return unaryOp(xla::Tanh, operand); }
     XlaOp* Sqrt(XlaOp& operand) { return unaryOp(xla::Sqrt, operand); }
+
+    XlaOp* Pow(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Pow, lhs, rhs); }
+
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 
     XlaOp* Map(

@@ -238,6 +238,10 @@ export
 prim__sqrt : GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Pow")
+prim__pow : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Neg")
 prim__neg : GCAnyPtr -> PrimIO AnyPtr
 
