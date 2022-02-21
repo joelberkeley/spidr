@@ -119,6 +119,9 @@ extern "C" {
     XlaOp* Sin(XlaOp& operand);
     XlaOp* Tanh(XlaOp& operand);
     XlaOp* Sqrt(XlaOp& operand);
+
+    XlaOp* Pow(XlaOp& lhs, XlaOp& rhs);
+
     XlaOp* Neg(XlaOp& operand);
 
     XlaOp* Map(

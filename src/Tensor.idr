@@ -688,6 +688,19 @@ export
       Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 l / r = l /# broadcast {prf=scalarToAnyOk shape} r
 
+infixr 9 ^#
+
+||| Each element in `base` raised to the power of the corresponding element in `exponent`.
+||| example, `const [2, 25, -9] ^# const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, nan]`.
+|||
+||| Note: The behaviour of this function is not well-defined at negative or positive infinity, or
+|||   NaN.
+|||
+||| Note: The first root is used.
+export
+(^#) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
+(^#) = binaryOp prim__pow
+
 ||| Element-wise absolute value. For example, `absEach (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.
 export
@@ -745,15 +758,6 @@ tanhEach = unaryOp prim__tanh
 export
 sqrtEach : Tensor shape F64 -> Tensor shape F64
 sqrtEach = unaryOp prim__sqrt
-
-infixr 9 ^
-
-||| Each element in `base` raised to the power of the corresponding element in `exponent`.
-||| example, `const [2, 25, -9] ^ const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, 3i]`.
-|||
-||| Note: The first root is used.
-export
-(^) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `minEach (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
