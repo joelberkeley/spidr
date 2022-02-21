@@ -366,11 +366,15 @@ test_squeeze = do
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
 
-test_T : Tensor [2, 3] F64 -> Tensor [3, 2] F64
-test_T x = x.T
+export
+test_T : IO ()
+test_T = do
+    assertAll "(.T) for empty array" $ (const {dtype=S32} []).T ==# const []
+    assertAll "(.T) for single element" $ (const {dtype=S32} [[3]]).T ==# const [[3]]
 
-test_T_with_leading : Tensor [2, 3, 5] F64 -> Tensor [2, 5, 3] F64
-test_T_with_leading x = x.T
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        expected = const [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+    assertAll "(.T)" $ x.T ==# expected
 
 export
 test_map : IO ()
