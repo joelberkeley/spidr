@@ -816,7 +816,7 @@ det : forall shape, dtype . Primitive.Neg dtype => NonEmpty shape => NonEmpty (i
 
 infix 9 \\
 
-||| Find `X` from `A` and `B` as `A \\ B` s.t. `AX = B` where `A` is a lower-triangular matrix.
+||| Find `X` from `A` and `B` (as `A \\ B`) s.t. `AX = B` where `A` is a lower-triangular matrix.
 ||| If `A` is not lower-triangular, all values in the resulting `Tensor` will be NaN.
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> length tl `LTE` 2 => Tensor (n :: tl) dtype
