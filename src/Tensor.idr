@@ -246,14 +246,14 @@ concat axis (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   res <- primIO $ prim__concatInDim builder ops 2 (cast axis)
   onCollectAny res XlaOp.delete
 
-||| Tranpose the last two axes of a tensor. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
+||| Tranpose a matrix. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export
-(.T) : forall shape, dtype . NonEmpty shape => NonEmpty (init shape) => Tensor shape dtype ->
-       let leading = init (init shape)
-           m = last (init shape)
-           n = last shape
-        in Tensor (leading ++ [n, m]) dtype
+(.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
+(MkTensor mkOp).T = MkTensor $ \builder => do
+  permutations <- mkIntArray [1, 0]
+  op <- primIO $ prim__transpose !(mkOp builder) permutations 2
+  onCollectAny op XlaOp.delete
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```

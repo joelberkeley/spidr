@@ -301,6 +301,17 @@ extern "C" {
 
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 
+    XlaOp* Transpose(XlaOp& operand, int* permutation, int rank) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        xla::int64 permutation64[rank];
+        std::copy(permutation, permutation + rank, permutation64);
+        auto permutation_span = absl::Span<const xla::int64>(permutation64, rank);
+
+        xla::XlaOp res = xla::Transpose(operand_, permutation_span);
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Map(
         XlaBuilder* builder,
         XlaOp* operands,
