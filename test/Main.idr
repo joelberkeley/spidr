@@ -67,6 +67,7 @@ main = do
     test_maxEach
     test_Max
     test_cholesky
+    test_triangularsolve
     test_trace
 
     Vect.test_range
