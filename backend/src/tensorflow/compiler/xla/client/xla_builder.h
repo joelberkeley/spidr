@@ -88,6 +88,9 @@ extern "C" {
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs);
 
     XlaOp* Dot(XlaOp& lhs, XlaOp& rhs);
+    XlaOp* TriangularSolve(
+        XlaOp& a, XlaOp& b, int left_side, int lower, int unit_diagonal, int transpose_a
+    );
     XlaOp* Cholesky(XlaOp& a, int lower);
 
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs);

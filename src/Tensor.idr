@@ -816,9 +816,12 @@ det : forall shape, dtype . Primitive.Neg dtype => NonEmpty shape => NonEmpty (i
 
 infix 9 \\
 
-||| Find `Y` from `A` and `X` s.t. `X = AY` where `A` is a lower triangular matrix.
+||| Find `X` from `A` and `B` s.t. `AX = B` where `A` is a lower triangular matrix.
 export
-(\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> Tensor (n :: tl) dtype
+(\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> length tl `LTE` 2 => Tensor (n :: tl) dtype
+(MkTensor mkOpA) \\ (MkTensor mkOpB) = MkTensor $ \builder => do
+  op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 1 0 0
+  onCollectAny op XlaOp.delete
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.

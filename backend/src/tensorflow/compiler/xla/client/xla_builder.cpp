@@ -215,6 +215,24 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* TriangularSolve(
+        XlaOp& a, XlaOp& b, int left_side, int lower, int unit_diagonal, int transpose_a
+    ) {
+        auto& a_ = reinterpret_cast<xla::XlaOp&>(a);
+        auto& b_ = reinterpret_cast<xla::XlaOp&>(b);
+
+        xla::XlaOp res = xla::TriangularSolve(
+            a_,
+            b_,
+            (bool) left_side,
+            (bool) lower,
+            (bool) unit_diagonal,
+            (xla::TriangularSolveOptions::Transpose) transpose_a
+        );
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Cholesky(XlaOp& a, int lower) {
         auto& a_ = reinterpret_cast<xla::XlaOp&>(a);
         xla::XlaOp res = xla::Cholesky(a_, (bool) lower);

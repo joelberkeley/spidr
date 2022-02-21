@@ -154,6 +154,10 @@ export
 prim__dot : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "TriangularSolve")
+prim__triangularSolve : GCAnyPtr -> GCAnyPtr -> Int -> Int -> Int -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Cholesky")
 prim__cholesky : GCAnyPtr -> Int -> PrimIO AnyPtr
 
