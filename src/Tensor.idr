@@ -819,7 +819,8 @@ infix 9 \\
 namespace Matrix
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
-  ||| upper-triangular part are ignored.
+  ||| upper-triangular part are ignored. If `a` is lower-triangular already,
+  ||| this is written `a \\ b`.
   export
   (\\) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
   (MkTensor mkOpA) \\ (MkTensor mkOpB) = MkTensor $ \builder => do
@@ -829,7 +830,8 @@ namespace Matrix
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
-  ||| upper-triangular part are ignored.
+  ||| upper-triangular part are ignored. If `a` is lower-triangular already,
+  ||| this is written `a \\ b`.
   export
   (\\) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
   a \\ b = squeeze (a \\ (expand 1 b))
