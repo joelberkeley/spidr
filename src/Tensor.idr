@@ -262,8 +262,6 @@ diag (MkTensor mkOp) = MkTensor $ \builder => do
 
 ||| Tranpose a matrix. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
-|||
-||| **NOTE** This function is not yet implemented.
 export
 (.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
 (MkTensor mkOp).T = MkTensor $ \builder => do
