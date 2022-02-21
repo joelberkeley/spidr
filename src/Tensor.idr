@@ -821,7 +821,7 @@ infix 9 \\
 export
 (\\) : Tensor [n, n] dtype -> Tensor (n :: tl) dtype -> length tl `LTE` 2 => Tensor (n :: tl) dtype
 (MkTensor mkOpA) \\ (MkTensor mkOpB) = MkTensor $ \builder => do
-  op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 1 0 0
+  op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 1 0 1
   onCollectAny op XlaOp.delete
 
 ||| Sum the elements along the diagonal of the input. For example,
