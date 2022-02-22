@@ -28,6 +28,7 @@ import Error
 import public Primitive
 import public Types
 import public Util
+import XLA.Client.Lib.LuDecomposition
 import XLA.Client.Lib.Matrix
 import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
@@ -809,13 +810,16 @@ diag (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO $ prim__getMatrixDiagonal !(mkOp builder)
   onCollectAny op XlaOp.delete
 
+lu : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
+lu (MkTensor mkOp) = MkTensor $ \builder => do
+  lu_res <- primIO $ prim__luDecomposition !(mkOp builder)
+  onCollectAny (getField lu_res "lu") XlaOp.delete
+
 ||| The determinant of a tensor (with respect to the last two axes). For example,
 ||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
 export
 det : {n : _} -> Tensor [S n, S n] F64 -> Tensor [] F64
--- cholesky is only valid on symmetric matrices. Use LU decomposition
--- see https://github.com/elixir-nx/nx/blob/v0.1.0/nx/lib/nx/lin_alg.ex#L1120
-det x = let sqrt_det = reduce @{Prod} 0 (diag (cholesky x)) in sqrt_det * sqrt_det
+det x = reduce @{Prod} 0 (diag (lu x))
 
 infix 9 \\
 
