@@ -42,6 +42,5 @@ test_gaussian_pdf = do
         cov = const [[[1.2], [0.5]], [[0.5], [0.7]]]
         x = const {shape=[2, 1]} [[1.1], [-0.5]]
         actual = pdf (MkGaussian mean cov) x
-        -- expected calculated using TensorFlow Probability
-        expected = const 0.016427375
+        expected = const 0.016427375  -- calculated using TensorFlow Probability
     assertAll "multivariate Gaussian" $ sufficientlyEqEach {tol=0.00000001} actual expected
