@@ -22,3 +22,7 @@ import XLA.FFI
 export
 %foreign (libxla "IdentityMatrix")
 prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "GetMatrixDiagonal")
+prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr

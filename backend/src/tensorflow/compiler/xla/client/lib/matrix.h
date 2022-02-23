@@ -17,4 +17,6 @@ limitations under the License.
 
 extern "C" {
     XlaOp* IdentityMatrix(XlaBuilder* builder, int type, int m, int n);
+
+    XlaOp* GetMatrixDiagonal(XlaOp& x);
 }

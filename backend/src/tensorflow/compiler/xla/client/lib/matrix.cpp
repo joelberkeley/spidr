@@ -25,4 +25,10 @@ extern "C" {
         );
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
+
+    XlaOp* GetMatrixDiagonal(XlaOp& x) {
+        auto& x_ = reinterpret_cast<xla::XlaOp&>(x);
+        xla::XlaOp res = xla::GetMatrixDiagonal(x_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 }
