@@ -28,7 +28,6 @@ import Error
 import public Primitive
 import public Types
 import public Util
-import XLA.Client.Lib.LuDecomposition
 import XLA.Client.Lib.Matrix
 import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
