@@ -20,9 +20,9 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
 
 ## Installation
 
-* Clone or download the spidr source code with the appropriate version tag. For example, for version 0.0.4
+* Clone or download the spidr source code with the appropriate version tag. For example, for version 0.0.3
   ```bash
-  git clone --depth 1 --branch v0.0.4 https://github.com/joelberkeley/spidr.git
+  git clone --depth 1 --branch v0.0.3 https://github.com/joelberkeley/spidr.git
   ```
 * Download the pre-built XLA C interface from the [releases page](https://github.com/joelberkeley/spidr/releases) and place it in the project root
 * Download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the whole archive into the `backend/` directory of the project root
