@@ -23,10 +23,19 @@ import Distribution
 export
 test_gaussian_pdf : IO ()
 test_gaussian_pdf = do
-  let mean = const {shape=[1, 1]} [[0]]
-      cov = const [[[1]]]
-      gaussian = MkGaussian mean cov
-      x = const {shape=[1, 1]} [[0]]
-  assertAll "Gaussian pdf" $ pdf gaussian x ==# const (1 / sqrt (2 * pi))
-  let x = const {shape=[1, 1]} [[1]]
-  assertAll "Gaussian pdf" $ pdf gaussian x ==# const (exp (-0.5) / sqrt (2 * pi))
+    sequence_ [assertPdf mean cov x |
+          mean <- [-2, -1, 0, 1, 2],
+          cov <- [0.1, 1, 2],
+          x <- the (List _) [-2, -1, 0, 1, 2]
+    ]
+
+    where
+      assertPdf : Double -> Double -> Double -> IO ()
+      assertPdf mean cov x =
+        let gaussian = MkGaussian (const {shape=[1, 1]} [[mean]]) (const [[[cov]]])
+            actual = pdf gaussian (const {shape=[1, 1]} [[x]])
+            expected = const (exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov))
+            msg = "Gaussian mean \{show mean} cov \{show cov} x \{show x}"
+         in assertAll msg (sufficientlyEqEach actual expected)
+
+    -- multivariate normal

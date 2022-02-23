@@ -80,7 +80,7 @@ ClosedFormDistribution [1] Gaussian where
         tri = chol_cov \\ squeeze (x - mean)
         exponent = - tri @@ tri / const 2.0
         cov_sqrt_det = reduce @{Prod} 0 (diag chol_cov)
-        denominator = const (2 * pi) ^# (const $ cast (S d) / 2.0) * cov_sqrt_det
+        denominator = (const (2 * pi) ^# (const $ cast (S d) / 2.0)) * cov_sqrt_det
      in expEach exponent / denominator
 
   cdf (MkGaussian mean cov) x = ?cdf_rhs
