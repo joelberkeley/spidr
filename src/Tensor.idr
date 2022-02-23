@@ -287,20 +287,6 @@ identity = MkTensor $ \builder => do
   op <- primIO $ prim__identityMatrix builder (xlaIdentifier {dtype}) n n
   onCollectAny op XlaOp.delete
 
-||| The diagonal of a matrix as a vector. For example, for
-||| ```
-||| x : Tensor [3, 3] S32
-||| x = const [[0, 1, 2],
-|||            [3, 4, 5],
-|||            [6, 7, 8]]
-||| ```
-||| `diag x` is equivalent to `const [0, 4, 8]`.
-export
-diag : Tensor [n, n] dtype -> Tensor [n] dtype
-diag (MkTensor mkOp) = MkTensor $ \builder => do
-  op <- primIO (prim__getMatrixDiagonal !(mkOp builder))
-  onCollectAny op XlaOp.delete
-
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
 public export
