@@ -885,12 +885,6 @@ test_cholesky = do
                 ]
     assertAll "cholesky" $ sufficientlyEqEach {tol=0.000001} (cholesky x) expected
 
-test_det : Tensor [3, 3] F64 -> Tensor [] F64
-test_det x = det x
-
-test_det_with_leading : Tensor [2, 3, 3] F64 -> Tensor [2] F64
-test_det_with_leading x = det x
-
 export
 test_triangularsolve : IO ()
 test_triangularsolve = do

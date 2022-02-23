@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Main
 
+import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestUtil
 import Unit.TestXLA
@@ -25,6 +26,8 @@ main : IO ()
 main = do
     test_sufficientlyEq
     test_sufficientlyEqEach
+
+    test_gaussian_pdf
 
     test_const_eval
     test_toString

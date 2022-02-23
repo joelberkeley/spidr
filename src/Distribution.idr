@@ -76,17 +76,11 @@ Distribution Gaussian where
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =
-    let diff : Tensor [S d, 1] F64
-        diff = x - mean
-        
-        cov : Tensor [S d, S d] F64 := squeeze cov
-
-        exponent : Tensor [] F64
-        exponent = - squeeze (diff.T @@ cov @@ diff) / (const 2.0)
-
-        denominator : Tensor [] F64
-        denominator = (const $ 2 * pi) ^# (const $ cast (S d) / 2.0) * (det cov) ^# const 0.5
-
-     in (expEach exponent) / denominator
+    let chol_cov = cholesky (squeeze {to=[S d, S d]} cov)
+        tri = chol_cov \\ (squeeze (x - mean))
+        exponent = - tri @@ tri / const 2.0
+        cov_sqrt_det = reduce @{Prod} 0 (diag chol_cov)
+        denominator = const (2 * pi) ^# (const $ cast (S d) / 2.0) * cov_sqrt_det
+     in expEach exponent / denominator
 
   cdf (MkGaussian mean cov) x = ?cdf_rhs

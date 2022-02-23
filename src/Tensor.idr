@@ -28,6 +28,7 @@ import Error
 import public Primitive
 import public Types
 import public Util
+import XLA.Client.Lib.LuDecomposition
 import XLA.Client.Lib.Matrix
 import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
@@ -285,6 +286,20 @@ identity : (Primitive.Num dtype, Primitive dtype) => {n : _} -> Tensor [n, n] dt
 identity = MkTensor $ \builder => do
   let n = cast n
   op <- primIO $ prim__identityMatrix builder (xlaIdentifier {dtype}) n n
+  onCollectAny op XlaOp.delete
+
+||| The diagonal of a matrix as a vector. For example, for
+||| ```
+||| x : Tensor [3, 3] S32
+||| x = const [[0, 1, 2],
+|||            [3, 4, 5],
+|||            [6, 7, 8]]
+||| ```
+||| `diag x` is equivalent to `const [0, 4, 8]`.
+export
+diag : Tensor [n, n] dtype -> Tensor [n] dtype
+diag (MkTensor mkOp) = MkTensor $ \builder => do
+  op <- primIO (prim__getMatrixDiagonal !(mkOp builder))
   onCollectAny op XlaOp.delete
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
@@ -811,22 +826,13 @@ namespace Monoid
 
 ---------------------------- other ----------------------------------
 
-||| Cholesky decomposition. Computes the lower triangular matrix `L` from `X` s.t. `X = L @@ L.T`.
+||| Cholesky decomposition. Computes the lower triangular matrix `L` from the symmetric, positive
+||| semi-definite matrix `X` s.t. `X = L @@ L.T`.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 cholesky (MkTensor mkOp) = MkTensor $ \builder => do
   res <- primIO $ prim__cholesky !(mkOp builder) 1
   onCollectAny res XlaOp.delete
-
-||| The determinant of a tensor (with respect to the last two axes). For example,
-||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
-export
-det : forall shape, dtype . Primitive.Neg dtype => NonEmpty shape => NonEmpty (init shape)
-      => Tensor shape dtype ->
-      let leading = init (init shape)
-          m = last (init shape)
-          n = last shape
-       in {auto 0 isSquare : m = n} -> {auto 0 nonEmpty : IsSucc m} -> Tensor leading dtype
 
 infix 9 \\
 
