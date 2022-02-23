@@ -811,22 +811,13 @@ namespace Monoid
 
 ---------------------------- other ----------------------------------
 
-||| Cholesky decomposition. Computes the lower triangular matrix `L` from `X` s.t. `X = L @@ L.T`.
+||| Cholesky decomposition. Computes the lower triangular matrix `L` from the symmetric, positive
+||| semi-definite matrix `X` s.t. `X = L @@ L.T`.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 cholesky (MkTensor mkOp) = MkTensor $ \builder => do
   res <- primIO $ prim__cholesky !(mkOp builder) 1
   onCollectAny res XlaOp.delete
-
-||| The determinant of a tensor (with respect to the last two axes). For example,
-||| `det $ const [[1, 2], [3, 4]]` is equivalent to `const -2`.
-export
-det : forall shape, dtype . Primitive.Neg dtype => NonEmpty shape => NonEmpty (init shape)
-      => Tensor shape dtype ->
-      let leading = init (init shape)
-          m = last (init shape)
-          n = last shape
-       in {auto 0 isSquare : m = n} -> {auto 0 nonEmpty : IsSucc m} -> Tensor leading dtype
 
 infix 9 \\
 
