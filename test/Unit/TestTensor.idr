@@ -225,6 +225,18 @@ test_concat = do
     assertAll "concat array 1" $ concat 1 l r ==# arr
 
 export
+test_diag : IO ()
+test_diag = do
+    let x = const {shape=[_, _]} {dtype=S32} []
+    assertAll "diag empty" $ diag x ==# const []
+
+    let x = const {shape=[_, _]} {dtype=S32} [[3]]
+    assertAll "diag 1" $ diag x ==# const [3]
+
+    let x = const {shape=[_, _]} {dtype=S32} [[1, 2], [3, 4]]
+    assertAll "diag 2" $ diag x ==# const [1, 4]
+
+export
 test_identity : IO ()
 test_identity = do
     assertAll "identity 0 S32" $ identity ==# const {dtype=S32} []

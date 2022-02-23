@@ -246,6 +246,20 @@ concat axis (MkTensor mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
   res <- primIO $ prim__concatInDim builder ops 2 (cast axis)
   onCollectAny res XlaOp.delete
 
+||| The diagonal of a matrix as a vector. For example, for
+||| ```
+||| x : Tensor [3, 3] S32
+||| x = const [[0, 1, 2],
+|||            [3, 4, 5],
+|||            [6, 7, 8]]
+||| ```
+||| `diag x` is equivalent to `const [0, 4, 8]`.
+export
+diag : Tensor [n, n] dtype -> Tensor [n] dtype
+diag (MkTensor mkOp) = MkTensor $ \builder => do
+  op <- primIO (prim__getMatrixDiagonal !(mkOp builder))
+  onCollectAny op XlaOp.delete
+
 ||| Tranpose a matrix. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export
