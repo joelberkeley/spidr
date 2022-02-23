@@ -77,7 +77,7 @@ export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =
     let chol_cov = cholesky (squeeze {to=[S d, S d]} cov)
-        tri = chol_cov \\ (squeeze (x - mean))
+        tri = chol_cov \\ squeeze (x - mean)
         exponent = - tri @@ tri / const 2.0
         cov_sqrt_det = reduce @{Prod} 0 (diag chol_cov)
         denominator = const (2 * pi) ^# (const $ cast (S d) / 2.0) * cov_sqrt_det
