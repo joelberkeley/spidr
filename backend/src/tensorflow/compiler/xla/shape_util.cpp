@@ -20,13 +20,13 @@ limitations under the License.
 
 extern "C" {
     Shape* MakeShape(int primitive_type, int* shape, int rank) {
-        xla::int64 shape64[rank];
+        int64_t shape64[rank];
         std::copy(shape, shape + rank, shape64);
 
         xla::Shape* xla_shape = new xla::Shape();
         *xla_shape = xla::ShapeUtil::MakeShape(
             (xla::PrimitiveType) primitive_type,
-            absl::Span<const xla::int64>(shape64, rank)
+            absl::Span<const int64_t>(shape64, rank)
         );
         return reinterpret_cast<Shape*>(xla_shape);
     }

@@ -33,19 +33,19 @@ extern "C" {
 template <typename NativeT>
 NativeT Literal_Get(Literal& lit, int* indices) {
     xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
-    xla::int64 rank = lit_.shape().rank();
-    xla::int64 multi_index[rank];
+    int64_t rank = lit_.shape().rank();
+    int64_t multi_index[rank];
     std::copy(indices, indices + rank, multi_index);
-    return lit_.Get<NativeT>(absl::Span<const xla::int64>(multi_index, rank));
+    return lit_.Get<NativeT>(absl::Span<const int64_t>(multi_index, rank));
 };
 
 template <typename NativeT>
 void Literal_Set(Literal& lit, int* indices, NativeT value) {
     xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
-    xla::int64 rank = lit_.shape().rank();
-    xla::int64 multi_index[rank];
+    int64_t rank = lit_.shape().rank();
+    int64_t multi_index[rank];
     std::copy(indices, indices + rank, multi_index);
-    lit_.Set<NativeT>(absl::Span<const xla::int64>(multi_index, rank), value);
+    lit_.Set<NativeT>(absl::Span<const int64_t>(multi_index, rank), value);
 };
 
 extern "C" {

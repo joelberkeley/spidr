@@ -98,25 +98,25 @@ extern "C" {
 
     XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len) {
         xla::XlaOp s_ = reinterpret_cast<xla::XlaOp&>(s);
-        xla::int64 bcs64[len];
+        int64_t bcs64[len];
         std::copy(broadcast_sizes, broadcast_sizes + len, bcs64);
-        xla::XlaOp res = Broadcast(s_, absl::Span<const xla::int64>(bcs64, len));
+        xla::XlaOp res = Broadcast(s_, absl::Span<const int64_t>(bcs64, len));
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
     XlaOp* BroadcastInDim(
         XlaOp& s, int* out_dim_size, int ods_len, int* broadcast_dimensions, int bcd_len
     ) {
-        xla::int64 ods64[ods_len];
+        int64_t ods64[ods_len];
         std::copy(out_dim_size, out_dim_size + ods_len, ods64);
 
-        xla::int64 bcd64[bcd_len];
+        int64_t bcd64[bcd_len];
         std::copy(broadcast_dimensions, broadcast_dimensions + bcd_len, bcd64);
 
         xla::XlaOp res = BroadcastInDim(
             reinterpret_cast<xla::XlaOp&>(s),
-            absl::Span<const xla::int64>(ods64, ods_len),
-            absl::Span<const xla::int64>(bcd64, bcd_len)
+            absl::Span<const int64_t>(ods64, ods_len),
+            absl::Span<const int64_t>(bcd64, bcd_len)
         );
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
@@ -126,16 +126,16 @@ extern "C" {
     ) {
         auto operand_ = reinterpret_cast<xla::XlaOp&>(operand);
 
-        xla::int64 dimensions64[dimensions_len];
+        int64_t dimensions64[dimensions_len];
         std::copy(dimensions, dimensions + dimensions_len, dimensions64);
 
-        xla::int64 new_sizes64[new_sizes_len];
+        int64_t new_sizes64[new_sizes_len];
         std::copy(new_sizes, new_sizes + new_sizes_len, new_sizes64);
 
         xla::XlaOp res = xla::Reshape(
             operand_,
-            absl::Span<const xla::int64>(dimensions64, dimensions_len),
-            absl::Span<const xla::int64>(new_sizes64, new_sizes_len)
+            absl::Span<const int64_t>(dimensions64, dimensions_len),
+            absl::Span<const int64_t>(new_sizes64, new_sizes_len)
         );
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
@@ -152,20 +152,20 @@ extern "C" {
     ) {
         auto operand_ = reinterpret_cast<xla::XlaOp&>(operand);
 
-        xla::int64 start_indices64[start_indices_len];
+        int64_t start_indices64[start_indices_len];
         std::copy(start_indices, start_indices + start_indices_len, start_indices64);
 
-        xla::int64 limit_indices64[limit_indices_len];
+        int64_t limit_indices64[limit_indices_len];
         std::copy(limit_indices, limit_indices + limit_indices_len, limit_indices64);
 
-        xla::int64 strides64[strides_len];
+        int64_t strides64[strides_len];
         std::copy(strides, strides + strides_len, strides64);
 
         xla::XlaOp res = xla::Slice(
             operand_,
-            absl::Span<const xla::int64>(start_indices64, start_indices_len),
-            absl::Span<const xla::int64>(limit_indices64, limit_indices_len),
-            absl::Span<const xla::int64>(strides64, strides_len)
+            absl::Span<const int64_t>(start_indices64, start_indices_len),
+            absl::Span<const int64_t>(limit_indices64, limit_indices_len),
+            absl::Span<const int64_t>(strides64, strides_len)
         );
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
@@ -176,7 +176,7 @@ extern "C" {
         auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
 
-        xla::XlaOp res = xla::ConcatInDim(builder_, operands_span, (xla::int64) dimension);
+        xla::XlaOp res = xla::ConcatInDim(builder_, operands_span, (int64_t) dimension);
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
@@ -189,7 +189,7 @@ XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {
 
 XlaOp* binOp(
     std::function<xla::XlaOp(
-        xla::XlaOp, xla::XlaOp, absl::Span<const xla::int64> broadcast_dimensions
+        xla::XlaOp, xla::XlaOp, absl::Span<const int64_t> broadcast_dimensions
     )> op,
     XlaOp& lhs,
     XlaOp& rhs
@@ -270,7 +270,7 @@ extern "C" {
         int* dimensions_to_reduce,
         int dimensions_to_reduce_len
     ) {
-        xla::int64 dimensions_to_reduce64[dimensions_to_reduce_len];
+        int64_t dimensions_to_reduce64[dimensions_to_reduce_len];
         std::copy(
             dimensions_to_reduce,
             dimensions_to_reduce + dimensions_to_reduce_len,
@@ -281,7 +281,7 @@ extern "C" {
             reinterpret_cast<xla::XlaOp&>(operand),
             reinterpret_cast<xla::XlaOp&>(init_value),
             reinterpret_cast<const xla::XlaComputation&>(computation),
-            absl::Span<const xla::int64>(dimensions_to_reduce64, dimensions_to_reduce_len)
+            absl::Span<const int64_t>(dimensions_to_reduce64, dimensions_to_reduce_len)
         );
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
@@ -303,9 +303,9 @@ extern "C" {
 
     XlaOp* Transpose(XlaOp& operand, int* permutation, int rank) {
         auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
-        xla::int64 permutation64[rank];
+        int64_t permutation64[rank];
         std::copy(permutation, permutation + rank, permutation64);
-        auto permutation_span = absl::Span<const xla::int64>(permutation64, rank);
+        auto permutation_span = absl::Span<const int64_t>(permutation64, rank);
 
         xla::XlaOp res = xla::Transpose(operand_, permutation_span);
 
@@ -327,11 +327,11 @@ extern "C" {
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
         xla::XlaOp* static_operands_ = reinterpret_cast<xla::XlaOp*>(static_operands);
 
-        xla::int64 dimensions64[dimensions_len];
+        int64_t dimensions64[dimensions_len];
         std::copy(dimensions, dimensions + dimensions_len, dimensions64);
 
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
-        auto dimensions_span = absl::Span<const xla::int64>(dimensions64, dimensions_len);
+        auto dimensions_span = absl::Span<const int64_t>(dimensions64, dimensions_len);
         auto static_operands_span = absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
 
         xla::XlaOp res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
