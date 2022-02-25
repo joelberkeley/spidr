@@ -21,7 +21,7 @@ extern "C" {
     XlaOp* IdentityMatrix(XlaBuilder* builder, int type, int m, int n) {
         auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         xla::XlaOp res = xla::IdentityMatrix(
-            builder_, (xla::PrimitiveType) type, (xla::int64) m, (xla::int64) n
+            builder_, (xla::PrimitiveType) type, (int64_t) m, (int64_t) n
         );
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
