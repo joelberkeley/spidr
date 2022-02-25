@@ -25,7 +25,7 @@ jobs:
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
-        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.2.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
+        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
         sudo apt install -y apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
