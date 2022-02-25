@@ -551,282 +551,284 @@ namespace S32
         f_tensor (const l) (const r) ==# const {shape=[]} {dtype=S32} (f_native l r)
 
 namespace F64
-    export
-    testElementwiseBinary : String -> (Double -> Double -> Double)
-        -> (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) -> IO ()
-    testElementwiseBinary name f_native f_tensor = do
-        let x = [[3, 4, -5], [0, 0.3, 0]]
-            y = [[1, -2.3, 0.2], [0.1, 0, 0]]
-            expected = const {shape=[2, 3]} {dtype=F64} $ [
-                    [f_native 3 1, f_native 4 (-2.3), f_native (-5) 0.2],
-                    [f_native 0 0.1, f_native 0.3 0, f_native 0 0]
-                ]
-        assertAll (name ++ " for F64 array") $
-            sufficientlyEqEach (f_tensor (const x) (const y)) expected
+  export
+  testElementwiseBinary : String -> (Double -> Double -> Double)
+    -> (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) -> IO ()
+  testElementwiseBinary name f_native f_tensor = do
+    let x = [[3, 4, -5], [0, 0.3, 0]]
+        y = [[1, -2.3, 0.2], [0.1, 0, 0]]
+        expected = const {shape=[2, 3]} {dtype=F64} $ [
+          [f_native 3 1, f_native 4 (-2.3), f_native (-5) 0.2],
+          [f_native 0 0.1, f_native 0.3 0, f_native 0 0]
+        ]
+    assertAll (name ++ " for F64 array") $
+      sufficientlyEqEach (f_tensor (const x) (const y)) expected
 
-        sequence_ $ do
-            l <- doubles
-            r <- doubles
-            pure $ assertAll (name ++ " for F64 scalar " ++ show l ++ " " ++ show r) $
-                sufficientlyEqEach (f_tensor (const l) (const r)) $
-                    const {shape=[]} {dtype=F64} (f_native l r)
+    sequence_ $ do
+      l <- doubles
+      r <- doubles
+      pure $ assertAll (name ++ " for F64 scalar " ++ show l ++ " " ++ show r) $
+        sufficientlyEqEach (f_tensor (const l) (const r)) $
+          const {shape=[]} {dtype=F64} (f_native l r)
 
 namespace Vector
-    export
-    test_dot : IO ()
-    test_dot = do
-        let l = const {shape=[3]} {dtype=S32} [-2, 0, 1]
-            r = const {shape=[3]} {dtype=S32} [3, 1, 2]
-        assertAll "vector dot" $ l @@ r ==# const (-4)
+  export
+  test_dot : IO ()
+  test_dot = do
+    let l = const {shape=[3]} {dtype=S32} [-2, 0, 1]
+        r = const {shape=[3]} {dtype=S32} [3, 1, 2]
+    assertAll "vector dot" $ l @@ r ==# const (-4)
 
 namespace Matrix
-    export
-    test_dot : IO ()
-    test_dot = do
-        let l = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
-            r = const {shape=[3]} {dtype=S32} [3, 3, -1]
-        assertAll "matrix dot vector" $ l @@ r ==# const [-7, 8]
+  export
+  test_dot : IO ()
+  test_dot = do
+    let l = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+        r = const {shape=[3]} {dtype=S32} [3, 3, -1]
+    assertAll "matrix dot vector" $ l @@ r ==# const [-7, 8]
 
-        let l = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
-            r = const {shape=[3, 2]} {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
-        assertAll "matrix dot matrix" $ l @@ r ==# const [[ -7,  -2], [  8, -11]]
+    let l = const {shape=[2, 3]} {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+        r = const {shape=[3, 2]} {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
+    assertAll "matrix dot matrix" $ l @@ r ==# const [[ -7,  -2], [  8, -11]]
 
 export
 test_add : IO ()
 test_add = do
-    S32.testElementwiseBinary "(+)" (+) (+)
-    F64.testElementwiseBinary "(+)" (+) (+)
+  S32.testElementwiseBinary "(+)" (+) (+)
+  F64.testElementwiseBinary "(+)" (+) (+)
 
 export
 test_Sum : IO ()
 test_Sum = do
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-    assertAll "Sum neutral is neutral right" $ (<+>) @{Sum} x (neutral @{Sum}) ==# x
-    assertAll "Sum neutral is neutral left" $ (<+>) @{Sum} (neutral @{Sum}) x ==# x
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+  assertAll "Sum neutral is neutral right" $ (<+>) @{Sum} x (neutral @{Sum}) ==# x
+  assertAll "Sum neutral is neutral left" $ (<+>) @{Sum} (neutral @{Sum}) x ==# x
 
 export
 test_subtract : IO ()
 test_subtract = do
-    let l = const [[1, 15, 5], [-1, 7, 6]]
-        r = const [[11, 5, 7], [-3, -4, 0]]
-    assertAll "- for S32 matrix" $
-        (l - r) ==# const {shape=[_, _]} {dtype=S32} [[-10, 10, -2], [2, 11, 6]]
+  let l = const [[1, 15, 5], [-1, 7, 6]]
+      r = const [[11, 5, 7], [-3, -4, 0]]
+  assertAll "- for S32 matrix" $
+    (l - r) ==# const {shape=[_, _]} {dtype=S32} [[-10, 10, -2], [2, 11, 6]]
 
-    let l = const [1.8, 1.3, 4.0]
-        r = const [-3.3, 0.0, 0.3]
-    diff <- eval {shape=[3]} {dtype=F64} (l - r)
-    sequence_ (zipWith ((assert "- for F64 matrix") .: sufficientlyEq) diff [5.1, 1.3, 3.7])
+  let l = const [1.8, 1.3, 4.0]
+      r = const [-3.3, 0.0, 0.3]
+  diff <- eval {shape=[3]} {dtype=F64} (l - r)
+  sequence_ (zipWith ((assert "- for F64 matrix") .: sufficientlyEq) diff [5.1, 1.3, 3.7])
 
-    sequence_ $ do
-        l <- ints
-        r <- ints
-        pure $ assertAll "- for S32 scalar" $ (const l - const r) ==# const {shape=[]} {dtype=S32} (l - r)
+  sequence_ $ do
+    l <- ints
+    r <- ints
+    pure $ assertAll "- for S32 scalar" $
+      (const l - const r) ==# const {shape=[]} {dtype=S32} (l - r)
 
-    sequence_ $ do
-        l <- doubles
-        r <- doubles
-        pure $ do
-            diff <- eval {shape=[]} {dtype=F64} (const l - const r)
-            assert "- for F64 scalar" (sufficientlyEq diff (l - r))
+  sequence_ $ do
+    l <- doubles
+    r <- doubles
+    pure $ do
+      diff <- eval {shape=[]} {dtype=F64} (const l - const r)
+      assert "- for F64 scalar" (sufficientlyEq diff (l - r))
 
 export
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
-    S32.testElementwiseBinary "(*#)" (*) (*#)
-    F64.testElementwiseBinary "(*#)" (*) (*#)
+  S32.testElementwiseBinary "(*#)" (*) (*#)
+  F64.testElementwiseBinary "(*#)" (*) (*#)
 
 export
 test_scalar_multiplication : IO ()
 test_scalar_multiplication = do
-    let r = const {shape=[_, _]} {dtype=S32} [[11, 5, 7], [-3, -4, 0]]
-    sequence_ $ do
-        l <- ints
-        pure $ assertAll "* for int array" $
-            (const l) * r ==# const [[11 * l, 5 * l, 7 * l], [-3 * l, -4 * l, 0]]
+  let r = const {shape=[_, _]} {dtype=S32} [[11, 5, 7], [-3, -4, 0]]
+  sequence_ $ do
+    l <- ints
+    pure $ assertAll "* for int array" $
+      (const l) * r ==# const [[11 * l, 5 * l, 7 * l], [-3 * l, -4 * l, 0]]
 
-    let r = const {shape=[_, _]} {dtype=F64} [[-3.3], [0.0], [0.3]]
-    sequence_ $ do
-        l <- doubles
-        pure $ assertAll "* for double array" $
-            sufficientlyEqEach ((const l) * r) (const [[-3.3 * l], [0.0 * l], [0.3 * l]])
+  let r = const {shape=[_, _]} {dtype=F64} [[-3.3], [0.0], [0.3]]
+  sequence_ $ do
+    l <- doubles
+    pure $ assertAll "* for double array" $
+      sufficientlyEqEach ((const l) * r) (const [[-3.3 * l], [0.0 * l], [0.3 * l]])
 
-    sequence_ $ do
-        l <- ints
-        r <- ints
-        pure $ assertAll "* for int scalar" $
-            (const l * const r) ==# const {shape=[]} {dtype=S32} (l * r)
+  sequence_ $ do
+    l <- ints
+    r <- ints
+    pure $ assertAll "* for int scalar" $
+      (const l * const r) ==# const {shape=[]} {dtype=S32} (l * r)
 
-    sequence_ $ do
-        l <- doubles
-        r <- doubles
-        pure $ assertAll "* for double array" $
-            sufficientlyEqEach (const l * const r) (const {shape=[]} (l * r))
+  sequence_ $ do
+    l <- doubles
+    r <- doubles
+    pure $ assertAll "* for double array" $
+      sufficientlyEqEach (const l * const r) (const {shape=[]} (l * r))
 
 export
 test_Prod : IO ()
 test_Prod = do
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-    assertAll "Prod neutral is neutral right" $ (<+>) @{Prod} x (neutral @{Prod}) ==# x
-    assertAll "Prod neutral is neutral left" $ (<+>) @{Prod} (neutral @{Prod}) x ==# x
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+  assertAll "Prod neutral is neutral right" $ (<+>) @{Prod} x (neutral @{Prod}) ==# x
+  assertAll "Prod neutral is neutral left" $ (<+>) @{Prod} (neutral @{Prod}) x ==# x
 
 assertBooleanOpArray : String -> (Tensor [2, 2] PRED -> Tensor [2, 2] PRED -> Tensor [2, 2] PRED)
                        -> Array [2, 2] Bool -> IO ()
 assertBooleanOpArray name op expected = do
-    let l = const [[True, True], [False, False]]
-        r = const [[True, False], [True, False]]
-    assertAll name $ op l r ==# const expected
+  let l = const [[True, True], [False, False]]
+      r = const [[True, False], [True, False]]
+  assertAll name $ op l r ==# const expected
 
 assertBooleanOpScalar : String -> (Tensor [] PRED -> Tensor [] PRED -> Tensor [] PRED)
                         -> (Bool -> Lazy Bool -> Bool) -> IO ()
 assertBooleanOpScalar name tensor_op bool_op =
-    sequence_ $ do
-        l <- bools
-        r <- bools
-        pure $ assertAll name $ tensor_op (const l) (const r) ==# const (bool_op l r)
+  sequence_ $ do
+    l <- bools
+    r <- bools
+    pure $ assertAll name $ tensor_op (const l) (const r) ==# const (bool_op l r)
 
 export
 test_elementwise_and : IO ()
 test_elementwise_and = do
-    assertBooleanOpArray "&&# for array" (&&#) [[True, False], [False, False]]
-    assertBooleanOpScalar "&&# for scalar" (&&#) (&&)
+  assertBooleanOpArray "&&# for array" (&&#) [[True, False], [False, False]]
+  assertBooleanOpScalar "&&# for scalar" (&&#) (&&)
 
 export
 test_All : IO ()
 test_All = do
-    let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
-    assertAll "All neutral is neutral right" $ (<+>) @{All} x (neutral @{All}) ==# x
-    assertAll "All neutral is neutral left" $ (<+>) @{All} (neutral @{All}) x ==# x
+  let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
+  assertAll "All neutral is neutral right" $ (<+>) @{All} x (neutral @{All}) ==# x
+  assertAll "All neutral is neutral left" $ (<+>) @{All} (neutral @{All}) x ==# x
 
 export
 test_elementwise_or : IO ()
 test_elementwise_or = do
-    assertBooleanOpArray "||# for array" (||#) [[True, True], [True, False]]
-    assertBooleanOpScalar "||# for scalar" (||#) (||)
+  assertBooleanOpArray "||# for array" (||#) [[True, True], [True, False]]
+  assertBooleanOpScalar "||# for scalar" (||#) (||)
 
 export
 test_Any : IO ()
 test_Any = do
-    let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
-    assertAll "Any neutral is neutral right" $ (<+>) @{Any} x (neutral @{Any}) ==# x
-    assertAll "Any neutral is neutral left" $ (<+>) @{Any} (neutral @{Any}) x ==# x
+  let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
+  assertAll "Any neutral is neutral right" $ (<+>) @{Any} x (neutral @{Any}) ==# x
+  assertAll "Any neutral is neutral left" $ (<+>) @{Any} (neutral @{Any}) x ==# x
 
 export
 test_elementwise_notEach : IO ()
 test_elementwise_notEach = do
-    assertAll "notEach for array" $
-        notEach (const [True, False]) ==# const {shape=[_]} [False, True]
-    sequence_ [assertAll "notEach for scalar" $
-               notEach (const x) ==# const {shape=[]} (not x) | x <- bools]
+  assertAll "notEach for array" $
+    notEach (const [True, False]) ==# const {shape=[_]} [False, True]
+  sequence_ [assertAll "notEach for scalar" $
+             notEach (const x) ==# const {shape=[]} (not x) | x <- bools]
 
 export
 test_elementwise_division : IO ()
 test_elementwise_division = do
-    F64.testElementwiseBinary "(/#)" (/) (/#)
+  F64.testElementwiseBinary "(/#)" (/) (/#)
 
 export
 test_scalar_division : IO ()
 test_scalar_division = do
-    let l = const {shape=[_, _]} {dtype=F64} [[-3.3], [0.0], [0.3]]
-    sequence_ $ do
-        r <- doubles
-        pure $ assertAll "/ for array" $
-            sufficientlyEqEach (l / const r) (const [[-3.3 / r], [0.0 / r], [0.3 / r]])
+  let l = const {shape=[_, _]} {dtype=F64} [[-3.3], [0.0], [0.3]]
+  sequence_ $ do
+    r <- doubles
+    pure $ assertAll "/ for array" $
+      sufficientlyEqEach (l / const r) (const [[-3.3 / r], [0.0 / r], [0.3 / r]])
 
-    sequence_ $ do
-        l <- doubles
-        r <- doubles
-        pure $ assertAll "/ for scalar" $
-            sufficientlyEqEach (const l / const r) (const {shape=[]} (l / r))
+  sequence_ $ do
+    l <- doubles
+    r <- doubles
+    pure $ assertAll "/ for scalar" $
+      sufficientlyEqEach (const l / const r) (const {shape=[]} (l / r))
 
 export
 test_pow : IO ()
 test_pow = do
-    let x = [[3, 4, -5], [0, 0.3, 0]]
-        y = [[1, -2.3, 0.2], [0.1, 0, 2]]
-        expected = const {shape=[2, 3]} {dtype=F64} $ [
-                [pow 3 1, pow 4 (-2.3), pow (-5) 0.2],
-                [pow 0 0.1, pow 0.3 0, pow 0 2]
-            ]
-    assertAll ("^# for F64 array") $ sufficientlyEqEach ((const x) ^# (const y)) expected
+  let x = [[3, 4, -5], [0, 0.3, 0]]
+      y = [[1, -2.3, 0.2], [0.1, 0, 2]]
+      expected = const {shape=[2, 3]} {dtype=F64} $ [
+        [pow 3 1, pow 4 (-2.3), pow (-5) 0.2],
+        [pow 0 0.1, pow 0.3 0, pow 0 2]
+      ]
+  assertAll ("^# for F64 array") $ sufficientlyEqEach ((const x) ^# (const y)) expected
 
-    sequence_ $ do
-        l <- the (List Double) [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
-        r <- the (List Double) [-3.4, -1.1, -0.1, 0.1, 1.1, 3.4]
-        pure $ assertAll ("^# for F64 scalar " ++ show l ++ " " ++ show r) $
-            sufficientlyEqEach ((const l) ^# (const r)) $ const {shape=[]} {dtype=F64} (pow l r)
+  sequence_ $ do
+    l <- the (List Double) [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
+    r <- the (List Double) [-3.4, -1.1, -0.1, 0.1, 1.1, 3.4]
+    pure $ assertAll ("^# for F64 scalar " ++ show l ++ " " ++ show r) $
+      sufficientlyEqEach ((const l) ^# (const r)) $ const {shape=[]} {dtype=F64} (pow l r)
 
 export
 test_absEach : IO ()
 test_absEach = do
-    let x = const {shape=[_]} {dtype=S32} [1, 0, -5]
-    assertAll "absEach for int array" $ absEach x ==# const [1, 0, 5]
+  let x = const {shape=[_]} {dtype=S32} [1, 0, -5]
+  assertAll "absEach for int array" $ absEach x ==# const [1, 0, 5]
 
-    let x = const {shape=[3]} {dtype=F64} [1.8, -1.3, 0.0]
-    actual <- eval (absEach x)
-    sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq)
-        actual [1.8, 1.3, 0.0])
+  let x = const {shape=[3]} {dtype=F64} [1.8, -1.3, 0.0]
+  actual <- eval (absEach x)
+  sequence_ (zipWith ((assert "absEach for double array") .: sufficientlyEq)
+    actual [1.8, 1.3, 0.0])
 
-    sequence_ $ do
-        x <- ints
-        pure $ assertAll "absEach for int scalar" $
-            absEach (const {shape=[]} {dtype=S32} x) ==# const (abs x)
+  sequence_ $ do
+    x <- ints
+    pure $ assertAll "absEach for int scalar" $
+      absEach (const {shape=[]} {dtype=S32} x) ==# const (abs x)
 
-    traverse_ (\x => do
-            actual <- eval (absEach $ const {shape=[]} {dtype=F64} x)
-            assert "absEach for double scalar" (sufficientlyEq actual (abs x))
-        ) doubles
+  traverse_ (\x => do
+      actual <- eval (absEach $ const {shape=[]} {dtype=F64} x)
+      assert "absEach for double scalar" (sufficientlyEq actual (abs x))
+    ) doubles
 
 namespace S32
-    export
-    testElementwiseUnary : String -> (Int -> Int)
-        -> (forall shape . Tensor shape S32 -> Tensor shape S32) -> IO ()
-    testElementwiseUnary name f_native f_tensor = do
-        let x = [[1, 15, -5], [-1, 7, 0]]
-            expected = const {shape=[_, _]} {dtype=S32} (map (map f_native) x)
-        assertAll (name ++ " for S32 array") $ f_tensor (const x) ==# expected
+  export
+  testElementwiseUnary : String -> (Int -> Int)
+                         -> (forall shape . Tensor shape S32 -> Tensor shape S32) -> IO ()
+  testElementwiseUnary name f_native f_tensor = do
+    let x = [[1, 15, -5], [-1, 7, 0]]
+        expected = const {shape=[_, _]} {dtype=S32} (map (map f_native) x)
+    assertAll (name ++ " for S32 array") $ f_tensor (const x) ==# expected
 
-        sequence_
-            [assertAll (name ++ " for S32 scalar " ++ show x) $ 
-                (f_tensor $ const x) ==# (const {shape=[]} (f_native x)) | x <- ints]
+  sequence_ [
+      assertAll (name ++ " for S32 scalar " ++ show x) $ 
+      (f_tensor $ const x) ==# (const {shape=[]} (f_native x)) | x <- ints
+    ]
 
 namespace F64
-    export
-    testElementwiseUnary : String -> (Double -> Double)
-        -> (forall shape . Tensor shape F64 -> Tensor shape F64) -> IO ()
-    testElementwiseUnary name f_native f_tensor = do
-        let x = [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
-            expected = const {shape=[_, _]} {dtype=F64} (map (map f_native) x)
-        assertAll (name ++ " for F64 array") $
-            sufficientlyEqEach (f_tensor (const x)) expected
+  export
+  testElementwiseUnary : String -> (Double -> Double)
+                         -> (forall shape . Tensor shape F64 -> Tensor shape F64) -> IO ()
+  testElementwiseUnary name f_native f_tensor = do
+    let x = [[1.3, 1.5, -5.2], [-1.1, 7.0, 0.0]]
+        expected = const {shape=[_, _]} {dtype=F64} (map (map f_native) x)
+    assertAll (name ++ " for F64 array") $ sufficientlyEqEach (f_tensor (const x)) expected
 
-        sequence_
-            [assertAll (name ++ " for F64 scalar " ++ show x) $ sufficientlyEqEach
-                (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles]
+  sequence_ [
+      assertAll (name ++ " for F64 scalar " ++ show x) $ sufficientlyEqEach
+      (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles
+    ]
 
 export
 test_negate : IO ()
 test_negate = do
-    S32.testElementwiseUnary "negate" negate negate
-    F64.testElementwiseUnary "negate" negate negate
+  S32.testElementwiseUnary "negate" negate negate
+  F64.testElementwiseUnary "negate" negate negate
 
 tanh' : Double -> Double
 tanh' x =
-    if x == -inf then -1.0
-    else if x == inf then 1.0
-    else tanh x
+  if x == -inf then -1.0
+  else if x == inf then 1.0
+  else tanh x
 
 export
 testElementwiseUnaryDoubleCases : IO ()
 testElementwiseUnaryDoubleCases = do
-    F64.testElementwiseUnary "expEach" exp expEach
-    F64.testElementwiseUnary "floorEach" floor floorEach
-    F64.testElementwiseUnary "ceilEach" ceiling ceilEach
-    F64.testElementwiseUnary "logEach" log logEach
-    F64.testElementwiseUnary "logisticEach" (\x => 1 / (1 + exp (-x))) logisticEach
-    F64.testElementwiseUnary "sinEach" sin sinEach
-    F64.testElementwiseUnary "cosEach" cos cosEach
-    F64.testElementwiseUnary "tanhEach" tanh' tanhEach
-    F64.testElementwiseUnary "sqrtEach" sqrt sqrtEach
+  F64.testElementwiseUnary "expEach" exp expEach
+  F64.testElementwiseUnary "floorEach" floor floorEach
+  F64.testElementwiseUnary "ceilEach" ceiling ceilEach
+  F64.testElementwiseUnary "logEach" log logEach
+  F64.testElementwiseUnary "logisticEach" (\x => 1 / (1 + exp (-x))) logisticEach
+  F64.testElementwiseUnary "sinEach" sin sinEach
+  F64.testElementwiseUnary "cosEach" cos cosEach
+  F64.testElementwiseUnary "tanhEach" tanh' tanhEach
+  F64.testElementwiseUnary "sqrtEach" sqrt sqrtEach
 
 min' : Double -> Double -> Double
 min' x y = if (x /= x) then x else if (y /= y) then y else min x y
@@ -834,15 +836,15 @@ min' x y = if (x /= x) then x else if (y /= y) then y else min x y
 export
 test_minEach : IO ()
 test_minEach = do
-    S32.testElementwiseBinary "minEach" min minEach
-    F64.testElementwiseBinary "minEach" min' minEach
+  S32.testElementwiseBinary "minEach" min minEach
+  F64.testElementwiseBinary "minEach" min' minEach
 
 export
 test_Min : IO ()
 test_Min = do
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-    assertAll "Min neutral is neutral right" $ (<+>) @{Min} x (neutral @{Min}) ==# x
-    assertAll "Min neutral is neutral left" $ (<+>) @{Min} (neutral @{Min}) x ==# x
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+  assertAll "Min neutral is neutral right" $ (<+>) @{Min} x (neutral @{Min}) ==# x
+  assertAll "Min neutral is neutral left" $ (<+>) @{Min} (neutral @{Min}) x ==# x
 
 max' : Double -> Double -> Double
 max' x y = if (x /= x) then x else if (y /= y) then y else max x y
@@ -850,65 +852,64 @@ max' x y = if (x /= x) then x else if (y /= y) then y else max x y
 export
 test_maxEach : IO ()
 test_maxEach = do
-    S32.testElementwiseBinary "maxEach" max maxEach
-    F64.testElementwiseBinary "maxEach" max' maxEach
+  S32.testElementwiseBinary "maxEach" max maxEach
+  F64.testElementwiseBinary "maxEach" max' maxEach
 
 export
 test_Max : IO ()
 test_Max = do
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-    assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) ==# x
-    assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x ==# x
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
+  assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) ==# x
+  assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x ==# x
 
 export
 test_cholesky : IO ()
 test_cholesky = do
-    let x = const {shape=[_, _]} {dtype=F64} [[1, 0], [2, 0]]
-        expected = const [[nan, nan], [nan, nan]]
-    assertAll "cholesky zero determinant" $ sufficientlyEqEach (cholesky x) expected
+  let x = const {shape=[_, _]} {dtype=F64} [[1, 0], [2, 0]]
+      expected = const [[nan, nan], [nan, nan]]
+  assertAll "cholesky zero determinant" $ sufficientlyEqEach (cholesky x) expected
 
-    -- example generated with tensorflow
-    let x = const {shape=[_, _]} {dtype=F64} [
-                    [ 2.236123  ,  0.70387983,  2.8447943 ],
-                    [ 0.7059226 ,  2.661426  , -0.8714733 ],
-                    [ 1.3730898 ,  1.4064665 ,  2.7474475 ]
-                ]
-        expected = const [
-                    [1.4953672 , 0.0       , 0.0       ],
-                    [0.47207308, 1.5615932 , 0.0       ],
-                    [0.9182292 , 0.6230785 , 1.2312902 ]
-                ]
-    assertAll "cholesky" $ sufficientlyEqEach {tol=0.000001} (cholesky x) expected
+  -- example generated with tensorflow
+  let x = const {shape=[_, _]} {dtype=F64} [
+              [ 2.236123  ,  0.70387983,  2.8447943 ],
+              [ 0.7059226 ,  2.661426  , -0.8714733 ],
+              [ 1.3730898 ,  1.4064665 ,  2.7474475 ]
+            ]
+      expected = const [
+              [1.4953672 , 0.0       , 0.0       ],
+              [0.47207308, 1.5615932 , 0.0       ],
+              [0.9182292 , 0.6230785 , 1.2312902 ]
+            ]
+  assertAll "cholesky" $ sufficientlyEqEach {tol=0.000001} (cholesky x) expected
 
 export
 test_triangularsolve : IO ()
 test_triangularsolve = do
-    let a = const {shape=[_, _]} [
-                [0.8578532 , 0.0       , 0.0       ],
-                [0.2481904 , 0.9885198 , 0.0       ],
-                [0.59390426, 0.14998078, 0.19468737]
+  let a = const {shape=[_, _]} [
+              [0.8578532 , 0.0       , 0.0       ],
+              [0.2481904 , 0.9885198 , 0.0       ],
+              [0.59390426, 0.14998078, 0.19468737]
             ]
-        b = const {shape=[_, _]} [
-                [0.45312142, 0.37276268],
-                [0.9210588 , 0.00647926],
-                [0.7890165 , 0.77121615]
+      b = const {shape=[_, _]} [
+              [0.45312142, 0.37276268],
+              [0.9210588 , 0.00647926],
+              [0.7890165 , 0.77121615]
             ]
-        actual = a \\ b
-        expected = const {shape=[_, _]} [
-                        [ 0.52820396,  0.43452972],
-                        [ 0.79913783, -0.10254406],
-                        [ 1.8257918 ,  2.7147462 ]
-                    ]
-    assertAll #"(\\) result"# $ sufficientlyEqEach {tol=0.000001} actual expected
-    assertAll #"(\\) is invertible with (@@)"# $ sufficientlyEqEach {tol=0.000001} (a @@ actual) b
+      actual = a \\ b
+      expected = const {shape=[_, _]} [
+                    [ 0.52820396,  0.43452972],
+                    [ 0.79913783, -0.10254406],
+                    [ 1.8257918 ,  2.7147462 ]
+                  ]
+  assertAll #"(\\) result"# $ sufficientlyEqEach {tol=0.000001} actual expected
+  assertAll #"(\\) is invertible with (@@)"# $ sufficientlyEqEach {tol=0.000001} (a @@ actual) b
 
-    let a = const {shape=[_, _]} [[1, 2], [3, 4]]
-        a_lt = const {shape=[_, _]} [[1, 0], [3, 4]]
-        b = const {shape=[_]} [5, 6]
-    assertAll #"(\\) upper triangular elements are ignored"# $
-        sufficientlyEqEach (a \\ b) (a_lt \\ b)
+  let a = const {shape=[_, _]} [[1, 2], [3, 4]]
+      a_lt = const {shape=[_, _]} [[1, 0], [3, 4]]
+      b = const {shape=[_]} [5, 6]
+  assertAll #"(\\) upper triangular elements are ignored"# $ sufficientlyEqEach (a \\ b) (a_lt \\ b)
 
 export
 test_trace : IO ()
 test_trace = do
-    assertAll "trace" $ trace (const {dtype=S32} [[-1, 5], [1, 4]]) ==# const 3
+  assertAll "trace" $ trace (const {dtype=S32} [[-1, 5], [1, 4]]) ==# const 3
