@@ -8,7 +8,9 @@ executable = test
 main = Main
 
 modules =
+  Unit.TestDistribution,
   Unit.TestTensor,
+  Unit.TestUtil,
   Unit.TestXLA,
 
   Main,
