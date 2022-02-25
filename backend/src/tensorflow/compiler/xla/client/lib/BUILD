@@ -14,6 +14,8 @@
 
 cc_library(
     name = "lib",
+    linkstatic = True,
+    alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
