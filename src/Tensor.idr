@@ -361,30 +361,30 @@ broadcast xs = case (isElem 0 to, toList from == toList to) of
   (Yes _, False) => empty
   _ => impl [] to xs
 
-    where
-    broadcast : List Nat -> XlaOpFactory -> XlaOpFactory
-    broadcast broadcast_sizes f builder = do
-      broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-      op <- primIO (
-          prim__broadcast !(f builder) broadcast_sizes_ptr (cast $ length broadcast_sizes)
-        )
-      onCollectAny op XlaOp.delete
+  where
+  broadcast : List Nat -> XlaOpFactory -> XlaOpFactory
+  broadcast broadcast_sizes f builder = do
+    broadcast_sizes_ptr <- mkIntArray broadcast_sizes
+    op <- primIO (
+        prim__broadcast !(f builder) broadcast_sizes_ptr (cast $ length broadcast_sizes)
+      )
+    onCollectAny op XlaOp.delete
 
-    broadcastInDim : Shape -> Shape -> XlaOpFactory -> XlaOpFactory
-    broadcastInDim ods bcd f builder = do
-      ods_ptr <- mkIntArray ods
-      bcd_ptr <- mkIntArray bcd
-      let len = cast (length ods)
-      op <- primIO (prim__broadcastInDim !(f builder) ods_ptr len bcd_ptr len)
-      onCollectAny op XlaOp.delete
+  broadcastInDim : Shape -> Shape -> XlaOpFactory -> XlaOpFactory
+  broadcastInDim ods bcd f builder = do
+    ods_ptr <- mkIntArray ods
+    bcd_ptr <- mkIntArray bcd
+    let len = cast (length ods)
+    op <- primIO (prim__broadcastInDim !(f builder) ods_ptr len bcd_ptr len)
+    onCollectAny op XlaOp.delete
 
-    impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
-      -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-    impl to_leading _ {prf=Same} (MkTensor mkOp) =
-      MkTensor $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
-    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
-      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
-    impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
+  impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
+    -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
+  impl to_leading _ {prf=Same} (MkTensor mkOp) =
+    MkTensor $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
+  impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
+    MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
+  impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
@@ -558,12 +558,12 @@ export
 namespace Semigroup
   export
   [All] Semigroup (Tensor shape PRED) where
-      (<+>) = (&&#)
+    (<+>) = (&&#)
 
 namespace Monoid
   export
   [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
-      neutral = fill True
+    neutral = fill True
 
 infixr 4 ||#
 
@@ -577,12 +577,12 @@ export
 namespace Semigroup
   export
   [Any] Semigroup (Tensor shape PRED) where
-      (<+>) = (||#)
+    (<+>) = (||#)
 
 namespace Monoid
   export
   [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
-      neutral = fill False
+    neutral = fill False
 
 ||| Element-wise boolean negation. For example, `notEach (const [True, False])` is equivalent to
 ||| `const [False, True]`.
@@ -644,7 +644,7 @@ export
 namespace Semigroup
   export
   [Sum] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
-      (<+>) = (+)
+    (<+>) = (+)
 
 namespace Monoid
   export
@@ -681,7 +681,7 @@ l * r = broadcast {prf=scalarToAnyOk shape} l *# r
 namespace Semigroup
   export
   [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
-      (<+>) = (*#)
+    (<+>) = (*#)
 
 namespace Monoid
   export

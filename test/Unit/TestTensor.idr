@@ -25,327 +25,327 @@ import Utils
 export
 test_const_eval : IO ()
 test_const_eval = do
-    let x = [[True, False, False], [False, True, False]]
-    x' <- eval $ const {shape=[_, _]} {dtype=PRED} x
-    assert "const eval returns original Bool" (x' == x)
+  let x = [[True, False, False], [False, True, False]]
+  x' <- eval $ const {shape=[_, _]} {dtype=PRED} x
+  assert "const eval returns original Bool" (x' == x)
 
-    let x =  [[1, 15, 5], [-1, 7, 6]]
-    x' <- eval $ const {shape=[_, _]} {dtype=S32} x
-    assert "const eval returns original Int" (x' == x)
+  let x =  [[1, 15, 5], [-1, 7, 6]]
+  x' <- eval $ const {shape=[_, _]} {dtype=S32} x
+  assert "const eval returns original Int" (x' == x)
 
-    let name = "const eval returns original Double"
-    x <- eval $ const {shape=[_, _]} {dtype=F64} [[-1.5], [1.3], [4.3]]
-    assert name $ sufficientlyEq (index 0 (index 0 x)) (-1.5)
-    assert name $ sufficientlyEq (index 0 (index 1 x)) 1.3
-    assert name $ sufficientlyEq (index 0 (index 2 x)) 4.3
+  let name = "const eval returns original Double"
+  x <- eval $ const {shape=[_, _]} {dtype=F64} [[-1.5], [1.3], [4.3]]
+  assert name $ sufficientlyEq (index 0 (index 0 x)) (-1.5)
+  assert name $ sufficientlyEq (index 0 (index 1 x)) 1.3
+  assert name $ sufficientlyEq (index 0 (index 2 x)) 4.3
 
-    let name = "const eval returns original scalar"
-    traverse_ (\x => do x' <- eval {shape=[]} {dtype=PRED} (const x); assert name (x == x')) bools
-    traverse_ (\x => do x' <- eval {shape=[]} {dtype=S32} (const x); assert name (x == x')) ints
-    traverse_ (\x => do
-            x' <- eval {shape=[]} {dtype=F64} (const x)
-            assert name (sufficientlyEq x x')
-        ) doubles
+  let name = "const eval returns original scalar"
+  traverse_ (\x => do x' <- eval {shape=[]} {dtype=PRED} (const x); assert name (x == x')) bools
+  traverse_ (\x => do x' <- eval {shape=[]} {dtype=S32} (const x); assert name (x == x')) ints
+  traverse_ (\x => do
+      x' <- eval {shape=[]} {dtype=F64} (const x)
+      assert name (sufficientlyEq x x')
+    ) doubles
 
 export
 test_toString : IO ()
 test_toString = do
-    str <- toString $ const {shape=[]} {dtype=S32} 1
-    assert "toString for scalar Int" (str == "constant, shape=[], metadata={:0}")
+  str <- toString $ const {shape=[]} {dtype=S32} 1
+  assert "toString for scalar Int" (str == "constant, shape=[], metadata={:0}")
 
-    let x = const {shape=[]} {dtype=S32} 1
-        y = const {shape=[]} {dtype=S32} 2
-    str <- toString (x + y)
-    assert "toString for scalar addition" $ str ==
-        """
-        add, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-          constant, shape=[], metadata={:0}
-        """
+  let x = const {shape=[]} {dtype=S32} 1
+      y = const {shape=[]} {dtype=S32} 2
+  str <- toString (x + y)
+  assert "toString for scalar addition" $ str ==
+    """
+    add, shape=[], metadata={:0}
+      constant, shape=[], metadata={:0}
+      constant, shape=[], metadata={:0}
+    """
 
-    str <- toString $ const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
-    assert "toString for vector F64" $ str == "constant, shape=[3], metadata={:0}"
+  str <- toString $ const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
+  assert "toString for vector F64" $ str == "constant, shape=[3], metadata={:0}"
 
 export
 test_reshape : IO ()
 test_reshape = do
-    let x = const {shape=[]} {dtype=S32} 3
-        expected = const {shape=[1]} {dtype=S32} [3]
-    assertAll "reshape add dims scalar" $ reshape x ==# expected
+  let x = const {shape=[]} {dtype=S32} 3
+      expected = const {shape=[1]} {dtype=S32} [3]
+  assertAll "reshape add dims scalar" $ reshape x ==# expected
 
-    let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
-        flipped = const {shape=[3, 1]} {dtype=S32} [[3], [4], [5]]
-    assertAll "reshape flip dims vector" $ reshape x ==# flipped
+  let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
+      flipped = const {shape=[3, 1]} {dtype=S32} [[3], [4], [5]]
+  assertAll "reshape flip dims vector" $ reshape x ==# flipped
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-        flipped = const {shape=[3, 2]} {dtype=S32} [[3, 4], [5, 6], [7, 8]]
-    assertAll "reshape flip dims array" $ reshape x ==# flipped
+  let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+      flipped = const {shape=[3, 2]} {dtype=S32} [[3, 4], [5, 6], [7, 8]]
+  assertAll "reshape flip dims array" $ reshape x ==# flipped
 
-    let with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-    assertAll "reshape add dimension array" $ reshape x ==# with_extra_dim
+  let with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+  assertAll "reshape add dimension array" $ reshape x ==# with_extra_dim
 
-    let flattened = const {shape=[6]} {dtype=S32} [3, 4, 5, 6, 7, 8]
-    assertAll "reshape as flatten array" $ reshape x ==# flattened
+  let flattened = const {shape=[6]} {dtype=S32} [3, 4, 5, 6, 7, 8]
+  assertAll "reshape as flatten array" $ reshape x ==# flattened
 
 export
 test_slice : IO ()
 test_slice = do
-    let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
-    assertAll "slice vector 0 0" $ slice 0 0 0 x ==# const []
-    assertAll "slice vector 0 1" $ slice 0 0 1 x ==# const [3]
-    assertAll "slice vector 0 2" $ slice 0 0 2 x ==# const [3, 4]
-    assertAll "slice vector 0 3" $ slice 0 0 3 x ==# const [3, 4, 5]
-    assertAll "slice vector 1 1" $ slice 0 1 1 x ==# const []
-    assertAll "slice vector 1 2" $ slice 0 1 2 x ==# const [4]
-    assertAll "slice vector 1 3" $ slice 0 1 3 x ==# const [4, 5]
-    assertAll "slice vector 2 2" $ slice 0 2 2 x ==# const []
-    assertAll "slice vector 2 2" $ slice 0 2 3 x ==# const [5]
+  let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
+  assertAll "slice vector 0 0" $ slice 0 0 0 x ==# const []
+  assertAll "slice vector 0 1" $ slice 0 0 1 x ==# const [3]
+  assertAll "slice vector 0 2" $ slice 0 0 2 x ==# const [3, 4]
+  assertAll "slice vector 0 3" $ slice 0 0 3 x ==# const [3, 4, 5]
+  assertAll "slice vector 1 1" $ slice 0 1 1 x ==# const []
+  assertAll "slice vector 1 2" $ slice 0 1 2 x ==# const [4]
+  assertAll "slice vector 1 3" $ slice 0 1 3 x ==# const [4, 5]
+  assertAll "slice vector 2 2" $ slice 0 2 2 x ==# const []
+  assertAll "slice vector 2 2" $ slice 0 2 3 x ==# const [5]
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-    assertAll "slice array 0 0 1" $ slice 0 0 1 x ==# const [[3, 4, 5]]
-    assertAll "slice array 0 1 1" $ slice 0 1 1 x ==# const []
-    assertAll "slice array 1 2 2" $ slice 1 2 2 x ==# const [[], []]
-    assertAll "slice array 1 1 3" $ slice 1 1 3 x ==# const [[4, 5], [7, 8]]
+  let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  assertAll "slice array 0 0 1" $ slice 0 0 1 x ==# const [[3, 4, 5]]
+  assertAll "slice array 0 1 1" $ slice 0 1 1 x ==# const []
+  assertAll "slice array 1 2 2" $ slice 1 2 2 x ==# const [[], []]
+  assertAll "slice array 1 1 3" $ slice 1 1 3 x ==# const [[4, 5], [7, 8]]
 
 export
 test_index : IO ()
 test_index = do
-    let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
-    assertAll "index vector 0" $ index 0 0 x ==# const 3
-    assertAll "index vector 1" $ index 0 1 x ==# const 4
-    assertAll "index vector 2" $ index 0 2 x ==# const 5
+  let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
+  assertAll "index vector 0" $ index 0 0 x ==# const 3
+  assertAll "index vector 1" $ index 0 1 x ==# const 4
+  assertAll "index vector 2" $ index 0 2 x ==# const 5
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-    assertAll "index array 0 0" $ index 0 0 x ==# const [3, 4, 5]
-    assertAll "index array 0 1" $ index 0 1 x ==# const [6, 7, 8]
-    assertAll "index array 1 0" $ index 1 0 x ==# const [3, 6]
-    assertAll "index array 1 1" $ index 1 1 x ==# const [4, 7]
-    assertAll "index array 1 2" $ index 1 2 x ==# const [5, 8]
+  let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  assertAll "index array 0 0" $ index 0 0 x ==# const [3, 4, 5]
+  assertAll "index array 0 1" $ index 0 1 x ==# const [6, 7, 8]
+  assertAll "index array 1 0" $ index 1 0 x ==# const [3, 6]
+  assertAll "index array 1 1" $ index 1 1 x ==# const [4, 7]
+  assertAll "index array 1 2" $ index 1 2 x ==# const [5, 8]
 
 export
 test_split : IO ()
 test_split = do
-    let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
+  let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
 
-    let (l, r) = split 0 0 vector
-    assertAll "split vector 0 left" $ l ==# const []
-    assertAll "split vector 0 right" $ r ==# const [3, 4, 5]
+  let (l, r) = split 0 0 vector
+  assertAll "split vector 0 left" $ l ==# const []
+  assertAll "split vector 0 right" $ r ==# const [3, 4, 5]
 
-    let (l, r) = split 0 1 vector
-    assertAll "split vector 1 left" $ l ==# const [3]
-    assertAll "split vector 1 right" $ r ==# const [4, 5]
+  let (l, r) = split 0 1 vector
+  assertAll "split vector 1 left" $ l ==# const [3]
+  assertAll "split vector 1 right" $ r ==# const [4, 5]
 
-    let (l, r) = split 0 2 vector
-    assertAll "split vector 2 left" $ l ==# const [3, 4]
-    assertAll "split vector 2 right" $ r ==# const [5]
+  let (l, r) = split 0 2 vector
+  assertAll "split vector 2 left" $ l ==# const [3, 4]
+  assertAll "split vector 2 right" $ r ==# const [5]
 
-    let (l, r) = split 0 3 vector
-    assertAll "split vector 3 left" $ l ==# const [3, 4, 5]
-    assertAll "split vector 3 right" $ r ==# const []
+  let (l, r) = split 0 3 vector
+  assertAll "split vector 3 left" $ l ==# const [3, 4, 5]
+  assertAll "split vector 3 right" $ r ==# const []
 
-    let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
-    let (l, r) = split 0 0 arr
-    assertAll "split array 0 0 left" $ l ==# const []
-    assertAll "split array 0 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
+  let (l, r) = split 0 0 arr
+  assertAll "split array 0 0 left" $ l ==# const []
+  assertAll "split array 0 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
 
-    let (l, r) = split 0 1 arr
-    assertAll "split array 0 1 left" $ l ==# const [[3, 4, 5]]
-    assertAll "split array 0 1 right" $ r ==# const [[6, 7, 8]]
+  let (l, r) = split 0 1 arr
+  assertAll "split array 0 1 left" $ l ==# const [[3, 4, 5]]
+  assertAll "split array 0 1 right" $ r ==# const [[6, 7, 8]]
 
-    let (l, r) = split 0 2 arr
-    assertAll "split array 0 2 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
-    assertAll "split array 0 2 right" $ r ==# const []
+  let (l, r) = split 0 2 arr
+  assertAll "split array 0 2 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
+  assertAll "split array 0 2 right" $ r ==# const []
 
-    let (l, r) = split 1 0 arr
-    assertAll "split array 1 0 left" $ l ==# const [[], []]
-    assertAll "split array 1 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
+  let (l, r) = split 1 0 arr
+  assertAll "split array 1 0 left" $ l ==# const [[], []]
+  assertAll "split array 1 0 right" $ r ==# const [[3, 4, 5], [6, 7, 8]]
 
-    let (l, r) = split 1 1 arr
-    assertAll "split array 1 1 left" $ l ==# const [[3], [6]]
-    assertAll "split array 1 1 right" $ r ==# const [[4, 5], [7, 8]]
+  let (l, r) = split 1 1 arr
+  assertAll "split array 1 1 left" $ l ==# const [[3], [6]]
+  assertAll "split array 1 1 right" $ r ==# const [[4, 5], [7, 8]]
 
-    let (l, r) = split 1 2 arr
-    assertAll "split array 1 2 left" $ l ==# const [[3, 4], [6, 7]]
-    assertAll "split array 1 2 right" $ r ==# const [[5], [8]]
+  let (l, r) = split 1 2 arr
+  assertAll "split array 1 2 left" $ l ==# const [[3, 4], [6, 7]]
+  assertAll "split array 1 2 right" $ r ==# const [[5], [8]]
 
-    let (l, r) = split 1 3 arr
-    assertAll "split array 1 3 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
-    assertAll "split array 1 3 right" $ r ==# const [[], []]
+  let (l, r) = split 1 3 arr
+  assertAll "split array 1 3 left" $ l ==# const [[3, 4, 5], [6, 7, 8]]
+  assertAll "split array 1 3 right" $ r ==# const [[], []]
 
 export
 test_concat : IO ()
 test_concat = do
-    let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
+  let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
 
-    let l = const {shape=[0]} []
-        r = const {shape=[3]} [3, 4, 5]
-    assertAll "concat vector" $ concat 0 l r ==# vector
+  let l = const {shape=[0]} []
+      r = const {shape=[3]} [3, 4, 5]
+  assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let l = const {shape=[1]} [3]
-        r = const {shape=[2]} [4, 5]
-    assertAll "concat vector" $ concat 0 l r ==# vector
+  let l = const {shape=[1]} [3]
+      r = const {shape=[2]} [4, 5]
+  assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let l = const {shape=[2]} [3, 4]
-        r = const {shape=[1]} [5]
-    assertAll "concat vector" $ concat 0 l r ==# vector
+  let l = const {shape=[2]} [3, 4]
+      r = const {shape=[1]} [5]
+  assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let l = const {shape=[3]} [3, 4, 5]
-        r = const {shape=[0]} []
-    assertAll "concat vector" $ concat 0 l r ==# vector
+  let l = const {shape=[3]} [3, 4, 5]
+      r = const {shape=[0]} []
+  assertAll "concat vector" $ concat 0 l r ==# vector
 
-    let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let arr = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
-    let l = const {shape=[0, 3]} []
-        r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
-    assertAll "concat array 0" $ concat 0 l r ==# arr
+  let l = const {shape=[0, 3]} []
+      r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+  assertAll "concat array 0" $ concat 0 l r ==# arr
 
-    let l = const {shape=[1, 3]} [[3, 4, 5]]
-        r = const {shape=[1, 3]} [[6, 7, 8]]
-    assertAll "concat array 0" $ concat 0 l r ==# arr
+  let l = const {shape=[1, 3]} [[3, 4, 5]]
+      r = const {shape=[1, 3]} [[6, 7, 8]]
+  assertAll "concat array 0" $ concat 0 l r ==# arr
 
-    let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
-        r = const {shape=[0, 3]} []
-    assertAll "concat array 0" $ concat 0 l r ==# arr
+  let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+      r = const {shape=[0, 3]} []
+  assertAll "concat array 0" $ concat 0 l r ==# arr
 
-    let l = const {shape=[2, 0]} [[], []]
-        r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
-    assertAll "concat array 1" $ concat 1 l r ==# arr
+  let l = const {shape=[2, 0]} [[], []]
+      r = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+  assertAll "concat array 1" $ concat 1 l r ==# arr
 
-    let l = const {shape=[2, 1]} [[3], [6]]
-        r = const {shape=[2, 2]} [[4, 5], [7, 8]]
-    assertAll "concat array 1" $ concat 1 l r ==# arr
+  let l = const {shape=[2, 1]} [[3], [6]]
+      r = const {shape=[2, 2]} [[4, 5], [7, 8]]
+  assertAll "concat array 1" $ concat 1 l r ==# arr
 
-    let l = const {shape=[2, 2]} [[3, 4], [6, 7]]
-        r = const {shape=[2, 1]} [[5], [8]]
-    assertAll "concat array 1" $ concat 1 l r ==# arr
+  let l = const {shape=[2, 2]} [[3, 4], [6, 7]]
+      r = const {shape=[2, 1]} [[5], [8]]
+  assertAll "concat array 1" $ concat 1 l r ==# arr
 
-    let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
-        r = const {shape=[2, 0]} [[], []]
-    assertAll "concat array 1" $ concat 1 l r ==# arr
+  let l = const {shape=[2, 3]} [[3, 4, 5], [6, 7, 8]]
+      r = const {shape=[2, 0]} [[], []]
+  assertAll "concat array 1" $ concat 1 l r ==# arr
 
 export
 test_diag : IO ()
 test_diag = do
-    let x = const {shape=[_, _]} {dtype=S32} []
-    assertAll "diag empty" $ diag x ==# const []
+  let x = const {shape=[_, _]} {dtype=S32} []
+  assertAll "diag empty" $ diag x ==# const []
 
-    let x = const {shape=[_, _]} {dtype=S32} [[3]]
-    assertAll "diag 1" $ diag x ==# const [3]
+  let x = const {shape=[_, _]} {dtype=S32} [[3]]
+  assertAll "diag 1" $ diag x ==# const [3]
 
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 2], [3, 4]]
-    assertAll "diag 2" $ diag x ==# const [1, 4]
+  let x = const {shape=[_, _]} {dtype=S32} [[1, 2], [3, 4]]
+  assertAll "diag 2" $ diag x ==# const [1, 4]
 
 export
 test_identity : IO ()
 test_identity = do
-    assertAll "identity 0 S32" $ identity ==# const {dtype=S32} []
-    assertAll "identity 1 S32" $ identity ==# const {dtype=S32} [[1]]
-    assertAll "identity 2 S32" $ identity ==# const {dtype=S32} [[1, 0], [0, 1]]
-    assertAll "identity 4 S32" $
-        identity ==# const {dtype=S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  assertAll "identity 0 S32" $ identity ==# const {dtype=S32} []
+  assertAll "identity 1 S32" $ identity ==# const {dtype=S32} [[1]]
+  assertAll "identity 2 S32" $ identity ==# const {dtype=S32} [[1, 0], [0, 1]]
+  assertAll "identity 4 S32" $
+    identity ==# const {dtype=S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
-    assertAll "identity 0 F64" $ identity ==# const {dtype=F64} []
-    assertAll "identity 1 F64" $ identity ==# const {dtype=F64} [[1]]
-    assertAll "identity 2 F64" $ identity ==# const {dtype=F64} [[1, 0], [0, 1]]
-    assertAll "identity 4 F64" $
-        identity ==# const {dtype=F64} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  assertAll "identity 0 F64" $ identity ==# const {dtype=F64} []
+  assertAll "identity 1 F64" $ identity ==# const {dtype=F64} [[1]]
+  assertAll "identity 2 F64" $ identity ==# const {dtype=F64} [[1, 0], [0, 1]]
+  assertAll "identity 4 F64" $
+    identity ==# const {dtype=F64} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
 export
 test_expand : IO ()
 test_expand = do
-    let x = const {shape=[]} {dtype=S32} 3
-        expected = const {shape=[1]} {dtype=S32} [3]
-    assertAll "expand add dims scalar" $ expand 0 x ==# expected
+  let x = const {shape=[]} {dtype=S32} 3
+      expected = const {shape=[1]} {dtype=S32} [3]
+  assertAll "expand add dims scalar" $ expand 0 x ==# expected
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-        with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-    assertAll "expand add dimension array" $ expand 1 x ==# with_extra_dim
+  let x = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+      with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+  assertAll "expand add dimension array" $ expand 1 x ==# with_extra_dim
 
 export
 test_broadcast : IO ()
 test_broadcast = do
-    let x = const {shape=[]} {dtype=S32} 7
-    assertAll "broadcast scalar to itself" $ broadcast {to=[]} x ==# const 7
+  let x = const {shape=[]} {dtype=S32} 7
+  assertAll "broadcast scalar to itself" $ broadcast {to=[]} x ==# const 7
 
-    let x = const {shape=[]} {dtype=S32} 7
-    assertAll "broadcast scalar to rank 1" $ broadcast {to=[1]} x ==# const [7]
+  let x = const {shape=[]} {dtype=S32} 7
+  assertAll "broadcast scalar to rank 1" $ broadcast {to=[1]} x ==# const [7]
 
-    let x = const {shape=[]} {dtype=S32} 7
-    assertAll "broadcast scalar to rank 2" $
-        broadcast {to=[2, 3]} x ==# const [[7, 7, 7], [7, 7, 7]]
+  let x = const {shape=[]} {dtype=S32} 7
+  assertAll "broadcast scalar to rank 2" $
+    broadcast {to=[2, 3]} x ==# const [[7, 7, 7], [7, 7, 7]]
 
-    let x = const {shape=[]} {dtype=S32} 7
-    assertAll "broadcast scalar to rank 3" $ broadcast {to=[1, 1, 1]} x ==# const [[[7]]]
+  let x = const {shape=[]} {dtype=S32} 7
+  assertAll "broadcast scalar to rank 3" $ broadcast {to=[1, 1, 1]} x ==# const [[[7]]]
 
-    let x = const {shape=[1]} {dtype=S32} [7]
-    assertAll "broadcast rank 1 to empty" $ broadcast {to=[0]} x ==# const []
+  let x = const {shape=[1]} {dtype=S32} [7]
+  assertAll "broadcast rank 1 to empty" $ broadcast {to=[0]} x ==# const []
 
-    let x = const {shape=[1]} {dtype=S32} [7]
-    assertAll "broadcast rank 1 to itself" $ broadcast {to=[1]} x ==# const [7]
+  let x = const {shape=[1]} {dtype=S32} [7]
+  assertAll "broadcast rank 1 to itself" $ broadcast {to=[1]} x ==# const [7]
 
-    let x = const {shape=[1]} {dtype=S32} [7]
-    assertAll "broadcast rank 1 to larger rank 1" $ broadcast {to=[3]} x ==# const [7, 7, 7]
+  let x = const {shape=[1]} {dtype=S32} [7]
+  assertAll "broadcast rank 1 to larger rank 1" $ broadcast {to=[3]} x ==# const [7, 7, 7]
 
-    let x = const {shape=[1]} {dtype=S32} [7]
-    assertAll "broadcast rank 1 to rank 2" $
-        broadcast {to=[2, 3]} x ==# const [[7, 7, 7], [7, 7, 7]]
+  let x = const {shape=[1]} {dtype=S32} [7]
+  assertAll "broadcast rank 1 to rank 2" $
+    broadcast {to=[2, 3]} x ==# const [[7, 7, 7], [7, 7, 7]]
 
-    let x = const {shape=[2]} {dtype=S32} [5, 7]
-    assertAll "broadcast rank 1 to empty" $ broadcast {to=[2, 0]} x ==# const [[], []]
+  let x = const {shape=[2]} {dtype=S32} [5, 7]
+  assertAll "broadcast rank 1 to empty" $ broadcast {to=[2, 0]} x ==# const [[], []]
 
-    let x = const {shape=[2]} {dtype=S32} [5, 7]
-    assertAll "broadcast rank 1 to rank 2" $
-        broadcast {to=[3, 2]} x ==# const [[5, 7], [5, 7], [5, 7]]
+  let x = const {shape=[2]} {dtype=S32} [5, 7]
+  assertAll "broadcast rank 1 to rank 2" $
+    broadcast {to=[3, 2]} x ==# const [[5, 7], [5, 7], [5, 7]]
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-    assertAll "broadcast rank 2 to itself" $
-        broadcast {to=[2, 3]} x ==# const [[2, 3, 5], [7, 11, 13]]
+  let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+  assertAll "broadcast rank 2 to itself" $
+    broadcast {to=[2, 3]} x ==# const [[2, 3, 5], [7, 11, 13]]
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-    assertAll "broadcast rank 2 to rank 2 empty" $ broadcast {to=[2, 0]} x ==# const [[], []]
+  let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+  assertAll "broadcast rank 2 to rank 2 empty" $ broadcast {to=[2, 0]} x ==# const [[], []]
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-    assertAll "broadcast rank 2 to empty" $ broadcast {to=[0, 3]} x ==# const []
+  let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+  assertAll "broadcast rank 2 to empty" $ broadcast {to=[0, 3]} x ==# const []
 
-    let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-        expected = const [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
-    assertAll "broadcast rank 2 to rank 3" $ broadcast {to=[2, 2, 3]} x ==# expected
+  let x = const {shape=[2, 3]} {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+      expected = const [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
+  assertAll "broadcast rank 2 to rank 3" $ broadcast {to=[2, 2, 3]} x ==# expected
 
-    let x = const {shape=[2, 1, 3]} {dtype=S32} [[[2, 3, 5]], [[7, 11, 13]]]
-        expected = const [
-            [
-                [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
-                [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
-            ],
-            [
-                [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
-                [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
-            ]
+  let x = const {shape=[2, 1, 3]} {dtype=S32} [[[2, 3, 5]], [[7, 11, 13]]]
+      expected = const [
+        [
+          [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+          [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
+        ],
+        [
+          [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
+          [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
         ]
-    assertAll "broadcast rank 3 to rank 4" $ broadcast {to=[2, 2, 5, 3]} x ==# expected
+      ]
+  assertAll "broadcast rank 3 to rank 4" $ broadcast {to=[2, 2, 5, 3]} x ==# expected
 
 test_dimbroadcastable : List (a ** b ** DimBroadcastable a b)
 test_dimbroadcastable = [
-    (0 ** 0 ** Same),
-    (1 ** 1 ** Same),
-    (3 ** 3 ** Same),
-    (1 ** 0 ** Stack),
-    (1 ** 1 ** Stack),
-    (1 ** 3 ** Stack),
-    (0 ** 0 ** Zero),
-    (1 ** 0 ** Zero),
-    (3 ** 0 ** Zero)
+  (0 ** 0 ** Same),
+  (1 ** 1 ** Same),
+  (3 ** 3 ** Same),
+  (1 ** 0 ** Stack),
+  (1 ** 1 ** Stack),
+  (1 ** 3 ** Stack),
+  (0 ** 0 ** Zero),
+  (1 ** 0 ** Zero),
+  (3 ** 0 ** Zero)
 ]
 
 test_broadcastable : List (from : Shape ** to : Shape ** Broadcastable from to)
 test_broadcastable = [
-    ([] ** [] ** Same),
-    ([3, 2, 5] ** [3, 2, 5] ** Same),
-    ([] ** [3, 2, 5] ** Nest $ Nest $ Nest Same),
-    ([3, 1, 5] ** [3, 7, 5] ** Match $ Match Same),
-    ([3, 2, 5] ** [1, 3, 2, 5] ** Nest Same),
-    ([3, 2, 5] ** [7, 3, 2, 5] ** Nest Same)
+  ([] ** [] ** Same),
+  ([3, 2, 5] ** [3, 2, 5] ** Same),
+  ([] ** [3, 2, 5] ** Nest $ Nest $ Nest Same),
+  ([3, 1, 5] ** [3, 7, 5] ** Match $ Match Same),
+  ([3, 2, 5] ** [1, 3, 2, 5] ** Nest Same),
+  ([3, 2, 5] ** [7, 3, 2, 5] ** Nest Same)
 ]
 
 test_broadcastable_cannot_reduce_rank0 : Broadcastable [5] [] -> Void
@@ -361,19 +361,19 @@ test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
 export
 test_squeeze : IO ()
 test_squeeze = do
-    let x = const {shape=[1, 1]} {dtype=S32} [[3]]
-        squeezed = const {shape=[]} {dtype=S32} 3
-    assertAll "squeeze can flatten only ones" $ squeeze x ==# squeezed
+  let x = const {shape=[1, 1]} {dtype=S32} [[3]]
+      squeezed = const {shape=[]} {dtype=S32} 3
+  assertAll "squeeze can flatten only ones" $ squeeze x ==# squeezed
 
-    let x = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-    assertAll "squeeze can no-op" $ squeeze x ==# x
+  let x = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+  assertAll "squeeze can no-op" $ squeeze x ==# x
 
-    let squeezed = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-    assertAll "squeeze can remove dim from array" $ squeeze x ==# squeezed
+  let squeezed = const {shape=[2, 3]} {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  assertAll "squeeze can remove dim from array" $ squeeze x ==# squeezed
 
-    let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
-    assertAll "squeeze can remove many dims from array" $
-        squeeze x ==# fill {shape=[3, 2, 5]} {dtype=S32} 0
+  let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
+  assertAll "squeeze can remove many dims from array" $
+    squeeze x ==# fill {shape=[3, 2, 5]} {dtype=S32} 0
 
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
@@ -381,179 +381,174 @@ test_squeezable_cannot_remove_non_ones (Nest _) impossible
 export
 test_T : IO ()
 test_T = do
-    assertAll "(.T) for empty array" $ (const {dtype=S32} []).T ==# const []
-    assertAll "(.T) for single element" $ (const {dtype=S32} [[3]]).T ==# const [[3]]
+  assertAll "(.T) for empty array" $ (const {dtype=S32} []).T ==# const []
+  assertAll "(.T) for single element" $ (const {dtype=S32} [[3]]).T ==# const [[3]]
 
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-        expected = const [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
-    assertAll "(.T)" $ x.T ==# expected
+  let x = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+      expected = const [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+  assertAll "(.T)" $ x.T ==# expected
 
 export
 test_map : IO ()
 test_map = do
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-    assertAll "map for S32 array" $ map absEach x ==# absEach x
+  let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
+  assertAll "map for S32 array" $ map absEach x ==# absEach x
 
-    let x = const {shape=[_, _]} {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
-    assertAll "map for F64 array" $
-        map (const 1 /) x ==# const [[1.0, 0.4, inf], [-1.25, -10, 0.2]]
+  let x = const {shape=[_, _]} {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
+  assertAll "map for F64 array" $
+    map (const 1 /) x ==# const [[1.0, 0.4, inf], [-1.25, -10, 0.2]]
 
-    sequence_ $ do
-        x <- ints
-        let x = const {shape=[]} {dtype=S32} x
-        pure $ assertAll "map for S32 scalar" $ map (+ const 1) x ==# x + const 1
+  sequence_ $ do
+    x <- ints
+    let x = const {shape=[]} {dtype=S32} x
+    pure $ assertAll "map for S32 scalar" $ map (+ const 1) x ==# x + const 1
 
-    sequence_ $ do
-        x <- doubles
-        let x = const {shape=[]} {dtype=F64} x
-        pure $ assertAll "map for F64 scalar" $
-            sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
+  sequence_ $ do
+    x <- doubles
+    let x = const {shape=[]} {dtype=F64} x
+    pure $ assertAll "map for F64 scalar" $ sufficientlyEqEach (map (+ const 1.2) x) (x + const 1.2)
 
 export
 test_map2 : IO ()
 test_map2 = do
-    let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-        r = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-    assertAll "map2 for S32 array" $ map2 (+) l r ==# (l + r)
+  let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
+      r = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
+  assertAll "map2 for S32 array" $ map2 (+) l r ==# (l + r)
 
-    let l = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-        r = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    assertAll "map2 for F64 matrix" $ sufficientlyEqEach (map2 (+) l r) (l + r)
+  let l = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+      r = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
+  assertAll "map2 for F64 matrix" $ sufficientlyEqEach (map2 (+) l r) (l + r)
 
-    sequence_ $ do
-        l <- doubles
-        r <- doubles
-        let l' = const {shape=[]} {dtype=F64} l
-            r' = const {shape=[]} {dtype=F64} r
-        pure $ assertAll "map2 for F64 scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
+  sequence_ $ do
+    l <- doubles
+    r <- doubles
+    let l' = const {shape=[]} {dtype=F64} l
+        r' = const {shape=[]} {dtype=F64} r
+    pure $ assertAll "map2 for F64 scalars" $ sufficientlyEqEach (map2 (+) l' r') (l' + r')
 
-    sequence_ $ do
-        l <- doubles
-        let l' = const {shape=[]} {dtype=F64} l
-        pure $ assertAll "map2 for F64 scalars with repeated argument" $
-            sufficientlyEqEach (map2 (+) l' l') (l' + l')
+  sequence_ $ do
+    l <- doubles
+    let l' = const {shape=[]} {dtype=F64} l
+    pure $ assertAll "map2 for F64 scalars with repeated argument" $
+      sufficientlyEqEach (map2 (+) l' l') (l' + l')
 
 export
 test_reduce : IO ()
 test_reduce = do
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-    assertAll "reduce for F64 array" $ sufficientlyEqEach (reduce @{Sum} 1 x) (const [6.6, -6.6])
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+  assertAll "reduce for F64 array" $ sufficientlyEqEach (reduce @{Sum} 1 x) (const [6.6, -6.6])
 
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-    assertAll "reduce for F64 array" $ sufficientlyEqEach (reduce @{Sum} 0 x) (const [0, 0, 0])
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+  assertAll "reduce for F64 array" $ sufficientlyEqEach (reduce @{Sum} 0 x) (const [0, 0, 0])
 
-    let x = const {shape=[_, _]} {dtype=PRED} [[True, False, True], [True, False, False]]
-    assertAll "reduce for PRED array" $ reduce @{All} 1 x ==# const [False, False]
+  let x = const {shape=[_, _]} {dtype=PRED} [[True, False, True], [True, False, False]]
+  assertAll "reduce for PRED array" $ reduce @{All} 1 x ==# const [False, False]
 
 export
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
-    let x = const {shape=[_]} {dtype=PRED} [True, True, False]
-        y = const {shape=[_]} {dtype=PRED} [False, True, False]
-    eq <- eval {shape=[_]} (y ==# x)
-    assert "==# for boolean vector" $ eq == [False, True, True]
+  let x = const {shape=[_]} {dtype=PRED} [True, True, False]
+      y = const {shape=[_]} {dtype=PRED} [False, True, False]
+  eq <- eval {shape=[_]} (y ==# x)
+  assert "==# for boolean vector" $ eq == [False, True, True]
 
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=S32} [[2, 15, 3], [2, 7, 6]]
-    eq <- eval (y ==# x)
-    assert "==# for integer matrix" $ eq == [[False, True, False], [False, True, True]]
+  let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
+      y = const {shape=[_, _]} {dtype=S32} [[2, 15, 3], [2, 7, 6]]
+  eq <- eval (y ==# x)
+  assert "==# for integer matrix" $ eq == [[False, True, False], [False, True, True]]
 
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-        y = const {shape=[_, _]} {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    eq <- eval (y ==# x)
-    assert "==# for double matrix" $ eq == [[False, True, False], [False, True, True]]
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+      y = const {shape=[_, _]} {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
+  eq <- eval (y ==# x)
+  assert "==# for double matrix" $ eq == [[False, True, False], [False, True, True]]
 
-    sequence_ [compareScalars {dtype=PRED} x y | x <- bools, y <- bools]
-    sequence_ [compareScalars {dtype=S32} x y | x <- ints, y <- ints]
-    sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
+  sequence_ [compareScalars {dtype=PRED} x y | x <- bools, y <- bools]
+  sequence_ [compareScalars {dtype=S32} x y | x <- ints, y <- ints]
+  sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
 
-    where
-        compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
-                         => Primitive.Eq dtype => ty -> ty -> IO ()
-        compareScalars l r = do
-            actual <- eval {shape=[]} ((const {dtype} l) ==# (const {dtype} r))
-            assert "==# for scalars" (actual == (l == r))
+  where
+    compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
+                     => Primitive.Eq dtype => ty -> ty -> IO ()
+    compareScalars l r = do
+      actual <- eval {shape=[]} ((const {dtype} l) ==# (const {dtype} r))
+      assert "==# for scalars" (actual == (l == r))
 
 export
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
-    let x = const {shape=[_]} {dtype=PRED} [True, True, False]
-        y = const {shape=[_]} {dtype=PRED} [False, True, False]
-    assertAll "==# for boolean vector" $ (y /=# x) ==# const {shape=[_]} [True, False, False]
+  let x = const {shape=[_]} {dtype=PRED} [True, True, False]
+      y = const {shape=[_]} {dtype=PRED} [False, True, False]
+  assertAll "==# for boolean vector" $ (y /=# x) ==# const {shape=[_]} [True, False, False]
 
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-        y = const {shape=[_, _]} {dtype=S32} [[2, 15, 3], [2, 7, 6]]
-    assertAll "==# for integer matrix" $
-        (x /=# y) ==# const [[True, False, True], [True, False, False]]
+  let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
+      y = const {shape=[_, _]} {dtype=S32} [[2, 15, 3], [2, 7, 6]]
+  assertAll "==# for integer matrix" $
+    (x /=# y) ==# const [[True, False, True], [True, False, False]]
 
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-        y = const {shape=[_, _]} {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-    assertAll "==# for double matrix" $
-        (x /=# y) ==# const [[True, False, True], [True, False, False]]
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
+      y = const {shape=[_, _]} {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
+  assertAll "==# for double matrix" $
+    (x /=# y) ==# const [[True, False, True], [True, False, False]]
 
-    sequence_ [compareScalars {dtype=PRED} l r | l <- bools, r <- bools]
-    sequence_ [compareScalars {dtype=S32} l r | l <- ints, r <- ints]
-    sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
+  sequence_ [compareScalars {dtype=PRED} l r | l <- bools, r <- bools]
+  sequence_ [compareScalars {dtype=S32} l r | l <- ints, r <- ints]
+  sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
-    where
-        compareScalars : Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
-                         => PrimitiveRW dtype ty => ty -> ty -> IO ()
-        compareScalars l r =
-            assertAll "/=# for scalars" $ (const {dtype} l /=# const r) ==# const {shape=[]} (l /= r)
+  where
+    compareScalars : Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
+                     => PrimitiveRW dtype ty => ty -> ty -> IO ()
+    compareScalars l r =
+      assertAll "/=# for scalars" $ (const {dtype} l /=# const r) ==# const {shape=[]} (l /= r)
 
 export
 test_comparison : IO ()
 test_comparison = do
-    let x = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-        y = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-    assertAll "># for S32 matrix" $ (y ># x) ==# const [[False, True, False], [False, True, False]]
-    assertAll "<# for S32 matrix" $ (y <# x) ==# const [[False, False, True], [True, False, False]]
-    assertAll ">=# for S32 matrix" $ (y >=# x) ==# const [[True, True, False], [False, True, True]]
-    assertAll "<=# for S32 matrix" $ (y <=# x) ==# const [[True, False, True], [True, False, True]]
+  let x = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
+      y = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
+  assertAll "># for S32 matrix" $ (y ># x) ==# const [[False, True, False], [False, True, False]]
+  assertAll "<# for S32 matrix" $ (y <# x) ==# const [[False, False, True], [True, False, False]]
+  assertAll ">=# for S32 matrix" $ (y >=# x) ==# const [[True, True, False], [False, True, True]]
+  assertAll "<=# for S32 matrix" $ (y <=# x) ==# const [[True, False, True], [True, False, True]]
 
-    let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-        y = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-    assertAll "># for F64 matrix" $
-        (y ># x) ==# const [[False, True, False], [False, True, False]]
-    assertAll "<# for F64 matrix" $
-        (y <# x) ==# const [[False, False, True], [True, False, False]]
-    assertAll ">=# for F64 matrix" $
-        (y >=# x) ==# const [[True, True, False], [False, True, True]]
-    assertAll "<=# for F64 matrix" $
-        (y <=# x) ==# const [[True, False, True], [True, False, True]]
+  let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
+      y = const {shape=[_, _]} {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
+  assertAll "># for F64 matrix" $ (y ># x) ==# const [[False, True, False], [False, True, False]]
+  assertAll "<# for F64 matrix" $ (y <# x) ==# const [[False, False, True], [True, False, False]]
+  assertAll ">=# for F64 matrix" $ (y >=# x) ==# const [[True, True, False], [False, True, True]]
+  assertAll "<=# for F64 matrix" $ (y <=# x) ==# const [[True, False, True], [True, False, True]]
 
-    sequence_ [compareScalars {dtype=S32} l r | l <- ints, r <- ints]
-    sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
+  sequence_ [compareScalars {dtype=S32} l r | l <- ints, r <- ints]
+  sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
-    where
-        compareScalars : Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
-                         => Primitive dtype => ty -> ty -> IO ()
-        compareScalars l r = do
-            let l' = const {dtype} l
-                r' = const {dtype} r
-            assertAll "># for scalars" $ (l' ># r') ==# const {shape=[]} {dtype=PRED} (l > r)
-            assertAll "<# for scalars" $ (l' <# r') ==# const {shape=[]} {dtype=PRED} (l < r)
-            assertAll ">=# for scalars" $ (l' >=# r') ==# const {shape=[]} {dtype=PRED} (l >= r)
-            assertAll "<=# for scalars" $ (l' <=# r') ==# const {shape=[]} {dtype=PRED} (l <= r)
+  where
+    compareScalars : Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
+                     => Primitive dtype => ty -> ty -> IO ()
+    compareScalars l r = do
+      let l' = const {dtype} l
+          r' = const {dtype} r
+      assertAll "># for scalars" $ (l' ># r') ==# const {shape=[]} {dtype=PRED} (l > r)
+      assertAll "<# for scalars" $ (l' <# r') ==# const {shape=[]} {dtype=PRED} (l < r)
+      assertAll ">=# for scalars" $ (l' >=# r') ==# const {shape=[]} {dtype=PRED} (l >= r)
+      assertAll "<=# for scalars" $ (l' <=# r') ==# const {shape=[]} {dtype=PRED} (l <= r)
 
 namespace S32
-    export
-    testElementwiseBinary : String -> (Int -> Int -> Int)
-        -> (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) -> IO ()
-    testElementwiseBinary name f_native f_tensor = do
-        let x = [[1, 15, 5], [-1, 7, 6]]
-            y = [[11, 5, 7], [-3, -4, 0]]
-            expected = const {shape=[2, 3]} {dtype=S32} $ [
-                    [f_native 1 11, f_native 15 5, f_native 5 7],
-                    [f_native (-1) (-3), f_native 7 (-4), f_native 6 0]
-                ]
-        assertAll (name ++ " for S32 array") $ f_tensor (const x) (const y) ==# expected
+  export
+  testElementwiseBinary : String -> (Int -> Int -> Int)
+      -> (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) -> IO ()
+  testElementwiseBinary name f_native f_tensor = do
+    let x = [[1, 15, 5], [-1, 7, 6]]
+        y = [[11, 5, 7], [-3, -4, 0]]
+        expected = const {shape=[2, 3]} {dtype=S32} $ [
+          [f_native 1 11, f_native 15 5, f_native 5 7],
+          [f_native (-1) (-3), f_native 7 (-4), f_native 6 0]
+        ]
+    assertAll (name ++ " for S32 array") $ f_tensor (const x) (const y) ==# expected
 
-        sequence_ $ do
-            l <- ints
-            r <- ints
-            pure $ assertAll (name ++ " for S32 scalar " ++ show l ++ " " ++ show r) $
-                f_tensor (const l) (const r) ==# const {shape=[]} {dtype=S32} (f_native l r)
+    sequence_ $ do
+      l <- ints
+      r <- ints
+      pure $ assertAll (name ++ " for S32 scalar " ++ show l ++ " " ++ show r) $
+        f_tensor (const l) (const r) ==# const {shape=[]} {dtype=S32} (f_native l r)
 
 namespace F64
     export
