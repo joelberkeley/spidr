@@ -95,6 +95,8 @@ negativeLowerConfidenceBound beta =
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
+|||
+||| **NOTE** This function is not yet implemented.
 export
 expectedConstrainedImprovement : (limit : Tensor [] F64) ->
   Empiric features [1] {marginal=Gaussian} $ (Acquisition 1 features -> Acquisition 1 features)

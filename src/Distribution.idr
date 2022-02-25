@@ -73,6 +73,7 @@ Distribution Gaussian where
   mean (MkGaussian mean' _) = mean'
   cov (MkGaussian _ cov') = cov'
 
+||| **NOTE** `cdf` is not yet implemented for `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =

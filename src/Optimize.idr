@@ -34,6 +34,8 @@ Optimizer a = (a -> m $ Tensor [] F64) -> m a
 ||| Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search
 ||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
 |||
+||| **NOTE** This function is not yet implemented.
+|||
 ||| @density The density of the grid.
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
@@ -51,6 +53,8 @@ gridSearch : (density : Tensor [d] U32) ->
 ||| available at
 |||
 ||| https://www.ams.org/journals/mcom/1980-35-151/S0025-5718-1980-0572855-7/
+|||
+||| **NOTE** This function is not yet implemented.
 |||
 ||| @initial_points The points from which to start optimization.
 export
