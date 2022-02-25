@@ -786,10 +786,10 @@ namespace S32
         expected = const {shape=[_, _]} {dtype=S32} (map (map f_native) x)
     assertAll (name ++ " for S32 array") $ f_tensor (const x) ==# expected
 
-  sequence_ [
-      assertAll (name ++ " for S32 scalar " ++ show x) $ 
-      (f_tensor $ const x) ==# (const {shape=[]} (f_native x)) | x <- ints
-    ]
+    sequence_ [
+        assertAll (name ++ " for S32 scalar " ++ show x) $ 
+        (f_tensor $ const x) ==# (const {shape=[]} (f_native x)) | x <- ints
+      ]
 
 namespace F64
   export
@@ -800,10 +800,10 @@ namespace F64
         expected = const {shape=[_, _]} {dtype=F64} (map (map f_native) x)
     assertAll (name ++ " for F64 array") $ sufficientlyEqEach (f_tensor (const x)) expected
 
-  sequence_ [
-      assertAll (name ++ " for F64 scalar " ++ show x) $ sufficientlyEqEach
-      (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles
-    ]
+    sequence_ [
+        assertAll (name ++ " for F64 scalar " ++ show x) $ sufficientlyEqEach
+        (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles
+      ]
 
 export
 test_negate : IO ()
