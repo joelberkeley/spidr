@@ -31,7 +31,7 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
   ```bash
   idris2 --install spidr.ipkg
   ```
-  You should now be able to import spidr. When running code that depends on spidr, set your `LD_LIBRARY_PATH` to include the location of the libc_xla_extension.so shared library extracted in step 2. Also remember to include `-p spidr` when invoking Idris.
+  You should now be able to import spidr. When running code that depends on spidr, set `LD_LIBRARY_PATH` to include the location of the libc_xla_extension.so shared library located in `c_xla_extension` extracted in step 2. Also remember to include `-p spidr` when invoking Idris.
 
 ## Contact
 
