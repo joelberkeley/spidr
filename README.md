@@ -22,10 +22,11 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
 
 ## Installation
 
-1. Clone or download the spidr source code with the latest version tag with, for example,
+1. Clone or download the spidr source code at tag v0.0.4, for example,
    ```bash
    git clone --depth 1 --branch v0.0.4 https://github.com/joelberkeley/spidr.git
    ```
+   See the git history for installing earlier versions.
 2. [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
 3. In the spidr root directory, install with
    ```bash
