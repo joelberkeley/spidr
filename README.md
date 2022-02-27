@@ -27,7 +27,7 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
   git clone --depth 1 --branch v0.0.4 https://github.com/joelberkeley/spidr.git
   ```
 2. Download the pre-built XLA C interface from the [releases page](https://github.com/joelberkeley/spidr/releases), and extract the archive. The extracted directory can be placed anywhere you wish.
-3. Download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the archive. Place the directory `xla_extension` into the same path as the directory `c_xla_extension` extracted in step 2.
+3. Download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the archive. See the spidr releases page for details of which versions are supported. Place the directory `xla_extension` into the same path as the directory `c_xla_extension` extracted in step 2.
 4. [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
 5. In the spidr root directory, install spidr with
    ```bash
