@@ -22,7 +22,7 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
 
 ## Installation
 
-1. Clone or download the spidr source code with the appropriate version tag. For example, for version 0.0.4
+1. Clone or download the spidr source code with the latest version tag. For example, with
    ```bash
    git clone --depth 1 --branch v0.0.4 https://github.com/joelberkeley/spidr.git
    ```
