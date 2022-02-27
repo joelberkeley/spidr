@@ -117,4 +117,4 @@ fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
       mk_posterior : Tensor [p] F64 -> GaussianProcess features
       mk_posterior params' = posterior (mk_prior params') (squeeze noise) (x, squeeze y)
 
-    in MkConjugateGPR mk_posterior gp_params (squeeze noise)
+   in MkConjugateGPR mk_posterior gp_params (squeeze noise)

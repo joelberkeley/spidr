@@ -221,7 +221,7 @@ at these points. We can then update our historical data and models with these ne
 
 ```idris
 observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
-                               -> (Dataset [2] [1], ConjugateGPRegression [2])
+                            -> (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let new_data = MkDataset point (objective point)
                                   in (dataset <+> new_data, fit model lbfgs new_data)
 ```

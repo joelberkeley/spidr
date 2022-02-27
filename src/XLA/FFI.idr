@@ -22,15 +22,15 @@ import Types
 import Util
 
 namespace Vect
-    export
-    enumerate : Vect n ty -> Vect n (Nat, ty)
-    enumerate xs = rewrite sym $ lengthCorrect xs in
-        zip (range (length xs)) (rewrite lengthCorrect xs in xs)
+  export
+  enumerate : Vect n ty -> Vect n (Nat, ty)
+  enumerate xs = rewrite sym $ lengthCorrect xs in
+    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
 
 namespace List
-    export
-    enumerate : List ty -> List (Nat, ty)
-    enumerate xs = toList (enumerate (fromList xs))
+  export
+  enumerate : List ty -> List (Nat, ty)
+  enumerate xs = toList (enumerate (fromList xs))
 
 export
 free : Ptr t -> IO ()
@@ -55,14 +55,14 @@ export
 prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
 
 namespace GCAnyPtr
-    export
-    %foreign (libxla "set_array_ptr")
-    prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
+  export
+  %foreign (libxla "set_array_ptr")
+  prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
 mkIntArray : Cast ty Int => List ty -> IO (GCPtr Int)
 mkIntArray xs = do
-    ptr <- malloc (cast (length xs) * sizeof_int)
-    let ptr = prim__castPtr ptr
-    traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
-    onCollect ptr free
+  ptr <- malloc (cast (length xs) * sizeof_int)
+  let ptr = prim__castPtr ptr
+  traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
+  onCollect ptr free

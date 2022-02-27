@@ -34,25 +34,25 @@ import Utils
 export
 test_parameter_addition : IO ()
 test_parameter_addition = do
-    builder <- prim__mkXlaBuilder ""
-    xla_shape <- mkShape {dtype=S32} [2, 3]
-    p0 <- onCollectAny (parameter builder 0 xla_shape "") XlaOp.delete
-    p1 <- onCollectAny (parameter builder 1 xla_shape "") XlaOp.delete
-    sum <- primIO (prim__add p0 p1)
-    _ <- onCollectAny sum XlaOp.delete
-    computation <- prim__build builder
+  builder <- prim__mkXlaBuilder ""
+  xla_shape <- mkShape {dtype=S32} [2, 3]
+  p0 <- onCollectAny (parameter builder 0 xla_shape "") XlaOp.delete
+  p1 <- onCollectAny (parameter builder 1 xla_shape "") XlaOp.delete
+  sum <- primIO (prim__add p0 p1)
+  _ <- onCollectAny sum XlaOp.delete
+  computation <- prim__build builder
 
-    p0_lit <- mkLiteral {shape=[2, 3]} {dtype=S32} {ty=Int} [[0, 1, 2], [3, 4, 5]]
-    p1_lit <- mkLiteral {shape=[2, 3]} {dtype=S32} {ty=Int} [[1, 1, 1], [-1, -1, -1]]
+  p0_lit <- mkLiteral {shape=[2, 3]} {dtype=S32} {ty=Int} [[0, 1, 2], [3, 4, 5]]
+  p1_lit <- mkLiteral {shape=[2, 3]} {dtype=S32} {ty=Int} [[1, 1, 1], [-1, -1, -1]]
 
-    client <- primIO prim__localClientOrDie
-    gd0 <- prim__transferToServer client p0_lit
-    gd1 <- prim__transferToServer client p1_lit
-    gd_arr <- malloc (2 * sizeof_voidPtr)
-    primIO (prim__setArrayPtr gd_arr 0 gd0)
-    primIO (prim__setArrayPtr gd_arr 1 gd1)
-    lit <- prim__executeAndTransfer client computation gd_arr 2
-    free gd_arr
+  client <- primIO prim__localClientOrDie
+  gd0 <- prim__transferToServer client p0_lit
+  gd1 <- prim__transferToServer client p1_lit
+  gd_arr <- malloc (2 * sizeof_voidPtr)
+  primIO (prim__setArrayPtr gd_arr 0 gd0)
+  primIO (prim__setArrayPtr gd_arr 1 gd1)
+  lit <- prim__executeAndTransfer client computation gd_arr 2
+  free gd_arr
 
-    let sum = toArray {shape=[2, 3]} {dtype=S32} {ty=Int} lit
-    assert "array addition using Parameter" (sum == [[1, 2, 3], [2, 3, 4]])
+  let sum = toArray {shape=[2, 3]} {dtype=S32} {ty=Int} lit
+  assert "array addition using Parameter" (sum == [[1, 2, 3], [2, 3, 4]])

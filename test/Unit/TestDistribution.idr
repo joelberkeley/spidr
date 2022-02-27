@@ -23,24 +23,24 @@ import Distribution
 export
 test_gaussian_pdf : IO ()
 test_gaussian_pdf = do
-    let
-      assertMono : Double -> Double -> Double -> IO ()
-      assertMono mean cov x =
-        let gaussian = MkGaussian (const {shape=[1, 1]} [[mean]]) (const [[[cov]]])
-            actual = pdf gaussian (const {shape=[1, 1]} [[x]])
-            expected = const (exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov))
-            msg = "Gaussian mean \{show mean} cov \{show cov} x \{show x}"
-         in assertAll msg (sufficientlyEqEach actual expected)
+  let
+    assertMono : Double -> Double -> Double -> IO ()
+    assertMono mean cov x =
+      let gaussian = MkGaussian (const {shape=[1, 1]} [[mean]]) (const [[[cov]]])
+          actual = pdf gaussian (const {shape=[1, 1]} [[x]])
+          expected = const (exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov))
+          msg = "Gaussian mean \{show mean} cov \{show cov} x \{show x}"
+       in assertAll msg (sufficientlyEqEach actual expected)
 
-    sequence_ [assertMono mean cov x |
-          mean <- [-2, -1, 0, 1, 2],
-          cov <- [0.1, 1, 2],
-          x <- the (List _) [-2, -1, 0, 1, 2]
-    ]
+  sequence_ [assertMono mean cov x |
+    mean <- [-2, -1, 0, 1, 2],
+    cov <- [0.1, 1, 2],
+    x <- the (List _) [-2, -1, 0, 1, 2]
+  ]
 
-    let mean = const {shape=[2, 1]} [[-0.2], [0.3]]
-        cov = const [[[1.2], [0.5]], [[0.5], [0.7]]]
-        x = const {shape=[2, 1]} [[1.1], [-0.5]]
-        actual = pdf (MkGaussian mean cov) x
-        expected = const 0.016427375  -- calculated using TensorFlow Probability
-    assertAll "multivariate Gaussian" $ sufficientlyEqEach {tol=0.00000001} actual expected
+  let mean = const {shape=[2, 1]} [[-0.2], [0.3]]
+      cov = const [[[1.2], [0.5]], [[0.5], [0.7]]]
+      x = const {shape=[2, 1]} [[1.1], [-0.5]]
+      actual = pdf (MkGaussian mean cov) x
+      expected = const 0.016427375  -- calculated using TensorFlow Probability
+  assertAll "multivariate Gaussian" $ sufficientlyEqEach {tol=0.00000001} actual expected
