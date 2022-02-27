@@ -14,7 +14,7 @@ This is a tall order, so to keep the workload manageable we may omit conceptuall
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
-spidr has an [online API reference](https://joelberkeley.github.io/spidr), and [tutorials](tutorials). The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
+spidr has an _incomplete_ [online API reference](https://joelberkeley.github.io/spidr), incomplete as the documentation builder is itself a work in progress and omits a number of items, and renders others incorrectly. See the source code for full details). spidr also has [tutorials](tutorials), which are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
 We use [semantic versioning](https://semver.org/).
 
