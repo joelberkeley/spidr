@@ -1,5 +1,7 @@
 # spidr
 
+**Note:** spidr is in early development. Some APIs have no implementation, and there are notable performance limitations with some workflows.
+
 With spidr, we explore what is possible when we bring some of the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning utilities, libraries and frameworks; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
 
   - **robust** by leveraging the dependent types and theorem proving offered by [Idris](https://github.com/idris-lang/Idris2)
@@ -24,7 +26,7 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
   ```bash
   git clone --depth 1 --branch v0.0.4 https://github.com/joelberkeley/spidr.git
   ```
-2. Download the pre-built XLA C interface from the [releases page](https://github.com/joelberkeley/spidr/releases), and extract the archive.
+2. Download the pre-built XLA C interface from the [releases page](https://github.com/joelberkeley/spidr/releases), and extract the archive. The extracted directory can be placed anywhere you wish.
 3. Download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the archive. Place the directory `xla_extension` into the same path as the directory `c_xla_extension` extracted in step 2.
 4. [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use
 5. In the spidr root directory, install spidr with
