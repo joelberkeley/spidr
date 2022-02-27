@@ -30,10 +30,11 @@ I'd like to thank the Idris community for their frequent guidance and Idris itse
 3. Download an XLA binary from [elixir-nx/xla](https://github.com/elixir-nx/xla/releases), and extract the archive. Place the directory `xla_extension` into the same path as the directory `c_xla_extension` extracted in step 2.
 4. [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use
 5. In the spidr root directory, install spidr with
-  ```bash
-  idris2 --install spidr.ipkg
-  ```
-  You should now be able to import spidr. When running code that depends on spidr, set `LD_LIBRARY_PATH` to include the location of the libc_xla_extension.so shared library located in `c_xla_extension` extracted in step 2. Also remember to include `-p spidr` when invoking Idris.
+   ```bash
+   idris2 --install spidr.ipkg
+   ```
+6. When invoking Idris to build your code depending on spidr, either include `-p spidr` on the command line, or list spidr as a dependency in your project's configuration.
+7. When running code that depends on spidr, set `LD_LIBRARY_PATH` to include the location of the libc_xla_extension.so shared library located in `c_xla_extension` extracted in step 2.
 
 ## Contact
 
