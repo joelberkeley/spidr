@@ -826,6 +826,9 @@ namespace Matrix
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
   ||| upper-triangular part are ignored. If `a` is lower-triangular already,
   ||| this is written `a |\ b`.
+  |||
+  ||| The operator is shaped like a lower-triangular matrix to signal that it uses the
+  ||| lower-triangular component of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
   (MkTensor mkOpA) |\ (MkTensor mkOpB) = MkTensor $ \builder => do
@@ -836,6 +839,9 @@ namespace Matrix
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
   ||| lower-triangular part are ignored. If `a` is upper-triangular already, this is written
   ||| `a \| b`.
+  |||
+  ||| The operator is shaped like a upper-triangular matrix to signal that it uses the
+  ||| upper-triangular component of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
   (MkTensor mkOpA) \| (MkTensor mkOpB) = MkTensor $ \builder => do
@@ -847,6 +853,9 @@ namespace Vector
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
   ||| upper-triangular part are ignored. If `a` is lower-triangular already,
   ||| this is written `a |\ b`.
+  |||
+  ||| The operator is shaped like a lower-triangular matrix to signal that it uses the
+  ||| lower-triangular component of its argument. This is in contrast to `(\|)`.
   export
   (|\) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
   a |\ b = squeeze (a |\ (expand 1 b))
@@ -855,6 +864,9 @@ namespace Vector
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
   ||| lower-triangular part are ignored. If `a` is upper-triangular already, this is written
   ||| `a \| b`.
+  |||
+  ||| The operator is shaped like a upper-triangular matrix to signal that it uses the
+  ||| upper-triangular component of its argument. This is in contrast to `(|\)`.
   export
   (\|) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
   a \| b = squeeze (a \| (expand 1 b))
