@@ -41,14 +41,14 @@ posterior :
   -> GaussianProcess features
 posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
   let l = cholesky (prior_kernel x_train x_train + noise * identity)
-      alpha = l.T \\ (l \\ y_train)
+      alpha = l.T \| (l |\ y_train)
 
       posterior_meanf : MeanFunction features
       posterior_meanf x = prior_meanf x + (prior_kernel x x_train) @@ alpha
 
       posterior_kernel : Kernel features
       posterior_kernel x x' = prior_kernel x x' -
-                              (l \\ (prior_kernel x_train x)).T @@ (l \\ (prior_kernel x_train x'))
+                              (l |\ (prior_kernel x_train x)).T @@ (l |\ (prior_kernel x_train x'))
 
    in MkGP posterior_meanf posterior_kernel
 
@@ -59,7 +59,7 @@ log_marginal_likelihood :
   -> Tensor [] F64
 log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + noise * identity)
-      alpha = l.T \\ (l \\ y)
+      alpha = l.T \| (l |\ y)
       log2pi = logEach $ const $ 2.0 * pi
    in - y @@ alpha / const 2.0 - trace (logEach l) - (const $ cast (S s)) * log2pi / const 2.0
 

@@ -819,27 +819,57 @@ cholesky (MkTensor mkOp) = MkTensor $ \builder => do
   res <- primIO $ prim__cholesky !(mkOp builder) 1
   onCollectAny res XlaOp.delete
 
-infix 9 \\
+infix 9 |\, \|
 
 namespace Matrix
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
   ||| upper-triangular part are ignored. If `a` is lower-triangular already,
-  ||| this is written `a \\ b`.
+  ||| this is written `a |\ b`.
+  |||
+  ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (\\) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
-  (MkTensor mkOpA) \\ (MkTensor mkOpB) = MkTensor $ \builder => do
+  (|\) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
+  (MkTensor mkOpA) |\ (MkTensor mkOpB) = MkTensor $ \builder => do
     op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 1 0 1
+    onCollectAny op XlaOp.delete
+
+  ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
+  ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
+  ||| lower-triangular part are ignored. If `a` is upper-triangular already, this is written
+  ||| `a \| b`.
+  |||
+  ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(|\)`.
+  export
+  (\|) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
+  (MkTensor mkOpA) \| (MkTensor mkOpB) = MkTensor $ \builder => do
+    op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 0 0 1
     onCollectAny op XlaOp.delete
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
   ||| upper-triangular part are ignored. If `a` is lower-triangular already,
-  ||| this is written `a \\ b`.
+  ||| this is written `a |\ b`.
+  |||
+  ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (\\) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
-  a \\ b = squeeze (a \\ (expand 1 b))
+  (|\) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
+  a |\ b = squeeze (a |\ (expand 1 b))
+
+  ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
+  ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
+  ||| lower-triangular part are ignored. If `a` is upper-triangular already, this is written
+  ||| `a \| b`.
+  |||
+  ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(|\)`.
+  export
+  (\|) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
+  a \| b = squeeze (a \| (expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
