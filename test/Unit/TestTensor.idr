@@ -895,19 +895,31 @@ test_triangularsolve = do
               [0.9210588 , 0.00647926],
               [0.7890165 , 0.77121615]
             ]
-      actual = a \\ b
+      actual = a |\ b
       expected = const {shape=[_, _]} [
                     [ 0.52820396,  0.43452972],
                     [ 0.79913783, -0.10254406],
                     [ 1.8257918 ,  2.7147462 ]
                   ]
-  assertAll #"(\\) result"# $ sufficientlyEqEach {tol=0.000001} actual expected
-  assertAll #"(\\) is invertible with (@@)"# $ sufficientlyEqEach {tol=0.000001} (a @@ actual) b
+  assertAll #"(|\) result"# $ sufficientlyEqEach {tol=0.000001} actual expected
+  assertAll #"(|\) is invertible with (@@)"# $ sufficientlyEqEach {tol=0.000001} (a @@ actual) b
+
+  let actual = a.T \| b
+      expected = const {shape=[_, _]} [
+                    [-2.3692384 , -2.135952  ],
+                    [ 0.31686386, -0.594465  ],
+                    [ 4.0527363 ,  3.9613056 ]
+                  ]
+  assertAll "(\|) result" $ sufficientlyEqEach {tol=0.000001} actual expected
+  assertAll "(\|) is invertible with (@@)" $ sufficientlyEqEach {tol=0.000001} (a.T @@ actual) b
 
   let a = const {shape=[_, _]} [[1, 2], [3, 4]]
       a_lt = const {shape=[_, _]} [[1, 0], [3, 4]]
       b = const {shape=[_]} [5, 6]
-  assertAll #"(\\) upper triangular elements are ignored"# $ sufficientlyEqEach (a \\ b) (a_lt \\ b)
+  assertAll "(|\) upper triangular elements are ignored" $ sufficientlyEqEach (a |\ b) (a_lt |\ b)
+
+  let a_ut = const {shape=[_, _]} [[1, 2], [0, 4]]
+  assertAll "(\|) lower triangular elements are ignored" $ sufficientlyEqEach (a \| b) (a_ut \| b)
 
 export
 test_trace : IO ()
