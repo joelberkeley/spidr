@@ -827,8 +827,8 @@ namespace Matrix
   ||| upper-triangular part are ignored. If `a` is lower-triangular already,
   ||| this is written `a |\ b`.
   |||
-  ||| The operator is shaped like a lower-triangular matrix to signal that it uses the
-  ||| lower-triangular component of its argument. This is in contrast to `(\|)`.
+  ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
   (MkTensor mkOpA) |\ (MkTensor mkOpB) = MkTensor $ \builder => do
@@ -840,8 +840,8 @@ namespace Matrix
   ||| lower-triangular part are ignored. If `a` is upper-triangular already, this is written
   ||| `a \| b`.
   |||
-  ||| The operator is shaped like a upper-triangular matrix to signal that it uses the
-  ||| upper-triangular component of its argument. This is in contrast to `(|\)`.
+  ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
   (MkTensor mkOpA) \| (MkTensor mkOpB) = MkTensor $ \builder => do
@@ -854,8 +854,8 @@ namespace Vector
   ||| upper-triangular part are ignored. If `a` is lower-triangular already,
   ||| this is written `a |\ b`.
   |||
-  ||| The operator is shaped like a lower-triangular matrix to signal that it uses the
-  ||| lower-triangular component of its argument. This is in contrast to `(\|)`.
+  ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
   a |\ b = squeeze (a |\ (expand 1 b))
@@ -865,8 +865,8 @@ namespace Vector
   ||| lower-triangular part are ignored. If `a` is upper-triangular already, this is written
   ||| `a \| b`.
   |||
-  ||| The operator is shaped like a upper-triangular matrix to signal that it uses the
-  ||| upper-triangular component of its argument. This is in contrast to `(|\)`.
+  ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
+  ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : {m : _} -> Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
   a \| b = squeeze (a \| (expand 1 b))
