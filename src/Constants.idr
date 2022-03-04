@@ -17,6 +17,11 @@ module Constants
 
 import Tensor
 
+||| Infinity.
+export
+inf : Tensor [] F64
+inf = fromDouble (1.0 / 0.0)
+
 export
 pi : Tensor [] F64
 pi = fromDouble pi

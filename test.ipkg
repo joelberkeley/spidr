@@ -16,8 +16,10 @@ executable = test
 main = Main
 
 modules =
+  Unit.BayesianOptimization.TestAcquisition,
   Unit.Model.TestKernel,
   Unit.Util.TestHashable,
+  
   Unit.TestDistribution,
   Unit.TestLiteral,
   Unit.TestTensor,

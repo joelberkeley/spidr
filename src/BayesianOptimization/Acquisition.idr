@@ -15,7 +15,9 @@ limitations under the License.
 --}
 module BayesianOptimization.Acquisition
 
+import Constants
 import public Data.Nat
+import Data.Vect
 import Distribution
 import Literal
 import Tensor
@@ -103,8 +105,17 @@ negativeLowerConfidenceBound beta _ model at =
 ||| complete acquisition function is built from a constraint acquisition function, which quantifies
 ||| whether specified points in the input space satisfy the constraint.
 |||
-||| **NOTE** This function is not yet implemented.
+||| @limit Points at which the constraint acquisition function takes values greater than or equal
+|||   to `limit` are considered to satisfy the constraint.
 export
-expectedConstrainedImprovement :
-  (limit : Tensor [] F64) ->
-  Empiric features [1] {marginal=Gaussian} $ (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement : (limit : Tensor [] F64) -> {features : _} ->
+  Empiric features [1] {marginal=Gaussian} (Acquisition 1 features -> Acquisition 1 features)
+expectedConstrainedImprovement limit (MkDataset {s} qp obs) model acq at =
+  let each_is_feasible = vmap acq (expand 1 qp) >= broadcast limit
+      -- make a github issue to mask out infeasible query points before marginalising the model, so
+      -- as not to marginalise the model at points we know we won't use
+      mean = squeeze $ mean $ marginalise model qp
+      feasible_mean : Tensor [S s] F64 = select each_is_feasible mean (broadcast (-inf))
+      eta = reduce [0] @{Min} feasible_mean
+      any_is_feasible = reduce [0] @{Any} each_is_feasible
+   in cond any_is_feasible (\at => expectedImprovement model eta at * acq at) at acq at

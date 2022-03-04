@@ -580,6 +580,9 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
+export
+vmap : (Tensor s d -> Tensor s' d') -> Tensor (n :: s) d -> Tensor (n :: s') d'
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
