@@ -260,6 +260,15 @@ diag (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO (prim__getMatrixDiagonal !(mkOp builder))
   onCollectAny op XlaOp.delete
 
+public export
+data Triangle = Upper | Lower
+
+export
+triangle : Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
+triangle tri (MkTensor mkOp) = MkTensor $ \builder => do
+  op <- primIO $ prim__triangle !(mkOp builder) tri
+  onCollectAny op XlaOp.delete
+
 ||| Tranpose a matrix. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export
