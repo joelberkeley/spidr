@@ -260,6 +260,30 @@ diag (MkTensor mkOp) = MkTensor $ \builder => do
   op <- primIO (prim__getMatrixDiagonal !(mkOp builder))
   onCollectAny op XlaOp.delete
 
+||| Represents the upper- or lower-trinagular component of a matrix.
+public export
+data Triangle = Upper | Lower
+
+||| Get the upper- or lower-triangular component of a matrix. For example, for
+||| ```
+||| x : Tensor [3, 3] S32
+||| x = const [[1, 2, 3],
+|||            [4, 5, 6],
+|||            [7, 8, 9]]
+||| ```
+||| `triangle Lower x` is equivalent to
+||| ```
+||| x : Tensor [3, 3] S32
+||| x = const [[1, 0, 0],
+|||            [4, 5, 0],
+|||            [7, 8, 9]]
+||| ```
+export
+triangle : Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
+triangle tri (MkTensor mkOp) = MkTensor $ \builder => do
+  op <- primIO $ prim__triangle !(mkOp builder) (case tri of Upper => 0; Lower => 1)
+  onCollectAny op XlaOp.delete
+
 ||| Tranpose a matrix. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
 ||| to `const [[1, 3], [2, 4]]`.
 export

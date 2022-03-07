@@ -37,6 +37,7 @@ main = do
   test_split
   test_concat
   test_diag
+  test_triangle
   test_identity
   test_expand
   test_broadcast

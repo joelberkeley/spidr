@@ -31,4 +31,10 @@ extern "C" {
         xla::XlaOp res = xla::GetMatrixDiagonal(x_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
+
+    XlaOp* Triangle(XlaOp& x, int lower) {
+        auto& x_ = reinterpret_cast<xla::XlaOp&>(x);
+        xla::XlaOp res = xla::Triangle(x_, (bool) lower);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 }
