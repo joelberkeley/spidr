@@ -30,7 +30,7 @@ test_gaussian_pdf = do
           actual = pdf gaussian (const {shape=[1, 1]} [[x]])
           expected = const (exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov))
           msg = "Gaussian mean \{show mean} cov \{show cov} x \{show x}"
-       in assertAll msg (sufficientlyEqEach actual expected)
+       in assertAll msg (sufficientlyEq actual expected)
 
   sequence_ [assertMono mean cov x |
     mean <- [-2, -1, 0, 1, 2],
@@ -43,4 +43,4 @@ test_gaussian_pdf = do
       x = const {shape=[2, 1]} [[1.1], [-0.5]]
       actual = pdf (MkGaussian mean cov) x
       expected = const 0.016427375  -- calculated using TensorFlow Probability
-  assertAll "multivariate Gaussian" $ sufficientlyEqEach {tol=0.00000001} actual expected
+  assertAll "multivariate Gaussian" $ sufficientlyEq {tol=0.00000001} actual expected

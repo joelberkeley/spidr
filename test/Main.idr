@@ -25,7 +25,7 @@ import Utils
 main : IO ()
 main = do
   test_sufficientlyEq
-  test_sufficientlyEqEach
+  test_sufficientlyEq
 
   test_gaussian_pdf
 
@@ -64,13 +64,13 @@ main = do
   test_All
   test_elementwise_or
   test_Any
-  test_elementwise_notEach
-  test_absEach
+  test_elementwise_not
+  test_abs
   test_negate
   testElementwiseUnaryDoubleCases
-  test_minEach
+  test_min
   test_Min
-  test_maxEach
+  test_max
   test_Max
   test_cholesky
   test_triangularsolve
