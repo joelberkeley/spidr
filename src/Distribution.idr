@@ -35,10 +35,8 @@ interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) whe
 
 ||| The variance of a single random variable.
 export
-variance : Distribution dist => dist event 1 -> Tensor (1 :: event) F64
-variance dist =
-  let cov@(MkTensor {shape=(_ :: _ :: event)} _) = cov dist
-   in squeeze {from=(1 :: 1 :: event)} cov
+variance : {event : _} -> Distribution dist => dist event 1 -> Tensor (1 :: event) F64
+variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
@@ -66,7 +64,7 @@ public export
 data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
-  MkGaussian : (mean : Tensor (S d :: event) F64) ->
+  MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) F64) ->
                (cov : Tensor (S d :: S d :: event) F64) ->
                Gaussian event (S d)
 
@@ -78,7 +76,7 @@ Distribution Gaussian where
 ||| **NOTE** `cdf` is not yet implemented for `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
-  pdf (MkGaussian {d} mean@(MkTensor {shape=S d :: _} _) cov) x =
+  pdf (MkGaussian {d} mean cov) x =
     let chol_cov = cholesky (squeeze {to=[S d, S d]} cov)
         tri = chol_cov |\ squeeze (x - mean)
         exponent = - tri @@ tri / const 2.0

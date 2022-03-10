@@ -222,17 +222,18 @@ split : forall shape . (axis, idx : Nat) -> InBounds axis shape
             Tensor (replaceAt axis idx shape) dtype,
             Tensor (replaceAt axis remaining shape) dtype
           )
-split @{_} @{sums} axis idx xs@(MkTensor {shape} _) =
-  let %hint
-      isWithinAxis : LTE idx (index axis shape)
-      isWithinAxis = rewrite sym sums in lteAddRight idx
+split @{_} @{sums} axis idx xs with (xs)
+  _ | MkTensor {shape} _ =
+    let %hint
+        isWithinAxis : LTE idx (index axis shape)
+        isWithinAxis = rewrite sym sums in lteAddRight idx
 
-      sums' : remaining = minus (index axis shape) idx
-      sums' = rewrite sym sums in sym (minusPlus idx)
-   in (
-        rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
-        rewrite sums' in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
-      )
+        sums' : remaining = minus (index axis shape) idx
+        sums' = rewrite sym sums in sym (minusPlus idx)
+    in (
+          rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
+          rewrite sums' in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
+        )
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (const [[1, 2], [3, 4]]) (const [[5, 6]])` and
@@ -380,36 +381,37 @@ empty = MkTensor $ \builder => do
 ||| x = const [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
-broadcast : Primitive dtype => {to : _} -> {auto 0 prf : Broadcastable from to}
+broadcast : Primitive dtype => {to : _} -> {auto prf : Broadcastable from to}
   -> Tensor from dtype -> Tensor to dtype
-broadcast xs@(MkTensor {shape} _) = case (isElem 0 to, toList from == toList to) of
-  (Yes _, False) => empty
-  _ => impl [] to xs
+broadcast xs with (xs)
+  _ | MkTensor {shape=from} _ = case (isElem 0 to, toList from == toList to) of
+    (Yes _, False) => empty
+    _ => impl [] to xs
 
-  where
-  broadcast : List Nat -> XlaOpFactory -> XlaOpFactory
-  broadcast broadcast_sizes f builder = do
-    broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-    op <- primIO (
-        prim__broadcast !(f builder) broadcast_sizes_ptr (cast $ length broadcast_sizes)
-      )
-    onCollectAny op XlaOp.delete
+    where
+    broadcast : List Nat -> XlaOpFactory -> XlaOpFactory
+    broadcast broadcast_sizes f builder = do
+      broadcast_sizes_ptr <- mkIntArray broadcast_sizes
+      op <- primIO (
+          prim__broadcast !(f builder) broadcast_sizes_ptr (cast $ length broadcast_sizes)
+        )
+      onCollectAny op XlaOp.delete
 
-  broadcastInDim : Shape -> Shape -> XlaOpFactory -> XlaOpFactory
-  broadcastInDim ods bcd f builder = do
-    ods_ptr <- mkIntArray ods
-    bcd_ptr <- mkIntArray bcd
-    let len = cast (length ods)
-    op <- primIO (prim__broadcastInDim !(f builder) ods_ptr len bcd_ptr len)
-    onCollectAny op XlaOp.delete
+    broadcastInDim : Shape -> Shape -> XlaOpFactory -> XlaOpFactory
+    broadcastInDim ods bcd f builder = do
+      ods_ptr <- mkIntArray ods
+      bcd_ptr <- mkIntArray bcd
+      let len = cast (length ods)
+      op <- primIO (prim__broadcastInDim !(f builder) ods_ptr len bcd_ptr len)
+      onCollectAny op XlaOp.delete
 
-  impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
-    -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-  impl to_leading _ {prf=Same} (MkTensor mkOp) =
-    MkTensor $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
-  impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
-    MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
-  impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
+    impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
+      -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
+    impl to_leading _ {prf=Same} (MkTensor mkOp) =
+      MkTensor $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
+    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor mkOp) =
+      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
+    impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
@@ -700,7 +702,8 @@ export
 export
 (*) : Primitive dtype => Primitive.Num dtype =>
       Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
-l * r@(MkTensor {shape} _) = broadcast {prf=scalarToAnyOk shape} l *# r
+l * r with (r)
+  _ | MkTensor {shape} _ = broadcast {prf=scalarToAnyOk shape} l *# r
 
 namespace Semigroup
   export
@@ -724,7 +727,8 @@ export
 export
 (/) : Primitive dtype => Primitive.Fractional dtype
       => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
-l@(MkTensor {shape} _) / r = l /# broadcast {prf=scalarToAnyOk shape} r
+l / r with (l)
+  _ | MkTensor {shape} _ = l /# broadcast {prf=scalarToAnyOk shape} r
 
 infixr 9 ^#
 
@@ -882,7 +886,8 @@ namespace Vector
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
-  a |\ b@(MkTensor {shape=[m]} _) = squeeze (a |\ (expand 1 b))
+  a |\ b with (b)
+    _ | MkTensor {shape=[m]} _ = squeeze (a |\ (expand 1 b))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -893,11 +898,13 @@ namespace Vector
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] dtype -> Tensor [m] dtype -> Tensor [m] dtype
-  a \| b@(MkTensor {shape=[m]} _) = squeeze (a \| (expand 1 b))
+  a \| b with (b)
+    _ | MkTensor {shape=[m]} _ = squeeze (a \| (expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
 export
 trace : (Primitive.Num dtype, Prelude.Num a) => PrimitiveRW dtype a
         => Tensor [S n, S n] dtype -> Tensor [] dtype
-trace x@(MkTensor {shape=[S n, S n]} _) = reduce @{Sum} 0 (reduce @{Sum} 1 (x *# identity))
+trace x with (x)
+  _ | MkTensor {shape=[S n, S n]} _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x *# identity))
