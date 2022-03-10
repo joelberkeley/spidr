@@ -203,7 +203,7 @@ export
 index : (axis, idx : Nat) -> InBounds axis shape => idx `LT` index axis shape
         => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
 index axis idx (MkTensor {shape} mkOp) =
-  let MkTensor mkSliced =
+  let MkTensor mkSliced : Tensor _ dtype :=
         slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) (MkTensor {shape} mkOp)
    in MkTensor $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
