@@ -608,7 +608,7 @@ export
 not : Tensor shape PRED -> Tensor shape PRED
 not = unaryOp prim__not
 
--- see https://www.python.org/dev/peps/pep-0465/precedence-and-associativity
+-- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 
 namespace Vector
