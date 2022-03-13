@@ -722,7 +722,7 @@ l / r with (l)
 
 infixr 9 ^
 
-|||  element in `base` raised to the power of the corresponding element in `exponent`.
+||| Each element in `base` raised to the power of the corresponding element in `exponent`.
 ||| example, `const [2, 25, -9] ^ const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, nan]`.
 |||
 ||| Note: The behaviour of this function is not well-defined at negative or positive infinity, or
