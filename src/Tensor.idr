@@ -684,8 +684,7 @@ export
 ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
-(*) : Primitive.Num dtype
-      => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (*) = binaryOp prim__mul
 
 namespace Scalarwise
@@ -713,8 +712,7 @@ namespace Monoid
 ||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
 ||| to `const [0.5, 0.6]`.
 export
-(/) : Primitive.Fractional dtype
-      => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (/) = binaryOp prim__div
 
 namespace Scalarwise
