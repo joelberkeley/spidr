@@ -710,23 +710,23 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
-namespace Elementwise
-  ||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
-  ||| to `const [0.5, 0.6]`.
-  export
-  (/) : Primitive.Fractional dtype
-        => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-  (/) = binaryOp prim__div
-
-||| Floating point division by a scalar. For example, `const [3.4, -5.6] / const 2` is equivalent
-||| to `const [1.7, -2.8]`.
-|||
-||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
+||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
+||| to `const [0.5, 0.6]`.
 export
-(/) : (Primitive dtype, Primitive.Fractional dtype)
-      => Tensor (d :: ds) dtype -> Tensor [] dtype -> Tensor (d :: ds) dtype
-l / r with (l)
-  _ | (MkTensor {shape=(d :: ds)} _) = l / (broadcast {prf=scalarToAnyOk (d :: ds)} r)
+(/) : Primitive.Fractional dtype
+      => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(/) = binaryOp prim__div
+
+namespace Scalarwise
+  ||| Floating point division by a scalar. For example, `const [3.4, -5.6] / const 2` is equivalent
+  ||| to `const [1.7, -2.8]`.
+  |||
+  ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
+  export
+  (/) : (Primitive dtype, Primitive.Fractional dtype)
+        => Tensor (d :: ds) dtype -> Tensor [] dtype -> Tensor (d :: ds) dtype
+  l / r with (l)
+    _ | (MkTensor {shape=(d :: ds)} _) = l / (broadcast {prf=scalarToAnyOk (d :: ds)} r)
 
 infixr 9 ^
 
