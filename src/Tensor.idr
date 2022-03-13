@@ -700,7 +700,7 @@ l * r with (r)
 namespace Semigroup
   export
   [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = mul
+    (<+>) = binaryOp prim__mul
 
 namespace Monoid
   export
