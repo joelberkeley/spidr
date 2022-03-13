@@ -36,7 +36,7 @@ scaled_l2_norm : Tensor [] F64 -> {d, n, n' : _}
  -> Tensor [n', S d] F64
  -> Tensor [n, n'] F64
 scaled_l2_norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
-                           in reduce @{Sum} 2 $ ((xs - broadcast (expand 0 x')) / len) ^# fill 2.0
+                           in reduce @{Sum} 2 $ ((xs - broadcast (expand 0 x')) / len) ^ fill 2.0
 
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
 |||
@@ -52,7 +52,7 @@ scaled_l2_norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
 ||| @length_scale The length scale `l`.
 export
 rbf : (length_scale : Tensor [] F64) -> {d : _} -> Kernel [S d]
-rbf length_scale x x' = expEach (- scaled_l2_norm length_scale x x' / const 2.0)
+rbf length_scale x x' = exp (- scaled_l2_norm length_scale x x' / const 2.0)
 
 ||| The Matern kernel for parameter 5/2. This is a stationary kernel with form
 |||
@@ -69,5 +69,5 @@ export
 matern52 : (amplitude : Tensor [] F64) -> (length_scale : Tensor [] F64)
            -> {d : _} -> Kernel [S d]
 matern52 amp len x x' = let d2 = const 5.0 * scaled_l2_norm len x x'
-                            d = d2 ^# fill 0.5
-                         in (amp ^# const 2.0) * (d2 / fill 3.0 + d + fill 1.0) *# expEach (- d)
+                            d = d2 ^ fill 0.5
+                         in (amp ^ const 2.0) * (d2 / const 3.0 + d + fill 1.0) * exp (- d)

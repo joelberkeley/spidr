@@ -54,12 +54,13 @@ export
 floatingPointTolerance : Double
 floatingPointTolerance = 0.00000001
 
-export
-sufficientlyEq : Double -> Double -> Bool
-sufficientlyEq x y =
-  x /= x && y /= y  -- nan
-  || x == y  -- inf
-  || abs (x - y) < floatingPointTolerance  -- real
+namespace Double
+  export
+  sufficientlyEq : Double -> Double -> Bool
+  sufficientlyEq x y =
+    x /= x && y /= y  -- nan
+    || x == y  -- inf
+    || abs (x - y) < floatingPointTolerance  -- real
 
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [
@@ -102,35 +103,37 @@ insufficientlyEqCases =
       (-inf, nan)
   ] in cases ++ map (\(x, y) => (y, x)) cases
 
-export
-test_sufficientlyEq : IO ()
-test_sufficientlyEq = do
-  sequence_ [assert "sufficientlyEq for suff. equal" $ sufficientlyEq x y
+namespace Double
+  export
+  test_sufficientlyEq : IO ()
+  test_sufficientlyEq = do
+    sequence_ [assert "sufficientlyEq for suff. equal" $ sufficientlyEq x y
+                | (x, y) <- sufficientlyEqCases]
+    sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
+                | (x, y) <- insufficientlyEqCases]
+
+namespace Tensor
+  -- WARNING: This uses a number of functions, and thus assumes they work, so
+  -- we shouldn't use it to test them.
+  export
+  sufficientlyEq : {default floatingPointTolerance tol : Double} -> {shape : _}
+                      -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
+  sufficientlyEq x y =
+    x /= x && y /= y  -- nan
+    || x == y  -- inf
+    || abs (x - y) < fill tol  -- real
+
+  export
+  test_sufficientlyEq : IO ()
+  test_sufficientlyEq = do
+    let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
+        y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
+    eq <- eval {shape=[_, _]} (sufficientlyEq x y)
+    assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
+
+    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
+              sufficientlyEq {shape=[]} (const x) (const y)
               | (x, y) <- sufficientlyEqCases]
-  sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
+    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
+              not (sufficientlyEq {shape=[]} (const x) (const y))
               | (x, y) <- insufficientlyEqCases]
-
--- WARNING: This uses a number of functions, and thus assumes they work, so
--- we shouldn't use it to test them.
-export
-sufficientlyEqEach : {default floatingPointTolerance tol : Double} -> {shape : _}
-                     -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
-sufficientlyEqEach x y =
-  x /=# x &&# y /=# y  -- nan
-  ||# x ==# y  -- inf
-  ||# absEach (x - y) <# fill tol  -- real
-
-export
-test_sufficientlyEqEach : IO ()
-test_sufficientlyEqEach = do
-  let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
-      y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
-  eq <- eval {shape=[_, _]} (sufficientlyEqEach x y)
-  assert "sufficientlyEqEach for array" (eq == [[False, True, True], [False, True, False]])
-
-  sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-             sufficientlyEqEach {shape=[]} (const x) (const y)
-             | (x, y) <- sufficientlyEqCases]
-  sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-             notEach (sufficientlyEqEach {shape=[]} (const x) (const y))
-             | (x, y) <- insufficientlyEqCases]
