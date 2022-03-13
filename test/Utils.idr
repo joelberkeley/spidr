@@ -54,12 +54,13 @@ export
 floatingPointTolerance : Double
 floatingPointTolerance = 0.00000001
 
-export
-sufficientlyEq : Double -> Double -> Bool
-sufficientlyEq x y =
-  x /= x && y /= y  -- nan
-  || x == y  -- inf
-  || abs (x - y) < floatingPointTolerance  -- real
+namespace Double
+  export
+  sufficientlyEq : Double -> Double -> Bool
+  sufficientlyEq x y =
+    x /= x && y /= y  -- nan
+    || x == y  -- inf
+    || abs (x - y) < floatingPointTolerance  -- real
 
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [
@@ -110,15 +111,16 @@ test_sufficientlyEq = do
   sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
               | (x, y) <- insufficientlyEqCases]
 
--- WARNING: This uses a number of functions, and thus assumes they work, so
--- we shouldn't use it to test them.
-export
-sufficientlyEq : {default floatingPointTolerance tol : Double} -> {shape : _}
-                     -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
-sufficientlyEq x y =
-  x /= x && y /= y  -- nan
-  || x == y  -- inf
-  || abs (x - y) < fill tol  -- real
+namespace Tensor
+  -- WARNING: This uses a number of functions, and thus assumes they work, so
+  -- we shouldn't use it to test them.
+  export
+  sufficientlyEq : {default floatingPointTolerance tol : Double} -> {shape : _}
+                      -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
+  sufficientlyEq x y =
+    x /= x && y /= y  -- nan
+    || x == y  -- inf
+    || abs (x - y) < fill tol  -- real
 
 export
 test_sufficientlyEq : IO ()
