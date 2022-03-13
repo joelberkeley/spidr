@@ -681,24 +681,29 @@ export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (-) = binaryOp prim__sub
 
+mul : Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+mul = binaryOp prim__mul
+
+namespace Elementwise
+  ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
+  ||| `const [8, 15]`.
+  export
+  (*) : Primitive.Num dtype
+        => Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
+  (*) = binaryOp prim__mul
+
 ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
-(*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) = binaryOp prim__mul
-
-||| Multiplication by a constant. For example, `const 2 * const [3, 5]` is equivalent to
-||| `const [6, 10]`.
-export
-(*) : Primitive dtype => Primitive.Num dtype =>
-      Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
+(*) : (Primitive dtype, Primitive.Num dtype)
+      => Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
 l * r with (r)
-  _ | MkTensor {shape} _ = broadcast {prf=scalarToAnyOk shape} l * r
+  _ | (MkTensor {shape} _) = mul (broadcast {prf=scalarToAnyOk shape} l) r
 
 namespace Semigroup
   export
   [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = (*)
+    (<+>) = mul
 
 namespace Monoid
   export
@@ -706,19 +711,22 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
-||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
-||| to `const [0.5, 0.6]`.
-export
-(/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(/) = binaryOp prim__div
+div : Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+div = binaryOp prim__div
 
-||| Floating point division by a constant. For example, `const [3.4, -5.6] / const 2` is equivalent
-||| to `const [1.7, -2.8]`.
+namespace Elementwise
+  ||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
+  ||| to `const [0.5, 0.6]`.
+  export
+  (/) : Primitive.Fractional dtype
+        => Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
+  (/) = div
+
 export
-(/) : Primitive dtype => Primitive.Fractional dtype
+(/) : (Primitive dtype, Primitive.Fractional dtype)
       => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 l / r with (l)
-  _ | MkTensor {shape} _ = l / broadcast {prf=scalarToAnyOk shape} r
+  _ | (MkTensor {shape} _) = div l (broadcast {prf=scalarToAnyOk shape} r)
 
 infixr 9 ^
 

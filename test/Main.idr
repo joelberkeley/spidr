@@ -24,8 +24,8 @@ import Utils
 
 main : IO ()
 main = do
-  test_sufficientlyEq
-  test_sufficientlyEq
+  Double.test_sufficientlyEq
+  Tensor.test_sufficientlyEq
 
   test_gaussian_pdf
 

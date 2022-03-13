@@ -103,13 +103,14 @@ insufficientlyEqCases =
       (-inf, nan)
   ] in cases ++ map (\(x, y) => (y, x)) cases
 
-export
-test_sufficientlyEq : IO ()
-test_sufficientlyEq = do
-  sequence_ [assert "sufficientlyEq for suff. equal" $ sufficientlyEq x y
-              | (x, y) <- sufficientlyEqCases]
-  sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
-              | (x, y) <- insufficientlyEqCases]
+namespace Double
+  export
+  test_sufficientlyEq : IO ()
+  test_sufficientlyEq = do
+    sequence_ [assert "sufficientlyEq for suff. equal" $ sufficientlyEq x y
+                | (x, y) <- sufficientlyEqCases]
+    sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
+                | (x, y) <- insufficientlyEqCases]
 
 namespace Tensor
   -- WARNING: This uses a number of functions, and thus assumes they work, so
@@ -122,17 +123,17 @@ namespace Tensor
     || x == y  -- inf
     || abs (x - y) < fill tol  -- real
 
-export
-test_sufficientlyEq : IO ()
-test_sufficientlyEq = do
-  let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
-      y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
-  eq <- eval {shape=[_, _]} (sufficientlyEq x y)
-  assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
+  export
+  test_sufficientlyEq : IO ()
+  test_sufficientlyEq = do
+    let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
+        y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
+    eq <- eval {shape=[_, _]} (sufficientlyEq x y)
+    assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
 
-  sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-             sufficientlyEq {shape=[]} (const x) (const y)
-             | (x, y) <- sufficientlyEqCases]
-  sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-             not (sufficientlyEq {shape=[]} (const x) (const y))
-             | (x, y) <- insufficientlyEqCases]
+    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
+              sufficientlyEq {shape=[]} (const x) (const y)
+              | (x, y) <- sufficientlyEqCases]
+    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
+              not (sufficientlyEq {shape=[]} (const x) (const y))
+              | (x, y) <- insufficientlyEqCases]

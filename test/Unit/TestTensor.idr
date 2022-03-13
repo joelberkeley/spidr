@@ -552,8 +552,10 @@ test_comparison = do
 
 namespace S32
   export
-  testElementwiseBinary : String -> (Int -> Int -> Int)
-      -> (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) -> IO ()
+  testElementwiseBinary : String
+    -> (Int -> Int -> Int)
+    -> (forall d, ds . Tensor (d :: ds) S32 -> Tensor (d :: ds) S32 -> Tensor (d :: ds) S32)
+    -> IO ()
   testElementwiseBinary name f_native f_tensor = do
     let x = [[1, 15, 5], [-1, 7, 6]]
         y = [[11, 5, 7], [-3, -4, 0]]
@@ -563,6 +565,10 @@ namespace S32
         ]
     assertAll (name ++ " for S32 array") $ f_tensor (const x) (const y) == expected
 
+  export
+  testScalarBinary : String -> (Int -> Int -> Int)
+      -> (Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32) -> IO ()
+  testScalarBinary name f_native f_tensor = do
     sequence_ $ do
       l <- ints
       r <- ints
@@ -571,8 +577,10 @@ namespace S32
 
 namespace F64
   export
-  testElementwiseBinary : String -> (Double -> Double -> Double)
-    -> (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) -> IO ()
+  testElementwiseBinary : String
+    -> (Double -> Double -> Double)
+    -> (forall d, ds . Tensor (d :: ds) F64 -> Tensor (d :: ds) F64 -> Tensor (d :: ds) F64)
+    -> IO ()
   testElementwiseBinary name f_native f_tensor = do
     let x = [[3, 4, -5], [0, 0.3, 0]]
         y = [[1, -2.3, 0.2], [0.1, 0, 0]]
@@ -583,6 +591,10 @@ namespace F64
     assertAll (name ++ " for F64 array") $
       sufficientlyEq (f_tensor (const x) (const y)) expected
 
+  export
+  testScalarBinary : String -> (Double -> Double -> Double)
+      -> (Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64) -> IO ()
+  testScalarBinary name f_native f_tensor = do
     sequence_ $ do
       l <- doubles
       r <- doubles
@@ -614,7 +626,9 @@ export
 test_add : IO ()
 test_add = do
   S32.testElementwiseBinary "(+)" (+) (+)
+  S32.testScalarBinary "(+)" (+) (+)
   F64.testElementwiseBinary "(+)" (+) (+)
+  F64.testScalarBinary "(+)" (+) (+)
 
 export
 test_Sum : IO ()
@@ -652,8 +666,8 @@ test_subtract = do
 export
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
-  S32.testElementwiseBinary "(*)" (*) (*)
-  F64.testElementwiseBinary "(*)" (*) (*)
+  S32.testElementwiseBinary "(*)" (*) Elementwise.(*)
+  F64.testElementwiseBinary "(*)" (*) Elementwise.(*)
 
 export
 test_scalar_multiplication : IO ()
@@ -856,7 +870,9 @@ export
 test_min : IO ()
 test_min = do
   S32.testElementwiseBinary "min" min min
+  S32.testScalarBinary "min" min min
   F64.testElementwiseBinary "min" min' min
+  F64.testScalarBinary "min" min' min
 
 export
 test_Min : IO ()
@@ -872,7 +888,9 @@ export
 test_max : IO ()
 test_max = do
   S32.testElementwiseBinary "max" max max
+  S32.testScalarBinary "max" max max
   F64.testElementwiseBinary "max" max' max
+  F64.testScalarBinary "max" max' max
 
 export
 test_Max : IO ()
