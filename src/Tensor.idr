@@ -681,9 +681,6 @@ export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (-) = binaryOp prim__sub
 
-mul : Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-mul = binaryOp prim__mul
-
 namespace Elementwise
   ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
   ||| `const [8, 15]`.
@@ -698,7 +695,7 @@ export
 (*) : (Primitive dtype, Primitive.Num dtype)
       => Tensor [] dtype -> Tensor shape dtype -> Tensor shape dtype
 l * r with (r)
-  _ | (MkTensor {shape} _) = mul (broadcast {prf=scalarToAnyOk shape} l) r
+  _ | (MkTensor {shape} _) = binaryOp prim__mul (broadcast {prf=scalarToAnyOk shape} l) r
 
 namespace Semigroup
   export
@@ -711,22 +708,19 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
-div : Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-div = binaryOp prim__div
-
 namespace Elementwise
   ||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
   ||| to `const [0.5, 0.6]`.
   export
   (/) : Primitive.Fractional dtype
         => Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
-  (/) = div
+  (/) = binaryOp prim__div
 
 export
 (/) : (Primitive dtype, Primitive.Fractional dtype)
       => Tensor shape dtype -> Tensor [] dtype -> Tensor shape dtype
 l / r with (l)
-  _ | (MkTensor {shape} _) = div l (broadcast {prf=scalarToAnyOk shape} r)
+  _ | (MkTensor {shape} _) = binaryOp prim__div l (broadcast {prf=scalarToAnyOk shape} r)
 
 infixr 9 ^
 
