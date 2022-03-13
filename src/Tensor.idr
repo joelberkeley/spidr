@@ -681,21 +681,23 @@ export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (-) = binaryOp prim__sub
 
-namespace Elementwise
-  ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
-  ||| `const [8, 15]`.
-  export
-  (*) : Primitive.Num dtype
-        => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-  (*) = binaryOp prim__mul
-
 ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
-(*) : (Primitive dtype, Primitive.Num dtype)
-      => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
-l * r with (r)
-  _ | (MkTensor {shape=(d :: ds)} _) = (broadcast {prf=scalarToAnyOk (d :: ds)} l) * r
+(*) : Primitive.Num dtype
+      => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(*) = binaryOp prim__mul
+
+namespace Scalarwise
+  ||| Multiplication by a scalar. For example, `const 2 * const [3, 5]` is equivalent to
+  ||| `const [6, 10]`.
+  |||
+  ||| The RHS is required to be non-scalar simply to avoid ambiguities with element-wise `(*)`.
+  export
+  (*) : (Primitive dtype, Primitive.Num dtype)
+        => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
+  l * r with (r)
+    _ | (MkTensor {shape=(d :: ds)} _) = (broadcast {prf=scalarToAnyOk (d :: ds)} l) * r
 
 namespace Semigroup
   export
@@ -716,6 +718,10 @@ namespace Elementwise
         => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
   (/) = binaryOp prim__div
 
+||| Floating point division by a scalar. For example, `const [3.4, -5.6] / const 2` is equivalent
+||| to `const [1.7, -2.8]`.
+|||
+||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
 export
 (/) : (Primitive dtype, Primitive.Fractional dtype)
       => Tensor (d :: ds) dtype -> Tensor [] dtype -> Tensor (d :: ds) dtype
