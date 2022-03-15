@@ -411,21 +411,21 @@ export
 test_map : IO ()
 test_map = do
   let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-  assertAll "map for S32 array" $ map abs x == abs x
+  assertAll "map for S32 array" $ map {leading=[_, _]} abs x == abs x
 
   let x = const {shape=[_, _]} {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
   assertAll "map for F64 array" $
-    map (const 1 /) x == const [[1.0, 0.4, inf], [-1.25, -10, 0.2]]
+    map {leading=[_, _]} (const 1 /) x == const {shape=[_, _]} [[1.0, 0.4, inf], [-1.25, -10, 0.2]]
 
   sequence_ $ do
     x <- ints
     let x = const {shape=[]} {dtype=S32} x
-    pure $ assertAll "map for S32 scalar" $ map (+ const 1) x == x + const 1
+    pure $ assertAll "map for S32 scalar" $ map {leading=[]} (+ const 1) x == x + const 1
 
   sequence_ $ do
     x <- doubles
     let x = const {shape=[]} {dtype=F64} x
-    pure $ assertAll "map for F64 scalar" $ sufficientlyEq (map (+ const 1.2) x) (x + const 1.2)
+    pure $ assertAll "map for F64 scalar" $ sufficientlyEq (map {leading=[]} (+ const 1.2) x) (x + const 1.2)
 
 export
 test_map2 : IO ()

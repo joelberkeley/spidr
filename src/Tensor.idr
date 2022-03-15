@@ -440,17 +440,19 @@ parameter position name shape = do
   pure $ MkTensor $ \builder =>
     onCollectAny (parameter builder position xla_shape name) XlaOp.delete
 
-||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
-||| For example,
-||| ```idris
-||| recip : Tensor [] F64 -> Tensor [] F64
-||| recip = (const 1 /)
-||| ```
-||| can be lifted to an element-wise reciprocal function as `map recip (const [-2, 0.4])`, which is
-||| equivalent to `const [-0.5, 2.5]`.
-export
-map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
-map f (MkTensor {shape} mkOp) = MkTensor $ \builder => do
+splitRows : Tensor (n :: shape) dtype -> Vect n (Tensor shape dtype)
+splitRows x with (x)
+  _ | (MkTensor {shape=(n :: shape)} _) with (n)
+    _ | Z = []
+    _ | S k = let (hd, tl) = split 0 1 x in squeeze hd :: splitRows tl
+
+concatRows : Vect (S n) (Tensor shape dtype) -> Tensor (S n :: shape) dtype
+concatRows [x] = expand 0 x
+concatRows (x :: y :: ys) = concat 0 (expand 0 x) (concatRows (y :: ys))
+
+mapScalar : (Primitive a, Primitive b) =>
+            (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
+mapScalar f (MkTensor {shape} mkOp) = MkTensor $ \builder => do
   sub_builder <- prim__createSubBuilder builder "computation"
   (MkTensor mkOp') <- [| f (parameter 0 "" [] {dtype=a}) |]
   _ <- mkOp' sub_builder
@@ -467,12 +469,31 @@ map f (MkTensor {shape} mkOp) = MkTensor $ \builder => do
     )
   onCollectAny op XlaOp.delete
 
-map' : (Tensor from dtype -> Tensor to dtype)
-      -> Tensor (leading ++ from) dtype -> Tensor (leading ++ to) dtype
-map' f (MkTensor {shape=(leading ++ from)} mkOp) = MkTensor $ \builder => do
-  op <- mkOp builder
-  let MkTensor iteration = const 0
-  
+mapGeneral : (Primitive ft, Primitive tt) => {ts, leading : _} -> (Tensor fs ft -> Tensor ts tt)
+             -> Tensor (leading ++ fs) ft -> Tensor (leading ++ ts) tt
+mapGeneral f {leading=[]} x = f x
+mapGeneral f {leading=(0 :: _)} x = empty
+mapGeneral f {leading=(S k :: _)} x = concatRows (Prelude.map (mapGeneral f) (splitRows x))
+
+||| Apply a function between `Tensor`s to the trailing dimensions of a `Tensor`. For example, for
+||| ```
+||| x : Tensor [2, 3, 3] S32
+||| x = const [[[ 0,  1,  2],
+|||             [ 3,  4,  5],
+|||             [ 6,  7,  8]],
+|||            [[ 9, 10, 11],
+|||             [12, 13, 14],
+|||             [15, 16, 17]]]
+||| ```
+||| `map diag x` is equivalent to `const [[0, 4, 8], [9, 13, 17]]`.
+|||
+||| **Note:** This function is efficiently optimized for scalar-wise operations where `fs` and `ts`
+||| are `[]`. We cannot guarantee performance for other shapes.
+export
+map : (Primitive ft, Primitive tt) => {fs, ts, leading : _} -> (Tensor fs ft -> Tensor ts tt)
+      -> Tensor (leading ++ fs) ft -> Tensor (leading ++ ts) tt
+map {fs=[]} {ts=[]} f x = mapScalar f x
+map f x = mapGeneral f x
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
