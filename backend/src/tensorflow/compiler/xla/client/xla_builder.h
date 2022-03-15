@@ -78,7 +78,13 @@ extern "C" {
         int strides_len
     );
 
+    XlaOp* DynamicUpdateSlice(
+        XlaOp& operand, XlaOp& update, XlaOp* start_indices, int start_indices_len
+    );
+
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len);
+    XlaOp* GetTupleElement(XlaOp& tuple_data, int index);
 
     XlaOp* Eq(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ne(XlaOp& lhs, XlaOp& rhs);
@@ -139,4 +145,6 @@ extern "C" {
         XlaOp* static_operands,
         int static_operands_len
     );
+
+    XlaOp* While(const XlaComputation& condition, const XlaComputation& body, XlaOp& init);
 }

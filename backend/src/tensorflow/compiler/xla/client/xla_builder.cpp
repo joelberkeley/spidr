@@ -171,13 +171,38 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* DynamicUpdateSlice(
+        XlaOp& operand, XlaOp& update, XlaOp* start_indices, int start_indices_len
+    ) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto& update_ = reinterpret_cast<xla::XlaOp&>(update);
+        auto start_indices_ = reinterpret_cast<xla::XlaOp*>(start_indices);
+        auto start_indices_span = absl::Span<const xla::XlaOp>(start_indices_, start_indices_len);
+
+        xla::XlaOp res = xla::DynamicUpdateSlice(operand_, update_, start_indices_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension) {
         auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
 
         xla::XlaOp res = xla::ConcatInDim(builder_, operands_span, (int64_t) dimension);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        auto elements_ = reinterpret_cast<xla::XlaOp*>(elements);
+        auto elements_span = absl::Span<const xla::XlaOp>(elements_, elements_len);
+        xla::XlaOp res = xla::Tuple(builder_, elements_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* GetTupleElement(XlaOp& tuple_data, int index) {
+        auto& tuple_data_ = reinterpret_cast<xla::XlaOp&>(tuple_data);
+        xla::XlaOp res = xla::GetTupleElement(tuple_data_, (int64_t) index);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }
@@ -335,6 +360,15 @@ extern "C" {
         auto static_operands_span = absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
 
         xla::XlaOp res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* While(const XlaComputation& condition, const XlaComputation& body, XlaOp& init) {
+        auto& condition_ = reinterpret_cast<const xla::XlaComputation&>(condition);
+        auto& body_ = reinterpret_cast<const xla::XlaComputation&>(body);
+        auto& init_ = reinterpret_cast<xla::XlaOp&>(init);
+
+        xla::XlaOp res = xla::While(condition_, body_, init_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }

@@ -467,6 +467,13 @@ map f (MkTensor {shape} mkOp) = MkTensor $ \builder => do
     )
   onCollectAny op XlaOp.delete
 
+map' : (Tensor from dtype -> Tensor to dtype)
+      -> Tensor (leading ++ from) dtype -> Tensor (leading ++ to) dtype
+map' f (MkTensor {shape=(leading ++ from)} mkOp) = MkTensor $ \builder => do
+  op <- mkOp builder
+  let MkTensor iteration = const 0
+  
+
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
