@@ -615,10 +615,10 @@ not = unaryOp prim__not
 ||| preds : Tensor [3] PRED
 ||| preds = const [False, True, False]
 |||
-||| onTrue : Tensor [2, 2] S32
+||| onTrue : Tensor [3] S32
 ||| onTrue = const [1, 2, 3]
 |||
-||| onFalse : Tensor [2, 2] S32
+||| onFalse : Tensor [3] S32
 ||| onFalse = const [4, 5, 6]
 ||| ```
 ||| `cond preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
