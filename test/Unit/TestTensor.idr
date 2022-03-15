@@ -425,7 +425,8 @@ test_map = do
   sequence_ $ do
     x <- doubles
     let x = const {shape=[]} {dtype=F64} x
-    pure $ assertAll "map for F64 scalar" $ sufficientlyEq (map {leading=[]} (+ const 1.2) x) (x + const 1.2)
+    pure $ assertAll "map for F64 scalar" $
+      sufficientlyEq (map {leading=[]} (+ const 1.2) x) (x + const 1.2)
 
 export
 test_map2 : IO ()
