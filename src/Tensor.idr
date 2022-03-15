@@ -488,7 +488,7 @@ mapGeneral f {leading=(S k :: _)} x = concatRows (Prelude.map (mapGeneral f) (sp
 ||| `map diag x` is equivalent to `const [[0, 4, 8], [9, 13, 17]]`.
 |||
 ||| **Note:** This function is efficiently optimized for scalar-wise operations where `fs` and `ts`
-||| are `[]`. We cannot guarantee performance for other shapes.
+||| are `[]`. We do not guarantee performance for other shapes.
 export
 map : (Primitive ft, Primitive tt) => {fs, ts, leading : _} -> (Tensor fs ft -> Tensor ts tt)
       -> Tensor (leading ++ fs) ft -> Tensor (leading ++ ts) tt
