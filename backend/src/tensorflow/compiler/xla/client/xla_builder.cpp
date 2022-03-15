@@ -180,6 +180,16 @@ extern "C" {
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
+
+    XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false) {
+        auto& pred_ = reinterpret_cast<xla::XlaOp&>(pred);
+        auto& on_true_ = reinterpret_cast<xla::XlaOp&>(on_true);
+        auto& on_false_ = reinterpret_cast<xla::XlaOp&>(on_false);
+
+        xla::XlaOp res = xla::Select(pred_, on_true_, on_false_);
+        
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {
@@ -332,9 +342,13 @@ extern "C" {
 
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
         auto dimensions_span = absl::Span<const int64_t>(dimensions64, dimensions_len);
-        auto static_operands_span = absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
+        auto static_operands_span =
+            absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
 
-        xla::XlaOp res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
+        xla::XlaOp res = xla::Map(
+            builder_, operands_span, computation_, dimensions_span, static_operands_span
+        );
+
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }

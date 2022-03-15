@@ -55,9 +55,7 @@ extern "C" {
      */
 
     XlaOp* Parameter(XlaBuilder& builder, int parameter_number, Shape& shape, const char* name);
-
     XlaOp* ConstantLiteral(XlaBuilder& builder, Literal& data);
-
     XlaOp* Broadcast(XlaOp& s, int* broadcast_sizes, int len);
 
     XlaOp* BroadcastInDim(
@@ -79,6 +77,7 @@ extern "C" {
     );
 
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
+    XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
 
     XlaOp* Eq(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ne(XlaOp& lhs, XlaOp& rhs);

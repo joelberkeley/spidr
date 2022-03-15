@@ -126,6 +126,10 @@ export
 prim__concatInDim : GCAnyPtr -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Select")
+prim__select : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
