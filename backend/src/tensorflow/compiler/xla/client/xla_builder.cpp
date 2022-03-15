@@ -342,13 +342,9 @@ extern "C" {
 
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
         auto dimensions_span = absl::Span<const int64_t>(dimensions64, dimensions_len);
-        auto static_operands_span =
-            absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
+        auto static_operands_span = absl::Span<const xla::XlaOp>(static_operands_, static_operands_len);
 
-        xla::XlaOp res = xla::Map(
-            builder_, operands_span, computation_, dimensions_span, static_operands_span
-        );
-
+        xla::XlaOp res = xla::Map(builder_, operands_span, computation_, dimensions_span, static_operands_span);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }
