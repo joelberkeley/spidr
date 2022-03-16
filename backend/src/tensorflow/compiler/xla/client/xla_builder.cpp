@@ -177,7 +177,6 @@ extern "C" {
         auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
 
         xla::XlaOp res = xla::ConcatInDim(builder_, operands_span, (int64_t) dimension);
-
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
@@ -187,7 +186,6 @@ extern "C" {
         auto& on_false_ = reinterpret_cast<xla::XlaOp&>(on_false);
 
         xla::XlaOp res = xla::Select(pred_, on_true_, on_false_);
-        
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }
