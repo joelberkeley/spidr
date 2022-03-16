@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Main
 
+import Unit.Model.TestKernel
 import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestUtil
@@ -24,6 +25,7 @@ import Utils
 
 main : IO ()
 main = do
+  Unit.Model.TestKernel.test
   Unit.TestDistribution.test
   Unit.TestTensor.test
   Unit.TestUtil.test
