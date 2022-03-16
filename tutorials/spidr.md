@@ -27,7 +27,7 @@ import Data.Vect
 xs : List Int
 xs = [0, 1, 2]
 
-xs : List Int
+xs' : List Int
 xs' = []
 ```
 If we try to write a function `head` which gives us the first element, we immediately run into a problem
