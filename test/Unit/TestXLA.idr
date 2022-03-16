@@ -31,7 +31,6 @@ import Types
 
 import Utils
 
-export
 test_parameter_addition : IO ()
 test_parameter_addition = do
   builder <- prim__mkXlaBuilder ""
@@ -56,3 +55,8 @@ test_parameter_addition = do
 
   let sum = toArray {shape=[2, 3]} {dtype=S32} {ty=Int} lit
   assert "array addition using Parameter" (sum == [[1, 2, 3], [2, 3, 4]])
+
+export
+test : IO ()
+test = do
+  test_parameter_addition

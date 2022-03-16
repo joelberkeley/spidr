@@ -20,7 +20,6 @@ import Utils
 import Tensor
 import Distribution
 
-export
 test_gaussian_pdf : IO ()
 test_gaussian_pdf = do
   let
@@ -44,3 +43,8 @@ test_gaussian_pdf = do
       actual = pdf (MkGaussian mean cov) x
       expected = const 0.016427375  -- calculated using TensorFlow Probability
   assertAll "multivariate Gaussian" $ sufficientlyEq {tol=0.00000001} actual expected
+
+export
+test : IO ()
+test = do
+  test_gaussian_pdf
