@@ -25,6 +25,7 @@ test_rbf = do
   let length_scale = const 0.4
       x = const {shape=[4, 1]} [[-1.2], [-0.5], [0.3], [1.2]]
       x' = const {shape=[3, 1]} [[-1.2], [-0.2], [0.8]]
+      -- expected calculated with tensorflow probability
       expected = const {shape=[4, 3]} [
           [       1.0, 0.04393695, 0.00000373],
           [0.21626519, 0.75483966, 0.00508606],
