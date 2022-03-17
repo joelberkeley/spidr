@@ -865,7 +865,7 @@ tanh = unaryOp prim__tanh
 
 ||| An approximation to the element-wise error function.
 export
-erf : Tensor shape dtype -> Tensor shape dtype
+erf : Tensor shape F64 -> Tensor shape F64
 erf = unaryOp prim__erf
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
