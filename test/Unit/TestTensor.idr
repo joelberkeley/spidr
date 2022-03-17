@@ -741,6 +741,7 @@ test_pow = do
     pure $ assertAll ("^ for F64 scalar " ++ show l ++ " " ++ show r) $
       sufficientlyEq ((const l) ^ (const r)) $ const {shape=[]} {dtype=F64} (pow l r)
 
+export
 test_abs : IO ()
 test_abs = do
   let x = const {shape=[_]} {dtype=S32} [1, 0, -5]
