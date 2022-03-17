@@ -659,24 +659,25 @@ cond : (Primitive tType, Primitive fType) => {shape : _} -> Tensor [] PRED
   -> Tensor shape dtype
 cond
   (MkTensor mkPred)
-  onTrue (MkTensor {shape=tShape} mkOpTrue)
-  onFalse (MkTensor {shape=fShape} mkOpFalse) =
-    MkTensor $ \builder => do
-      (MkTensor mkOpTrueRes) <- map onTrue (parameter 0 "" tShape)
-      trueBuilder <- prim__createSubBuilder builder "on True computation"
-      _ <- mkOpTrueRes trueBuilder
-      trueComp <- prim__build trueBuilder
-      (MkTensor mkOpFalseRes) <- map onFalse (parameter 0 "" fShape)
-      falseBuilder <- prim__createSubBuilder builder "on False computation"
-      _ <- mkOpFalseRes falseBuilder
-      falseComp <- prim__build falseBuilder
-      op <- primIO $ prim__conditional
-        !(mkPred builder)
-        !(mkOpTrue builder)
-        trueComp
-        !(mkOpFalse builder)
-        falseComp
-      onCollectAny op XlaOp.delete
+  onTrue
+  (MkTensor {shape=tShape} mkOpTrue)
+  onFalse
+  (MkTensor {shape=fShape} mkOpFalse) = MkTensor $ \builder => do
+    (MkTensor mkOpTrueRes) <- map onTrue (parameter 0 "" tShape)
+    trueBuilder <- prim__createSubBuilder builder "on True computation"
+    _ <- mkOpTrueRes trueBuilder
+    trueComp <- prim__build trueBuilder
+    (MkTensor mkOpFalseRes) <- map onFalse (parameter 0 "" fShape)
+    falseBuilder <- prim__createSubBuilder builder "on False computation"
+    _ <- mkOpFalseRes falseBuilder
+    falseComp <- prim__build falseBuilder
+    op <- primIO $ prim__conditional
+      !(mkPred builder)
+      !(mkOpTrue builder)
+      trueComp
+      !(mkOpFalse builder)
+      falseComp
+    onCollectAny op XlaOp.delete
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
