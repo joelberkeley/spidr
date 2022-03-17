@@ -638,11 +638,11 @@ select (MkTensor mkOpPred) (MkTensor mkOpTrue) (MkTensor mkOpFalse) = MkTensor $
 ||| for
 ||| ```
 ||| x : Tensor [2] S32
-||| x = [2, -1]
+||| x = const [2, -1]
 |||
 ||| y : Tensor [2, 2] S32
-||| y = [[5, 6],
-|||      [7, 8]]
+||| y = const [[5, 6],
+|||            [7, 8]]
 ||| ```
 ||| `cond (const True) (const 2 *) x diag y` is equivalent to `const [4, -2]` and
 ||| `cond (const False) (const 2 *) x diag y` to `const [5, 8]`.
