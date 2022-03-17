@@ -137,3 +137,9 @@ namespace Tensor
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
               not (sufficientlyEq {shape=[]} (const x) (const y))
               | (x, y) <- insufficientlyEqCases]
+
+export
+test : IO ()
+test = do
+  Double.test_sufficientlyEq
+  Tensor.test_sufficientlyEq

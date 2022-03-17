@@ -57,3 +57,11 @@ namespace List
     assert "replaceAt can replace at middle" $ (List.replaceAt 1 5 [6, 7, 8]) == [6, 5, 8]
     assert "replaceAt can replace at end" $ (List.replaceAt 2 5 [6, 7, 8]) == [6, 7, 5]
     assert "replaceAt for length one list" $ (List.replaceAt 0 5 [6]) == [5]
+
+export
+test : IO ()
+test = do
+  Vect.test_range
+  List.test_range
+  test_insertAt
+  test_deleteAt

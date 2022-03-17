@@ -22,7 +22,6 @@ import Tensor
 
 import Utils
 
-export
 test_const_eval : IO ()
 test_const_eval = do
   let x = [[True, False, False], [False, True, False]]
@@ -47,7 +46,6 @@ test_const_eval = do
       assert name (sufficientlyEq x x')
     ) doubles
 
-export
 test_toString : IO ()
 test_toString = do
   str <- toString $ const {shape=[]} {dtype=S32} 1
@@ -66,7 +64,6 @@ test_toString = do
   str <- toString $ const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
   assert "toString for vector F64" $ str == "constant, shape=[3], metadata={:0}"
 
-export
 test_reshape : IO ()
 test_reshape = do
   let x = const {shape=[]} {dtype=S32} 3
@@ -87,7 +84,6 @@ test_reshape = do
   let flattened = const {shape=[6]} {dtype=S32} [3, 4, 5, 6, 7, 8]
   assertAll "reshape as flatten array" $ reshape x == flattened
 
-export
 test_slice : IO ()
 test_slice = do
   let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
@@ -107,7 +103,6 @@ test_slice = do
   assertAll "slice array 1 2 2" $ slice 1 2 2 x == const [[], []]
   assertAll "slice array 1 1 3" $ slice 1 1 3 x == const [[4, 5], [7, 8]]
 
-export
 test_index : IO ()
 test_index = do
   let x = const {shape=[3]} {dtype=S32} [3, 4, 5]
@@ -122,7 +117,6 @@ test_index = do
   assertAll "index array 1 1" $ index 1 1 x == const [4, 7]
   assertAll "index array 1 2" $ index 1 2 x == const [5, 8]
 
-export
 test_split : IO ()
 test_split = do
   let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
@@ -173,7 +167,6 @@ test_split = do
   assertAll "split array 1 3 left" $ l == const [[3, 4, 5], [6, 7, 8]]
   assertAll "split array 1 3 right" $ r == const [[], []]
 
-export
 test_concat : IO ()
 test_concat = do
   let vector = const {shape=[3]} {dtype=S32} [3, 4, 5]
@@ -224,7 +217,6 @@ test_concat = do
       r = const {shape=[2, 0]} [[], []]
   assertAll "concat array 1" $ concat 1 l r == arr
 
-export
 test_diag : IO ()
 test_diag = do
   let x = const {dtype=S32} []
@@ -236,7 +228,6 @@ test_diag = do
   let x = const {dtype=S32} [[1, 2], [3, 4]]
   assertAll "diag 2" $ diag x == const [1, 4]
 
-export
 test_triangle : IO ()
 test_triangle = do
   let x = const {dtype=S32} []
@@ -255,7 +246,6 @@ test_triangle = do
   assertAll "triangle upper 3" $ triangle Upper x == const [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
   assertAll "triangle lower 3" $ triangle Lower x == const [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
-export
 test_identity : IO ()
 test_identity = do
   assertAll "identity 0 S32" $ identity == const {dtype=S32} []
@@ -270,7 +260,6 @@ test_identity = do
   assertAll "identity 4 F64" $
     identity == const {dtype=F64} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
-export
 test_expand : IO ()
 test_expand = do
   let x = const {shape=[]} {dtype=S32} 3
@@ -281,7 +270,6 @@ test_expand = do
       with_extra_dim = const {shape=[2, 1, 3]} {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
   assertAll "expand add dimension array" $ expand 1 x == with_extra_dim
 
-export
 test_broadcast : IO ()
 test_broadcast = do
   let x = const {shape=[]} {dtype=S32} 7
@@ -377,7 +365,6 @@ test_broadcastable_cannot_stack_dimension_gt_one : Broadcastable [3, 2] [3, 7] -
 test_broadcastable_cannot_stack_dimension_gt_one (Match Same) impossible
 test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
 
-export
 test_squeeze : IO ()
 test_squeeze = do
   let x = const {shape=[1, 1]} {dtype=S32} [[3]]
@@ -397,7 +384,6 @@ test_squeeze = do
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
 
-export
 test_T : IO ()
 test_T = do
   assertAll "(.T) for empty array" $ (const {dtype=S32} []).T == const []
@@ -407,7 +393,6 @@ test_T = do
       expected = const [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
   assertAll "(.T)" $ x.T == expected
 
-export
 test_map : IO ()
 test_map = do
   let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
@@ -427,7 +412,6 @@ test_map = do
     let x = const {shape=[]} {dtype=F64} x
     pure $ assertAll "map for F64 scalar" $ sufficientlyEq (map (+ const 1.2) x) (x + const 1.2)
 
-export
 test_map2 : IO ()
 test_map2 = do
   let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
@@ -451,7 +435,6 @@ test_map2 = do
     pure $ assertAll "map2 for F64 scalars with repeated argument" $
       sufficientlyEq (map2 (+) l' l') (l' + l')
 
-export
 test_reduce : IO ()
 test_reduce = do
   let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
@@ -463,7 +446,6 @@ test_reduce = do
   let x = const {shape=[_, _]} {dtype=PRED} [[True, False, True], [True, False, False]]
   assertAll "reduce for PRED array" $ reduce @{All} 1 x == const [False, False]
 
-export
 test_elementwise_equality : IO ()
 test_elementwise_equality = do
   let x = const {shape=[_]} {dtype=PRED} [True, True, False]
@@ -492,7 +474,6 @@ test_elementwise_equality = do
       actual <- eval {shape=[]} ((const {dtype} l) == (const {dtype} r))
       assert "== for scalars" (actual == (l == r))
 
-export
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
   let x = const {shape=[_]} {dtype=PRED} [True, True, False]
@@ -519,7 +500,6 @@ test_elementwise_inequality = do
     compareScalars l r =
       assertAll "/= for scalars" $ (const {dtype} l /= const r) == const {shape=[]} (l /= r)
 
-export
 test_comparison : IO ()
 test_comparison = do
   let x = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
@@ -610,20 +590,17 @@ namespace Matrix
         r = const {shape=[3, 2]} {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
     assertAll "matrix dot matrix" $ l @@ r == const [[ -7,  -2], [  8, -11]]
 
-export
 test_add : IO ()
 test_add = do
   S32.testElementwiseBinary "(+)" (+) (+)
   F64.testElementwiseBinary "(+)" (+) (+)
 
-export
 test_Sum : IO ()
 test_Sum = do
   let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
   assertAll "Sum neutral is neutral right" $ (<+>) @{Sum} x (neutral @{Sum}) == x
   assertAll "Sum neutral is neutral left" $ (<+>) @{Sum} (neutral @{Sum}) x == x
 
-export
 test_subtract : IO ()
 test_subtract = do
   let l = const [[1, 15, 5], [-1, 7, 6]]
@@ -649,13 +626,11 @@ test_subtract = do
       diff <- eval {shape=[]} {dtype=F64} (const l - const r)
       assert "- for F64 scalar" (sufficientlyEq diff (l - r))
 
-export
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
   S32.testElementwiseBinary "(*)" (*) (*)
   F64.testElementwiseBinary "(*)" (*) (*)
 
-export
 test_scalar_multiplication : IO ()
 test_scalar_multiplication = do
   let r = const {shape=[_, _]} {dtype=S32} [[11, 5, 7], [-3, -4, 0]]
@@ -682,7 +657,6 @@ test_scalar_multiplication = do
     pure $ assertAll "* for double array" $
       sufficientlyEq (const l * const r) (const {shape=[]} (l * r))
 
-export
 test_Prod : IO ()
 test_Prod = do
   let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
@@ -704,33 +678,28 @@ assertBooleanOpScalar name tensor_op bool_op =
     r <- bools
     pure $ assertAll name $ tensor_op (const l) (const r) == const (bool_op l r)
 
-export
 test_elementwise_and : IO ()
 test_elementwise_and = do
   assertBooleanOpArray "&& for array" (&&) [[True, False], [False, False]]
   assertBooleanOpScalar "&& for scalar" (&&) (&&)
 
-export
 test_All : IO ()
 test_All = do
   let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
   assertAll "All neutral is neutral right" $ (<+>) @{All} x (neutral @{All}) == x
   assertAll "All neutral is neutral left" $ (<+>) @{All} (neutral @{All}) x == x
 
-export
 test_elementwise_or : IO ()
 test_elementwise_or = do
   assertBooleanOpArray "|| for array" (||) [[True, True], [True, False]]
   assertBooleanOpScalar "|| for scalar" (||) (||)
 
-export
 test_Any : IO ()
 test_Any = do
   let x = const {shape=[_, _]} {dtype=PRED} [[True, True], [False, False]]
   assertAll "Any neutral is neutral right" $ (<+>) @{Any} x (neutral @{Any}) == x
   assertAll "Any neutral is neutral left" $ (<+>) @{Any} (neutral @{Any}) x == x
 
-export
 test_elementwise_not : IO ()
 test_elementwise_not = do
   assertAll "not for array" $
@@ -738,12 +707,10 @@ test_elementwise_not = do
   sequence_ [assertAll "not for scalar" $
              not (const x) == const {shape=[]} (not x) | x <- bools]
 
-export
 test_elementwise_division : IO ()
 test_elementwise_division = do
   F64.testElementwiseBinary "(/)" (/) (/)
 
-export
 test_scalar_division : IO ()
 test_scalar_division = do
   let l = const {shape=[_, _]} {dtype=F64} [[-3.3], [0.0], [0.3]]
@@ -758,7 +725,6 @@ test_scalar_division = do
     pure $ assertAll "/ for scalar" $
       sufficientlyEq (const l / const r) (const {shape=[]} (l / r))
 
-export
 test_pow : IO ()
 test_pow = do
   let x = [[3, 4, -5], [0, 0.3, 0]]
@@ -775,7 +741,6 @@ test_pow = do
     pure $ assertAll ("^ for F64 scalar " ++ show l ++ " " ++ show r) $
       sufficientlyEq ((const l) ^ (const r)) $ const {shape=[]} {dtype=F64} (pow l r)
 
-export
 test_abs : IO ()
 test_abs = do
   let x = const {shape=[_]} {dtype=S32} [1, 0, -5]
@@ -824,7 +789,6 @@ namespace F64
         (f_tensor $ const x) (const {shape=[]} (f_native x)) | x <- doubles
       ]
 
-export
 test_negate : IO ()
 test_negate = do
   S32.testElementwiseUnary "negate" negate negate
@@ -836,7 +800,6 @@ tanh' x =
   else if x == inf then 1.0
   else tanh x
 
-export
 testElementwiseUnaryDoubleCases : IO ()
 testElementwiseUnaryDoubleCases = do
   F64.testElementwiseUnary "exp" exp exp
@@ -852,13 +815,11 @@ testElementwiseUnaryDoubleCases = do
 min' : Double -> Double -> Double
 min' x y = if (x /= x) then x else if (y /= y) then y else min x y
 
-export
 test_min : IO ()
 test_min = do
   S32.testElementwiseBinary "min" min min
   F64.testElementwiseBinary "min" min' min
 
-export
 test_Min : IO ()
 test_Min = do
   let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
@@ -868,20 +829,17 @@ test_Min = do
 max' : Double -> Double -> Double
 max' x y = if (x /= x) then x else if (y /= y) then y else max x y
 
-export
 test_max : IO ()
 test_max = do
   S32.testElementwiseBinary "max" max max
   F64.testElementwiseBinary "max" max' max
 
-export
 test_Max : IO ()
 test_Max = do
   let x = const {shape=[_, _]} {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
   assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) == x
   assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x == x
 
-export
 test_cholesky : IO ()
 test_cholesky = do
   let x = const {shape=[_, _]} {dtype=F64} [[1, 0], [2, 0]]
@@ -901,7 +859,6 @@ test_cholesky = do
             ]
   assertAll "cholesky" $ sufficientlyEq {tol=0.000001} (cholesky x) expected
 
-export
 test_triangularsolve : IO ()
 test_triangularsolve = do
   let a = const {shape=[_, _]} [
@@ -940,7 +897,56 @@ test_triangularsolve = do
   let a_ut = const {shape=[_, _]} [[1, 2], [0, 4]]
   assertAll "(\|) lower triangular elements are ignored" $ sufficientlyEq (a \| b) (a_ut \| b)
 
-export
 test_trace : IO ()
 test_trace = do
   assertAll "trace" $ trace (const {dtype=S32} [[-1, 5], [1, 4]]) == const 3
+
+export
+test : IO ()
+test = do
+  test_const_eval
+  test_toString
+  test_reshape
+  test_slice
+  test_index
+  test_split
+  test_concat
+  test_diag
+  test_triangle
+  test_identity
+  test_expand
+  test_broadcast
+  test_squeeze
+  test_T
+  test_map
+  test_map2
+  test_reduce
+  test_elementwise_equality
+  test_elementwise_inequality
+  test_comparison
+  Vector.test_dot
+  Matrix.test_dot
+  test_add
+  test_Sum
+  test_subtract
+  test_elementwise_multiplication
+  test_scalar_multiplication
+  test_Prod
+  test_elementwise_division
+  test_scalar_division
+  test_pow
+  test_elementwise_and
+  test_All
+  test_elementwise_or
+  test_Any
+  test_elementwise_not
+  test_abs
+  test_negate
+  testElementwiseUnaryDoubleCases
+  test_min
+  test_Min
+  test_max
+  test_Max
+  test_cholesky
+  test_triangularsolve
+  test_trace
