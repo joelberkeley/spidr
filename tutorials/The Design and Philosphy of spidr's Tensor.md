@@ -40,16 +40,13 @@ we can't implement `head` for empty lists, at least not as a total function. Let
 ```idris
 ys : Vect 3 Int
 ys = [0, 1, 2]
-
--- this won't compile
-ys' : Vect 3 Int
-ys' = []
 ```
-If we try to define `head` for `Vect`, we find that we can use the types to require that the argument isn't empty
+If we tried to implement this with `ys = [0]`, it wouldn't compile, as this is a `Vect 1 Nat`. If we try to define `head` for `Vect`, we find that we can use the types to require that the argument isn't empty
 ```idris
-head : Vect (S n) Int -> Int
-head [] impossible  -- `impossible` means this case can't happen
-head (x :: _) = x
+namespace Vect
+  head : Vect (S n) Int -> Int
+  head [] impossible  -- `impossible` means this case can't happen
+  head (x :: _) = x
 ```
 This kind of precision can be used not only to constrain arguments, but also function return values. For example, consider the nested list, or matrix
 ```idris
