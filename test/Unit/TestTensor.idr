@@ -846,7 +846,7 @@ testElementwiseUnaryDoubleCases = do
 test_erf : IO ()
 test_erf = do
   let x = const {shape=[_]} [-1.5, -0.5, 0.5, 1.5]
-      expected = const [-0.96610516, -0.5204998,  0.5204998,  0.9661051]
+      expected = const [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
   assertAll "erf agrees with tfp Normal" $ sufficientlyEq {tol=0.000001} (erf x) expected
 
 min' : Double -> Double -> Double
