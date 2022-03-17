@@ -632,10 +632,10 @@ select (MkTensor mkOpPred) (MkTensor mkOpTrue) (MkTensor mkOpFalse) = MkTensor $
   op <- primIO $ prim__select !(mkOpPred builder) !(mkOpTrue builder) !(mkOpFalse builder)
   onCollectAny op XlaOp.delete
 
-||| Evaluate one of two functions depending on a scalar predicte. If the predicte is truthy, this
-||| function evaluates `onTrue` on the corresponding specified argument, otherwise it evaluates
-||| `onFalse` on the corresponding specified argument. The result of the evaluated function is
-||| returned. For example, for
+||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
+||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
+||| corresponding specified argument. The result of the evaluated function is returned. For example,
+||| for
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = [2, -1]
