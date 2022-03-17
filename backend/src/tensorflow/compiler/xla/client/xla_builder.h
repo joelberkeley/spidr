@@ -138,4 +138,12 @@ extern "C" {
         XlaOp* static_operands,
         int static_operands_len
     );
+
+    XlaOp* Conditional(
+        XlaOp& predicate,
+        XlaOp& true_operand,
+        const XlaComputation& true_computation,
+        XlaOp& false_operand,
+        const XlaComputation& false_computation
+    );
 }
