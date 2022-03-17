@@ -720,6 +720,24 @@ test_select = do
       expected = const {shape=[_, _]} {dtype=S32} [[6, 1, 2], [3, 10, 11]]
   assertAll "select for array" $ select pred onTrue onFalse == expected
 
+test_cond : IO ()
+test_cond = do
+  let x = const {shape=[]} {dtype=S32} 0
+  assertAll "cond for trivial truthy" $
+    cond (const True) (+ const 1) x (\x => x - const 1) x == const 1
+
+  let x = const {shape=[]} {dtype=S32} 0
+  assertAll "cond for trivial falsy" $
+    cond (const False) (+ const 1) x (\x => x - const 1) x == const (-1)
+
+  let x = const {shape=[_]} {dtype=S32} [2, 3]
+      y = const {shape=[_, _]} {dtype=S32} [[6, 7], [8, 9]]
+  assertAll "cond for non-trivial truthy" $ cond (const True) (const 5 *) x diag y == const [10, 15]
+
+  let x = const {shape=[_]} {dtype=S32} [2, 3]
+      y = const {shape=[_, _]} {dtype=S32} [[6, 7], [8, 9]]
+  assertAll "cond for non-trivial falsy" $ cond (const False) (const 5 *) x diag y == const [6, 9]
+
 test_elementwise_division : IO ()
 test_elementwise_division = do
   F64.testElementwiseBinary "(/)" (/) (/)
@@ -954,6 +972,7 @@ test = do
   test_Any
   test_elementwise_not
   test_select
+  test_cond
   test_abs
   test_negate
   testElementwiseUnaryDoubleCases

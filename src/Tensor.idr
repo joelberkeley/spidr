@@ -621,13 +621,63 @@ not = unaryOp prim__not
 ||| onFalse : Tensor [3] S32
 ||| onFalse = const [4, 5, 6]
 ||| ```
-||| `cond preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
+||| `select preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
+|||
+||| @onTrue The elements to choose where the predicate elements are truthy.
+||| @onFalse The elements to choose where the predicate elements are falsy.
 export
 select : Tensor shape PRED -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype)
          -> Tensor shape dtype
 select (MkTensor mkOpPred) (MkTensor mkOpTrue) (MkTensor mkOpFalse) = MkTensor $ \builder => do
   op <- primIO $ prim__select !(mkOpPred builder) !(mkOpTrue builder) !(mkOpFalse builder)
   onCollectAny op XlaOp.delete
+
+||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
+||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
+||| corresponding specified argument. The result of the evaluated function is returned. For example,
+||| for
+||| ```
+||| x : Tensor [2] S32
+||| x = const [2, -1]
+|||
+||| y : Tensor [2, 2] S32
+||| y = const [[5, 6],
+|||            [7, 8]]
+||| ```
+||| `cond (const True) (const 2 *) x diag y` is equivalent to `const [4, -2]` and
+||| `cond (const False) (const 2 *) x diag y` to `const [5, 8]`.
+|||
+||| While both functions will be called for the purposes of defining the computation, only one will
+||| be evaluated with its specified argument. That is, this function short-circuits.
+|||
+||| @onTrue The function to execute if the predicate is truthy.
+||| @onFalse The function to execute if the predicate is falsy.
+export
+cond : (Primitive tType, Primitive fType) => {shape : _} -> Tensor [] PRED
+  -> (onTrue : Tensor tShape tType -> Tensor shape dtype) -> Tensor tShape tType
+  -> (onFalse : Tensor fShape fType -> Tensor shape dtype) -> Tensor fShape fType
+  -> Tensor shape dtype
+cond
+  (MkTensor mkPred)
+  onTrue
+  (MkTensor {shape=tShape} mkOpTrue)
+  onFalse
+  (MkTensor {shape=fShape} mkOpFalse) = MkTensor $ \builder => do
+    (MkTensor mkOpTrueRes) <- map onTrue (parameter 0 "" tShape)
+    trueBuilder <- prim__createSubBuilder builder "on True computation"
+    _ <- mkOpTrueRes trueBuilder
+    trueComp <- prim__build trueBuilder
+    (MkTensor mkOpFalseRes) <- map onFalse (parameter 0 "" fShape)
+    falseBuilder <- prim__createSubBuilder builder "on False computation"
+    _ <- mkOpFalseRes falseBuilder
+    falseComp <- prim__build falseBuilder
+    op <- primIO $ prim__conditional
+      !(mkPred builder)
+      !(mkOpTrue builder)
+      trueComp
+      !(mkOpFalse builder)
+      falseComp
+    onCollectAny op XlaOp.delete
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@

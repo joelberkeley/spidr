@@ -261,3 +261,7 @@ export
 %foreign (libxla "Map")
 prim__map : GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr
             -> GCPtr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Conditional")
+prim__conditional : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
