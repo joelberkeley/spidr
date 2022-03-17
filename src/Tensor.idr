@@ -627,7 +627,7 @@ select : Tensor shape PRED -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor
          -> Tensor shape dtype
 select (MkTensor mkOpPred) (MkTensor mkOpTrue) (MkTensor mkOpFalse) = MkTensor $ \builder => do
   op <- primIO $ prim__select !(mkOpPred builder) !(mkOpTrue builder) !(mkOpFalse builder)
-  onCollectAny op XlaBuilder.delete
+  onCollectAny op XlaOp.delete
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
