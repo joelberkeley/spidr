@@ -608,6 +608,27 @@ export
 not : Tensor shape PRED -> Tensor shape PRED
 not = unaryOp prim__not
 
+||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
+||| predicates, the output will use the corresponding element from `onTrue` if the element is
+||| truthy, else the element from `onFalse`. For example, for
+||| ```
+||| preds : Tensor [3] PRED
+||| preds = const [False, True, False]
+|||
+||| onTrue : Tensor [3] S32
+||| onTrue = const [1, 2, 3]
+|||
+||| onFalse : Tensor [3] S32
+||| onFalse = const [4, 5, 6]
+||| ```
+||| `cond preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
+export
+select : Tensor shape PRED -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype)
+         -> Tensor shape dtype
+select (MkTensor mkOpPred) (MkTensor mkOpTrue) (MkTensor mkOpFalse) = MkTensor $ \builder => do
+  op <- primIO $ prim__select !(mkOpPred builder) !(mkOpTrue builder) !(mkOpFalse builder)
+  onCollectAny op XlaOp.delete
+
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
 

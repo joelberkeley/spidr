@@ -707,6 +707,19 @@ test_elementwise_not = do
   sequence_ [assertAll "not for scalar" $
              not (const x) == const {shape=[]} (not x) | x <- bools]
 
+test_select : IO ()
+test_select = do
+  let onTrue = const {shape=[]} {dtype=S32} 1
+      onFalse = const 0
+  assertAll "select for scalar True" $ select (const True) onTrue onFalse == onTrue
+  assertAll "select for scalar False" $ select (const False) onTrue onFalse == onFalse
+
+  let pred = const [[False, True, True], [True, False, False]]
+      onTrue = const [[0, 1, 2], [3, 4, 5]]
+      onFalse = const [[6, 7, 8], [9, 10, 11]]
+      expected = const {shape=[_, _]} {dtype=S32} [[6, 1, 2], [3, 10, 11]]
+  assertAll "select for array" $ select pred onTrue onFalse == expected
+
 test_elementwise_division : IO ()
 test_elementwise_division = do
   F64.testElementwiseBinary "(/)" (/) (/)
@@ -940,6 +953,7 @@ test = do
   test_elementwise_or
   test_Any
   test_elementwise_not
+  test_select
   test_abs
   test_negate
   testElementwiseUnaryDoubleCases
