@@ -621,7 +621,7 @@ not = unaryOp prim__not
 ||| onFalse : Tensor [3] S32
 ||| onFalse = const [4, 5, 6]
 ||| ```
-||| `cond preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
+||| `select preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
 |||
 ||| @onTrue The elements to choose where the predicate elements are truthy.
 ||| @onFalse The elements to choose where the predicate elements are falsy.
@@ -635,7 +635,17 @@ select (MkTensor mkOpPred) (MkTensor mkOpTrue) (MkTensor mkOpFalse) = MkTensor $
 ||| Evaluate one of two functions depending on a scalar predicte. If the predicte is truthy, this
 ||| function evaluates `onTrue` on the corresponding specified argument, otherwise it evaluates
 ||| `onFalse` on the corresponding specified argument. The result of the evaluated function is
-||| returned.
+||| returned. For example, for
+||| ```
+||| x : Tensor [2] S32
+||| x = [2, -1]
+|||
+||| y : Tensor [2, 2] S32
+||| y = [[5, 6],
+|||      [7, 8]]
+||| ```
+||| `cond (const True) (const 2 *) x diag y` is equivalent to `const [4, -2]` and
+||| `cond (const False) (const 2 *) x diag y` to `const [5, 8]`.
 |||
 ||| While both functions will be called for the purposes of defining the computation, only one will
 ||| be evaluated with its specified argument. That is this function short-circuits.
