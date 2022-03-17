@@ -44,7 +44,14 @@ test_gaussian_pdf = do
       expected = const 0.016427375  -- calculated using TensorFlow Probability
   assertAll "multivariate Gaussian" $ sufficientlyEq {tol=0.00000001} actual expected
 
+test_gaussian_cdf : IO ()
+test_gaussian_cdf = do
+  let gaussian = MkGaussian (const [[0]]) (const [[[1.0]]])
+      x : Tensor [1, 1] F64 = (const [[0]])
+  assertAll "cdf" $ sufficientlyEq (cdf gaussian x) (const 0.5)
+
 export
 test : IO ()
 test = do
   test_gaussian_pdf
+  test_gaussian_cdf

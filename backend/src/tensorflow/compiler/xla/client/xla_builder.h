@@ -13,6 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <functional>
+
+#include "tensorflow/compiler/xla/client/xla_builder.h"
+
 #include "../literal.h"
 #include "xla_computation.h"
 
@@ -78,7 +82,11 @@ extern "C" {
 
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
     XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
+}
 
+XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand);
+
+extern "C" {
     XlaOp* Eq(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ne(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Ge(XlaOp& lhs, XlaOp& rhs);

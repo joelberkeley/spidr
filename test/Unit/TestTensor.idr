@@ -843,6 +843,10 @@ testElementwiseUnaryDoubleCases = do
   F64.testElementwiseUnary "tanh" tanh' tanh
   F64.testElementwiseUnary "sqrt" sqrt sqrt
 
+test_erf : IO ()
+test_erf = do
+  assertAll "erf" $ erf (const {shape=[]} {dtype=F64} 0) == const 0
+
 min' : Double -> Double -> Double
 min' x y = if (x /= x) then x else if (y /= y) then y else min x y
 
@@ -976,6 +980,7 @@ test = do
   test_abs
   test_negate
   testElementwiseUnaryDoubleCases
+  test_erf
   test_min
   test_Min
   test_max
