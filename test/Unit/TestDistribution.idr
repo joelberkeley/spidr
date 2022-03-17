@@ -46,9 +46,15 @@ test_gaussian_pdf = do
 
 test_gaussian_cdf : IO ()
 test_gaussian_cdf = do
-  let gaussian = MkGaussian (const [[0]]) (const [[[1.0]]])
-      x : Tensor [1, 1] F64 = (const [[0]])
-  assertAll "cdf" $ sufficientlyEq (cdf gaussian x) (const 0.5)
+  let gaussian = MkGaussian (const [[0.5]]) (const [[[1.44]]])
+      xs : Vect _ _ = [-1.5, -0.5, 0.5, 1.5]
+      expected = [0.04779036, 0.20232838, 0.5, 0.7976716]
+
+      assert' : (Double, Double) -> IO ()
+      assert' (x, exp) = assertAll "cdf \{show x} \{show exp}" $
+        sufficientlyEq {tol=0.0001} (cdf gaussian (const {shape=[1, 1]} [[x]])) (const exp)
+
+  traverse_ assert' (zip xs expected)
 
 export
 test : IO ()

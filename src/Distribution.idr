@@ -86,4 +86,4 @@ ClosedFormDistribution [1] Gaussian where
 
   cdf (MkGaussian {d} mean cov) x with (d)
     _ | S k = ?cdf_rhs
-    _ | 0 = (const 1 + erf (squeeze (x - mean) / (squeeze cov) ^ (const 0.5))) / const 2
+    _ | 0 = (const 1 + erf (squeeze (x - mean) / (sqrt (squeeze cov * const 2)))) / const 2
