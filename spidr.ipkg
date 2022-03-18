@@ -24,6 +24,7 @@ modules =
   Util,
 
   XLA,
+  XLA.Client.Lib.Math,
   XLA.Client.Lib.Matrix,
   XLA.Client.ClientLibrary,
   XLA.Client.LocalClient,

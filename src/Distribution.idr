@@ -73,7 +73,7 @@ Distribution Gaussian where
   mean (MkGaussian mean' _) = mean'
   cov (MkGaussian _ cov') = cov'
 
-||| **NOTE** `cdf` is not yet implemented for `Gaussian`.
+||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =
@@ -84,4 +84,6 @@ ClosedFormDistribution [1] Gaussian where
         denominator = (const (2 * pi) ^ (const $ cast (S d) / 2.0)) * cov_sqrt_det
      in exp exponent / denominator
 
-  cdf (MkGaussian mean cov) x = ?cdf_rhs
+  cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
+  cdf (MkGaussian {d=0} mean cov) x =
+    (const 1 + erf (squeeze (x - mean) / (sqrt (squeeze cov * const 2)))) / const 2

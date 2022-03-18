@@ -28,6 +28,7 @@ import Error
 import public Primitive
 import public Types
 import public Util
+import XLA.Client.Lib.Math
 import XLA.Client.Lib.Matrix
 import XLA.Client.ClientLibrary
 import XLA.Client.LocalClient
@@ -861,6 +862,11 @@ cos = unaryOp prim__cos
 export
 tanh : Tensor shape F64 -> Tensor shape F64
 tanh = unaryOp prim__tanh
+
+||| An approximation to the element-wise error function.
+export
+erf : Tensor shape F64 -> Tensor shape F64
+erf = unaryOp prim__erf
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (const [0, 9])` is equivalent to `const [0, 3]`.
