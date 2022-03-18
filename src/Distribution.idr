@@ -84,6 +84,6 @@ ClosedFormDistribution [1] Gaussian where
         denominator = (const (2 * pi) ^ (const $ cast (S d) / 2.0)) * cov_sqrt_det
      in exp exponent / denominator
 
-  cdf (MkGaussian {d} mean cov) x with (d)
-    _ | S k = ?cdf_rhs
-    _ | 0 = (const 1 + erf (squeeze (x - mean) / (sqrt (squeeze cov * const 2)))) / const 2
+  cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
+  cdf (MkGaussian {d=0} mean cov) x =
+    (const 1 + erf (squeeze (x - mean) / (sqrt (squeeze cov * const 2)))) / const 2
