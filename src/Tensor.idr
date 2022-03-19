@@ -39,6 +39,19 @@ import XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
 
+data PrimTensor : Type where
+  Computation : (GCAnyPtr -> IO (List GCAnyPtr)) -> IO GCAnyPtr -> PrimTensor
+  Operand : (GCAnyPtr -> IO GCAnyPtr) -> PrimTensor
+
+noArgs : GCAnyPtr -> IO (List GCAnyPtr)
+noArgs _ = pure []
+
+toOp : PrimTensor -> GCAnyPtr -> IO GCAnyPtr
+toOp (Computation mk_args comp) builder = do
+  args <- mk_args builder
+  prim__call builder !comp !(mkXlaOpArray args) (cast $ length args)
+toOp (Operand mk_op) builder = mk_op builder
+
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
 ||| the specific backend.
@@ -47,40 +60,40 @@ import XLA.ShapeUtil
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> IO GCAnyPtr -> Tensor shape dtype
+  MkTensor : {shape : _} -> PrimTensor -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Array` data.
 export
 const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype
-const xs = MkTensor $ do
-  builder <- prim__mkXlaBuilder "const"
+const xs = MkTensor $ Operand $ \builder => do
   lit <- mkLiteral {dtype} xs
-  _ <- onCollectAny (constantLiteral builder lit) XlaOp.delete
-  prim__build builder
+  onCollectAny (constantLiteral builder lit) XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
 eval : PrimitiveRW dtype ty => Tensor shape dtype -> IO $ Array shape ty
-eval (MkTensor {shape} comp) = do
+eval (MkTensor xs) = do
+  builder <- prim__mkXlaBuilder "eval"
+  _ <- toOp xs builder
   client <- primIO prim__localClientOrDie
-  lit <- prim__executeAndTransfer client !comp prim__getNullAnyPtr 0
+  lit <- prim__executeAndTransfer client !(prim__build builder) prim__getNullAnyPtr 0
   pure (toArray {dtype} lit)
 
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
 export
 toString : Tensor shape dtype -> IO String
-toString (MkTensor comp) = do
+toString (MkTensor xs) = do
   builder <- prim__mkXlaBuilder "toString"
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
+  op <- toOp xs builder
   pure (prim__opToString builder op)
 
 ----------------------------- structural operations ----------------------------
 
-reshapeImpl : String -> (from, to : Shape) -> IO GCAnyPtr -> IO GCAnyPtr
-reshapeImpl name from to comp = do
+reshapeImpl : String -> (from, to : Shape) -> PrimTensor -> IO GCAnyPtr
+reshapeImpl name from to xs = do
   builder <- prim__mkXlaBuilder name
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
+  op <- toOp xs builder
   dim_order <- mkIntArray (range (length from))
   cto <- mkIntArray to
   reshaped <- primIO $ prim__reshape op dim_order (cast (length from)) cto (cast (length to))
@@ -91,7 +104,8 @@ reshapeImpl name from to comp = do
 ||| `const [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape : {to : _} -> product from = product to => Tensor from dtype -> Tensor to dtype
-reshape (MkTensor {shape=from} comp) = MkTensor $ reshapeImpl "reshape" from to comp
+reshape (MkTensor {shape=from} xs) =
+  MkTensor $ Computation noArgs $ reshapeImpl "reshape" from to xs
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -100,8 +114,8 @@ reshape (MkTensor {shape=from} comp) = MkTensor $ reshapeImpl "reshape" from to 
 export
 expand : (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
          -> Tensor (insertAt axis 1 shape) dtype
-expand axis (MkTensor {shape} comp) = MkTensor $
-  reshapeImpl "expand" shape (insertAt axis 1 shape) comp
+expand axis (MkTensor {shape} xs) =
+  MkTensor $ Computation noArgs $ reshapeImpl "expand" shape (insertAt axis 1 shape) xs
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -143,7 +157,8 @@ namespace Squeezable
 ||| ```
 export
 squeeze : {to : _} -> Squeezable from to => Tensor from dtype -> Tensor to dtype
-squeeze (MkTensor {shape=from} comp) = MkTensor $ reshapeImpl "squeeze" from to comp
+squeeze (MkTensor {shape=from} xs) =
+  MkTensor $ Computation noArgs $ reshapeImpl "squeeze" from to xs
 
 ||| Take a slice from a single `Tensor` axis. For example, for
 ||| ```
@@ -185,9 +200,9 @@ export
 slice : (axis, from, to : Nat)
         -> from `LTE` to => InBounds axis shape => (isWithinAxis : to `LTE` index axis shape)
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
-slice axis from to (MkTensor {shape} comp) = MkTensor $ do
+slice axis from to (MkTensor {shape} xs) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder "slice"
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
+  op <- toOp xs builder
   let rank = length shape
   start <- mkIntArray (replicate axis 0 ++ [from] ++ replicate (rank `minus` axis) 0)
   stop <- mkIntArray (replaceAt axis to shape)
@@ -205,10 +220,10 @@ slice axis from to (MkTensor {shape} comp) = MkTensor $ do
 export
 index : (axis, idx : Nat) -> InBounds axis shape => idx `LT` index axis shape
         => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
-index axis idx (MkTensor {shape} comp) =
-  let MkTensor compSliced : Tensor _ dtype :=
-        slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) (MkTensor {shape} comp)
-   in MkTensor $ reshapeImpl "index" shape (deleteAt axis shape) compSliced
+index axis idx (MkTensor {shape} xs) =
+  let MkTensor sliced : Tensor _ dtype :=
+        slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) (MkTensor {shape} xs)
+   in MkTensor $ Computation noArgs $ reshapeImpl "index" shape (deleteAt axis shape) sliced
 
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
@@ -246,11 +261,9 @@ export
 concat : (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
          -> (InBounds axis s, InBounds axis s') => deleteAt axis s = deleteAt axis s'
          => Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor compL) (MkTensor compR) = MkTensor $ do
+concat axis (MkTensor l) (MkTensor r) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder "concat"
-  opL <- prim__call builder !compL !(mkXlaOpArray []) 0
-  opR <- prim__call builder !compR !(mkXlaOpArray []) 0
-  ops <- mkXlaOpArray [opL, opR]
+  ops <- mkXlaOpArray [!(toOp l builder), !(toOp r builder)]
   res <- primIO $ prim__concatInDim builder ops 2 (cast axis)
   _ <- onCollectAny res XlaOp.delete
   prim__build builder
@@ -265,9 +278,9 @@ concat axis (MkTensor compL) (MkTensor compR) = MkTensor $ do
 ||| `diag x` is equivalent to `const [0, 4, 8]`.
 export
 diag : Tensor [n, n] dtype -> Tensor [n] dtype
-diag (MkTensor comp) = MkTensor $ do
+diag (MkTensor xs) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder "diag"
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
+  op <- toOp xs builder
   res <- primIO (prim__getMatrixDiagonal op)
   _ <- onCollectAny res XlaOp.delete
   prim__build builder
@@ -292,9 +305,9 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
-triangle tri (MkTensor comp) = MkTensor $ do
+triangle tri (MkTensor xs) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder "triangle"
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
+  op <- toOp xs builder
   res <- primIO $ prim__triangle op (case tri of Upper => 0; Lower => 1)
   _ <- onCollectAny res XlaOp.delete
   prim__build builder
@@ -303,10 +316,10 @@ triangle tri (MkTensor comp) = MkTensor $ do
 ||| to `const [[1, 3], [2, 4]]`.
 export
 (.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
-(MkTensor comp).T = MkTensor $ do
+(MkTensor xs).T = MkTensor $ Computation noArgs $ do
   permutations <- mkIntArray [1, 0]
   builder <- prim__mkXlaBuilder "(.T)"
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
+  op <- toOp xs builder
   res <- primIO $ prim__transpose op permutations 2
   _ <- onCollectAny res XlaOp.delete
   prim__build builder
@@ -324,12 +337,10 @@ export
 ||| ```
 export
 identity : (Primitive.Num dtype, Primitive dtype) => {n : _} -> Tensor [n, n] dtype
-identity = MkTensor $ do
+identity = MkTensor $ Operand $ \builder => do
   let n = cast n
-  builder <- prim__mkXlaBuilder "identity"
   res <- primIO $ prim__identityMatrix builder (xlaIdentifier {dtype}) n n
-  _ <- onCollectAny res XlaOp.delete
-  prim__build builder
+  onCollectAny res XlaOp.delete
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -379,13 +390,11 @@ namespace Broadcastable
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
 empty : Primitive dtype => {shape : _} -> {auto 0 isEmpty : Elem 0 shape} -> Tensor shape dtype
-empty = MkTensor $ do
+empty = MkTensor $ Operand $ \builder => do
   xla_shape <- mkShape {dtype} shape
-  builder <- prim__mkXlaBuilder "empty"
   literal <- primIO $ prim__allocLiteral xla_shape
   literal <- onCollectAny literal Literal.delete
-  _ <- onCollectAny (constantLiteral builder literal) XlaOp.delete
-  prim__build builder
+  onCollectAny (constantLiteral builder literal) XlaOp.delete
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
@@ -409,32 +418,32 @@ broadcast xs with (xs)
     _ => impl [] to xs
 
     where
-    broadcast : List Nat -> IO GCAnyPtr -> IO GCAnyPtr
-    broadcast broadcast_sizes comp = do
-      broadcast_sizes_ptr <- mkIntArray broadcast_sizes
+    broadcast : List Nat -> PrimTensor -> PrimTensor
+    broadcast broadcast_sizes xs = Computation noArgs $ do
       builder <- prim__mkXlaBuilder "broadcast"
-      op <- prim__call builder !comp !(mkXlaOpArray []) 0
+      broadcast_sizes_ptr <- mkIntArray broadcast_sizes
+      op <- toOp xs builder
       res <- primIO $ prim__broadcast op broadcast_sizes_ptr (cast $ length broadcast_sizes)
       _ <- onCollectAny res XlaOp.delete
       prim__build builder
 
-    broadcastInDim : Shape -> Shape -> IO GCAnyPtr -> IO GCAnyPtr
-    broadcastInDim ods bcd comp = do
+    broadcastInDim : Shape -> Shape -> PrimTensor -> PrimTensor
+    broadcastInDim ods bcd xs = Computation noArgs $ do
       ods_ptr <- mkIntArray ods
       bcd_ptr <- mkIntArray bcd
       let len = cast (length ods)
       builder <- prim__mkXlaBuilder "broadcast"
-      op <- prim__call builder !comp !(mkXlaOpArray []) 0
+      op <- toOp xs builder
       res <- primIO (prim__broadcastInDim op ods_ptr len bcd_ptr len)
       _ <- onCollectAny res XlaOp.delete
       prim__build builder
 
     impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-    impl to_leading _ {prf=Same} (MkTensor comp) =
-      MkTensor $ if (length to_leading == 0) then comp else broadcast to_leading comp
-    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor comp) =
-      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) comp)
+    impl to_leading _ {prf=Same} (MkTensor xs) =
+      MkTensor $ if (length to_leading == 0) then xs else broadcast to_leading xs
+    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor xs) =
+      MkTensor $ broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) xs)
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
@@ -468,16 +477,18 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| equivalent to `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
--- map f (MkTensor {shape} comp) = MkTensor $ do
+-- map f (MkTensor {shape} mk_args comp) = MkTensor $ do
 --   builder <- prim__mkXlaBuilder "map"
-  
+
 --   xla_shape <- mkShape {dtype=a} []
 
 --   parambuilder <- prim__createSubBuilder builder ""
---   _ <- onCollectAny (parameter parambuilder 0 xla_shape "") XlaOp.delete
+--   param <- onCollectAny (parameter parambuilder 0 xla_shape "") XlaOp.delete
 --   let MkTensor computation = f (MkTensor (prim__build parambuilder))
 --   putStrLn "map ... prim__call"
---   op <- prim__call builder !comp !(mkXlaOpArray []) 0
+
+--   args <- mk_args builder
+--   op <- prim__call builder !comp !(mkXlaOpArray args) (cast $ length args)
 --   operands <- mkXlaOpArray [op]
 --   let rank = length shape
 --   dimensions <- mkIntArray (range rank)
@@ -559,66 +570,63 @@ reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat)
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
-unaryOp name prim_operator (MkTensor comp) = MkTensor $ do
+primUnary : String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
+primUnary name prim_operator (MkTensor xs) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder name
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
-  res <- primIO (prim_operator op)
-  _ <- onCollectAny res XlaOp.delete
+  op <- primIO (prim_operator !(toOp xs builder))
+  _ <- onCollectAny op XlaOp.delete
   prim__build builder
 
-binaryOp : String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
+primBinary : String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
            -> Tensor shape a -> Tensor shape b -> Tensor shape c
-binaryOp name prim_operator (MkTensor compL) (MkTensor compR) = MkTensor $ do
+primBinary name prim_operator (MkTensor l) (MkTensor r) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder name
-  opL <- prim__call builder !compL !(mkXlaOpArray []) 0
-  opR <- prim__call builder !compR !(mkXlaOpArray []) 0
-  res <- primIO (prim_operator opL opR)
-  _ <- onCollectAny res XlaOp.delete
+  op <- primIO (prim_operator !(toOp l builder) !(toOp r builder))
+  _ <- onCollectAny op XlaOp.delete
   prim__build builder
 
 ||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
 ||| `const [True, False]`.
 export
 (==) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(==) = binaryOp "(==)" prim__eq
+(==) = primBinary "(==)" prim__eq
 
 ||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
 ||| `const [False, True]`.
 export
 (/=) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(/=) = binaryOp "(/=)" prim__ne
+(/=) = primBinary "(/=)" prim__ne
 
 ||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
 ||| `const [True, False, False]`.
 export
 (<) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<) = binaryOp "(<)" prim__lt
+(<) = primBinary "(<)" prim__lt
 
 ||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
 ||| `const [False, False, True]`.
 export
 (>) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>) = binaryOp "(>)" prim__gt
+(>) = primBinary "(>)" prim__gt
 
 ||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is
 ||| equivalent to `const [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<=) = binaryOp "(<=)" prim__le
+(<=) = primBinary "(<=)" prim__le
 
 ||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
 ||| equivalent to `const [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>=) = binaryOp "(>=)" prim__ge
+(>=) = primBinary "(>=)" prim__ge
 
 ||| Element-wise boolean and. For example,
 ||| `const [True, True, False, False] && const [True, False, True, False]` is equivalent to
 ||| `const [True, False, False, False]`.
 export
 (&&) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(&&) = binaryOp "(&&)" prim__and
+(&&) = primBinary "(&&)" prim__and
 
 namespace Semigroup
   export
@@ -635,7 +643,7 @@ namespace Monoid
 ||| `const [True, True, True, False]`.
 export
 (||) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(||) = binaryOp "(||)" prim__or
+(||) = primBinary "(||)" prim__or
 
 namespace Semigroup
   export
@@ -651,7 +659,7 @@ namespace Monoid
 ||| `const [False, True]`.
 export
 not : Tensor shape PRED -> Tensor shape PRED
-not = unaryOp "not" prim__not
+not = primUnary "not" prim__not
 
 ||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
 ||| predicates, the output will use the corresponding element from `onTrue` if the element is
@@ -673,14 +681,11 @@ not = unaryOp "not" prim__not
 export
 select : Tensor shape PRED -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype)
          -> Tensor shape dtype
-select (MkTensor compPred) (MkTensor compTrue) (MkTensor compFalse) = MkTensor $ do
-  builder <- prim__mkXlaBuilder "select"
-  opPred <- prim__call builder !compPred !(mkXlaOpArray []) 0
-  opTrue <- prim__call builder !compTrue !(mkXlaOpArray []) 0
-  opFalse <- prim__call builder !compFalse !(mkXlaOpArray []) 0
-  op <- primIO $ prim__select opPred opTrue opFalse
-  _ <- onCollectAny op XlaOp.delete
-  prim__build builder
+select (MkTensor pred) (MkTensor true) (MkTensor false) = MkTensor $ Computation noArgs $ do
+    builder <- prim__mkXlaBuilder "select"
+    op <- primIO $ prim__select !(toOp pred builder) !(toOp true builder) !(toOp false builder)
+    _ <- onCollectAny op XlaOp.delete
+    prim__build builder
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -740,12 +745,10 @@ namespace Vector
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
-  (MkTensor compL) @@ (MkTensor compR) = MkTensor $ do
+  (MkTensor l) @@ (MkTensor r) = MkTensor $ Computation noArgs $ do
     builder <- prim__mkXlaBuilder "(@@)"
-    opL <- prim__call builder !compL !(mkXlaOpArray []) 0
-    opR <- prim__call builder !compR !(mkXlaOpArray []) 0
-    res <- primIO $ prim__dot opL opR
-    _ <- onCollectAny res XlaOp.delete
+    op <- primIO $ prim__dot !(toOp l builder) !(toOp r builder)
+    _ <- onCollectAny op XlaOp.delete
     prim__build builder
 
 namespace Matrix
@@ -774,19 +777,17 @@ namespace Matrix
   export
   (@@) : Primitive.Num dtype => Tensor [n, S m] dtype -> Tensor (S m :: tl) dtype
          -> length tl `LTE` 1 => Tensor (n :: tl) dtype
-  (MkTensor compL) @@ (MkTensor compR) = MkTensor $ do
+  (MkTensor l) @@ (MkTensor r) = MkTensor $ Computation noArgs $ do
     builder <- prim__mkXlaBuilder "(@@)"
-    opL <- prim__call builder !compL !(mkXlaOpArray []) 0
-    opR <- prim__call builder !compR !(mkXlaOpArray []) 0
-    res <- primIO $ prim__dot opL opR
-    _ <- onCollectAny res XlaOp.delete
+    op <- primIO $ prim__dot !(toOp l builder) !(toOp r builder)
+    _ <- onCollectAny op XlaOp.delete
     prim__build builder
 
 ||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
 ||| `const [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) = binaryOp "(+)" prim__add
+(+) = primBinary "(+)" prim__add
 
 namespace Semigroup
   export
@@ -802,19 +803,19 @@ namespace Monoid
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate = unaryOp "negate" prim__neg
+negate = primUnary "negate" prim__neg
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) = binaryOp "(-)" prim__sub
+(-) = primBinary "(-)" prim__sub
 
 ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) = binaryOp "(*)" prim__mul
+(*) = primBinary "(*)" prim__mul
 
 namespace Scalarwise
   ||| Multiplication by a scalar. For example, `const 2 * const [3, 5]` is equivalent to
@@ -825,7 +826,7 @@ namespace Scalarwise
   (*) : (Primitive dtype, Primitive.Num dtype)
         => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
   l * r with (r)
-    _ | (MkTensor {shape=(d :: ds)} _) = (broadcast {prf=scalarToAnyOk (d :: ds)} l) * r
+    _ | MkTensor {shape=(d :: ds)} _ = broadcast {prf=scalarToAnyOk (d :: ds)} l * r
 
 namespace Semigroup
   export
@@ -842,7 +843,7 @@ namespace Monoid
 ||| to `const [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(/) = binaryOp "(/)" prim__div
+(/) = primBinary "(/)" prim__div
 
 namespace Scalarwise
   ||| Floating point division by a scalar. For example, `const [3.4, -5.6] / const 2` is equivalent
@@ -853,7 +854,7 @@ namespace Scalarwise
   (/) : (Primitive dtype, Primitive.Fractional dtype)
         => Tensor (d :: ds) dtype -> Tensor [] dtype -> Tensor (d :: ds) dtype
   l / r with (l)
-    _ | (MkTensor {shape=(d :: ds)} _) = l / (broadcast {prf=scalarToAnyOk (d :: ds)} r)
+    _ | MkTensor {shape=(d :: ds)} _ = l / broadcast {prf=scalarToAnyOk (d :: ds)} r
 
 infixr 9 ^
 
@@ -866,76 +867,76 @@ infixr 9 ^
 ||| Note: The first root is used.
 export
 (^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
-(^) = binaryOp "(^)" prim__pow
+(^) = primBinary "(^)" prim__pow
 
 ||| Element-wise absolute value. For example, `abs (const [-2, 3])` is equivalent to
 ||| `const [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-abs = unaryOp "abs" prim__abs
+abs = primUnary "abs" prim__abs
 
 ||| The element-wise natural exponential. For example, `exp (const [-1, 0, 2])` is equivalent to
 ||| `const [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Tensor shape F64
-exp = unaryOp "exp" prim__exp
+exp = primUnary "exp" prim__exp
 
 ||| The element-wise floor function. For example,
 ||| `floor (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
 ||| `const [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Tensor shape F64
-floor = unaryOp "floor" prim__floor
+floor = primUnary "floor" prim__floor
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
 ||| `const [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Tensor shape F64
-ceil = unaryOp "ceil" prim__ceil
+ceil = primUnary "ceil" prim__ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log (const [1 / euler, 1, euler * euler])` is equivalent to `const [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Tensor shape F64
-log = unaryOp "log" prim__log
+log = primUnary "log" prim__log
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp (-x)`.
 export
 logistic : Tensor shape F64 -> Tensor shape F64
-logistic = unaryOp "logistic" prim__logistic
+logistic = primUnary "logistic" prim__logistic
 
 ||| The element-wise sine.
 export
 sin : Tensor shape F64 -> Tensor shape F64
-sin = unaryOp "sin" prim__sin
+sin = primUnary "sin" prim__sin
 
 ||| The element-wise cosine.
 export
 cos : Tensor shape F64 -> Tensor shape F64
-cos = unaryOp "cos" prim__cos
+cos = primUnary "cos" prim__cos
 
 ||| The element-wise hyperbolic tangent.
 export
 tanh : Tensor shape F64 -> Tensor shape F64
-tanh = unaryOp "tanh" prim__tanh
+tanh = primUnary "tanh" prim__tanh
 
 ||| An approximation to the element-wise error function.
 export
 erf : Tensor shape F64 -> Tensor shape F64
-erf = unaryOp "erf" prim__erf
+erf = primUnary "erf" prim__erf
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (const [0, 9])` is equivalent to `const [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Tensor shape F64
-sqrt = unaryOp "sqrt" prim__sqrt
+sqrt = primUnary "sqrt" prim__sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-min = binaryOp "min" prim__min
+min = primBinary "min" prim__min
 
 namespace Semigroup
   export
@@ -953,7 +954,7 @@ namespace Monoid
 ||| `max (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-max = binaryOp "max" prim__max
+max = primBinary "max" prim__max
 
 namespace Semigroup
   export
@@ -973,11 +974,10 @@ namespace Monoid
 ||| semi-definite matrix `X` s.t. `X = L @@ L.T`.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
-cholesky (MkTensor comp) = MkTensor $ do
+cholesky (MkTensor xs) = MkTensor $ Computation noArgs $ do
   builder <- prim__mkXlaBuilder "cholesky"
-  op <- prim__call builder !comp !(mkXlaOpArray []) 0
-  res <- primIO $ prim__cholesky op 1
-  _ <- onCollectAny res XlaOp.delete
+  op <- primIO $ prim__cholesky !(toOp xs builder) 1
+  _ <- onCollectAny op XlaOp.delete
   prim__build builder
 
 infix 9 |\, \|
@@ -992,12 +992,10 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
-  (MkTensor compA) |\ (MkTensor compB) = MkTensor $ do
+  (MkTensor a) |\ (MkTensor b) = MkTensor $ Computation noArgs $ do
     builder <- prim__mkXlaBuilder "(|\)"
-    opA <- prim__call builder !compA !(mkXlaOpArray []) 0
-    opB <- prim__call builder !compB !(mkXlaOpArray []) 0
-    res <- primIO $ prim__triangularSolve opA opB 1 1 0 1
-    _ <- onCollectAny res XlaOp.delete
+    op <- primIO $ prim__triangularSolve !(toOp a builder) !(toOp b builder) 1 1 0 1
+    _ <- onCollectAny op XlaOp.delete
     prim__build builder
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
@@ -1009,12 +1007,10 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] dtype -> Tensor [m, n] dtype -> Tensor [m, n] dtype
-  (MkTensor compA) \| (MkTensor compB) = MkTensor $ do
+  (MkTensor a) \| (MkTensor b) = MkTensor $ Computation noArgs $ do
     builder <- prim__mkXlaBuilder "(\|)"
-    opA <- prim__call builder !compA !(mkXlaOpArray []) 0
-    opB <- prim__call builder !compB !(mkXlaOpArray []) 0
-    res <- primIO $ prim__triangularSolve opA opB 1 0 0 1
-    _ <- onCollectAny res XlaOp.delete
+    op <- primIO $ prim__triangularSolve !(toOp a builder) !(toOp b builder) 1 0 0 1
+    _ <- onCollectAny op XlaOp.delete
     prim__build builder
 
 namespace Vector
