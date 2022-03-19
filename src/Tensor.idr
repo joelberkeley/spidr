@@ -514,22 +514,31 @@ map f (MkTensor {shape} xs) = MkTensor $ Computation noArgs $ do
 export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
       -> Tensor shape a -> Tensor shape b -> Tensor shape c
--- map2 f (MkTensor {shape} mkOpL) (MkTensor mkOpR) = MkTensor $ \builder => do
---   sub_builder <- prim__createSubBuilder builder "computation"
---   (MkTensor mkOp') <- [| f (parameter 0 "" [] {dtype=a}) (parameter 1 "" [] {dtype=b}) |]
---   _ <- mkOp' sub_builder
---   computation <- prim__build sub_builder
---   operands <- mkXlaOpArray [!(mkOpL builder), !(mkOpR builder)]
---   let rank = length shape
---   dimensions <- mkIntArray (range rank)
---   op <- primIO (prim__map
---       builder
---       operands 2
---       computation
---       dimensions (cast rank)
---       prim__getNullAnyPtr 0
---     )
---   onCollectAny op XlaOp.delete
+map2 f (MkTensor {shape} l) (MkTensor r) = MkTensor $ Computation noArgs $ do
+  builder <- prim__mkXlaBuilder "map"
+
+  xla_shape <- mkShape {dtype=a} []
+  let paramL = MkTensor $ Operand $ \b => onCollectAny (parameter b 0 xla_shape "") XlaOp.delete
+      paramR = MkTensor $ Operand $ \b => onCollectAny (parameter b 1 xla_shape "") XlaOp.delete
+      computation = case f paramL paramR of
+        (MkTensor $ Computation _ comp) => comp
+        (MkTensor $ Operand mkOp) => do
+          sub <- prim__createSubBuilder builder ""
+          _ <- mkOp sub
+          prim__build sub
+
+  operands <- mkXlaOpArray [!(toOp l builder), !(toOp r builder)]
+  let rank = length shape
+  dimensions <- mkIntArray (range rank)
+  op <- primIO (prim__map
+      builder
+      operands 2
+      !computation
+      dimensions (cast rank)
+      prim__getNullAnyPtr 0
+    )
+  _ <- onCollectAny op XlaOp.delete
+  prim__build builder
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
@@ -540,30 +549,28 @@ map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b ->
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) ->
   InBounds axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
--- reduce axis (MkTensor comp) = MkTensor $ do
---   builder <- prim__mkXlaBuilder "reduce"
-  
---   xla_shape <- mkShape {dtype} []
+reduce axis (MkTensor comp) = MkTensor $ Computation noArgs $ do
+  builder <- prim__mkXlaBuilder "reduce"
 
---   parambuilder <- prim__createSubBuilder builder ""
---   _ <- onCollectAny (parameter paramLbuilder 0 xla_shape "") XlaOp.delete
---   _ <- onCollectAny (parameter paramRbuilder 1 xla_shape "") XlaOp.delete
---   let paramComp = MkTensor (prim__build paramRbuilder)
+  let semigroup : Monoid a -> Semigroup a
+      semigroup m = %search
 
---       semigroup : Monoid a -> Semigroup a
---       semigroup m = %search
+  xla_shape <- mkShape {dtype} []
+  let paramL = MkTensor $ Operand $ \b => onCollectAny (parameter b 0 xla_shape "") XlaOp.delete
+      paramR = MkTensor $ Operand $ \b => onCollectAny (parameter b 1 xla_shape "") XlaOp.delete
+      reducerComp = case (<+>) @{semigroup reducer} paramL paramR of
+        (MkTensor $ Computation _ comp) => comp
+        (MkTensor $ Operand mkOp) => do
+          sub <- prim__createSubBuilder builder ""
+          _ <- mkOp sub
+          prim__build sub
 
---   let MkTensor reducerComp = (<+>) @{semigroup reducer} paramL paramR
---       MkTensor initComp = neutral @{reducer}
---   putStrLn "reduce ... call comp"
---   op <- prim__call builder !comp !(mkXlaOpArray []) 0
---   putStrLn "reduce ... call initComp"
---   initOp <- prim__call builder !initComp !(mkXlaOpArray []) 0
---   putStrLn "reduce ... prim__reduce"
---   res <- primIO (prim__reduce op initOp !reducerComp !(mkIntArray [axis]) 1)
---   putStrLn "reduce ... gc"
---   _ <- onCollectAny res XlaOp.delete
---   prim__build builder
+  let MkTensor init = neutral @{reducer}
+  op <- toOp comp builder
+  initOp <- toOp init builder
+  res <- primIO (prim__reduce op initOp !reducerComp !(mkIntArray [axis]) 1)
+  _ <- onCollectAny res XlaOp.delete
+  prim__build builder
 
 ----------------------------- numeric operations ----------------------------
 

@@ -958,8 +958,8 @@ test = do
   test_squeeze
   test_T
   test_map
-  -- test_map2
-  -- test_reduce
+  test_map2
+  test_reduce
   test_elementwise_equality
   test_elementwise_inequality
   test_comparison
@@ -991,4 +991,4 @@ test = do
   test_Max
   test_cholesky
   test_triangularsolve
-  -- test_trace
+  test_trace

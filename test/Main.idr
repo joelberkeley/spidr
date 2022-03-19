@@ -25,8 +25,8 @@ import Utils
 
 main : IO ()
 main = do
-  -- Unit.Model.TestKernel.test
-  -- Unit.TestDistribution.test
+  Unit.Model.TestKernel.test
+  Unit.TestDistribution.test
   Unit.TestTensor.test
   Unit.TestUtil.test
   Unit.TestXLA.test
