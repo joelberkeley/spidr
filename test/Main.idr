@@ -20,21 +20,17 @@ import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestUtil
 import Unit.TestXLA
-import Tensor
 
 import Utils
 
 main : IO ()
 main = do
-  let x = const {shape=[_, _]} {dtype=S32} [[0, 0], [1, 1]]
-  eval (diag x) >>= printLn
-
   -- Unit.Model.TestKernel.test
   -- Unit.TestDistribution.test
-  -- Unit.TestTensor.test
-  -- Unit.TestUtil.test
-  -- Unit.TestXLA.test
+  Unit.TestTensor.test
+  Unit.TestUtil.test
+  Unit.TestXLA.test
 
-  -- Utils.test
+  Utils.test
 
-  -- putStrLn "Tests passed"
+  putStrLn "Tests passed"
