@@ -980,7 +980,7 @@ test = do
   test_Any
   test_elementwise_not
   test_select
-  -- test_cond
+  test_cond
   test_abs
   test_negate
   testElementwiseUnaryDoubleCases

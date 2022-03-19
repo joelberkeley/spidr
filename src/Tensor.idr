@@ -686,10 +686,10 @@ export
 select : Tensor shape PRED -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype)
          -> Tensor shape dtype
 select (MkTensor pred) (MkTensor true) (MkTensor false) = MkTensor $ Computation noArgs $ do
-    builder <- prim__mkXlaBuilder "select"
-    op <- primIO $ prim__select !(toOp pred builder) !(toOp true builder) !(toOp false builder)
-    _ <- onCollectAny op XlaOp.delete
-    prim__build builder
+  builder <- prim__mkXlaBuilder "select"
+  op <- primIO $ prim__select !(toOp pred builder) !(toOp true builder) !(toOp false builder)
+  _ <- onCollectAny op XlaOp.delete
+  prim__build builder
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -716,27 +716,39 @@ cond : (Primitive tType, Primitive fType) => {shape : _} -> Tensor [] PRED
   -> (onTrue : Tensor tShape tType -> Tensor shape dtype) -> Tensor tShape tType
   -> (onFalse : Tensor fShape fType -> Tensor shape dtype) -> Tensor fShape fType
   -> Tensor shape dtype
--- cond
---   (MkTensor mkPred)
---   onTrue
---   (MkTensor {shape=tShape} mkOpTrue)
---   onFalse
---   (MkTensor {shape=fShape} mkOpFalse) = MkTensor $ \builder => do
---     (MkTensor mkOpTrueRes) <- map onTrue (parameter 0 "" tShape)
---     trueBuilder <- prim__createSubBuilder builder "on True computation"
---     _ <- mkOpTrueRes trueBuilder
---     trueComp <- prim__build trueBuilder
---     (MkTensor mkOpFalseRes) <- map onFalse (parameter 0 "" fShape)
---     falseBuilder <- prim__createSubBuilder builder "on False computation"
---     _ <- mkOpFalseRes falseBuilder
---     falseComp <- prim__build falseBuilder
---     op <- primIO $ prim__conditional
---       !(mkPred builder)
---       !(mkOpTrue builder)
---       trueComp
---       !(mkOpFalse builder)
---       falseComp
---     onCollectAny op XlaOp.delete
+cond
+  (MkTensor xsPred)
+  onTrue
+  (MkTensor {shape=tShape} xsTrue)
+  onFalse
+  (MkTensor {shape=fShape} xsFalse) = MkTensor $ Computation noArgs $ do
+    builder <- prim__mkXlaBuilder "cond"
+
+    xla_fShape <- mkShape {dtype=fType} fShape
+    xla_tShape <- mkShape {dtype=tType} tShape
+    let paramT = MkTensor $ Operand $ \b => onCollectAny (parameter b 0 xla_tShape "") XlaOp.delete
+        paramF = MkTensor $ Operand $ \b => onCollectAny (parameter b 0 xla_fShape "") XlaOp.delete
+        trueComp = case onTrue paramT of
+          (MkTensor $ Computation _ comp) => comp
+          (MkTensor $ Operand mkOp) => do
+            sub <- prim__createSubBuilder builder ""
+            _ <- mkOp sub
+            prim__build sub
+        falseComp = case onFalse paramF of
+          (MkTensor $ Computation _ comp) => comp
+          (MkTensor $ Operand mkOp) => do
+            sub <- prim__createSubBuilder builder ""
+            _ <- mkOp sub
+            prim__build sub
+
+    op <- primIO $ prim__conditional
+      !(toOp xsPred builder)
+      !(toOp xsTrue builder)
+      !trueComp
+      !(toOp xsFalse builder)
+      !falseComp
+    _ <- onCollectAny op XlaOp.delete
+    prim__build builder
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
