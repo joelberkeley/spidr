@@ -165,6 +165,15 @@ export
 %foreign (libxla "Cholesky")
 prim__cholesky : GCAnyPtr -> Int -> PrimIO AnyPtr
 
+%foreign (libxla "Call")
+prim__callImpl : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
+prim__call : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Int -> IO GCAnyPtr
+prim__call builder computation operands operands_len = do
+  op <- primIO $ prim__callImpl builder computation operands operands_len
+  onCollectAny op XlaOp.delete
+
 export
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
