@@ -477,33 +477,30 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| equivalent to `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
--- map f (MkTensor {shape} mk_args comp) = MkTensor $ do
---   builder <- prim__mkXlaBuilder "map"
+map f (MkTensor {shape} xs) = MkTensor $ Computation noArgs $ do
+  builder <- prim__mkXlaBuilder "map"
 
---   xla_shape <- mkShape {dtype=a} []
+  xla_shape <- mkShape {dtype=a} []
+  let param = MkTensor $ Operand $ \b => onCollectAny (parameter b 0 xla_shape "") XlaOp.delete
+      computation = case f param of
+        (MkTensor $ Computation _ comp) => comp
+        (MkTensor $ Operand mkOp) => do
+          sub <- prim__createSubBuilder builder ""
+          _ <- mkOp sub
+          prim__build sub
 
---   parambuilder <- prim__createSubBuilder builder ""
---   param <- onCollectAny (parameter parambuilder 0 xla_shape "") XlaOp.delete
---   let MkTensor computation = f (MkTensor (prim__build parambuilder))
---   putStrLn "map ... prim__call"
-
---   args <- mk_args builder
---   op <- prim__call builder !comp !(mkXlaOpArray args) (cast $ length args)
---   operands <- mkXlaOpArray [op]
---   let rank = length shape
---   dimensions <- mkIntArray (range rank)
---   putStrLn "map ... prim__map"
---   op <- primIO (prim__map
---       builder
---       operands 1
---       !computation
---       dimensions (cast rank)
---       prim__getNullAnyPtr 0
---     )
---   putStrLn "map ... gc"
---   _ <- onCollectAny op XlaOp.delete
---   putStrLn "map ... return"
---   prim__build builder
+  operands <- mkXlaOpArray [!(toOp xs builder)]
+  let rank = length shape
+  dimensions <- mkIntArray (range rank)
+  op <- primIO (prim__map
+      builder
+      operands 1
+      !computation
+      dimensions (cast rank)
+      prim__getNullAnyPtr 0
+    )
+  _ <- onCollectAny op XlaOp.delete
+  prim__build builder
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
