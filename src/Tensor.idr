@@ -61,8 +61,8 @@ const xs = MkTensor $ \builder => do
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
-eval : PrimitiveRW dtype ty => Tensor shape dtype -> IO $ Array shape ty
-eval (MkTensor {shape} mkOp) = do
+toArray : PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
+toArray (MkTensor {shape} mkOp) = unsafePerformIO $ do
   builder <- prim__mkXlaBuilder ""
   _ <- mkOp builder
   computation <- prim__build builder
