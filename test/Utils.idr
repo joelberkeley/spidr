@@ -27,7 +27,7 @@ assert name x = unless x $ do
 
 export
 assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
-assertAll name xs = assert name (arrayAll !(eval xs)) where
+assertAll name xs = assert name (arrayAll (toArray xs)) where
   arrayAll : {shape : _} -> Array shape Bool -> Bool
   arrayAll {shape = []} x = x
   arrayAll {shape = (0 :: _)} [] = True
@@ -128,7 +128,7 @@ namespace Tensor
   test_sufficientlyEq = do
     let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
         y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
-    eq <- eval {shape=[_, _]} (sufficientlyEq x y)
+        eq = toArray {shape=[_, _]} (sufficientlyEq x y)
     assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
 
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $

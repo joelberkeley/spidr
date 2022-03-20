@@ -60,6 +60,10 @@ const xs = MkTensor $ \builder => do
   onCollectAny (constantLiteral builder lit) XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
+|||
+||| **Note:** This function performs side effects. The only side effect that users should be able to
+||| observe is logging, which you can disable by adjusting the TensorFlow logging level e.g. with
+||| `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
 toArray : PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
 toArray (MkTensor {shape} mkOp) = unsafePerformIO $ do

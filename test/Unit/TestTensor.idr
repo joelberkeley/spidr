@@ -22,28 +22,31 @@ import Tensor
 
 import Utils
 
-test_const_eval : IO ()
-test_const_eval = do
+test_const_toArray : IO ()
+test_const_toArray = do
   let x = [[True, False, False], [False, True, False]]
-  x' <- eval $ const {shape=[_, _]} {dtype=PRED} x
-  assert "const eval returns original Bool" (x' == x)
+      x' = toArray $ const {shape=[_, _]} {dtype=PRED} x
+  assert "const toArray returns original Bool" (x' == x)
 
   let x =  [[1, 15, 5], [-1, 7, 6]]
-  x' <- eval $ const {shape=[_, _]} {dtype=S32} x
-  assert "const eval returns original Int" (x' == x)
+      x' = toArray $ const {shape=[_, _]} {dtype=S32} x
+  assert "const toArray returns original Int" (x' == x)
 
-  let name = "const eval returns original Double"
-  x <- eval $ const {shape=[_, _]} {dtype=F64} [[-1.5], [1.3], [4.3]]
+  let name = "const toArray returns original Double"
+      x = toArray $ const {shape=[_, _]} {dtype=F64} [[-1.5], [1.3], [4.3]]
   assert name $ sufficientlyEq (index 0 (index 0 x)) (-1.5)
   assert name $ sufficientlyEq (index 0 (index 1 x)) 1.3
   assert name $ sufficientlyEq (index 0 (index 2 x)) 4.3
 
-  let name = "const eval returns original scalar"
-  traverse_ (\x => do x' <- eval {shape=[]} {dtype=PRED} (const x); assert name (x == x')) bools
-  traverse_ (\x => do x' <- eval {shape=[]} {dtype=S32} (const x); assert name (x == x')) ints
-  traverse_ (\x => do
-      x' <- eval {shape=[]} {dtype=F64} (const x)
-      assert name (sufficientlyEq x x')
+  let name = "const toArray returns original scalar"
+  traverse_ (\x =>
+      let x' = toArray {shape=[]} {dtype=PRED} (const x)
+       in assert name (x == x')
+    ) bools
+  traverse_ (\x => let x' = toArray {shape=[]} {dtype=S32} (const x) in assert name (x == x')) ints
+  traverse_ (\x =>
+      let x' = toArray {shape=[]} {dtype=F64} (const x)
+       in assert name (sufficientlyEq x x')
     ) doubles
 
 test_toString : IO ()
@@ -450,17 +453,17 @@ test_elementwise_equality : IO ()
 test_elementwise_equality = do
   let x = const {shape=[_]} {dtype=PRED} [True, True, False]
       y = const {shape=[_]} {dtype=PRED} [False, True, False]
-  eq <- eval {shape=[_]} (y == x)
+      eq = toArray {shape=[_]} (y == x)
   assert "== for boolean vector" $ eq == [False, True, True]
 
   let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
       y = const {shape=[_, _]} {dtype=S32} [[2, 15, 3], [2, 7, 6]]
-  eq <- eval (y == x)
+      eq = toArray (y == x)
   assert "== for integer matrix" $ eq == [[False, True, False], [False, True, True]]
 
   let x = const {shape=[_, _]} {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
       y = const {shape=[_, _]} {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-  eq <- eval (y == x)
+      eq = toArray (y == x)
   assert "== for double matrix" $ eq == [[False, True, False], [False, True, True]]
 
   sequence_ [compareScalars {dtype=PRED} x y | x <- bools, y <- bools]
@@ -470,9 +473,9 @@ test_elementwise_equality = do
   where
     compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
                      => Primitive.Eq dtype => ty -> ty -> IO ()
-    compareScalars l r = do
-      actual <- eval {shape=[]} ((const {dtype} l) == (const {dtype} r))
-      assert "== for scalars" (actual == (l == r))
+    compareScalars l r =
+      let actual = toArray {shape=[]} ((const {dtype} l) == (const {dtype} r))
+       in assert "== for scalars" (actual == (l == r))
 
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
@@ -610,7 +613,7 @@ test_subtract = do
 
   let l = const [1.8, 1.3, 4.0]
       r = const [-3.3, 0.0, 0.3]
-  diff <- eval {shape=[3]} {dtype=F64} (l - r)
+      diff = toArray {shape=[3]} {dtype=F64} (l - r)
   sequence_ (zipWith ((assert "- for F64 matrix") .: sufficientlyEq) diff [5.1, 1.3, 3.7])
 
   sequence_ $ do
@@ -622,9 +625,9 @@ test_subtract = do
   sequence_ $ do
     l <- doubles
     r <- doubles
-    pure $ do
-      diff <- eval {shape=[]} {dtype=F64} (const l - const r)
-      assert "- for F64 scalar" (sufficientlyEq diff (l - r))
+    pure $
+      let diff = toArray {shape=[]} {dtype=F64} (const l - const r)
+       in assert "- for F64 scalar" (sufficientlyEq diff (l - r))
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -778,18 +781,17 @@ test_abs = do
   assertAll "abs for int array" $ abs x == const [1, 0, 5]
 
   let x = const {shape=[3]} {dtype=F64} [1.8, -1.3, 0.0]
-  actual <- eval (abs x)
-  sequence_ (zipWith ((assert "abs for double array") .: sufficientlyEq)
-    actual [1.8, 1.3, 0.0])
+      actual = toArray (abs x)
+  sequence_ (zipWith ((assert "abs for double array") .: sufficientlyEq) actual [1.8, 1.3, 0.0])
 
   sequence_ $ do
     x <- ints
     pure $ assertAll "abs for int scalar" $
       abs (const {shape=[]} {dtype=S32} x) == const (abs x)
 
-  traverse_ (\x => do
-      actual <- eval (abs $ const {shape=[]} {dtype=F64} x)
-      assert "abs for double scalar" (sufficientlyEq actual (abs x))
+  traverse_ (\x =>
+      let actual = toArray (abs $ const {shape=[]} {dtype=F64} x)
+       in assert "abs for double scalar" (sufficientlyEq actual (abs x))
     ) doubles
 
 namespace S32
@@ -941,7 +943,7 @@ test_trace = do
 export
 test : IO ()
 test = do
-  test_const_eval
+  test_const_toArray
   test_toString
   test_reshape
   test_slice
