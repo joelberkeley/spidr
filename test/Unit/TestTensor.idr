@@ -56,7 +56,7 @@ test_show = do
 
   let x = const {shape=[]} {dtype=S32} 1
       y = const {shape=[]} {dtype=S32} 2
-  assert "show for scalar addition" $ show (x + y) ==
+  assert "show for scalar addition" $ show (Tensor.(+) x y) ==
     """
     add, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
@@ -943,7 +943,7 @@ export
 test : IO ()
 test = do
   test_const_toArray
-  test_toString
+  test_show
   test_reshape
   test_slice
   test_index
