@@ -35,8 +35,10 @@ test_parameter_addition : IO ()
 test_parameter_addition = do
   builder <- prim__mkXlaBuilder ""
   xla_shape <- mkShape {dtype=S32} [2, 3]
-  p0 <- onCollectAny (parameter builder 0 xla_shape "") XlaOp.delete
-  p1 <- onCollectAny (parameter builder 1 xla_shape "") XlaOp.delete
+  p0 <- primIO $ parameter builder 0 xla_shape ""
+  p0 <- onCollectAny p0 XlaOp.delete
+  p1 <- primIO $ parameter builder 1 xla_shape ""
+  p1 <- onCollectAny p1 XlaOp.delete
   sum <- primIO (prim__add p0 p1)
   _ <- onCollectAny sum XlaOp.delete
   computation <- prim__build builder

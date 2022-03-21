@@ -99,11 +99,11 @@ mkXlaOpArray ops = do
 
 export
 %foreign (libxla "Parameter")
-parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> AnyPtr
+parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
 %foreign (libxla "ConstantLiteral")
-constantLiteral : GCAnyPtr -> GCAnyPtr -> AnyPtr
+constantLiteral : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Broadcast")

@@ -57,7 +57,8 @@ export
 const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype
 const xs = MkTensor $ \builder => do
   lit <- mkLiteral {dtype} xs
-  onCollectAny (constantLiteral builder lit) XlaOp.delete
+  op <- primIO $ constantLiteral builder lit
+  onCollectAny op XlaOp.delete
 
 ||| Evaluate a `Tensor`, returning its value as an `Array`.
 export
@@ -366,7 +367,8 @@ empty = MkTensor $ \builder => do
   xla_shape <- mkShape {dtype} shape
   literal <- primIO $ prim__allocLiteral xla_shape
   literal <- onCollectAny literal Literal.delete
-  onCollectAny (constantLiteral builder literal) XlaOp.delete
+  op <- primIO $ constantLiteral builder literal
+  onCollectAny op XlaOp.delete
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
@@ -438,8 +440,9 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 parameter : Int -> String -> (shape : Shape) -> Primitive dtype => IO (Tensor shape dtype)
 parameter position name shape = do
   xla_shape <- mkShape {dtype} shape
-  pure $ MkTensor $ \builder =>
-    onCollectAny (parameter builder position xla_shape name) XlaOp.delete
+  pure $ MkTensor $ \builder => do
+    param <- primIO $ parameter builder position xla_shape name
+    onCollectAny param XlaOp.delete
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
