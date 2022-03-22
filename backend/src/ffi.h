@@ -15,8 +15,6 @@ limitations under the License.
 */
 extern "C" {
     int sizeof_int();
-    int sizeof_void_ptr();
 
     void set_array_int(int* arr, int idx, int value);
-    void set_array_ptr(void** arr, int idx, void* value);
 }

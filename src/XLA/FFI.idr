@@ -43,21 +43,8 @@ libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 %foreign (libxla "sizeof_int")
 sizeof_int : Int
 
-export
-%foreign (libxla "sizeof_void_ptr")
-sizeof_voidPtr : Int
-
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
-
-export
-%foreign (libxla "set_array_ptr")
-prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()
-
-namespace GCAnyPtr
-  export
-  %foreign (libxla "set_array_ptr")
-  prim__setArrayPtr : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
 mkIntArray : Cast ty Int => List ty -> IO (GCPtr Int)

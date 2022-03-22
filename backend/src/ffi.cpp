@@ -18,15 +18,7 @@ extern "C" {
         return sizeof(int);
     }
 
-    int sizeof_void_ptr() {
-        return sizeof(void*);
-    }
-
     void set_array_int(int* arr, int idx, int value) {
-        arr[idx] = value;
-    }
-
-    void set_array_ptr(void** arr, int idx, void* value) {
         arr[idx] = value;
     }
 }
