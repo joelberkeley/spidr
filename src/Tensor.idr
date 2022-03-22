@@ -469,6 +469,8 @@ mapScalar f (MkTensor {shape} mkOp) = MkTensor $ \builder => do
     )
   onCollectAny op XlaOp.delete
 
+-- we may be able to use map's ability to accept any number of arguments to avoid concatenating
+-- after mapping
 mapGeneral : (Primitive ft, Primitive tt) => {ts, leading : _} -> (Tensor fs ft -> Tensor ts tt)
              -> Tensor (leading ++ fs) ft -> Tensor (leading ++ ts) tt
 mapGeneral f {leading=[]} x = f x
