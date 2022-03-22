@@ -59,11 +59,16 @@ const xs = MkTensor $ \builder => do
   lit <- mkLiteral {dtype} xs
   onCollectAny (constantLiteral builder lit) XlaOp.delete
 
-||| Evaluate a `Tensor`, returning its value as an `Array`.
+||| Evaluate a `Tensor`, returning its value as an `Array`. This function builds and executes the
+||| computation graph.
 |||
-||| **Note:** This function performs side effects. The only side effect that users should be able to
-||| observe is logging, which you can disable by adjusting the TensorFlow logging level e.g. with
-||| `export TF_CPP_MIN_LOG_LEVEL=3`.
+||| **Note:**
+||| * Each call to `toArray` will rebuild and execute the graph. Similarly, multiple calls to 
+|||   `toArray` on different `Tensor`s in a computation will be treated entirely independently.
+|||   `toArray` does not store intermediate values. This is a known limitation, and may change in
+|||   the future.
+||| * `toArray` performs logging as a side effect. You can disable this by adjusting the
+|||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
 toArray : PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
 toArray (MkTensor {shape} mkOp) = unsafePerformIO $ do
