@@ -49,14 +49,39 @@ test_const_toArray = do
        in assert name (sufficientlyEq x x')
     ) doubles
 
-test_show : IO ()
-test_show = do
+test_show_graph : IO ()
+test_show_graph = do
   let x = const {shape=[]} {dtype=S32} 1
-  assert "show for scalar Int" (show x == "constant, shape=[], metadata={:0}")
+  assert "show @{Graph} for scalar Int" $ show @{Graph} x == "S32[] const"
 
   let x = const {shape=[]} {dtype=S32} 1
       y = const {shape=[]} {dtype=S32} 2
-  assert "show for scalar addition" $ show (Tensor.(+) x y) ==
+  assert "show @{Graph} for scalar addition" $ show @{Graph} (Tensor.(+) x y) ==
+    "S32[] (+): [S32[] const, S32[] const]"
+
+  let x = const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
+  assert "show @{Graph} for vector F64" $ show @{Graph} x == "F64[3] const"
+
+  let x = const {shape=[_, _]} {dtype=S32} [[0, 0, 0], [0, 0, 0]]
+      y = const {shape=[_, _]} [[0], [0], [0]]
+  assert "show @{Graph} for differing argument shapes" $ show @{Graph} (x @@ y) ==
+    "S32[2, 1] (@@): [S32[2, 3] const, S32[3, 1] const]"
+
+  let x = const {shape=[_]} {dtype=S32} [0, 0]
+      y = const {shape=[_, _]} {dtype=S32} [[0, 0], [0, 0]]
+  assert "show @{Graph} for non-trivial cond" $
+    show @{Graph} (cond (const True) (const [0, 0] *) x diag y) ==
+      "S32[2] cond: [PRED[] const, S32[2] (*): [S32[2] const, S32[2] parameter], " ++
+        "S32[2] const, S32[2] diag: [S32[2, 2] parameter], S32[2, 2] const]"
+
+test_show_graphxla : IO ()
+test_show_graphxla = do
+  let x = const {shape=[]} {dtype=S32} 1
+  assert "show @{XLA} for scalar Int" $ show @{XLA} x == "constant, shape=[], metadata={:0}"
+
+  let x = const {shape=[]} {dtype=S32} 1
+      y = const {shape=[]} {dtype=S32} 2
+  assert "show @{XLA} for scalar addition" $ show @{XLA} (Tensor.(+) x y) ==
     """
     add, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
@@ -64,7 +89,7 @@ test_show = do
     """
 
   let x = const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
-  assert "show for vector F64" $ show x == "constant, shape=[3], metadata={:0}"
+  assert "show @{XLA} for vector F64" $ show @{XLA} x == "constant, shape=[3], metadata={:0}"
 
 test_reshape : IO ()
 test_reshape = do
@@ -470,7 +495,7 @@ test_elementwise_equality = do
   sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
 
   where
-    compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
+    compareScalars : Hashable ty => Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
                      => Primitive.Eq dtype => ty -> ty -> IO ()
     compareScalars l r =
       let actual = toArray {shape=[]} ((const {dtype} l) == (const {dtype} r))
@@ -497,7 +522,7 @@ test_elementwise_inequality = do
   sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
   where
-    compareScalars : Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
+    compareScalars : Hashable ty => Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
                      => PrimitiveRW dtype ty => ty -> ty -> IO ()
     compareScalars l r =
       assertAll "/= for scalars" $ (const {dtype} l /= const r) == const {shape=[]} (l /= r)
@@ -522,7 +547,7 @@ test_comparison = do
   sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
   where
-    compareScalars : Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
+    compareScalars : Hashable ty => Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
                      => Primitive dtype => ty -> ty -> IO ()
     compareScalars l r = do
       let l' = const {dtype} l
@@ -943,7 +968,8 @@ export
 test : IO ()
 test = do
   test_const_toArray
-  test_show
+  test_show_graph
+  test_show_graphxla
   test_reshape
   test_slice
   test_index

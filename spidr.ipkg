@@ -1,6 +1,7 @@
 package spidr
 version = 0.0.4
 
+depends = hashable
 opts = "--total"
 sourcedir = "src"
 modules =
@@ -23,6 +24,7 @@ modules =
   Data,
   Distribution,
   Error,
+  Graph,
 
   Model,
   Model.GaussianProcess,
