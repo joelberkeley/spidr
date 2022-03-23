@@ -49,23 +49,22 @@ test_const_toArray = do
        in assert name (sufficientlyEq x x')
     ) doubles
 
-test_toString : IO ()
-test_toString = do
-  str <- toString $ const {shape=[]} {dtype=S32} 1
-  assert "toString for scalar Int" (str == "constant, shape=[], metadata={:0}")
+test_show : IO ()
+test_show = do
+  let x = const {shape=[]} {dtype=S32} 1
+  assert "show for scalar Int" (show x == "constant, shape=[], metadata={:0}")
 
   let x = const {shape=[]} {dtype=S32} 1
       y = const {shape=[]} {dtype=S32} 2
-  str <- toString (x + y)
-  assert "toString for scalar addition" $ str ==
+  assert "show for scalar addition" $ show (Tensor.(+) x y) ==
     """
     add, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
     """
 
-  str <- toString $ const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
-  assert "toString for vector F64" $ str == "constant, shape=[3], metadata={:0}"
+  let x = const {shape=[_]} {dtype=F64} [1.3, 2.0, -0.4]
+  assert "show for vector F64" $ show x == "constant, shape=[3], metadata={:0}"
 
 test_reshape : IO ()
 test_reshape = do
@@ -944,7 +943,7 @@ export
 test : IO ()
 test = do
   test_const_toArray
-  test_toString
+  test_show
   test_reshape
   test_slice
   test_index

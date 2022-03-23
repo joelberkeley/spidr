@@ -82,10 +82,10 @@ toArray (MkTensor {shape} mkOp) = unsafePerformIO $ do
 ||| Return a string representation of an unevaluated `Tensor`, detailing all enqueued operations.
 ||| Useful for debugging.
 export
-toString : Tensor shape dtype -> IO String
-toString (MkTensor f) = do
-  builder <- prim__mkXlaBuilder ""
-  pure (prim__opToString builder !(f builder))
+Show (Tensor shape dtype) where
+  show (MkTensor f) = unsafePerformIO $ do
+    builder <- prim__mkXlaBuilder ""
+    pure (prim__opToString builder !(f builder))
 
 ----------------------------- structural operations ----------------------------
 
