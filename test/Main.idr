@@ -19,7 +19,6 @@ import Unit.Model.TestKernel
 import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestUtil
-import Unit.TestXLA
 
 import Utils
 
@@ -29,7 +28,6 @@ main = do
   Unit.TestDistribution.test
   Unit.TestTensor.test
   Unit.TestUtil.test
-  Unit.TestXLA.test
 
   Utils.test
 
