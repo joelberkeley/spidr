@@ -29,6 +29,13 @@ namespace Vect
   range Z = []
   range (S n) = snoc (range n) n
 
+  ||| Enumerate entries in a vector with their indices. For example, `enumerate [5, 7, 9]`
+  ||| is `[(0, 5), (1, 7), (2, 9)]`.
+  export
+  enumerate : Vect n ty -> Vect n (Nat, ty)
+  enumerate xs = rewrite sym $ lengthCorrect xs in
+    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
+
 namespace List
   ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
   |||
@@ -36,6 +43,12 @@ namespace List
   export
   range : (n : Nat) -> List Nat
   range n = toList (Vect.range n)
+
+  ||| Enumerate entries in a list with their indices. For example, `enumerate [5, 7, 9]`
+  ||| is `[(0, 5), (1, 7), (2, 9)]`.
+  export
+  enumerate : List ty -> List (Nat, ty)
+  enumerate xs = toList (enumerate (fromList xs))
 
   ||| Insert a value in a list. For example, `insertAt 1 [6, 7, 8] 9` is `[6, 9, 7, 8]`, and
   ||| `insertAt 3 [6, 7, 8] 9` is `[6, 7, 8, 9]`.
