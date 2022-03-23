@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.ShapeUtil
+module Compiler.XLA.ShapeUtil
 
 import System.FFI
 
+import Compiler.FFI
+import Compiler.XLA.Shape
+import Compiler.XLA.XlaData
 import Types
-import XLA.FFI
-import XLA.Shape
-import XLA.XlaData
 
 %foreign (libxla "MakeShape")
 prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr

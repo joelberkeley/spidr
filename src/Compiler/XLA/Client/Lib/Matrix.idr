@@ -13,15 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.Client.XlaComputation
+module Compiler.XLA.Client.Lib.Matrix
 
 import System.FFI
 
-import XLA.FFI
-
-%foreign (libxla "XlaComputation_delete")
-prim__delete : AnyPtr -> PrimIO ()
+import Compiler.FFI
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+%foreign (libxla "IdentityMatrix")
+prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "GetMatrixDiagonal")
+prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Triangle")
+prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr
