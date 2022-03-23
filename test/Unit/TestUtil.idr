@@ -29,7 +29,7 @@ namespace Vect
   export
   test_enumerate : IO ()
   test_enumerate = do
-    assert "Vect enumerate 0" $ Vect.enumerate [] == []
+    assert "Vect enumerate 0" $ Vect.enumerate {a=()} [] == []
     assert "Vect enumerate 1" $ Vect.enumerate [5] == [(0, 5)]
     assert "Vect enumerate 3" $ Vect.enumerate [5, 7, 9] == [(0, 5), (1, 7), (2, 9)]
 
@@ -44,7 +44,7 @@ namespace List
   export
   test_enumerate : IO ()
   test_enumerate = do
-    assert "List enumerate 0" $ List.enumerate [] == []
+    assert "List enumerate 0" $ List.enumerate {a=()} [] == []
     assert "List enumerate 1" $ List.enumerate [5] == [(0, 5)]
     assert "List enumerate 3" $ List.enumerate [5, 7, 9] == [(0, 5), (1, 7), (2, 9)]
 
