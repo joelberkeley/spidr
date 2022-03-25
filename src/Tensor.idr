@@ -68,7 +68,7 @@ hash = Tensor.hashWithSalt1 hashWithSalt defaultSalt
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : {shape : _} -> PrimitiveRW dtype ty => Array shape ty -> Tensor shape dtype
+const : {shape : _} -> Hashable ty => PrimitiveRW dtype ty => Array shape ty -> Tensor shape dtype
 const xs = 
   let graph = Leaf "const" (assert_total $ Tensor.hash xs) shape (typeString {dtype})
    in MkTensor graph $ \builder => do
@@ -85,8 +85,8 @@ const xs =
 |||   the future.
 ||| * `toArray` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
-export
-toArray : PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
+export total
+toArray : Hashable ty => PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
 toArray (MkTensor _ {shape} mkOp) = unsafePerformIO $ do
   builder <- prim__mkXlaBuilder ""
   _ <- mkOp builder
@@ -244,11 +244,11 @@ slice axis from to (MkTensor graph {shape} mkOp) =
 export
 index : (axis, idx : Nat) -> InBounds axis shape => idx `LT` index axis shape
         => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
-index axis idx (MkTensor graph {shape} mkOp) =
-  let graph = Operation "index" [graph] (deleteAt axis shape) (typeString {dtype})
+index axis idx (MkTensor @{primitive} graph {shape} mkOp) =
+  let graph = Operation "index" [graph] (deleteAt axis shape) (typeString @{primitive})
       MkTensor _ mkSliced : Tensor _ dtype :=
         slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) (MkTensor {shape} graph mkOp)
-   in MkTensor graph $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
+   in MkTensor @{primitive} graph $ \builder => reshapeImpl shape (deleteAt axis shape) !(mkSliced builder)
 
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
@@ -286,10 +286,10 @@ export
 concat : (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
          -> (InBounds axis s, InBounds axis s') => deleteAt axis s = deleteAt axis s'
          => Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor {shape=s} graphL mkOpL) (MkTensor {shape=s'} graphR mkOpR) =
+concat axis (MkTensor @{primitive} {shape=s} graphL mkOpL) (MkTensor {shape=s'} graphR mkOpR) =
   let to_shape = replaceAt axis (index axis s + index axis s') s
-      graph = Operation "concat" [graphL, graphR] to_shape (typeString {dtype})
-   in MkTensor graph $ \builder => do
+      graph = Operation "concat" [graphL, graphR] to_shape (typeString @{primitive})
+   in MkTensor @{primitive} graph $ \builder => do
         ops <- mkXlaOpArray [!(mkOpL builder), !(mkOpR builder)]
         res <- primIO $ prim__concatInDim builder ops 2 (cast axis)
         onCollectAny res XlaOp.delete
@@ -462,12 +462,12 @@ broadcast xs with (xs)
 
     impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
       -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-    impl to_leading _ {prf=Same} (MkTensor graph mkOp) =
-      let graph = Operation "broadcast" [graph] to (typeString {dtype})
-       in MkTensor graph $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
-    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor graph mkOp) =
-      let graph = Operation "broadcast" [graph] to (typeString {dtype})
-       in MkTensor graph $
+    impl to_leading _ {prf=Same} (MkTensor @{primitive} graph mkOp) =
+      let graph = Operation "broadcast" [graph] to (typeString @{primitive})
+       in MkTensor @{primitive} graph $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
+    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor @{primitive} graph mkOp) =
+      let graph = Operation "broadcast" [graph] to (typeString @{primitive})
+       in MkTensor @{primitive} graph $
             broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
@@ -487,7 +487,7 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| fives = const [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
-fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
+fill : Hashable ty => PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
 fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- generic operations ----------------------------
@@ -509,11 +509,11 @@ parameter position name shape = unsafePerformIO $ do
 ||| can be lifted to an element-wise reciprocal function as `map recip (const [-2, 0.4])`, which is
 ||| equivalent to `const [-0.5, 2.5]`.
 export
-map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
+map : (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor graph {shape} mkOp) =
-  let MkTensor graphf mkOpf = f (parameter 0 "" [] {dtype=a})
-      graph = Operation "map" [graphf, graph] shape (typeString {dtype=b})
-   in MkTensor graph $ \builder => do
+  let MkTensor @{primitive} graphf mkOpf = f (parameter 0 "" [] {dtype=a})
+      graph = Operation "map" [graphf, graph] shape (typeString @{primitive})
+   in MkTensor @{primitive} graph $ \builder => do
         sub_builder <- prim__createSubBuilder builder "computation"
         _ <- mkOpf sub_builder
         computation <- prim__build sub_builder
@@ -539,12 +539,12 @@ map f (MkTensor graph {shape} mkOp) =
 ||| `map2 addRecip (const [3.0, -3.0]) (const [-2, 0.4])`, which is equivalent to
 ||| `const [2.5, -0.5]`.
 export
-map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
-      -> Tensor shape a -> Tensor shape b -> Tensor shape c
+map2 : (Tensor [] a -> Tensor [] b -> Tensor [] c)
+        -> Tensor shape a -> Tensor shape b -> Tensor shape c
 map2 f (MkTensor {shape} graphL mkOpL) (MkTensor graphR mkOpR) =
-  let MkTensor graphf mkOpf = f (parameter 0 "" [] {dtype=a}) (parameter 1 "" [] {dtype=b})
-      graph = Operation "map2" [graphf, graphL, graphR] shape (typeString {dtype=c})
-   in MkTensor graph $ \builder => do
+  let MkTensor @{primitive} graphf mkOpf = f (parameter 0 "" [] {dtype=a}) (parameter 1 "" [] {dtype=b})
+      graph = Operation "map2" [graphf, graphL, graphR] shape (typeString @{primitive})
+   in MkTensor @{primitive} graph $ \builder => do
         sub_builder <- prim__createSubBuilder builder "computation"
         _ <- mkOpf sub_builder
         computation <- prim__build sub_builder
@@ -569,10 +569,10 @@ map2 f (MkTensor {shape} graphL mkOpL) (MkTensor graphR mkOpR) =
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => (axis : Nat) ->
   InBounds axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
-reduce axis (MkTensor {shape} graph mkOp) =
+reduce axis (MkTensor @{primitive} {shape} graph mkOp) =
   let MkTensor graphf mkOpf = parameter 0 "" [] {dtype} <+> parameter 1 "" [] {dtype}
-      graph = Operation "reduce" [graphf, graph] (deleteAt axis shape) (typeString {dtype})
-   in MkTensor graph $ \builder => do
+      graph = Operation "reduce" [graphf, graph] (deleteAt axis shape) (typeString @{primitive})
+   in MkTensor @{primitive} graph $ \builder => do
         sub_builder <- prim__createSubBuilder builder "computation"
         _ <- mkOpf sub_builder
         let (MkTensor _ mk_init_value) = neutral @{reducer}
@@ -587,20 +587,30 @@ reduce axis (MkTensor {shape} graph mkOp) =
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
+unaryOp : Primitive b => String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
 unaryOp fn_name prim_operator (MkTensor {shape} graph mkOp) =
   let graph = Operation fn_name [graph] shape (typeString {dtype=b})
    in MkTensor graph $ \builder => do
         op <- primIO (prim_operator !(mkOp builder))
         onCollectAny op XlaOp.delete
 
-binaryOp : String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
+genericReturnUnaryOp :
+  String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape dtype -> Tensor shape dtype
+genericReturnUnaryOp fn_name prim_operator xs with (xs)
+  _ | (MkTensor @{primitive} {shape} _ _) = unaryOp fn_name prim_operator xs
+
+binaryOp : Primitive c => String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
            -> Tensor shape a -> Tensor shape b -> Tensor shape c
 binaryOp fn_name prim_operator (MkTensor {shape} graphL mkLeft) (MkTensor graphR mkRight) =
   let graph = Operation fn_name [graphL, graphR] shape (typeString {dtype=c})
    in MkTensor graph $ \builder => do
         op <- primIO (prim_operator !(mkLeft builder) !(mkRight builder))
         onCollectAny op XlaOp.delete
+
+genericReturnBinaryOp : String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
+                        -> Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+genericReturnBinaryOp fn_name prim_operator xs with (xs)
+  _ | (MkTensor @{primitive} {shape} _ _) = binaryOp fn_name prim_operator xs
 
 ||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
 ||| `const [True, False]`.
@@ -698,11 +708,14 @@ not = unaryOp "not" prim__not
 export
 select : Tensor shape PRED -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype)
          -> Tensor shape dtype
-select (MkTensor {shape} gPred mkOpPred) (MkTensor gTrue mkOpTrue) (MkTensor gFalse mkOpFalse) =
-  let graph = Operation "select" [gPred, gTrue, gFalse] shape (typeString {dtype})
-   in MkTensor graph $ \builder => do
-        op <- primIO $ prim__select !(mkOpPred builder) !(mkOpTrue builder) !(mkOpFalse builder)
-        onCollectAny op XlaOp.delete
+select
+  (MkTensor {shape} gPred mkOpPred)
+  (MkTensor @{primitive} gTrue mkOpTrue)
+  (MkTensor gFalse mkOpFalse) =
+    let graph = Operation "select" [gPred, gTrue, gFalse] shape (typeString @{primitive})
+    in MkTensor @{primitive} graph $ \builder => do
+          op <- primIO $ prim__select !(mkOpPred builder) !(mkOpTrue builder) !(mkOpFalse builder)
+          onCollectAny op XlaOp.delete
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -725,7 +738,7 @@ select (MkTensor {shape} gPred mkOpPred) (MkTensor gTrue mkOpTrue) (MkTensor gFa
 ||| @onTrue The function to execute if the predicate is truthy.
 ||| @onFalse The function to execute if the predicate is falsy.
 export
-cond : (Primitive tType, Primitive fType) => {shape : _} -> Tensor [] PRED
+cond : {shape : _} -> Tensor [] PRED
   -> (onTrue : Tensor tShape tType -> Tensor shape dtype) -> Tensor tShape tType
   -> (onFalse : Tensor fShape fType -> Tensor shape dtype) -> Tensor fShape fType
   -> Tensor shape dtype
@@ -735,11 +748,11 @@ cond
   (MkTensor graphTrue {shape=tShape} mkOpTrue)
   onFalse
   (MkTensor graphFalse {shape=fShape} mkOpFalse) =
-    let MkTensor graphOnTrue mkOpTrueRes = onTrue (parameter 0 "" tShape)
+    let MkTensor @{primitive} graphOnTrue mkOpTrueRes = onTrue (parameter 0 "" tShape)
         MkTensor graphOnFalse mkOpFalseRes = onFalse (parameter 0 "" fShape)
         args = [graphPred, graphOnTrue, graphTrue, graphOnFalse, graphFalse]
-        graph = Operation "cond" args shape (typeString {dtype})
-     in MkTensor graph $ \builder => do
+        graph = Operation "cond" args shape (typeString @{primitive})
+     in MkTensor @{primitive} graph $ \builder => do
           trueBuilder <- prim__createSubBuilder builder "on True computation"
           _ <- mkOpTrueRes trueBuilder
           trueComp <- prim__build trueBuilder
@@ -765,9 +778,9 @@ namespace Vector
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
-  (MkTensor graphL mkOpL) @@ (MkTensor graphR mkOpR) =
-    let graph = Operation "(@@)" [graphL, graphR] [] (typeString {dtype})
-     in MkTensor graph $ \builder => do
+  (MkTensor @{primitive} graphL mkOpL) @@ (MkTensor graphR mkOpR) =
+    let graph = Operation "(@@)" [graphL, graphR] [] (typeString @{primitive})
+     in MkTensor @{primitive} graph $ \builder => do
           op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
           onCollectAny op XlaOp.delete
 
@@ -797,9 +810,9 @@ namespace Matrix
   export
   (@@) : Primitive.Num dtype => Tensor [n, S m] dtype -> Tensor (S m :: tl) dtype
          -> length tl `LTE` 1 => Tensor (n :: tl) dtype
-  (MkTensor {shape=[n, _]} graphL mkOpL) @@ (MkTensor {shape=_ :: tl} graphR mkOpR) =
-    let graph = Operation "(@@)" [graphL, graphR] (n :: tl) (typeString {dtype})
-     in MkTensor graph $ \builder => do
+  (MkTensor @{primitive} {shape=[n, _]} graphL mkOpL) @@ (MkTensor {shape=_ :: tl} graphR mkOpR) =
+    let graph = Operation "(@@)" [graphL, graphR] (n :: tl) (typeString @{primitive})
+     in MkTensor @{primitive} graph $ \builder => do
           op <- primIO $ prim__dot !(mkOpL builder) !(mkOpR builder)
           onCollectAny op XlaOp.delete
 
@@ -807,7 +820,7 @@ namespace Matrix
 ||| `const [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) = binaryOp "(+)" prim__add
+(+) = genericReturnBinaryOp "(+)" prim__add
 
 namespace Semigroup
   export
@@ -816,26 +829,26 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Sum] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
+  [Sum] {shape : _} -> Prelude.Num a => Hashable a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
 ||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate = unaryOp "negate" prim__neg
+negate = genericReturnUnaryOp "negate" prim__neg
 
 ||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
 ||| `const [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) = binaryOp "(-)" prim__sub
+(-) = genericReturnBinaryOp "(-)" prim__sub
 
 ||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
 ||| `const [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) = binaryOp "(*)" prim__mul
+(*) = genericReturnBinaryOp "(*)" prim__mul
 
 namespace Scalarwise
   ||| Multiplication by a scalar. For example, `const 2 * const [3, 5]` is equivalent to
@@ -854,7 +867,7 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Prod] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
+  [Prod] {shape : _} -> Prelude.Num a => Hashable a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
@@ -862,7 +875,7 @@ namespace Monoid
 ||| to `const [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(/) = binaryOp "(/)" prim__div
+(/) = genericReturnBinaryOp "(/)" prim__div
 
 namespace Scalarwise
   ||| Floating point division by a scalar. For example, `const [3.4, -5.6] / const 2` is equivalent
@@ -892,7 +905,7 @@ export
 ||| `const [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-abs = unaryOp "abs" prim__abs
+abs = genericReturnUnaryOp "abs" prim__abs
 
 ||| The element-wise natural exponential. For example, `exp (const [-1, 0, 2])` is equivalent to
 ||| `const [1 / euler, 1, pow euler 2]`.
@@ -955,7 +968,7 @@ sqrt = unaryOp "sqrt" prim__sqrt
 ||| `min (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-min = binaryOp "min" prim__min
+min = genericReturnBinaryOp "min" prim__min
 
 namespace Semigroup
   export
@@ -973,7 +986,7 @@ namespace Monoid
 ||| `max (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-max = binaryOp "max" prim__max
+max = genericReturnBinaryOp "max" prim__max
 
 namespace Semigroup
   export
@@ -1011,9 +1024,9 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor graphA mkOpA) |\ (MkTensor {shape=[m, n]} graphB mkOpB) =
-    let graph = Operation "Matrix.(|\)" [graphA, graphB] [m, n] (typeString {dtype=F64})
-     in MkTensor graph $ \builder => do
+  (MkTensor @{primitive} graphA mkOpA) |\ (MkTensor {shape=[m, n]} graphB mkOpB) =
+    let graph = Operation "Matrix.(|\)" [graphA, graphB] [m, n] (typeString @{primitive})
+     in MkTensor @{primitive} graph $ \builder => do
           op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 1 0 1
           onCollectAny op XlaOp.delete
 
@@ -1026,9 +1039,9 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor graphA mkOpA) \| (MkTensor {shape=[m, n]} graphB mkOpB) =
-    let graph = Operation "Matrix.(\|)" [graphA, graphB] [m, n] (typeString {dtype=F64})
-     in MkTensor graph $ \builder => do
+  (MkTensor @{primitive} graphA mkOpA) \| (MkTensor {shape=[m, n]} graphB mkOpB) =
+    let graph = Operation "Matrix.(\|)" [graphA, graphB] [m, n] (typeString @{primitive})
+     in MkTensor @{primitive} graph $ \builder => do
           op <- primIO $ prim__triangularSolve !(mkOpA builder) !(mkOpB builder) 1 0 0 1
           onCollectAny op XlaOp.delete
 
@@ -1060,7 +1073,7 @@ namespace Vector
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
 export
-trace : (Primitive.Num dtype, Prelude.Num a) => PrimitiveRW dtype a
+trace : (Primitive.Num dtype, Prelude.Num a) => Hashable a => PrimitiveRW dtype a
         => Tensor [S n, S n] dtype -> Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))

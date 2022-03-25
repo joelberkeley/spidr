@@ -80,7 +80,7 @@ export Ord F64 where
 ||| A `PrimitiveRW dtype idr` constitutes proof that we can read and write between a backend
 ||| primitive type `dtype` and an Idris type `idr`.
 export
-interface Hashable idr => LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
+interface LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
 
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where
