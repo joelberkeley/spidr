@@ -1,6 +1,7 @@
 package test
 
 depends = spidr, hashable
+opts = "--total"
 sourcedir = "test"
 
 executable = test
