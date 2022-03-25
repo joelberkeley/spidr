@@ -10,6 +10,7 @@ modules =
   BayesianOptimization.Morphisms,
 
   Compiler.FFI,
+  Compiler.Graph,
   Compiler.XLA.Client.Lib.Math,
   Compiler.XLA.Client.Lib.Matrix,
   Compiler.XLA.Client.ClientLibrary,
@@ -24,7 +25,6 @@ modules =
   Data,
   Distribution,
   Error,
-  Graph,
 
   Model,
   Model.GaussianProcess,

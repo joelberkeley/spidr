@@ -24,13 +24,13 @@ import public Data.List.Elem
 import Decidable.Equality
 import System.FFI
 
-import Graph
 import Error
 import public Primitive
 import public Types
 import public Util
 import public Util.Hashable
 import Compiler.FFI
+import Compiler.Graph
 import Compiler.XLA.Client.Lib.Math
 import Compiler.XLA.Client.Lib.Matrix
 import Compiler.XLA.Client.ClientLibrary
