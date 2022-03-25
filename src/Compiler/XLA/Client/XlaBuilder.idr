@@ -13,16 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.Client.XlaBuilder
+module Compiler.XLA.Client.XlaBuilder
 
 import Data.Vect
 import System.FFI
 
-import XLA.Shape
-import XLA.Client.XlaComputation
-import XLA.FFI
-import XLA.Literal
-import XLA.XlaData
+import Compiler.FFI
+import Compiler.XLA.Client.XlaComputation
+import Compiler.XLA.Literal
+import Compiler.XLA.Shape
+import Compiler.XLA.XlaData
 import Types
 import Util
 

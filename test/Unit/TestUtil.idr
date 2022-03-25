@@ -26,6 +26,13 @@ namespace Vect
     assert "Vect range 1" $ Vect.range 1 == [0]
     assert "Vect range 3" $ Vect.range 3 == [0, 1, 2]
 
+  export
+  test_enumerate : IO ()
+  test_enumerate = do
+    assert "Vect enumerate 0" $ Vect.enumerate {a=()} [] == []
+    assert "Vect enumerate 1" $ Vect.enumerate [5] == [(0, 5)]
+    assert "Vect enumerate 3" $ Vect.enumerate [5, 7, 9] == [(0, 5), (1, 7), (2, 9)]
+
 namespace List
   export
   test_range : IO ()
@@ -33,6 +40,13 @@ namespace List
     assert "List range 0" $ List.range 0 == []
     assert "List range 1" $ List.range 1 == [0]
     assert "List range 3" $ List.range 3 == [0, 1, 2]
+
+  export
+  test_enumerate : IO ()
+  test_enumerate = do
+    assert "List enumerate 0" $ List.enumerate {a=()} [] == []
+    assert "List enumerate 1" $ List.enumerate [5] == [(0, 5)]
+    assert "List enumerate 3" $ List.enumerate [5, 7, 9] == [(0, 5), (1, 7), (2, 9)]
 
   export
   test_insertAt : IO ()
@@ -62,6 +76,8 @@ export
 test : IO ()
 test = do
   Vect.test_range
+  Vect.test_enumerate
   List.test_range
+  List.test_enumerate
   test_insertAt
   test_deleteAt

@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.Client.Lib.Math
+module Compiler.XLA.Client.Lib.Math
 
 import System.FFI
 
-import XLA.FFI
+import Compiler.FFI
 
 export
 %foreign (libxla "Erf")

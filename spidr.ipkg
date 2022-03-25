@@ -8,6 +8,18 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
+  Compiler.FFI,
+  Compiler.XLA.Client.Lib.Math,
+  Compiler.XLA.Client.Lib.Matrix,
+  Compiler.XLA.Client.ClientLibrary,
+  Compiler.XLA.Client.LocalClient,
+  Compiler.XLA.Client.XlaBuilder,
+  Compiler.XLA.Client.XlaComputation,
+  Compiler.XLA.Literal,
+  Compiler.XLA.Shape,
+  Compiler.XLA.ShapeUtil,
+  Compiler.XLA.XlaData,
+
   Data,
   Distribution,
   Error,
@@ -21,20 +33,7 @@ modules =
   Primitive,
   Tensor,
   Types,
-  Util,
-
-  XLA,
-  XLA.Client.Lib.Math,
-  XLA.Client.Lib.Matrix,
-  XLA.Client.ClientLibrary,
-  XLA.Client.LocalClient,
-  XLA.Client.XlaBuilder,
-  XLA.Client.XlaComputation,
-  XLA.FFI,
-  XLA.Literal,
-  XLA.Shape,
-  XLA.ShapeUtil,
-  XLA.XlaData
+  Util
 
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."
 readme = "README.md"

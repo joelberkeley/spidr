@@ -13,24 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.FFI
+module Compiler.FFI
 
 import Data.Vect
 import System.FFI
 
 import Types
 import Util
-
-namespace Vect
-  export
-  enumerate : Vect n ty -> Vect n (Nat, ty)
-  enumerate xs = rewrite sym $ lengthCorrect xs in
-    zip (range (length xs)) (rewrite lengthCorrect xs in xs)
-
-namespace List
-  export
-  enumerate : List ty -> List (Nat, ty)
-  enumerate xs = toList (enumerate (fromList xs))
 
 export
 free : Ptr t -> IO ()

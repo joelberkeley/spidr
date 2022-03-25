@@ -28,14 +28,14 @@ import Error
 import public Primitive
 import public Types
 import public Util
-import XLA.Client.Lib.Math
-import XLA.Client.Lib.Matrix
-import XLA.Client.ClientLibrary
-import XLA.Client.LocalClient
-import XLA.Client.XlaBuilder
-import XLA.FFI
-import XLA.Literal
-import XLA.ShapeUtil
+import Compiler.FFI
+import Compiler.XLA.Client.Lib.Math
+import Compiler.XLA.Client.Lib.Matrix
+import Compiler.XLA.Client.ClientLibrary
+import Compiler.XLA.Client.LocalClient
+import Compiler.XLA.Client.XlaBuilder
+import Compiler.XLA.Literal
+import Compiler.XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
 

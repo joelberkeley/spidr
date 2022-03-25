@@ -21,8 +21,8 @@ limitations under the License.
 ||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
-import public XLA.XlaData
-import XLA.Literal
+import public Compiler.XLA.XlaData
+import Compiler.XLA.Literal
 
 %hide Prelude.Num
 %hide Prelude.Neg

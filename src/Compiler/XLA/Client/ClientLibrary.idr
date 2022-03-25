@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module XLA.Client.ClientLibrary
+module Compiler.XLA.Client.ClientLibrary
 
 import System.FFI
 
-import XLA.Client.LocalClient
-import XLA.FFI
+import Compiler.FFI
+import Compiler.XLA.Client.LocalClient
 
 export
 %foreign (libxla "ClientLibrary_LocalClientOrDie")
