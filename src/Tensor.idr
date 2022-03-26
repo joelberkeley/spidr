@@ -17,7 +17,7 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import public Data.Hashable
+import Data.Hashable
 import Data.Hashable.Lifted
 import public Data.List
 import public Data.List.Elem
@@ -28,7 +28,6 @@ import Error
 import public Primitive
 import public Types
 import public Util
-import public Util.Hashable
 import Compiler.FFI
 import Compiler.Graph
 import Compiler.XLA.Client.Lib.Math
@@ -68,7 +67,7 @@ hash = Tensor.hashWithSalt1 hashWithSalt defaultSalt
 
 ||| Construct a `Tensor` from `Array` data.
 export
-const : {shape : _} -> Hashable ty => PrimitiveRW dtype ty => Array shape ty -> Tensor shape dtype
+const : {shape : _} -> PrimitiveRW dtype ty => Array shape ty -> Tensor shape dtype
 const xs = 
   let graph = Leaf "const" (assert_total $ Tensor.hash xs) shape (typeString {dtype})
    in MkTensor graph $ \builder => do
@@ -86,7 +85,7 @@ const xs =
 ||| * `toArray` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
-toArray : Hashable ty => PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
+toArray : PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
 toArray (MkTensor _ {shape} mkOp) = unsafePerformIO $ do
   builder <- prim__mkXlaBuilder ""
   _ <- mkOp builder
@@ -487,7 +486,7 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| fives = const [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
-fill : Hashable ty => PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
+fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
 fill = broadcast {prf=scalarToAnyOk shape} . const
 
 ----------------------------- generic operations ----------------------------
@@ -829,7 +828,7 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Sum] {shape : _} -> Prelude.Num a => Hashable a => PrimitiveRW dtype a => Primitive.Num dtype =>
+  [Sum] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
@@ -867,7 +866,7 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Prod] {shape : _} -> Prelude.Num a => Hashable a => PrimitiveRW dtype a => Primitive.Num dtype =>
+  [Prod] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
@@ -1073,7 +1072,7 @@ namespace Vector
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
 export
-trace : (Primitive.Num dtype, Prelude.Num a) => Hashable a => PrimitiveRW dtype a
+trace : (Primitive.Num dtype, Prelude.Num a) => PrimitiveRW dtype a
         => Tensor [S n, S n] dtype -> Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))

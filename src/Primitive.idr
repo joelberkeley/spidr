@@ -22,9 +22,10 @@ limitations under the License.
 module Primitive
 
 import Data.Hashable
-import public Compiler.XLA.XlaData
+
 import Compiler.XLA.Literal
-import Util.Hashable
+import public Compiler.XLA.XlaData
+import public Util.Hashable
 
 %hide Prelude.Num
 %hide Prelude.Neg
@@ -77,10 +78,9 @@ export Ord S64 where
 export Ord F32 where
 export Ord F64 where
 
-||| A `PrimitiveRW dtype idr` constitutes proof that we can read and write between a backend
-||| primitive type `dtype` and an Idris type `idr`.
+||| rewrite
 export
-interface LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
+interface Hashable idr => LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
 
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where

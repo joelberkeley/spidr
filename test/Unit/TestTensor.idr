@@ -512,7 +512,7 @@ test_elementwise_equality = do
   sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
 
   where
-    compareScalars : Hashable ty => Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
+    compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
                      => Primitive.Eq dtype => ty -> ty -> IO ()
     compareScalars l r =
       let actual = toArray {shape=[]} ((const {dtype} l) == (const {dtype} r))
@@ -539,7 +539,7 @@ test_elementwise_inequality = do
   sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
   where
-    compareScalars : Hashable ty => Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
+    compareScalars : Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
                      => PrimitiveRW dtype ty => ty -> ty -> IO ()
     compareScalars l r =
       assertAll "/= for scalars" $ (const {dtype} l /= const r) == const {shape=[]} (l /= r)
@@ -564,7 +564,7 @@ test_comparison = do
   sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
 
   where
-    compareScalars : Hashable ty => Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
+    compareScalars : Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
                      => Primitive dtype => ty -> ty -> IO ()
     compareScalars l r = do
       let l' = const {dtype} l
