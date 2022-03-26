@@ -85,7 +85,7 @@ const xs =
 |||   the future.
 ||| * `toArray` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
-export total
+export
 toArray : Hashable ty => PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
 toArray (MkTensor _ {shape} mkOp) = unsafePerformIO $ do
   builder <- prim__mkXlaBuilder ""
