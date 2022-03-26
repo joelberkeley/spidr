@@ -20,13 +20,6 @@ import public Data.Hashable
 import Util
 
 export
-Hashable Bool where
-  hash False = 0
-  hash True = 1
-
-  hashWithSalt s x = s `combine` hash x
-
-export
 Hashable Double where
   hashWithSalt _ x =
     if x /= x then 111111 else
