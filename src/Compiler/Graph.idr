@@ -15,13 +15,35 @@ limitations under the License.
 --}
 module Compiler.Graph
 
+import Data.Stream
 import Types
 import Util
 
+||| A `Graph` represents a graph computation of a tensor value. Crucially,
+||| if two `Graph`s are equal, their corresponding computations are equal.
 public export
-data Graph =
-  Operation String (List Graph) Shape String
-  | Leaf String Bits64 Shape String
+data Graph : Type where
+  ||| Represents a function application.
+  |||
+  ||| @name The name of the operation.
+  ||| @arguments The arguments the operation is called on.
+  ||| @shape The shape of the resulting tensor.
+  ||| @type A string representation of the data type of the resulting tensor.
+  Operation :
+    (name : String) ->
+    (arguments : List Graph) ->
+    (shape : Shape) ->
+    (type : String) ->
+    Graph
+
+  ||| Represents a tensor value. This tensor can have a concrete value, or correspond to a
+  ||| function argument.
+  |||
+  ||| @name The name of the method of instantiating the tensor.
+  ||| @id_ An identifier to differentiate this tensor from other tensors.
+  ||| @shape The shape of this tensor.
+  ||| @type A string representation of the data type of the tensor.
+  Leaf : (name : String) -> (id_ : Bits64) -> (shape : Shape) -> (type : String) -> Graph
 
 export covering
 Eq Graph where
@@ -33,5 +55,12 @@ Eq Graph where
 
 export covering
 Show Graph where
-  show (Operation name args shape type) = "\{type}\{show shape} \{name}: \{show args}"
-  show (Leaf name hash shape type) = "\{type}\{show shape} \{name}"
+  show xs = impl 0 xs where
+    impl : Nat -> Graph -> String
+    impl depth =
+      let indent = pack $ take (2 * depth) (repeat ' ')
+       in \case
+            Operation name args shape type =>
+              let init = indent ++ "\{type}\{show shape} \{name}"
+               in foldl (\acc, g => acc ++ impl (S depth) g) init args
+            Leaf name hash shape type => indent ++ "\{type}\{show shape} \{name}"
