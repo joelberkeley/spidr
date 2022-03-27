@@ -6,7 +6,7 @@
    ```
    See the git history for installing earlier versions.
 2. [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
-3. Install spidr's Idris dependencies by running `./install_deps.sh` in the spidr root directory.
+3. Install spidr's Idris dependencies by running `./install_deps.sh` located in the spidr root directory.
 4. In the spidr root directory, install spidr with
    ```bash
    idris2 --install spidr.ipkg
