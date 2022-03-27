@@ -1,6 +1,6 @@
 package test
 
-depends = spidr
+depends = spidr, hashable
 opts = "--total"
 sourcedir = "test"
 
@@ -8,6 +8,7 @@ executable = test
 main = Main
 
 modules =
+  Unit.Model.TestKernel,
   Unit.TestDistribution,
   Unit.TestTensor,
   Unit.TestUtil,

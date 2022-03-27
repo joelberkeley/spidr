@@ -22,45 +22,53 @@ module Compiler.XLA.XlaData
 export
 interface Primitive dtype where
   xlaIdentifier : Int
+  typeString : String
 
 export data PRED : Type where
 
 export
 Primitive PRED where
   xlaIdentifier = 1
+  typeString = "PRED"
 
 export data S32 : Type where
 
 export
 Primitive S32 where
   xlaIdentifier = 4
+  typeString = "S32"
 
 export data S64 : Type where
 
 export
 Primitive S64 where
   xlaIdentifier = 5
+  typeString = "S64"
 
 export data U32 : Type where
 
 export
 Primitive U32 where
   xlaIdentifier = 8
+  typeString = "U32"
 
 export data U64 : Type where
 
 export
 Primitive U64 where
   xlaIdentifier = 9
+  typeString = "U64"
 
 export data F32 : Type where
 
 export
 Primitive F32 where
   xlaIdentifier = 11
+  typeString = "F32"
 
 export data F64 : Type where
 
 export
 Primitive F64 where
   xlaIdentifier = 12
+  typeString = "F64"

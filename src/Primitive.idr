@@ -21,15 +21,18 @@ limitations under the License.
 ||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
-import public Compiler.XLA.XlaData
+import Data.Hashable
+
 import Compiler.XLA.Literal
+import public Compiler.XLA.XlaData
+import public Util.Hashable
 
 %hide Prelude.Num
 %hide Prelude.Neg
 %hide Prelude.Abs
 %hide Prelude.Fractional
 
-export interface Num (dtype : Type) where
+export interface Primitive dtype => Num dtype where
 export interface Num dtype => Neg dtype where
 export interface Num dtype => Abs dtype where
 export interface Num dtype => Fractional dtype where
@@ -57,7 +60,7 @@ export Fractional F64 where
 %hide Prelude.Eq
 %hide Prelude.Ord
 
-export interface Eq (dtype : Type) where
+export interface Primitive dtype => Eq dtype where
 export interface Eq dtype => Ord dtype where
 
 export Eq PRED where
@@ -75,10 +78,10 @@ export Ord S64 where
 export Ord F32 where
 export Ord F64 where
 
-||| A `PrimitiveRW dtype idr` constitutes proof that we can read and write between a backend
-||| primitive type `dtype` and an Idris type `idr`.
+||| A `PrimitiveRW dtype idr` means that values of type `idr` can be used to construct backend
+||| data with data type `dtype`.
 export
-interface LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
+interface Hashable idr => LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
 
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where

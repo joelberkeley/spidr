@@ -1,6 +1,7 @@
 package spidr
 version = 0.0.4
 
+depends = hashable
 opts = "--total"
 sourcedir = "src"
 modules =
@@ -9,6 +10,7 @@ modules =
   BayesianOptimization.Morphisms,
 
   Compiler.FFI,
+  Compiler.Graph,
   Compiler.XLA.Client.Lib.Math,
   Compiler.XLA.Client.Lib.Matrix,
   Compiler.XLA.Client.ClientLibrary,
