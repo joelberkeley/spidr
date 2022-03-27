@@ -18,11 +18,25 @@ module Util.Hashable
 import public Data.Hashable
 
 import Util
+import Types
 
 export
 Hashable Double where
-  hashWithSalt _ x =
-    if x /= x then 111111 else
-    if x == 1 / 0 then 222222 else
-    if x == -1 / 0 then -222222 else
-    cast x
+  hashWithSalt s x =
+    let hash : Bits64 =
+          if x /= x then 111111 else
+          if x == 1 / 0 then 222222 else
+          if x == -1 / 0 then -222222 else
+          cast x
+     in s `combine` hash
+
+export
+hashWithSalt : Hashable a => {shape : _} -> Bits64 -> Array shape a -> Bits64
+hashWithSalt {shape=[]} salt x = hashWithSalt salt x
+hashWithSalt {shape=(0 :: _)} salt [] = Data.Hashable.hashWithSalt salt 0
+hashWithSalt {shape=(S d :: ds)} salt (x :: xs) =
+  hashWithSalt {shape=(d :: ds)} (
+    hashWithSalt {shape=ds} (
+      Data.Hashable.hashWithSalt salt 1
+    ) x
+  ) xs

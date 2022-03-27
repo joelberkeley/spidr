@@ -52,23 +52,11 @@ export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : Primitive dtype => {shape : _} -> Graph -> XlaOpFactory -> Tensor shape dtype
 
-covering
-hashWithSalt1 : {shape : _} -> (Bits64 -> a -> Bits64) -> Bits64 -> Array shape a -> Bits64
-hashWithSalt1 {shape=[]} hws s xs = hws s xs
-hashWithSalt1 {shape=(d :: ds)} hws s xs = uncurry hashWithSalt (foldl step (s, 0) xs)
-  where
-  step : (Bits64, Bits64) -> Array ds a -> (Bits64, Bits64)
-  step (s, l) x = (hashWithSalt1 hws s x, l + 1)
-
-covering
-hash : {shape : _} -> Hashable a => Array shape a -> Bits64
-hash = hashWithSalt1 hashWithSalt defaultSalt
-
 ||| Construct a `Tensor` from `Array` data.
 export
 const : {shape : _} -> PrimitiveRW dtype ty => Array shape ty -> Tensor shape dtype
 const xs = 
-  let graph = Leaf "const" (assert_total $ Tensor.hash xs) shape (typeString {dtype})
+  let graph = Leaf "const" (Util.Hashable.hashWithSalt defaultSalt xs) shape (typeString {dtype})
    in MkTensor graph $ \builder => do
         lit <- mkLiteral {dtype} xs
         onCollectAny (constantLiteral builder lit) XlaOp.delete
