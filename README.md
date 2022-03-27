@@ -1,7 +1,5 @@
 # spidr
 
-*Accelerated numerical computing with dependent types*
-
 **Note:** spidr is in early development. [See here](https://github.com/joelberkeley/spidr/labels/notable%20limitation) for a list of notable limitations.
 
 For installation, see [the instructions](INSTALL.md). We use [semantic versioning](https://semver.org/).
