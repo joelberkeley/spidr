@@ -26,8 +26,3 @@ Hashable Double where
     if x == 1 / 0 then 222222 else
     if x == -1 / 0 then -222222 else
     cast x
-
-export
-Hashable Nat where
-  hash = cast
-  hashWithSalt s x = s `combine` hash x

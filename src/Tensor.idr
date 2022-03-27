@@ -18,7 +18,6 @@ limitations under the License.
 module Tensor
 
 import Data.Hashable
-import Data.Hashable.Lifted
 import public Data.List
 import public Data.List.Elem
 import Decidable.Equality
@@ -59,11 +58,11 @@ hashWithSalt1 {shape=[]} hws s xs = hws s xs
 hashWithSalt1 {shape=(d :: ds)} hws s xs = uncurry hashWithSalt (foldl step (s, 0) xs)
   where
   step : (Bits64, Bits64) -> Array ds a -> (Bits64, Bits64)
-  step (s, l) x = (Tensor.hashWithSalt1 hws s x, l + 1)
+  step (s, l) x = (hashWithSalt1 hws s x, l + 1)
 
 covering
 hash : {shape : _} -> Hashable a => Array shape a -> Bits64
-hash = Tensor.hashWithSalt1 hashWithSalt defaultSalt
+hash = hashWithSalt1 hashWithSalt defaultSalt
 
 ||| Construct a `Tensor` from `Array` data.
 export

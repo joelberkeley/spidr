@@ -19,8 +19,8 @@ import Data.Stream
 import Types
 import Util
 
-||| A `Graph` represents the graph computation of a tensor value. It is isomorphic to the
-||| computation graph used at runtime, but might not be an exact representation. Crucially, given
+||| A `Graph` represents the graph computation of a tensor value. It is equivalent to the
+||| computation graph used at runtime, but might not be an exact representation. Specifically, given
 ||| two `Graph`s gx and gy that compute tensors x and y respectively, if gx is equal to gy, then x
 ||| is equal to y, but the computations used to compute x and y may be different.
 public export
@@ -64,5 +64,5 @@ Show Graph where
        in \case
             Operation name args shape type =>
               let init = indent ++ "\{type}\{show shape} \{name}"
-               in foldl (\acc, g => acc ++ impl (S depth) g) init args
+               in foldl (\acc, g => acc ++ "\n" ++ impl (S depth) g) init args
             Leaf name hash shape type => indent ++ "\{type}\{show shape} \{name}"
