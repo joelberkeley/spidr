@@ -21,8 +21,6 @@ limitations under the License.
 ||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
-import Data.Hashable
-
 import Compiler.XLA.Literal
 import public Compiler.XLA.XlaData
 import public Util.Hashable
@@ -78,7 +76,8 @@ export Ord S64 where
 export Ord F32 where
 export Ord F64 where
 
-||| rewrite
+||| A `PrimitiveRW dtype idr` means that values of type `idr` can be used to construct backend
+||| data with data type `dtype`.
 export
 interface Hashable idr => LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
 
