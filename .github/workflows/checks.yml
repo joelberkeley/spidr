@@ -24,9 +24,6 @@ jobs:
     - run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install idris2
-
-        ./install_deps.sh
-
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
         sudo apt install -y apt-transport-https curl gnupg
@@ -38,6 +35,7 @@ jobs:
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
 
+        ./install_deps.sh
         idris2 --install spidr.ipkg
         idris2 --install test.ipkg
         ./build/exec/test
