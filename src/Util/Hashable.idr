@@ -30,6 +30,8 @@ Hashable Double where
           cast x
      in s `combine` hash
 
+||| Hash an array with a given salt. This is implemented as a function as interface resolution is
+||| limited with type synonyms.
 export
 hashWithSalt : Hashable a => {shape : _} -> Bits64 -> Array shape a -> Bits64
 hashWithSalt {shape=[]} salt x = hashWithSalt salt x
