@@ -21,6 +21,8 @@ limitations under the License.
 ||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
+import Data.Hashable
+
 import Compiler.XLA.Literal
 import public Compiler.XLA.XlaData
 import public Util.Hashable
