@@ -19,9 +19,10 @@ import Data.Stream
 import Types
 import Util
 
-||| A `Graph` represents a graph computation of a tensor value. Crucially, given two `Graph`s
-||| gx and gy that compute tensors x and y respectively, if gx is equal to gy, then x is equal to y,
-||| but the computation used to compute x and y may be different.
+||| A `Graph` represents the graph computation of a tensor value. It is isomorphic to the
+||| computation graph used at runtime, but might not be an exact representation. Crucially, given
+||| two `Graph`s gx and gy that compute tensors x and y respectively, if gx is equal to gy, then x
+||| is equal to y, but the computations used to compute x and y may be different.
 public export
 data Graph : Type where
   ||| Represents a function application.
