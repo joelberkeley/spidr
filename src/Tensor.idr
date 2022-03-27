@@ -482,12 +482,12 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ----------------------------- generic operations ----------------------------
 
 parameter : Int -> String -> (shape : Shape) -> Primitive dtype => Tensor shape dtype
--- is this unsafePerformIO safe? We could use IO Graph in MkTensor and not be unsafe here, though
--- we'll end up using unsafePerformIO in e.g. Show, which may be safer
-parameter position name shape = unsafePerformIO $ do
-  xla_shape <- mkShape {dtype} shape
+parameter position name shape =
   let graph = Leaf "parameter" (cast position) shape (typeString {dtype})
-  pure $ MkTensor graph $ \b => onCollectAny (parameter b position xla_shape name) XlaOp.delete
+   in unsafePerformIO $ do
+        xla_shape <- mkShape {dtype} shape
+        pure $ MkTensor graph $
+          \b => onCollectAny (parameter b position xla_shape name) XlaOp.delete
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
