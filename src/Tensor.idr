@@ -92,7 +92,10 @@ export
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Idris operations.
 ||| Useful for debugging.
 |||
-||| **Note:** The layout of the string is not guaranteed. It is intended for humans not machines.
+||| **Note:**
+|||   * The layout of the string is not guaranteed. It is intended for humans not machines.
+|||   * Idenitifiers used to differentiate `const` values are omitted from the graph for
+|||     readability.
 export covering
 [Graph] Show (Tensor shape dtype) where
   show (MkTensor graph _) = show graph
