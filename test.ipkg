@@ -9,6 +9,7 @@ main = Main
 
 modules =
   Unit.Model.TestKernel,
+  Unit.Util.TestHashable,
   Unit.TestDistribution,
   Unit.TestTensor,
   Unit.TestUtil,

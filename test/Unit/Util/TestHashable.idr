@@ -13,24 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Main
+module Unit.Util.TestHashable
 
-import Unit.Model.TestKernel
-import Unit.Util.TestHashable
-import Unit.TestDistribution
-import Unit.TestTensor
-import Unit.TestUtil
+import Util.Hashable
 
 import Utils
 
-main : IO ()
-main = do
-  Utils.test
+test_hash_double : IO ()
+test_hash_double = do
+  sequence_ $ do
+    x <- doubles
+    y <- doubles
+    pure $ assert "hash for Double" $
+      (hash x == hash y) == (let bothNan = x /= x && y /= y in bothNan || x == y)
 
-  Unit.TestUtil.test
-  Unit.Util.TestHashable.test
-  Unit.TestTensor.test
-  Unit.Model.TestKernel.test
-  Unit.TestDistribution.test
-
-  putStrLn "Tests passed"
+export
+test : IO ()
+test = do
+  test_hash_double
