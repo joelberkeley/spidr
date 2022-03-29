@@ -439,6 +439,9 @@ test_T = do
 
 test_map : IO ()
 test_map = do
+  let x = const {shape=[]} {dtype=S32} 1
+  assertAll "" $ map (\y => y + y) x == x * const 2
+
   let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
   assertAll "map for S32 array" $ map abs x == abs x
 

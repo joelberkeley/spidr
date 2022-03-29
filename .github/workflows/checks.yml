@@ -49,4 +49,4 @@ jobs:
         brew install idris2
         ./install_deps.sh
         idris2 --install spidr.ipkg
-        res=0; for f in tutorials/*.md; do idris2 --check -p hashable "$f" || res=$?; done; $(exit $res)
+        res=0; for f in tutorials/*.md; do idris2 --check -p contrib -p hashable "$f" || res=$?; done; $(exit $res)

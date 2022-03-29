@@ -26,7 +26,7 @@ import Types
 prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
-mkShape : Primitive dtype => Shape -> IO GCAnyPtr
+mkShape : HasIO io => Primitive dtype => Shape -> io GCAnyPtr
 mkShape shape = do
   let dtype_enum = xlaIdentifier {dtype}
   shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))

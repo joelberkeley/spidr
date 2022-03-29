@@ -15,13 +15,29 @@ limitations under the License.
 --}
 module Compiler.XLA.Client.Lib.Matrix
 
+import Data.Hashable
+import Control.Monad.State
 import System.FFI
+import Data.SortedMap
 
 import Compiler.FFI
+import Compiler.Graph
+import Compiler.XLA.Client.XlaBuilder
+import Primitive
+
+%foreign (libxla "IdentityMatrix")
+prim__identityMatrixImpl : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
 
 export
-%foreign (libxla "IdentityMatrix")
-prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
+prim__identityMatrix : Primitive dtype => Int -> Int -> Graph -> XlaOpFactory
+prim__identityMatrix m n graph = ST $ \builder@(MkXlaBuilder ptr cache) =>
+  let graphHash = hash graph
+   in case lookup graphHash cache of
+        Just op => pure (builder, op)
+        Nothing => do
+            op <- primIO $ prim__identityMatrixImpl ptr (xlaIdentifier {dtype}) m n
+            op <- onCollectAny op XlaOp.delete
+            pure (MkXlaBuilder ptr (insert graphHash op cache), op)
 
 export
 %foreign (libxla "GetMatrixDiagonal")

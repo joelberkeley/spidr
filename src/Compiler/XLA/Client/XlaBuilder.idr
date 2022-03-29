@@ -15,14 +15,19 @@ limitations under the License.
 --}
 module Compiler.XLA.Client.XlaBuilder
 
+import Data.Hashable
+import Control.Monad.State
+import Data.SortedMap
 import Data.Vect
 import System.FFI
 
 import Compiler.FFI
+import Compiler.Graph
 import Compiler.XLA.Client.XlaComputation
 import Compiler.XLA.Literal
 import Compiler.XLA.Shape
 import Compiler.XLA.XlaData
+import Compiler.XLA.ShapeUtil
 import Types
 import Util
 
@@ -41,33 +46,53 @@ namespace XlaBuilder
   delete = primIO . prim__delete
 
 %foreign (libxla "XlaBuilder_new")
-prim__mkXlaBuilderImpl : String -> PrimIO AnyPtr
-
-export
-prim__mkXlaBuilder : String -> IO GCAnyPtr
-prim__mkXlaBuilder computation_name = do
-  builder <- primIO (prim__mkXlaBuilderImpl computation_name)
-  onCollectAny builder XlaBuilder.delete
+prim__mkXlaBuilder : String -> PrimIO AnyPtr
 
 %foreign (libxla "CreateSubBuilder")
-prim__createSubBuilderImpl : GCAnyPtr -> String -> PrimIO AnyPtr
-
-export
-prim__createSubBuilder : GCAnyPtr -> String -> IO GCAnyPtr
-prim__createSubBuilder builder computation_name = do
-  sub_builder <- primIO (prim__createSubBuilderImpl builder computation_name)
-  onCollectAny sub_builder XlaBuilder.delete
+prim__createSubBuilder : GCAnyPtr -> String -> PrimIO AnyPtr
 
 %foreign (libxla "XlaBuilder_Build")
-prim__buildImpl : GCAnyPtr -> AnyPtr
+prim__build : GCAnyPtr -> AnyPtr
 
-export
-prim__build : GCAnyPtr -> IO GCAnyPtr
-prim__build builder = onCollectAny (prim__buildImpl builder) XlaComputation.delete
-
-export
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : GCAnyPtr -> GCAnyPtr -> String
+
+public export
+data XlaBuilder : Type where
+  MkXlaBuilder : GCAnyPtr -> SortedMap Bits64 GCAnyPtr -> XlaBuilder
+
+public export
+XlaOpFactory : Type
+XlaOpFactory = StateT XlaBuilder IO GCAnyPtr
+
+mkXlaBuilder : String -> IO XlaBuilder
+mkXlaBuilder computation_name = do
+  ptr <- primIO (prim__mkXlaBuilder computation_name)
+  ptr <- onCollectAny ptr XlaBuilder.delete
+  pure (MkXlaBuilder ptr empty)
+
+export
+build : String -> XlaOpFactory -> IO GCAnyPtr
+build computation_name x = do
+  builder <- mkXlaBuilder computation_name
+  (MkXlaBuilder ptr _) <- execStateT builder x
+  onCollectAny (prim__build ptr) XlaComputation.delete
+
+export
+sub : String -> XlaOpFactory -> StateT XlaBuilder IO GCAnyPtr  -- XlaComputation not XlaOp
+sub computation_name x = ST $ \builder@(MkXlaBuilder ptr _) => do
+  sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
+  sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
+  (MkXlaBuilder sub_ptr _) <- execStateT (MkXlaBuilder sub_ptr empty) x  -- this x may be wrong
+  computation <- onCollectAny (prim__build sub_ptr) XlaComputation.delete
+  pure (builder, computation)
+
+export
+opToString : XlaOpFactory -> IO String
+opToString xs = do
+  builder <- mkXlaBuilder "toString"
+  (MkXlaBuilder ptr _, op) <- runStateT builder xs
+  pure (prim__opToString ptr op)
 
 {-
  -
@@ -90,20 +115,47 @@ sizeOfXlaOp : Int
 prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
-mkXlaOpArray : List GCAnyPtr -> IO GCAnyPtr
+mkXlaOpArray : HasIO io => List GCAnyPtr -> io GCAnyPtr
 mkXlaOpArray ops = do
   arr <- malloc (cast (length ops) * sizeOfXlaOp)
   traverse_ (\(idx, op) =>
     primIO $ prim__setArrayXlaOp arr (cast idx) op) (enumerate (fromList ops))
   onCollectAny arr free
 
-export
 %foreign (libxla "Parameter")
-parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> AnyPtr
+prim__parameterImpl : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
+prim__parameter :
+  Primitive dtype
+  => (position : Int)
+  -> (shape : Shape)
+  -> (name : String)
+  -> (graph : Graph)
+  -> XlaOpFactory
+prim__parameter position shape name graph = ST $ \builder@(MkXlaBuilder ptr cache) =>
+  let graphHash = hash graph
+   in case lookup graphHash cache of
+        Just op => pure (builder, op)
+        Nothing => do
+          xla_shape <- mkShape {dtype} shape
+          op <- primIO $ prim__parameterImpl ptr position xla_shape name
+          op <- onCollectAny op XlaOp.delete
+          pure (MkXlaBuilder ptr (insert graphHash op cache), op)
+
 %foreign (libxla "ConstantLiteral")
-constantLiteral : GCAnyPtr -> GCAnyPtr -> AnyPtr
+prim__constantLiteralImpl : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+prim__constantLiteral : (literal : GCAnyPtr) -> (graph : Graph) -> XlaOpFactory
+prim__constantLiteral literal graph = ST $ \builder@(MkXlaBuilder ptr cache) =>
+  let graphHash = hash graph
+   in case lookup graphHash cache of
+        Just op => pure (builder, op)
+        Nothing => do
+          op <- primIO $ prim__constantLiteralImpl ptr literal
+          op <- onCollectAny op XlaOp.delete
+          pure (MkXlaBuilder ptr (insert graphHash op cache), op)
 
 export
 %foreign (libxla "Broadcast")

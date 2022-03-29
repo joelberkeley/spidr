@@ -1,6 +1,6 @@
 package test
 
-depends = spidr, hashable
+depends = spidr, contrib, hashable
 opts = "--total"
 sourcedir = "test"
 
