@@ -30,10 +30,10 @@ prim__identityMatrixImpl : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
 
 export
 prim__identityMatrix : Primitive dtype => Int -> Int -> Graph -> XlaOpFactory
-prim__identityMatrix m n graph = ST $ \builder@(MkXlaBuilder ptr cache) => do
+prim__identityMatrix m n graph = do
+  MkXlaBuilder ptr _ <- get
   op <- primIO $ prim__identityMatrixImpl ptr (xlaIdentifier {dtype}) m n
-  op <- onCollectAny op XlaOp.delete
-  pure (builder, op)
+  onCollectAny op XlaOp.delete
 
 export
 %foreign (libxla "GetMatrixDiagonal")

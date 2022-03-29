@@ -53,8 +53,6 @@ test_gaussian_cdf = do
 
       assert' : (Double, Double) -> IO ()
       assert' (x, exp) = do
-        printLn $ toArray $ cdf gaussian (const {shape=[1, 1]} [[x]])
-        printLn $ exp
         assertAll "Gaussian cdf agrees with tfp Normal \{show x} \{show exp}" $
           sufficientlyEq {tol=0.0001} (cdf gaussian (const {shape=[1, 1]} [[x]])) (const exp)
 
@@ -64,4 +62,4 @@ export
 test : IO ()
 test = do
   test_gaussian_pdf
-  -- test_gaussian_cdf
+  test_gaussian_cdf
