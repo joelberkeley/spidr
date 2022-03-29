@@ -52,7 +52,7 @@ test_gaussian_cdf = do
       expected = [0.04779036, 0.20232838, 0.5, 0.7976716]
 
       assert' : (Double, Double) -> IO ()
-      assert' (x, exp) = do
+      assert' (x, exp) =
         assertAll "Gaussian cdf agrees with tfp Normal \{show x} \{show exp}" $
           sufficientlyEq {tol=0.0001} (cdf gaussian (const {shape=[1, 1]} [[x]])) (const exp)
 
