@@ -519,7 +519,7 @@ test_elementwise_equality = do
   sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
 
   where
-    compareScalars : Show ty => Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
+    compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
                      => Primitive.Eq dtype => ty -> ty -> IO ()
     compareScalars l r =
       let actual = toArray {shape=[]} ((const {dtype} l) == (const {dtype} r))
