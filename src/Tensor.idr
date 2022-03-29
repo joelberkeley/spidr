@@ -17,6 +17,7 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
+import Data.SortedMap
 import Control.Monad.State
 import Data.Hashable
 import public Data.List
@@ -51,6 +52,13 @@ data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : {shape : _} -> Graph -> XlaOpFactory -> Tensor shape dtype
 
 cached : Graph -> XlaOpFactory -> XlaOpFactory
+cached graph xs = assert_total $ ST $ \builder@(MkXlaBuilder ptr cache) => do
+  let graphHash = hash graph
+  case lookup graphHash cache of
+    Just op => pure (builder, op)
+    Nothing => do
+      (builder, op) <- runStateT builder xs
+      pure (MkXlaBuilder ptr (insert graphHash op cache), op)
 
 ||| Construct a `Tensor` from `Array` data.
 export
@@ -487,7 +495,7 @@ export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} graph xs) =
   let graph0 = Leaf "parameter" 0 [] (typeString {dtype=a})
-      p0 = MkTensor graph0 $ prim__parameter 0 [] "" {dtype=a} graph0
+      p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype=a} graph0
       MkTensor graphf res = f p0
       graph = Operation "map" [graphf, graph] shape (typeString {dtype=b})
    in MkTensor graph $ cached graph $ do
@@ -708,7 +716,7 @@ select (MkTensor {shape} gPred pred) (MkTensor gTrue true) (MkTensor gFalse fals
 ||| @onTrue The function to execute if the predicate is truthy.
 ||| @onFalse The function to execute if the predicate is falsy.
 export
-cond : (Primitive tt, Primitive ft, Primitive dtype) => {shape : _} -> Tensor [] PRED
+cond : (Primitive tt, Primitive ft, Primitive dtype) => {shape, ts, fs : _} -> Tensor [] PRED
   -> (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt
   -> (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft
   -> Tensor shape dtype
@@ -718,10 +726,10 @@ cond
   (MkTensor graphTrue {shape=tShape} true)
   onFalse
   (MkTensor graphFalse {shape=fShape} false) =
-    let grapht = Leaf "parameter" 0 [] (typeString {dtype=tt})
-        graphf = Leaf "parameter" 0 [] (typeString {dtype=ft})
-        pt = MkTensor grapht $ prim__parameter 0 [] "" {dtype} grapht
-        pf = MkTensor graphf $ prim__parameter 1 [] "" {dtype} graphf
+    let grapht = Leaf "parameter" 0 ts (typeString {dtype=tt})
+        graphf = Leaf "parameter" 0 fs (typeString {dtype=ft})
+        pt = MkTensor grapht $ cached grapht $ prim__parameter 0 ts "" {dtype} grapht
+        pf = MkTensor graphf $ cached graphf $ prim__parameter 0 fs "" {dtype} graphf
         MkTensor graphOnTrue trueRes = onTrue pt
         MkTensor graphOnFalse falseRes = onFalse pf
         args = [graphPred, graphOnTrue, graphTrue, graphOnFalse, graphFalse]

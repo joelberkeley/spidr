@@ -22,13 +22,7 @@ import Types
 
 export
 Hashable Double where
-  hashWithSalt s x =
-    let hash : Bits64 =
-          if x /= x then 111111 else
-          if x == 1 / 0 then 222222 else
-          if x == -1 / 0 then -222222 else
-          cast x
-     in s `combine` hash
+  hashWithSalt s x = s `combine` hash (show x)
 
 ||| Hash an array with a given salt. This is implemented as a function as interface resolution is
 ||| limited with type synonyms.

@@ -80,12 +80,19 @@ build computation_name x = do
 
 export
 sub : String -> XlaOpFactory -> StateT XlaBuilder IO GCAnyPtr  -- XlaComputation not XlaOp
-sub computation_name x = ST $ \builder@(MkXlaBuilder ptr _) => do
+sub computation_name x = do
+  -- printLn "sub ... get"
+  MkXlaBuilder ptr _ <- get
+  -- printLn "sub ... create"
   sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
+  -- printLn "sub ... gc sub"
   sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
-  (MkXlaBuilder sub_ptr _) <- execStateT (MkXlaBuilder sub_ptr empty) x  -- this x may be wrong
-  computation <- onCollectAny (prim__build sub_ptr) XlaComputation.delete
-  pure (builder, computation)
+  -- printLn "sub ... build graph"
+  MkXlaBuilder sub_ptr _ <- liftIO $ execStateT (MkXlaBuilder sub_ptr empty) x
+  -- printLn "sub ... build computation"
+  let computation = prim__build sub_ptr
+  -- printLn "sub ... gc"
+  onCollectAny computation XlaComputation.delete
 
 export
 opToString : XlaOpFactory -> IO String
@@ -133,29 +140,21 @@ prim__parameter :
   -> (name : String)
   -> (graph : Graph)
   -> XlaOpFactory
-prim__parameter position shape name graph = ST $ \builder@(MkXlaBuilder ptr cache) =>
-  let graphHash = hash graph
-   in case lookup graphHash cache of
-        Just op => pure (builder, op)
-        Nothing => do
-          xla_shape <- mkShape {dtype} shape
-          op <- primIO $ prim__parameterImpl ptr position xla_shape name
-          op <- onCollectAny op XlaOp.delete
-          pure (MkXlaBuilder ptr (insert graphHash op cache), op)
+prim__parameter position shape name graph = ST $ \builder@(MkXlaBuilder ptr cache) => do
+  xla_shape <- mkShape {dtype} shape
+  op <- primIO $ prim__parameterImpl ptr position xla_shape name
+  op <- onCollectAny op XlaOp.delete
+  pure (builder, op)
 
 %foreign (libxla "ConstantLiteral")
 prim__constantLiteralImpl : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 prim__constantLiteral : (literal : GCAnyPtr) -> (graph : Graph) -> XlaOpFactory
-prim__constantLiteral literal graph = ST $ \builder@(MkXlaBuilder ptr cache) =>
-  let graphHash = hash graph
-   in case lookup graphHash cache of
-        Just op => pure (builder, op)
-        Nothing => do
-          op <- primIO $ prim__constantLiteralImpl ptr literal
-          op <- onCollectAny op XlaOp.delete
-          pure (MkXlaBuilder ptr (insert graphHash op cache), op)
+prim__constantLiteral literal graph = ST $ \builder@(MkXlaBuilder ptr cache) => do
+  op <- primIO $ prim__constantLiteralImpl ptr literal
+  op <- onCollectAny op XlaOp.delete
+  pure (builder, op)
 
 export
 %foreign (libxla "Broadcast")

@@ -515,11 +515,17 @@ test_elementwise_equality = do
   sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
 
   where
-    compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
+    compareScalars : Show ty => Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
                      => Primitive.Eq dtype => ty -> ty -> IO ()
     compareScalars l r =
-      let actual = toArray {shape=[]} ((const {dtype} l) == (const {dtype} r))
-       in assert "== for scalars" (actual == (l == r))
+      let actual = const {dtype} l == const r
+          actual' = toArray {shape=[]} actual
+       in do
+            -- printLn l
+            -- printLn r
+            -- printLn actual'
+            -- printLn $ show @{Graph} actual
+            assert "== for scalars" (actual' == (l == r))
 
 test_elementwise_inequality : IO ()
 test_elementwise_inequality = do
@@ -1026,6 +1032,7 @@ test = do
   test_elementwise_not
   test_select
   test_cond
+  putStrLn "ok"
   test_abs
   test_negate
   testElementwiseUnaryDoubleCases

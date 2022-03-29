@@ -68,6 +68,9 @@ Show Graph where
                in foldl (\acc, g => acc ++ "\n" ++ impl (S depth) g) init args
             Leaf name hash shape type => indent ++ "\{type}\{show shape} \{name}"
 
-export
+export covering
 Hashable Graph where
-  hashWithSalt = ?hashWithSalt
+  hashWithSalt salt (Operation name arguments shape type) =
+    salt `hashWithSalt` name `hashWithSalt` arguments `hashWithSalt` shape `hashWithSalt` type
+  hashWithSalt salt (Leaf name id_ shape type) =
+    salt `hashWithSalt` name `hashWithSalt` id_ `hashWithSalt` shape `hashWithSalt` type
