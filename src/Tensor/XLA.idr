@@ -30,7 +30,8 @@ public export
 data XlaBuilder : Type where
   MkXlaBuilder : GCAnyPtr -> SortedMap Bits64 GCAnyPtr -> XlaBuilder
 
--- note, the type of thing pointed to by the GCAnyPtr must be inferred from the context.
+-- note, the type of thing pointed to by the GCAnyPtr can be anything, and must be inferred from the
+-- context.
 public export
 ComputationComponent : Type
 ComputationComponent = StateT XlaBuilder IO GCAnyPtr
