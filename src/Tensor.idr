@@ -57,7 +57,7 @@ cached graph xs = assert_total $ ST $ \builder@(MkXlaBuilder ptr cache) => do
   case lookup graphHash cache of
     Just op => pure (builder, op)
     Nothing => do
-      (builder, op) <- runStateT builder xs
+      (MkXlaBuilder ptr cache, op) <- runStateT builder xs
       pure (MkXlaBuilder ptr (insert graphHash op cache), op)
 
 ||| Construct a `Tensor` from `Array` data.
@@ -495,7 +495,7 @@ export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} graph xs) =
   let graph0 = Leaf "parameter" 0 [] (typeString {dtype=a})
-      p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype=a} graph0
+      p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f p0
       graph = Operation "map" [graphf, graph] shape (typeString {dtype=b})
    in MkTensor graph $ cached graph $ do
@@ -530,8 +530,8 @@ map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b ->
 map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
   let graph0 = Leaf "parameter" 0 [] (typeString {dtype=a})
       graph1 = Leaf "parameter" 1 [] (typeString {dtype=b})
-      p0 = MkTensor graph0 $ prim__parameter 0 [] "" {dtype=a} graph0
-      p1 = MkTensor graph1 $ prim__parameter 1 [] "" {dtype=b} graph1
+      p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype=a}
+      p1 = MkTensor graph1 $ cached graph1 $ prim__parameter 1 [] "" {dtype=b}
       MkTensor graphf res = f p0 p1
       graph = Operation "map2" [graphf, graphL, graphR] shape (typeString {dtype=c})
    in MkTensor graph $ cached graph $ do
@@ -566,8 +566,8 @@ reduce axis (MkTensor {shape} graph xs) =
 
    in let graph0 = Leaf "parameter" 0 [] (typeString {dtype})
           graph1 = Leaf "parameter" 1 [] (typeString {dtype})
-          p0 = MkTensor graph0 $ prim__parameter 0 [] "" {dtype} graph0
-          p1 = MkTensor graph1 $ prim__parameter 1 [] "" {dtype} graph1
+          p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype}
+          p1 = MkTensor graph1 $ cached graph1 $ prim__parameter 1 [] "" {dtype}
           MkTensor graphf resf = (<+>) @{semigroup reducer} p0 p1
           graph = Operation "reduce" [graphf, graph] (deleteAt axis shape) (typeString {dtype})
        in MkTensor graph $ cached graph $ do
@@ -728,8 +728,8 @@ cond
   (MkTensor graphFalse {shape=fShape} false) =
     let grapht = Leaf "parameter" 0 ts (typeString {dtype=tt})
         graphf = Leaf "parameter" 0 fs (typeString {dtype=ft})
-        pt = MkTensor grapht $ cached grapht $ prim__parameter 0 ts "" {dtype} grapht
-        pf = MkTensor graphf $ cached graphf $ prim__parameter 0 fs "" {dtype} graphf
+        pt = MkTensor grapht $ cached grapht $ prim__parameter 0 ts "" {dtype}
+        pf = MkTensor graphf $ cached graphf $ prim__parameter 0 fs "" {dtype}
         MkTensor graphOnTrue trueRes = onTrue pt
         MkTensor graphOnFalse falseRes = onFalse pf
         args = [graphPred, graphOnTrue, graphTrue, graphOnFalse, graphFalse]

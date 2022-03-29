@@ -81,17 +81,11 @@ build computation_name x = do
 export
 sub : String -> XlaOpFactory -> StateT XlaBuilder IO GCAnyPtr  -- XlaComputation not XlaOp
 sub computation_name x = do
-  -- printLn "sub ... get"
   MkXlaBuilder ptr _ <- get
-  -- printLn "sub ... create"
   sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
-  -- printLn "sub ... gc sub"
   sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
-  -- printLn "sub ... build graph"
   MkXlaBuilder sub_ptr _ <- liftIO $ execStateT (MkXlaBuilder sub_ptr empty) x
-  -- printLn "sub ... build computation"
   let computation = prim__build sub_ptr
-  -- printLn "sub ... gc"
   onCollectAny computation XlaComputation.delete
 
 export
@@ -133,28 +127,22 @@ mkXlaOpArray ops = do
 prim__parameterImpl : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
-prim__parameter :
-  Primitive dtype
-  => (position : Int)
-  -> (shape : Shape)
-  -> (name : String)
-  -> (graph : Graph)
-  -> XlaOpFactory
-prim__parameter position shape name graph = ST $ \builder@(MkXlaBuilder ptr cache) => do
+prim__parameter : Primitive dtype => Int -> Shape -> String -> XlaOpFactory
+prim__parameter position shape name = do
+  (MkXlaBuilder ptr _) <- get
   xla_shape <- mkShape {dtype} shape
   op <- primIO $ prim__parameterImpl ptr position xla_shape name
-  op <- onCollectAny op XlaOp.delete
-  pure (builder, op)
+  onCollectAny op XlaOp.delete
 
 %foreign (libxla "ConstantLiteral")
 prim__constantLiteralImpl : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
-prim__constantLiteral : (literal : GCAnyPtr) -> (graph : Graph) -> XlaOpFactory
-prim__constantLiteral literal graph = ST $ \builder@(MkXlaBuilder ptr cache) => do
+prim__constantLiteral : GCAnyPtr -> Graph -> XlaOpFactory
+prim__constantLiteral literal graph = do
+  (MkXlaBuilder ptr _) <- get
   op <- primIO $ prim__constantLiteralImpl ptr literal
-  op <- onCollectAny op XlaOp.delete
-  pure (builder, op)
+  onCollectAny op XlaOp.delete
 
 export
 %foreign (libxla "Broadcast")

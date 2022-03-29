@@ -440,7 +440,7 @@ test_T = do
 test_map : IO ()
 test_map = do
   let x = const {shape=[]} {dtype=S32} 1
-  assertAll "" $ map (\y => y + y) x == x * const 2
+  assertAll "" $ map (\y => y + y) x == const 2
 
   let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
   assertAll "map for S32 array" $ map abs x == abs x
@@ -461,6 +461,10 @@ test_map = do
 
 test_map2 : IO ()
 test_map2 = do
+  let x = const {shape=[]} {dtype=S32} 1
+      y = const {shape=[]} {dtype=S32} 2
+  assertAll "map2 with reused parameters" $ map2 (\xx, yy => xx + xx + yy + yy) x y == const 6
+
   let l = const {shape=[_, _]} {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
       r = const {shape=[_, _]} {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
   assertAll "map2 for S32 array" $ map2 (+) l r == (l + r)
@@ -775,6 +779,10 @@ test_select = do
 
 test_cond : IO ()
 test_cond = do
+  let x = const {shape=[]} {dtype=S32} 1
+      y = const {shape=[]} {dtype=S32} 2
+  assertAll "" $ cond (const True) (\z => z + z) x (\z => z - z) y == const 2
+
   let x = const {shape=[]} {dtype=S32} 0
   assertAll "cond for trivial truthy" $
     cond (const True) (+ const 1) x (\x => x - const 1) x == const 1
@@ -1032,7 +1040,6 @@ test = do
   test_elementwise_not
   test_select
   test_cond
-  putStrLn "ok"
   test_abs
   test_negate
   testElementwiseUnaryDoubleCases
