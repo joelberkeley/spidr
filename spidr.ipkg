@@ -33,7 +33,10 @@ modules =
 
   Optimize,
   Primitive,
+  
   Tensor,
+  Tensor.XLA,
+
   Types,
   Util
 

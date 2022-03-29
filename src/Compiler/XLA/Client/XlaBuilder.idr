@@ -15,19 +15,12 @@ limitations under the License.
 --}
 module Compiler.XLA.Client.XlaBuilder
 
-import Data.Hashable
-import Control.Monad.State
-import Data.SortedMap
-import Data.Vect
 import System.FFI
 
 import Compiler.FFI
 import Compiler.Graph
 import Compiler.XLA.Client.XlaComputation
 import Compiler.XLA.Literal
-import Compiler.XLA.Shape
-import Compiler.XLA.XlaData
-import Compiler.XLA.ShapeUtil
 import Types
 import Util
 
@@ -45,55 +38,21 @@ namespace XlaBuilder
   delete : AnyPtr -> IO ()
   delete = primIO . prim__delete
 
+export
 %foreign (libxla "XlaBuilder_new")
 prim__mkXlaBuilder : String -> PrimIO AnyPtr
 
+export
 %foreign (libxla "CreateSubBuilder")
 prim__createSubBuilder : GCAnyPtr -> String -> PrimIO AnyPtr
 
+export
 %foreign (libxla "XlaBuilder_Build")
 prim__build : GCAnyPtr -> AnyPtr
 
+export
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : GCAnyPtr -> GCAnyPtr -> String
-
-public export
-data XlaBuilder : Type where
-  MkXlaBuilder : GCAnyPtr -> SortedMap Bits64 GCAnyPtr -> XlaBuilder
-
-public export
-XlaOpFactory : Type
-XlaOpFactory = StateT XlaBuilder IO GCAnyPtr
-
-mkXlaBuilder : String -> IO XlaBuilder
-mkXlaBuilder computation_name = do
-  ptr <- primIO (prim__mkXlaBuilder computation_name)
-  ptr <- onCollectAny ptr XlaBuilder.delete
-  pure (MkXlaBuilder ptr empty)
-
-export
-build : String -> XlaOpFactory -> IO GCAnyPtr
-build computation_name x = do
-  builder <- mkXlaBuilder computation_name
-  (MkXlaBuilder ptr _) <- execStateT builder x
-  onCollectAny (prim__build ptr) XlaComputation.delete
-
-export
-sub : String -> XlaOpFactory -> StateT XlaBuilder IO GCAnyPtr  -- XlaComputation not XlaOp
-sub computation_name x = do
-  MkXlaBuilder ptr _ <- get
-  sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
-  sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
-  MkXlaBuilder sub_ptr _ <- liftIO $ execStateT (MkXlaBuilder sub_ptr empty) x
-  let computation = prim__build sub_ptr
-  onCollectAny computation XlaComputation.delete
-
-export
-opToString : XlaOpFactory -> IO String
-opToString xs = do
-  builder <- mkXlaBuilder "toString"
-  (MkXlaBuilder ptr _, op) <- runStateT builder xs
-  pure (prim__opToString ptr op)
 
 {-
  -
@@ -123,26 +82,13 @@ mkXlaOpArray ops = do
     primIO $ prim__setArrayXlaOp arr (cast idx) op) (enumerate (fromList ops))
   onCollectAny arr free
 
+export
 %foreign (libxla "Parameter")
-prim__parameterImpl : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
+prim__parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
-prim__parameter : Primitive dtype => Int -> Shape -> String -> XlaOpFactory
-prim__parameter position shape name = do
-  (MkXlaBuilder ptr _) <- get
-  xla_shape <- mkShape {dtype} shape
-  op <- primIO $ prim__parameterImpl ptr position xla_shape name
-  onCollectAny op XlaOp.delete
-
 %foreign (libxla "ConstantLiteral")
-prim__constantLiteralImpl : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
-
-export
-prim__constantLiteral : GCAnyPtr -> Graph -> XlaOpFactory
-prim__constantLiteral literal graph = do
-  (MkXlaBuilder ptr _) <- get
-  op <- primIO $ prim__constantLiteralImpl ptr literal
-  onCollectAny op XlaOp.delete
+prim__constantLiteral : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Broadcast")

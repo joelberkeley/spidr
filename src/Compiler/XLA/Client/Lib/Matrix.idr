@@ -25,15 +25,9 @@ import Compiler.Graph
 import Compiler.XLA.Client.XlaBuilder
 import Primitive
 
-%foreign (libxla "IdentityMatrix")
-prim__identityMatrixImpl : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
-
 export
-prim__identityMatrix : Primitive dtype => Int -> Int -> Graph -> XlaOpFactory
-prim__identityMatrix m n graph = do
-  MkXlaBuilder ptr _ <- get
-  op <- primIO $ prim__identityMatrixImpl ptr (xlaIdentifier {dtype}) m n
-  onCollectAny op XlaOp.delete
+%foreign (libxla "IdentityMatrix")
+prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "GetMatrixDiagonal")

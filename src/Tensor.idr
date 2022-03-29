@@ -29,6 +29,7 @@ import Error
 import public Primitive
 import public Types
 import public Util
+import Tensor.XLA
 import Compiler.FFI
 import Compiler.Graph
 import Compiler.XLA.Client.Lib.Math
@@ -49,9 +50,9 @@ import Compiler.XLA.ShapeUtil
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Graph -> XlaOpFactory -> Tensor shape dtype
+  MkTensor : {shape : _} -> Graph -> ComputationComponent -> Tensor shape dtype
 
-cached : Graph -> XlaOpFactory -> XlaOpFactory
+cached : Graph -> ComputationComponent -> ComputationComponent
 cached graph xs = assert_total $ ST $ \builder@(MkXlaBuilder ptr cache) => do
   let graphHash = hash graph
   case lookup graphHash cache of
@@ -59,6 +60,12 @@ cached graph xs = assert_total $ ST $ \builder@(MkXlaBuilder ptr cache) => do
     Nothing => do
       (MkXlaBuilder ptr cache, op) <- runStateT builder xs
       pure (MkXlaBuilder ptr (insert graphHash op cache), op)
+
+prim__constantLiteral : GCAnyPtr -> Graph -> ComputationComponent
+prim__constantLiteral literal graph = do
+  MkXlaBuilder ptr _ <- get
+  op <- primIO $ prim__constantLiteral ptr literal
+  onCollectAny op XlaOp.delete
 
 ||| Construct a `Tensor` from `Array` data.
 export
@@ -91,7 +98,7 @@ toArray (MkTensor {shape} _ xs) = unsafePerformIO $ do
 ||| Useful for debugging.
 export
 [XLA] Show (Tensor shape dtype) where
-  show (MkTensor _ xs) = unsafePerformIO (opToString xs)
+  show (MkTensor _ xs) = unsafePerformIO (prim__opToString xs)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Idris operations.
 ||| Useful for debugging.
@@ -106,7 +113,7 @@ export covering
 
 ----------------------------- structural operations ----------------------------
 
-reshapeImpl : (from, to : Shape) -> XlaOpFactory -> XlaOpFactory
+reshapeImpl : (from, to : Shape) -> ComputationComponent -> ComputationComponent
 reshapeImpl from to xs = do
   dim_order <- mkIntArray (range (length from))
   cto <- mkIntArray to
@@ -357,7 +364,10 @@ identity : Primitive.Num dtype => {n : _} -> Tensor [n, n] dtype
 identity =
   let graph = Leaf "identity" (cast n) [n, n] (typeString {dtype})
       n = cast n
-   in MkTensor graph $ cached graph $ prim__identityMatrix {dtype} n n graph
+   in MkTensor graph $ cached graph $ do
+        MkXlaBuilder ptr _ <- get
+        op <- primIO $ prim__identityMatrix ptr (xlaIdentifier {dtype}) n n
+        onCollectAny op XlaOp.delete
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -437,13 +447,13 @@ broadcast xs with (xs)
     _ => impl [] to xs
 
     where
-    broadcast : List Nat -> XlaOpFactory -> XlaOpFactory
+    broadcast : List Nat -> ComputationComponent -> ComputationComponent
     broadcast broadcast_sizes xs = do
       broadcast_sizes_ptr <- mkIntArray broadcast_sizes
       op <- primIO (prim__broadcast !xs broadcast_sizes_ptr (cast $ length broadcast_sizes))
       onCollectAny op XlaOp.delete
 
-    broadcastInDim : Shape -> Shape -> XlaOpFactory -> XlaOpFactory
+    broadcastInDim : Shape -> Shape -> ComputationComponent -> ComputationComponent
     broadcastInDim ods bcd xs = do
       ods_ptr <- mkIntArray ods
       bcd_ptr <- mkIntArray bcd
@@ -499,7 +509,7 @@ map f (MkTensor {shape} graph xs) =
       MkTensor graphf res = f p0
       graph = Operation "map" [graphf, graph] shape (typeString {dtype=b})
    in MkTensor graph $ cached graph $ do
-        computation <- sub "computation" res
+        computation <- buildWithSubBuilder "computation" res
 
         operands <- mkXlaOpArray [!xs]
         let rank = length shape
@@ -535,7 +545,7 @@ map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
       MkTensor graphf res = f p0 p1
       graph = Operation "map2" [graphf, graphL, graphR] shape (typeString {dtype=c})
    in MkTensor graph $ cached graph $ do
-        computation <- sub "computation" res
+        computation <- buildWithSubBuilder "computation" res
 
         operands <- mkXlaOpArray [!l, !r]
         let rank = length shape
@@ -571,7 +581,7 @@ reduce axis (MkTensor {shape} graph xs) =
           MkTensor graphf resf = (<+>) @{semigroup reducer} p0 p1
           graph = Operation "reduce" [graphf, graph] (deleteAt axis shape) (typeString {dtype})
        in MkTensor graph $ cached graph $ do
-            computation <- sub "computation" resf
+            computation <- buildWithSubBuilder "computation" resf
             let MkTensor _ init = neutral @{reducer}
             op <- primIO $ prim__reduce !xs !init computation !(mkIntArray [axis]) 1
             onCollectAny op XlaOp.delete
@@ -735,8 +745,8 @@ cond
         args = [graphPred, graphOnTrue, graphTrue, graphOnFalse, graphFalse]
         graph = Operation "cond" args shape (typeString {dtype})
      in MkTensor graph $ cached graph $ do
-          trueComp <- sub "truthy computation" trueRes
-          falseComp <- sub "falsy computation" falseRes
+          trueComp <- buildWithSubBuilder "truthy computation" trueRes
+          falseComp <- buildWithSubBuilder "falsy computation" falseRes
           op <- primIO $ prim__conditional !pred !true trueComp !false falseComp
           onCollectAny op XlaOp.delete
 
