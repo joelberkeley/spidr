@@ -52,21 +52,6 @@ export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : {shape : _} -> Graph -> ComputationComponent -> Tensor shape dtype
 
-cached : Graph -> ComputationComponent -> ComputationComponent
-cached graph xs = assert_total $ ST $ \builder@(MkXlaBuilder ptr cache) => do
-  let graphHash = hash graph
-  case lookup graphHash cache of
-    Just op => pure (builder, op)
-    Nothing => do
-      (MkXlaBuilder ptr cache, op) <- runStateT builder xs
-      pure (MkXlaBuilder ptr (insert graphHash op cache), op)
-
-prim__constantLiteral : GCAnyPtr -> Graph -> ComputationComponent
-prim__constantLiteral literal graph = do
-  MkXlaBuilder ptr _ <- get
-  op <- primIO $ prim__constantLiteral ptr literal
-  onCollectAny op XlaOp.delete
-
 ||| Construct a `Tensor` from `Array` data.
 export
 const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype

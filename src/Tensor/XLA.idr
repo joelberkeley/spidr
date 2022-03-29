@@ -19,6 +19,7 @@ import Data.Hashable
 import Control.Monad.State
 import Data.SortedMap
 
+import Compiler.Graph
 import Compiler.XLA.Client.XlaBuilder
 import Compiler.XLA.Client.XlaComputation
 import Compiler.XLA.ShapeUtil
@@ -33,6 +34,16 @@ data XlaBuilder : Type where
 public export
 ComputationComponent : Type
 ComputationComponent = StateT XlaBuilder IO GCAnyPtr
+
+export
+cached : Graph -> ComputationComponent -> ComputationComponent
+cached graph xs = assert_total $ ST $ \builder@(MkXlaBuilder ptr cache) => do
+  let graphHash = hash graph
+  case lookup graphHash cache of
+    Just op => pure (builder, op)
+    Nothing => do
+      (MkXlaBuilder ptr cache, op) <- runStateT builder xs
+      pure (MkXlaBuilder ptr (insert graphHash op cache), op)
 
 mkXlaBuilder : String -> IO XlaBuilder
 mkXlaBuilder computation_name = do
@@ -63,6 +74,13 @@ prim__opToString xs = do
   builder <- mkXlaBuilder "toString"
   (MkXlaBuilder ptr _, op) <- runStateT builder xs
   pure (XlaBuilder.prim__opToString ptr op)
+
+export
+prim__constantLiteral : GCAnyPtr -> Graph -> ComputationComponent
+prim__constantLiteral literal graph = do
+  MkXlaBuilder ptr _ <- get
+  op <- primIO $ prim__constantLiteral ptr literal
+  onCollectAny op XlaOp.delete
 
 export
 prim__parameter : Primitive dtype => Int -> Shape -> String -> ComputationComponent

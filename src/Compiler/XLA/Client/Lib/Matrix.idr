@@ -15,15 +15,9 @@ limitations under the License.
 --}
 module Compiler.XLA.Client.Lib.Matrix
 
-import Data.Hashable
-import Control.Monad.State
 import System.FFI
-import Data.SortedMap
 
 import Compiler.FFI
-import Compiler.Graph
-import Compiler.XLA.Client.XlaBuilder
-import Primitive
 
 export
 %foreign (libxla "IdentityMatrix")
