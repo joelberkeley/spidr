@@ -24,7 +24,7 @@ test_hash_double = do
   sequence_ $ do
     x <- doubles
     y <- doubles
-    pure $ assert "hash for Double" $
+    pure $ assert "hash for Double \{show x} \{show y}" $
       (hash x == hash y) == (let bothNan = x /= x && y /= y in bothNan || x == y)
 
 export
