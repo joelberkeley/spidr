@@ -35,7 +35,7 @@ modules =
   Primitive,
   
   Tensor,
-  Tensor.XLA,
+  Compiler.XLA,
 
   Types,
   Util

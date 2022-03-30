@@ -29,7 +29,7 @@ import Error
 import public Primitive
 import public Types
 import public Util
-import Tensor.XLA
+import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
 import Compiler.XLA.Client.Lib.Math
