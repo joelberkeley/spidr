@@ -488,13 +488,13 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| equivalent to `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
-map f (MkTensor {shape} graph xs) =
+map f (MkTensor {shape} graph xs) = assert_total $
   let graph0 = Leaf "parameter" 0 [] (typeString {dtype=a})
-      p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype=a}
-      MkTensor graphf res = f p0
+      p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
+      MkTensor graphf res = f (MkTensor graph0 p0)
       graph = Operation "map" [graphf, graph] shape (typeString {dtype=b})
    in MkTensor graph $ cached graph $ do
-        computation <- buildWithSubBuilder "computation" res
+        computation <- buildWithSubBuilder "computation" [p0] res
 
         operands <- mkXlaOpArray [!xs]
         let rank = length shape
@@ -525,12 +525,12 @@ map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b ->
 map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
   let graph0 = Leaf "parameter" 0 [] (typeString {dtype=a})
       graph1 = Leaf "parameter" 1 [] (typeString {dtype=b})
-      p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype=a}
-      p1 = MkTensor graph1 $ cached graph1 $ prim__parameter 1 [] "" {dtype=b}
-      MkTensor graphf res = f p0 p1
+      p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
+      p1 = cached graph1 $ prim__parameter 1 [] "" {dtype=b}
+      MkTensor graphf res = f (MkTensor graph0 p0) (MkTensor graph1 p1)
       graph = Operation "map2" [graphf, graphL, graphR] shape (typeString {dtype=c})
    in MkTensor graph $ cached graph $ do
-        computation <- buildWithSubBuilder "computation" res
+        computation <- buildWithSubBuilder "computation" [p0, p1] res
 
         operands <- mkXlaOpArray [!l, !r]
         let rank = length shape
@@ -561,12 +561,12 @@ reduce axis (MkTensor {shape} graph xs) =
 
    in let graph0 = Leaf "parameter" 0 [] (typeString {dtype})
           graph1 = Leaf "parameter" 1 [] (typeString {dtype})
-          p0 = MkTensor graph0 $ cached graph0 $ prim__parameter 0 [] "" {dtype}
-          p1 = MkTensor graph1 $ cached graph1 $ prim__parameter 1 [] "" {dtype}
-          MkTensor graphf resf = (<+>) @{semigroup reducer} p0 p1
+          p0 = cached graph0 $ prim__parameter 0 [] "" {dtype}
+          p1 = cached graph1 $ prim__parameter 1 [] "" {dtype}
+          MkTensor graphf resf = (<+>) @{semigroup reducer} (MkTensor graph0 p0) (MkTensor graph1 p1)
           graph = Operation "reduce" [graphf, graph] (deleteAt axis shape) (typeString {dtype})
        in MkTensor graph $ cached graph $ do
-            computation <- buildWithSubBuilder "computation" resf
+            computation <- buildWithSubBuilder "computation" [p0, p1] resf
             let MkTensor _ init = neutral @{reducer}
             op <- primIO $ prim__reduce !xs !init computation !(mkIntArray [axis]) 1
             onCollectAny op XlaOp.delete
@@ -723,15 +723,15 @@ cond
   (MkTensor graphFalse {shape=fShape} false) =
     let grapht = Leaf "parameter" 0 ts (typeString {dtype=tt})
         graphf = Leaf "parameter" 0 fs (typeString {dtype=ft})
-        pt = MkTensor grapht $ cached grapht $ prim__parameter 0 ts "" {dtype}
-        pf = MkTensor graphf $ cached graphf $ prim__parameter 0 fs "" {dtype}
-        MkTensor graphOnTrue trueRes = onTrue pt
-        MkTensor graphOnFalse falseRes = onFalse pf
+        pt = cached grapht $ prim__parameter 0 ts "" {dtype}
+        pf = cached graphf $ prim__parameter 0 fs "" {dtype}
+        MkTensor graphOnTrue trueRes = onTrue (MkTensor grapht pt)
+        MkTensor graphOnFalse falseRes = onFalse (MkTensor graphf pf)
         args = [graphPred, graphOnTrue, graphTrue, graphOnFalse, graphFalse]
         graph = Operation "cond" args shape (typeString {dtype})
      in MkTensor graph $ cached graph $ do
-          trueComp <- buildWithSubBuilder "truthy computation" trueRes
-          falseComp <- buildWithSubBuilder "falsy computation" falseRes
+          trueComp <- buildWithSubBuilder "truthy computation" [pt] trueRes
+          falseComp <- buildWithSubBuilder "falsy computation" [pf] falseRes
           op <- primIO $ prim__conditional !pred !true trueComp !false falseComp
           onCollectAny op XlaOp.delete
 

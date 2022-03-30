@@ -442,6 +442,9 @@ test_map = do
   let x = const {shape=[]} {dtype=S32} 1
   assertAll "map with function with reused arguments" $ map (\y => y + y) x == const 2
 
+  let x = const {shape=[]} {dtype=S32} 1
+  assertAll "map with function with unused arguments" $ map (\_ => const 2) x == const {dtype=S32} 2
+
   let x = const {shape=[_, _]} {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
   assertAll "map for S32 array" $ map abs x == abs x
 
