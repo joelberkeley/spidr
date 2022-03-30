@@ -1,7 +1,7 @@
 package spidr
 version = 0.0.4
 
-depends = hashable
+depends = contrib, hashable
 opts = "--total"
 sourcedir = "src"
 modules =
@@ -33,7 +33,10 @@ modules =
 
   Optimize,
   Primitive,
+  
   Tensor,
+  Compiler.XLA,
+
   Types,
   Util
 

@@ -16,6 +16,7 @@ limitations under the License.
 module Main
 
 import Unit.Model.TestKernel
+import Unit.Util.TestHashable
 import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestUtil
@@ -24,11 +25,12 @@ import Utils
 
 main : IO ()
 main = do
+  Utils.test
+
+  Unit.TestUtil.test
+  Unit.Util.TestHashable.test
+  Unit.TestTensor.test
   Unit.Model.TestKernel.test
   Unit.TestDistribution.test
-  Unit.TestTensor.test
-  Unit.TestUtil.test
-
-  Utils.test
 
   putStrLn "Tests passed"

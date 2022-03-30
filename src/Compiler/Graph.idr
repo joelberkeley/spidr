@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Compiler.Graph
 
+import Data.Hashable
 import Data.Stream
 import Types
 import Util
@@ -66,3 +67,10 @@ Show Graph where
               let init = indent ++ "\{type}\{show shape} \{name}"
                in foldl (\acc, g => acc ++ "\n" ++ impl (S depth) g) init args
             Leaf name hash shape type => indent ++ "\{type}\{show shape} \{name}"
+
+export covering
+Hashable Graph where
+  hashWithSalt salt (Operation name arguments shape type) =
+    salt `hashWithSalt` name `hashWithSalt` arguments `hashWithSalt` shape `hashWithSalt` type
+  hashWithSalt salt (Leaf name id_ shape type) =
+    salt `hashWithSalt` name `hashWithSalt` id_ `hashWithSalt` shape `hashWithSalt` type

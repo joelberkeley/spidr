@@ -36,7 +36,7 @@ sizeof_int : Int
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
 export
-mkIntArray : Cast ty Int => List ty -> IO (GCPtr Int)
+mkIntArray : HasIO io => Cast ty Int => List ty -> io (GCPtr Int)
 mkIntArray xs = do
   ptr <- malloc (cast (length xs) * sizeof_int)
   let ptr = prim__castPtr ptr

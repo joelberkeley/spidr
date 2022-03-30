@@ -13,21 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.ShapeUtil
+module Unit.Util.TestHashable
 
-import System.FFI
+import Util.Hashable
 
-import Compiler.FFI
-import Compiler.XLA.Shape
-import Compiler.XLA.XlaData
-import Types
+import Utils
 
-%foreign (libxla "MakeShape")
-prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+test_hash_double : IO ()
+test_hash_double = do
+  sequence_ $ do
+    x <- doubles
+    y <- doubles
+    pure $ assert "hash for Double \{show x} \{show y}" $
+      (hash x == hash y) == (let bothNan = x /= x && y /= y in bothNan || x == y)
 
 export
-mkShape : HasIO io => Primitive dtype => Shape -> io GCAnyPtr
-mkShape shape = do
-  let dtype_enum = xlaIdentifier {dtype}
-  shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))
-  onCollectAny shape_ptr Shape.delete
+test : IO ()
+test = do
+  test_hash_double

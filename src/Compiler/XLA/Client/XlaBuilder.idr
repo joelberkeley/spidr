@@ -15,14 +15,12 @@ limitations under the License.
 --}
 module Compiler.XLA.Client.XlaBuilder
 
-import Data.Vect
 import System.FFI
 
 import Compiler.FFI
+import Compiler.Graph
 import Compiler.XLA.Client.XlaComputation
 import Compiler.XLA.Literal
-import Compiler.XLA.Shape
-import Compiler.XLA.XlaData
 import Types
 import Util
 
@@ -40,30 +38,17 @@ namespace XlaBuilder
   delete : AnyPtr -> IO ()
   delete = primIO . prim__delete
 
+export
 %foreign (libxla "XlaBuilder_new")
-prim__mkXlaBuilderImpl : String -> PrimIO AnyPtr
+prim__mkXlaBuilder : String -> PrimIO AnyPtr
 
 export
-prim__mkXlaBuilder : String -> IO GCAnyPtr
-prim__mkXlaBuilder computation_name = do
-  builder <- primIO (prim__mkXlaBuilderImpl computation_name)
-  onCollectAny builder XlaBuilder.delete
-
 %foreign (libxla "CreateSubBuilder")
-prim__createSubBuilderImpl : GCAnyPtr -> String -> PrimIO AnyPtr
+prim__createSubBuilder : GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
-prim__createSubBuilder : GCAnyPtr -> String -> IO GCAnyPtr
-prim__createSubBuilder builder computation_name = do
-  sub_builder <- primIO (prim__createSubBuilderImpl builder computation_name)
-  onCollectAny sub_builder XlaBuilder.delete
-
 %foreign (libxla "XlaBuilder_Build")
-prim__buildImpl : GCAnyPtr -> AnyPtr
-
-export
-prim__build : GCAnyPtr -> IO GCAnyPtr
-prim__build builder = onCollectAny (prim__buildImpl builder) XlaComputation.delete
+prim__build : GCAnyPtr -> AnyPtr
 
 export
 %foreign (libxla "XlaBuilder_OpToString")
@@ -90,7 +75,7 @@ sizeOfXlaOp : Int
 prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 export
-mkXlaOpArray : List GCAnyPtr -> IO GCAnyPtr
+mkXlaOpArray : HasIO io => List GCAnyPtr -> io GCAnyPtr
 mkXlaOpArray ops = do
   arr <- malloc (cast (length ops) * sizeOfXlaOp)
   traverse_ (\(idx, op) =>
@@ -99,11 +84,11 @@ mkXlaOpArray ops = do
 
 export
 %foreign (libxla "Parameter")
-parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> AnyPtr
+prim__parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
 %foreign (libxla "ConstantLiteral")
-constantLiteral : GCAnyPtr -> GCAnyPtr -> AnyPtr
+prim__constantLiteral : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Broadcast")

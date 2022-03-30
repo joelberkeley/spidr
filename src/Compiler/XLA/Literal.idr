@@ -51,12 +51,12 @@ populateLiteral shape lit arr = impl shape [] arr where
       setArrays (idx, xs') = impl rest (acc_indices ++ [idx]) xs'
 
 export
-mkLiteral : LiteralPrimitiveRW dtype ty => {shape : _} -> Array shape ty -> IO GCAnyPtr
+mkLiteral : HasIO io => LiteralPrimitiveRW dtype ty => {shape : _} -> Array shape ty -> io GCAnyPtr
 mkLiteral xs = do
   xla_shape <- mkShape {dtype} shape
   literal <- primIO $ prim__allocLiteral xla_shape
   literal <- onCollectAny literal Literal.delete
-  populateLiteral {dtype} shape literal xs
+  liftIO $ populateLiteral {dtype} shape literal xs
   pure literal
 
 %foreign (libxla "Literal_Set_bool")
