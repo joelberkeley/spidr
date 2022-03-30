@@ -60,25 +60,24 @@ build computation_name x = do
   onCollectAny (prim__build ptr) XlaComputation.delete
 
 export
+buildWithSubBuilder :
+  String -> List ComputationComponent -> ComputationComponent -> ComputationComponent
+buildWithSubBuilder computation_name args res = do
+  MkXlaBuilder ptr _ <- get
+  sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
+  sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
+  let sub_builder = MkXlaBuilder sub_ptr empty
+      all_ops = sequence_ (args ++ [res])
+  MkXlaBuilder sub_ptr _ <- liftIO $ execStateT sub_builder all_ops
+  let computation = prim__build sub_ptr
+  onCollectAny computation XlaComputation.delete
+
+export
 prim__opToString : ComputationComponent -> IO String
 prim__opToString xs = do
   builder <- mkXlaBuilder "toString"
   (MkXlaBuilder ptr _, op) <- runStateT builder xs
   pure (XlaBuilder.prim__opToString ptr op)
-
-export
-buildWithSubBuilder :
-  String -> List ComputationComponent -> ComputationComponent -> ComputationComponent
-buildWithSubBuilder computation_name args res = ST $ \builder => do
-  let MkXlaBuilder ptr _ = builder
-  sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
-  sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
-  let sub = MkXlaBuilder sub_ptr empty
-  sub <- foldr (\arg, b => do execStateT !b arg) (pure sub) args
-  MkXlaBuilder sub_ptr _ <- execStateT sub res
-  let computation = prim__build sub_ptr
-  computation <- onCollectAny computation XlaComputation.delete
-  pure (builder, computation)
 
 export
 prim__constantLiteral : GCAnyPtr -> Graph -> ComputationComponent
