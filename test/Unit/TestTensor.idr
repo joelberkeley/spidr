@@ -777,9 +777,9 @@ test_cond = do
   let x = const {shape=[]} {dtype=S32} 1
       y = const {shape=[]} {dtype=S32} 3
   assertAll "cond with function with reused arguments (truthy)" $
-    cond (const True) (\z => z + z) x (\z => z * z) y == const 4
+    cond (const True) (\z => z + z) x (\z => z * z) y == const 2
   assertAll "cond with function with reused arguments (falsy)" $
-    cond (const False) (\z => z + z) x (\z => z * z) y == const 3
+    cond (const False) (\z => z + z) x (\z => z * z) y == const 9
 
   let x = const {shape=[]} {dtype=S32} 0
   assertAll "cond for trivial truthy" $
