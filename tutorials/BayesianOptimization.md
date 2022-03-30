@@ -46,6 +46,7 @@ While we can trivially represent a number of new query points with a `Tensor`, w
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
 <!-- idris
+import Literal
 import Tensor
 import BayesianOptimization
 import Data
@@ -59,17 +60,15 @@ import Data.Stream
 -->
 ```idris
 historicData : Dataset [2] [1]
-historicData = MkDataset (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]) (const [[1.2], [-0.5], [0.7]])
+historicData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]) (fromLiteral [[1.2], [-0.5], [0.7]])
 ```
 
 and model that data
 
 ```idris
 model : ConjugateGPRegression [2]
-model = let mk_gp = \len => MkGP zero (matern52 (const {shape=[]} 1.0) $ squeeze len)
-            length_scale = const {shape=[1]} [0.5]
-            noise = const {shape=[]} 0.2
-            model = MkConjugateGPR mk_gp length_scale noise
+model = let mk_gp = \len => MkGP zero (matern52 1.0 $ squeeze len)
+            model = MkConjugateGPR mk_gp (fromLiteral [0.5]) 0.2
          in fit model lbfgs historicData
 ```
 
@@ -77,7 +76,7 @@ then optimize over the marginal mean
 
 ```idris
 optimizer : Optimizer $ Tensor [1, 2] F64
-optimizer = let gs = gridSearch (const [100, 100]) (const [0.0, 0.0]) (const [1.0, 1.0])
+optimizer = let gs = gridSearch (fromLiteral [100, 100]) (fromLiteral [0.0, 0.0]) (fromLiteral [1.0, 1.0])
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Tensor [1, 2] F64
@@ -179,13 +178,11 @@ With this new functionality at hand, we'll return to our objective with failure 
 
 ```idris
 failureData : Dataset [2] [1]
-failureData = MkDataset (const [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]) (const [[0], [0], [0], [1]])
+failureData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]) (fromLiteral [[0], [0], [0], [1]])
 
 failureModel : ConjugateGPRegression [2]
 failureModel = let mk_gp = \len => MkGP zero (rbf $ squeeze len)
-                   length_scale = const {shape=[1]} [0.2]
-                   noise = const {shape=[]} 0.1
-                   model = MkConjugateGPR mk_gp length_scale noise
+                   model = MkConjugateGPR mk_gp (fromLiteral [0.2]) 0.1
                 in fit model lbfgs failureData
 ```
 
@@ -202,8 +199,8 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} (const 0.5)
-                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} (const 0.5)
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.5
+                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} 0.5
                  acquisition = map optimizer (eci <*> pof)
                  dataAndModel = Label (historicData, model) (failureData, failureModel)
               in run acquisition dataAndModel

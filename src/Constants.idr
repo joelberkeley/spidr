@@ -13,26 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Main
+module Constants
 
-import Unit.Model.TestKernel
-import Unit.Util.TestHashable
-import Unit.TestDistribution
-import Unit.TestTensor
-import Unit.TestLiteral
-import Unit.TestUtil
+import Literal
+import Tensor
 
-import Utils
-
-main : IO ()
-main = do
-  Utils.test
-
-  Unit.TestUtil.test
-  Unit.Util.TestHashable.test
-  Unit.TestLiteral.test
-  Unit.TestTensor.test
-  Unit.Model.TestKernel.test
-  Unit.TestDistribution.test
-
-  putStrLn "Tests passed"
+export
+pi : Tensor [] F64
+pi = fromDouble pi

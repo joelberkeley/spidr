@@ -26,6 +26,7 @@ import Decidable.Equality
 import System.FFI
 
 import Error
+import Literal
 import public Primitive
 import public Types
 import public Util
@@ -37,7 +38,7 @@ import Compiler.XLA.Client.Lib.Matrix
 import Compiler.XLA.Client.ClientLibrary
 import Compiler.XLA.Client.LocalClient
 import Compiler.XLA.Client.XlaBuilder
-import Compiler.XLA.Literal
+import public Compiler.XLA.Literal
 import Compiler.XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
@@ -52,28 +53,38 @@ export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : {shape : _} -> Graph -> ComputationComponent -> Tensor shape dtype
 
-||| Construct a `Tensor` from `Array` data.
+||| Construct a `Tensor` from `Literal` data.
 export
-const : PrimitiveRW dtype ty => {shape : _} -> Array shape ty -> Tensor shape dtype
-const xs = 
-  let graph = Leaf "const" (Util.Hashable.hashWithSalt defaultSalt xs) shape (typeString {dtype})
+fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor shape dtype
+fromLiteral xs = 
+  let graph = Leaf "fromLiteral" (hashWithSalt defaultSalt xs) shape (typeString {dtype})
    in MkTensor graph $ cached graph $ do
         lit <- mkLiteral {dtype} xs
         prim__constantLiteral lit graph
 
-||| Evaluate a `Tensor`, returning its value as an `Array`. This function builds and executes the
+namespace F64
+  export
+  fromDouble : Double -> Tensor [] F64
+  fromDouble = fromLiteral . Scalar
+
+namespace S32
+  export
+  fromInteger : Integer -> Tensor [] S32
+  fromInteger = fromLiteral . Scalar . cast
+
+||| Evaluate a `Tensor`, returning its value as an `Literal`. This function builds and executes the
 ||| computation graph.
 |||
 ||| **Note:**
-||| * Each call to `toArray` will rebuild and execute the graph. Similarly, multiple calls to 
-|||   `toArray` on different `Tensor`s in a computation will be treated entirely independently.
-|||   `toArray` does not store intermediate values. This is a known limitation, and may change in
+||| * Each call to `toLiteral` will rebuild and execute the graph. Similarly, multiple calls to 
+|||   `toLiteral` on different `Tensor`s in a computation will be treated entirely independently.
+|||   `toLiteral` does not store intermediate values. This is a known limitation, and may change in
 |||   the future.
-||| * `toArray` performs logging as a side effect. You can disable this by adjusting the
+||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
-toArray : PrimitiveRW dtype ty => Tensor shape dtype -> Array shape ty
-toArray (MkTensor {shape} _ xs) = unsafePerformIO $ do
+toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
+toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
   client <- primIO prim__localClientOrDie
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
@@ -105,8 +116,8 @@ reshapeImpl from to xs = do
   reshaped <- primIO $ prim__reshape !xs dim_order (cast (length from)) cto (cast (length to))
   onCollectAny reshaped XlaOp.delete
 
-||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (const [3, 4])` is equivalent to
-||| `const [[3], [4]]`. The output can have a different rank to the input.
+||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
+||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape : Primitive dtype => {to : _} -> product from = product to
           => Tensor from dtype -> Tensor to dtype
@@ -116,8 +127,8 @@ reshape (MkTensor {shape=from} graph xs) =
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
-||| `expand 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to
-||| `const [[[1, 2]], [[3, 4]], [[5, 6]]]`.
+||| `expand 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is
+||| `fromLiteral [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand : Primitive dtype => (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
          -> Tensor (insertAt axis 1 shape) dtype
@@ -151,17 +162,17 @@ namespace Squeezable
 |||
 ||| ```idris
 ||| x : Tensor [2, 1, 3, 1] S32
-||| x = const [[[[4], [5], [6]]], [[[7], [8], [9]]]]
+||| x = fromLiteral [[[[4], [5], [6]]], [[[7], [8], [9]]]]
 |||
 ||| y : Tensor [2, 1, 3] S32
 ||| y = squeeze x
 ||| ```
 |||
-||| is equivalent to
+||| is
 |||
 ||| ```idris
 ||| y : Tensor [2, 1, 3] S32
-||| y = const [[[4, 5, 6]], [[7, 8, 9]]]
+||| y = fromLiteral [[[4, 5, 6]], [[7, 8, 9]]]
 ||| ```
 export
 squeeze : Primitive dtype => {to : _} -> Squeezable from to => Tensor from dtype -> Tensor to dtype
@@ -172,7 +183,7 @@ squeeze (MkTensor {shape=from} graph xs) =
 ||| Take a slice from a single `Tensor` axis. For example, for
 ||| ```
 ||| x : Tensor [5, 6] S32
-||| x = const [
+||| x = fromLiteral [
 |||       [ 0,  1,  2,  3,  4,  5],
 |||       [ 6,  7,  8,  9, 10, 11],
 |||       [12, 13, 14, 15, 16, 17],
@@ -180,10 +191,10 @@ squeeze (MkTensor {shape=from} graph xs) =
 |||       [24, 25, 26, 27, 28, 29]
 |||     ]
 ||| ```
-||| `slice 0 1 3 x` is equivalent to
+||| `slice 0 1 3 x` is
 ||| ```
 ||| y : Tensor [2, 6] S32
-||| y = const [
+||| y = fromLiteral [
 |||       [ 6,  7,  8,  9, 10, 11],
 |||       [12, 13, 14, 15, 16, 17]
 |||     ]
@@ -191,7 +202,7 @@ squeeze (MkTensor {shape=from} graph xs) =
 ||| and `slice 1 0 4 x` to
 ||| ```
 ||| z : Tensor [5, 6] S32
-||| z = const [
+||| z = fromLiteral [
 |||       [ 0,  1,  2,  3],
 |||       [ 6,  7,  8,  9],
 |||       [12, 13, 14, 15],
@@ -199,8 +210,8 @@ squeeze (MkTensor {shape=from} graph xs) =
 |||       [24, 25, 26, 27]
 |||     ]
 ||| ```
-||| Equal bounds will result in an empty array. For example, `slice 1 2 2 xs` is equivalent to
-||| `const [[], [], [], [], []]`.
+||| Equal bounds will result in an empty array. For example, `slice 1 2 2 xs` is
+||| `fromLiteral [[], [], [], [], []]`.
 |||
 ||| @axis The `Tensor` axis to slice.
 ||| @from The inclusive lower bound of the slice along the specified `axis`.
@@ -216,13 +227,13 @@ slice axis from to (MkTensor graph xs) =
         let rank = length shape
         start <- mkIntArray (replicate axis 0 ++ [from] ++ replicate (rank `minus` axis) 0)
         stop <- mkIntArray (replaceAt axis to shape)
-        strides <- mkIntArray (replicate rank 1)
+        strides <- mkIntArray (the (List Int) $ replicate rank 1)
         sliced <- primIO $ prim__slice !xs start (cast rank) stop (cast rank) strides (cast rank)
         onCollectAny sliced XlaOp.delete
 
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
-||| `index 0 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [3, 4]`, and
-||| `index 1 1 $ const [[1, 2], [3, 4], [5, 6]]` is equivalent to `const [2, 4, 6]`.
+||| `index 0 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is `fromLiteral [3, 4]`, and
+||| `index 1 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is `fromLiteral [2, 4, 6]`.
 |||
 ||| @axis The axis to index.
 ||| @idx Where along the specified `axis` to fetch elements.
@@ -236,9 +247,10 @@ index axis idx (MkTensor {shape} graph xs) =
    in MkTensor graph $ cached graph $ reshapeImpl shape (deleteAt axis shape) sliced
 
 ||| Split a `Tensor` along a given axis at the specified index. For example,
-||| `split 0 2 const [[1, 2], [3, 4], [5, 6]]` is equivalent to
-||| `(const [[1, 2], [3, 4]], const [[5, 6]])`, and `split 1 1 const [[1, 2], [3, 4], [5, 6]]` to
-||| `(const [[1], [3], [5]], const [[2], [4], [6]])`.
+||| `split 0 2 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
+||| `(fromLiteral [[1, 2], [3, 4]], fromLiteral [[5, 6]])`, and
+||| `split 1 1 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
+||| `(fromLiteral [[1], [3], [5]], fromLiteral [[2], [4], [6]])`.
 |||
 ||| @axis The axis on which to split.
 ||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
@@ -264,9 +276,9 @@ split @{_} @{sums} axis idx xs with (xs)
         )
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
-||| `concat 0 (const [[1, 2], [3, 4]]) (const [[5, 6]])` and
-||| `concat 1 (const [[3], [6]]) const ([[4, 5], [7, 8]])` are both equivalent to
-||| `const [[1, 2], [3, 4], [5, 6]]`.
+||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
+||| `concat 1 (fromLiteral [[3], [6]]) fromLiteral ([[4, 5], [7, 8]])` are both
+||| `fromLiteral [[1, 2], [3, 4], [5, 6]]`.
 export
 concat : Primitive dtype => (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
          -> (InBounds axis s, InBounds axis s') => deleteAt axis s = deleteAt axis s'
@@ -283,11 +295,11 @@ concat axis (MkTensor {shape=s} graphL l) (MkTensor {shape=s'} graphR r) =
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
 ||| x : Tensor [3, 3] S32
-||| x = const [[0, 1, 2],
-|||            [3, 4, 5],
-|||            [6, 7, 8]]
+||| x = fromLiteral [[0, 1, 2],
+|||                  [3, 4, 5],
+|||                  [6, 7, 8]]
 ||| ```
-||| `diag x` is equivalent to `const [0, 4, 8]`.
+||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
 diag (MkTensor {shape=[n, n]} graph xs) =
@@ -303,16 +315,16 @@ data Triangle = Upper | Lower
 ||| Get the upper- or lower-triangular component of a matrix. For example, for
 ||| ```
 ||| x : Tensor [3, 3] S32
-||| x = const [[1, 2, 3],
-|||            [4, 5, 6],
-|||            [7, 8, 9]]
+||| x = fromLiteral [[1, 2, 3],
+|||                  [4, 5, 6],
+|||                  [7, 8, 9]]
 ||| ```
-||| `triangle Lower x` is equivalent to
+||| `triangle Lower x` is
 ||| ```
 ||| x : Tensor [3, 3] S32
-||| x = const [[1, 0, 0],
-|||            [4, 5, 0],
-|||            [7, 8, 9]]
+||| x = fromLiteral [[1, 0, 0],
+|||                  [4, 5, 0],
+|||                  [7, 8, 9]]
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
@@ -322,14 +334,14 @@ triangle tri (MkTensor {shape=[n, n]} graph xs) =
         op <- primIO $ prim__triangle !xs (case tri of Upper => 0; Lower => 1)
         onCollectAny op XlaOp.delete
 
-||| Tranpose a matrix. For example, `(const [[1, 2], [3, 4]]).T` is equivalent
-||| to `const [[1, 3], [2, 4]]`.
+||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
+||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Primitive dtype => Tensor [m, n] dtype -> Tensor [n, m] dtype
 (MkTensor {shape=[m, n]} graph xs).T =
   let graph = Operation "(.T)" [graph] [n, m] (typeString {dtype})
    in MkTensor graph $ cached graph $ do
-        permutations <- mkIntArray [1, 0]
+        permutations <- mkIntArray $ the (List Int) $ [1, 0]
         op <- primIO $ prim__transpose !xs permutations 2
         onCollectAny op XlaOp.delete
 
@@ -338,7 +350,7 @@ export
 ||| x : Tensor [2, 2] S32
 ||| x = identity
 ||| ```
-||| is equivalent to
+||| is
 ||| ```
 ||| x : Tensor [2, 2] S32
 ||| x = [[1, 0],
@@ -414,14 +426,14 @@ empty =
 |||
 ||| ```idris
 ||| x : Tensor [2, 3] S32
-||| x = broadcast (const [4, 5, 6])
+||| x = broadcast (fromLiteral [4, 5, 6])
 ||| ```
 |||
-||| is equivalent to
+||| is
 |||
 ||| ```idris
 ||| x : Tensor [2, 3] S32
-||| x = const [[4, 5, 6], [4, 5, 6]]
+||| x = fromLiteral [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
 broadcast : Primitive dtype => {to : _} -> {auto prf : Broadcastable from to}
@@ -457,6 +469,8 @@ broadcast xs with (xs)
             broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
     impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
 
+%hint
+export
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
@@ -467,14 +481,15 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| fives : Tensor [2, 3] Int
 ||| fives = fill 5
 ||| ```
-||| is equivalent to
+||| is
 ||| ```idris
 ||| fives : Tensor [2, 3] Int
-||| fives = const [[5, 5, 5], [5, 5, 5]]
+||| fives = fromLiteral [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
+-- not right
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
-fill = broadcast {prf=scalarToAnyOk shape} . const
+fill = broadcast {prf=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
@@ -482,10 +497,10 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| For example,
 ||| ```idris
 ||| recip : Tensor [] F64 -> Tensor [] F64
-||| recip = (const 1 /)
+||| recip = (1.0 /)
 ||| ```
-||| can be lifted to an element-wise reciprocal function as `map recip (const [-2, 0.4])`, which is
-||| equivalent to `const [-0.5, 2.5]`.
+||| can be lifted to an element-wise reciprocal function as `map recip (fromLiteral [-2, 0.4])`,
+||| which is `fromLiteral [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} graph xs) =
@@ -514,11 +529,11 @@ map f (MkTensor {shape} graph xs) =
 ||| For example,
 ||| ```idris
 ||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
-||| addRecip x y = x + const 1 / y
+||| addRecip x y = x + 1.0 / y
 ||| ```
 ||| can be lifted to an element-wise function as
-||| `map2 addRecip (const [3.0, -3.0]) (const [-2, 0.4])`, which is equivalent to
-||| `const [2.5, -0.5]`.
+||| `map2 addRecip (fromLiteral [3.0, -3.0]) (fromLiteral [-2.0, 0.4])`, which is
+||| `fromLiteral [2.5, -0.5]`.
 export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
        -> Tensor shape a -> Tensor shape b -> Tensor shape c
@@ -547,8 +562,8 @@ map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
         onCollectAny res XlaOp.delete
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
-||| For example, if `x = const [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is equivalent to
-||| `const [3, 5, 7]` and `reduce @{Sum} 1 x` to `const [3, 12]`.
+||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
+||| `fromLiteral [3, 5, 7]` and `reduce @{Sum} 1 x` to `fromLiteral [3, 12]`.
 |||
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
@@ -588,45 +603,45 @@ binaryOp fn_name prim_operator (MkTensor {shape} graphL l) (MkTensor graphR r) =
         op <- primIO (prim_operator !l !r)
         onCollectAny op XlaOp.delete
 
-||| Element-wise equality. For example, `const [1, 2] == const [1, 3]` is equivalent to
-||| `const [True, False]`.
+||| Element-wise equality. For example, `fromLiteral [1, 2] == fromLiteral [1, 3]` is
+||| `fromLiteral [True, False]`.
 export
 (==) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (==) = binaryOp "(==)" prim__eq
 
-||| Element-wise inequality. For example, `const [1, 2] /= const [1, 3]` is equivalent to
-||| `const [False, True]`.
+||| Element-wise inequality. For example, `fromLiteral [1, 2] /= fromLiteral [1, 3]` is
+||| `fromLiteral [False, True]`.
 export
 (/=) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (/=) = binaryOp "(/=)" prim__ne
 
-||| Element-wise less than. For example, `const [1, 2, 3] < const [2, 2, 2]` is equivalent to
-||| `const [True, False, False]`.
+||| Element-wise less than. For example, `fromLiteral [1, 2, 3] < fromLiteral [2, 2, 2]` is
+||| `fromLiteral [True, False, False]`.
 export
 (<) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (<) = binaryOp "(<)" prim__lt
 
-||| Element-wise greater than. For example, `const [1, 2, 3] > const [2, 2, 2]` is equivalent to
-||| `const [False, False, True]`.
+||| Element-wise greater than. For example, `fromLiteral [1, 2, 3] > fromLiteral [2, 2, 2]` is
+||| `fromLiteral [False, False, True]`.
 export
 (>) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (>) = binaryOp "(>)" prim__gt
 
-||| Element-wise less than or equal. For example, `const [1, 2, 3] <= const [2, 2, 2]` is
-||| equivalent to `const [True, True, False]`.
+||| Element-wise less than or equal. For example, `fromLiteral [1, 2, 3] <= fromLiteral [2, 2, 2]`
+||| is `fromLiteral [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (<=) = binaryOp "(<=)" prim__le
 
-||| Element-wise greater than or equal. For example, `const [1, 2, 3] >= const [2, 2, 2]` is
-||| equivalent to `const [False, True, True]`.
+||| Element-wise greater than or equal. For example,
+||| `fromLiteral [1, 2, 3] >= fromLiteral [2, 2, 2]` is `fromLiteral [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
 (>=) = binaryOp "(>=)" prim__ge
 
 ||| Element-wise boolean and. For example,
-||| `const [True, True, False, False] && const [True, False, True, False]` is equivalent to
-||| `const [True, False, False, False]`.
+||| `fromLiteral [True, True, False, False] && fromLiteral [True, False, True, False]` is
+||| `fromLiteral [True, False, False, False]`.
 export
 (&&) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
 (&&) = binaryOp "(&&)" prim__and
@@ -642,8 +657,8 @@ namespace Monoid
     neutral = fill True
 
 ||| Element-wise boolean or. For example,
-||| `const [True, True, False, False] || const [True, False, True, False]` is equivalent to
-||| `const [True, True, True, False]`.
+||| `fromLiteral [True, True, False, False] || fromLiteral [True, False, True, False]` is
+||| `fromLiteral [True, True, True, False]`.
 export
 (||) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
 (||) = binaryOp "(||)" prim__or
@@ -658,8 +673,8 @@ namespace Monoid
   [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
     neutral = fill False
 
-||| Element-wise boolean negation. For example, `not (const [True, False])` is equivalent to
-||| `const [False, True]`.
+||| Element-wise boolean negation. For example, `not (fromLiteral [True, False])` is
+||| `fromLiteral [False, True]`.
 export
 not : Tensor shape PRED -> Tensor shape PRED
 not = unaryOp "not" prim__not
@@ -669,15 +684,15 @@ not = unaryOp "not" prim__not
 ||| truthy, else the element from `onFalse`. For example, for
 ||| ```
 ||| preds : Tensor [3] PRED
-||| preds = const [False, True, False]
+||| preds = fromLiteral [False, True, False]
 |||
 ||| onTrue : Tensor [3] S32
-||| onTrue = const [1, 2, 3]
+||| onTrue = fromLiteral [1, 2, 3]
 |||
 ||| onFalse : Tensor [3] S32
-||| onFalse = const [4, 5, 6]
+||| onFalse = fromLiteral [4, 5, 6]
 ||| ```
-||| `select preds onTrue onFalse` is equivalent to `const [4, 2, 6]`.
+||| `select preds onTrue onFalse` is `fromLiteral [4, 2, 6]`.
 |||
 ||| @onTrue The elements to choose where the predicate elements are truthy.
 ||| @onFalse The elements to choose where the predicate elements are falsy.
@@ -696,14 +711,14 @@ select (MkTensor {shape} gPred pred) (MkTensor gTrue true) (MkTensor gFalse fals
 ||| for
 ||| ```
 ||| x : Tensor [2] S32
-||| x = const [2, -1]
+||| x = fromLiteral [2, -1]
 |||
 ||| y : Tensor [2, 2] S32
-||| y = const [[5, 6],
-|||            [7, 8]]
+||| y = fromLiteral [[5, 6],
+|||                  [7, 8]]
 ||| ```
-||| `cond (const True) (const 2 *) x diag y` is equivalent to `const [4, -2]` and
-||| `cond (const False) (const 2 *) x diag y` to `const [5, 8]`.
+||| `cond (fromLiteral True) (fromLiteral 2 *) x diag y` is `fromLiteral [4, -2]` and
+||| `cond (fromLiteral False) (fromLiteral 2 *) x diag y` to `fromLiteral [5, 8]`.
 |||
 ||| While both functions will be called for the purposes of defining the computation, only one will
 ||| be evaluated with its specified argument. That is, this function short-circuits.
@@ -740,8 +755,8 @@ infixl 9 @@
 
 namespace Vector
   ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
-  ||| the right-hand side tensor. For example `const [0, 1, 2] @@ const [-1, -3, -1]` is equivalent
-  ||| to `const -1`.
+  ||| the right-hand side tensor. For example `fromLiteral [0, 1, 2] @@ fromLiteral [-1, -3, -1]` is
+  ||| `-1`.
   |||
   ||| **WARNING** Not well tested
   export
@@ -758,20 +773,20 @@ namespace Matrix
   |||
   ||| ```idris
   ||| x : Tensor [2, 3] S32
-  ||| x = const [[-1, -2, -3], [0, 1, 2]]
+  ||| x = fromLiteral [[-1, -2, -3], [0, 1, 2]]
   |||
   ||| y : Tensor [3, 1] S32
-  ||| y = const [[4, 0, 5]]
+  ||| y = fromLiteral [[4, 0, 5]]
   |||
   ||| z : Tensor [2, 1] S32
   ||| z = x @@ y
   ||| ```
   |||
-  ||| is equivalent to
+  ||| is
   |||
   ||| ```idris
   ||| z : Tensor [2, 1] S32
-  ||| z = const [-19, 10]
+  ||| z = fromLiteral [-19, 10]
   ||| ```
   |||
   ||| **WARNING** Not well tested
@@ -785,8 +800,8 @@ namespace Matrix
           op <- primIO $ prim__dot !l !r
           onCollectAny op XlaOp.delete
 
-||| Element-wise addition. For example, `const [1, 2] + const [3, 4]` is equivalent to
-||| `const [4, 6]`.
+||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
+||| `fromLiteral [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (+) = binaryOp "(+)" prim__add
@@ -802,26 +817,26 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
-||| Element-wise negation. For example, `- const [1, -2]` is equivalent to `const [-1, 2]`.
+||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
 negate = unaryOp "negate" prim__neg
 
-||| Element-wise subtraction. For example, `const [3, 4] - const [4, 2]` is equivalent to
-||| `const [-1, 2]`.
+||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
+||| `fromLiteral [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (-) = binaryOp "(-)" prim__sub
 
-||| Element-wise multiplication. For example, `const [2, 3] * const [4, 5]` is equivalent to
-||| `const [8, 15]`.
+||| Element-wise multiplication. For example, `fromLiteral [2, 3] * fromLiteral [4, 5]` is
+||| `fromLiteral [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (*) = binaryOp "(*)" prim__mul
 
 namespace Scalarwise
-  ||| Multiplication by a scalar. For example, `const 2 * const [3, 5]` is equivalent to
-  ||| `const [6, 10]`.
+  ||| Multiplication by a scalar. For example, `fromLiteral 2 * fromLiteral [3, 5]` is
+  ||| `fromLiteral [6, 10]`.
   |||
   ||| The RHS is required to be non-scalar simply to avoid ambiguities with element-wise `(*)`.
   export
@@ -840,15 +855,15 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
-||| Element-wise floating point division. For example, `const [2, 3] / const [4, 5]` is equivalent
-||| to `const [0.5, 0.6]`.
+||| Element-wise floating point division. For example, `fromLiteral [2, 3] / fromLiteral [4, 5]` is
+||| `fromLiteral [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (/) = binaryOp "(/)" prim__div
 
 namespace Scalarwise
-  ||| Floating point division by a scalar. For example, `const [3.4, -5.6] / const 2` is equivalent
-  ||| to `const [1.7, -2.8]`.
+  ||| Floating point division by a scalar. For example, `fromLiteral [3.4, -5.6] / fromLiteral 2` is
+  ||| `fromLiteral [1.7, -2.8]`.
   |||
   ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
   export
@@ -860,7 +875,7 @@ namespace Scalarwise
 infixr 9 ^
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
-||| example, `const [2, 25, -9] ^ const [3, -0.5, 0.5]` is equivalent to `const [8, 0.2, nan]`.
+||| example, `fromLiteral [2, 25, -9] ^ fromLiteral [3, -0.5, 0.5]` is `fromLiteral [8, 0.2, nan]`.
 |||
 ||| Note: The behaviour of this function is not well-defined at negative or positive infinity, or
 |||   NaN.
@@ -870,34 +885,34 @@ export
 (^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
 (^) = binaryOp "(^)" prim__pow
 
-||| Element-wise absolute value. For example, `abs (const [-2, 3])` is equivalent to
-||| `const [2, 3]`.
+||| Element-wise absolute value. For example, `abs (fromLiteral [-2, 3])` is
+||| `fromLiteral [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
 abs = unaryOp "abs" prim__abs
 
-||| The element-wise natural exponential. For example, `exp (const [-1, 0, 2])` is equivalent to
-||| `const [1 / euler, 1, pow euler 2]`.
+||| The element-wise natural exponential. For example, `exp (fromLiteral [-1, 0, 2])` is
+||| `fromLiteral [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Tensor shape F64
 exp = unaryOp "exp" prim__exp
 
 ||| The element-wise floor function. For example,
-||| `floor (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
-||| `const [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
+||| `floor (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
+||| `fromLiteral [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Tensor shape F64
 floor = unaryOp "floor" prim__floor
 
 ||| The element-wise ceiling function. For example,
-||| `ceil (const [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is equivalent to
-||| `const [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
+||| `ceil (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
+||| `fromLiteral [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Tensor shape F64
 ceil = unaryOp "ceil" prim__ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
-||| `log (const [1 / euler, 1, euler * euler])` is equivalent to `const [-1, 0, 2]`.
+||| `log (fromLiteral [1 / euler, 1, euler * euler])` is `fromLiteral [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Tensor shape F64
 log = unaryOp "log" prim__log
@@ -928,13 +943,13 @@ erf : Tensor shape F64 -> Tensor shape F64
 erf = unaryOp "erf" prim__erf
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
-||| For example, `sqrt (const [0, 9])` is equivalent to `const [0, 3]`.
+||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Tensor shape F64
 sqrt = unaryOp "sqrt" prim__sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
-||| `min (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-3, -1, 1]`.
+||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 min = binaryOp "min" prim__min
@@ -952,7 +967,7 @@ namespace Monoid
       neutral = fill (1.0 / 0.0)
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
-||| `max (const [-3, -1, 3]) (const [-1, 0, 1])` is equivalent to `const [-1, 0, 3]`.
+||| `max (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-1, 0, 3]`.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 max = binaryOp "max" prim__max
@@ -1040,7 +1055,7 @@ namespace Vector
     _ | MkTensor {shape=[m]} _ _ = squeeze (a \| (expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
-||| `trace (const [[-1, 5], [1, 4]])` is equivalent to `const 3`.
+||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
 export
 trace : (Primitive.Num dtype, Prelude.Num a) => PrimitiveRW dtype a
         => Tensor [S n, S n] dtype -> Tensor [] dtype

@@ -25,6 +25,7 @@ modules =
   Data,
   Distribution,
   Error,
+  Literal,
 
   Model,
   Model.GaussianProcess,
