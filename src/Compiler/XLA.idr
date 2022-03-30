@@ -60,12 +60,15 @@ build computation_name x = do
   onCollectAny (prim__build ptr) XlaComputation.delete
 
 export
-buildWithSubBuilder : String -> ComputationComponent -> ComputationComponent
-buildWithSubBuilder computation_name x = do
+buildWithSubBuilder :
+  String -> List ComputationComponent -> ComputationComponent -> ComputationComponent
+buildWithSubBuilder computation_name args res = do
   MkXlaBuilder ptr _ <- get
   sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
   sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
-  MkXlaBuilder sub_ptr _ <- liftIO $ execStateT (MkXlaBuilder sub_ptr empty) x
+  let sub_builder = MkXlaBuilder sub_ptr empty
+      all_ops = sequence_ (args ++ [res])
+  MkXlaBuilder sub_ptr _ <- liftIO $ execStateT sub_builder all_ops
   let computation = prim__build sub_ptr
   onCollectAny computation XlaComputation.delete
 
