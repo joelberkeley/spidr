@@ -488,7 +488,7 @@ fill = broadcast {prf=scalarToAnyOk shape} . const
 ||| equivalent to `const [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
-map f (MkTensor {shape} graph xs) = assert_total $
+map f (MkTensor {shape} graph xs) =
   let graph0 = Leaf "parameter" 0 [] (typeString {dtype=a})
       p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f (MkTensor graph0 p0)
