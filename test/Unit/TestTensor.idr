@@ -775,11 +775,11 @@ test_select = do
 test_cond : IO ()
 test_cond = do
   let x = const {shape=[]} {dtype=S32} 1
-      y = const {shape=[]} {dtype=S32} 2
+      y = const {shape=[]} {dtype=S32} 3
   assertAll "map with function with reused arguments (truthy)" $
-    cond (const True) (\z => z + z) x (\z => z - z) y == const 2
+    cond (const True) (\z => z + z) x (\z => z * z) y == const 4
   assertAll "map with function with reused arguments (falsy)" $
-    cond (const False) (\z => z + z) x (\z => z - z) y == const 2
+    cond (const False) (\z => z + z) x (\z => z * z) y == const 3
 
   let x = const {shape=[]} {dtype=S32} 0
   assertAll "cond for trivial truthy" $
