@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module Constants
 
-import Literal
 import Tensor
 
 export
