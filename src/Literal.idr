@@ -100,41 +100,50 @@ toList' : Literal (d :: ds) a -> List (Literal ds a)
 toList' [] = []
 toList' (x :: y) = x :: toList' y
 
+showDefaultScalar : Show a => Literal [] a -> String
+showDefaultScalar (Scalar x) = show x
+
+showDefaultVector : Show (Literal [] a) => Literal [m] a -> String
+showDefaultVector xs = show (toList' xs)
+
+showDefaultMatrix : Show (Literal [] a) => Literal [m, n] a -> String
+showDefaultMatrix xs = show (map toList' $ toList' xs)
+
 export
 Show (Literal [] Int) where
-  show (Scalar x) = show x
+  show = showDefaultScalar
 
 export
 Show (Literal [m] Int) where
-  show xs = show (toList' xs)
+  show = showDefaultVector
 
 export
 Show (Literal [m, n] Int) where
-  show xs = show (map toList' $ toList' xs)
+  show = showDefaultMatrix
 
 export
 Show (Literal [] Double) where
-  show (Scalar x) = show x
+  show = showDefaultScalar
 
 export
 Show (Literal [m] Double) where
-  show xs = show (toList' xs)
+  show = showDefaultVector
 
 export
 Show (Literal [m, n] Double) where
-  show xs = show (map toList' $ toList' xs)
+  show = showDefaultMatrix
 
 export
 Show (Literal [] Bool) where
-  show (Scalar x) = show x
+  show = showDefaultScalar
 
 export
 Show (Literal [m] Bool) where
-  show xs = show (toList' xs)
+  show = showDefaultVector
 
 export
 Show (Literal [m, n] Bool) where
-  show xs = show (map toList' $ toList' xs)
+  show = showDefaultMatrix
 
 export
 {shape : _} -> Hashable a => Hashable (Literal shape a) where
