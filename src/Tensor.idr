@@ -487,7 +487,6 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| fives = fromLiteral [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
--- not right
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
 fill = broadcast {prf=scalarToAnyOk shape} . fromLiteral . Scalar
 
