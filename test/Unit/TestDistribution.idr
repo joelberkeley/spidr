@@ -17,44 +17,49 @@ module Unit.TestDistribution
 
 import Utils
 
+import Literal
 import Tensor
 import Distribution
 
 test_gaussian_pdf : IO ()
 test_gaussian_pdf = do
   let
-    assertMono : Double -> Double -> Double -> IO ()
-    assertMono mean cov x =
-      let gaussian = MkGaussian (const {shape=[1, 1]} [[mean]]) (const [[[cov]]])
-          actual = pdf gaussian (const {shape=[1, 1]} [[x]])
-          expected = const (exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov))
+    assertForUnivariate : Literal [] Double -> Literal [] Double -> Literal [] Double -> IO ()
+    assertForUnivariate mean cov x =
+      let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
+          actual = pdf gaussian (fromLiteral [[x]])
+          expected = fromLiteral [| univariate x mean cov |]
           msg = "Gaussian pdf mean \{show mean} cov \{show cov} x \{show x}"
        in assertAll msg (sufficientlyEq actual expected)
 
-  sequence_ [assertMono mean cov x |
+          where
+          univariate : Double -> Double -> Double -> Double
+          univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
+
+  sequence_ [assertForUnivariate mean cov x |
     mean <- [-2, -1, 0, 1, 2],
     cov <- [0.1, 1, 2],
     x <- the (List _) [-2, -1, 0, 1, 2]
   ]
 
-  let mean = const {shape=[2, 1]} [[-0.2], [0.3]]
-      cov = const [[[1.2], [0.5]], [[0.5], [0.7]]]
-      x = const {shape=[2, 1]} [[1.1], [-0.5]]
+  let mean = fromLiteral [[-0.2], [0.3]]
+      cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
+      x = fromLiteral [[1.1], [-0.5]]
       actual = pdf (MkGaussian mean cov) x
-      expected = const 0.016427375
+      expected = fromLiteral 0.016427375
   assertAll "multivariate Gaussian pdf agrees with tfp" $
     sufficientlyEq {tol=0.00000001} actual expected
 
 test_gaussian_cdf : IO ()
 test_gaussian_cdf = do
-  let gaussian = MkGaussian (const [[0.5]]) (const [[[1.44]]])
+  let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
       xs : Vect _ _ = [-1.5, -0.5, 0.5, 1.5]
       expected = [0.04779036, 0.20232838, 0.5, 0.7976716]
 
-      assert' : (Double, Double) -> IO ()
+      assert' : (Literal [] Double, Literal [] Double) -> IO ()
       assert' (x, exp) =
         assertAll "Gaussian cdf agrees with tfp Normal \{show x} \{show exp}" $
-          sufficientlyEq {tol=0.0001} (cdf gaussian (const {shape=[1, 1]} [[x]])) (const exp)
+          sufficientlyEq {tol=0.0001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
 
   traverse_ assert' (zip xs expected)
 

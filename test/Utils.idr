@@ -17,6 +17,7 @@ module Utils
 
 import System
 
+import Literal
 import Tensor
 
 export
@@ -27,28 +28,41 @@ assert name x = unless x $ do
 
 export
 assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
-assertAll name xs = assert name (arrayAll (toArray xs)) where
-  arrayAll : {shape : _} -> Array shape Bool -> Bool
-  arrayAll {shape = []} x = x
+assertAll name xs = assert name (arrayAll (toLiteral xs)) where
+  arrayAll : {shape : _} -> Literal shape Bool -> Bool
+  arrayAll {shape = []} (Scalar x) = x
   arrayAll {shape = (0 :: _)} [] = True
   arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
 
 export
-bools : List Bool
+bools : List (Literal [] Bool)
 bools = [True, False]
 
 export
-ints : List Int
+ints : List (Literal [] Int)
 ints = [-3, -1, 0, 1, 3]
 
-export
-nan, inf : Double
-nan = 0.0 / 0.0
-inf = 1.0 / 0.0
+namespace Double
+  export
+  nan, inf : Double
+  nan = 0.0 / 0.0
+  inf = 1.0 / 0.0
 
-export
-doubles : List Double
-doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
+namespace Literal
+  export
+  nan, inf : Literal [] Double
+  nan = Scalar (0.0 / 0.0)
+  inf = Scalar (1.0 / 0.0)
+
+namespace Double
+  export
+  doubles : List Double
+  doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
+
+namespace Literal
+  export
+  doubles : List (Literal [] Double)
+  doubles = map Scalar doubles
 
 export
 floatingPointTolerance : Double
@@ -57,10 +71,16 @@ floatingPointTolerance = 0.00000001
 namespace Double
   export
   sufficientlyEq : Double -> Double -> Bool
-  sufficientlyEq x y =
+  sufficientlyEq x y =  -- moved
     x /= x && y /= y  -- nan
     || x == y  -- inf
-    || abs (x - y) < floatingPointTolerance  -- real
+    -- `let` avoids compiler bug
+    || (let diff = abs (x - y) in diff < floatingPointTolerance)  -- real
+
+namespace Literal
+  export
+  sufficientlyEq : Literal [] Double -> Literal [] Double -> Bool
+  sufficientlyEq x y = all [| sufficientlyEq x y |]
 
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [
@@ -126,16 +146,16 @@ namespace Tensor
   export
   test_sufficientlyEq : IO ()
   test_sufficientlyEq = do
-    let x = const [[0.0, 1.1, inf], [-inf, nan, -1.1]]
-        y = const [[0.1, 1.1, inf], [inf, nan, 1.1]]
-        eq = toArray {shape=[_, _]} (sufficientlyEq x y)
+    let x = fromLiteral [[0.0, 1.1, inf], [-inf, nan, -1.1]]
+        y = fromLiteral [[0.1, 1.1, inf], [inf, nan, 1.1]]
+        eq = toLiteral (Tensor.sufficientlyEq x y)
     assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
 
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-              sufficientlyEq {shape=[]} (const x) (const y)
+              sufficientlyEq (fromDouble x) (fromDouble y)
               | (x, y) <- sufficientlyEqCases]
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-              not (sufficientlyEq {shape=[]} (const x) (const y))
+              not (sufficientlyEq (fromDouble x) (fromDouble y))
               | (x, y) <- insufficientlyEqCases]
 
 export

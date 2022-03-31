@@ -17,7 +17,9 @@ limitations under the License.
 module Distribution
 
 import Data.Nat
+import Literal
 import Tensor
+import Constants
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the first
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
@@ -79,11 +81,11 @@ ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =
     let chol_cov = cholesky (squeeze {to=[S d, S d]} cov)
         tri = chol_cov |\ squeeze (x - mean)
-        exponent = - tri @@ tri / const 2.0
+        exponent = - tri @@ tri / 2.0
         cov_sqrt_det = reduce @{Prod} 0 (diag chol_cov)
-        denominator = (const (2 * pi) ^ (const $ cast (S d) / 2.0)) * cov_sqrt_det
+        denominator = ((2.0 * pi) ^ fromDouble (cast (S d) / 2)) * cov_sqrt_det
      in exp exponent / denominator
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
   cdf (MkGaussian {d=0} mean cov) x =
-    (const 1 + erf (squeeze (x - mean) / (sqrt (squeeze cov * const 2)))) / const 2
+    (1.0 + erf (squeeze (x - mean) / (sqrt (squeeze cov * 2.0)))) / 2.0

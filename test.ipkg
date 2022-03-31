@@ -11,6 +11,7 @@ modules =
   Unit.Model.TestKernel,
   Unit.Util.TestHashable,
   Unit.TestDistribution,
+  Unit.TestLiteral,
   Unit.TestTensor,
   Unit.TestUtil,
 

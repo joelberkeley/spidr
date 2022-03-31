@@ -17,6 +17,7 @@ module BayesianOptimization.Acquisition
 
 import public Data.Nat
 import Distribution
+import Literal
 import Tensor
 import Data
 import Model
@@ -89,7 +90,7 @@ negativeLowerConfidenceBound beta =
   then Left $ MkValueError $ "beta should be greater than or equal to zero, got " ++ show beta
   else Right $ \_, model, at =>
     let marginal = marginalise model at
-     in squeeze $ mean {event=[1]} marginal - const beta * variance {event=[1]} marginal
+     in squeeze $ mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The

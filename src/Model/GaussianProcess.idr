@@ -16,7 +16,9 @@ limitations under the License.
 ||| This module contains functionality for Gaussian process inference.
 module Model.GaussianProcess
 
+import Literal
 import Tensor
+import Constants
 import Data
 import Model
 import Model.Kernel
@@ -60,8 +62,7 @@ log_marginal_likelihood :
 log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + noise * identity)
       alpha = l.T \| (l |\ y)
-      log2pi = log $ const $ 2.0 * pi
-   in - y @@ alpha / const 2.0 - trace (log l) - (const $ cast (S s)) * log2pi / const 2.0
+   in - y @@ alpha / 2.0 - trace (log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following
