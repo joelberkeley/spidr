@@ -125,6 +125,18 @@ Show (Literal [m, n] Double) where
   show xs = show (map toList' $ toList' xs)
 
 export
+Show (Literal [] Bool) where
+  show (Scalar x) = show x
+
+export
+Show (Literal [m] Bool) where
+  show xs = show (toList' xs)
+
+export
+Show (Literal [m, n] Bool) where
+  show xs = show (map toList' $ toList' xs)
+
+export
 {shape : _} -> Hashable a => Hashable (Literal shape a) where
   hashWithSalt salt (Scalar x) = Data.Hashable.hashWithSalt salt x
   hashWithSalt salt [] = assert_total $ Data.Hashable.hashWithSalt salt 0

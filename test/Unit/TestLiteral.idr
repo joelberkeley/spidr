@@ -67,6 +67,18 @@ test_all = do
   assert "Literal all array some false" $ all [True, False] == False
   assert "Literal all array all false" $ all [False, False] == False
 
+test_show : IO ()
+test_show = do
+  assert "Literal show scalar Int" $ show (Scalar $ the Int 1) == "1"
+  assert "Literal show scalar Double" $ show (Scalar $ the Double 1.2) == "1.2"
+  assert "Literal show scalar Bool" $ show Literal.True == "True"
+  assert "Literal show array Int" $
+    show (the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) == "[[0, 1, 2], [3, 4, 5]]"
+  assert "Literal show array Double" $
+    let expected = "[[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]"
+     in show (the (Literal _ _) [[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]) == expected
+  assert "Literal show array Int" $ show (the (Literal _ _) [[True, False]]) == "[[True, False]]"
+
 export
 test : IO ()
 test = do
@@ -75,3 +87,4 @@ test = do
   test_apply
   test_foldr
   test_all
+  test_show
