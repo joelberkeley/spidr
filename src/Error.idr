@@ -16,16 +16,6 @@ limitations under the License.
 ||| This module contains error types.
 module Error
 
-||| An `Error` indicates a runtime error.
-public export
-interface Error exc where
-  ||| Show the error in a human readable format.
-  format : exc -> String
-
 ||| Indicates a value is invalid.
 public export
 data ValueError = MkValueError String
-
-export
-Error ValueError where
-  format (MkValueError msg) = msg
