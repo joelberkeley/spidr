@@ -14,17 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module contains the `Literal` type, which is a single value or array of values with a
-||| specified shape. It is similar to the `Tensor` type, and is useful for constructing `Tensor`s,
-||| but it differs in a number of important ways:
+||| specified shape. It is similar to the `Tensor` type, but differs in a number of important ways:
 |||
-||| * A `Literal` can contain arbitrary values.
+||| * `Literal` offers a convenient syntax for constructing `Literal`s with boolean and numeric
+|||   contents. For example, `True`, `1` and `[1, 2, 3]` are all valid `Literal`s. This makes it
+|||   useful for constructing `Tensor`s.
 ||| * `Literal` is *not* accelerated by XLA, so operations on large `Literal`s, and large sequences
 |||   of operations on any `Literal`, can be expected to be slower than they would on an equivalent
 |||   `Tensor`.
-||| * `Literal` has a more powerful API, and implements a number of standard Idris interfaces. This
+||| * A `Literal` is implemented in pure Idris. As such, it can contain elements of any type, and
+|||   implements a number of standard Idris interfaces. This, along with its convenient syntax,
 |||   makes it particularly useful for testing the result of `Tensor` operations.
-||| * `Literal` offers a convenient syntax for constructing `Literal`s with boolean and numeric
-|||   contents. For example, `True`, `1` and `[1, 2, 3]` are all valid `Literal`s.
 module Literal
 
 import Data.Hashable
