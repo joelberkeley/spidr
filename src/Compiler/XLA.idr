@@ -39,13 +39,14 @@ ComputationComponent = StateT XlaBuilder IO GCAnyPtr
 export
 cached : Graph -> ComputationComponent -> ComputationComponent
 cached graph xs = let graphHash = assert_total $ hash graph in do
-  builder@(MkXlaBuilder ptr cache) <- get
+  MkXlaBuilder _ cache <- get
   case lookup graphHash cache of
-    Just op => pure op
+    Just op_ptr => pure op_ptr
     Nothing => do
-      op <- xs
-      put (MkXlaBuilder ptr (insert graphHash op cache))
-      pure op
+      op_ptr <- xs
+      MkXlaBuilder builder_ptr cache <- get
+      put (MkXlaBuilder builder_ptr (insert graphHash op_ptr cache))
+      pure op_ptr
 
 mkXlaBuilder : String -> IO XlaBuilder
 mkXlaBuilder computation_name = do
