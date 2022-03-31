@@ -79,6 +79,23 @@ test_show = do
      in show (the (Literal _ _) [[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]) == expected
   assert "Literal show array Int" $ show (the (Literal _ _) [[True, False]]) == "[[True, False]]"
 
+test_cast : IO ()
+test_cast = do
+  let lit : Literal [] Nat = Scalar 1
+      arr : Array [] Nat = 1
+  assert "Literal cast scalar to Array" $ cast @{toArray} lit == arr
+  assert "Literal cast scalar from Array" $ lit == cast arr
+
+  let lit : Literal [0] Nat = []
+      arr : Array [0] Nat = []
+  assert "Literal cast empty to Array" $ cast @{toArray} lit == arr
+  assert "Literal cast empty from Array" $ lit == cast arr
+
+  let lit : Literal [2, 3] Nat = [[0, 1, 2], [3, 4, 5]]
+      arr : Array [2, 3] Nat = [[0, 1, 2], [3, 4, 5]]
+  assert "Literal cast array to Array" $ cast @{toArray} lit == arr
+  assert "Literal cast array from Array" $ lit == cast arr
+
 export
 test : IO ()
 test = do

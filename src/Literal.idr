@@ -146,6 +146,20 @@ Show (Literal [m, n] Bool) where
   show = showDefaultMatrix
 
 export
+{shape : _} -> Cast (Array shape a) (Literal shape a) where
+  cast x with (shape)
+    cast x | [] = Scalar x
+    cast _ | (0 :: _) = []
+    cast (x :: xs) | (S d :: ds) = cast x :: cast xs
+
+export
+[toArray] {shape : _} -> Cast (Literal shape a) (Array shape a) where
+  cast x with (shape)
+    cast (Scalar x) | [] = x
+    cast _ | (0 :: _) = []
+    cast (x :: xs) | (S d :: ds) = cast @{toArray} x :: cast @{toArray} xs
+
+export
 {shape : _} -> Hashable a => Hashable (Literal shape a) where
   hashWithSalt salt (Scalar x) = Data.Hashable.hashWithSalt salt x
   hashWithSalt salt [] = assert_total $ Data.Hashable.hashWithSalt salt 0
