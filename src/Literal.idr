@@ -24,7 +24,7 @@ limitations under the License.
 |||   `Tensor`.
 ||| * A `Literal` is implemented in pure Idris. As such, it can contain elements of any type, and
 |||   implements a number of standard Idris interfaces. This, along with its convenient syntax,
-|||   makes it particularly useful for testing the result of `Tensor` operations.
+|||   makes it particularly useful for testing operations on `Tensor`s.
 module Literal
 
 import Data.Hashable
