@@ -23,16 +23,3 @@ import Types
 export
 Hashable Double where
   hashWithSalt s x = s `combine` hash (show x)
-
-||| Hash an array with a given salt. This is implemented as a function as interface resolution is
-||| limited with type synonyms.
-export
-hashWithSalt : Hashable a => {shape : _} -> Bits64 -> Array shape a -> Bits64
-hashWithSalt {shape=[]} salt x = hashWithSalt salt x
-hashWithSalt {shape=(0 :: _)} salt [] = Data.Hashable.hashWithSalt salt 0
-hashWithSalt {shape=(S d :: ds)} salt (x :: xs) =
-  hashWithSalt {shape=(d :: ds)} (
-    hashWithSalt {shape=ds} (
-      Data.Hashable.hashWithSalt salt 1
-    ) x
-  ) xs
