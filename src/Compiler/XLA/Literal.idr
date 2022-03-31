@@ -112,8 +112,8 @@ concat [] = []
 concat (x :: xs) = x :: concat xs
 
 export
-toArray : {shape : _} -> GCAnyPtr -> LiteralPrimitiveRW dtype a => Literal shape a
-toArray lit = impl shape [] where
+toLiteral : {shape : _} -> GCAnyPtr -> LiteralPrimitiveRW dtype a => Literal shape a
+toLiteral lit = impl shape [] where
   impl : (shape', idxs : Shape) -> Literal shape' a
   impl [] idxs = Scalar (unsafePerformIO $ (map (get {dtype} lit) (mkIntArray idxs)))
   impl (0 :: ds) idxs = []

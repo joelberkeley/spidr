@@ -88,7 +88,7 @@ toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
   client <- primIO prim__localClientOrDie
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-  pure (toArray {dtype} lit)
+  pure (toLiteral {dtype} lit)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued XLA operations.
 ||| Useful for debugging.
