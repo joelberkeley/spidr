@@ -70,7 +70,7 @@ namespace F64
 namespace S32
   export
   fromInteger : Integer -> Tensor [] S32
-  fromInteger = fromLiteral . Scalar . cast
+  fromInteger = fromLiteral . Scalar . fromInteger
 
 ||| Evaluate a `Tensor`, returning its value as an `Literal`. This function builds and executes the
 ||| computation graph.
