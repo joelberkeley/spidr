@@ -148,14 +148,14 @@ namespace Tensor
   test_sufficientlyEq = do
     let x = fromLiteral [[0.0, 1.1, inf], [-inf, nan, -1.1]]
         y = fromLiteral [[0.1, 1.1, inf], [inf, nan, 1.1]]
-        eq = toLiteral {shape=[_, _]} (Tensor.sufficientlyEq x y)
+        eq = toLiteral (Tensor.sufficientlyEq x y)
     assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
 
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-              sufficientlyEq {shape=[]} (fromDouble x) (fromDouble y)
+              sufficientlyEq (fromDouble x) (fromDouble y)
               | (x, y) <- sufficientlyEqCases]
     sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-              not (sufficientlyEq {shape=[]} (fromDouble x) (fromDouble y))
+              not (sufficientlyEq (fromDouble x) (fromDouble y))
               | (x, y) <- insufficientlyEqCases]
 
 export
