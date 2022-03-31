@@ -160,9 +160,9 @@ export
     cast (x :: xs) | (S d :: ds) = cast @{toArray} x :: cast @{toArray} xs
 
 export
-{shape : _} -> Hashable a => Hashable (Literal shape a) where
-  hashWithSalt salt (Scalar x) = Data.Hashable.hashWithSalt salt x
-  hashWithSalt salt [] = assert_total $ Data.Hashable.hashWithSalt salt 0
+Hashable a => Hashable (Literal shape a) where
+  hashWithSalt salt (Scalar x) = hashWithSalt salt x
+  hashWithSalt salt [] = hashWithSalt salt (the Bits64 0)
   hashWithSalt salt (x :: xs) = assert_total $ salt
     `hashWithSalt` 1
     `hashWithSalt` x
