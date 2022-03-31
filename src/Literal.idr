@@ -77,7 +77,7 @@ Foldable (Literal shape) where
   foldr _ acc [] = acc
   foldr f acc (x :: y) = foldr f (foldr f acc y) x
 
-||| `True` if no elements are `False`. `[]` evaluates to `True`.
+||| `True` if no elements are `False`. `all []` is `True`.
 export
 all : Literal shape Bool -> Bool
 all xs = foldr (\x, y => x && y) True xs
