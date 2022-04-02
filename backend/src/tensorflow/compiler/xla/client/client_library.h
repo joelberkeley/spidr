@@ -16,7 +16,5 @@ limitations under the License.
 #include "local_client.h"
 
 extern "C" {
-    struct ClientLibrary;
-
     LocalClient* ClientLibrary_LocalClientOrDie();
 }

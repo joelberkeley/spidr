@@ -1,4 +1,4 @@
-# Copyright 2021 Joel Berkeley
+# Copyright 2022 Joel Berkeley
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cc_binary(
-    name = "c_xla_extension",
-    linkshared = True,
-    srcs = [
-        "//src/tensorflow/core/common_runtime/gpu:gpu",
-        "//src/tensorflow/compiler/xla:xla",
-        "//src/tensorflow/compiler/xla/client:client",
-        "//src/tensorflow/compiler/xla/client/lib:lib",
-        "//src/tensorflow/stream_executor:stream_executor",
+cc_library(
+    name = "gpu",
+    linkstatic = True,
+    alwayslink = True,
+    srcs = glob(["*.cpp"]),
+    hdrs = glob(["*.h"]),
+        deps = [
+        "@xla_extension//:xla_extension",
         "//src:src",
-    ],
-    deps = [
-        "//src/tensorflow/core/common_runtime/gpu:gpu",
-        "//src/tensorflow/compiler/xla:xla",
-        "//src/tensorflow/compiler/xla/client:client",
-        "//src/tensorflow/compiler/xla/client/lib:lib",
         "//src/tensorflow/stream_executor:stream_executor",
-        "//src:src",
     ],
+    visibility = ["//visibility:public"],
 )

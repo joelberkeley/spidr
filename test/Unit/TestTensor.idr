@@ -938,7 +938,7 @@ test_cholesky = do
               [0.47207308, 1.5615932 , 0.0       ],
               [0.9182292 , 0.6230785 , 1.2312902 ]
             ]
-  assertAll "cholesky" $ sufficientlyEq {tol=0.000001} (cholesky x) expected
+  assertAll "cholesky" $ sufficientlyEq {tol=0.00001} (cholesky x) expected
 
 test_triangularsolve : IO ()
 test_triangularsolve = do

@@ -33,6 +33,7 @@ import public Util
 import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
+import Compiler.Core.CommonRuntime.GPU.GPUInit
 import Compiler.XLA.Client.Lib.Math
 import Compiler.XLA.Client.Lib.Matrix
 import Compiler.XLA.Client.ClientLibrary
@@ -86,7 +87,8 @@ export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
-  client <- primIO prim__localClientOrDie
+  gpu_manager <- primIO prim__gpuMachineManager
+  client <- primIO $ prim__getOrCreateLocalClient gpu_manager prim__getNullAnyPtr 0
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
   pure (toLiteral {dtype} lit)
 

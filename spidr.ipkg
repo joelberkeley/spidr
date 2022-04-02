@@ -9,6 +9,7 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
+  Compiler.Core.CommonRuntime.GPU.GPUInit,
   Compiler.FFI,
   Compiler.Graph,
   Compiler.XLA.Client.Lib.Math,
