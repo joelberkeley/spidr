@@ -39,6 +39,7 @@ import Compiler.XLA.Client.Lib.Matrix
 import Compiler.XLA.Client.ClientLibrary
 import Compiler.XLA.Client.LocalClient
 import Compiler.XLA.Client.XlaBuilder
+import Compiler.XLA.Service.PlatformUtil
 import public Compiler.XLA.Literal
 import Compiler.XLA.ShapeUtil
 
@@ -73,6 +74,13 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = fromLiteral . Scalar . fromInteger
 
+public export
+data Device = CPU | GPU
+
+prim__getPlatform : Device -> IO AnyPtr
+prim__getPlatform CPU = primIO $ prim__getPlatform "Host"
+prim__getPlatform GPU = primIO prim__gpuMachineManager
+
 ||| Evaluate a `Tensor`, returning its value as an `Literal`. This function builds and executes the
 ||| computation graph.
 |||
@@ -84,11 +92,11 @@ namespace S32
 ||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
-toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
+toLiteral : {auto device : Device} -> PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
-  gpu_manager <- primIO prim__gpuMachineManager
-  client <- primIO $ prim__getOrCreateLocalClient gpu_manager prim__getNullAnyPtr 0
+  platform <- prim__getPlatform device
+  client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
   pure (toLiteral {dtype} lit)
 

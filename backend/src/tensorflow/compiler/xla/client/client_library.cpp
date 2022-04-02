@@ -26,22 +26,17 @@ extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
+        absl::optional<std::set<int>> allowed_devices_ = absl::nullopt;
         if (allowed_devices_len > 0) {
-            // ???
-        } else {
+            absl::optional<std::set<int>> allowed_devices_ =
+                std::set<int>(allowed_devices, allowed_devices + allowed_devices_len);
         }
         auto platform_ = reinterpret_cast<tensorflow::se::Platform*>(platform);
-        auto allowed_devices_ = reinterpret_cast<const absl::optional<std::set<int>>&>(absl::nullopt);
 
         xla::LocalClient* client =
             xla::ClientLibrary::GetOrCreateLocalClient(platform_, allowed_devices_)
             .ConsumeValueOrDie();
 
-        return reinterpret_cast<LocalClient*>(client);
-    }
-
-    LocalClient* ClientLibrary_LocalClientOrDie() {
-        xla::LocalClient* client = xla::ClientLibrary::LocalClientOrDie();
         return reinterpret_cast<LocalClient*>(client);
     }
 }

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cc_library(
-    name = "gpu",
+    name = "service",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),

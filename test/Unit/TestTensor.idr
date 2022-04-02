@@ -23,6 +23,10 @@ import Tensor
 
 import Utils
 
+%hint
+device : Device
+device = GPU
+
 test_fromLiteral_toLiteral : IO ()
 test_fromLiteral_toLiteral = do
   let x = [[True, False, False], [False, True, False]]

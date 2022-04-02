@@ -16,5 +16,7 @@ limitations under the License.
 #include "local_client.h"
 
 extern "C" {
-    LocalClient* ClientLibrary_LocalClientOrDie();
+    LocalClient* ClientLibrary_GetOrCreateLocalClient(
+        Platform* platform, int* allowed_devices, int allowed_devices_len
+    );
 }

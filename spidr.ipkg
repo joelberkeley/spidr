@@ -19,6 +19,7 @@ modules =
   Compiler.XLA.Client.XlaBuilder,
   Compiler.XLA.Client.XlaComputation,
   Compiler.XLA.Literal,
+  Compiler.XLA.Service.PlatformUtil,
   Compiler.XLA.Shape,
   Compiler.XLA.ShapeUtil,
   Compiler.XLA.XlaData,
