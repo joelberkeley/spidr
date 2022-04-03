@@ -17,6 +17,8 @@ module Utils
 
 import System
 
+import Data.Hashable
+
 import Literal
 import Tensor
 

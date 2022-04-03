@@ -27,6 +27,7 @@ import Unit.TestUtil
 
 import Utils
 
+covering
 main : IO ()
 main = do
   Utils.test
@@ -41,8 +42,7 @@ main = do
   putStrLn "Old style tests passed\n\n"
 
   _ <- checkGroup $ MkGroup "All" [
-    ("Scalar addition", scalarAddition),
-    ("Vector addition", vectorAddition)
-    -- ("arrayAddition", arrayAddition),
-    -- ("test_addition", test_addition)
+    ("test_addition", test_addition)
   ]
+
+  pure ()

@@ -1,19 +1,19 @@
 package test
 
-depends = spidr, contrib, hashable
-opts = "--total"
-sourcedir = "test"
-
-executable = test
-main = Main
-
 depends =
   contrib,
+  hashable,
   elab-util,
   hedgehog,
   pretty-show,
   sop,
   spidr
+
+opts = "--total"
+sourcedir = "test"
+
+executable = test
+main = Main
 
 modules =
   Unit.Model.TestKernel,
