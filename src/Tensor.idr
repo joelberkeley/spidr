@@ -74,6 +74,7 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = fromLiteral . Scalar . fromInteger
 
+||| The type of device to execute graphs on.
 public export
 data Device = CPU | GPU
 
@@ -91,6 +92,8 @@ prim__getPlatform GPU = primIO prim__gpuMachineManager
 |||   the future.
 ||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
+|||
+||| @device The type of device to execute the graph on.
 export
 toLiteral : {auto device : Device} -> PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
