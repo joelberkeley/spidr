@@ -95,7 +95,8 @@ prim__getPlatform GPU = primIO prim__gpuMachineManager
 |||
 ||| @device The type of device to execute the graph on.
 export
-toLiteral : {auto device : Device} -> PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
+toLiteral : {default CPU device : Device} -> PrimitiveRW dtype ty =>
+            Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
   platform <- prim__getPlatform device
