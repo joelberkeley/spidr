@@ -36,6 +36,6 @@ Shape = List Nat
 ||| @shape The shape of the array.
 ||| @dtype The type of elements of the array.
 public export 0
-Array : (0 shape : Shape) -> (dtype : Type) -> Type
+Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
 Array [] dtype = dtype
 Array (d :: ds) dtype = Vect d (Array ds dtype)
