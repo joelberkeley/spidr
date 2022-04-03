@@ -82,7 +82,7 @@ prim__getPlatform : Device -> IO AnyPtr
 prim__getPlatform CPU = primIO $ prim__getPlatform "Host"
 prim__getPlatform GPU = primIO prim__gpuMachineManager
 
-||| Evaluate a `Tensor`, returning its value as an `Literal`. This function builds and executes the
+||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computation graph.
 |||
 ||| **Note:**
