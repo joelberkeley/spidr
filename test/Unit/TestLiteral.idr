@@ -79,7 +79,7 @@ test_show = do
     let expected = "[[0.1, 1.1, 2.1],\n [-3.1, 4.1, 5.1]]"
      in show (the (Literal _ _) [[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]) == expected
   assert "Literal show array Bool" $ show (the (Literal _ _) [[True, False]]) == "[[True, False]]"
-  
+
   assert "Literal show shape [0]" $ show (the (Literal [0] Nat) []) == "[]"
   assert "Literal show shape [0, 0]" $ show (the (Literal [0, 0] Nat) []) == "[]"
   assert "Literal show shape [0, 1]" $ show (the (Literal [0, 1] Nat) []) == "[]"

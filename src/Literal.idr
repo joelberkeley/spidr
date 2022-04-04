@@ -100,10 +100,6 @@ toVect : Literal (d :: ds) a -> Vect d (Literal ds a)
 toVect [] = []
 toVect (x :: y) = x :: toVect y
 
-indent : Nat -> String
-indent Z = ""
-indent (S k) = indent k ++ " "
-
 export
 {shape : _} -> Show a => Show (Literal shape a) where
   show = showWithIndent "" where
