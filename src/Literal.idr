@@ -96,54 +96,23 @@ export
 {shape : _} -> Eq a => Eq (Literal shape a) where
   x == y = all [| x == y |]
 
-toList' : Literal (d :: ds) a -> List (Literal ds a)
-toList' [] = []
-toList' (x :: y) = x :: toList' y
+toVect : Literal (d :: ds) a -> Vect d (Literal ds a)
+toVect [] = []
+toVect (x :: y) = x :: toVect y
 
-showDefaultScalar : Show a => Literal [] a -> String
-showDefaultScalar (Scalar x) = show x
-
-showDefaultVector : Show (Literal [] a) => Literal [m] a -> String
-showDefaultVector xs = show (toList' xs)
-
-showDefaultMatrix : Show (Literal [] a) => Literal [m, n] a -> String
-showDefaultMatrix xs = show (map toList' $ toList' xs)
-
+||| Show the `Literal`. The `Scalar` constructor is omitted for brevity.
 export
-Show (Literal [] Int) where
-  show = showDefaultScalar
-
-export
-Show (Literal [m] Int) where
-  show = showDefaultVector
-
-export
-Show (Literal [m, n] Int) where
-  show = showDefaultMatrix
-
-export
-Show (Literal [] Double) where
-  show = showDefaultScalar
-
-export
-Show (Literal [m] Double) where
-  show = showDefaultVector
-
-export
-Show (Literal [m, n] Double) where
-  show = showDefaultMatrix
-
-export
-Show (Literal [] Bool) where
-  show = showDefaultScalar
-
-export
-Show (Literal [m] Bool) where
-  show = showDefaultVector
-
-export
-Show (Literal [m, n] Bool) where
-  show = showDefaultMatrix
+{shape : _} -> Show a => Show (Literal shape a) where
+  show = showWithIndent "" where
+    showWithIndent : {shape : _} -> String -> Literal shape a -> String
+    showWithIndent {shape=[]} _ (Scalar x) = show x
+    showWithIndent {shape=(0 :: _)} _ _ = "[]"
+    showWithIndent {shape=[S _]} _ x = show (toList x)
+    showWithIndent {shape=(S d :: dd :: ddd)} indent (x :: xs) =
+      let indent = " " ++ indent
+          first = showWithIndent indent x
+          rest = foldMap (\e => ",\n" ++ indent ++ showWithIndent indent e) (toVect xs)
+       in "[" ++ first ++ rest ++ "]"
 
 export
 {shape : _} -> Cast (Array shape a) (Literal shape a) where
