@@ -100,7 +100,7 @@ toVect : Literal (d :: ds) a -> Vect d (Literal ds a)
 toVect [] = []
 toVect (x :: y) = x :: toVect y
 
-||| Show the `Literal`. Scalar values are formatted with the `Scalar` for brevity.
+||| Show the `Literal`. The `Scalar` constructor is omitted for brevity.
 export
 {shape : _} -> Show a => Show (Literal shape a) where
   show = showWithIndent "" where
