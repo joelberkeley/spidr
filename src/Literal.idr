@@ -106,16 +106,16 @@ indent (S k) = indent k ++ " "
 
 export
 {shape : _} -> Show a => Show (Literal shape a) where
-  show = showWithDepth "" where
-    showWithDepth : {shape : _} -> String -> Literal shape a -> String
-    showWithDepth {shape=[]} _ (Scalar x) = show x
-    showWithDepth {shape=(0 :: _)} indent _ = "[]"
-    showWithDepth {shape=[S _]} indent x = show (toList x)
-    showWithDepth {shape=(S d :: dd :: ddd)} indent (x :: xs) =
-      let strs = map (\e => ",\n " ++ indent ++ showWithDepth (indent ++ " ") e) (toVect xs)
-       in "[" ++ foldl (++) (showWithDepth (indent ++ " ") x) strs ++ "]"
-
-      -- "[" ++ show x ++ foldMap (\e => ",\n" ++ indent ++ showWithDepth (indent ++ " ") e) (toVect xs) ++ "]"
+  show = showWithIndent "" where
+    showWithIndent : {shape : _} -> String -> Literal shape a -> String
+    showWithIndent {shape=[]} _ (Scalar x) = show x
+    showWithIndent {shape=(0 :: _)} _ _ = "[]"
+    showWithIndent {shape=[S _]} _ x = show (toList x)
+    showWithIndent {shape=(S d :: dd :: ddd)} indent (x :: xs) =
+      let indent = " " ++ indent
+          first = showWithIndent indent x
+          rest = foldMap (\e => ",\n" ++ indent ++ showWithIndent indent e) (toVect xs)
+       in "[" ++ first ++ rest ++ "]"
 
 export
 {shape : _} -> Cast (Array shape a) (Literal shape a) where
