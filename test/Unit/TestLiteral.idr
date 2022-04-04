@@ -72,12 +72,23 @@ test_show = do
   assert "Literal show scalar Int" $ show (Scalar $ the Int 1) == "1"
   assert "Literal show scalar Double" $ show (Scalar $ the Double 1.2) == "1.2"
   assert "Literal show scalar Bool" $ show Literal.True == "True"
+  assert "Literal show vector Int" $ show (the (Literal _ _) [0, 1, 2]) == "[0, 1, 2]"
   assert "Literal show array Int" $
-    show (the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) == "[[0, 1, 2], [3, 4, 5]]"
+    show (the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) == "[[0, 1, 2],\n [3, 4, 5]]"
   assert "Literal show array Double" $
-    let expected = "[[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]"
+    let expected = "[[0.1, 1.1, 2.1],\n [-3.1, 4.1, 5.1]]"
      in show (the (Literal _ _) [[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]) == expected
-  assert "Literal show array Int" $ show (the (Literal _ _) [[True, False]]) == "[[True, False]]"
+  assert "Literal show array Bool" $ show (the (Literal _ _) [[True, False]]) == "[[True, False]]"
+  
+  assert "Literal show shape [0]" $ show (the (Literal [0] Nat) []) == "[]"
+  assert "Literal show shape [0, 0]" $ show (the (Literal [0, 0] Nat) []) == "[]"
+  assert "Literal show shape [0, 1]" $ show (the (Literal [0, 1] Nat) []) == "[]"
+  assert "Literal show shape [1, 0]" $ show (the (Literal [1, 0] Nat) [[]]) == "[[]]"
+  assert "Literal show shape [1, 0, 1]" $ show (the (Literal [1, 0, 1] Nat) [[]]) == "[[]]"
+  assert "Literal show shape [2, 0]" $ show (the (Literal [2, 0] Nat) [[], []]) == "[[],\n []]"
+  assert "Literal show shape [3, 2, 2]" $
+    let xs : Literal [3, 2, 2] Nat = [[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]
+     in show xs == "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
 
 test_cast : IO ()
 test_cast = do

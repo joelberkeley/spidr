@@ -96,54 +96,26 @@ export
 {shape : _} -> Eq a => Eq (Literal shape a) where
   x == y = all [| x == y |]
 
-toList' : Literal (d :: ds) a -> List (Literal ds a)
-toList' [] = []
-toList' (x :: y) = x :: toList' y
+toVect : Literal (d :: ds) a -> Vect d (Literal ds a)
+toVect [] = []
+toVect (x :: y) = x :: toVect y
 
-showDefaultScalar : Show a => Literal [] a -> String
-showDefaultScalar (Scalar x) = show x
-
-showDefaultVector : Show (Literal [] a) => Literal [m] a -> String
-showDefaultVector xs = show (toList' xs)
-
-showDefaultMatrix : Show (Literal [] a) => Literal [m, n] a -> String
-showDefaultMatrix xs = show (map toList' $ toList' xs)
+indent : Nat -> String
+indent Z = ""
+indent (S k) = indent k ++ " "
 
 export
-Show (Literal [] Int) where
-  show = showDefaultScalar
+{shape : _} -> Show a => Show (Literal shape a) where
+  show = showWithDepth "" where
+    showWithDepth : {shape : _} -> String -> Literal shape a -> String
+    showWithDepth {shape=[]} _ (Scalar x) = show x
+    showWithDepth {shape=(0 :: _)} indent _ = "[]"
+    showWithDepth {shape=[S _]} indent x = show (toList x)
+    showWithDepth {shape=(S d :: dd :: ddd)} indent (x :: xs) =
+      let strs = map (\e => ",\n " ++ indent ++ showWithDepth (indent ++ " ") e) (toVect xs)
+       in "[" ++ foldl (++) (showWithDepth (indent ++ " ") x) strs ++ "]"
 
-export
-Show (Literal [m] Int) where
-  show = showDefaultVector
-
-export
-Show (Literal [m, n] Int) where
-  show = showDefaultMatrix
-
-export
-Show (Literal [] Double) where
-  show = showDefaultScalar
-
-export
-Show (Literal [m] Double) where
-  show = showDefaultVector
-
-export
-Show (Literal [m, n] Double) where
-  show = showDefaultMatrix
-
-export
-Show (Literal [] Bool) where
-  show = showDefaultScalar
-
-export
-Show (Literal [m] Bool) where
-  show = showDefaultVector
-
-export
-Show (Literal [m, n] Bool) where
-  show = showDefaultMatrix
+      -- "[" ++ show x ++ foldMap (\e => ",\n" ++ indent ++ showWithDepth (indent ++ " ") e) (toVect xs) ++ "]"
 
 export
 {shape : _} -> Cast (Array shape a) (Literal shape a) where
