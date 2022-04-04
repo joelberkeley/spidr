@@ -31,13 +31,13 @@ test_fromLiteral_toLiteral = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  x === toLiteral $ fromLiteral {dtype=F64} x
+  x === toLiteral (fromLiteral {dtype=F64} x)
 
   x <- forAll (literal shape ints)
-  x === toLiteral $ fromLiteral {dtype=S32} x
+  x === toLiteral (fromLiteral {dtype=S32} x)
 
   x <- forAll (literal shape bool)
-  x === toLiteral $ fromLiteral {dtype=PRED} x
+  x === toLiteral (fromLiteral {dtype=PRED} x)
 
 test_show_graph : IO ()
 test_show_graph = do
@@ -477,126 +477,119 @@ test_reduce = do
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
   assertAll "reduce for PRED array" $ reduce @{All} 1 x == fromLiteral [False, False]
 
-test_elementwise_equality : IO ()
-test_elementwise_equality = do
-  let x = fromLiteral {dtype=PRED} [True, True, False]
-      y = fromLiteral {dtype=PRED} [False, True, False]
-      eq = toLiteral (y == x)
-  assert "== for boolean vector" $ eq == [False, True, True]
+covering
+test_equality : Property
+test_equality = property $ do
+  shape <- forAll shapes
 
-  let x = fromLiteral {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-      y = fromLiteral {dtype=S32} [[2, 15, 3], [2, 7, 6]]
-      eq = toLiteral (y == x)
-  assert "== for integer matrix" $ eq == [[False, True, False], [False, True, True]]
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x == y |] === toLiteral (x' == y')
 
-  let x = fromLiteral {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-      y = fromLiteral {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-      eq = toLiteral (y == x)
-  assert "== for double matrix" $ eq == [[False, True, False], [False, True, True]]
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x == y |] === toLiteral (x' == y')
 
-  sequence_ [compareScalars {dtype=PRED} x y | x <- bools, y <- bools]
-  sequence_ [compareScalars {dtype=S32} x y | x <- ints, y <- ints]
-  sequence_ [compareScalars {dtype=F64} x y | x <- doubles, y <- doubles]
+  let bools = literal shape bool
+  [x, y] <- forAll (np [bools, bools])
+  let x' = fromLiteral {dtype=PRED} x
+      y' = fromLiteral {dtype=PRED} y
+  [| x == y |] === toLiteral (x' == y')
 
-  where
-    compareScalars : Primitive dtype => Prelude.Eq ty => PrimitiveRW dtype ty
-                     => Primitive.Eq dtype => Literal [] ty -> Literal [] ty -> IO ()
-    compareScalars l r =
-      let actual = toLiteral (fromLiteral {dtype} l == fromLiteral {dtype} r)
-          expected = [| l == r |]
-       in assert "== for scalars" $ all [| actual == expected |]
+covering
+test_inequality : Property
+test_inequality = property $ do
+  shape <- forAll shapes
 
-test_elementwise_inequality : IO ()
-test_elementwise_inequality = do
-  let x = fromLiteral {dtype=PRED} [True, True, False]
-      y = fromLiteral {dtype=PRED} [False, True, False]
-  assertAll "== for boolean vector" $ (y /= x) == fromLiteral [True, False, False]
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x /= y |] === toLiteral (x' /= y')
 
-  let x = fromLiteral {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-      y = fromLiteral {dtype=S32} [[2, 15, 3], [2, 7, 6]]
-  assertAll "== for integer matrix" $
-    (x /= y) == fromLiteral [[True, False, True], [True, False, False]]
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x /= y |] === toLiteral (x' /= y')
 
-  let x = fromLiteral {dtype=F64} [[1.1, 15.3, 5.2], [-1.6, 7.1, 6.0]]
-      y = fromLiteral {dtype=F64} [[2.2, 15.3, 3.4], [2.6, 7.1, 6.0]]
-  assertAll "== for double matrix" $
-    (x /= y) == fromLiteral [[True, False, True], [True, False, False]]
+  let bools = literal shape bool
+  [x, y] <- forAll (np [bools, bools])
+  let x' = fromLiteral {dtype=PRED} x
+      y' = fromLiteral {dtype=PRED} y
+  [| x /= y |] === toLiteral (x' /= y')
 
-  sequence_ [compareScalars {dtype=PRED} l r | l <- bools, r <- bools]
-  sequence_ [compareScalars {dtype=S32} l r | l <- ints, r <- ints]
-  sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
+covering
+test_less_than : Property
+test_less_than = property $ do
+  shape <- forAll shapes
 
-  where
-    compareScalars : Primitive dtype => Primitive.Eq dtype => Prelude.Eq ty
-                     => PrimitiveRW dtype ty => Literal [] ty -> Literal [] ty -> IO ()
-    compareScalars l r =
-      assertAll "/= for scalars" $
-        (fromLiteral {dtype} l /= fromLiteral r) == fromLiteral [| l /= r |]
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x < y |] === toLiteral (x' < y')
 
-test_comparison : IO ()
-test_comparison = do
-  let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-      y = fromLiteral {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-  assertAll "> for S32 matrix" $ (y > x) == fromLiteral [[False, True, False], [False, True, False]]
-  assertAll "< for S32 matrix" $ (y < x) == fromLiteral [[False, False, True], [True, False, False]]
-  assertAll ">= for S32 matrix" $ (y >= x) == fromLiteral [[True, True, False], [False, True, True]]
-  assertAll "<= for S32 matrix" $ (y <= x) == fromLiteral [[True, False, True], [True, False, True]]
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x < y |] === toLiteral (x' < y')
 
-  let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-      y = fromLiteral {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-  assertAll "> for F64 matrix" $ (y > x) == fromLiteral [[False, True, False], [False, True, False]]
-  assertAll "< for F64 matrix" $ (y < x) == fromLiteral [[False, False, True], [True, False, False]]
-  assertAll ">= for F64 matrix" $ (y >= x) == fromLiteral [[True, True, False], [False, True, True]]
-  assertAll "<= for F64 matrix" $ (y <= x) == fromLiteral [[True, False, True], [True, False, True]]
+covering
+test_less_than_equal : Property
+test_less_than_equal = property $ do
+  shape <- forAll shapes
 
-  sequence_ [compareScalars {dtype=S32} l r | l <- ints, r <- ints]
-  sequence_ [compareScalars {dtype=F64} l r | l <- doubles, r <- doubles]
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x <= y |] === toLiteral (x' <= y')
 
-  where
-    compareScalars : Primitive.Ord dtype => Prelude.Ord ty => PrimitiveRW dtype ty
-                     => Primitive dtype => Literal [] ty -> Literal [] ty -> IO ()
-    compareScalars l r = do
-      let l' = fromLiteral {dtype} l
-          r' = fromLiteral {dtype} r
-      assertAll "> for scalars" $ (l' > r') == fromLiteral {dtype=PRED} [| l > r |]
-      assertAll "< for scalars" $ (l' < r') == fromLiteral {dtype=PRED} [| l < r |]
-      assertAll ">= for scalars" $ (l' >= r') == fromLiteral {dtype=PRED} [| l >= r |]
-      assertAll "<= for scalars" $ (l' <= r') == fromLiteral {dtype=PRED} [| l <= r |]
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x <= y |] === toLiteral (x' <= y')
 
-namespace S32
-  export
-  testElementwiseBinary : String -> (Int -> Int -> Int)
-      -> (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) -> IO ()
-  testElementwiseBinary name f_native f_tensor = do
-    let x = [[1, 15, 5], [-1, 7, 6]]
-        y = [[11, 5, 7], [-3, -4, 0]]
-        expected = fromLiteral [| f_native x y |]
-    assertAll (name ++ " for S32 array") $
-      f_tensor (fromLiteral {dtype=S32} x) (fromLiteral y) == expected
+covering
+test_greater_than : Property
+test_greater_than = property $ do
+  shape <- forAll shapes
 
-    sequence_ $ do
-      l <- ints
-      r <- ints
-      pure $ assertAll (name ++ " for S32 scalar " ++ show l ++ " " ++ show r) $
-        f_tensor (fromLiteral l) (fromLiteral r) == fromLiteral {dtype=S32} [| f_native l r |]
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x > y |] === toLiteral (x' > y')
 
-namespace F64
-  export
-  testElementwiseBinary : String -> (Double -> Double -> Double)
-    -> (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) -> IO ()
-  testElementwiseBinary name f_native f_tensor = do
-    let x = [[3.0, 4.0, -5.0], [0.0, 0.3, 0.0]]
-        y = [[1.0, -2.3, 0.2], [0.1, 0.0, 0.0]]
-        expected = fromLiteral [| f_native x y |]
-    assertAll (name ++ " for F64 array") $
-      sufficientlyEq (f_tensor (fromLiteral {dtype=F64} x) (fromLiteral y)) expected
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x > y |] === toLiteral (x' > y')
 
-    sequence_ $ do
-      l <- doubles
-      r <- doubles
-      pure $ assertAll (name ++ " for F64 scalar " ++ show l ++ " " ++ show r) $
-        sufficientlyEq (f_tensor (fromLiteral l) (fromLiteral r)) $
-          fromLiteral {dtype=F64} [| f_native l r |]
+covering
+test_greater_than_equal : Property
+test_greater_than_equal = property $ do
+  shape <- forAll shapes
+
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x >= y |] === toLiteral (x' >= y')
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x >= y |] === toLiteral (x' >= y')
 
 namespace Vector
   export
@@ -618,7 +611,7 @@ namespace Matrix
         r = fromLiteral {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
     assertAll "matrix dot matrix" $ l @@ r == fromLiteral [[ -7,  -2], [  8, -11]]
 
-export covering
+covering
 test_addition : Property
 test_addition = property $ do
   shape <- forAll shapes
@@ -635,7 +628,7 @@ test_addition = property $ do
       y' = fromLiteral {dtype=S32} y
   [| x + y |] === toLiteral (x' + y')
 
-export covering
+covering
 test_subtraction : Property
 test_subtraction = property $ do
   shape <- forAll shapes
@@ -652,7 +645,7 @@ test_subtraction = property $ do
       y' = fromLiteral {dtype=S32} y
   [| x - y |] === toLiteral (x' - y')
 
-export covering
+covering
 test_multiplication : Property
 test_multiplication = property $ do
   shape <- forAll shapes
@@ -669,7 +662,7 @@ test_multiplication = property $ do
       y' = fromLiteral {dtype=S32} y
   [| x * y |] === toLiteral (x' * y')
 
-export covering
+covering
 test_division : Property
 test_division = property $ do
   shape <- forAll shapes
@@ -685,11 +678,6 @@ test_Sum = do
   let x = fromLiteral {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
   assertAll "Sum neutral is neutral right" $ (<+>) @{Sum} x (neutral @{Sum}) == x
   assertAll "Sum neutral is neutral left" $ (<+>) @{Sum} (neutral @{Sum}) x == x
-
-test_elementwise_multiplication : IO ()
-test_elementwise_multiplication = do
-  S32.testElementwiseBinary "(*)" (*) (*)
-  F64.testElementwiseBinary "(*)" (*) (*)
 
 test_scalar_multiplication : IO ()
 test_scalar_multiplication = do
@@ -739,10 +727,20 @@ assertBooleanOpScalar name tensor_op bool_op =
     pure $ assertAll name $
       tensor_op (fromLiteral l) (fromLiteral r) == fromLiteral [| (\x, y => bool_op x y) l r |]
 
-test_elementwise_and : IO ()
-test_elementwise_and = do
-  assertBooleanOpArray "&& for array" (&&) [[True, False], [False, False]]
-  assertBooleanOpScalar "&& for scalar" (&&) (&&)
+covering
+test_and : Property
+test_and = property $ do
+  shape <- forAll shapes
+  let bools = literal shape bool
+  [x, y] <- forAll (np [bools, bools])
+  let x' = fromLiteral {dtype=PRED} x
+      y' = fromLiteral {dtype=PRED} y
+  [| x `and` y |] === toLiteral (x' && y')
+
+  where
+
+  and : Bool -> Bool -> Bool
+  and x y = x && y
 
 test_All : IO ()
 test_All = do
@@ -750,10 +748,20 @@ test_All = do
   assertAll "All neutral is neutral right" $ (<+>) @{All} x (neutral @{All}) == x
   assertAll "All neutral is neutral left" $ (<+>) @{All} (neutral @{All}) x == x
 
-test_elementwise_or : IO ()
-test_elementwise_or = do
-  assertBooleanOpArray "|| for array" (||) [[True, True], [True, False]]
-  assertBooleanOpScalar "|| for scalar" (||) (||)
+covering
+test_or : Property
+test_or = property $ do
+  shape <- forAll shapes
+  let bools = literal shape bool
+  [x, y] <- forAll (np [bools, bools])
+  let x' = fromLiteral {dtype=PRED} x
+      y' = fromLiteral {dtype=PRED} y
+  [| x `or` y |] === toLiteral (x' || y')
+
+  where
+
+  or : Bool -> Bool -> Bool
+  or x y = x || y
 
 test_Any : IO ()
 test_Any = do
@@ -808,10 +816,6 @@ test_cond = do
   assertAll "cond for non-trivial falsy" $
     cond (fromLiteral False) (fromLiteral 5 *) x diag y == fromLiteral [6, 9]
 
-test_elementwise_division : IO ()
-test_elementwise_division = do
-  F64.testElementwiseBinary "(/)" (/) (/)
-
 test_scalar_division : IO ()
 test_scalar_division = do
   let l : Literal _ _ = [[-3.3], [0.0], [0.3]]
@@ -826,18 +830,15 @@ test_scalar_division = do
     pure $ assertAll "/ for scalar" $
       sufficientlyEq (fromLiteral l / fromLiteral r) (fromLiteral [| l / r |])
 
-test_pow : IO ()
-test_pow = do
-  let x = [[3.0, 4.0, -5.0], [0.0, 0.3, 0.0]]
-      y = [[1.0, -2.3, 0.2], [0.1, 0.0, 2.0]]
-      expected = fromLiteral [| pow x y |]
-  assertAll ("^ for F64 array") $ sufficientlyEq (fromLiteral x ^ fromLiteral y) expected
-
-  sequence_ $ do
-    l <- the (List $ Literal [] Double) [-3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4]
-    r <- the (List $ Literal [] Double) [-3.4, -1.1, -0.1, 0.1, 1.1, 3.4]
-    pure $ assertAll ("^ for F64 scalar " ++ show l ++ " " ++ show r) $
-      sufficientlyEq (fromLiteral l ^ fromLiteral r) $ fromLiteral [| pow l r |]
+export covering
+test_pow : Property
+test_pow = property $ do
+  shape <- forAll shapes
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| pow x y |] === toLiteral (x' ^ y')
 
 test_abs : IO ()
 test_abs = do
@@ -917,10 +918,22 @@ test_erf = do
 min' : Double -> Double -> Double
 min' x y = if (x /= x) then x else if (y /= y) then y else min x y
 
-test_min : IO ()
-test_min = do
-  S32.testElementwiseBinary "min" min min
-  F64.testElementwiseBinary "min" min' min
+covering
+test_min : Property
+test_min = property $ do
+  shape <- forAll shapes
+
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| min' x y |] === toLiteral (min x' y')
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| min x y |] === toLiteral (min x' y')
 
 test_Min : IO ()
 test_Min = do
@@ -931,10 +944,22 @@ test_Min = do
 max' : Double -> Double -> Double
 max' x y = if (x /= x) then x else if (y /= y) then y else max x y
 
-test_max : IO ()
-test_max = do
-  S32.testElementwiseBinary "max" max max
-  F64.testElementwiseBinary "max" max' max
+covering
+test_max : Property
+test_max = property $ do
+  shape <- forAll shapes
+
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| max' x y |] === toLiteral (max x' y')
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| max x y |] === toLiteral (max x' y')
 
 test_Max : IO ()
 test_Max = do
@@ -1007,10 +1032,21 @@ export covering
 test : IO Bool
 test = checkGroup $ MkGroup "Tensor" [
     ("test_fromLiteral_toLiteral", test_fromLiteral_toLiteral),
+    ("test_equality", test_equality),
+    ("test_inequality", test_inequality),
+    ("test_less_than", test_less_than),
+    ("test_less_than_equal", test_less_than_equal),
+    ("test_greater_than", test_greater_than),
+    ("test_greater_than_equal", test_greater_than_equal),
     ("test_addition", test_addition),
+    ("test_and", test_and),
+    ("test_or", test_or),
     ("test_subtraction", test_subtraction),
     ("test_multiplication", test_multiplication),
-    ("test_division", test_division)
+    ("test_division", test_division),
+    ("test_min", test_min),
+    ("test_max", test_max),
+    ("test_pow", test_pow)
   ]
 
 export
@@ -1033,21 +1069,13 @@ test' = do
   test_map
   test_map2
   test_reduce
-  test_elementwise_equality
-  test_elementwise_inequality
-  test_comparison
   Vector.test_dot
   Matrix.test_dot
   test_Sum
-  test_elementwise_multiplication
   test_scalar_multiplication
   test_Prod
-  test_elementwise_division
   test_scalar_division
-  test_pow
-  test_elementwise_and
   test_All
-  test_elementwise_or
   test_Any
   test_elementwise_not
   test_select
@@ -1056,9 +1084,7 @@ test' = do
   test_negate
   testElementwiseUnaryDoubleCases
   test_erf
-  test_min
   test_Min
-  test_max
   test_Max
   test_cholesky
   test_triangularsolve
