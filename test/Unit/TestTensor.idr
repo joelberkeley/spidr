@@ -672,26 +672,24 @@ test_division = property $ do
       y' = fromLiteral {dtype=F64} y
   [| x / y |] === toLiteral (x' / y')
 
--- export
--- test_Sum : IO ()
--- test_Sum = do
---   shape <- forAll shapes
+covering
+test_Sum : Property
+test_Sum = property $ do
+  shape <- forAll shapes
 
---   let doubles = literal shape doubles
---   [x, y] <- forAll (np [doubles, doubles])
---   let x' = fromLiteral {dtype=F64} x
---       y' = fromLiteral {dtype=F64} y
---       right = (<+>) @{Sum} x (neutral @{Sum})
---   toLiteral right == x
---   toLiteral
---   toLiteral $ (<+>) @{Sum} (neutral @{Sum}) x == x
---   [| x * y |] === toLiteral (x' * y')
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral {dtype=F64} x
+      right = (<+>) @{Sum} x' (neutral @{Sum})
+      left = (<+>) @{Sum} (neutral @{Sum}) x'
+  toLiteral right === x
+  toLiteral left === x
 
---   let ints = literal shape ints
---   [x, y] <- forAll (np [ints, ints])
---   let x' = fromLiteral {dtype=S32} x
---       y' = fromLiteral {dtype=S32} y
---   [| x * y |] === toLiteral (x' * y')
+  x <- forAll (literal shape ints)
+  let x' = fromLiteral {dtype=S32} x
+      right = (<+>) @{Sum} x' (neutral @{Sum})
+      left = (<+>) @{Sum} (neutral @{Sum}) x'
+  toLiteral right === x
+  toLiteral left === x
 
 covering
 test_scalar_multiplication : Property
@@ -705,11 +703,24 @@ test_scalar_multiplication = property $ do
           scalar' = fromLiteral {dtype=F64} (Scalar scalar)
       map (scalar *) lit === toLiteral (scalar' * lit')
 
-test_Prod : IO ()
-test_Prod = do
-  let x = fromLiteral {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-  assertAll "Prod neutral is neutral right" $ (<+>) @{Prod} x (neutral @{Prod}) == x
-  assertAll "Prod neutral is neutral left" $ (<+>) @{Prod} (neutral @{Prod}) x == x
+covering
+test_Prod : Property
+test_Prod = property $ do
+  shape <- forAll shapes
+
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral {dtype=F64} x
+      right = (<+>) @{Prod} x' (neutral @{Prod})
+      left = (<+>) @{Prod} (neutral @{Prod}) x'
+  toLiteral right === x
+  toLiteral left === x
+
+  x <- forAll (literal shape ints)
+  let x' = fromLiteral {dtype=S32} x
+      right = (<+>) @{Prod} x' (neutral @{Prod})
+      left = (<+>) @{Prod} (neutral @{Prod}) x'
+  toLiteral right === x
+  toLiteral left === x
 
 covering
 test_and : Property
@@ -1012,14 +1023,16 @@ test = checkGroup $ MkGroup "Tensor" $ [
     ("test_scalar_division", test_scalar_division),
     ("test_min", test_min),
     ("test_max", test_max),
-    ("test_pow", test_pow)
+    ("test_pow", test_pow),
+    ("Sum", test_Sum),
+    ("Prod", test_Prod)
   ]
 
 export
 test' : IO ()
 test' = do
-  test_show_graph
-  test_show_graphxla
+  -- test_show_graph
+  -- test_show_graphxla
   test_reshape
   test_slice
   test_index
@@ -1032,19 +1045,18 @@ test' = do
   test_broadcast
   test_squeeze
   test_T
-  test_map
-  test_map2
-  test_reduce
+  -- test_map
+  -- test_map2
+  -- test_reduce
   Vector.test_dot
   Matrix.test_dot
-  test_Prod
-  test_All
-  test_Any
+  -- test_All
+  -- test_Any
   test_select
   test_cond
   test_erf
-  test_Min
-  test_Max
+  -- test_Min
+  -- test_Max
   test_cholesky
   test_triangularsolve
   test_trace
