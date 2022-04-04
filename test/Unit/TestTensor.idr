@@ -20,9 +20,6 @@ import Data.Vect
 import System
 
 import Literal
-import Data.SOP
-import Data.Bounded
-import Hedgehog
 
 import Tensor
 
@@ -632,84 +629,21 @@ namespace Matrix
         r = fromLiteral {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
     assertAll "matrix dot matrix" $ l @@ r == fromLiteral [[ -7,  -2], [  8, -11]]
 
-test_add : IO ()
-test_add = do
-  S32.testElementwiseBinary "(+)" (+) (+)
-  F64.testElementwiseBinary "(+)" (+) (+)
-
--- export
--- test_abs_scalar : Property
--- test_abs_scalar =
---     let doubles = double (exponentialDoubleFrom (-9999) 0 9999)
---      in property $ do
---             x <- forAll doubles
---             let x' = fromLiteral {dtype=F64} x
---             toLiteral (abs x') === abs x
-
--- export
--- test_abs_vector : Property
--- test_abs_vector =
---     let doubles = vect 4 (double (exponentialDoubleFrom (-9999) 0 9999))
---      in property $ do
---             [x, y] <- forAll (np [doubles, doubles])
---             let x' = fromLiteral {dtype=F64} x
---                 res = toLiteral (abs x')
---             res === map abs x
-
--- export
--- scalarAddition : Property
--- scalarAddition =
---     let doubles = double (exponentialDoubleFrom (-9999) 0 9999)
---      in property $ do
---             [x, y] <- forAll (np [doubles, doubles])
---             let x' = fromLiteral {dtype=F64} x
---                 y' = fromLiteral {dtype=F64} y
---             [| x + y |] === toLiteral (x' + y')
-
--- export
--- vectorAddition : Property
--- vectorAddition =
---     let doubles = vect 4 (double (exponentialDoubleFrom (-9999) 0 9999))
---      in property $ do
---             [x, y] <- forAll (np [doubles, doubles])
---             let x' = fromLiteral {dtype=F64} x
---                 y' = fromLiteral {dtype=F64} y
---             [| x + y |] === toLiteral (x' + y')
-
--- export
--- arrayAddition : Property
--- arrayAddition =
---     let doubles = vect 3 (vect 4 (double (exponentialDoubleFrom (-9999) 0 9999)))
---      in property $ do
---             [x, y] <- forAll (np [doubles, doubles])
---             let x' = fromLiteral {dtype=F64} x
---                 y' = fromLiteral {dtype=F64} y
---             [| x + y |] === toLiteral (x' + y')
-
-maxRank : Nat
-maxRank = 5
-
-maxDim : Nat
-maxDim = 20
-
-covering
-literal : (shape : Shape) -> Gen a -> Gen (Literal shape a)
-literal [] gen = map Scalar gen
-literal (0 :: _) gen = pure []
-literal (S d :: ds) gen = [| literal ds gen :: literal (d :: ds) gen |]
-
-doubles' : Gen Double
-doubles' = double (exponentialDoubleFrom (-9999) 0 9999)
-
 export covering
 test_addition : Property
 test_addition = property $ do
-    shape <- forAll $ list (linear 0 maxRank) (nat $ linear 0 maxDim)
-    let doubles = literal shape doubles'
-    [x, y] <- forAll (np [doubles, doubles])
-    let x' = fromLiteral {dtype=F64} x
-        y' = fromLiteral {dtype=F64} y
-    [| x + y |] === toLiteral (x' + y')
+  shape <- forAll shapes
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x + y |] === toLiteral (x' + y')
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x + y |] === toLiteral (x' + y')
 
 export
 test_Sum : IO ()
@@ -1088,7 +1022,6 @@ test = do
   test_comparison
   Vector.test_dot
   Matrix.test_dot
-  test_add
   test_Sum
   test_subtract
   test_elementwise_multiplication

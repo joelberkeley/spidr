@@ -19,15 +19,12 @@ import Util.Hashable
 
 import Utils
 
-test_hash_double : IO ()
-test_hash_double = do
-  sequence_ $ do
-    x <- doubles
-    y <- doubles
-    pure $ assert "hash for Double \{show x} \{show y}" $
-      (hash x == hash y) == (let bothNan = x /= x && y /= y in bothNan || x == y)
+test_hash_double : Property
+test_hash_double = property $ do
+    [x, y] <- forAll (np [doubles, doubles])
+    (hash x == hash y) === (let bothNan = x /= x && y /= y in bothNan || x == y)
 
 export
-test : IO ()
+test : Property
 test = do
   test_hash_double

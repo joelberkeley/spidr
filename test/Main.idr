@@ -30,19 +30,18 @@ import Utils
 covering
 main : IO ()
 main = do
-  Utils.test
+  -- Utils.test
 
-  Unit.TestUtil.test
-  Unit.Util.TestHashable.test
-  Unit.TestLiteral.test
-  Unit.TestTensor.test
-  Unit.Model.TestKernel.test
-  Unit.TestDistribution.test
-
-  putStrLn "Old style tests passed\n\n"
+  -- Unit.TestUtil.test
+  -- Unit.Util.TestHashable.test
+  -- Unit.TestLiteral.test
+  -- Unit.TestTensor.test
+  -- Unit.Model.TestKernel.test
+  -- Unit.TestDistribution.test
 
   _ <- checkGroup $ MkGroup "All" [
-    ("test_addition", test_addition)
+    ("Tensor", test_addition),
+    ("Hashable", Unit.Util.TestHashable.test)
   ]
 
   pure ()

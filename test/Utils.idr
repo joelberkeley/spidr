@@ -19,8 +19,45 @@ import System
 
 import Data.Hashable
 
+import public Data.SOP
+import Data.Bounded
+import public Hedgehog
 import Literal
 import Tensor
+
+maxRank : Nat
+maxRank = 5
+
+maxDim : Nat
+maxDim = 20
+
+export
+shapes : Gen Shape
+shapes = list (linear 0 maxRank) (nat $ linear 0 maxDim)
+
+export covering
+literal : (shape : Shape) -> Gen a -> Gen (Literal shape a)
+literal [] gen = map Scalar gen
+literal (0 :: _) gen = pure []
+literal (S d :: ds) gen = [| literal ds gen :: literal (d :: ds) gen |]
+
+pow : Prelude.Num ty => ty -> Nat -> ty
+pow x Z = x
+pow x (S k) = x * pow x k
+
+intBound : Int
+intBound = pow 2 29
+
+export
+ints : Gen Int
+ints = int $ linear (-intBound) intBound
+
+doubleBound : Double
+doubleBound = 9999
+
+export
+doubles : Gen Double
+doubles = double (exponentialDoubleFrom (-doubleBound) 0 doubleBound)
 
 export
 assert : String -> Bool -> IO ()
@@ -40,9 +77,10 @@ export
 bools : List (Literal [] Bool)
 bools = [True, False]
 
-export
-ints : List (Literal [] Int)
-ints = [-3, -1, 0, 1, 3]
+namespace Literal
+  export
+  ints : List (Literal [] Int)
+  ints = [-3, -1, 0, 1, 3]
 
 namespace Double
   export
