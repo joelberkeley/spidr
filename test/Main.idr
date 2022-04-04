@@ -28,20 +28,17 @@ import Unit.TestUtil
 import Utils
 
 covering
-main : IO ()
+main : IO Bool
 main = do
   -- Utils.test
 
   -- Unit.TestUtil.test
   -- Unit.Util.TestHashable.test
   -- Unit.TestLiteral.test
-  -- Unit.TestTensor.test
   -- Unit.Model.TestKernel.test
   -- Unit.TestDistribution.test
 
-  _ <- checkGroup $ MkGroup "All" [
-    ("Tensor", test_addition),
-    ("Hashable", Unit.Util.TestHashable.test)
+  map (all id) $ sequence [
+    Unit.Util.TestHashable.test,
+    Unit.TestTensor.test
   ]
-
-  pure ()

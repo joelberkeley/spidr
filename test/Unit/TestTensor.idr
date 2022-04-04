@@ -25,30 +25,19 @@ import Tensor
 
 import Utils
 
-test_fromLiteral_toLiteral : IO ()
-test_fromLiteral_toLiteral = do
-  let x = [[True, False, False], [False, True, False]]
-      x' = toLiteral $ fromLiteral {dtype=PRED} x
-  assert "fromLiteral toLiteral returns original Bool" (x' == x)
+covering
+test_fromLiteral_toLiteral : Property
+test_fromLiteral_toLiteral = property $ do
+  shape <- forAll shapes
 
-  let x =  [[1, 15, 5], [-1, 7, 6]]
-      x' = toLiteral $ fromLiteral {dtype=S32} x
-  assert "fromLiteral toLiteral returns original Int" (x' == x)
+  x <- forAll (literal shape doubles)
+  x === toLiteral $ fromLiteral {dtype=F64} x
 
-  let name = "fromLiteral toLiteral returns original Double"
-      x = toLiteral $ fromLiteral {dtype=F64} [[-1.5], [1.3], [4.3]]
-  assert name $ all [| sufficientlyEq x [[-1.5], [1.3], [4.3]] |]
+  x <- forAll (literal shape ints)
+  x === toLiteral $ fromLiteral {dtype=S32} x
 
-  let name = "fromLiteral toLiteral returns original scalar"
-  traverse_ (\x =>
-      let x' = toLiteral (fromLiteral {dtype=PRED} x)
-       in assert name (x == x')
-    ) bools
-  traverse_ (\x => let x' = toLiteral (fromLiteral {dtype=S32} x) in assert name (x == x')) ints
-  traverse_ (\x =>
-      let x' = toLiteral (fromLiteral {dtype=F64} x)
-       in assert name $ all [| sufficientlyEq x x' |]
-    ) doubles
+  x <- forAll (literal shape bool)
+  x === toLiteral $ fromLiteral {dtype=PRED} x
 
 test_show_graph : IO ()
 test_show_graph = do
@@ -633,6 +622,7 @@ export covering
 test_addition : Property
 test_addition = property $ do
   shape <- forAll shapes
+
   let doubles = literal shape doubles
   [x, y] <- forAll (np [doubles, doubles])
   let x' = fromLiteral {dtype=F64} x
@@ -645,39 +635,56 @@ test_addition = property $ do
       y' = fromLiteral {dtype=S32} y
   [| x + y |] === toLiteral (x' + y')
 
+export covering
+test_subtraction : Property
+test_subtraction = property $ do
+  shape <- forAll shapes
+
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x - y |] === toLiteral (x' - y')
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x - y |] === toLiteral (x' - y')
+
+export covering
+test_multiplication : Property
+test_multiplication = property $ do
+  shape <- forAll shapes
+
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x * y |] === toLiteral (x' * y')
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x * y |] === toLiteral (x' * y')
+
+export covering
+test_division : Property
+test_division = property $ do
+  shape <- forAll shapes
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x / y |] === toLiteral (x' / y')
+
 export
 test_Sum : IO ()
 test_Sum = do
   let x = fromLiteral {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
   assertAll "Sum neutral is neutral right" $ (<+>) @{Sum} x (neutral @{Sum}) == x
   assertAll "Sum neutral is neutral left" $ (<+>) @{Sum} (neutral @{Sum}) x == x
-
-test_subtract : IO ()
-test_subtract = do
-  let l = fromLiteral [[1, 15, 5], [-1, 7, 6]]
-      r = fromLiteral [[11, 5, 7], [-3, -4, 0]]
-  assertAll "- for S32 matrix" $
-    (l - r) == fromLiteral {dtype=S32} [[-10, 10, -2], [2, 11, 6]]
-
-  let l = fromLiteral [1.8, 1.3, 4.0]
-      r = fromLiteral [-3.3, 0.0, 0.3]
-      diff = toLiteral {dtype=F64} (l - r)
-  assert "- for F64 matrix" $ all [| sufficientlyEq diff [5.1, 1.3, 3.7] |]
-
-  sequence_ $ do
-    l <- ints
-    r <- ints
-    pure $ assertAll "- for S32 scalar" $
-      (fromLiteral l - fromLiteral r) == fromLiteral {dtype=S32} [| l - r |]
-
-  sequence_ $ do
-    l <- doubles
-    r <- doubles
-    pure $
-      let diff = toLiteral (fromLiteral {dtype=F64} l - fromLiteral r)
-       -- this means we can drop sufficientlyEq for everything but Double, and just test using
-       -- Literals. This also means we can test abs, ==, fill etc. normally!!!
-       in assert "- for F64 scalar" $ all [| sufficientlyEq diff [| l - r |] |]
 
 test_elementwise_multiplication : IO ()
 test_elementwise_multiplication = do
@@ -996,10 +1003,19 @@ test_trace : IO ()
 test_trace = do
   assertAll "trace" $ trace (fromLiteral {dtype=S32} [[-1, 5], [1, 4]]) == 3
 
+export covering
+test : IO Bool
+test = checkGroup $ MkGroup "Tensor" [
+    ("test_fromLiteral_toLiteral", test_fromLiteral_toLiteral),
+    ("test_addition", test_addition),
+    ("test_subtraction", test_subtraction),
+    ("test_multiplication", test_multiplication),
+    ("test_division", test_division)
+  ]
+
 export
-test : IO ()
-test = do
-  test_fromLiteral_toLiteral
+test' : IO ()
+test' = do
   test_show_graph
   test_show_graphxla
   test_reshape
@@ -1023,7 +1039,6 @@ test = do
   Vector.test_dot
   Matrix.test_dot
   test_Sum
-  test_subtract
   test_elementwise_multiplication
   test_scalar_multiplication
   test_Prod

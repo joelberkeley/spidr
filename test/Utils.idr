@@ -46,7 +46,7 @@ pow x Z = x
 pow x (S k) = x * pow x k
 
 intBound : Int
-intBound = pow 2 29
+intBound = pow 2 10
 
 export
 ints : Gen Int

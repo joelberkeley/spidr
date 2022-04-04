@@ -25,6 +25,7 @@ test_hash_double = property $ do
     (hash x == hash y) === (let bothNan = x /= x && y /= y in bothNan || x == y)
 
 export
-test : Property
-test = do
-  test_hash_double
+test : IO Bool
+test = checkGroup $ MkGroup "Hashable" [
+    ("test_hash_double", test_hash_double)
+  ]
