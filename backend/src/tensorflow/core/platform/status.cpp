@@ -13,18 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "tensorflow/core/common_runtime/gpu/gpu_init.h"
+#include "tensorflow/core/platform/status.h"
 
-#include "../../platform/status.h"
-#include "../../../stream_executor/platform.h"
+#include "status.h"
 
 extern "C" {
-    Status* ValidateGPUMachineManager() {
-        tensorflow::Status status = tensorflow::ValidateGPUMachineManager();
-        return reinterpret_cast<Status*>(new tensorflow::Status(status));
+    void Status_delete(Status* status) {
+        delete reinterpret_cast<tensorflow::Status*>(status);
     }
 
-    Platform* GPUMachineManager() {
-        return reinterpret_cast<Platform*>(tensorflow::GPUMachineManager());
+    int Status_ok(Status& status) {
+        return (int) reinterpret_cast<tensorflow::Status&>(status).ok();
     }
 }

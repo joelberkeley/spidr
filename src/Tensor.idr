@@ -34,6 +34,7 @@ import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
 import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.Core.Platform.Status
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
@@ -74,14 +75,6 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = fromLiteral . Scalar . fromInteger
 
-||| The type of device to execute graphs on.
-public export
-data Device = CPU | GPU
-
-prim__getPlatform : Device -> IO AnyPtr
-prim__getPlatform CPU = primIO $ prim__getPlatform "Host"
-prim__getPlatform GPU = primIO prim__gpuMachineManager
-
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computation graph.
 |||
@@ -95,12 +88,14 @@ prim__getPlatform GPU = primIO prim__gpuMachineManager
 |||
 ||| @device The type of device to execute the graph on.
 export
-toLiteral : {default CPU device : Device} -> PrimitiveRW dtype ty =>
-            Tensor shape dtype -> Literal shape ty
+toLiteral :
+  {default cpu device : Device} ->
+  PrimitiveRW dtype ty =>
+  Tensor shape dtype ->
+  Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
-  platform <- prim__getPlatform device
-  client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
+  client <- primIO $ prim__getOrCreateLocalClient (platform device) prim__getNullAnyPtr 0
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
   pure (toLiteral {dtype} lit)
 

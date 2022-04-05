@@ -20,5 +20,9 @@ import System.FFI
 import Compiler.FFI
 
 export
+%foreign (libxla "ValidateGPUMachineManager")
+prim__validateGPUMachineManager : PrimIO AnyPtr
+
+export
 %foreign (libxla "GPUMachineManager")
 prim__gpuMachineManager : PrimIO AnyPtr

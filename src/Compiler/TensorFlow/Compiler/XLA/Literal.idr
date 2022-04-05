@@ -50,12 +50,7 @@ literalGetBool : GCAnyPtr -> GCPtr Int -> Int
 export
 LiteralPrimitiveRW PRED Bool where
   set lit idxs x = prim__literalSetBool lit idxs (if x then 1 else 0)
-  get lit idxs = case literalGetBool lit idxs of
-    0 => False
-    1 => True
-    x => (assert_total idris_crash) (
-           "Internal error: expected 0 or 1 from XLA C API for boolean conversion, got " ++ show x
-         )
+  get lit idxs = cIntToBool (literalGetBool lit idxs)
 
 %foreign (libxla "Literal_Set_double")
 prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()

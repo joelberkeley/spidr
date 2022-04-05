@@ -1,4 +1,4 @@
-/*
+{--
 Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,23 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "tensorflow/core/common_runtime/gpu/gpu_init.h"
+--}
+module Compiler.TensorFlow.Core.Platform.Status
 
-#include "../../platform/status.h"
-#include "../../../stream_executor/platform.h"
+import System.FFI
 
-extern "C" {
-    Status* ValidateGPUMachineManager() {
-        tensorflow::Status status = tensorflow::ValidateGPUMachineManager();
-        return reinterpret_cast<Status*>(new tensorflow::Status(status));
-    }
+import Compiler.FFI
 
-    Platform* GPUMachineManager() {
-        return reinterpret_cast<Platform*>(tensorflow::GPUMachineManager());
-    }
-}
+%foreign (libxla "Status_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
+export
+delete : AnyPtr -> IO ()
+delete = primIO . prim__delete
+
+%foreign (libxla "Status_ok")
+prim__okImpl : GCAnyPtr -> Int
+
+export
+prim__ok : GCAnyPtr -> Bool
+prim__ok = cIntToBool . prim__okImpl

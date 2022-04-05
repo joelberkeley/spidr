@@ -17,6 +17,7 @@ cc_binary(
     linkshared = True,
     srcs = [
         "//src/tensorflow/core/common_runtime/gpu:gpu",
+        "//src/tensorflow/core/platform:platform",
         "//src/tensorflow/compiler/xla:xla",
         "//src/tensorflow/compiler/xla/client:client",
         "//src/tensorflow/compiler/xla/client/lib:lib",
@@ -26,6 +27,7 @@ cc_binary(
     ],
     deps = [
         "//src/tensorflow/core/common_runtime/gpu:gpu",
+        "//src/tensorflow/core/platform:platform",
         "//src/tensorflow/compiler/xla:xla",
         "//src/tensorflow/compiler/xla/client:client",
         "//src/tensorflow/compiler/xla/client/lib:lib",
