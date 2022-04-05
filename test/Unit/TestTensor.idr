@@ -18,6 +18,7 @@ module Unit.TestTensor
 import Data.Nat
 import System
 
+import Device
 import Literal
 import Tensor
 

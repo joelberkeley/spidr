@@ -15,6 +15,10 @@ limitations under the License.
 --}
 module Device
 
+import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
+import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.Core.Platform.Status
+
 ||| A computational device, such as a CPU or GPU.
 export
 data Device = CPU AnyPtr | GPU AnyPtr

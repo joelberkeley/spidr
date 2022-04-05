@@ -17,6 +17,7 @@ module Utils
 
 import System
 
+import Device
 import Literal
 import Tensor
 

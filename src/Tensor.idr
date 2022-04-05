@@ -25,6 +25,7 @@ import public Data.List.Elem
 import Decidable.Equality
 import System.FFI
 
+import Device
 import Error
 import Literal
 import public Primitive
@@ -33,14 +34,11 @@ import public Util
 import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
-import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.TensorFlow.Core.Platform.Status
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
 import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
-import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
 import public Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 

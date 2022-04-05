@@ -17,6 +17,7 @@ module Unit.TestDistribution
 
 import Utils
 
+import Device
 import Literal
 import Tensor
 import Distribution
