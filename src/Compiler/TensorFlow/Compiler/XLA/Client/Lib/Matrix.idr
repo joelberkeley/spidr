@@ -13,15 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.XLA.Shape
+module Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 
 import System.FFI
 
 import Compiler.FFI
 
-%foreign (libxla "Shape_delete")
-prim__delete : AnyPtr -> PrimIO ()
+export
+%foreign (libxla "IdentityMatrix")
+prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+%foreign (libxla "GetMatrixDiagonal")
+prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Triangle")
+prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr

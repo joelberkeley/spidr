@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.XLA.Client.XlaBuilder
+module Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
 
 import System.FFI
 
 import Compiler.FFI
 import Compiler.Graph
-import Compiler.TensorFlow.XLA.Client.XlaComputation
-import Compiler.TensorFlow.XLA.Literal
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+import Compiler.TensorFlow.Compiler.XLA.Literal
 import Types
 import Util
 

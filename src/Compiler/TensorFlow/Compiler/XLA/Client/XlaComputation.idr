@@ -13,12 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.XLA.Client.Lib.Math
+module Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
 
 import System.FFI
 
 import Compiler.FFI
 
+%foreign (libxla "XlaComputation_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
 export
-%foreign (libxla "Erf")
-prim__erf : GCAnyPtr -> PrimIO AnyPtr
+delete : AnyPtr -> IO ()
+delete = primIO . prim__delete

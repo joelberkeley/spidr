@@ -34,14 +34,14 @@ import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
 import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.TensorFlow.XLA.Client.Lib.Math
-import Compiler.TensorFlow.XLA.Client.Lib.Matrix
-import Compiler.TensorFlow.XLA.Client.ClientLibrary
-import Compiler.TensorFlow.XLA.Client.LocalClient
-import Compiler.TensorFlow.XLA.Client.XlaBuilder
-import Compiler.TensorFlow.XLA.Service.PlatformUtil
-import public Compiler.TensorFlow.XLA.Literal
-import Compiler.TensorFlow.XLA.ShapeUtil
+import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
+import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
+import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
+import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
+import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
+import public Compiler.TensorFlow.Compiler.XLA.Literal
+import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
 

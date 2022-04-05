@@ -23,8 +23,8 @@ module Primitive
 
 import Data.Hashable
 
-import Compiler.TensorFlow.XLA.Literal
-import public Compiler.TensorFlow.XLA.XlaData
+import Compiler.TensorFlow.Compiler.XLA.Literal
+import public Compiler.TensorFlow.Compiler.XLA.XlaData
 import public Util.Hashable
 
 %hide Prelude.Num

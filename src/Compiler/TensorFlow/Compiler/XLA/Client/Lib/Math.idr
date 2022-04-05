@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.XLA.Service.PlatformUtil
+module Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 
 import System.FFI
 
 import Compiler.FFI
 
 export
-%foreign (libxla "PlatformUtil_GetPlatform")
-prim__getPlatform : String -> PrimIO AnyPtr
+%foreign (libxla "Erf")
+prim__erf : GCAnyPtr -> PrimIO AnyPtr
