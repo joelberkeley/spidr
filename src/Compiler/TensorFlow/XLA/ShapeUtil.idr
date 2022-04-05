@@ -13,15 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.Client.XlaComputation
+module Compiler.TensorFlow.XLA.ShapeUtil
 
 import System.FFI
 
 import Compiler.FFI
+import Compiler.TensorFlow.XLA.Shape
+import Compiler.TensorFlow.XLA.XlaData
+import Types
 
-%foreign (libxla "XlaComputation_delete")
-prim__delete : AnyPtr -> PrimIO ()
+%foreign (libxla "MakeShape")
+prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+mkShape : HasIO io => Primitive dtype => Shape -> io GCAnyPtr
+mkShape shape = do
+  let dtype_enum = xlaIdentifier {dtype}
+  shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))
+  onCollectAny shape_ptr Shape.delete

@@ -13,20 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.Client.Lib.Matrix
+module Compiler.TensorFlow.XLA.Client.Lib.Math
 
 import System.FFI
 
 import Compiler.FFI
 
 export
-%foreign (libxla "IdentityMatrix")
-prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
-
-export
-%foreign (libxla "GetMatrixDiagonal")
-prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
-
-export
-%foreign (libxla "Triangle")
-prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr
+%foreign (libxla "Erf")
+prim__erf : GCAnyPtr -> PrimIO AnyPtr

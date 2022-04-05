@@ -13,12 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Core.CommonRuntime.GPU.GPUInit
+module Compiler.TensorFlow.XLA.Client.ClientLibrary
 
 import System.FFI
 
 import Compiler.FFI
+import Compiler.TensorFlow.XLA.Client.LocalClient
 
 export
-%foreign (libxla "GPUMachineManager")
-prim__gpuMachineManager : PrimIO AnyPtr
+%foreign (libxla "ClientLibrary_GetOrCreateLocalClient")
+prim__getOrCreateLocalClient : AnyPtr -> AnyPtr -> Int -> PrimIO LocalClient

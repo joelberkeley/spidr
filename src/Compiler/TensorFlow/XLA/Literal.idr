@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.Literal
+module Compiler.TensorFlow.XLA.Literal
 
 import System.FFI
 
 import Compiler.FFI
-import Compiler.XLA.Shape
-import Compiler.XLA.ShapeUtil
-import Compiler.XLA.XlaData
+import Compiler.TensorFlow.XLA.Shape
+import Compiler.TensorFlow.XLA.ShapeUtil
+import Compiler.TensorFlow.XLA.XlaData
 import Literal
 import Types
 import Util

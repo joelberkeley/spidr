@@ -13,12 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.Service.PlatformUtil
+module Compiler.TensorFlow.XLA.Shape
 
 import System.FFI
 
 import Compiler.FFI
 
+%foreign (libxla "Shape_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
 export
-%foreign (libxla "PlatformUtil_GetPlatform")
-prim__getPlatform : String -> PrimIO AnyPtr
+delete : AnyPtr -> IO ()
+delete = primIO . prim__delete
