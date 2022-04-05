@@ -15,6 +15,6 @@ limitations under the License.
 */
 extern "C" {
     struct Status;
-    void Status_delete(Status& status);
+    void Status_delete(Status* status);
     int Status_ok(Status& status);
 }
