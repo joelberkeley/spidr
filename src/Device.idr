@@ -15,7 +15,7 @@ limitations under the License.
 --}
 module Device
 
-||| The type of device to execute graphs on.
+||| A computational device, such as a CPU or GPU.
 export
 data Device = CPU AnyPtr | GPU AnyPtr
 

@@ -25,6 +25,6 @@
 
 ## Additional steps for execution on GPU
 
-**Note:** We have only tested this on a single GPU. Multiple GPUs may work, but it also may not.
+**Note:** We have only tested this on a single GPU.
 
 9. Install the NVIDIA prerequisites for running TensorFlow on GPU, as listed on the TensorFlow GPU [installation page](https://www.tensorflow.org/install/gpu). **There is no need to install TensorFlow itself**.
