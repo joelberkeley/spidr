@@ -1,6 +1,6 @@
 # Installation
 
-**Note:** these installation instructions may have changed since the latest release. Navigate to the latest git tag for accurate instructions.
+**Note:** these instructions may have changed since the latest release. Navigate to the instructions at the latest git tag for accurate details.
 
 ## Install the spidr frontend
 
@@ -27,4 +27,4 @@
 
 **Note:** We have only tested this on a single GPU. Multiple GPUs may work, but it also may not.
 
-9. Install the prerequisites for running TensorFlow on GPU, as listed on the TensorFlow GPU [installation page](https://www.tensorflow.org/install/gpu). **There is no need to install TensorFlow itself**.
+9. Install the NVIDIA prerequisites for running TensorFlow on GPU, as listed on the TensorFlow GPU [installation page](https://www.tensorflow.org/install/gpu). **There is no need to install TensorFlow itself**.
