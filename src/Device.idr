@@ -19,16 +19,16 @@ import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
 import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 import Compiler.TensorFlow.Core.Platform.Status
 
-||| A computational device, such as a CPU or GPU.
+||| A handle to an installed computational device, such as a CPU or GPU.
 export
 data Device = CPU AnyPtr | GPU AnyPtr
 
--- how to make private?
 export
 platform : Device -> AnyPtr
 platform (CPU ptr) = ptr
 platform (GPU ptr) = ptr
 
+||| A handle to an installed GPU, if present.
 export
 gpu : Maybe Device
 -- unsafePerformIO is safe as long as it's the only way to get a `GPU`
@@ -41,6 +41,7 @@ gpu = unsafePerformIO $ do
       pure (Just (GPU ptr))
     False => pure Nothing
 
+||| A handle to the host CPU.
 export
 cpu : Device
 -- unsafePerformIO is safe as long as it's the only way to get a `CPU`
