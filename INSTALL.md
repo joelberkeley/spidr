@@ -2,7 +2,7 @@
 
 **Note:** these instructions may have changed since the latest release. Navigate to the instructions at the latest git tag for accurate details.
 
-## Install the spidr frontend
+## Install the Idris frontend
 
 1. Clone or download the spidr source code at tag v0.0.4 with, for example,
    ```bash
