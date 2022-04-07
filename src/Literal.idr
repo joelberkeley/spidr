@@ -60,16 +60,19 @@ Functor (Literal shape) where
   map _ [] = []
   map f (x :: y) = (map f x) :: (map f y)
 
+apply : Literal shape (a -> b) -> Literal shape a -> Literal shape b
+apply (Scalar f) (Scalar x) = Scalar (f x)
+apply [] [] = []
+apply (f :: fs) (x :: xs) = apply f x :: apply fs xs
+
 export
 {shape : Shape} -> Applicative (Literal shape) where
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
-    ((S d) :: ds) => assert_total $ pure x :: pure x
+    (S _ :: _) => assert_total $ pure x :: pure x
 
-  (Scalar f) <*> (Scalar x) = Scalar (f x)
-  _ <*> [] = []
-  (fx :: fy) <*> (x :: y) = (fx <*> x) :: (fy <*> y)
+  (<*>) = apply
 
 export
 Foldable (Literal shape) where
@@ -93,8 +96,8 @@ negate : Neg a => Literal shape a -> Literal shape a
 negate = map negate
 
 export
-{shape : _} -> Eq a => Eq (Literal shape a) where
-  x == y = all [| x == y |]
+Eq a => Eq (Literal shape a) where
+  x == y = all (map (==) x `apply` y)
 
 toVect : Literal (d :: ds) a -> Vect d (Literal ds a)
 toVect [] = []
@@ -105,8 +108,8 @@ export
 {shape : _} -> Show a => Show (Literal shape a) where
   show = showWithIndent "" where
     showWithIndent : {shape : _} -> String -> Literal shape a -> String
-    showWithIndent {shape=[]} _ (Scalar x) = show x
-    showWithIndent {shape=(0 :: _)} _ _ = "[]"
+    showWithIndent _ (Scalar x) = show x
+    showWithIndent _ [] = "[]"
     showWithIndent {shape=[S _]} _ x = show (toList x)
     showWithIndent {shape=(S d :: dd :: ddd)} indent (x :: xs) =
       let indent = " " ++ indent
@@ -122,11 +125,10 @@ export
     cast (x :: xs) | (S d :: ds) = cast x :: cast xs
 
 export
-[toArray] {shape : _} -> Cast (Literal shape a) (Array shape a) where
-  cast x with (shape)
-    cast (Scalar x) | [] = x
-    cast _ | (0 :: _) = []
-    cast (x :: xs) | (S d :: ds) = cast @{toArray} x :: cast @{toArray} xs
+[toArray] Cast (Literal shape a) (Array shape a) where
+  cast (Scalar x) = x
+  cast [] = []
+  cast (x :: y) = cast @{toArray} x :: cast @{toArray} y
 
 export
 Hashable a => Hashable (Literal shape a) where
