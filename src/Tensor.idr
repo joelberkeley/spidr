@@ -39,6 +39,9 @@ import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
 import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
+import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
+import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.Core.Platform.Status
 import public Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 
@@ -76,6 +79,8 @@ namespace S32
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computation graph.
 |||
+||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
+|||
 ||| **Note:**
 ||| * Each call to `toLiteral` will rebuild and execute the graph. Similarly, multiple calls to 
 |||   `toLiteral` on different `Tensor`s in a computation will be treated entirely independently.
@@ -83,14 +88,18 @@ namespace S32
 |||   the future.
 ||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
-|||
-||| @device The type of device to execute the graph on.
 export
-toLiteral : {default cpu device : Device} -> PrimitiveRW dtype ty =>
-            Tensor shape dtype -> Literal shape ty
+toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
+  status <- primIO prim__validateGPUMachineManager
+  status <- onCollectAny status Status.delete
+  platform <-
+    if prim__ok status
+    then primIO prim__gpuMachineManager
+    else primIO (prim__getPlatform "Host")
+
   computation <- build "" xs
-  client <- primIO $ prim__getOrCreateLocalClient (platform device) prim__getNullAnyPtr 0
+  client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
   pure (toLiteral {dtype} lit)
 
@@ -990,12 +999,14 @@ namespace Monoid
 ---------------------------- other ----------------------------------
 
 ||| Cholesky decomposition. Computes the lower triangular matrix `L` from the symmetric, positive
-||| semi-definite matrix `X` s.t. `X = L @@ L.T`.
+||| semi-definite matrix `X` s.t. `X = L @@ L.T`. Values will be NaN if the input matrix is not
+||| positive semi-definite. The remaining matrix components - those not in the lower triangle or
+||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 cholesky (MkTensor {shape=[S n, _]} graph xs) =
   let graph = Operation "cholesky" [graph] [S n, S n] (typeString {dtype=F64})
-   in MkTensor graph $ cached graph $ do
+   in triangle Lower $ MkTensor graph $ cached graph $ do
         res <- primIO $ prim__cholesky !xs 1
         onCollectAny res XlaOp.delete
 

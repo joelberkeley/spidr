@@ -925,7 +925,7 @@ test_Max = do
 test_cholesky : IO ()
 test_cholesky = do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
-      expected = fromLiteral [[nan, nan], [nan, nan]]
+      expected = fromLiteral [[nan, 0], [nan, nan]]
   assertAll "cholesky zero determinant" $ sufficientlyEq (cholesky x) expected
 
   -- example generated with tensorflow
