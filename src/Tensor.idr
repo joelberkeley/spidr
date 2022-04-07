@@ -90,10 +90,10 @@ namespace S32
 export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
-  status <- primIO prim__validateGPUMachineManager
-  status <- onCollectAny status Status.delete
+  gpuStatus <- primIO prim__validateGPUMachineManager
+  gpuStatus <- onCollectAny gpuStatus Status.delete
   platform <-
-    if prim__ok status
+    if prim__ok gpuStatus
     then primIO prim__gpuMachineManager
     else primIO (prim__getPlatform "Host")
 
