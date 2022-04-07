@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module Unit.Model.TestKernel
 
-import Device
 import Literal
 import Tensor
 import Model.Kernel
