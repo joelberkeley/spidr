@@ -86,11 +86,8 @@ namespace S32
 |||
 ||| @device The type of device to execute the graph on.
 export
-toLiteral :
-  {default cpu device : Device} ->
-  PrimitiveRW dtype ty =>
-  Tensor shape dtype ->
-  Literal shape ty
+toLiteral : {default cpu device : Device} -> PrimitiveRW dtype ty =>
+            Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
   client <- primIO $ prim__getOrCreateLocalClient (platform device) prim__getNullAnyPtr 0
