@@ -57,7 +57,10 @@ doubleBound = 9999
 
 export
 doubles : Gen Double
-doubles = double (exponentialDoubleFrom (-doubleBound) 0 doubleBound)
+doubles = frequency [
+    (4, double $ exponentialDoubleFrom (-doubleBound) 0 doubleBound),
+    (1, element [-1 / 0, 1 / 0, 0 / 0])
+  ]
 
 export
 assert : String -> Bool -> IO ()
@@ -203,3 +206,12 @@ test : IO ()
 test = do
   Double.test_sufficientlyEq
   Tensor.test_sufficientlyEq
+
+infix 1 ==~
+
+sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
+sufficientlyEq' x y = all [| sufficientlyEq x y |]
+
+export covering
+(==~) : Monad m => {shape : _} -> Literal shape Double -> Literal shape Double -> TestT m ()
+(==~) x y = diff x sufficientlyEq' y
