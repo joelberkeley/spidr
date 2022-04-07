@@ -13,10 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "local_client.h"
+#include "tensorflow/core/platform/status.h"
+
+#include "status.h"
 
 extern "C" {
-    LocalClient* ClientLibrary_GetOrCreateLocalClient(
-        Platform* platform, int* allowed_devices, int allowed_devices_len
-    );
+    void Status_delete(Status* status) {
+        delete reinterpret_cast<tensorflow::Status*>(status);
+    }
+
+    int Status_ok(Status& status) {
+        return (int) reinterpret_cast<tensorflow::Status&>(status).ok();
+    }
 }

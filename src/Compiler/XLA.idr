@@ -20,10 +20,10 @@ import Control.Monad.State
 import Data.SortedMap
 
 import Compiler.Graph
-import Compiler.XLA.Client.XlaBuilder
-import Compiler.XLA.Client.XlaComputation
-import Compiler.XLA.ShapeUtil
-import Compiler.XLA.XlaData
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
+import Compiler.TensorFlow.Compiler.XLA.XlaData
 import Types
 
 public export

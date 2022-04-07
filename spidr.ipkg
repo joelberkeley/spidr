@@ -11,16 +11,19 @@ modules =
 
   Compiler.FFI,
   Compiler.Graph,
-  Compiler.XLA.Client.Lib.Math,
-  Compiler.XLA.Client.Lib.Matrix,
-  Compiler.XLA.Client.ClientLibrary,
-  Compiler.XLA.Client.LocalClient,
-  Compiler.XLA.Client.XlaBuilder,
-  Compiler.XLA.Client.XlaComputation,
-  Compiler.XLA.Literal,
-  Compiler.XLA.Shape,
-  Compiler.XLA.ShapeUtil,
-  Compiler.XLA.XlaData,
+  Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math,
+  Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix,
+  Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary,
+  Compiler.TensorFlow.Compiler.XLA.Client.LocalClient,
+  Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder,
+  Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation,
+  Compiler.TensorFlow.Compiler.XLA.Literal,
+  Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil,
+  Compiler.TensorFlow.Compiler.XLA.Shape,
+  Compiler.TensorFlow.Compiler.XLA.ShapeUtil,
+  Compiler.TensorFlow.Compiler.XLA.XlaData,
+  Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit,
+  Compiler.XLA,
 
   Data,
   Distribution,
@@ -36,7 +39,6 @@ modules =
   Primitive,
   
   Tensor,
-  Compiler.XLA,
 
   Types,
   Util

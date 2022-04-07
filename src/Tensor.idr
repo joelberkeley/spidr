@@ -33,13 +33,16 @@ import public Util
 import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
-import Compiler.XLA.Client.Lib.Math
-import Compiler.XLA.Client.Lib.Matrix
-import Compiler.XLA.Client.ClientLibrary
-import Compiler.XLA.Client.LocalClient
-import Compiler.XLA.Client.XlaBuilder
-import public Compiler.XLA.Literal
-import Compiler.XLA.ShapeUtil
+import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
+import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
+import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
+import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
+import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
+import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.Core.Platform.Status
+import public Compiler.TensorFlow.Compiler.XLA.Literal
+import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 
 ----------------------------- core definitions ----------------------------
 
@@ -72,8 +75,10 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = fromLiteral . Scalar . fromInteger
 
-||| Evaluate a `Tensor`, returning its value as an `Literal`. This function builds and executes the
+||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computation graph.
+|||
+||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
 ||| **Note:**
 ||| * Each call to `toLiteral` will rebuild and execute the graph. Similarly, multiple calls to 
@@ -85,8 +90,15 @@ namespace S32
 export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
+  gpuStatus <- primIO prim__validateGPUMachineManager
+  gpuStatus <- onCollectAny gpuStatus Status.delete
+  platform <-
+    if prim__ok gpuStatus
+    then primIO prim__gpuMachineManager
+    else primIO (prim__getPlatform "Host")
+
   computation <- build "" xs
-  client <- primIO prim__localClientOrDie
+  client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
   lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
   pure (toLiteral {dtype} lit)
 
@@ -986,12 +998,14 @@ namespace Monoid
 ---------------------------- other ----------------------------------
 
 ||| Cholesky decomposition. Computes the lower triangular matrix `L` from the symmetric, positive
-||| semi-definite matrix `X` s.t. `X = L @@ L.T`.
+||| semi-definite matrix `X` s.t. `X = L @@ L.T`. Values will be NaN if the input matrix is not
+||| positive semi-definite. The remaining matrix components - those not in the lower triangle or
+||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 cholesky (MkTensor {shape=[S n, _]} graph xs) =
   let graph = Operation "cholesky" [graph] [S n, S n] (typeString {dtype=F64})
-   in MkTensor graph $ cached graph $ do
+   in triangle Lower $ MkTensor graph $ cached graph $ do
         res <- primIO $ prim__cholesky !xs 1
         onCollectAny res XlaOp.delete
 

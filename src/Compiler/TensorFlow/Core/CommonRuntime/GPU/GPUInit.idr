@@ -1,4 +1,4 @@
-/*
+{--
 Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "local_client.h"
+--}
+module Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 
-extern "C" {
-    LocalClient* ClientLibrary_GetOrCreateLocalClient(
-        Platform* platform, int* allowed_devices, int allowed_devices_len
-    );
-}
+import System.FFI
+
+import Compiler.FFI
+
+export
+%foreign (libxla "ValidateGPUMachineManager")
+prim__validateGPUMachineManager : PrimIO AnyPtr
+
+export
+%foreign (libxla "GPUMachineManager")
+prim__gpuMachineManager : PrimIO AnyPtr

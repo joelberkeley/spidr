@@ -13,20 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.Client.Lib.Matrix
+module Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 
 import System.FFI
 
 import Compiler.FFI
+import Compiler.TensorFlow.Compiler.XLA.Shape
+import Compiler.TensorFlow.Compiler.XLA.XlaData
+import Types
+
+%foreign (libxla "MakeShape")
+prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
-%foreign (libxla "IdentityMatrix")
-prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
-
-export
-%foreign (libxla "GetMatrixDiagonal")
-prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
-
-export
-%foreign (libxla "Triangle")
-prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr
+mkShape : HasIO io => Primitive dtype => Shape -> io GCAnyPtr
+mkShape shape = do
+  let dtype_enum = xlaIdentifier {dtype}
+  shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))
+  onCollectAny shape_ptr Shape.delete

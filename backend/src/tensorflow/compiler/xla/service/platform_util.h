@@ -13,10 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "local_client.h"
+#include "../../stream_executor/platform.h"
 
 extern "C" {
-    LocalClient* ClientLibrary_GetOrCreateLocalClient(
-        Platform* platform, int* allowed_devices, int allowed_devices_len
-    );
+    Platform* PlatformUtil_GetPlatform(const char* platform_name);
 }

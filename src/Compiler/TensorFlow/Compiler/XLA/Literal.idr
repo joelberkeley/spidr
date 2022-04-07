@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.XLA.Literal
+module Compiler.TensorFlow.Compiler.XLA.Literal
 
 import System.FFI
 
 import Compiler.FFI
-import Compiler.XLA.Shape
-import Compiler.XLA.ShapeUtil
-import Compiler.XLA.XlaData
+import Compiler.TensorFlow.Compiler.XLA.Shape
+import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
+import Compiler.TensorFlow.Compiler.XLA.XlaData
 import Literal
 import Types
 import Util
@@ -50,12 +50,7 @@ literalGetBool : GCAnyPtr -> GCPtr Int -> Int
 export
 LiteralPrimitiveRW PRED Bool where
   set lit idxs x = prim__literalSetBool lit idxs (if x then 1 else 0)
-  get lit idxs = case literalGetBool lit idxs of
-    0 => False
-    1 => True
-    x => (assert_total idris_crash) (
-           "Internal error: expected 0 or 1 from XLA C API for boolean conversion, got " ++ show x
-         )
+  get lit idxs = cIntToBool (literalGetBool lit idxs)
 
 %foreign (libxla "Literal_Set_double")
 prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()

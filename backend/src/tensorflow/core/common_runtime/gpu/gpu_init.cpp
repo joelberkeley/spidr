@@ -1,4 +1,4 @@
-{--
+/*
 Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,16 +12,19 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
---}
-module Compiler.XLA.Client.XlaComputation
+*/
+#include "tensorflow/core/common_runtime/gpu/gpu_init.h"
 
-import System.FFI
+#include "../../platform/status.h"
+#include "../../../stream_executor/platform.h"
 
-import Compiler.FFI
+extern "C" {
+    Status* ValidateGPUMachineManager() {
+        tensorflow::Status status = tensorflow::ValidateGPUMachineManager();
+        return reinterpret_cast<Status*>(new tensorflow::Status(status));
+    }
 
-%foreign (libxla "XlaComputation_delete")
-prim__delete : AnyPtr -> PrimIO ()
-
-export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+    Platform* GPUMachineManager() {
+        return reinterpret_cast<Platform*>(tensorflow::GPUMachineManager());
+    }
+}

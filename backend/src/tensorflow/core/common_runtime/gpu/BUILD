@@ -13,15 +13,14 @@
 # limitations under the License.
 
 cc_library(
-    name = "client",
+    name = "gpu",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
         "@xla_extension//:xla_extension",
-        "//src:src",
-        "//src/tensorflow/compiler/xla:xla",
+        "//src/tensorflow/core/platform:platform",
         "//src/tensorflow/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],

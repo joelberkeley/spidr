@@ -16,13 +16,25 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/client_library.h"
 #include "tensorflow/compiler/xla/client/local_client.h"
 
+#include "../../../stream_executor/platform.h"
 #include "client_library.h"
 
 extern "C" {
-    struct ClientLibrary;
+    LocalClient* ClientLibrary_GetOrCreateLocalClient(
+        Platform* platform, int* allowed_devices, int allowed_devices_len
+    ) {
+        auto platform_ = reinterpret_cast<tensorflow::se::Platform*>(platform);
 
-    LocalClient* ClientLibrary_LocalClientOrDie() {
-        xla::LocalClient* client = xla::ClientLibrary::LocalClientOrDie();
+        absl::optional<std::set<int>> allowed_devices_ = absl::nullopt;
+        if (allowed_devices_len > 0) {
+            allowed_devices_ =
+                std::set<int>(allowed_devices, allowed_devices + allowed_devices_len);
+        }
+
+        xla::LocalClient* client =
+            xla::ClientLibrary::GetOrCreateLocalClient(platform_, allowed_devices_)
+            .ConsumeValueOrDie();
+
         return reinterpret_cast<LocalClient*>(client);
     }
 }
