@@ -564,30 +564,21 @@ namespace PRED
 covering
 testElementwiseComparatorCases : List (PropertyName, Property)
 testElementwiseComparatorCases = [
-    ("(==)", F64.testElementwiseComparator (==) (==)),
-    ("(==)", S32.testElementwiseComparator (==) (==)),
-    ("(==)", PRED.testElementwiseComparator (==) (==)),
-    ("(/=)", F64.testElementwiseComparator (/=) (/=)),
-    ("(/=)", S32.testElementwiseComparator (/=) (/=)),
-    ("(/=)", PRED.testElementwiseComparator (/=) (/=)),
-    ("(<)", F64.testElementwiseComparator (<) (<)),
-    ("(<)", S32.testElementwiseComparator (<) (<)),
-    ("(>)", F64.testElementwiseComparator (>) (>)),
-    ("(>)", S32.testElementwiseComparator (>) (>)),
-    ("(<=)", F64.testElementwiseComparator (<=) (<=)),
-    ("(<=)", S32.testElementwiseComparator (<=) (<=)),
-    ("(>=)", F64.testElementwiseComparator (>=) (>=)),
-    ("(>=)", S32.testElementwiseComparator (>=) (>=)),
-    ("(&&)", PRED.testElementwiseComparator and (&&)),
-    ("(||)", PRED.testElementwiseComparator or (||))
+    ("(==) F64", F64.testElementwiseComparator (==) (==)),
+    ("(==) S32", S32.testElementwiseComparator (==) (==)),
+    ("(==) PRED", PRED.testElementwiseComparator (==) (==)),
+    ("(/=) F64", F64.testElementwiseComparator (/=) (/=)),
+    ("(/=) S32", S32.testElementwiseComparator (/=) (/=)),
+    ("(/=) PRED", PRED.testElementwiseComparator (/=) (/=)),
+    ("(<) F64", F64.testElementwiseComparator (<) (<)),
+    ("(<) S32", S32.testElementwiseComparator (<) (<)),
+    ("(>) F64", F64.testElementwiseComparator (>) (>)),
+    ("(>) S32", S32.testElementwiseComparator (>) (>)),
+    ("(<=) F64", F64.testElementwiseComparator (<=) (<=)),
+    ("(<=) S32", S32.testElementwiseComparator (<=) (<=)),
+    ("(>=) F64", F64.testElementwiseComparator (>=) (>=)),
+    ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
   ]
-
-  where
-  and : Bool -> Bool -> Bool
-  and x y = x && y
-  
-  or : Bool -> Bool -> Bool
-  or x y = x || y
 
 namespace S32
   export covering
@@ -617,21 +608,31 @@ namespace F64
         y' = fromLiteral {dtype=F64} y
     [| fDouble x y |] ==~ toLiteral (fTensor x' y')
 
+namespace PRED
+  export covering
+  testElementwiseBinary :
+    (Bool -> Bool -> Bool) ->
+    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    Property
+  testElementwiseBinary = testElementwiseComparator
+
 covering
 testElementwiseBinaryCases : List (PropertyName, Property)
 testElementwiseBinaryCases = [
-    ("(+)", F64.testElementwiseBinary (+) (+)),
-    ("(+)", S32.testElementwiseBinary (+) (+)),
-    ("(-)", F64.testElementwiseBinary (-) (-)),
-    ("(-)", S32.testElementwiseBinary (-) (-)),
-    ("(*)", F64.testElementwiseBinary (*) (*)),
-    ("(*)", S32.testElementwiseBinary (*) (*)),
+    ("(+) F64", F64.testElementwiseBinary (+) (+)),
+    ("(+) S32", S32.testElementwiseBinary (+) (+)),
+    ("(-) F64", F64.testElementwiseBinary (-) (-)),
+    ("(-) S32", S32.testElementwiseBinary (-) (-)),
+    ("(*) F64", F64.testElementwiseBinary (*) (*)),
+    ("(*) S32", S32.testElementwiseBinary (*) (*)),
     ("(/)", F64.testElementwiseBinary (/) (/)),
     -- ("pow", F64.testElementwiseBinary pow (^)),  there's a bug in idris 0.5.1 pow
-    ("min", F64.testElementwiseBinary min' min),
-    ("min", S32.testElementwiseBinary min min),
-    ("max", F64.testElementwiseBinary max' max),
-    ("max", S32.testElementwiseBinary max max)    
+    ("min F64", F64.testElementwiseBinary min' min),
+    ("min S32", S32.testElementwiseBinary min min),
+    ("max F64", F64.testElementwiseBinary max' max),
+    ("max S32", S32.testElementwiseBinary max max),
+    ("(&&)", PRED.testElementwiseBinary and (&&)),
+    ("(||)", PRED.testElementwiseBinary or (||))
   ]
 
   where
@@ -640,6 +641,12 @@ testElementwiseBinaryCases = [
 
   max' : Double -> Double -> Double
   max' x y = if (x /= x) then x else if (y /= y) then y else max x y
+
+  and : Bool -> Bool -> Bool
+  and x y = x && y
+
+  or : Bool -> Bool -> Bool
+  or x y = x || y
 
 covering
 test_Sum : Property
@@ -764,10 +771,10 @@ namespace PRED
 covering
 testElementwiseUnaryCases : List (PropertyName, Property)
 testElementwiseUnaryCases = [
-    ("negate", S32.testElementwiseUnary negate negate),
-    ("negate", F64.testElementwiseUnary negate negate),
-    ("abs", S32.testElementwiseUnary abs abs),
-    ("abs", F64.testElementwiseUnary abs abs),
+    ("negate S32", S32.testElementwiseUnary negate negate),
+    ("negate F64", F64.testElementwiseUnary negate negate),
+    ("abs S32", S32.testElementwiseUnary abs abs),
+    ("abs F64", F64.testElementwiseUnary abs abs),
     ("exp", F64.testElementwiseUnary exp exp),
     ("ceil", F64.testElementwiseUnary ceiling ceil),
     ("floor", F64.testElementwiseUnary floor floor),
