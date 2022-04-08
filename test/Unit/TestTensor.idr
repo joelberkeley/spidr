@@ -91,29 +91,19 @@ test_show_graph' = do
         S32[2, 2] fromLiteral
       """
 
-covering
-test_show_xla : Property
-test_show_xla = property $ do
-  shape <- forAll shapes
+test_show_xla : IO ()
+test_show_xla = do
+  assert "show @{XLA} for scalar" $ show @{XLA {dtype=S32}} 1 == "constant, shape=[], metadata={:0}"
 
-  x <- forAll (literal shape ints)
-  let x = fromLiteral {dtype=S32} x
-  show @{XLA} x === "constant, shape=\{show shape}, metadata={:0}"
-
-  x <- forAll (literal shape doubles)
-  let x = fromLiteral {dtype=F64} x
-  show @{XLA} x === "constant, shape=\{show shape}, metadata={:0}"
-
-  let ints = literal shape ints
-  [x, y] <- forAll (np [ints, ints])
-  let x = fromLiteral {dtype=S32} x
-      y = fromLiteral {dtype=S32} y
-  show @{XLA {dtype=S32}} (x + y) ===
+  assert "show @{XLA} for scalar addition" $ show @{XLA {dtype=S32}} (1 + 2) ==
     """
-    add, shape=\{show shape}, metadata={:0}
-      constant, shape=\{show shape}, metadata={:0}
-      constant, shape=\{show shape}, metadata={:0}
+    add, shape=[], metadata={:0}
+      constant, shape=[], metadata={:0}
+      constant, shape=[], metadata={:0}
     """
+
+  let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
+  assert "show @{XLA} for vector F64" $ show @{XLA} x == "constant, shape=[3], metadata={:0}"
 
 test_reshape : IO ()
 test_reshape = do
@@ -628,7 +618,7 @@ covering
 testElementwiseBinaryCases : List (PropertyName, Property)
 testElementwiseBinaryCases = [
     ("(+) F64", F64.testElementwiseBinary (+) (+)),
-    ("(+) S32", S32.testElementwiseBinary (+) (+)),
+    ("(+) S32", S32.testElementwiseBinary (+) (-)),
     ("(-) F64", F64.testElementwiseBinary (-) (-)),
     ("(-) S32", S32.testElementwiseBinary (-) (-)),
     ("(*) F64", F64.testElementwiseBinary (*) (*)),
@@ -929,7 +919,6 @@ root : Group
 root = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", test_fromLiteral_toLiteral)
     , ("show @{Graph}", test_show_graph)
-    , ("show @{XLA}", test_show_xla)
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
@@ -949,6 +938,7 @@ export
 test' : IO ()
 test' = do
   test_show_graph'
+  test_show_xla
   test_reshape
   test_slice
   test_index
