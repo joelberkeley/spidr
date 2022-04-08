@@ -628,7 +628,7 @@ covering
 testElementwiseBinaryCases : List (PropertyName, Property)
 testElementwiseBinaryCases = [
     ("(+) F64", F64.testElementwiseBinary (+) (+)),
-    ("(+) S32", S32.testElementwiseBinary (+) (-)),
+    ("(+) S32", S32.testElementwiseBinary (+) (+)),
     ("(-) F64", F64.testElementwiseBinary (-) (-)),
     ("(-) S32", S32.testElementwiseBinary (-) (-)),
     ("(*) F64", F64.testElementwiseBinary (*) (*)),
@@ -927,22 +927,22 @@ test_trace = do
 export covering
 root : Group
 root = MkGroup "Tensor" $ [
-    ("toLiteral . fromLiteral", test_fromLiteral_toLiteral),
-    ("show @{Graph}", test_show_graph),
-    ("show @{XLA}", test_show_xla)
+      ("toLiteral . fromLiteral", test_fromLiteral_toLiteral)
+    , ("show @{Graph}", test_show_graph)
+    , ("show @{XLA}", test_show_xla)
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
   ++ testElementwiseBinaryCases
   ++ [
-    ("Scalarwise.(*)", test_scalar_multiplication),
-    ("Scalarwise.(/)", test_scalar_division),
-    ("Sum", test_Sum),
-    ("Prod", test_Prod),
-    ("Min", test_Min),
-    ("Max", test_Max),
-    ("Any", test_Any),
-    ("All", test_All)
+      ("Scalarwise.(*)", test_scalar_multiplication)
+    , ("Scalarwise.(/)", test_scalar_division)
+    , ("Sum", test_Sum)
+    , ("Prod", test_Prod)
+    , ("Min", test_Min)
+    , ("Max", test_Max)
+    , ("Any", test_Any)
+    , ("All", test_All)
   ]
 
 export
