@@ -15,8 +15,6 @@ limitations under the License.
 --}
 module Unit.TestDistribution
 
-import Utils
-
 import Literal
 import Tensor
 import Distribution
