@@ -39,20 +39,32 @@ test_fromLiteral_toLiteral = property $ do
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
-test_show_graph : IO ()
-test_show_graph = do
-  assert "show @{Graph} for scalar" $ show @{Graph {dtype=S32}} 1 == "S32[] fromLiteral"
+covering
+test_show_graph : Property
+test_show_graph = property $ do
+  shape <- forAll shapes
 
-  assert "show @{Graph} for scalar addition" $ show @{Graph {dtype=S32}} (1 + 2) ==
+  x <- forAll (literal shape ints)
+  let x = fromLiteral {dtype=S32} x
+  show @{Graph} x === "S32\{show shape} fromLiteral"
+
+  x <- forAll (literal shape doubles)
+  let x = fromLiteral {dtype=F64} x
+  show @{Graph} x === "F64\{show shape} fromLiteral"
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x = fromLiteral {dtype=S32} x
+      y = fromLiteral {dtype=S32} y
+  show @{Graph {dtype=S32}} (x + y) ===
     """
-    S32[] (+)
-      S32[] fromLiteral
-      S32[] fromLiteral
+    S32\{show shape} (+)
+      S32\{show shape} fromLiteral
+      S32\{show shape} fromLiteral
     """
 
-  let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
-  assert "show @{Graph} for vector F64" $ show @{Graph} x == "F64[3] fromLiteral"
-
+test_show_graph' : IO ()
+test_show_graph' = do
   let x = fromLiteral {dtype=S32} [[0, 0, 0], [0, 0, 0]]
       y = fromLiteral [[0], [0], [0]]
   assert "show @{Graph} for differing argument shapes" $ show @{Graph} (x @@ y) ==
@@ -78,19 +90,29 @@ test_show_graph = do
         S32[2, 2] fromLiteral
       """
 
-test_show_graphxla : IO ()
-test_show_graphxla = do
-  assert "show @{XLA} for scalar" $ show @{XLA {dtype=S32}} 1 == "constant, shape=[], metadata={:0}"
+covering
+test_show_xla : Property
+test_show_xla = property $ do
+  shape <- forAll shapes
 
-  assert "show @{XLA} for scalar addition" $ show @{XLA {dtype=S32}} (1 + 2) ==
-    """
-    add, shape=[], metadata={:0}
-      constant, shape=[], metadata={:0}
-      constant, shape=[], metadata={:0}
-    """
+  x <- forAll (literal shape ints)
+  let x = fromLiteral {dtype=S32} x
+  show @{XLA} x === "constant, shape=\{show shape}, metadata={:0}"
 
-  let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
-  assert "show @{XLA} for vector F64" $ show @{XLA} x == "constant, shape=[3], metadata={:0}"
+  x <- forAll (literal shape doubles)
+  let x = fromLiteral {dtype=F64} x
+  show @{XLA} x === "constant, shape=\{show shape}, metadata={:0}"
+
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x = fromLiteral {dtype=S32} x
+      y = fromLiteral {dtype=S32} y
+  show @{XLA {dtype=S32}} (x + y) ===
+    """
+    add, shape=\{show shape}, metadata={:0}
+      constant, shape=\{show shape}, metadata={:0}
+      constant, shape=\{show shape}, metadata={:0}
+    """
 
 test_reshape : IO ()
 test_reshape = do
@@ -477,6 +499,26 @@ test_reduce = do
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
   assertAll "reduce for PRED array" $ reduce @{All} 1 x == fromLiteral [False, False]
 
+namespace Vector
+  export
+  test_dot : IO ()
+  test_dot = do
+    let l = fromLiteral {dtype=S32} [-2, 0, 1]
+        r = fromLiteral {dtype=S32} [3, 1, 2]
+    assertAll "vector dot" $ l @@ r == -4
+
+namespace Matrix
+  export
+  test_dot : IO ()
+  test_dot = do
+    let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+        r = fromLiteral {dtype=S32} [3, 3, -1]
+    assertAll "matrix dot vector" $ l @@ r == fromLiteral [-7, 8]
+
+    let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
+        r = fromLiteral {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
+    assertAll "matrix dot matrix" $ l @@ r == fromLiteral [[ -7,  -2], [  8, -11]]
+
 namespace S32
   export covering
   testElementwiseComparator :
@@ -546,26 +588,6 @@ testElementwiseComparatorCases = [
   
   or : Bool -> Bool -> Bool
   or x y = x || y
-
-namespace Vector
-  export
-  test_dot : IO ()
-  test_dot = do
-    let l = fromLiteral {dtype=S32} [-2, 0, 1]
-        r = fromLiteral {dtype=S32} [3, 1, 2]
-    assertAll "vector dot" $ l @@ r == -4
-
-namespace Matrix
-  export
-  test_dot : IO ()
-  test_dot = do
-    let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
-        r = fromLiteral {dtype=S32} [3, 3, -1]
-    assertAll "matrix dot vector" $ l @@ r == fromLiteral [-7, 8]
-
-    let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
-        r = fromLiteral {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
-    assertAll "matrix dot matrix" $ l @@ r == fromLiteral [[ -7,  -2], [  8, -11]]
 
 namespace S32
   export covering
@@ -669,57 +691,27 @@ test_Prod = property $ do
   toLiteral right === x
   toLiteral left === x
 
-test_All : IO ()
-test_All = do
-  let x = fromLiteral [[True, True], [False, False]]
-  assertAll "All neutral is neutral right" $ (<+>) @{All} x (neutral @{All}) == x
-  assertAll "All neutral is neutral left" $ (<+>) @{All} (neutral @{All}) x == x
+covering
+test_Any : Property
+test_Any = property $ do
+  shape <- forAll shapes
+  x <- forAll (literal shape bool)
+  let x' = fromLiteral {dtype=PRED} x
+      right = (<+>) @{Any} x' (neutral @{Any})
+      left = (<+>) @{Any} (neutral @{Any}) x'
+  toLiteral right === x
+  toLiteral left === x
 
-test_Any : IO ()
-test_Any = do
-  let x = fromLiteral [[True, True], [False, False]]
-  assertAll "Any neutral is neutral right" $ (<+>) @{Any} x (neutral @{Any}) == x
-  assertAll "Any neutral is neutral left" $ (<+>) @{Any} (neutral @{Any}) x == x
-
-test_select : IO ()
-test_select = do
-  let onTrue = fromLiteral {dtype=S32} 1
-      onFalse = fromLiteral 0
-  assertAll "select for scalar True" $ select (fromLiteral True) onTrue onFalse == onTrue
-  assertAll "select for scalar False" $ select (fromLiteral False) onTrue onFalse == onFalse
-
-  let pred = fromLiteral [[False, True, True], [True, False, False]]
-      onTrue = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
-      onFalse = fromLiteral [[6, 7, 8], [9, 10, 11]]
-      expected = fromLiteral [[6, 1, 2], [3, 10, 11]]
-  assertAll "select for array" $ select pred onTrue onFalse == expected
-
-test_cond : IO ()
-test_cond = do
-  let x = fromLiteral {dtype=S32} 1
-      y = fromLiteral {dtype=S32} 3
-  assertAll "cond with function with reused arguments (truthy)" $
-    cond (fromLiteral True) (\z => z + z) x (\z => z * z) y == 2
-  assertAll "cond with function with reused arguments (falsy)" $
-    cond (fromLiteral False) (\z => z + z) x (\z => z * z) y == 9
-
-  let x = fromLiteral {dtype=S32} 0
-  assertAll "cond for trivial truthy" $
-    cond (fromLiteral True) (+ 1) x (\x => x - 1) x == 1
-
-  let x = fromLiteral {dtype=S32} 0
-  assertAll "cond for trivial falsy" $
-    cond (fromLiteral False) (+ 1) x (\x => x - 1) x == -1
-
-  let x = fromLiteral {dtype=S32} [2, 3]
-      y = fromLiteral [[6, 7], [8, 9]]
-  assertAll "cond for non-trivial truthy" $
-    cond (fromLiteral True) (fromLiteral 5 *) x diag y == fromLiteral [10, 15]
-
-  let x = fromLiteral {dtype=S32} [2, 3]
-      y = fromLiteral [[6, 7], [8, 9]]
-  assertAll "cond for non-trivial falsy" $
-    cond (fromLiteral False) (fromLiteral 5 *) x diag y == fromLiteral [6, 9]
+covering
+test_All : Property
+test_All = property $ do
+  shape <- forAll shapes
+  x <- forAll (literal shape bool)
+  let x' = fromLiteral {dtype=PRED} x
+      right = (<+>) @{All} x' (neutral @{All})
+      left = (<+>) @{All} (neutral @{All}) x'
+  toLiteral right === x
+  toLiteral left === x
 
 covering
 test_scalar_division : Property
@@ -769,15 +761,6 @@ namespace PRED
     let x' = fromLiteral x
     [| fBool x |] === toLiteral (fTensor x')
 
-isNan : Double -> Bool
-isNan x = x /= x
-
-tanh' : Double -> Double
-tanh' x = let idrisResult = tanh x in
-  if isNan idrisResult then
-  if isNan x then idrisResult else
-  if x < 0 then -1 else 1 else idrisResult
-
 covering
 testElementwiseUnaryCases : List (PropertyName, Property)
 testElementwiseUnaryCases = [
@@ -797,23 +780,82 @@ testElementwiseUnaryCases = [
     ("not", PRED.testElementwiseUnary not not)
   ]
 
+  where
+  tanh' : Double -> Double
+  tanh' x = let idrisResult = tanh x in
+    if isNan idrisResult then
+    if isNan x then idrisResult else
+    if x < 0 then -1 else 1 else idrisResult
+
+covering
+test_Min : Property
+test_Min = property $ do
+  shape <- forAll shapes
+
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral {dtype=F64} x
+      right = (<+>) @{Min} x' (neutral @{Min})
+      left = (<+>) @{Min} (neutral @{Min}) x'
+  toLiteral right ==~ x
+  toLiteral left ==~ x
+
+covering
+test_Max : Property
+test_Max = property $ do
+  shape <- forAll shapes
+
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral {dtype=F64} x
+      right = (<+>) @{Max} x' (neutral @{Max})
+      left = (<+>) @{Max} (neutral @{Max}) x'
+  toLiteral right ==~ x
+  toLiteral left ==~ x
+
+test_select : IO ()
+test_select = do
+  let onTrue = fromLiteral {dtype=S32} 1
+      onFalse = fromLiteral 0
+  assertAll "select for scalar True" $ select (fromLiteral True) onTrue onFalse == onTrue
+  assertAll "select for scalar False" $ select (fromLiteral False) onTrue onFalse == onFalse
+
+  let pred = fromLiteral [[False, True, True], [True, False, False]]
+      onTrue = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
+      onFalse = fromLiteral [[6, 7, 8], [9, 10, 11]]
+      expected = fromLiteral [[6, 1, 2], [3, 10, 11]]
+  assertAll "select for array" $ select pred onTrue onFalse == expected
+
+test_cond : IO ()
+test_cond = do
+  let x = fromLiteral {dtype=S32} 1
+      y = fromLiteral {dtype=S32} 3
+  assertAll "cond with function with reused arguments (truthy)" $
+    cond (fromLiteral True) (\z => z + z) x (\z => z * z) y == 2
+  assertAll "cond with function with reused arguments (falsy)" $
+    cond (fromLiteral False) (\z => z + z) x (\z => z * z) y == 9
+
+  let x = fromLiteral {dtype=S32} 0
+  assertAll "cond for trivial truthy" $
+    cond (fromLiteral True) (+ 1) x (\x => x - 1) x == 1
+
+  let x = fromLiteral {dtype=S32} 0
+  assertAll "cond for trivial falsy" $
+    cond (fromLiteral False) (+ 1) x (\x => x - 1) x == -1
+
+  let x = fromLiteral {dtype=S32} [2, 3]
+      y = fromLiteral [[6, 7], [8, 9]]
+  assertAll "cond for non-trivial truthy" $
+    cond (fromLiteral True) (fromLiteral 5 *) x diag y == fromLiteral [10, 15]
+
+  let x = fromLiteral {dtype=S32} [2, 3]
+      y = fromLiteral [[6, 7], [8, 9]]
+  assertAll "cond for non-trivial falsy" $
+    cond (fromLiteral False) (fromLiteral 5 *) x diag y == fromLiteral [6, 9]
+
 test_erf : IO ()
 test_erf = do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
   assertAll "erf agrees with tfp Normal" $ sufficientlyEq {tol=0.000001} (erf x) expected
-
-test_Min : IO ()
-test_Min = do
-  let x = fromLiteral {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-  assertAll "Min neutral is neutral right" $ (<+>) @{Min} x (neutral @{Min}) == x
-  assertAll "Min neutral is neutral left" $ (<+>) @{Min} (neutral @{Min}) x == x
-
-test_Max : IO ()
-test_Max = do
-  let x = fromLiteral {dtype=F64} [[1.1, 2.1, -2.0], [-1.3, -1.0, 1.0]]
-  assertAll "Max neutral is neutral right" $ (<+>) @{Max} x (neutral @{Max}) == x
-  assertAll "Max neutral is neutral left" $ (<+>) @{Max} (neutral @{Max}) x == x
 
 test_cholesky : IO ()
 test_cholesky = do
@@ -879,23 +921,28 @@ test_trace = do
 export covering
 test : IO Bool
 test = checkGroup $ MkGroup "Tensor" $ [
-    ("test_fromLiteral_toLiteral", test_fromLiteral_toLiteral)    
+    ("toLiteral . fromLiteral", test_fromLiteral_toLiteral),
+    ("show @{Graph}", test_show_graph),
+    ("show @{XLA}", test_show_xla)
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
   ++ testElementwiseBinaryCases
   ++ [
-    ("test_scalar_multiplication", test_scalar_multiplication),
-    ("test_scalar_division", test_scalar_division),
+    ("Scalarwise.(*)", test_scalar_multiplication),
+    ("Scalarwise.(/)", test_scalar_division),
     ("Sum", test_Sum),
-    ("Prod", test_Prod)
+    ("Prod", test_Prod),
+    ("Min", test_Min),
+    ("Max", test_Max),
+    ("Any", test_Any),
+    ("All", test_All)
   ]
 
 export
 test' : IO ()
 test' = do
-  -- test_show_graph
-  -- test_show_graphxla
+  test_show_graph'
   test_reshape
   test_slice
   test_index
@@ -908,18 +955,14 @@ test' = do
   test_broadcast
   test_squeeze
   test_T
-  -- test_map
-  -- test_map2
-  -- test_reduce
+  test_map
+  test_map2
+  test_reduce
   Vector.test_dot
   Matrix.test_dot
-  -- test_All
-  -- test_Any
   test_select
   test_cond
   test_erf
-  -- test_Min
-  -- test_Max
   test_cholesky
   test_triangularsolve
   test_trace

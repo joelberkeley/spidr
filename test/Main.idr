@@ -30,13 +30,12 @@ import Utils
 covering
 main : IO Bool
 main = do
-  -- Utils.test
+  Utils.test
 
-  -- Unit.TestUtil.test
-  -- Unit.Util.TestHashable.test
-  -- Unit.TestLiteral.test
-  -- Unit.Model.TestKernel.test
-  -- Unit.TestDistribution.test
+  Unit.TestUtil.test
+  Unit.TestLiteral.test
+  Unit.Model.TestKernel.test
+  Unit.TestDistribution.test
 
   map (all id) $ sequence [
     Unit.Util.TestHashable.test,

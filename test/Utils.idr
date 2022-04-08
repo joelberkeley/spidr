@@ -25,11 +25,15 @@ import public Hedgehog
 import Literal
 import Tensor
 
+export
+isNan : Double -> Bool
+isNan x = x /= x
+
 maxRank : Nat
 maxRank = 5
 
 maxDim : Nat
-maxDim = 20
+maxDim = 10
 
 export
 shapes : Gen Shape
@@ -58,8 +62,8 @@ doubleBound = 9999
 export
 doubles : Gen Double
 doubles = frequency [
-    (4, double $ exponentialDoubleFrom (-doubleBound) 0 doubleBound),
-    (1, element [-1 / 0, 1 / 0, 0 / 0])
+    (1, double $ exponentialDoubleFrom (-doubleBound) 0 doubleBound),
+    (3, element [-1 / 0, 1 / 0, 0 / 0])
   ]
 
 export
@@ -72,9 +76,9 @@ export
 assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
 assertAll name xs = assert name (arrayAll (toLiteral xs)) where
   arrayAll : {shape : _} -> Literal shape Bool -> Bool
-  arrayAll {shape = []} (Scalar x) = x
-  arrayAll {shape = (0 :: _)} [] = True
-  arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
+  arrayAll (Scalar x) = x
+  arrayAll [] = True
+  arrayAll (x :: xs) = arrayAll x && arrayAll xs
 
 export
 bools : List (Literal [] Bool)
