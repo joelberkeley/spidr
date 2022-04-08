@@ -27,8 +27,10 @@ import Unit.TestUtil
 
 import Utils.Example
 
+import System
+
 covering
-main : IO Bool
+main : IO ()
 main = do
   Utils.Example.test
 
@@ -37,7 +39,7 @@ main = do
   Unit.Model.TestKernel.test
   Unit.TestDistribution.test
 
-  map (all id) $ sequence [
-    Unit.Util.TestHashable.test,
-    Unit.TestTensor.test
+  test [
+      Unit.Util.TestHashable.root
+    , Unit.TestTensor.root
   ]

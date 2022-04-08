@@ -925,8 +925,8 @@ test_trace = do
   assertAll "trace" $ trace (fromLiteral {dtype=S32} [[-1, 5], [1, 4]]) == 3
 
 export covering
-test : IO Bool
-test = checkGroup $ MkGroup "Tensor" $ [
+root : Group
+root = MkGroup "Tensor" $ [
     ("toLiteral . fromLiteral", test_fromLiteral_toLiteral),
     ("show @{Graph}", test_show_graph),
     ("show @{XLA}", test_show_xla)
