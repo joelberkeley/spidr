@@ -522,219 +522,6 @@ namespace Matrix
 
 namespace S32
   export covering
-  testElementwiseComparator :
-    (Int -> Int -> Bool) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape PRED) ->
-    Property
-  testElementwiseComparator fInt fTensor = property $ do
-    shape <- forAll shapes
-    let ints = literal shape ints
-    [x, y] <- forAll (np [ints, ints])
-    let x' = fromLiteral {dtype=S32} x
-        y' = fromLiteral {dtype=S32} y
-    [| fInt x y |] === toLiteral (fTensor x' y')
-
-namespace F64
-  export covering
-  testElementwiseComparator :
-    (Double -> Double -> Bool) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED) ->
-    Property
-  testElementwiseComparator fDouble fTensor = property $ do
-    shape <- forAll shapes
-    let doubles = literal shape doubles
-    [x, y] <- forAll (np [doubles, doubles])
-    let x' = fromLiteral {dtype=F64} x
-        y' = fromLiteral {dtype=F64} y
-    [| fDouble x y |] === toLiteral (fTensor x' y')
-
-namespace PRED
-  export covering
-  testElementwiseComparator :
-    (Bool -> Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
-    Property
-  testElementwiseComparator fBool fTensor = property $ do
-    shape <- forAll shapes
-    let bools = literal shape bool
-    [x, y] <- forAll (np [bools, bools])
-    let x' = fromLiteral {dtype=PRED} x
-        y' = fromLiteral {dtype=PRED} y
-    [| fBool x y |] === toLiteral (fTensor x' y')
-
-covering
-testElementwiseComparatorCases : List (PropertyName, Property)
-testElementwiseComparatorCases = [
-    ("(==) F64", F64.testElementwiseComparator (==) (==)),
-    ("(==) S32", S32.testElementwiseComparator (==) (==)),
-    ("(==) PRED", PRED.testElementwiseComparator (==) (==)),
-    ("(/=) F64", F64.testElementwiseComparator (/=) (/=)),
-    ("(/=) S32", S32.testElementwiseComparator (/=) (/=)),
-    ("(/=) PRED", PRED.testElementwiseComparator (/=) (/=)),
-    ("(<) F64", F64.testElementwiseComparator (<) (<)),
-    ("(<) S32", S32.testElementwiseComparator (<) (<)),
-    ("(>) F64", F64.testElementwiseComparator (>) (>)),
-    ("(>) S32", S32.testElementwiseComparator (>) (>)),
-    ("(<=) F64", F64.testElementwiseComparator (<=) (<=)),
-    ("(<=) S32", S32.testElementwiseComparator (<=) (<=)),
-    ("(>=) F64", F64.testElementwiseComparator (>=) (>=)),
-    ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
-  ]
-
-namespace S32
-  export covering
-  testElementwiseBinary :
-    (Int -> Int -> Int) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) ->
-    Property
-  testElementwiseBinary fInt fTensor = property $ do
-    shape <- forAll shapes
-    let ints = literal shape ints
-    [x, y] <- forAll (np [ints, ints])
-    let x' = fromLiteral {dtype=S32} x
-        y' = fromLiteral {dtype=S32} y
-    [| fInt x y |] === toLiteral (fTensor x' y')
-
-namespace F64
-  export covering
-  testElementwiseBinary :
-    (Double -> Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) ->
-    Property
-  testElementwiseBinary fDouble fTensor = property $ do
-    shape <- forAll shapes
-    let doubles = literal shape doubles
-    [x, y] <- forAll (np [doubles, doubles])
-    let x' = fromLiteral {dtype=F64} x
-        y' = fromLiteral {dtype=F64} y
-    [| fDouble x y |] ==~ toLiteral (fTensor x' y')
-
-namespace PRED
-  export covering
-  testElementwiseBinary :
-    (Bool -> Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
-    Property
-  testElementwiseBinary = testElementwiseComparator
-
-covering
-testElementwiseBinaryCases : List (PropertyName, Property)
-testElementwiseBinaryCases = [
-    ("(+) F64", F64.testElementwiseBinary (+) (+)),
-    ("(+) S32", S32.testElementwiseBinary (+) (+)),
-    ("(-) F64", F64.testElementwiseBinary (-) (-)),
-    ("(-) S32", S32.testElementwiseBinary (-) (-)),
-    ("(*) F64", F64.testElementwiseBinary (*) (*)),
-    ("(*) S32", S32.testElementwiseBinary (*) (*)),
-    ("(/)", F64.testElementwiseBinary (/) (/)),
-    -- ("pow", F64.testElementwiseBinary pow (^)),  there's a bug in idris 0.5.1 pow
-    ("min F64", F64.testElementwiseBinary min' min),
-    ("min S32", S32.testElementwiseBinary min min),
-    ("max F64", F64.testElementwiseBinary max' max),
-    ("max S32", S32.testElementwiseBinary max max),
-    ("(&&)", PRED.testElementwiseBinary and (&&)),
-    ("(||)", PRED.testElementwiseBinary or (||))
-  ]
-
-  where
-  min' : Double -> Double -> Double
-  min' x y = if (x /= x) then x else if (y /= y) then y else min x y
-
-  max' : Double -> Double -> Double
-  max' x y = if (x /= x) then x else if (y /= y) then y else max x y
-
-  and : Bool -> Bool -> Bool
-  and x y = x && y
-
-  or : Bool -> Bool -> Bool
-  or x y = x || y
-
-covering
-test_Sum : Property
-test_Sum = property $ do
-  shape <- forAll shapes
-
-  x <- forAll (literal shape doubles)
-  let x' = fromLiteral {dtype=F64} x
-      right = (<+>) @{Sum} x' (neutral @{Sum})
-      left = (<+>) @{Sum} (neutral @{Sum}) x'
-  toLiteral right ==~ x
-  toLiteral left ==~ x
-
-  x <- forAll (literal shape ints)
-  let x' = fromLiteral {dtype=S32} x
-      right = (<+>) @{Sum} x' (neutral @{Sum})
-      left = (<+>) @{Sum} (neutral @{Sum}) x'
-  toLiteral right === x
-  toLiteral left === x
-
-covering
-test_scalar_multiplication : Property
-test_scalar_multiplication = property $ do
-  shape <- forAll shapes
-  case shape of
-    [] => success
-    (d :: ds) => do
-      [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
-      let lit' = fromLiteral {dtype=F64} lit
-          scalar' = fromLiteral {dtype=F64} (Scalar scalar)
-      map (scalar *) lit ==~ toLiteral (scalar' * lit')
-
-covering
-test_Prod : Property
-test_Prod = property $ do
-  shape <- forAll shapes
-
-  x <- forAll (literal shape doubles)
-  let x' = fromLiteral {dtype=F64} x
-      right = (<+>) @{Prod} x' (neutral @{Prod})
-      left = (<+>) @{Prod} (neutral @{Prod}) x'
-  toLiteral right ==~ x
-  toLiteral left ==~ x
-
-  x <- forAll (literal shape ints)
-  let x' = fromLiteral {dtype=S32} x
-      right = (<+>) @{Prod} x' (neutral @{Prod})
-      left = (<+>) @{Prod} (neutral @{Prod}) x'
-  toLiteral right === x
-  toLiteral left === x
-
-covering
-test_Any : Property
-test_Any = property $ do
-  shape <- forAll shapes
-  x <- forAll (literal shape bool)
-  let x' = fromLiteral {dtype=PRED} x
-      right = (<+>) @{Any} x' (neutral @{Any})
-      left = (<+>) @{Any} (neutral @{Any}) x'
-  toLiteral right === x
-  toLiteral left === x
-
-covering
-test_All : Property
-test_All = property $ do
-  shape <- forAll shapes
-  x <- forAll (literal shape bool)
-  let x' = fromLiteral {dtype=PRED} x
-      right = (<+>) @{All} x' (neutral @{All})
-      left = (<+>) @{All} (neutral @{All}) x'
-  toLiteral right === x
-  toLiteral left === x
-
-covering
-test_scalar_division : Property
-test_scalar_division = property $ do
-  shape <- forAll shapes
-  case shape of
-    [] => success
-    (d :: ds) => do
-      [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
-      let lit' = fromLiteral {dtype=F64} lit
-          scalar' = fromLiteral {dtype=F64} (Scalar scalar)
-      map (/ scalar) lit ==~ toLiteral (lit' / scalar')
-
-namespace S32
-  export covering
   testElementwiseUnary :
     (Int -> Int) ->
     (forall shape . Tensor shape S32 -> Tensor shape S32) ->
@@ -795,11 +582,168 @@ testElementwiseUnaryCases = [
     if isNan x then idrisResult else
     if x < 0 then -1 else 1 else idrisResult
 
+namespace S32
+  export covering
+  testElementwiseBinary :
+    (Int -> Int -> Int) ->
+    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) ->
+    Property
+  testElementwiseBinary fInt fTensor = property $ do
+    shape <- forAll shapes
+    let ints = literal shape ints
+    [x, y] <- forAll (np [ints, ints])
+    let x' = fromLiteral {dtype=S32} x
+        y' = fromLiteral {dtype=S32} y
+    [| fInt x y |] === toLiteral (fTensor x' y')
+
+namespace F64
+  export covering
+  testElementwiseBinary :
+    (Double -> Double -> Double) ->
+    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) ->
+    Property
+  testElementwiseBinary fDouble fTensor = property $ do
+    shape <- forAll shapes
+    let doubles = literal shape doubles
+    [x, y] <- forAll (np [doubles, doubles])
+    let x' = fromLiteral {dtype=F64} x
+        y' = fromLiteral {dtype=F64} y
+    [| fDouble x y |] ==~ toLiteral (fTensor x' y')
+
+namespace PRED
+  export covering
+  testElementwiseBinary :
+    (Bool -> Bool -> Bool) ->
+    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    Property
+  testElementwiseBinary fBool fTensor = property $ do
+    shape <- forAll shapes
+    let bools = literal shape bool
+    [x, y] <- forAll (np [bools, bools])
+    let x' = fromLiteral {dtype=PRED} x
+        y' = fromLiteral {dtype=PRED} y
+    [| fBool x y |] === toLiteral (fTensor x' y')
+
+covering
+testElementwiseBinaryCases : List (PropertyName, Property)
+testElementwiseBinaryCases = [
+    ("(+) F64", F64.testElementwiseBinary (+) (+)),
+    ("(+) S32", S32.testElementwiseBinary (+) (+)),
+    ("(-) F64", F64.testElementwiseBinary (-) (-)),
+    ("(-) S32", S32.testElementwiseBinary (-) (-)),
+    ("(*) F64", F64.testElementwiseBinary (*) (*)),
+    ("(*) S32", S32.testElementwiseBinary (*) (*)),
+    ("(/)", F64.testElementwiseBinary (/) (/)),
+    -- ("pow", F64.testElementwiseBinary pow (^)),  there's a bug in idris 0.5.1 pow
+    ("min F64", F64.testElementwiseBinary min' min),
+    ("min S32", S32.testElementwiseBinary min min),
+    ("max F64", F64.testElementwiseBinary max' max),
+    ("max S32", S32.testElementwiseBinary max max),
+    ("(&&)", PRED.testElementwiseBinary and (&&)),
+    ("(||)", PRED.testElementwiseBinary or (||))
+  ]
+
+  where
+  min' : Double -> Double -> Double
+  min' x y = if (x /= x) then x else if (y /= y) then y else min x y
+
+  max' : Double -> Double -> Double
+  max' x y = if (x /= x) then x else if (y /= y) then y else max x y
+
+  and : Bool -> Bool -> Bool
+  and x y = x && y
+
+  or : Bool -> Bool -> Bool
+  or x y = x || y
+
+covering
+test_scalar_multiplication : Property
+test_scalar_multiplication = property $ do
+  shape <- forAll shapes
+  case shape of
+    [] => success
+    (d :: ds) => do
+      [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
+      let lit' = fromLiteral {dtype=F64} lit
+          scalar' = fromLiteral {dtype=F64} (Scalar scalar)
+      map (scalar *) lit ==~ toLiteral (scalar' * lit')
+
+covering
+test_scalar_division : Property
+test_scalar_division = property $ do
+  shape <- forAll shapes
+  case shape of
+    [] => success
+    (d :: ds) => do
+      [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
+      let lit' = fromLiteral {dtype=F64} lit
+          scalar' = fromLiteral {dtype=F64} (Scalar scalar)
+      map (/ scalar) lit ==~ toLiteral (lit' / scalar')
+
+covering
+test_Sum : Property
+test_Sum = property $ do
+  shape <- forAll shapes
+
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral {dtype=F64} x
+      right = (<+>) @{Sum} x' (neutral @{Sum})
+      left = (<+>) @{Sum} (neutral @{Sum}) x'
+  toLiteral right ==~ x
+  toLiteral left ==~ x
+
+  x <- forAll (literal shape ints)
+  let x' = fromLiteral {dtype=S32} x
+      right = (<+>) @{Sum} x' (neutral @{Sum})
+      left = (<+>) @{Sum} (neutral @{Sum}) x'
+  toLiteral right === x
+  toLiteral left === x
+
+covering
+test_Prod : Property
+test_Prod = property $ do
+  shape <- forAll shapes
+
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral {dtype=F64} x
+      right = (<+>) @{Prod} x' (neutral @{Prod})
+      left = (<+>) @{Prod} (neutral @{Prod}) x'
+  toLiteral right ==~ x
+  toLiteral left ==~ x
+
+  x <- forAll (literal shape ints)
+  let x' = fromLiteral {dtype=S32} x
+      right = (<+>) @{Prod} x' (neutral @{Prod})
+      left = (<+>) @{Prod} (neutral @{Prod}) x'
+  toLiteral right === x
+  toLiteral left === x
+
+covering
+test_Any : Property
+test_Any = property $ do
+  shape <- forAll shapes
+  x <- forAll (literal shape bool)
+  let x' = fromLiteral {dtype=PRED} x
+      right = (<+>) @{Any} x' (neutral @{Any})
+      left = (<+>) @{Any} (neutral @{Any}) x'
+  toLiteral right === x
+  toLiteral left === x
+
+covering
+test_All : Property
+test_All = property $ do
+  shape <- forAll shapes
+  x <- forAll (literal shape bool)
+  let x' = fromLiteral {dtype=PRED} x
+      right = (<+>) @{All} x' (neutral @{All})
+      left = (<+>) @{All} (neutral @{All}) x'
+  toLiteral right === x
+  toLiteral left === x
+
 covering
 test_Min : Property
 test_Min = property $ do
   shape <- forAll shapes
-
   x <- forAll (literal shape doubles)
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Min} x' (neutral @{Min})
@@ -811,13 +755,67 @@ covering
 test_Max : Property
 test_Max = property $ do
   shape <- forAll shapes
-
   x <- forAll (literal shape doubles)
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Max} x' (neutral @{Max})
       left = (<+>) @{Max} (neutral @{Max}) x'
   toLiteral right ==~ x
   toLiteral left ==~ x
+
+namespace S32
+  export covering
+  testElementwiseComparator :
+    (Int -> Int -> Bool) ->
+    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape PRED) ->
+    Property
+  testElementwiseComparator fInt fTensor = property $ do
+    shape <- forAll shapes
+    let ints = literal shape ints
+    [x, y] <- forAll (np [ints, ints])
+    let x' = fromLiteral {dtype=S32} x
+        y' = fromLiteral {dtype=S32} y
+    [| fInt x y |] === toLiteral (fTensor x' y')
+
+namespace F64
+  export covering
+  testElementwiseComparator :
+    (Double -> Double -> Bool) ->
+    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED) ->
+    Property
+  testElementwiseComparator fDouble fTensor = property $ do
+    shape <- forAll shapes
+    let doubles = literal shape doubles
+    [x, y] <- forAll (np [doubles, doubles])
+    let x' = fromLiteral {dtype=F64} x
+        y' = fromLiteral {dtype=F64} y
+    [| fDouble x y |] === toLiteral (fTensor x' y')
+
+namespace PRED
+  export covering
+  testElementwiseComparator :
+    (Bool -> Bool -> Bool) ->
+    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    Property
+  testElementwiseComparator = testElementwiseBinary
+
+covering
+testElementwiseComparatorCases : List (PropertyName, Property)
+testElementwiseComparatorCases = [
+    ("(==) F64", F64.testElementwiseComparator (==) (==)),
+    ("(==) S32", S32.testElementwiseComparator (==) (==)),
+    ("(==) PRED", PRED.testElementwiseComparator (==) (==)),
+    ("(/=) F64", F64.testElementwiseComparator (/=) (/=)),
+    ("(/=) S32", S32.testElementwiseComparator (/=) (/=)),
+    ("(/=) PRED", PRED.testElementwiseComparator (/=) (/=)),
+    ("(<) F64", F64.testElementwiseComparator (<) (<)),
+    ("(<) S32", S32.testElementwiseComparator (<) (<)),
+    ("(>) F64", F64.testElementwiseComparator (>) (>)),
+    ("(>) S32", S32.testElementwiseComparator (>) (>)),
+    ("(<=) F64", F64.testElementwiseComparator (<=) (<=)),
+    ("(<=) S32", S32.testElementwiseComparator (<=) (<=)),
+    ("(>=) F64", F64.testElementwiseComparator (>=) (>=)),
+    ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
+  ]
 
 test_select : IO ()
 test_select = do
