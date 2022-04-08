@@ -189,18 +189,18 @@ failureModel = let mk_gp = \len => MkGP zero (rbf $ squeeze len)
 and we'll gather all the data and models in a `record`:
 
 ```idris
-record Labelled o f where
+record Labelled a where
   constructor Label
-  objective : o
-  failure : f
+  objective : a
+  failure : a
 ```
 
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to extract the respective data and model. Putting it all together, here's our empirical point:
 
 ```idris
 newPoint'' : Tensor [1, 2] F64
-newPoint'' = let eci = objective <| objective |> expectedConstrainedImprovement @{Latent} 0.5
-                 pof = failure <| failure |> probabilityOfFeasibility @{%search} @{Latent} 0.5
+newPoint'' = let eci = objective <|> expectedConstrainedImprovement @{Latent} 0.5
+                 pof = failure <|> probabilityOfFeasibility @{%search} @{Latent} 0.5
                  acquisition = map optimizer (eci <*> pof)
               in run acquisition (Label historicData failureData) (Label model failureModel)
 ```
