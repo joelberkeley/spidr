@@ -628,7 +628,7 @@ covering
 testElementwiseBinaryCases : List (PropertyName, Property)
 testElementwiseBinaryCases = [
     ("(+) F64", F64.testElementwiseBinary (+) (+)),
-    ("(+) S32", S32.testElementwiseBinary (+) (+)),
+    ("(+) S32", S32.testElementwiseBinary (+) (-)),
     ("(-) F64", F64.testElementwiseBinary (-) (-)),
     ("(-) S32", S32.testElementwiseBinary (-) (-)),
     ("(*) F64", F64.testElementwiseBinary (*) (*)),
