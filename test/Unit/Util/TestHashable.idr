@@ -17,17 +17,15 @@ module Unit.Util.TestHashable
 
 import Util.Hashable
 
-import Utils
+import Utils.Property
 
-test_hash_double : IO ()
-test_hash_double = do
-  sequence_ $ do
-    x <- doubles
-    y <- doubles
-    pure $ assert "hash for Double \{show x} \{show y}" $
-      (hash x == hash y) == (let bothNan = x /= x && y /= y in bothNan || x == y)
+test_hash_double : Property
+test_hash_double = property $ do
+    [x, y] <- forAll (np [doubles, doubles])
+    (hash x == hash y) === (let bothNan = x /= x && y /= y in bothNan || x == y)
 
 export
-test : IO ()
-test = do
-  test_hash_double
+root : Group
+root = MkGroup "Hashable" [
+    ("test_hash_double", test_hash_double)
+  ]

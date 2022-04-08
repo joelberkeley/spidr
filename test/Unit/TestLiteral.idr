@@ -15,9 +15,9 @@ limitations under the License.
 --}
 module Unit.TestLiteral
 
-import Utils
-
 import Literal
+
+import Utils.Example
 
 test_map : IO ()
 test_map = do

@@ -13,12 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Utils
+module Utils.Example
 
 import System
 
+import Data.Hashable
+
 import Literal
 import Tensor
+
+export
+isNan : Double -> Bool
+isNan x = x /= x
 
 export
 assert : String -> Bool -> IO ()
@@ -30,17 +36,18 @@ export
 assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
 assertAll name xs = assert name (arrayAll (toLiteral xs)) where
   arrayAll : {shape : _} -> Literal shape Bool -> Bool
-  arrayAll {shape = []} (Scalar x) = x
-  arrayAll {shape = (0 :: _)} [] = True
-  arrayAll {shape = ((S d) :: ds)} (x :: xs) = arrayAll x && arrayAll {shape=(d :: ds)} xs
+  arrayAll (Scalar x) = x
+  arrayAll [] = True
+  arrayAll (x :: xs) = arrayAll x && arrayAll xs
 
 export
 bools : List (Literal [] Bool)
 bools = [True, False]
 
-export
-ints : List (Literal [] Int)
-ints = [-3, -1, 0, 1, 3]
+namespace Literal
+  export
+  ints : List (Literal [] Int)
+  ints = [-3, -1, 0, 1, 3]
 
 namespace Double
   export

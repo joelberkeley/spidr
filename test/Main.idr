@@ -15,6 +15,9 @@ limitations under the License.
 --}
 module Main
 
+import Data.SOP
+import Hedgehog
+
 import Unit.Model.TestKernel
 import Unit.Util.TestHashable
 import Unit.TestDistribution
@@ -22,17 +25,21 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-import Utils
+import Utils.Example
 
+import System
+
+covering
 main : IO ()
 main = do
-  Utils.test
+  Utils.Example.test
 
   Unit.TestUtil.test
-  Unit.Util.TestHashable.test
   Unit.TestLiteral.test
-  Unit.TestTensor.test
   Unit.Model.TestKernel.test
   Unit.TestDistribution.test
 
-  putStrLn "Tests passed"
+  test [
+      Unit.Util.TestHashable.root
+    , Unit.TestTensor.root
+  ]

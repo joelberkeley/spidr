@@ -1,6 +1,14 @@
 package test
 
-depends = spidr, contrib, hashable
+depends =
+  contrib,
+  hashable,
+  elab-util,
+  hedgehog,
+  pretty-show,
+  sop,
+  spidr
+
 opts = "--total"
 sourcedir = "test"
 
@@ -16,4 +24,6 @@ modules =
   Unit.TestUtil,
 
   Main,
-  Utils
+
+  Utils.Example,
+  Utils.Property
