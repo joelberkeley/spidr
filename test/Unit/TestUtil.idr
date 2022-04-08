@@ -16,7 +16,8 @@ limitations under the License.
 module Unit.TestUtil
 
 import Util
-import Utils
+
+import Utils.Example
 
 namespace Vect
   export

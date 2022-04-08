@@ -19,7 +19,7 @@ import Literal
 import Tensor
 import Model.Kernel
 
-import Utils
+import Utils.Example
 
 test_rbf : IO ()
 test_rbf = do

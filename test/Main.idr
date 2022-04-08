@@ -25,12 +25,12 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-import Utils
+import Utils.Example
 
 covering
 main : IO Bool
 main = do
-  Utils.test
+  Utils.Example.test
 
   Unit.TestUtil.test
   Unit.TestLiteral.test

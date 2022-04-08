@@ -21,6 +21,9 @@ import Literal
 import Tensor
 import Distribution
 
+import Utils.Example
+import Utils.Property
+
 test_gaussian_pdf : IO ()
 test_gaussian_pdf = do
   let

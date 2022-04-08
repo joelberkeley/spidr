@@ -13,58 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Utils
+module Utils.Example
 
 import System
 
 import Data.Hashable
 
-import public Data.SOP
-import Data.Bounded
-import public Hedgehog
 import Literal
 import Tensor
 
 export
 isNan : Double -> Bool
 isNan x = x /= x
-
-maxRank : Nat
-maxRank = 5
-
-maxDim : Nat
-maxDim = 10
-
-export
-shapes : Gen Shape
-shapes = list (linear 0 maxRank) (nat $ linear 0 maxDim)
-
-export covering
-literal : (shape : Shape) -> Gen a -> Gen (Literal shape a)
-literal [] gen = map Scalar gen
-literal (0 :: _) gen = pure []
-literal (S d :: ds) gen = [| literal ds gen :: literal (d :: ds) gen |]
-
-pow : Prelude.Num ty => ty -> Nat -> ty
-pow x Z = x
-pow x (S k) = x * pow x k
-
-intBound : Int
-intBound = pow 2 10
-
-export
-ints : Gen Int
-ints = int $ linear (-intBound) intBound
-
-doubleBound : Double
-doubleBound = 9999
-
-export
-doubles : Gen Double
-doubles = frequency [
-    (1, double $ exponentialDoubleFrom (-doubleBound) 0 doubleBound),
-    (3, element [-1 / 0, 1 / 0, 0 / 0])
-  ]
 
 export
 assert : String -> Bool -> IO ()
@@ -210,12 +170,3 @@ test : IO ()
 test = do
   Double.test_sufficientlyEq
   Tensor.test_sufficientlyEq
-
-infix 1 ==~
-
-sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
-sufficientlyEq' x y = all [| sufficientlyEq x y |]
-
-export covering
-(==~) : Monad m => {shape : _} -> Literal shape Double -> Literal shape Double -> TestT m ()
-(==~) x y = diff x sufficientlyEq' y

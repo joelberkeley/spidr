@@ -23,7 +23,8 @@ import Literal
 
 import Tensor
 
-import Utils
+import Utils.Example
+import Utils.Property
 
 covering
 test_fromLiteral_toLiteral : Property
