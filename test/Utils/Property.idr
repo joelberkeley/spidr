@@ -54,12 +54,16 @@ ints = int $ linear (-intBound) intBound
 doubleBound : Double
 doubleBound = 9999
 
+numericDoubles : Gen Double
+numericDoubles = double $ exponentialDoubleFrom (-doubleBound) 0 doubleBound
+
 export
 doubles : Gen Double
-doubles = frequency [
-    (1, double $ exponentialDoubleFrom (-doubleBound) 0 doubleBound),
-    (3, element [-1 / 0, 1 / 0, 0 / 0])
-  ]
+doubles = frequency [(1, numericDoubles), (3, element [-inf, inf, nan])]
+
+export
+doublesWithoutNan : Gen Double
+doublesWithoutNan = frequency [(1, numericDoubles), (3, element [-inf, inf])]
 
 infix 1 ==~
 

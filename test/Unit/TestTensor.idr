@@ -624,27 +624,41 @@ testElementwiseBinaryCases = [
     ("(*) F64", F64.testElementwiseBinary (*) (*)),
     ("(*) S32", S32.testElementwiseBinary (*) (*)),
     ("(/)", F64.testElementwiseBinary (/) (/)),
-    -- ("pow", F64.testElementwiseBinary pow (^)),  there's a bug in idris 0.5.1 pow
-    ("min F64", F64.testElementwiseBinary min' min),
+    -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
     ("min S32", S32.testElementwiseBinary min min),
-    ("max F64", F64.testElementwiseBinary max' max),
     ("max S32", S32.testElementwiseBinary max max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
 
   where
-  min' : Double -> Double -> Double
-  min' x y = if (x /= x) then x else if (y /= y) then y else min x y
-
-  max' : Double -> Double -> Double
-  max' x y = if (x /= x) then x else if (y /= y) then y else max x y
-
   and : Bool -> Bool -> Bool
   and x y = x && y
 
   or : Bool -> Bool -> Bool
   or x y = x || y
+
+covering
+test_minF64 : Property
+test_minF64 = property $ do
+  shape <- forAll shapes
+  -- XLA has a bug for nan values
+  let doubles = literal shape doublesWithoutNan
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| min x y |] ==~ toLiteral (min x' y')
+
+covering
+test_maxF64 : Property
+test_maxF64 = property $ do
+  shape <- forAll shapes
+  -- XLA has a bug for nan values
+  let doubles = literal shape doublesWithoutNan
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| max x y |] ==~ toLiteral (max x' y')
 
 covering
 test_scalar_multiplication : Property
@@ -734,7 +748,7 @@ covering
 test_Min : Property
 test_Min = property $ do
   shape <- forAll shapes
-  x <- forAll (literal shape doubles)
+  x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Min} x' (neutral @{Min})
       left = (<+>) @{Min} (neutral @{Min}) x'
@@ -745,7 +759,7 @@ covering
 test_Max : Property
 test_Max = property $ do
   shape <- forAll shapes
-  x <- forAll (literal shape doubles)
+  x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Max} x' (neutral @{Max})
       left = (<+>) @{Max} (neutral @{Max}) x'
@@ -928,6 +942,8 @@ root = MkGroup "Tensor" $ [
     , ("Scalarwise.(/)", test_scalar_division)
     , ("Sum", test_Sum)
     , ("Prod", test_Prod)
+    , ("min F64", test_minF64)
+    , ("max F64", test_maxF64)
     , ("Min", test_Min)
     , ("Max", test_Max)
     , ("Any", test_Any)
