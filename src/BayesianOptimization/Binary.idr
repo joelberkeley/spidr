@@ -34,7 +34,7 @@ export
 Monad (Binary a b) where
   join (MkBinary f) = MkBinary (\a, b => run (f a b) a b)
 
-infixr 9 <|, |>, <|>
+infixr 9 $<, >$, >$<
 
 ||| Apply a function to the left-most value of the binary function, before passing it to the binary
 ||| function.
@@ -44,14 +44,14 @@ infixr 9 <|, |>, <|>
 ||| add = MkBinary (+)
 |||
 ||| add_fst : Binary (Int, Int) Int Int
-||| add_fst = fst <| add
+||| add_fst = fst $< add
 |||
 ||| three : Int
 ||| three = run add_fst (2, -4) 1
 ||| ```
 export
-(<|) : (a -> aa) -> Binary aa b c -> Binary a b c
-f <| bin = MkBinary (\a, b => run bin (f a) b)
+($<) : (a -> aa) -> Binary aa b c -> Binary a b c
+f $< bin = MkBinary (\a, b => run bin (f a) b)
 
 ||| Apply a function to the right-most value of the binary function, before passing it to the binary
 ||| function. For example,
@@ -61,18 +61,18 @@ f <| bin = MkBinary (\a, b => run bin (f a) b)
 ||| add = MkBinary (+)
 |||
 ||| add_fst : Binary Int (Int, Int) Int
-||| add_fst = fst |> add
+||| add_fst = fst >$ add
 |||
 ||| three : Int
 ||| three = run add_fst 1 (2, -4)
 ||| ```
 export
-(|>) : (b -> bb) -> Binary a bb c -> Binary a b c
-f |> bin = MkBinary (\a, b => run bin a (f b))
+(>$) : (b -> bb) -> Binary a bb c -> Binary a b c
+f >$ bin = MkBinary (\a, b => run bin a (f b))
 
 export
-(<|>) : forall t . (forall a . t a -> a) -> Binary a b c -> Binary (t a) (t b) c
-f <|> (MkBinary run) = MkBinary (\x, y => run (f x) (f y))
+(>$<) : forall t . (forall a . t a -> a) -> Binary a b c -> Binary (t a) (t b) c
+f >$< (MkBinary run) = MkBinary (\x, y => run (f x) (f y))
 
 -- these compile for (Labelled a b) but I didn't think too much about whether to keep them
 -- export

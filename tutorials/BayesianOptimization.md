@@ -199,8 +199,8 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Tensor [1, 2] F64
-newPoint'' = let eci = objective <|> expectedConstrainedImprovement @{Latent} 0.5
-                 pof = failure <|> probabilityOfFeasibility @{%search} @{Latent} 0.5
+newPoint'' = let eci = objective >$< expectedConstrainedImprovement @{Latent} 0.5
+                 pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
                  acquisition = map optimizer (eci <*> pof)
               in run acquisition (Label historicData failureData) (Label model failureModel)
 ```
