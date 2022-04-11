@@ -34,11 +34,7 @@ assert name x = unless x $ do
 
 export
 assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
-assertAll name xs = assert name (arrayAll (toLiteral xs)) where
-  arrayAll : {shape : _} -> Literal shape Bool -> Bool
-  arrayAll (Scalar x) = x
-  arrayAll [] = True
-  arrayAll (x :: xs) = arrayAll x && arrayAll xs
+assertAll name xs = assert name $ all $ toLiteral xs
 
 export
 bools : List (Literal [] Bool)
@@ -77,17 +73,18 @@ floatingPointTolerance = 0.00000001
 
 namespace Double
   export
-  sufficientlyEq : Double -> Double -> Bool
+  sufficientlyEq : {default floatingPointTolerance tol : Double} -> Double -> Double -> Bool
   sufficientlyEq x y =  -- moved
     x /= x && y /= y  -- nan
     || x == y  -- inf
     -- `let` avoids compiler bug
-    || (let diff = abs (x - y) in diff < floatingPointTolerance)  -- real
+    || (let diff = abs (x - y) in diff < tol)  -- real
 
 namespace Literal
   export
-  sufficientlyEq : Literal [] Double -> Literal [] Double -> Bool
-  sufficientlyEq x y = all [| sufficientlyEq x y |]
+  sufficientlyEq : {default floatingPointTolerance tol : Double} -> {shape : _}
+                   -> Literal shape Double -> Literal shape Double -> Bool
+  sufficientlyEq x y = all [| sufficientlyEq {tol} x y |]
 
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [
@@ -139,34 +136,7 @@ namespace Double
     sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
                 | (x, y) <- insufficientlyEqCases]
 
-namespace Tensor
-  -- WARNING: This uses a number of functions, and thus assumes they work, so
-  -- we shouldn't use it to test them.
-  export
-  sufficientlyEq : {default floatingPointTolerance tol : Double} -> {shape : _}
-                      -> Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED
-  sufficientlyEq x y =
-    x /= x && y /= y  -- nan
-    || x == y  -- inf
-    || abs (x - y) < fill tol  -- real
-
-  export
-  test_sufficientlyEq : IO ()
-  test_sufficientlyEq = do
-    let x = fromLiteral [[0.0, 1.1, inf], [-inf, nan, -1.1]]
-        y = fromLiteral [[0.1, 1.1, inf], [inf, nan, 1.1]]
-        eq = toLiteral (Tensor.sufficientlyEq x y)
-    assert "sufficientlyEq for array" (eq == [[False, True, True], [False, True, False]])
-
-    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-              sufficientlyEq (fromDouble x) (fromDouble y)
-              | (x, y) <- sufficientlyEqCases]
-    sequence_ [assertAll "sufficientlyEq for suff. equal scalars" $
-              not (sufficientlyEq (fromDouble x) (fromDouble y))
-              | (x, y) <- insufficientlyEqCases]
-
 export
 test : IO ()
 test = do
   Double.test_sufficientlyEq
-  Tensor.test_sufficientlyEq

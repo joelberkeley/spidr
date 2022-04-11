@@ -450,8 +450,8 @@ test_map = do
 
   sequence_ $ do
     x <- doubles
-    let x = fromLiteral {dtype=F64} x
-    pure $ assertAll "map for F64 scalar" $ sufficientlyEq (map (+ 1.2) x) (x + 1.2)
+    let x' = fromLiteral {dtype=F64} x
+    pure $ assert "map for F64 scalar" $ sufficientlyEq (toLiteral $ map (+ 1.2) x') (x + 1.2)
 
 test_map2 : IO ()
 test_map2 = do
@@ -463,29 +463,32 @@ test_map2 = do
 
   let l = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
       r = fromLiteral {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-  assertAll "map2 for F64 matrix" $ sufficientlyEq (map2 (+) l r) (l + r)
+      actual = map2 Tensor.(+) l r
+  assert "map2 for F64 matrix" $ sufficientlyEq (toLiteral actual) (toLiteral $ l + r)
 
   sequence_ $ do
     l <- doubles
     r <- doubles
     let l' = fromLiteral {dtype=F64} l
         r' = fromLiteral {dtype=F64} r
-    pure $ assertAll "map2 for F64 scalars" $ sufficientlyEq (map2 (+) l' r') (l' + r')
+        actual = map2 Tensor.(+) l' r'
+    pure $ assert "map2 for F64 scalars" $ sufficientlyEq (toLiteral actual) [| l + r |]
 
   sequence_ $ do
     l <- doubles
     let l' = fromLiteral {dtype=F64} l
-    pure $ assertAll "map2 for F64 scalars with repeated argument" $
-      sufficientlyEq (map2 (+) l' l') (l' + l')
+    pure $ assert "map2 for F64 scalars with repeated argument" $
+      sufficientlyEq (toLiteral $ map2 Tensor.(+) l' l') [| l + l |]
 
 test_reduce : IO ()
 test_reduce = do
   let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-  assertAll "reduce for F64 array" $ sufficientlyEq (reduce @{Sum} 1 x) (fromLiteral [6.6, -6.6])
+      actual = reduce @{Sum} 1 x
+  assert "reduce for F64 array" $ sufficientlyEq (toLiteral actual) [6.6, -6.6]
 
   let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-  assertAll "reduce for F64 array" $
-    sufficientlyEq (reduce @{Sum} 0 x) (fromLiteral [0.0, 0.0, 0.0])
+      actual = reduce @{Sum} 0 x
+  assert "reduce for F64 array" $ sufficientlyEq (toLiteral actual) [0.0, 0.0, 0.0]
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
   assertAll "reduce for PRED array" $ reduce @{All} 1 x == fromLiteral [False, False]
@@ -864,14 +867,14 @@ test_cond = do
 test_erf : IO ()
 test_erf = do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
-      expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
-  assertAll "erf agrees with tfp Normal" $ sufficientlyEq {tol=0.000001} (erf x) expected
+      expected = [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
+  assert "erf agrees with tfp Normal" $ sufficientlyEq {tol=0.000001} (toLiteral $ erf x) expected
 
 test_cholesky : IO ()
 test_cholesky = do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
-      expected = fromLiteral [[nan, 0], [nan, nan]]
-  assertAll "cholesky zero determinant" $ sufficientlyEq (cholesky x) expected
+      expected = [[nan, 0], [nan, nan]]
+  assert "cholesky zero determinant" $ sufficientlyEq (toLiteral $ cholesky x) expected
 
   -- example generated with tensorflow
   let x = fromLiteral [
@@ -879,12 +882,12 @@ test_cholesky = do
               [ 0.7059226 ,  2.661426  , -0.8714733 ],
               [ 1.3730898 ,  1.4064665 ,  2.7474475 ]
             ]
-      expected = fromLiteral [
+      expected = [
               [1.4953672 , 0.0       , 0.0       ],
               [0.47207308, 1.5615932 , 0.0       ],
               [0.9182292 , 0.6230785 , 1.2312902 ]
             ]
-  assertAll "cholesky" $ sufficientlyEq {tol=0.000001} (cholesky x) expected
+  assert "cholesky" $ sufficientlyEq {tol=0.000001} (toLiteral $ cholesky x) expected
 
 test_triangularsolve : IO ()
 test_triangularsolve = do
@@ -899,30 +902,34 @@ test_triangularsolve = do
               [0.7890165 , 0.77121615]
             ]
       actual = a |\ b
-      expected = fromLiteral [
+      expected = [
                     [ 0.52820396,  0.43452972],
                     [ 0.79913783, -0.10254406],
                     [ 1.8257918 ,  2.7147462 ]
                   ]
-  assertAll "(|\) result" $ sufficientlyEq {tol=0.000001} actual expected
-  assertAll "(|\) is invertible with (@@)" $ sufficientlyEq {tol=0.000001} (a @@ actual) b
+  assert "(|\) result" $ sufficientlyEq {tol=0.000001} (toLiteral actual) expected
+  assert "(|\) is invertible with (@@)" $
+    sufficientlyEq {tol=0.000001} (toLiteral $ a @@ actual) (toLiteral b)
 
   let actual = a.T \| b
-      expected = fromLiteral [
-                    [-2.3692384 , -2.135952  ],
-                    [ 0.31686386, -0.594465  ],
-                    [ 4.0527363 ,  3.9613056 ]
-                  ]
-  assertAll "(\|) result" $ sufficientlyEq {tol=0.000001} actual expected
-  assertAll "(\|) is invertible with (@@)" $ sufficientlyEq {tol=0.000001} (a.T @@ actual) b
+      expected = [
+                   [-2.3692384 , -2.135952  ],
+                   [ 0.31686386, -0.594465  ],
+                   [ 4.0527363 ,  3.9613056 ]
+                 ]
+  assert "(\|) result" $ sufficientlyEq {tol=0.000001} (toLiteral actual) expected
+  assert "(\|) is invertible with (@@)" $
+    sufficientlyEq {tol=0.000001} (toLiteral $ a.T @@ actual) (toLiteral b)
 
   let a = fromLiteral [[1.0, 2.0], [3.0, 4.0]]
       a_lt = fromLiteral [[1.0, 0.0], [3.0, 4.0]]
       b = fromLiteral [5.0, 6.0]
-  assertAll "(|\) upper triangular elements are ignored" $ sufficientlyEq (a |\ b) (a_lt |\ b)
+  assert "(|\) upper triangular elements are ignored" $
+    sufficientlyEq (toLiteral $ a |\ b) (toLiteral $ a_lt |\ b)
 
   let a_ut = fromLiteral [[1.0, 2.0], [0.0, 4.0]]
-  assertAll "(\|) lower triangular elements are ignored" $ sufficientlyEq (a \| b) (a_ut \| b)
+  assert "(\|) lower triangular elements are ignored" $
+    sufficientlyEq (toLiteral $ a \| b) (toLiteral $ a_ut \| b)
 
 test_trace : IO ()
 test_trace = do

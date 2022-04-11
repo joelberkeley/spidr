@@ -29,9 +29,9 @@ test_gaussian_pdf = do
     assertForUnivariate mean cov x =
       let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
           actual = pdf gaussian (fromLiteral [[x]])
-          expected = fromLiteral [| univariate x mean cov |]
+          expected = [| univariate x mean cov |]
           msg = "Gaussian pdf mean \{show mean} cov \{show cov} x \{show x}"
-       in assertAll msg (sufficientlyEq actual expected)
+       in assert msg (sufficientlyEq (toLiteral actual) expected)
 
           where
           univariate : Double -> Double -> Double -> Double
@@ -47,9 +47,9 @@ test_gaussian_pdf = do
       cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
       x = fromLiteral [[1.1], [-0.5]]
       actual = pdf (MkGaussian mean cov) x
-      expected = fromLiteral 0.016427375
-  assertAll "multivariate Gaussian pdf agrees with tfp" $
-    sufficientlyEq {tol=0.00000001} actual expected
+      expected = 0.016427375
+  assert "multivariate Gaussian pdf agrees with tfp" $
+    sufficientlyEq {tol=0.00000001} (toLiteral actual) expected
 
 test_gaussian_cdf : IO ()
 test_gaussian_cdf = do
@@ -59,8 +59,9 @@ test_gaussian_cdf = do
 
       assert' : (Literal [] Double, Literal [] Double) -> IO ()
       assert' (x, exp) =
-        assertAll "Gaussian cdf agrees with tfp Normal \{show x} \{show exp}" $
-          sufficientlyEq {tol=0.0001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
+        let actual = cdf gaussian (fromLiteral [[x]])
+         in assert "Gaussian cdf agrees with tfp Normal \{show x} \{show exp}" $
+              sufficientlyEq {tol=0.0001} (toLiteral actual) exp
 
   traverse_ assert' (zip xs expected)
 
