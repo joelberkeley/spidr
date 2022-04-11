@@ -31,8 +31,6 @@ import Data.Hashable
 
 import public Types
 
-prefix 9 #
-
 ||| A scalar or array of values.
 public export
 data Literal : Shape -> Type -> Type where
