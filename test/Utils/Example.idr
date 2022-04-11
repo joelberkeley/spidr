@@ -83,8 +83,8 @@ namespace Double
 namespace Literal
   export
   sufficientlyEq : {default floatingPointTolerance tol : Double} -> {shape : _}
-                   -> Literal shape Double -> Literal shape Double -> Bool
-  sufficientlyEq x y = all [| sufficientlyEq {tol} x y |]
+                   -> Tensor shape F64 -> Tensor shape F64 -> Bool
+  sufficientlyEq x y = all [| sufficientlyEq {tol} (toLiteral x) (toLiteral y) |]
 
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [

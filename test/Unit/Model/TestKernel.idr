@@ -26,15 +26,14 @@ test_rbf = do
   let length_scale = fromLiteral 0.4
       x = fromLiteral [[-1.2], [-0.5], [0.3], [1.2]]
       x' = fromLiteral [[-1.2], [-0.2], [0.8]]
-      actual = rbf length_scale x x'
-      expected = [  -- calculated with tensorflow probability
+      expected = fromLiteral [  -- calculated with tensorflow probability
           [       1.0, 0.04393695, 0.00000373],
           [0.21626519, 0.75483966, 0.00508606],
           [0.00088383, 0.45783338, 0.45783338],
           [       0.0, 0.00218749, 0.60653049]
         ]
   assert "rbf agrees with Tensorflow Probability" $
-    sufficientlyEq {tol=0.000001} (toLiteral actual) expected
+    sufficientlyEq {tol=0.000001} (rbf length_scale x x') expected
 
 export
 test : IO ()
