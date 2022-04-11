@@ -34,12 +34,12 @@ main : IO ()
 main = do
   Utils.Example.test
 
-  Unit.TestUtil.test
-  Unit.TestLiteral.test
-  Unit.Model.TestKernel.test
   Unit.TestDistribution.test
 
   test [
       Unit.Util.TestHashable.root
+    , Unit.TestUtil.root
+    , Unit.TestLiteral.root
     , Unit.TestTensor.root
+    , Unit.Model.TestKernel.root
   ]

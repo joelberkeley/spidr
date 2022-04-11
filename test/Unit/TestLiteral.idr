@@ -17,102 +17,99 @@ module Unit.TestLiteral
 
 import Literal
 
-import Utils.Example
+import Utils.Property
 
-test_map : IO ()
-test_map = do
-  assert "Literal map scalar" $ map (+ 1) (Scalar 2) == Scalar 3
-  assert "Literal map empty" $ (map (+ 1) $ the (Literal [0] _) []) == []
-  assert "Literal map array" $
-    (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) == [[1, 2, 3], [4, 5, 6]]
+test_map : Property
+test_map = property $ do
+  map (+ 1) (Scalar 2) === Scalar 3
+  (map (+ 1) $ the (Literal [0] _) []) === []
+  (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === [[1, 2, 3], [4, 5, 6]]
 
-test_pure : IO ()
-test_pure = do
-  assert "Literal pure scalar" $ the (Literal [] Nat) (pure 0) == Scalar 0
-  assert "Literal pure empty vector" $ the (Literal [0] Nat) (pure 0) == []
-  assert "Literal pure empty array" $ the (Literal [0, 2] Nat) (pure 0) == []
-  assert "Literal pure array" $ the (Literal [2, 3] Nat) (pure 0) == [[0, 0, 0], [0, 0, 0]]
+test_pure : Property
+test_pure = property $ do
+  the (Literal [] Nat) (pure 0) === Scalar 0
+  the (Literal [0] Nat) (pure 0) === []
+  the (Literal [0, 2] Nat) (pure 0) === []
+  the (Literal [2, 3] Nat) (pure 0) === [[0, 0, 0], [0, 0, 0]]
 
-test_apply : IO ()
-test_apply = do
-  assert "Literal (<*>) scalar unary" $ (Scalar (+ 1) <*> Scalar 2) == Scalar 3
-  assert "Literal (<*>) scalar binary" $ (Scalar (+) <*> Scalar 1 <*> Scalar 2) == Scalar 3
-  assert "Literal (<*>) empty" $
-    let f : Literal [0] (() -> ()) = []
-        x : Literal [0] () = []
-     in (f <*> x) == x
-  assert "Literal (<*>) array unary" $ ([Scalar (+ 1), Scalar (+ 1)] <*> [0, 1]) == [1, 2]
-  assert "Literal (<*>) array binary" $ ([Scalar (+), Scalar (+)] <*> [0, 1] <*> [2, 3]) == [2, 4]
+test_apply : Property
+test_apply = property $ do
+  (Scalar (+ 1) <*> Scalar 2) === Scalar 3
+  (Scalar (+) <*> Scalar 1 <*> Scalar 2) === Scalar 3
+  let f : Literal [0] (() -> ()) = []
+      x : Literal [0] () = []
+  (f <*> x) === x
+  ([Scalar (+ 1), Scalar (+ 1)] <*> [0, 1]) === [1, 2]
+  ([Scalar (+), Scalar (+)] <*> [0, 1] <*> [2, 3]) === [2, 4]
 
-test_foldr : IO ()
-test_foldr = do
+test_foldr : Property
+test_foldr = property $ do
   let xs : Literal [0] String = []
-  assert "Literal foldr empty" $ foldr (++) "!" xs == "!"
+  foldr (++) "!" xs === "!"
 
   let xs = Scalar "a"
-  assert "Literal foldr scalar" $ foldr (++) "!" xs == "a!"
+  foldr (++) "!" xs === "a!"
 
   let xs = [Scalar "a", Scalar "b", Scalar "c", Scalar "d"]
-  assert "Literal foldr vector" $ foldr String.(++) "!" xs == "abcd!"
+  foldr String.(++) "!" xs === "abcd!"
 
   let xs = [[Scalar "a", Scalar "b"], [Scalar "c", Scalar "d"]]
-  assert "Literal foldr matrix" $ foldr String.(++) "!" xs == "abcd!"
+  foldr String.(++) "!" xs === "abcd!"
 
-test_all : IO ()
-test_all = do
-  assert "Literal all scalar true" $ all True == True
-  assert "Literal all scalar false" $ all False == False
-  assert "Literal all empty" $ all (the (Literal [0] Bool) []) == True
-  assert "Literal all array all true" $ all [True, True] == True
-  assert "Literal all array some false" $ all [True, False] == False
-  assert "Literal all array all false" $ all [False, False] == False
+test_all : Property
+test_all = property $ do
+  all True === True
+  all False === False
+  all (the (Literal [0] Bool) []) === True
+  all [True, True] === True
+  all [True, False] === False
+  all [False, False] === False
 
-test_show : IO ()
-test_show = do
-  assert "Literal show scalar Int" $ show (Scalar $ the Int 1) == "1"
-  assert "Literal show scalar Double" $ show (Scalar $ the Double 1.2) == "1.2"
-  assert "Literal show scalar Bool" $ show Literal.True == "True"
-  assert "Literal show vector Int" $ show (the (Literal _ _) [0, 1, 2]) == "[0, 1, 2]"
-  assert "Literal show array Int" $
-    show (the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) == "[[0, 1, 2],\n [3, 4, 5]]"
-  assert "Literal show array Double" $
-    let expected = "[[0.1, 1.1, 2.1],\n [-3.1, 4.1, 5.1]]"
-     in show (the (Literal _ _) [[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]) == expected
-  assert "Literal show array Bool" $ show (the (Literal _ _) [[True, False]]) == "[[True, False]]"
+test_show : Property
+test_show = property $ do
+  show (Scalar $ the Int 1) === "1"
+  show (Scalar $ the Double 1.2) === "1.2"
+  show Literal.True === "True"
+  show (the (Literal _ _) [0, 1, 2]) === "[0, 1, 2]"
+  show (the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === "[[0, 1, 2],\n [3, 4, 5]]"
+  let expected = "[[0.1, 1.1, 2.1],\n [-3.1, 4.1, 5.1]]"
+  show (the (Literal _ _) [[0.1, 1.1, 2.1], [-3.1, 4.1, 5.1]]) === expected
+  show (the (Literal _ _) [[True, False]]) === "[[True, False]]"
 
-  assert "Literal show shape [0]" $ show (the (Literal [0] Nat) []) == "[]"
-  assert "Literal show shape [0, 0]" $ show (the (Literal [0, 0] Nat) []) == "[]"
-  assert "Literal show shape [0, 1]" $ show (the (Literal [0, 1] Nat) []) == "[]"
-  assert "Literal show shape [1, 0]" $ show (the (Literal [1, 0] Nat) [[]]) == "[[]]"
-  assert "Literal show shape [1, 0, 1]" $ show (the (Literal [1, 0, 1] Nat) [[]]) == "[[]]"
-  assert "Literal show shape [2, 0]" $ show (the (Literal [2, 0] Nat) [[], []]) == "[[],\n []]"
-  assert "Literal show shape [3, 2, 2]" $
-    let xs : Literal [3, 2, 2] Nat = [[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]
-     in show xs == "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
+  show (the (Literal [0] Nat) []) === "[]"
+  show (the (Literal [0, 0] Nat) []) === "[]"
+  show (the (Literal [0, 1] Nat) []) === "[]"
+  show (the (Literal [1, 0] Nat) [[]]) === "[[]]"
+  show (the (Literal [1, 0, 1] Nat) [[]]) === "[[]]"
+  show (the (Literal [2, 0] Nat) [[], []]) === "[[],\n []]"
+  
+  let xs : Literal [3, 2, 2] Nat = [[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]
+  show xs === "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
 
-test_cast : IO ()
-test_cast = do
+test_cast : Property
+test_cast = property $ do
   let lit : Literal [] Nat = Scalar 1
       arr : Array [] Nat = 1
-  assert "Literal cast scalar to Array" $ cast @{toArray} lit == arr
-  assert "Literal cast scalar from Array" $ lit == cast arr
+  cast @{toArray} lit === arr
+  lit === cast arr
 
   let lit : Literal [0] Nat = []
       arr : Array [0] Nat = []
-  assert "Literal cast empty to Array" $ cast @{toArray} lit == arr
-  assert "Literal cast empty from Array" $ lit == cast arr
+  cast @{toArray} lit === arr
+  lit === cast arr
 
   let lit : Literal [2, 3] Nat = [[0, 1, 2], [3, 4, 5]]
       arr : Array [2, 3] Nat = [[0, 1, 2], [3, 4, 5]]
-  assert "Literal cast array to Array" $ cast @{toArray} lit == arr
-  assert "Literal cast array from Array" $ lit == cast arr
+  cast @{toArray} lit === arr
+  lit === cast arr
 
 export
-test : IO ()
-test = do
-  test_map
-  test_pure
-  test_apply
-  test_foldr
-  test_all
-  test_show
+root : Group
+root = MkGroup "Literal" $ [
+      ("map", test_map)
+    , ("pure", test_pure)
+    , ("<*>", test_apply)
+    , ("foldr", test_foldr)
+    , ("all", test_all)
+    , ("show", test_show)
+  ]

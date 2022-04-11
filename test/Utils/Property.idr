@@ -20,6 +20,7 @@ import Data.Bounded
 import public Hedgehog
 
 import Literal
+import Tensor
 import Types
 
 import Utils.Example
@@ -73,3 +74,26 @@ export covering
   where
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
   sufficientlyEq' x y = all [| sufficientlyEq x y |]
+
+infix 1 ===?, ==~?
+
+export
+(===?) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+x ===? y = (toLiteral x) === (toLiteral y)
+
+namespace PRED
+  export
+  (===?) : Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
+  x ===? y = (toLiteral x) === (toLiteral y)
+
+export
+fpTensorEq : Monad m => {default floatingPointTolerance tol : Double} -> {shape : _} ->
+             Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+fpTensorEq x y = diff (toLiteral x) sufficientlyEq' (toLiteral y)
+  where
+  sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
+  sufficientlyEq' x y = all [| sufficientlyEq {tol} x y |]
+
+export
+(==~?) : Monad m => {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+(==~?) = fpTensorEq

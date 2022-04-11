@@ -33,10 +33,6 @@ assert name x = unless x $ do
   exitFailure
 
 export
-assertAll : String -> {shape : _} -> Tensor shape PRED -> IO ()
-assertAll name xs = assert name $ all $ toLiteral xs
-
-export
 bools : List (Literal [] Bool)
 bools = [True, False]
 
