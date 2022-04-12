@@ -48,14 +48,11 @@ gaussianMultivariatePDF = withTests 1 $ property $ do
 gaussianCDF : Property
 gaussianCDF = withTests 1 $ property $ do
   let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
-      xs : Vect _ _ = [-1.5, -0.5, 0.5, 1.5]
-      expected = [0.04779036, 0.20232838, 0.5, 0.7976716]
 
-      assert' : Monad m => (Literal [] Double, Literal [] Double) -> TestT m ()
-      assert' (x, exp) =
-        (===?) {tol=0.000001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
-
-  traverse_ assert' (zip xs expected)
+  cdf gaussian (fromLiteral [[-1.5]]) ===? 0.04779036
+  cdf gaussian (fromLiteral [[-0.5]]) ===? 0.20232838
+  cdf gaussian (fromLiteral [[0.5]]) ===? 0.5
+  cdf gaussian (fromLiteral [[1.5]]) ===? 0.7976716
 
 export covering
 group : Group
