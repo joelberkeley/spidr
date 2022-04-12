@@ -75,11 +75,12 @@ export covering
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
   sufficientlyEq' x y = all [| sufficientlyEq x y |]
 
-infix 1 ===?, ==~?
+infix 1 ===?
 
-export
-(===?) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
-x ===? y = (toLiteral x) === (toLiteral y)
+namespace S32
+  export
+  (===?) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+  x ===? y = (toLiteral x) === (toLiteral y)
 
 namespace PRED
   export
@@ -94,6 +95,7 @@ fpTensorEq x y = diff (toLiteral x) sufficientlyEq' (toLiteral y)
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
   sufficientlyEq' x y = all [| sufficientlyEq {tol} x y |]
 
-export
-(==~?) : Monad m => {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> TestT m ()
-(==~?) = fpTensorEq
+namespace F64
+  export
+  (===?) : Monad m => {shape : _} -> Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+  (===?) = fpTensorEq

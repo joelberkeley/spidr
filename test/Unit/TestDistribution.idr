@@ -22,16 +22,17 @@ import Distribution
 import Utils.Example
 import Utils.Property
 
-test_gaussian_pdf : IO ()
-test_gaussian_pdf = do
+test_gaussian_pdf : Property
+test_gaussian_pdf = withTests 1 $ property $ do
   let
-    assertForUnivariate : Literal [] Double -> Literal [] Double -> Literal [] Double -> IO ()
+    assertForUnivariate : Monad m =>
+                          Literal [] Double -> Literal [] Double -> Literal [] Double -> TestT m ()
     assertForUnivariate mean cov x =
       let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
           actual = pdf gaussian (fromLiteral [[x]])
           expected = fromLiteral [| univariate x mean cov |]
           msg = "Gaussian pdf mean \{show mean} cov \{show cov} x \{show x}"
-       in assert msg (sufficientlyEq actual expected)
+       in fpTensorEq actual expected
 
           where
           univariate : Double -> Double -> Double -> Double
@@ -48,24 +49,23 @@ test_gaussian_pdf = do
       x = fromLiteral [[1.1], [-0.5]]
       actual = pdf (MkGaussian mean cov) x
       expected = fromLiteral 0.016427375
-  assert "multivariate Gaussian pdf agrees with tfp" $
-    sufficientlyEq {tol=0.00000001} actual expected
+  fpTensorEq {tol=0.00000001} actual expected
 
-test_gaussian_cdf : IO ()
-test_gaussian_cdf = do
+test_gaussian_cdf : Property
+test_gaussian_cdf = withTests 1 $ property $ do
   let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
       xs : Vect _ _ = [-1.5, -0.5, 0.5, 1.5]
       expected = [0.04779036, 0.20232838, 0.5, 0.7976716]
 
-      assert' : (Literal [] Double, Literal [] Double) -> IO ()
+      assert' : Monad m => (Literal [] Double, Literal [] Double) -> TestT m ()
       assert' (x, exp) =
-        assert "Gaussian cdf agrees with tfp Normal \{show x} \{show exp}" $
-          sufficientlyEq {tol=0.0001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
+        fpTensorEq {tol=0.0001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
 
   traverse_ assert' (zip xs expected)
 
 export
-test : IO ()
-test = do
-  test_gaussian_pdf
-  test_gaussian_cdf
+group : Group
+group = MkGroup "Distribution" $ [
+      ("Gaussian pdf", test_gaussian_pdf)
+    , ("Gaussian cdf", test_gaussian_cdf)
+  ]

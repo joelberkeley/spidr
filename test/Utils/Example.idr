@@ -21,6 +21,9 @@ import Data.Hashable
 
 import Literal
 import Tensor
+import public Data.SOP
+import Data.Bounded
+import public Hedgehog
 
 export
 isNan : Double -> Bool
@@ -125,14 +128,13 @@ insufficientlyEqCases =
 
 namespace Double
   export
-  test_sufficientlyEq : IO ()
-  test_sufficientlyEq = do
-    sequence_ [assert "sufficientlyEq for suff. equal" $ sufficientlyEq x y
-                | (x, y) <- sufficientlyEqCases]
-    sequence_ [assert "sufficientlyEq for insuff. equal" $ not (sufficientlyEq x y)
-                | (x, y) <- insufficientlyEqCases]
+  test_sufficientlyEq : Property
+  test_sufficientlyEq = withTests 1 $ property $ do
+    traverse_ (\(x, y) => sufficientlyEq x y === True) sufficientlyEqCases
+    traverse_ (\(x, y) => (sufficientlyEq x y) === False) insufficientlyEqCases
 
 export
-test : IO ()
-test = do
-  Double.test_sufficientlyEq
+group : Group
+group = MkGroup "Test utilities" [
+    ("sufficientlyEq", Double.test_sufficientlyEq)
+  ]

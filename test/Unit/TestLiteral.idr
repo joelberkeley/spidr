@@ -20,20 +20,20 @@ import Literal
 import Utils.Property
 
 test_map : Property
-test_map = property $ do
+test_map = withTests 1 $ property $ do
   map (+ 1) (Scalar 2) === Scalar 3
   (map (+ 1) $ the (Literal [0] _) []) === []
   (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === [[1, 2, 3], [4, 5, 6]]
 
 test_pure : Property
-test_pure = property $ do
+test_pure = withTests 1 $ property $ do
   the (Literal [] Nat) (pure 0) === Scalar 0
   the (Literal [0] Nat) (pure 0) === []
   the (Literal [0, 2] Nat) (pure 0) === []
   the (Literal [2, 3] Nat) (pure 0) === [[0, 0, 0], [0, 0, 0]]
 
 test_apply : Property
-test_apply = property $ do
+test_apply = withTests 1 $ property $ do
   (Scalar (+ 1) <*> Scalar 2) === Scalar 3
   (Scalar (+) <*> Scalar 1 <*> Scalar 2) === Scalar 3
   let f : Literal [0] (() -> ()) = []
@@ -43,7 +43,7 @@ test_apply = property $ do
   ([Scalar (+), Scalar (+)] <*> [0, 1] <*> [2, 3]) === [2, 4]
 
 test_foldr : Property
-test_foldr = property $ do
+test_foldr = withTests 1 $ property $ do
   let xs : Literal [0] String = []
   foldr (++) "!" xs === "!"
 
@@ -57,7 +57,7 @@ test_foldr = property $ do
   foldr String.(++) "!" xs === "abcd!"
 
 test_all : Property
-test_all = property $ do
+test_all = withTests 1 $ property $ do
   all True === True
   all False === False
   all (the (Literal [0] Bool) []) === True
@@ -66,7 +66,7 @@ test_all = property $ do
   all [False, False] === False
 
 test_show : Property
-test_show = property $ do
+test_show = withTests 1 $ property $ do
   show (Scalar $ the Int 1) === "1"
   show (Scalar $ the Double 1.2) === "1.2"
   show Literal.True === "True"
@@ -87,7 +87,7 @@ test_show = property $ do
   show xs === "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
 
 test_cast : Property
-test_cast = property $ do
+test_cast = withTests 1 $ property $ do
   let lit : Literal [] Nat = Scalar 1
       arr : Array [] Nat = 1
   cast @{toArray} lit === arr
@@ -104,8 +104,8 @@ test_cast = property $ do
   lit === cast arr
 
 export
-root : Group
-root = MkGroup "Literal" $ [
+group : Group
+group = MkGroup "Literal" $ [
       ("map", test_map)
     , ("pure", test_pure)
     , ("<*>", test_apply)

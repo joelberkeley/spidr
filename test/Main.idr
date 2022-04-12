@@ -31,15 +31,12 @@ import System
 
 covering
 main : IO ()
-main = do
-  Utils.Example.test
-
-  Unit.TestDistribution.test
-
-  test [
-      Unit.Util.TestHashable.root
-    , Unit.TestUtil.root
-    , Unit.TestLiteral.root
-    , Unit.TestTensor.root
-    , Unit.Model.TestKernel.root
+main = test [
+      Utils.Example.group
+    , Unit.Util.TestHashable.group
+    , Unit.TestUtil.group
+    , Unit.TestLiteral.group
+    , Unit.TestTensor.group
+    , Unit.TestDistribution.group
+    , Unit.Model.TestKernel.group
   ]
