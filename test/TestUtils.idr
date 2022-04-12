@@ -13,30 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Main
+module TestUtils
 
-import Data.SOP
-import Hedgehog
+import Utils
+import Utils.Cases
+import Utils.Comparison
 
-import TestUtils
-import Utils.TestComparison
+isNanFalseForNumeric : Property
+isNanFalseForNumeric = property $ do
+  x <- forAll doublesWithoutNan
+  assert $ not $ isNan x
 
-import Unit.Model.TestKernel
-import Unit.Util.TestHashable
-import Unit.TestDistribution
-import Unit.TestTensor
-import Unit.TestLiteral
-import Unit.TestUtil
+isNanTrueForNan : Property
+isNanTrueForNan = withTests 1 $ property $ do
+  assert (isNan nan)
 
-covering
-main : IO ()
-main = test [
-      Utils.TestComparison.group
-    , TestUtils.group
-    , Unit.Util.TestHashable.group
-    , Unit.TestUtil.group
-    , Unit.TestLiteral.group
-    , Unit.TestTensor.group
-    , Unit.TestDistribution.group
-    , Unit.Model.TestKernel.group
+export
+group : Group
+group = MkGroup "Test utilities" [
+      ("isNan is False for numbers", isNanFalseForNumeric)
+    , ("isNan is True for nan", isNanTrueForNan)
   ]

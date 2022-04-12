@@ -67,7 +67,7 @@ isNotSufficientlyEq = withTests 1 $ property $ do
 
 export
 group : Group
-group = MkGroup "Test utilities" [
+group = MkGroup "Test comparison utilities" [
       ("sufficientlyEq", isSufficientlyEq)
     , ("not sufficientlyEq", isNotSufficientlyEq)
   ]
