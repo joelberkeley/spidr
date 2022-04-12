@@ -32,7 +32,7 @@ test_gaussian_pdf = withTests 1 $ property $ do
           actual = pdf gaussian (fromLiteral [[x]])
           expected = fromLiteral [| univariate x mean cov |]
           msg = "Gaussian pdf mean \{show mean} cov \{show cov} x \{show x}"
-       in fpTensorEq actual expected
+       in actual ===? expected
 
           where
           univariate : Double -> Double -> Double -> Double
@@ -49,7 +49,7 @@ test_gaussian_pdf = withTests 1 $ property $ do
       x = fromLiteral [[1.1], [-0.5]]
       actual = pdf (MkGaussian mean cov) x
       expected = fromLiteral 0.016427375
-  fpTensorEq {tol=0.00000001} actual expected
+  actual ===? expected
 
 test_gaussian_cdf : Property
 test_gaussian_cdf = withTests 1 $ property $ do

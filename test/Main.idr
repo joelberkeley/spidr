@@ -25,14 +25,12 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-import Utils.Example
-
-import System
+import Utils
 
 covering
 main : IO ()
 main = test [
-      Utils.Example.group
+      Utils.group
     , Unit.Util.TestHashable.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group

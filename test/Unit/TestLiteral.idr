@@ -108,7 +108,7 @@ group : Group
 group = MkGroup "Literal" $ [
       ("map", test_map)
     , ("pure", test_pure)
-    , ("<*>", test_apply)
+    , ("(<*>)", test_apply)
     , ("foldr", test_foldr)
     , ("all", test_all)
     , ("show", test_show)

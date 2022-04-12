@@ -25,5 +25,4 @@ modules =
 
   Main,
 
-  Utils.Example,
-  Utils.Property
+  Utils
