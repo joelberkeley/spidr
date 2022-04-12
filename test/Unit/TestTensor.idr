@@ -415,23 +415,18 @@ test_T = withTests 1 $ property $ do
       expected = fromLiteral [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
   x.T ===? expected
 
+covering
 mapResult : Property
-mapResult = withTests 1 $ property $ do
-  let x = fromLiteral {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-  map abs x ===? abs x
+mapResult = property $ do
+  shape <- forAll shapes
 
-  let x = fromLiteral {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
-  map (1.0 /) x ===? fromLiteral [[1.0, 0.4, inf], [-1.25, -10.0, 0.2]]
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral x
+  map (1.0 /) x ==~ toLiteral (map (1.0 /) x')
 
-  -- sequence_ $ do
-  --   x <- ints
-  --   let x = fromLiteral {dtype=S32} x
-  --   pure $ map (+ 1) x ===? x + 1
-
-  -- sequence_ $ do
-  --   x <- doubles
-  --   let x = fromLiteral {dtype=F64} x
-  --   pure $ map (+ 1.2) x ===? x + 1.2
+  x <- forAll (literal shape ints)
+  let x' = fromLiteral {dtype=S32} x
+  map (+ 1) x === toLiteral (map (+ 1) x')
 
 mapNonTrivial : Property
 mapNonTrivial = withTests 1 $ property $ do
@@ -439,27 +434,23 @@ mapNonTrivial = withTests 1 $ property $ do
   map {a=S32} (\_ => 2) 1 ===? 2
   map {a=S32} (map (+ 1)) 1 ===? 2
 
+covering
 map2Result : Property
 map2Result = withTests 1 $ property $ do
-  let l = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-      r = fromLiteral {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-  map2 (+) l r ===? (l + r)
+  shape <- forAll shapes
 
-  let l = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-      r = fromLiteral {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-  map2 (+) l r ===? l + r
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x + y |] === toLiteral (map2 Tensor.(+) x' y')
 
-  -- sequence_ $ do
-  --   l <- doubles
-  --   r <- doubles
-  --   let l' = fromLiteral {dtype=F64} l
-  --       r' = fromLiteral {dtype=F64} r
-  --   pure $ map2 (+) l' r' ===? l' + r'
-
-  -- sequence_ $ do
-  --   l <- doubles
-  --   let l' = fromLiteral {dtype=F64} l
-  --   pure $ map2 (+) l' l' ===? l' + l'
+  shape <- forAll shapes
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x + y |] ==~ toLiteral (map2 Tensor.(+) x' y')
 
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = withTests 1 $ property $ do
