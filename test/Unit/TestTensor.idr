@@ -422,15 +422,15 @@ mapResult = withTests 1 $ property $ do
   let x = fromLiteral {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
   map (1.0 /) x ===? fromLiteral [[1.0, 0.4, inf], [-1.25, -10.0, 0.2]]
 
-  sequence_ $ do
-    x <- ints
-    let x = fromLiteral {dtype=S32} x
-    pure $ map (+ 1) x ===? x + 1
+  -- sequence_ $ do
+  --   x <- ints
+  --   let x = fromLiteral {dtype=S32} x
+  --   pure $ map (+ 1) x ===? x + 1
 
-  sequence_ $ do
-    x <- doubles
-    let x = fromLiteral {dtype=F64} x
-    pure $ map (+ 1.2) x ===? x + 1.2
+  -- sequence_ $ do
+  --   x <- doubles
+  --   let x = fromLiteral {dtype=F64} x
+  --   pure $ map (+ 1.2) x ===? x + 1.2
 
 mapNonTrivial : Property
 mapNonTrivial = withTests 1 $ property $ do
@@ -448,17 +448,17 @@ map2Result = withTests 1 $ property $ do
       r = fromLiteral {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
   map2 (+) l r ===? l + r
 
-  sequence_ $ do
-    l <- doubles
-    r <- doubles
-    let l' = fromLiteral {dtype=F64} l
-        r' = fromLiteral {dtype=F64} r
-    pure $ map2 (+) l' r' ===? l' + r'
+  -- sequence_ $ do
+  --   l <- doubles
+  --   r <- doubles
+  --   let l' = fromLiteral {dtype=F64} l
+  --       r' = fromLiteral {dtype=F64} r
+  --   pure $ map2 (+) l' r' ===? l' + r'
 
-  sequence_ $ do
-    l <- doubles
-    let l' = fromLiteral {dtype=F64} l
-    pure $ map2 (+) l' l' ===? l' + l'
+  -- sequence_ $ do
+  --   l <- doubles
+  --   let l' = fromLiteral {dtype=F64} l
+  --   pure $ map2 (+) l' l' ===? l' + l'
 
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = withTests 1 $ property $ do

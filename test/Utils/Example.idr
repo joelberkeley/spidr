@@ -29,21 +29,6 @@ export
 isNan : Double -> Bool
 isNan x = x /= x
 
-export
-assert : String -> Bool -> IO ()
-assert name x = unless x $ do
-  putStrLn ("Test failed: " ++ name)
-  exitFailure
-
-export
-bools : List (Literal [] Bool)
-bools = [True, False]
-
-namespace Literal
-  export
-  ints : List (Literal [] Int)
-  ints = [-3, -1, 0, 1, 3]
-
 namespace Double
   export
   nan, inf : Double
@@ -55,16 +40,6 @@ namespace Literal
   nan, inf : Literal [] Double
   nan = Scalar (0.0 / 0.0)
   inf = Scalar (1.0 / 0.0)
-
-namespace Double
-  export
-  doubles : List Double
-  doubles = [-inf, -3.4, -1.1, -0.1, 0.0, 0.1, 1.1, 3.4, inf, nan]
-
-namespace Literal
-  export
-  doubles : List (Literal [] Double)
-  doubles = map Scalar doubles
 
 export
 floatingPointTolerance : Double
