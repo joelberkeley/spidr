@@ -41,9 +41,7 @@ gaussianMultivariatePDF = withTests 1 $ property $ do
   let mean = fromLiteral [[-0.2], [0.3]]
       cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
       x = fromLiteral [[1.1], [-0.5]]
-      actual = pdf (MkGaussian mean cov) x
-      expected = fromLiteral 0.016427375
-  actual ===? expected
+  pdf (MkGaussian mean cov) x ===? 0.016427375
 
 gaussianCDF : Property
 gaussianCDF = withTests 1 $ property $ do
