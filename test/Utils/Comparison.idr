@@ -45,20 +45,20 @@ export covering
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
   sufficientlyEq' x y = all [| sufficientlyEq {tol} x y |]
 
-infix 1 ===?
+infix 1 ===#
 
 namespace PRED
   export
-  (===?) : Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
-  x ===? y = (toLiteral x) === (toLiteral y)
+  (===#) : Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
+  x ===# y = (toLiteral x) === (toLiteral y)
 
 namespace S32
   export
-  (===?) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
-  x ===? y = (toLiteral x) === (toLiteral y)
+  (===#) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+  x ===# y = (toLiteral x) === (toLiteral y)
 
 namespace F64
   export
-  (===?) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
+  (===#) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
            Tensor shape F64 -> Tensor shape F64 -> TestT m ()
-  x ===? y = (==~) {tol} (toLiteral x) (toLiteral y)
+  x ===# y = (==~) {tol} (toLiteral x) (toLiteral y)

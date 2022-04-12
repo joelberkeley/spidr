@@ -30,7 +30,7 @@ gaussianUnivariatePDF = property $ do
   let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
       actual = pdf gaussian (fromLiteral [[x]])
       expected = fromLiteral [| univariate x mean cov |]
-  actual ===? expected
+  actual ===# expected
 
     where
     univariate : Double -> Double -> Double -> Double
@@ -41,16 +41,16 @@ gaussianMultivariatePDF = withTests 1 $ property $ do
   let mean = fromLiteral [[-0.2], [0.3]]
       cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
       x = fromLiteral [[1.1], [-0.5]]
-  pdf (MkGaussian mean cov) x ===? 0.016427375
+  pdf (MkGaussian mean cov) x ===# 0.016427375
 
 gaussianCDF : Property
 gaussianCDF = withTests 1 $ property $ do
   let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
 
-  cdf gaussian (fromLiteral [[-1.5]]) ===? 0.04779036
-  cdf gaussian (fromLiteral [[-0.5]]) ===? 0.20232838
-  cdf gaussian (fromLiteral [[0.5]]) ===? 0.5
-  cdf gaussian (fromLiteral [[1.5]]) ===? 0.7976716
+  cdf gaussian (fromLiteral [[-1.5]]) ===# 0.04779036
+  cdf gaussian (fromLiteral [[-0.5]]) ===# 0.20232838
+  cdf gaussian (fromLiteral [[0.5]]) ===# 0.5
+  cdf gaussian (fromLiteral [[1.5]]) ===# 0.7976716
 
 export covering
 group : Group
