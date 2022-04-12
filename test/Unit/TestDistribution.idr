@@ -19,31 +19,25 @@ import Literal
 import Tensor
 import Distribution
 
-import Utils.Example
-import Utils.Property
+import Utils.Comparison
+import Utils.Cases
 
-test_gaussian_pdf : Property
-test_gaussian_pdf = withTests 1 $ property $ do
-  let
-    assertForUnivariate : Monad m =>
-                          Literal [] Double -> Literal [] Double -> Literal [] Double -> TestT m ()
-    assertForUnivariate mean cov x =
-      let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
-          actual = pdf gaussian (fromLiteral [[x]])
-          expected = fromLiteral [| univariate x mean cov |]
-          msg = "Gaussian pdf mean \{show mean} cov \{show cov} x \{show x}"
-       in actual ===? expected
+covering
+gaussianUnivariatePDF : Property
+gaussianUnivariatePDF = property $ do
+  let doubles = literal [] doubles
+  [mean, cov, x] <- forAll (np [doubles, doubles, doubles])
+  let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
+      actual = pdf gaussian (fromLiteral [[x]])
+      expected = fromLiteral [| univariate x mean cov |]
+  actual ===? expected
 
-          where
-          univariate : Double -> Double -> Double -> Double
-          univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
+    where
+    univariate : Double -> Double -> Double -> Double
+    univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
 
-  sequence_ [assertForUnivariate mean cov x |
-    mean <- [-2, -1, 0, 1, 2],
-    cov <- [0.1, 1, 2],
-    x <- the (List _) [-2, -1, 0, 1, 2]
-  ]
-
+gaussianMultivariatePDF : Property
+gaussianMultivariatePDF = withTests 1 $ property $ do
   let mean = fromLiteral [[-0.2], [0.3]]
       cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
       x = fromLiteral [[1.1], [-0.5]]
@@ -51,21 +45,22 @@ test_gaussian_pdf = withTests 1 $ property $ do
       expected = fromLiteral 0.016427375
   actual ===? expected
 
-test_gaussian_cdf : Property
-test_gaussian_cdf = withTests 1 $ property $ do
+gaussianCDF : Property
+gaussianCDF = withTests 1 $ property $ do
   let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
       xs : Vect _ _ = [-1.5, -0.5, 0.5, 1.5]
       expected = [0.04779036, 0.20232838, 0.5, 0.7976716]
 
       assert' : Monad m => (Literal [] Double, Literal [] Double) -> TestT m ()
       assert' (x, exp) =
-        fpTensorEq {tol=0.0001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
+        (===?) {tol=0.000001} (cdf gaussian (fromLiteral [[x]])) (fromLiteral exp)
 
   traverse_ assert' (zip xs expected)
 
-export
+export covering
 group : Group
 group = MkGroup "Distribution" $ [
-      ("Gaussian pdf", test_gaussian_pdf)
-    , ("Gaussian cdf", test_gaussian_cdf)
+      ("Gaussian univariate pdf", gaussianUnivariatePDF)
+    , ("Gaussian multivariate pdf", gaussianMultivariatePDF)
+    , ("Gaussian cdf", gaussianCDF)
   ]

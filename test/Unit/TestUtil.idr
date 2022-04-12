@@ -17,7 +17,7 @@ module Unit.TestUtil
 
 import Util
 
-import Utils.Property
+import Utils.Comparison
 
 namespace Vect
   export

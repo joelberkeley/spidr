@@ -25,4 +25,7 @@ modules =
 
   Main,
 
-  Utils
+  Utils,
+  Utils.Cases,
+  Utils.Comparison,
+  Utils.TestComparison

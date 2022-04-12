@@ -23,8 +23,9 @@ import Literal
 
 import Tensor
 
-import Utils.Example
-import Utils.Property
+import Utils
+import Utils.Comparison
+import Utils.Cases
 
 covering
 test_fromLiteral_toLiteral : Property
@@ -846,7 +847,7 @@ test_erf : Property
 test_erf = withTests 1 $ property $ do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
-  fpTensorEq {tol=0.000001} (erf x) expected
+  erf x ===? expected
 
 test_cholesky : Property
 test_cholesky = withTests 1 $ property $ do
@@ -865,7 +866,7 @@ test_cholesky = withTests 1 $ property $ do
               [0.47207308, 1.5615932 , 0.0       ],
               [0.9182292 , 0.6230785 , 1.2312902 ]
             ]
-  fpTensorEq {tol=0.000001} (cholesky x) expected
+  cholesky x ===? expected
 
 triangularSolveResultAndInverse : Property
 triangularSolveResultAndInverse = withTests 1 $ property $ do
@@ -885,8 +886,8 @@ triangularSolveResultAndInverse = withTests 1 $ property $ do
                     [ 0.79913783, -0.10254406],
                     [ 1.8257918 ,  2.7147462 ]
                   ]
-  fpTensorEq {tol=0.000001} actual expected
-  fpTensorEq {tol=0.000001} (a @@ actual) b
+  actual ===? expected
+  a @@ actual ===? b
 
   let actual = a.T \| b
       expected = fromLiteral [
@@ -894,8 +895,8 @@ triangularSolveResultAndInverse = withTests 1 $ property $ do
                     [ 0.31686386, -0.594465  ],
                     [ 4.0527363 ,  3.9613056 ]
                   ]
-  fpTensorEq {tol=0.000001} actual expected
-  fpTensorEq {tol=0.000001} (a.T @@ actual) b
+  actual ===? expected
+  a.T @@ actual ===? b
 
 triangularSolveIgnoresOppositeElems : Property
 triangularSolveIgnoresOppositeElems = withTests 1 $ property $ do

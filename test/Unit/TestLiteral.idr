@@ -17,7 +17,8 @@ module Unit.TestLiteral
 
 import Literal
 
-import Utils.Property
+import Utils.Comparison
+import Utils.Cases
 
 test_map : Property
 test_map = withTests 1 $ property $ do

@@ -17,7 +17,8 @@ module Unit.Util.TestHashable
 
 import Util.Hashable
 
-import Utils.Property
+import Utils.Comparison
+import Utils.Cases
 
 test_hash_double : Property
 test_hash_double = property $ do

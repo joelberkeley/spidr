@@ -19,7 +19,8 @@ import Literal
 import Tensor
 import Model.Kernel
 
-import Utils.Property
+import Utils.Comparison
+import Utils.Cases
 
 covering
 rbfMatchesTFP : Property
@@ -27,13 +28,18 @@ rbfMatchesTFP = withTests 1 $ property $ do
   let length_scale = fromLiteral 0.4
       x = fromLiteral [[-1.2], [-0.5], [0.3], [1.2]]
       x' = fromLiteral [[-1.2], [-0.2], [0.8]]
-      expected = fromLiteral [  -- calculated with tensorflow probability
-          [       1.0, 0.04393695, 0.00000373],
-          [0.21626519, 0.75483966, 0.00508606],
-          [0.00088383, 0.45783338, 0.45783338],
-          [       0.0, 0.00218749, 0.60653049]
+      -- calculated with tensorflow probability
+      -- >>> rbf = tfp.math.psd_kernels.ExponentiatedQuadratic(length_scale=tf.cast(0.4, tf.float64))
+      -- >>> x = [[-1.2], [-0.5], [0.3], [1.2]]
+      -- >>> x_ = [[-1.2], [-0.2], [0.8]]
+      -- >>> rbf.tensor(x, x_, x1_example_ndims=1, x2_example_ndims=1)
+      expected = fromLiteral [
+          [1.00000000e+00, 4.39369377e-02, 3.72665456e-06],
+          [2.16265177e-01, 7.54839608e-01, 5.08607003e-03],
+          [8.83826492e-04, 4.57833372e-01, 4.57833372e-01],
+          [1.52299879e-08, 2.18749152e-03, 6.06530669e-01]
         ]
-  fpTensorEq {tol=0.000001} (rbf length_scale x x') expected
+  rbf length_scale x x' ===? expected
 
 export covering
 group : Group
