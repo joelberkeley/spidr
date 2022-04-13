@@ -23,8 +23,9 @@ import Literal
 
 import Tensor
 
-import Utils.Example
-import Utils.Property
+import Utils
+import Utils.Comparison
+import Utils.Cases
 
 covering
 test_fromLiteral_toLiteral : Property
@@ -64,11 +65,11 @@ test_show_graph = property $ do
       S32\{show shape} fromLiteral
     """
 
-test_show_graph' : IO ()
-test_show_graph' = do
+test_show_graph' : Property
+test_show_graph' = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[0, 0, 0], [0, 0, 0]]
       y = fromLiteral [[0], [0], [0]]
-  assert "show @{Graph} for differing argument shapes" $ show @{Graph} (x @@ y) ==
+  show @{Graph} (x @@ y) ===
     """
     S32[2, 1] (@@)
       S32[2, 3] fromLiteral
@@ -77,8 +78,7 @@ test_show_graph' = do
 
   let x = fromLiteral {dtype=S32} [0, 0]
       y = fromLiteral [[0, 0], [0, 0]]
-  assert "show @{Graph} for non-trivial cond" $
-    show @{Graph} (cond (fromLiteral True) (fromLiteral [0, 0] *) x diag y) ==
+  show @{Graph} (cond (fromLiteral True) (fromLiteral [0, 0] *) x diag y) ===
       """
       S32[2] cond
         PRED[] fromLiteral
@@ -91,11 +91,11 @@ test_show_graph' = do
         S32[2, 2] fromLiteral
       """
 
-test_show_xla : IO ()
-test_show_xla = do
-  assert "show @{XLA} for scalar" $ show @{XLA {dtype=S32}} 1 == "constant, shape=[], metadata={:0}"
+test_show_xla : Property
+test_show_xla = fixedProperty $ do
+  show @{XLA {dtype=S32}} 1 === "constant, shape=[], metadata={:0}"
 
-  assert "show @{XLA} for scalar addition" $ show @{XLA {dtype=S32}} (1 + 2) ==
+  show @{XLA {dtype=S32}} (1 + 2) ===
     """
     add, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
@@ -103,256 +103,245 @@ test_show_xla = do
     """
 
   let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
-  assert "show @{XLA} for vector F64" $ show @{XLA} x == "constant, shape=[3], metadata={:0}"
+  show @{XLA} x === "constant, shape=[3], metadata={:0}"
 
-test_reshape : IO ()
-test_reshape = do
-  assertAll "reshape add dims scalar" $ reshape 3 == fromLiteral {dtype=S32} [3]
+test_reshape : Property
+test_reshape = fixedProperty $ do
+  reshape 3 ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [3, 4, 5]
       flipped = fromLiteral [[3], [4], [5]]
-  assertAll "reshape flip dims vector" $ reshape x == flipped
+  reshape x ===# flipped
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
       flipped = fromLiteral [[3, 4], [5, 6], [7, 8]]
-  assertAll "reshape flip dims array" $ reshape x == flipped
+  reshape x ===# flipped
 
   let with_extra_dim = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-  assertAll "reshape add dimension array" $ reshape x == with_extra_dim
+  reshape x ===# with_extra_dim
 
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
-  assertAll "reshape as flatten array" $ reshape x == flattened
+  reshape x ===# flattened
 
-test_slice : IO ()
-test_slice = do
+test_slice : Property
+test_slice = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
-  assertAll "slice vector 0 0" $ slice 0 0 0 x == fromLiteral []
-  assertAll "slice vector 0 1" $ slice 0 0 1 x == fromLiteral [3]
-  assertAll "slice vector 0 2" $ slice 0 0 2 x == fromLiteral [3, 4]
-  assertAll "slice vector 0 3" $ slice 0 0 3 x == fromLiteral [3, 4, 5]
-  assertAll "slice vector 1 1" $ slice 0 1 1 x == fromLiteral []
-  assertAll "slice vector 1 2" $ slice 0 1 2 x == fromLiteral [4]
-  assertAll "slice vector 1 3" $ slice 0 1 3 x == fromLiteral [4, 5]
-  assertAll "slice vector 2 2" $ slice 0 2 2 x == fromLiteral []
-  assertAll "slice vector 2 2" $ slice 0 2 3 x == fromLiteral [5]
+  slice 0 0 0 x ===# fromLiteral []
+  slice 0 0 1 x ===# fromLiteral [3]
+  slice 0 0 2 x ===# fromLiteral [3, 4]
+  slice 0 0 3 x ===# fromLiteral [3, 4, 5]
+  slice 0 1 1 x ===# fromLiteral []
+  slice 0 1 2 x ===# fromLiteral [4]
+  slice 0 1 3 x ===# fromLiteral [4, 5]
+  slice 0 2 2 x ===# fromLiteral []
+  slice 0 2 3 x ===# fromLiteral [5]
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  assertAll "slice array 0 0 1" $ slice 0 0 1 x == fromLiteral [[3, 4, 5]]
-  assertAll "slice array 0 1 1" $ slice 0 1 1 x == fromLiteral []
-  assertAll "slice array 1 2 2" $ slice 1 2 2 x == fromLiteral [[], []]
-  assertAll "slice array 1 1 3" $ slice 1 1 3 x == fromLiteral [[4, 5], [7, 8]]
+  slice 0 0 1 x ===# fromLiteral [[3, 4, 5]]
+  slice 0 1 1 x ===# fromLiteral []
+  slice 1 2 2 x ===# fromLiteral [[], []]
+  slice 1 1 3 x ===# fromLiteral [[4, 5], [7, 8]]
 
-test_index : IO ()
-test_index = do
+test_index : Property
+test_index = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
-  assertAll "index vector 0" $ index 0 0 x == fromLiteral 3
-  assertAll "index vector 1" $ index 0 1 x == fromLiteral 4
-  assertAll "index vector 2" $ index 0 2 x == fromLiteral 5
+  index 0 0 x ===# fromLiteral 3
+  index 0 1 x ===# fromLiteral 4
+  index 0 2 x ===# fromLiteral 5
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  assertAll "index array 0 0" $ index 0 0 x == fromLiteral [3, 4, 5]
-  assertAll "index array 0 1" $ index 0 1 x == fromLiteral [6, 7, 8]
-  assertAll "index array 1 0" $ index 1 0 x == fromLiteral [3, 6]
-  assertAll "index array 1 1" $ index 1 1 x == fromLiteral [4, 7]
-  assertAll "index array 1 2" $ index 1 2 x == fromLiteral [5, 8]
+  index 0 0 x ===# fromLiteral [3, 4, 5]
+  index 0 1 x ===# fromLiteral [6, 7, 8]
+  index 1 0 x ===# fromLiteral [3, 6]
+  index 1 1 x ===# fromLiteral [4, 7]
+  index 1 2 x ===# fromLiteral [5, 8]
 
-test_split : IO ()
-test_split = do
+test_split : Property
+test_split = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let (l, r) = split 0 0 vector
-  assertAll "split vector 0 left" $ l == fromLiteral []
-  assertAll "split vector 0 right" $ r == fromLiteral [3, 4, 5]
+  l ===# fromLiteral []
+  r ===# fromLiteral [3, 4, 5]
 
   let (l, r) = split 0 1 vector
-  assertAll "split vector 1 left" $ l == fromLiteral [3]
-  assertAll "split vector 1 right" $ r == fromLiteral [4, 5]
+  l ===# fromLiteral [3]
+  r ===# fromLiteral [4, 5]
 
   let (l, r) = split 0 2 vector
-  assertAll "split vector 2 left" $ l == fromLiteral [3, 4]
-  assertAll "split vector 2 right" $ r == fromLiteral [5]
+  l ===# fromLiteral [3, 4]
+  r ===# fromLiteral [5]
 
   let (l, r) = split 0 3 vector
-  assertAll "split vector 3 left" $ l == fromLiteral [3, 4, 5]
-  assertAll "split vector 3 right" $ r == fromLiteral []
+  l ===# fromLiteral [3, 4, 5]
+  r ===# fromLiteral []
 
   let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
   let (l, r) = split 0 0 arr
-  assertAll "split array 0 0 left" $ l == fromLiteral []
-  assertAll "split array 0 0 right" $ r == fromLiteral [[3, 4, 5], [6, 7, 8]]
+  l ===# fromLiteral []
+  r ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
 
   let (l, r) = split 0 1 arr
-  assertAll "split array 0 1 left" $ l == fromLiteral [[3, 4, 5]]
-  assertAll "split array 0 1 right" $ r == fromLiteral [[6, 7, 8]]
+  l ===# fromLiteral [[3, 4, 5]]
+  r ===# fromLiteral [[6, 7, 8]]
 
   let (l, r) = split 0 2 arr
-  assertAll "split array 0 2 left" $ l == fromLiteral [[3, 4, 5], [6, 7, 8]]
-  assertAll "split array 0 2 right" $ r == fromLiteral []
+  l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
+  r ===# fromLiteral []
 
   let (l, r) = split 1 0 arr
-  assertAll "split array 1 0 left" $ l == fromLiteral [[], []]
-  assertAll "split array 1 0 right" $ r == fromLiteral [[3, 4, 5], [6, 7, 8]]
+  l ===# fromLiteral [[], []]
+  r ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
 
   let (l, r) = split 1 1 arr
-  assertAll "split array 1 1 left" $ l == fromLiteral [[3], [6]]
-  assertAll "split array 1 1 right" $ r == fromLiteral [[4, 5], [7, 8]]
+  l ===# fromLiteral [[3], [6]]
+  r ===# fromLiteral [[4, 5], [7, 8]]
 
   let (l, r) = split 1 2 arr
-  assertAll "split array 1 2 left" $ l == fromLiteral [[3, 4], [6, 7]]
-  assertAll "split array 1 2 right" $ r == fromLiteral [[5], [8]]
+  l ===# fromLiteral [[3, 4], [6, 7]]
+  r ===# fromLiteral [[5], [8]]
 
   let (l, r) = split 1 3 arr
-  assertAll "split array 1 3 left" $ l == fromLiteral [[3, 4, 5], [6, 7, 8]]
-  assertAll "split array 1 3 right" $ r == fromLiteral [[], []]
+  l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
+  r ===# fromLiteral [[], []]
 
-test_concat : IO ()
-test_concat = do
+test_concat : Property
+test_concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let l = fromLiteral {shape=[0]} []
       r = fromLiteral [3, 4, 5]
-  assertAll "concat vector" $ concat 0 l r == vector
+  concat 0 l r ===# vector
 
   let l = fromLiteral [3]
       r = fromLiteral [4, 5]
-  assertAll "concat vector" $ concat 0 l r == vector
+  concat 0 l r ===# vector
 
   let l = fromLiteral [3, 4]
       r = fromLiteral [5]
-  assertAll "concat vector" $ concat 0 l r == vector
+  concat 0 l r ===# vector
 
   let l = fromLiteral [3, 4, 5]
       r = fromLiteral {shape=[0]} []
-  assertAll "concat vector" $ concat 0 l r == vector
+  concat 0 l r ===# vector
 
   let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
   let l = fromLiteral {shape=[0, 3]} []
       r = fromLiteral [[3, 4, 5], [6, 7, 8]]
-  assertAll "concat array 0" $ concat 0 l r == arr
+  concat 0 l r ===# arr
 
   let l = fromLiteral [[3, 4, 5]]
       r = fromLiteral [[6, 7, 8]]
-  assertAll "concat array 0" $ concat 0 l r == arr
+  concat 0 l r ===# arr
 
   let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
       r = fromLiteral {shape=[0, 3]} []
-  assertAll "concat array 0" $ concat 0 l r == arr
+  concat 0 l r ===# arr
 
   let l = fromLiteral {shape=[2, 0]} [[], []]
       r = fromLiteral [[3, 4, 5], [6, 7, 8]]
-  assertAll "concat array 1" $ concat 1 l r == arr
+  concat 1 l r ===# arr
 
   let l = fromLiteral [[3], [6]]
       r = fromLiteral [[4, 5], [7, 8]]
-  assertAll "concat array 1" $ concat 1 l r == arr
+  concat 1 l r ===# arr
 
   let l = fromLiteral [[3, 4], [6, 7]]
       r = fromLiteral [[5], [8]]
-  assertAll "concat array 1" $ concat 1 l r == arr
+  concat 1 l r ===# arr
 
   let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
       r = fromLiteral {shape=[2, 0]} [[], []]
-  assertAll "concat array 1" $ concat 1 l r == arr
+  concat 1 l r ===# arr
 
-test_diag : IO ()
-test_diag = do
+test_diag : Property
+test_diag = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
-  assertAll "diag empty" $ diag x == fromLiteral []
+  diag x ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [[3]]
-  assertAll "diag 1" $ diag x == fromLiteral [3]
+  diag x ===# fromLiteral [3]
 
   let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
-  assertAll "diag 2" $ diag x == fromLiteral [1, 4]
+  diag x ===# fromLiteral [1, 4]
 
-test_triangle : IO ()
-test_triangle = do
+test_triangle : Property
+test_triangle = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
-  assertAll "triangle upper empty" $ triangle Upper x == fromLiteral []
-  assertAll "triangle lower empty" $ triangle Lower x == fromLiteral []
+  triangle Upper x ===# fromLiteral []
+  triangle Lower x ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [[3]]
-  assertAll "triangle upper 1" $ triangle Upper x == fromLiteral [[3]]
-  assertAll "triangle lower 1" $ triangle Lower x == fromLiteral [[3]]
+  triangle Upper x ===# fromLiteral [[3]]
+  triangle Lower x ===# fromLiteral [[3]]
 
   let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
-  assertAll "triangle upper 2" $ triangle Upper x == fromLiteral [[1, 2], [0, 4]]
-  assertAll "triangle lower 2" $ triangle Lower x == fromLiteral [[1, 0], [3, 4]]
+  triangle Upper x ===# fromLiteral [[1, 2], [0, 4]]
+  triangle Lower x ===# fromLiteral [[1, 0], [3, 4]]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-  assertAll "triangle upper 3" $ triangle Upper x == fromLiteral [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
-  assertAll "triangle lower 3" $ triangle Lower x == fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
+  triangle Upper x ===# fromLiteral [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
+  triangle Lower x ===# fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
-test_identity : IO ()
-test_identity = do
-  assertAll "identity 0 S32" $ identity == fromLiteral {dtype=S32} []
-  assertAll "identity 1 S32" $ identity == fromLiteral {dtype=S32} [[1]]
-  assertAll "identity 2 S32" $ identity == fromLiteral {dtype=S32} [[1, 0], [0, 1]]
-  assertAll "identity 4 S32" $
-    identity == fromLiteral {dtype=S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+test_identity : Property
+test_identity = fixedProperty $ do
+  identity ===# fromLiteral {dtype=S32} []
+  identity ===# fromLiteral {dtype=S32} [[1]]
+  identity ===# fromLiteral {dtype=S32} [[1, 0], [0, 1]]
+  identity ===# fromLiteral {dtype=S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
-  assertAll "identity 0 F64" $ identity == fromLiteral {dtype=F64} []
-  assertAll "identity 1 F64" $ identity == fromLiteral {dtype=F64} [[1.0]]
-  assertAll "identity 2 F64" $ identity == fromLiteral {dtype=F64} [[1.0, 0.0], [0.0, 1.0]]
-  assertAll "identity 4 F64" $
-    identity == fromLiteral {dtype=F64} [
-        [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]
-      ]
+  identity ===# fromLiteral {dtype=F64} []
+  identity ===# fromLiteral {dtype=F64} [[1.0]]
+  identity ===# fromLiteral {dtype=F64} [[1.0, 0.0], [0.0, 1.0]]
+  identity ===# fromLiteral {dtype=F64} [
+      [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]
+    ]
 
-test_expand : IO ()
-test_expand = do
-  assertAll "expand add dims scalar" $ expand 0 3 == fromLiteral {dtype=S32} [3]
+test_expand : Property
+test_expand = fixedProperty $ do
+  expand 0 3 ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
       with_extra_dim = fromLiteral [[[3, 4, 5]], [[6, 7, 8]]]
-  assertAll "expand add dimension array" $ expand 1 x == with_extra_dim
+  expand 1 x ===# with_extra_dim
 
-test_broadcast : IO ()
-test_broadcast = do
-  assertAll "broadcast scalar to itself" $ broadcast {to=[]} {dtype=S32} 7 == 7
-
-  assertAll "broadcast scalar to rank 1" $ broadcast {to=[1]} {dtype=S32} 7 == fromLiteral [7]
-
-  assertAll "broadcast scalar to rank 2" $
-    broadcast {to=[2, 3]} 7 == fromLiteral [[7, 7, 7], [7, 7, 7]]
-
-  assertAll "broadcast scalar to rank 3" $
-    broadcast {to=[1, 1, 1]} {dtype=S32} 7 == fromLiteral [[[7]]]
-
-  assertAll "broadcast rank 1 to empty" $ broadcast {to=[0]} 7 == fromLiteral []
+test_broadcast : Property
+test_broadcast = fixedProperty $ do
+  broadcast {to=[]} {dtype=S32} 7 ===# 7
+  broadcast {to=[1]} {dtype=S32} 7 ===# fromLiteral [7]
+  broadcast {to=[2, 3]} 7 ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
+  broadcast {to=[1, 1, 1]} {dtype=S32} 7 ===# fromLiteral [[[7]]]
+  broadcast {to=[0]} 7 ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [7]
-  assertAll "broadcast rank 1 to itself" $ broadcast {to=[1]} x == fromLiteral [7]
+  broadcast {to=[1]} x ===# fromLiteral [7]
 
   let x = fromLiteral {dtype=S32} [7]
-  assertAll "broadcast rank 1 to larger rank 1" $ broadcast {to=[3]} x == fromLiteral [7, 7, 7]
+  broadcast {to=[3]} x ===# fromLiteral [7, 7, 7]
 
   let x = fromLiteral {dtype=S32} [7]
-  assertAll "broadcast rank 1 to rank 2" $
-    broadcast {to=[2, 3]} x == fromLiteral [[7, 7, 7], [7, 7, 7]]
+  broadcast {to=[2, 3]} x ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
 
   let x = fromLiteral {dtype=S32} [5, 7]
-  assertAll "broadcast rank 1 to empty" $ broadcast {to=[2, 0]} x == fromLiteral [[], []]
+  broadcast {to=[2, 0]} x ===# fromLiteral [[], []]
 
   let x = fromLiteral {dtype=S32} [5, 7]
-  assertAll "broadcast rank 1 to rank 2" $
-    broadcast {to=[3, 2]} x == fromLiteral [[5, 7], [5, 7], [5, 7]]
+  broadcast {to=[3, 2]} x ===# fromLiteral [[5, 7], [5, 7], [5, 7]]
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  assertAll "broadcast rank 2 to itself" $
-    broadcast {to=[2, 3]} x == fromLiteral [[2, 3, 5], [7, 11, 13]]
+  broadcast {to=[2, 3]} x ===# fromLiteral [[2, 3, 5], [7, 11, 13]]
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  assertAll "broadcast rank 2 to rank 2 empty" $ broadcast {to=[2, 0]} x == fromLiteral [[], []]
+  broadcast {to=[2, 0]} x ===# fromLiteral [[], []]
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  assertAll "broadcast rank 2 to empty" $ broadcast {to=[0, 3]} x == fromLiteral []
+  broadcast {to=[0, 3]} x ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
       expected = fromLiteral [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
-  assertAll "broadcast rank 2 to rank 3" $ broadcast {to=[2, 2, 3]} x == expected
+  broadcast {to=[2, 2, 3]} x ===# expected
 
   let x = fromLiteral {dtype=S32} [[[2, 3, 5]], [[7, 11, 13]]]
       expected = fromLiteral [
@@ -365,7 +354,7 @@ test_broadcast = do
           [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
         ]
       ]
-  assertAll "broadcast rank 3 to rank 4" $ broadcast {to=[2, 2, 5, 3]} x == expected
+  broadcast {to=[2, 2, 5, 3]} x ===# expected
 
 test_dimbroadcastable : List (a ** b ** DimBroadcastable a b)
 test_dimbroadcastable = [
@@ -400,115 +389,103 @@ test_broadcastable_cannot_stack_dimension_gt_one : Broadcastable [3, 2] [3, 7] -
 test_broadcastable_cannot_stack_dimension_gt_one (Match Same) impossible
 test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
 
-test_squeeze : IO ()
-test_squeeze = do
+test_squeeze : Property
+test_squeeze = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[3]]
-      squeezed = 3
-  assertAll "squeeze can flatten only ones" $ squeeze x == squeezed
+  squeeze x ===# 3
 
   let x = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-  assertAll "squeeze can no-op" $ squeeze x == x
+  squeeze x ===# x
 
   let squeezed = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  assertAll "squeeze can remove dim from array" $ squeeze x == squeezed
+  squeeze x ===# squeezed
 
   let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
-  assertAll "squeeze can remove many dims from array" $
-    squeeze x == fill {shape=[3, 2, 5]} {dtype=S32} 0
+  squeeze x ===# fill {shape=[3, 2, 5]} {dtype=S32} 0
 
 test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
 
-test_T : IO ()
-test_T = do
-  assertAll "(.T) for empty array" $ (fromLiteral {dtype=S32} []).T == fromLiteral []
-  assertAll "(.T) for single element" $ (fromLiteral {dtype=S32} [[3]]).T == fromLiteral [[3]]
+test_T : Property
+test_T = fixedProperty $ do
+  (fromLiteral {dtype=S32} []).T ===# fromLiteral []
+  (fromLiteral {dtype=S32} [[3]]).T ===# fromLiteral [[3]]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
       expected = fromLiteral [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
-  assertAll "(.T)" $ x.T == expected
+  x.T ===# expected
 
-test_map : IO ()
-test_map = do
-  assertAll "map with function with reused arguments" $ map {a=S32} (\x => x + x) 1 == 2
+covering
+mapResult : Property
+mapResult = property $ do
+  shape <- forAll shapes
 
-  assertAll "map with function with unused arguments" $ map {a=S32} (\_ => 2) 1 == 2
+  x <- forAll (literal shape doubles)
+  let x' = fromLiteral x
+  map (1.0 /) x ==~ toLiteral (map (1.0 /) x')
 
-  assertAll "map with map in function" $ map {a=S32} (map (+ 1)) 1 == 2
+  x <- forAll (literal shape ints)
+  let x' = fromLiteral {dtype=S32} x
+  map (+ 1) x === toLiteral (map (+ 1) x')
 
-  let x = fromLiteral {dtype=S32} [[1, 15, 5], [-1, 7, 6]]
-  assertAll "map for S32 array" $ map abs x == abs x
+mapNonTrivial : Property
+mapNonTrivial = fixedProperty $ do
+  map {a=S32} (\x => x + x) 1 ===# 2
+  map {a=S32} (\_ => 2) 1 ===# 2
+  map {a=S32} (map (+ 1)) 1 ===# 2
 
-  let x = fromLiteral {dtype=F64} [[1.0, 2.5, 0.0], [-0.8, -0.1, 5.0]]
-  assertAll "map for F64 array" $
-    map (1.0 /) x == fromLiteral [[1.0, 0.4, inf], [-1.25, -10.0, 0.2]]
+covering
+map2Result : Property
+map2Result = fixedProperty $ do
+  shape <- forAll shapes
 
-  sequence_ $ do
-    x <- ints
-    let x = fromLiteral {dtype=S32} x
-    pure $ assertAll "map for S32 scalar" $ map (+ 1) x == x + 1
+  let ints = literal shape ints
+  [x, y] <- forAll (np [ints, ints])
+  let x' = fromLiteral {dtype=S32} x
+      y' = fromLiteral {dtype=S32} y
+  [| x + y |] === toLiteral (map2 Tensor.(+) x' y')
 
-  sequence_ $ do
-    x <- doubles
-    let x = fromLiteral {dtype=F64} x
-    pure $ assertAll "map for F64 scalar" $ sufficientlyEq (map (+ 1.2) x) (x + 1.2)
+  shape <- forAll shapes
+  let doubles = literal shape doubles
+  [x, y] <- forAll (np [doubles, doubles])
+  let x' = fromLiteral {dtype=F64} x
+      y' = fromLiteral {dtype=F64} y
+  [| x + y |] ==~ toLiteral (map2 Tensor.(+) x' y')
 
-test_map2 : IO ()
-test_map2 = do
-  assertAll "map2 with function with reused arguments" $ map2 (\x, y => x + x + y + y) 1 2 == 6
+map2ResultWithReusedFnArgs : Property
+map2ResultWithReusedFnArgs = fixedProperty $ do
+  map2 (\x, y => x + x + y + y) 1 2 ===# 6
 
-  let l = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-      r = fromLiteral {dtype=S32} [[1, 4, 2], [-2, -1, -3]]
-  assertAll "map2 for S32 array" $ map2 (+) l r == (l + r)
-
-  let l = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-      r = fromLiteral {dtype=F64} [[1.1, 4.4, 2.2], [-2.2, -1.1, -3.3]]
-  assertAll "map2 for F64 matrix" $ sufficientlyEq (map2 (+) l r) (l + r)
-
-  sequence_ $ do
-    l <- doubles
-    r <- doubles
-    let l' = fromLiteral {dtype=F64} l
-        r' = fromLiteral {dtype=F64} r
-    pure $ assertAll "map2 for F64 scalars" $ sufficientlyEq (map2 (+) l' r') (l' + r')
-
-  sequence_ $ do
-    l <- doubles
-    let l' = fromLiteral {dtype=F64} l
-    pure $ assertAll "map2 for F64 scalars with repeated argument" $
-      sufficientlyEq (map2 (+) l' l') (l' + l')
-
-test_reduce : IO ()
-test_reduce = do
+test_reduce : Property
+test_reduce = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-  assertAll "reduce for F64 array" $ sufficientlyEq (reduce @{Sum} 1 x) (fromLiteral [6.6, -6.6])
+  reduce @{Sum} 1 x ===# fromLiteral [6.6, -6.6]
 
   let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-  assertAll "reduce for F64 array" $
-    sufficientlyEq (reduce @{Sum} 0 x) (fromLiteral [0.0, 0.0, 0.0])
+  reduce @{Sum} 0 x ===# fromLiteral [0.0, 0.0, 0.0]
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
-  assertAll "reduce for PRED array" $ reduce @{All} 1 x == fromLiteral [False, False]
+  reduce @{All} 1 x ===# fromLiteral [False, False]
 
 namespace Vector
   export
-  test_dot : IO ()
-  test_dot = do
+  test_dot : Property
+  test_dot = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [-2, 0, 1]
         r = fromLiteral {dtype=S32} [3, 1, 2]
-    assertAll "vector dot" $ l @@ r == -4
+    l @@ r ===# -4
 
 namespace Matrix
   export
-  test_dot : IO ()
-  test_dot = do
+  test_dot : Property
+  test_dot = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [3, 3, -1]
-    assertAll "matrix dot vector" $ l @@ r == fromLiteral [-7, 8]
+    l @@ r ===# fromLiteral [-7, 8]
 
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
-    assertAll "matrix dot matrix" $ l @@ r == fromLiteral [[ -7,  -2], [  8, -11]]
+    l @@ r ===# fromLiteral [[ -7,  -2], [  8, -11]]
 
 namespace S32
   export covering
@@ -821,57 +798,53 @@ testElementwiseComparatorCases = [
     ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
   ]
 
-test_select : IO ()
-test_select = do
+test_select : Property
+test_select = fixedProperty $ do
   let onTrue = fromLiteral {dtype=S32} 1
       onFalse = fromLiteral 0
-  assertAll "select for scalar True" $ select (fromLiteral True) onTrue onFalse == onTrue
-  assertAll "select for scalar False" $ select (fromLiteral False) onTrue onFalse == onFalse
+  select (fromLiteral True) onTrue onFalse ===# onTrue
+  select (fromLiteral False) onTrue onFalse ===# onFalse
 
   let pred = fromLiteral [[False, True, True], [True, False, False]]
       onTrue = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
       onFalse = fromLiteral [[6, 7, 8], [9, 10, 11]]
       expected = fromLiteral [[6, 1, 2], [3, 10, 11]]
-  assertAll "select for array" $ select pred onTrue onFalse == expected
+  select pred onTrue onFalse ===# expected
 
-test_cond : IO ()
-test_cond = do
+condResultTrivialUsage : Property
+condResultTrivialUsage = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} 0
+  cond (fromLiteral True) (+ 1) x (\x => x - 1) x ===# 1
+
+  let x = fromLiteral {dtype=S32} 0
+  cond (fromLiteral False) (+ 1) x (\x => x - 1) x ===# -1
+
+  let x = fromLiteral {dtype=S32} [2, 3]
+      y = fromLiteral [[6, 7], [8, 9]]
+  cond (fromLiteral True) (fromLiteral 5 *) x diag y ===# fromLiteral [10, 15]
+
+  let x = fromLiteral {dtype=S32} [2, 3]
+      y = fromLiteral [[6, 7], [8, 9]]
+  cond (fromLiteral False) (fromLiteral 5 *) x diag y ===# fromLiteral [6, 9]
+
+condResultWithReusedArgs : Property
+condResultWithReusedArgs = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 1
       y = fromLiteral {dtype=S32} 3
-  assertAll "cond with function with reused arguments (truthy)" $
-    cond (fromLiteral True) (\z => z + z) x (\z => z * z) y == 2
-  assertAll "cond with function with reused arguments (falsy)" $
-    cond (fromLiteral False) (\z => z + z) x (\z => z * z) y == 9
+  cond (fromLiteral True) (\z => z + z) x (\z => z * z) y ===# 2
+  cond (fromLiteral False) (\z => z + z) x (\z => z * z) y ===# 9
 
-  let x = fromLiteral {dtype=S32} 0
-  assertAll "cond for trivial truthy" $
-    cond (fromLiteral True) (+ 1) x (\x => x - 1) x == 1
-
-  let x = fromLiteral {dtype=S32} 0
-  assertAll "cond for trivial falsy" $
-    cond (fromLiteral False) (+ 1) x (\x => x - 1) x == -1
-
-  let x = fromLiteral {dtype=S32} [2, 3]
-      y = fromLiteral [[6, 7], [8, 9]]
-  assertAll "cond for non-trivial truthy" $
-    cond (fromLiteral True) (fromLiteral 5 *) x diag y == fromLiteral [10, 15]
-
-  let x = fromLiteral {dtype=S32} [2, 3]
-      y = fromLiteral [[6, 7], [8, 9]]
-  assertAll "cond for non-trivial falsy" $
-    cond (fromLiteral False) (fromLiteral 5 *) x diag y == fromLiteral [6, 9]
-
-test_erf : IO ()
-test_erf = do
+test_erf : Property
+test_erf = fixedProperty $ do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
-  assertAll "erf agrees with tfp Normal" $ sufficientlyEq {tol=0.000001} (erf x) expected
+  erf x ===# expected
 
-test_cholesky : IO ()
-test_cholesky = do
+test_cholesky : Property
+test_cholesky = fixedProperty $ do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
       expected = fromLiteral [[nan, 0], [nan, nan]]
-  assertAll "cholesky zero determinant" $ sufficientlyEq (cholesky x) expected
+  cholesky x ===# expected
 
   -- example generated with tensorflow
   let x = fromLiteral [
@@ -884,10 +857,10 @@ test_cholesky = do
               [0.47207308, 1.5615932 , 0.0       ],
               [0.9182292 , 0.6230785 , 1.2312902 ]
             ]
-  assertAll "cholesky" $ sufficientlyEq {tol=0.000001} (cholesky x) expected
+  cholesky x ===# expected
 
-test_triangularsolve : IO ()
-test_triangularsolve = do
+triangularSolveResultAndInverse : Property
+triangularSolveResultAndInverse = fixedProperty $ do
   let a = fromLiteral [
               [0.8578532 , 0.0       , 0.0       ],
               [0.2481904 , 0.9885198 , 0.0       ],
@@ -904,8 +877,8 @@ test_triangularsolve = do
                     [ 0.79913783, -0.10254406],
                     [ 1.8257918 ,  2.7147462 ]
                   ]
-  assertAll "(|\) result" $ sufficientlyEq {tol=0.000001} actual expected
-  assertAll "(|\) is invertible with (@@)" $ sufficientlyEq {tol=0.000001} (a @@ actual) b
+  actual ===# expected
+  a @@ actual ===# b
 
   let actual = a.T \| b
       expected = fromLiteral [
@@ -913,26 +886,50 @@ test_triangularsolve = do
                     [ 0.31686386, -0.594465  ],
                     [ 4.0527363 ,  3.9613056 ]
                   ]
-  assertAll "(\|) result" $ sufficientlyEq {tol=0.000001} actual expected
-  assertAll "(\|) is invertible with (@@)" $ sufficientlyEq {tol=0.000001} (a.T @@ actual) b
+  actual ===# expected
+  a.T @@ actual ===# b
 
+triangularSolveIgnoresOppositeElems : Property
+triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = fromLiteral [[1.0, 2.0], [3.0, 4.0]]
       a_lt = fromLiteral [[1.0, 0.0], [3.0, 4.0]]
       b = fromLiteral [5.0, 6.0]
-  assertAll "(|\) upper triangular elements are ignored" $ sufficientlyEq (a |\ b) (a_lt |\ b)
+  a |\ b ===# a_lt |\ b
 
   let a_ut = fromLiteral [[1.0, 2.0], [0.0, 4.0]]
-  assertAll "(\|) lower triangular elements are ignored" $ sufficientlyEq (a \| b) (a_ut \| b)
+  a \| b ===# a_ut \| b
 
-test_trace : IO ()
-test_trace = do
-  assertAll "trace" $ trace (fromLiteral {dtype=S32} [[-1, 5], [1, 4]]) == 3
+test_trace : Property
+test_trace = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
+  trace x ===# 3
 
 export covering
-root : Group
-root = MkGroup "Tensor" $ [
+group : Group
+group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", test_fromLiteral_toLiteral)
     , ("show @{Graph}", test_show_graph)
+    , ("show @{Graph} 2", test_show_graph')
+    , ("show @{XLA}", test_show_xla)
+    , ("reshape", test_reshape)
+    , ("slice", test_slice)
+    , ("index", test_index)
+    , ("split", test_split)
+    , ("concat", test_concat)
+    , ("diag", test_diag)
+    , ("triangle", test_triangle)
+    , ("identity", test_identity)
+    , ("expand", test_expand)
+    , ("broadcast", test_broadcast)
+    , ("squeeze", test_squeeze)
+    , ("(.T)", test_T)
+    , ("map", mapResult)
+    , ("map with non-trivial function", mapNonTrivial)
+    , ("map2", map2Result)
+    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+    , ("reduce", test_reduce)
+    , ("Vector.(@@)", Vector.test_dot)
+    , ("Matrix.(@@)", Matrix.test_dot)
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
@@ -948,33 +945,12 @@ root = MkGroup "Tensor" $ [
     , ("Max", test_Max)
     , ("Any", test_Any)
     , ("All", test_All)
+    , ("select", test_select)
+    , ("cond for trivial usage", condResultTrivialUsage)
+    , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("erf", test_erf)
+    , ("cholesky", test_cholesky)
+    , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
+    , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
+    , ("trace", test_trace)
   ]
-
-export
-test' : IO ()
-test' = do
-  test_show_graph'
-  test_show_xla
-  test_reshape
-  test_slice
-  test_index
-  test_split
-  test_concat
-  test_diag
-  test_triangle
-  test_identity
-  test_expand
-  test_broadcast
-  test_squeeze
-  test_T
-  test_map
-  test_map2
-  test_reduce
-  Vector.test_dot
-  Matrix.test_dot
-  test_select
-  test_cond
-  test_erf
-  test_cholesky
-  test_triangularsolve
-  test_trace

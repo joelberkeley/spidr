@@ -17,15 +17,16 @@ module Unit.Util.TestHashable
 
 import Util.Hashable
 
-import Utils.Property
+import Utils.Comparison
+import Utils.Cases
 
-test_hash_double : Property
-test_hash_double = property $ do
+hashesEqualIffValuesEqual : Property
+hashesEqualIffValuesEqual = property $ do
     [x, y] <- forAll (np [doubles, doubles])
     (hash x == hash y) === (let bothNan = x /= x && y /= y in bothNan || x == y)
 
 export
-root : Group
-root = MkGroup "Hashable" [
-    ("test_hash_double", test_hash_double)
+group : Group
+group = MkGroup "Hashable" [
+    ("hashes are equal iff values are equal", hashesEqualIffValuesEqual)
   ]

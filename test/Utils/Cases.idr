@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Utils.Property
+module Utils.Cases
 
 import public Data.SOP
 import Data.Bounded
@@ -22,7 +22,21 @@ import public Hedgehog
 import Literal
 import Types
 
-import Utils.Example
+namespace Double
+  export
+  nan, inf : Double
+  nan = 0.0 / 0.0
+  inf = 1.0 / 0.0
+
+namespace Literal
+  export
+  nan, inf : Literal [] Double
+  nan = Scalar (0.0 / 0.0)
+  inf = Scalar (1.0 / 0.0)
+
+export
+fixedProperty : PropertyT () -> Property
+fixedProperty = withTests 1 . property
 
 maxRank : Nat
 maxRank = 5
@@ -64,12 +78,3 @@ doubles = frequency [(1, numericDoubles), (3, element [-inf, inf, nan])]
 export
 doublesWithoutNan : Gen Double
 doublesWithoutNan = frequency [(1, numericDoubles), (3, element [-inf, inf])]
-
-infix 1 ==~
-
-export covering
-(==~) : Monad m => {shape : _} -> Literal shape Double -> Literal shape Double -> TestT m ()
-(==~) x y = diff x sufficientlyEq' y
-  where
-  sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
-  sufficientlyEq' x y = all [| sufficientlyEq x y |]

@@ -17,68 +17,70 @@ module Unit.TestUtil
 
 import Util
 
-import Utils.Example
+import Utils.Cases
+import Utils.Comparison
 
 namespace Vect
   export
-  test_range : IO ()
-  test_range = do
-    assert "Vect range 0" $ Vect.range 0 == []
-    assert "Vect range 1" $ Vect.range 1 == [0]
-    assert "Vect range 3" $ Vect.range 3 == [0, 1, 2]
+  test_range : Property
+  test_range = fixedProperty $ do
+    Vect.range 0 === []
+    Vect.range 1 === [0]
+    Vect.range 3 === [0, 1, 2]
 
   export
-  test_enumerate : IO ()
-  test_enumerate = do
-    assert "Vect enumerate 0" $ Vect.enumerate {a=()} [] == []
-    assert "Vect enumerate 1" $ Vect.enumerate [5] == [(0, 5)]
-    assert "Vect enumerate 3" $ Vect.enumerate [5, 7, 9] == [(0, 5), (1, 7), (2, 9)]
+  test_enumerate : Property
+  test_enumerate = fixedProperty $ do
+    Vect.enumerate {a=()} [] === []
+    Vect.enumerate [5] === [(0, 5)]
+    Vect.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
 namespace List
   export
-  test_range : IO ()
-  test_range = do
-    assert "List range 0" $ List.range 0 == []
-    assert "List range 1" $ List.range 1 == [0]
-    assert "List range 3" $ List.range 3 == [0, 1, 2]
+  test_range : Property
+  test_range = fixedProperty $ do
+    List.range 0 === []
+    List.range 1 === [0]
+    List.range 3 === [0, 1, 2]
 
   export
-  test_enumerate : IO ()
-  test_enumerate = do
-    assert "List enumerate 0" $ List.enumerate {a=()} [] == []
-    assert "List enumerate 1" $ List.enumerate [5] == [(0, 5)]
-    assert "List enumerate 3" $ List.enumerate [5, 7, 9] == [(0, 5), (1, 7), (2, 9)]
+  test_enumerate : Property
+  test_enumerate = fixedProperty $ do
+    List.enumerate {a=()} [] === []
+    List.enumerate [5] === [(0, 5)]
+    List.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
   export
-  test_insertAt : IO ()
-  test_insertAt = do
-    assert "insertAt can insert at front" $ (List.insertAt 0 9 [6, 7, 8]) == [9, 6, 7, 8]
-    assert "insertAt can insert in middle" $ (List.insertAt 1 9 [6, 7, 8]) == [6, 9, 7, 8]
-    assert "insertAt can insert at end" $ (List.insertAt 3 9 [6, 7, 8]) == [6, 7, 8, 9]
-    assert "insertAt for empty list" $ (List.insertAt 0 9 []) == [9]
+  test_insertAt : Property
+  test_insertAt = fixedProperty $ do
+    List.insertAt 0 9 [6, 7, 8] === [9, 6, 7, 8]
+    List.insertAt 1 9 [6, 7, 8] === [6, 9, 7, 8]
+    List.insertAt 3 9 [6, 7, 8] === [6, 7, 8, 9]
+    List.insertAt 0 9 [] === [9]
 
   export
-  test_deleteAt : IO ()
-  test_deleteAt = do
-    assert "deleteAt can delete from front" $ (List.deleteAt 0 [6, 7, 8]) == [7, 8]
-    assert "deleteAt can delete from middle" $ (List.deleteAt 1 [6, 7, 8]) == [6, 8]
-    assert "deleteAt can delete from end" $ (List.deleteAt 2 [6, 7, 8]) == [6, 7]
-    assert "deleteAt for length one list" $ (List.deleteAt 0 [6]) == []
+  test_deleteAt : Property
+  test_deleteAt = fixedProperty $ do
+    List.deleteAt 0 [6, 7, 8] === [7, 8]
+    List.deleteAt 1 [6, 7, 8] === [6, 8]
+    List.deleteAt 2 [6, 7, 8] === [6, 7]
+    List.deleteAt 0 [6] === []
 
   export
-  test_replaceAt : IO ()
-  test_replaceAt = do
-    assert "replaceAt can replace at front" $ (List.replaceAt 0 5 [6, 7, 8]) == [5, 7, 8]
-    assert "replaceAt can replace at middle" $ (List.replaceAt 1 5 [6, 7, 8]) == [6, 5, 8]
-    assert "replaceAt can replace at end" $ (List.replaceAt 2 5 [6, 7, 8]) == [6, 7, 5]
-    assert "replaceAt for length one list" $ (List.replaceAt 0 5 [6]) == [5]
+  test_replaceAt : Property
+  test_replaceAt = fixedProperty $ do
+    List.replaceAt 0 5 [6, 7, 8] === [5, 7, 8]
+    List.replaceAt 1 5 [6, 7, 8] === [6, 5, 8]
+    List.replaceAt 2 5 [6, 7, 8] === [6, 7, 5]
+    List.replaceAt 0 5 [6] === [5]
 
 export
-test : IO ()
-test = do
-  Vect.test_range
-  Vect.test_enumerate
-  List.test_range
-  List.test_enumerate
-  test_insertAt
-  test_deleteAt
+group : Group
+group = MkGroup "Util" $ [
+      ("Vect.range", Vect.test_range)
+    , ("Vect.enumerate", Vect.test_enumerate)
+    , ("List.range", List.test_range)
+    , ("List.enumerate", List.test_enumerate)
+    , ("insertAt", test_insertAt)
+    , ("deleteAt", test_deleteAt)
+  ]

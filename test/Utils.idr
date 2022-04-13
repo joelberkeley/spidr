@@ -13,30 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Main
+module Utils
 
-import Data.SOP
-import Hedgehog
-
-import TestUtils
-import Utils.TestComparison
-
-import Unit.Model.TestKernel
-import Unit.Util.TestHashable
-import Unit.TestDistribution
-import Unit.TestTensor
-import Unit.TestLiteral
-import Unit.TestUtil
-
-covering
-main : IO ()
-main = test [
-      Utils.TestComparison.group
-    , TestUtils.group
-    , Unit.Util.TestHashable.group
-    , Unit.TestUtil.group
-    , Unit.TestLiteral.group
-    , Unit.TestTensor.group
-    , Unit.TestDistribution.group
-    , Unit.Model.TestKernel.group
-  ]
+export
+isNan : Double -> Bool
+isNan x = x /= x
