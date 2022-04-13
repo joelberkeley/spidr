@@ -13,15 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-# Accelerating with XLA
+# XLA: Accelerated Linear Algebra
 
-When writing spidr's `Tensor` API, we had the option to implement `Tensor` within spidr, or use a third party tool. We chose to opt for a third party tool for a number of reasons:
+## Why XLA?
+
+We had the option to implement `Tensor` in pure Idris, or to build on a third party tool. We chose the latter for a number of reasons:
 
 * it allowed us to start working on higher-level aspects of spidr sooner, such as the probabilistic modelling API
 * many frameworks have been highly optimized and offer impressive performance
 * many frameworks offer acceleration on hardware beyond CPUs
 
 We were drawn to smaller third party tools that offered only what we needed and nothing more, and especially those that were newer as they would be more likely to have learnt from older frameworks. The first candidate was Graphcore's Poplar. While the speed of Graphcore's IPU was attractive, we ruled this out because IPUs are difficult to access for individuals, and other accelerators are either not emphaised or not supported at all. XLA was the next candidate. It supports a number of accelerators of interest (including the IPU), and it is currently being used by Google's JAX, which suggests it will remain active for the forseeable future. It also offers a C++ API which allows us to efficiently call into it from Idris. In retrospect, progress has been slower due to the fact that XLA does not include automatic differentiation. We're unsure if this would have affected our decisions had we considered this at the time.
+
+## The foreign function interface to C++
 
 As mentioned, XLA has a C++ API. In order to call this from Idris, we had two options. The first is to write a C++ backend for Idris. Apparently the Idris core language is small, which means writing new backends is less work than one may expect. The other option is to wrap XLA in a pure C wrapper and use Idris' FFI capabilities to call into this wrapper. We chose this second option for a number of reasons:
 
@@ -33,3 +37,35 @@ We decided to keep the C wrapper as close to the C++ interface as possible, with
 ```
     Idris tensor API ------> XLA-specific Idris layer ------> C wrapper for XLA ------> XLA C++ interface
 ```
+
+There are a number of important differences between C++ and C. Let's now take a look at how we wrap C++ so that it can be consumed as a pure C API.
+
+### C++ overloading and extern
+
+C++ supports overloading, so functions names are always not enough to determine which function is being referred to. As such, names are mangled in such as way as to differentiate overload variants. C doesn't do this, and so it doesn't know how to use the mangled names. The solution is to wrap all C++ code in `extern "C" { <C++ code goes here> }`. This tells the compiler not to mangle names, which makes the API compatible with C.
+
+### C++ classes
+
+C++ is object-oriented. It has objects and classes. C does not. Let's look at how we can make a method compatible with C. Suppose we have the following simple C++ class
+```
+class Foo {
+  public:
+    double Bar(int x);
+}
+```
+we can start by making the presence of the class explicit
+```
+double Bar(Foo* foo, int x) {
+  return foo->Bar(x);
+}
+```
+This is good, as we've hidden the method resolution machinery, but we still have a reference to the class `Foo`, and C doesn't use classes. We could resolve this by simply typing `foo` as a `void*`, but we can be clearer and marginally safer by creating an _opaque pointer_, and casting to and from that, as
+```
+struct c__Foo;
+
+double Bar(c__Foo* foo, int) {
+  Foo* foo_ = reinterpret_cast<Foo*>(foo);
+  return foo_->Bar(x):
+}
+```
+This API is now pure C.
