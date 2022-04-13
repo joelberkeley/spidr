@@ -21,20 +21,20 @@ import Utils.Comparison
 import Utils.Cases
 
 test_map : Property
-test_map = withTests 1 $ property $ do
+test_map = fixedProperty $ do
   map (+ 1) (Scalar 2) === Scalar 3
   (map (+ 1) $ the (Literal [0] _) []) === []
   (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === [[1, 2, 3], [4, 5, 6]]
 
 test_pure : Property
-test_pure = withTests 1 $ property $ do
+test_pure = fixedProperty $ do
   the (Literal [] Nat) (pure 0) === Scalar 0
   the (Literal [0] Nat) (pure 0) === []
   the (Literal [0, 2] Nat) (pure 0) === []
   the (Literal [2, 3] Nat) (pure 0) === [[0, 0, 0], [0, 0, 0]]
 
 test_apply : Property
-test_apply = withTests 1 $ property $ do
+test_apply = fixedProperty $ do
   (Scalar (+ 1) <*> Scalar 2) === Scalar 3
   (Scalar (+) <*> Scalar 1 <*> Scalar 2) === Scalar 3
   let f : Literal [0] (() -> ()) = []
@@ -44,7 +44,7 @@ test_apply = withTests 1 $ property $ do
   ([Scalar (+), Scalar (+)] <*> [0, 1] <*> [2, 3]) === [2, 4]
 
 test_foldr : Property
-test_foldr = withTests 1 $ property $ do
+test_foldr = fixedProperty $ do
   let xs : Literal [0] String = []
   foldr (++) "!" xs === "!"
 
@@ -58,7 +58,7 @@ test_foldr = withTests 1 $ property $ do
   foldr String.(++) "!" xs === "abcd!"
 
 test_all : Property
-test_all = withTests 1 $ property $ do
+test_all = fixedProperty $ do
   all True === True
   all False === False
   all (the (Literal [0] Bool) []) === True
@@ -67,7 +67,7 @@ test_all = withTests 1 $ property $ do
   all [False, False] === False
 
 test_show : Property
-test_show = withTests 1 $ property $ do
+test_show = fixedProperty $ do
   show (Scalar $ the Int 1) === "1"
   show (Scalar $ the Double 1.2) === "1.2"
   show Literal.True === "True"
@@ -88,7 +88,7 @@ test_show = withTests 1 $ property $ do
   show xs === "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
 
 test_cast : Property
-test_cast = withTests 1 $ property $ do
+test_cast = fixedProperty $ do
   let lit : Literal [] Nat = Scalar 1
       arr : Array [] Nat = 1
   cast @{toArray} lit === arr

@@ -34,6 +34,10 @@ namespace Literal
   nan = Scalar (0.0 / 0.0)
   inf = Scalar (1.0 / 0.0)
 
+export
+fixedProperty : PropertyT () -> Property
+fixedProperty = withTests 1 . property
+
 maxRank : Nat
 maxRank = 5
 

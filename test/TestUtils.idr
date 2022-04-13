@@ -25,7 +25,7 @@ isNanFalseForNumeric = property $ do
   assert $ not $ isNan x
 
 isNanTrueForNan : Property
-isNanTrueForNan = withTests 1 $ property $ do
+isNanTrueForNan = fixedProperty $ do
   assert (isNan nan)
 
 export

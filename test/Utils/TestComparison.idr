@@ -58,11 +58,11 @@ insufficientlyEqCases =
   ] in cases ++ map (\(x, y) => (y, x)) cases
 
 isSufficientlyEq : Property
-isSufficientlyEq = withTests 1 $ property $ do
+isSufficientlyEq = fixedProperty $ do
   traverse_ (\(x, y) => diff x sufficientlyEq y) sufficientlyEqCases
 
 isNotSufficientlyEq : Property
-isNotSufficientlyEq = withTests 1 $ property $ do
+isNotSufficientlyEq = fixedProperty $ do
   traverse_ (\(x, y) => diff x (not .: sufficientlyEq) y) insufficientlyEqCases
 
 export

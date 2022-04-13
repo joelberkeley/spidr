@@ -24,7 +24,7 @@ import Utils.Cases
 
 covering
 rbfMatchesTFP : Property
-rbfMatchesTFP = withTests 1 $ property $ do
+rbfMatchesTFP = fixedProperty $ do
   let length_scale = fromLiteral 0.4
       x = fromLiteral [[-1.2], [-0.5], [0.3], [1.2]]
       x' = fromLiteral [[-1.2], [-0.2], [0.8]]

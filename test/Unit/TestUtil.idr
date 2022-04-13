@@ -17,19 +17,20 @@ module Unit.TestUtil
 
 import Util
 
+import Utils.Cases
 import Utils.Comparison
 
 namespace Vect
   export
   test_range : Property
-  test_range = withTests 1 $ property $ do
+  test_range = fixedProperty $ do
     Vect.range 0 === []
     Vect.range 1 === [0]
     Vect.range 3 === [0, 1, 2]
 
   export
   test_enumerate : Property
-  test_enumerate = withTests 1 $ property $ do
+  test_enumerate = fixedProperty $ do
     Vect.enumerate {a=()} [] === []
     Vect.enumerate [5] === [(0, 5)]
     Vect.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
@@ -37,21 +38,21 @@ namespace Vect
 namespace List
   export
   test_range : Property
-  test_range = withTests 1 $ property $ do
+  test_range = fixedProperty $ do
     List.range 0 === []
     List.range 1 === [0]
     List.range 3 === [0, 1, 2]
 
   export
   test_enumerate : Property
-  test_enumerate = withTests 1 $ property $ do
+  test_enumerate = fixedProperty $ do
     List.enumerate {a=()} [] === []
     List.enumerate [5] === [(0, 5)]
     List.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
   export
   test_insertAt : Property
-  test_insertAt = withTests 1 $ property $ do
+  test_insertAt = fixedProperty $ do
     List.insertAt 0 9 [6, 7, 8] === [9, 6, 7, 8]
     List.insertAt 1 9 [6, 7, 8] === [6, 9, 7, 8]
     List.insertAt 3 9 [6, 7, 8] === [6, 7, 8, 9]
@@ -59,7 +60,7 @@ namespace List
 
   export
   test_deleteAt : Property
-  test_deleteAt = withTests 1 $ property $ do
+  test_deleteAt = fixedProperty $ do
     List.deleteAt 0 [6, 7, 8] === [7, 8]
     List.deleteAt 1 [6, 7, 8] === [6, 8]
     List.deleteAt 2 [6, 7, 8] === [6, 7]
@@ -67,7 +68,7 @@ namespace List
 
   export
   test_replaceAt : Property
-  test_replaceAt = withTests 1 $ property $ do
+  test_replaceAt = fixedProperty $ do
     List.replaceAt 0 5 [6, 7, 8] === [5, 7, 8]
     List.replaceAt 1 5 [6, 7, 8] === [6, 5, 8]
     List.replaceAt 2 5 [6, 7, 8] === [6, 7, 5]

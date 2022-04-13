@@ -28,7 +28,7 @@ floatingPointTolerance = 0.000001
 
 export
 sufficientlyEq : {default floatingPointTolerance tol : Double} -> Double -> Double -> Bool
-sufficientlyEq x y =  -- moved
+sufficientlyEq x y =
   x /= x && y /= y  -- nan
   || x == y  -- inf
   || let diff = x - y

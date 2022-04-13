@@ -66,7 +66,7 @@ test_show_graph = property $ do
     """
 
 test_show_graph' : Property
-test_show_graph' = withTests 1 $ property $ do
+test_show_graph' = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[0, 0, 0], [0, 0, 0]]
       y = fromLiteral [[0], [0], [0]]
   show @{Graph} (x @@ y) ===
@@ -92,7 +92,7 @@ test_show_graph' = withTests 1 $ property $ do
       """
 
 test_show_xla : Property
-test_show_xla = withTests 1 $ property $ do
+test_show_xla = fixedProperty $ do
   show @{XLA {dtype=S32}} 1 === "constant, shape=[], metadata={:0}"
 
   show @{XLA {dtype=S32}} (1 + 2) ===
@@ -106,7 +106,7 @@ test_show_xla = withTests 1 $ property $ do
   show @{XLA} x === "constant, shape=[3], metadata={:0}"
 
 test_reshape : Property
-test_reshape = withTests 1 $ property $ do
+test_reshape = fixedProperty $ do
   reshape 3 ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [3, 4, 5]
@@ -124,7 +124,7 @@ test_reshape = withTests 1 $ property $ do
   reshape x ===# flattened
 
 test_slice : Property
-test_slice = withTests 1 $ property $ do
+test_slice = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
   slice 0 0 0 x ===# fromLiteral []
   slice 0 0 1 x ===# fromLiteral [3]
@@ -143,7 +143,7 @@ test_slice = withTests 1 $ property $ do
   slice 1 1 3 x ===# fromLiteral [[4, 5], [7, 8]]
 
 test_index : Property
-test_index = withTests 1 $ property $ do
+test_index = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
   index 0 0 x ===# fromLiteral 3
   index 0 1 x ===# fromLiteral 4
@@ -157,7 +157,7 @@ test_index = withTests 1 $ property $ do
   index 1 2 x ===# fromLiteral [5, 8]
 
 test_split : Property
-test_split = withTests 1 $ property $ do
+test_split = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let (l, r) = split 0 0 vector
@@ -207,7 +207,7 @@ test_split = withTests 1 $ property $ do
   r ===# fromLiteral [[], []]
 
 test_concat : Property
-test_concat = withTests 1 $ property $ do
+test_concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let l = fromLiteral {shape=[0]} []
@@ -257,7 +257,7 @@ test_concat = withTests 1 $ property $ do
   concat 1 l r ===# arr
 
 test_diag : Property
-test_diag = withTests 1 $ property $ do
+test_diag = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
   diag x ===# fromLiteral []
 
@@ -268,7 +268,7 @@ test_diag = withTests 1 $ property $ do
   diag x ===# fromLiteral [1, 4]
 
 test_triangle : Property
-test_triangle = withTests 1 $ property $ do
+test_triangle = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
   triangle Upper x ===# fromLiteral []
   triangle Lower x ===# fromLiteral []
@@ -286,7 +286,7 @@ test_triangle = withTests 1 $ property $ do
   triangle Lower x ===# fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
 test_identity : Property
-test_identity = withTests 1 $ property $ do
+test_identity = fixedProperty $ do
   identity ===# fromLiteral {dtype=S32} []
   identity ===# fromLiteral {dtype=S32} [[1]]
   identity ===# fromLiteral {dtype=S32} [[1, 0], [0, 1]]
@@ -300,7 +300,7 @@ test_identity = withTests 1 $ property $ do
     ]
 
 test_expand : Property
-test_expand = withTests 1 $ property $ do
+test_expand = fixedProperty $ do
   expand 0 3 ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
@@ -308,7 +308,7 @@ test_expand = withTests 1 $ property $ do
   expand 1 x ===# with_extra_dim
 
 test_broadcast : Property
-test_broadcast = withTests 1 $ property $ do
+test_broadcast = fixedProperty $ do
   broadcast {to=[]} {dtype=S32} 7 ===# 7
   broadcast {to=[1]} {dtype=S32} 7 ===# fromLiteral [7]
   broadcast {to=[2, 3]} 7 ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
@@ -390,7 +390,7 @@ test_broadcastable_cannot_stack_dimension_gt_one (Match Same) impossible
 test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
 
 test_squeeze : Property
-test_squeeze = withTests 1 $ property $ do
+test_squeeze = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[3]]
   squeeze x ===# 3
 
@@ -407,7 +407,7 @@ test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
 test_squeezable_cannot_remove_non_ones (Nest _) impossible
 
 test_T : Property
-test_T = withTests 1 $ property $ do
+test_T = fixedProperty $ do
   (fromLiteral {dtype=S32} []).T ===# fromLiteral []
   (fromLiteral {dtype=S32} [[3]]).T ===# fromLiteral [[3]]
 
@@ -429,14 +429,14 @@ mapResult = property $ do
   map (+ 1) x === toLiteral (map (+ 1) x')
 
 mapNonTrivial : Property
-mapNonTrivial = withTests 1 $ property $ do
+mapNonTrivial = fixedProperty $ do
   map {a=S32} (\x => x + x) 1 ===# 2
   map {a=S32} (\_ => 2) 1 ===# 2
   map {a=S32} (map (+ 1)) 1 ===# 2
 
 covering
 map2Result : Property
-map2Result = withTests 1 $ property $ do
+map2Result = fixedProperty $ do
   shape <- forAll shapes
 
   let ints = literal shape ints
@@ -453,11 +453,11 @@ map2Result = withTests 1 $ property $ do
   [| x + y |] ==~ toLiteral (map2 Tensor.(+) x' y')
 
 map2ResultWithReusedFnArgs : Property
-map2ResultWithReusedFnArgs = withTests 1 $ property $ do
+map2ResultWithReusedFnArgs = fixedProperty $ do
   map2 (\x, y => x + x + y + y) 1 2 ===# 6
 
 test_reduce : Property
-test_reduce = withTests 1 $ property $ do
+test_reduce = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
   reduce @{Sum} 1 x ===# fromLiteral [6.6, -6.6]
 
@@ -470,7 +470,7 @@ test_reduce = withTests 1 $ property $ do
 namespace Vector
   export
   test_dot : Property
-  test_dot = withTests 1 $ property $ do
+  test_dot = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [-2, 0, 1]
         r = fromLiteral {dtype=S32} [3, 1, 2]
     l @@ r ===# -4
@@ -478,7 +478,7 @@ namespace Vector
 namespace Matrix
   export
   test_dot : Property
-  test_dot = withTests 1 $ property $ do
+  test_dot = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [3, 3, -1]
     l @@ r ===# fromLiteral [-7, 8]
@@ -799,7 +799,7 @@ testElementwiseComparatorCases = [
   ]
 
 test_select : Property
-test_select = withTests 1 $ property $ do
+test_select = fixedProperty $ do
   let onTrue = fromLiteral {dtype=S32} 1
       onFalse = fromLiteral 0
   select (fromLiteral True) onTrue onFalse ===# onTrue
@@ -812,7 +812,7 @@ test_select = withTests 1 $ property $ do
   select pred onTrue onFalse ===# expected
 
 condResultTrivialUsage : Property
-condResultTrivialUsage = withTests 1 $ property $ do
+condResultTrivialUsage = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 0
   cond (fromLiteral True) (+ 1) x (\x => x - 1) x ===# 1
 
@@ -828,20 +828,20 @@ condResultTrivialUsage = withTests 1 $ property $ do
   cond (fromLiteral False) (fromLiteral 5 *) x diag y ===# fromLiteral [6, 9]
 
 condResultWithReusedArgs : Property
-condResultWithReusedArgs = withTests 1 $ property $ do
+condResultWithReusedArgs = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 1
       y = fromLiteral {dtype=S32} 3
   cond (fromLiteral True) (\z => z + z) x (\z => z * z) y ===# 2
   cond (fromLiteral False) (\z => z + z) x (\z => z * z) y ===# 9
 
 test_erf : Property
-test_erf = withTests 1 $ property $ do
+test_erf = fixedProperty $ do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
   erf x ===# expected
 
 test_cholesky : Property
-test_cholesky = withTests 1 $ property $ do
+test_cholesky = fixedProperty $ do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
       expected = fromLiteral [[nan, 0], [nan, nan]]
   cholesky x ===# expected
@@ -860,7 +860,7 @@ test_cholesky = withTests 1 $ property $ do
   cholesky x ===# expected
 
 triangularSolveResultAndInverse : Property
-triangularSolveResultAndInverse = withTests 1 $ property $ do
+triangularSolveResultAndInverse = fixedProperty $ do
   let a = fromLiteral [
               [0.8578532 , 0.0       , 0.0       ],
               [0.2481904 , 0.9885198 , 0.0       ],
@@ -890,7 +890,7 @@ triangularSolveResultAndInverse = withTests 1 $ property $ do
   a.T @@ actual ===# b
 
 triangularSolveIgnoresOppositeElems : Property
-triangularSolveIgnoresOppositeElems = withTests 1 $ property $ do
+triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = fromLiteral [[1.0, 2.0], [3.0, 4.0]]
       a_lt = fromLiteral [[1.0, 0.0], [3.0, 4.0]]
       b = fromLiteral [5.0, 6.0]
@@ -900,7 +900,7 @@ triangularSolveIgnoresOppositeElems = withTests 1 $ property $ do
   a \| b ===# a_ut \| b
 
 test_trace : Property
-test_trace = withTests 1 $ property $ do
+test_trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
   trace x ===# 3
 

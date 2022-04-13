@@ -37,14 +37,14 @@ gaussianUnivariatePDF = property $ do
     univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
 
 gaussianMultivariatePDF : Property
-gaussianMultivariatePDF = withTests 1 $ property $ do
+gaussianMultivariatePDF = fixedProperty $ do
   let mean = fromLiteral [[-0.2], [0.3]]
       cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
       x = fromLiteral [[1.1], [-0.5]]
   pdf (MkGaussian mean cov) x ===# 0.016427375
 
 gaussianCDF : Property
-gaussianCDF = withTests 1 $ property $ do
+gaussianCDF = fixedProperty $ do
   let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
 
   cdf gaussian (fromLiteral [[-1.5]]) ===# 0.04779036
