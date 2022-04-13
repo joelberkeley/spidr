@@ -38,7 +38,9 @@ We decided to keep the C wrapper as close to the C++ interface as possible, with
     Idris tensor API ------> XLA-specific Idris layer ------> C wrapper for XLA ------> XLA C++ interface
 ```
 
-There are a number of important differences between C++ and C. Let's now take a look at how we wrap C++ so that it can be consumed as a pure C API.
+Let's take a look at these, starting from C++ and going left along the diagram to Idris. There are a number of important differences between C++ and C, and we must wrap C++ so that it can be consumed as a pure C API.
+
+## Calling C++ from C
 
 ### C++ overloading and extern
 
@@ -47,25 +49,42 @@ C++ supports overloading, so functions names are always not enough to determine 
 ### C++ classes
 
 C++ is object-oriented. It has objects and classes. C does not. Let's look at how we can make a method compatible with C. Suppose we have the following simple C++ class
-```
+```cpp
 class Foo {
   public:
     double Bar(int x);
 }
 ```
 we can start by making the presence of the class explicit
-```
-double Bar(Foo* foo, int x) {
-  return foo->Bar(x);
+```cpp
+extern "C" {
+  double Bar(Foo* foo, int x) {
+    return foo->Bar(x);
+  }
 }
 ```
-This is good, as we've hidden the method resolution machinery, but we still have a reference to the class `Foo`, and C doesn't use classes. We could resolve this by simply typing `foo` as a `void*`, but we can be clearer and marginally safer by creating an _opaque pointer_, and casting to and from that, as
-```
-struct c__Foo;
+This is good, as we've hidden the method resolution machinery, but we still have a reference to the class `Foo`, and C doesn't use classes. We could resolve this by simply typing `foo` as a `void*`, but we can be clearer and marginally safer by creating an _opaque pointer_ `c__Foo`, and casting to and from that, as
+```cpp
+extern "C" {
+  struct c__Foo;
 
-double Bar(c__Foo* foo, int) {
-  Foo* foo_ = reinterpret_cast<Foo*>(foo);
-  return foo_->Bar(x):
+  double Bar(c__Foo* foo, int x) {
+    Foo* foo_ = reinterpret_cast<Foo*>(foo);
+    return foo_->Bar(x):
+  }
 }
 ```
 This API is now pure C.
+
+## Calling C from Idris
+
+Calling into C is, on the whole, relatively simple in Idris. [The docs](https://idris2.readthedocs.io/en/latest/ffi/index.html) cover everything you need to get going. That said, there are some difficulties one may encounter in more complex setups, for example:
+
+* One has to make sure to include IO where appropriate. C is typically written in an imperative style, while Idris is purely functional. Actions with side effects must be wrapped in IO. Indeed, it is always safe to wrap things in IO, but it can easily lead to subtle bugs if we omit it.
+* There are no functions in the Idris standard library for passing arrays to and from C. C arrays can be constructed by allocating the necessary memory using Idris' `malloc`, and iterating over the set of indices in the array, setting each value in the array with a C function such as
+  ```c
+  void set(double* arr, int idx, double value) {
+    arr[idx] = value;
+  }
+  ```
+  where here we're setting values in a list of `double`s. Similar functions can be used to get values from, and free arrays.
