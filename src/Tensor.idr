@@ -883,6 +883,12 @@ namespace Scalarwise
   l / r with (l)
     _ | (MkTensor {shape=(d :: ds)} _ _) = l / (broadcast {prf=scalarToAnyOk (d :: ds)} r)
 
+||| The element-wise reciprocal. For example, `recip (fromLiteral [-2, 0, 0.2])`
+||| is `fromLiteral [-0.5, nan, 5]`.
+export
+recip : Tensor shape F64 -> Tensor shape F64
+recip = unaryOp "recip" prim__reciprocal
+
 infixr 9 ^
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
@@ -943,15 +949,66 @@ export
 cos : Tensor shape F64 -> Tensor shape F64
 cos = unaryOp "cos" prim__cos
 
+||| The element-wise tangent.
+export
+tan : Tensor shape F64 -> Tensor shape F64
+tan = unaryOp "tan" prim__tan
+
+||| The element-wise inverse sine.
+export
+asin : Tensor shape F64 -> Tensor shape F64
+asin = unaryOp "asin" prim__asin
+
+||| The element-wise inverse cosine.
+export
+acos : Tensor shape F64 -> Tensor shape F64
+acos = unaryOp "acos" prim__acos
+
+||| The element-wise inverse tangent.
+export
+atan : Tensor shape F64 -> Tensor shape F64
+atan = unaryOp "atan" prim__atan
+
+||| The element-wise hyperbolic sine.
+export
+sinh : Tensor shape F64 -> Tensor shape F64
+sinh = unaryOp "sinh" prim__sinh
+
+||| The element-wise hyperbolic cosine.
+export
+cosh : Tensor shape F64 -> Tensor shape F64
+cosh = unaryOp "cosh" prim__cosh
+
 ||| The element-wise hyperbolic tangent.
 export
 tanh : Tensor shape F64 -> Tensor shape F64
 tanh = unaryOp "tanh" prim__tanh
 
+||| The element-wise inverse sine.
+export
+asinh : Tensor shape F64 -> Tensor shape F64
+asinh = unaryOp "asinh" prim__asinh
+
+||| The element-wise inverse cosine.
+export
+acosh : Tensor shape F64 -> Tensor shape F64
+acosh = unaryOp "acosh" prim__acosh
+
+||| The element-wise inverse tangent.
+export
+atanh : Tensor shape F64 -> Tensor shape F64
+atanh = unaryOp "atanh" prim__atanh
+
 ||| An approximation to the element-wise error function.
 export
 erf : Tensor shape F64 -> Tensor shape F64
 erf = unaryOp "erf" prim__erf
+
+||| The element-wise square. For example, `square (fromLiteral [-2, 0, 3])`
+||| is `fromLiteral [4, 0, 9]`.
+export
+square : Tensor shape F64 -> Tensor shape F64
+square = unaryOp "square" prim__square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.

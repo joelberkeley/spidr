@@ -16,5 +16,16 @@ limitations under the License.
 #include "../xla_builder.h"
 
 extern "C" {
+    XlaOp* Square(XlaOp& x);
+    XlaOp* Reciprocal(XlaOp& x);
+    XlaOp* Acos(XlaOp& x);
+    XlaOp* Asin(XlaOp& x);
+    XlaOp* Atan(XlaOp& x);
+    XlaOp* Tan(XlaOp& x);
+    XlaOp* Acosh(XlaOp& x);
+    XlaOp* Asinh(XlaOp& x);
+    XlaOp* Atanh(XlaOp& x);
+    XlaOp* Cosh(XlaOp& x);
+    XlaOp* Sinh(XlaOp& x);
     XlaOp* Erf(XlaOp& x);
 }

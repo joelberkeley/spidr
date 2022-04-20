@@ -528,6 +528,7 @@ testElementwiseUnaryCases : List (PropertyName, Property)
 testElementwiseUnaryCases = [
     ("negate S32", S32.testElementwiseUnary negate negate),
     ("negate F64", F64.testElementwiseUnary negate negate),
+    ("recip", F64.testElementwiseUnary recip recip),
     ("abs S32", S32.testElementwiseUnary abs abs),
     ("abs F64", F64.testElementwiseUnary abs abs),
     ("exp", F64.testElementwiseUnary exp exp),
@@ -537,8 +538,18 @@ testElementwiseUnaryCases = [
     ("logistic", F64.testElementwiseUnary (\x => 1 / (1 + exp (-x))) logistic),
     ("sin", F64.testElementwiseUnary sin sin),
     ("cos", F64.testElementwiseUnary cos cos),
+    ("tan", F64.testElementwiseUnary tan tan),
+    ("asin", F64.testElementwiseUnary asin asin),
+    ("acos", F64.testElementwiseUnary acos acos),
+    ("atan", F64.testElementwiseUnary atan atan),
+    ("sinh", F64.testElementwiseUnary sinh sinh),
+    ("cosh", F64.testElementwiseUnary cosh cosh),
     ("tanh", F64.testElementwiseUnary tanh' tanh),
+    ("asinh", F64.testElementwiseUnary asinh Tensor.asinh),
+    ("acosh", F64.testElementwiseUnary acosh Tensor.acosh),
+    ("atanh", F64.testElementwiseUnary atanh Tensor.atanh),
     ("sqrt", F64.testElementwiseUnary sqrt sqrt),
+    ("square", F64.testElementwiseUnary (flip pow 2) square),
     ("not", PRED.testElementwiseUnary not not)
   ]
 
@@ -548,6 +559,15 @@ testElementwiseUnaryCases = [
     if isNan idrisResult then
     if isNan x then idrisResult else
     if x < 0 then -1 else 1 else idrisResult
+
+  asinh : Double -> Double
+  asinh x = log (x + sqrt (x * x + 1))
+
+  acosh : Double -> Double
+  acosh x = log (x + sqrt (x * x - 1))
+
+  atanh : Double -> Double
+  atanh x = log ((1 + x) / (1 - x)) / 2
 
 namespace S32
   export covering
