@@ -549,7 +549,7 @@ testElementwiseUnaryCases = [
     ("acosh", F64.testElementwiseUnary acosh Tensor.acosh),
     ("atanh", F64.testElementwiseUnary atanh Tensor.atanh),
     ("sqrt", F64.testElementwiseUnary sqrt sqrt),
-    ("square", F64.testElementwiseUnary (flip pow 2) square),
+    ("square", F64.testElementwiseUnary (\x => x * x) square),
     ("not", PRED.testElementwiseUnary not not)
   ]
 
@@ -561,7 +561,10 @@ testElementwiseUnaryCases = [
     if x < 0 then -1 else 1 else idrisResult
 
   asinh : Double -> Double
-  asinh x = log (x + sqrt (x * x + 1))
+  asinh x =
+    if abs x < 1
+    then log (x + sqrt (x * x + 1))
+    else log (x * (1 + sqrt(1 + pow x (-2))))
 
   acosh : Double -> Double
   acosh x = log (x + sqrt (x * x - 1))
