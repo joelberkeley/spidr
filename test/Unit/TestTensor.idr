@@ -561,9 +561,11 @@ testElementwiseUnaryCases = [
     if x < 0 then -1 else 1 else idrisResult
 
   asinh : Double -> Double
-  asinh x = let res = log (x + sqrt (x * x + 1)) in
-    if not (isNan res) || isNan x then res else
-    if x < 0 then -inf else inf
+  asinh x = if isNan x then nan else
+    let res = log (x + sqrt (x * x + 1)) in
+      if isNan res
+      then if x < 0 then -inf else inf
+      else res
 
   acosh : Double -> Double
   acosh x = log (x + sqrt (x * x - 1))
