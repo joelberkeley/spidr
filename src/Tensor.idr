@@ -984,17 +984,17 @@ export
 tanh : Tensor shape F64 -> Tensor shape F64
 tanh = unaryOp "tanh" prim__tanh
 
-||| The element-wise inverse sine.
+||| The element-wise inverse hyperbolic sine.
 export
 asinh : Tensor shape F64 -> Tensor shape F64
 asinh = unaryOp "asinh" prim__asinh
 
-||| The element-wise inverse cosine.
+||| The element-wise inverse hyperbolic cosine.
 export
 acosh : Tensor shape F64 -> Tensor shape F64
 acosh = unaryOp "acosh" prim__acosh
 
-||| The element-wise inverse tangent.
+||| The element-wise inverse hyperbolic tangent.
 export
 atanh : Tensor shape F64 -> Tensor shape F64
 atanh = unaryOp "atanh" prim__atanh
