@@ -18,5 +18,16 @@ limitations under the License.
 #include "../xla_builder.h"
 
 extern "C" {
+    XlaOp* Square(XlaOp& x) { return unaryOp(xla::Square, x); }
+    XlaOp* Reciprocal(XlaOp& x) { return unaryOp(xla::Reciprocal, x); }
+    XlaOp* Acos(XlaOp& x) { return unaryOp(xla::Acos, x); }
+    XlaOp* Asin(XlaOp& x) { return unaryOp(xla::Asin, x); }
+    XlaOp* Atan(XlaOp& x) { return unaryOp(xla::Atan, x); }
+    XlaOp* Tan(XlaOp& x) { return unaryOp(xla::Tan, x); }
+    XlaOp* Acosh(XlaOp& x) { return unaryOp(xla::Acosh, x); }
+    XlaOp* Asinh(XlaOp& x) { return unaryOp(xla::Asinh, x); }
+    XlaOp* Atanh(XlaOp& x) { return unaryOp(xla::Atanh, x); }
+    XlaOp* Cosh(XlaOp& x) { return unaryOp(xla::Cosh, x); }
+    XlaOp* Sinh(XlaOp& x) { return unaryOp(xla::Sinh, x); }
     XlaOp* Erf(XlaOp& x) { return unaryOp(xla::Erf, x); }
 }

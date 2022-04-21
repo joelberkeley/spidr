@@ -20,5 +20,49 @@ import System.FFI
 import Compiler.FFI
 
 export
+%foreign (libxla "Square")
+prim__square : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Reciprocal")
+prim__reciprocal : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Acos")
+prim__acos : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Asin")
+prim__asin : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Atan")
+prim__atan : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Tan")
+prim__tan : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Acosh")
+prim__acosh : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Asinh")
+prim__asinh : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Atanh")
+prim__atanh : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Cosh")
+prim__cosh : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Sinh")
+prim__sinh : GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Erf")
 prim__erf : GCAnyPtr -> PrimIO AnyPtr
