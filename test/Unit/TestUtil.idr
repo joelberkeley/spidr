@@ -20,6 +20,16 @@ import Util
 import Utils.Cases
 import Utils.Comparison
 
+divIsFlooredDivision : Property
+divIsFlooredDivision = property $ do
+  x <- forAll $ nat (linear 0 20)
+  y <- forAll $ nat (linear 1 20)
+  let x' : Double = cast x
+      y' : Double = cast y
+  case y of
+    0 => success
+    (S n) => div x y === cast {to=Nat} (x' / y')
+
 namespace Vect
   export
   range : Property
@@ -77,7 +87,8 @@ namespace List
 export
 group : Group
 group = MkGroup "Util" $ [
-      ("Vect.range", Vect.range)
+      ("div is floored division", divIsFlooredDivision)
+    , ("Vect.range", Vect.range)
     , ("Vect.enumerate", Vect.enumerate)
     , ("List.range", List.range)
     , ("List.enumerate", List.enumerate)

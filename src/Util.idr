@@ -21,6 +21,11 @@ import public Data.List.Quantifiers
 import public Data.Nat
 import public Data.Vect
 
+||| Integer division of naturals.
+public export
+div : Nat -> (denominator : Nat) -> IsSucc denominator => Nat
+div n d = assert_total $ if n < d then 0 else 1 + div (n `minus` d) d
+
 namespace Vect
   ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
   |||
