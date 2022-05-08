@@ -58,6 +58,10 @@ transpose : Vect m (Vect n Int) -> Vect n (Vect m Int)
 ```
 It's exactly this kind of extra precision that we use throughout spidr when working with tensors.
 
+## A comparison of index nesting with bulk arrays
+
+spidr `Tensor`s are bulk arrays. This contrasts with the arrays in [Dex](https://github.com/google-research/dex-lang).
+
 ## Ergonomic dependent types
 
 There is a skill in using dependent types. Certain approaches can produce code that compiles, but is unergonomic. In this section, we'll look at a few approaches which help the compiler confirm your code is correct, as well as a few typing dead ends.
