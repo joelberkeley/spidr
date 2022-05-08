@@ -80,17 +80,13 @@ probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadca
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
 |||
-||| @beta The weighting given to the variance contribution. If negative, this function will throw
-|||   a `ValueError`.
+||| @beta The weighting given to the variance contribution.
 export
-negativeLowerConfidenceBound : (beta : Double) ->
-  Either ValueError $ Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-negativeLowerConfidenceBound beta =
-  if beta < 0
-  then Left $ MkValueError "beta should be greater than or equal to zero, got \{show beta}"
-  else Right $ \_, model, at =>
-    let marginal = marginalise model at
-     in squeeze $ mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
+negativeLowerConfidenceBound : (beta : Double) -> beta > 0 = True =>
+  Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
+negativeLowerConfidenceBound beta _ model at =
+  let marginal = marginalise model at
+    in squeeze $ mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
