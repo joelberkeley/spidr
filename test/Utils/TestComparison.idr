@@ -18,6 +18,10 @@ module Utils.TestComparison
 import Utils.Cases
 import Utils.Comparison
 
+-- compilation is very slow without these
+%hide Utils.Cases.Literal.inf
+%hide Utils.Cases.Literal.nan
+
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [
   (0.0, 0.0),
