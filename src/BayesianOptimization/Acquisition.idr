@@ -23,7 +23,6 @@ import Data
 import Model
 import Optimize
 import BayesianOptimization.Morphisms
-import Error
 
 ||| An `Empiric` constructs values from historic data and the model over that data.
 |||
