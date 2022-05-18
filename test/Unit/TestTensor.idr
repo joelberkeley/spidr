@@ -356,8 +356,8 @@ broadcast = fixedProperty $ do
       ]
   broadcast {to=[2, 2, 5, 3]} x ===# expected
 
-dimbroadcastable : List (a ** b ** DimBroadcastable a b)
-dimbroadcastable = [
+dimBroadcastable : List (a ** b ** DimBroadcastable a b)
+dimBroadcastable = [
   (0 ** 0 ** Same),
   (1 ** 1 ** Same),
   (3 ** 3 ** Same),
@@ -469,16 +469,16 @@ reduce = fixedProperty $ do
 
 namespace Vector
   export
-  dot : Property
-  dot = fixedProperty $ do
+  (@@) : Property
+  (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [-2, 0, 1]
         r = fromLiteral {dtype=S32} [3, 1, 2]
     l @@ r ===# -4
 
 namespace Matrix
   export
-  dot : Property
-  dot = fixedProperty $ do
+  (@@) : Property
+  (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [3, 3, -1]
     l @@ r ===# fromLiteral [-7, 8]
@@ -682,8 +682,8 @@ scalarDivision = property $ do
       map (/ scalar) lit ==~ toLiteral (lit' / scalar')
 
 covering
-Sum : Property
-Sum = property $ do
+neutralIsNeutralForSum : Property
+neutralIsNeutralForSum = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -701,8 +701,8 @@ Sum = property $ do
   toLiteral left === x
 
 covering
-Prod : Property
-Prod = property $ do
+neutralIsNeutralForProd : Property
+neutralIsNeutralForProd = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -720,8 +720,8 @@ Prod = property $ do
   toLiteral left === x
 
 covering
-Any : Property
-Any = property $ do
+neutralIsNeutralForAny : Property
+neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
@@ -731,8 +731,8 @@ Any = property $ do
   toLiteral left === x
 
 covering
-All : Property
-All = property $ do
+neutralIsNeutralForAll : Property
+neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
@@ -742,8 +742,8 @@ All = property $ do
   toLiteral left === x
 
 covering
-Min : Property
-Min = property $ do
+neutralIsNeutralForMin : Property
+neutralIsNeutralForMin = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
@@ -753,8 +753,8 @@ Min = property $ do
   toLiteral left ==~ x
 
 covering
-Max : Property
-Max = property $ do
+neutralIsNeutralForMax : Property
+neutralIsNeutralForMax = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
@@ -948,8 +948,8 @@ group = MkGroup "Tensor" $ [
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)
-    , ("Vector.(@@)", Vector.dot)
-    , ("Matrix.(@@)", Matrix.dot)
+    , ("Vector.(@@)", Vector.(@@))
+    , ("Matrix.(@@)", Matrix.(@@))
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
@@ -957,14 +957,14 @@ group = MkGroup "Tensor" $ [
   ++ [
       ("Scalarwise.(*)", scalarMultiplication)
     , ("Scalarwise.(/)", scalarDivision)
-    , ("Sum", Sum)
-    , ("Prod", Prod)
+    , ("Sum", neutralIsNeutralForSum)
+    , ("Prod", neutralIsNeutralForProd)
     , ("min F64", minF64)
     , ("max F64", maxF64)
-    , ("Min", Min)
-    , ("Max", Max)
-    , ("Any", Any)
-    , ("All", All)
+    , ("Min", neutralIsNeutralForMin)
+    , ("Max", neutralIsNeutralForMax)
+    , ("Any", neutralIsNeutralForAny)
+    , ("All", neutralIsNeutralForAll)
     , ("select", select)
     , ("cond for trivial usage", condResultTrivialUsage)
     , ("cond for re-used arguments", condResultWithReusedArgs)

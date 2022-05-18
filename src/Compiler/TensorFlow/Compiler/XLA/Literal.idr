@@ -35,11 +35,11 @@ export
 prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "Literal_delete")
-prim__LiteralDelete : AnyPtr -> PrimIO ()
+prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
-delete = primIO . prim__LiteralDelete
+delete = primIO . prim__delete
 
 %foreign (libxla "Literal_Set_bool")
 prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()

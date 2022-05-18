@@ -33,8 +33,8 @@ pure = fixedProperty $ do
   the (Literal [0, 2] Nat) (pure 0) === []
   the (Literal [2, 3] Nat) (pure 0) === [[0, 0, 0], [0, 0, 0]]
 
-apply : Property
-apply = fixedProperty $ do
+(<*>) : Property
+(<*>) = fixedProperty $ do
   (Scalar (+ 1) <*> Scalar 2) === Scalar 3
   (Scalar (+) <*> Scalar 1 <*> Scalar 2) === Scalar 3
   let f : Literal [0] (() -> ()) = []
@@ -109,7 +109,7 @@ group : Group
 group = MkGroup "Literal" $ [
       ("map", map)
     , ("pure", pure)
-    , ("(<*>)", apply)
+    , ("(<*>)", (<*>))
     , ("foldr", foldr)
     , ("all", all)
     , ("show", show)
