@@ -55,7 +55,7 @@ cached graph xs = let graphHash = assert_total $ hash graph in do
       pure opPtr
 
 mkXlaBuilder : String -> IO XlaBuilder
-mkXlaBuilder computation_name = do
+mkXlaBuilder computationName = do
   ptr <- primIO (prim__mkXlaBuilder computationName)
   ptr <- onCollectAny ptr XlaBuilder.delete
   pure (MkXlaBuilder ptr empty)
