@@ -81,7 +81,7 @@ probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadca
 |||
 ||| @beta The weighting given to the variance contribution.
 export
-negativeLowerConfidenceBound : (beta : Double) -> beta >= 0 = True =>
+negativeLowerConfidenceBound : (beta : Double) -> (0 _ : beta >= 0 = True) =>
   Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
 negativeLowerConfidenceBound beta _ model at =
   let marginal = marginalise model at
