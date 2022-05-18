@@ -38,12 +38,12 @@ Empiric features targets out = {0 model : _}
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 |||
-||| @batch_size The number of points in the feature domain that the `Acquisition` evaluates
+||| @batchSize The number of points in the feature domain that the `Acquisition` evaluates
 |||   at once.
 ||| @features The shape of the feature domain.
 public export 0
-Acquisition : (0 batch_size : Nat) -> {auto 0 _ : GT batch_size 0} -> (0 features : Shape) -> Type
-Acquisition batch_size features = Tensor (batch_size :: features) F64 -> Tensor [] F64
+Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
+Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -66,8 +66,8 @@ expectedImprovement model best at =
 ||| the observation value at each point.
 export
 expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-expectedImprovementByModel (MkDataset query_points _) model at =
-  let best = squeeze $ reduce @{Min} 0 $ mean {event=[1]} $ marginalise model query_points
+expectedImprovementByModel (MkDataset queryPoints _) model at =
+  let best = squeeze $ reduce @{Min} 0 $ mean {event=[1]} $ marginalise model queryPoints
    in expectedImprovement model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a

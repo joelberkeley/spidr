@@ -41,25 +41,25 @@ posterior :
   -> Tensor [] F64
   -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
   -> GaussianProcess features
-posterior (MkGP prior_meanf prior_kernel) noise (x_train, y_train) =
-  let l = cholesky (prior_kernel x_train x_train + noise * identity)
-      alpha = l.T \| (l |\ y_train)
+posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) =
+  let l = cholesky (priorKernel xTrain xTrain + noise * identity)
+      alpha = l.T \| (l |\ yTrain)
 
-      posterior_meanf : MeanFunction features
-      posterior_meanf x = prior_meanf x + (prior_kernel x x_train) @@ alpha
+      posteriorMeanf : MeanFunction features
+      posteriorMeanf x = priorMeanf x + (priorKernel x xTrain) @@ alpha
 
-      posterior_kernel : Kernel features
-      posterior_kernel x x' = prior_kernel x x' -
-                              (l |\ (prior_kernel x_train x)).T @@ (l |\ (prior_kernel x_train x'))
+      posteriorKernel : Kernel features
+      posteriorKernel x x' = priorKernel x x' -
+                              (l |\ (priorKernel xTrain x)).T @@ (l |\ (priorKernel xTrain x'))
 
-   in MkGP posterior_meanf posterior_kernel
+   in MkGP posteriorMeanf posteriorKernel
 
-log_marginal_likelihood :
+logMarginalLikelihood :
   GaussianProcess features
   -> Tensor [] F64
   -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
   -> Tensor [] F64
-log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
+logMarginalLikelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + noise * identity)
       alpha = l.T \| (l |\ y)
    in - y @@ alpha / 2.0 - trace (log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
@@ -77,12 +77,12 @@ log_marginal_likelihood (MkGP _ kernel) noise (x, y) =
 ||| Pattern Recognition and Machine Learning, Christopher M. Bishop
 public export
 data ConjugateGPRegression : (0 features : Shape) -> Type where
-  ||| @gp_from_hyperparameters Constructs a Gaussian process from the hyperparameters (presented as
+  ||| @gpFromHyperparameters Constructs a Gaussian process from the hyperparameters (presented as
   |||   a vector)
   ||| @hyperparameters The hyperparameters (excluding noise) presented as a vector.
   ||| @noise The likehood amplitude, or observation noise.
   MkConjugateGPR : {p : _}
-    -> (gp_from_hyperparameters : Tensor [p] F64 -> GaussianProcess features)
+    -> (gpFromHyperparameters : Tensor [p] F64 -> GaussianProcess features)
     -> (hyperparameters : Tensor [p] F64)
     -> (noise : Tensor [] F64)
     -> ConjugateGPRegression features
@@ -90,16 +90,16 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
 ||| A probabilistic model from feature values to a distribution over latent target values.
 export
 [Latent] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
-  marginalise (MkConjugateGPR mk_gp gp_params _) x =
-    let (MkGP meanf kernel) = mk_gp gp_params
+  marginalise (MkConjugateGPR mkGP gpParams _) x =
+    let (MkGP meanf kernel) = mkGP gpParams
      in MkGaussian (expand 1 $ meanf x) (expand 2 $ kernel x x)
 
 ||| A probabilistic model from feature values to a distribution over observed target values.
 export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise gpr@(MkConjugateGPR _ _ noise) x =
-    let (MkGaussian latent_mean latent_cov) = marginalise @{Latent} gpr x
-     in MkGaussian latent_mean (latent_cov + (broadcast $ expand 2 (noise * identity {n = S n})))
+    let (MkGaussian latentMean latentCov) = marginalise @{Latent} gpr x
+     in MkGaussian latentMean (latentCov + (broadcast $ expand 2 (noise * identity {n = S n})))
 
 ||| Fit the Gaussian process and noise to the specified data.
 export
@@ -107,15 +107,15 @@ fit : ConjugateGPRegression features
   -> (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
   -> ConjugateGPRegression features
-fit (MkConjugateGPR {p} mk_prior gp_params noise) optimizer (MkDataset x y) =
+fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] F64 -> Tensor [] F64
-      objective params = let (noise, prior_params) = split 0 1 params
-                          in log_marginal_likelihood (mk_prior prior_params)
+      objective params = let (noise, priorParams) = split 0 1 params
+                          in logMarginalLikelihood (mkPrior priorParams)
                              (squeeze noise) (x, squeeze y)
 
-      (noise, gp_params) := split 0 1 $ optimizer (concat 0 (expand 0 noise) gp_params) objective
+      (noise, gpParams) := split 0 1 $ optimizer (concat 0 (expand 0 noise) gpParams) objective
 
-      mk_posterior : Tensor [p] F64 -> GaussianProcess features
-      mk_posterior params' = posterior (mk_prior params') (squeeze noise) (x, squeeze y)
+      mkPosterior : Tensor [p] F64 -> GaussianProcess features
+      mkPosterior params' = posterior (mkPrior params') (squeeze noise) (x, squeeze y)
 
-   in MkConjugateGPR mk_posterior gp_params (squeeze noise)
+   in MkConjugateGPR mkPosterior gpParams (squeeze noise)

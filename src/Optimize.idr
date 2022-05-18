@@ -56,6 +56,6 @@ gridSearch : (density : Tensor [d] U32) ->
 |||
 ||| **NOTE** This function is not yet implemented.
 |||
-||| @initial_points The points from which to start optimization.
+||| @initialPoints The points from which to start optimization.
 export
-lbfgs : (initial_points : Tensor [n] F64) -> Optimizer (Tensor [n] F64)
+lbfgs : (initialPoints : Tensor [n] F64) -> Optimizer (Tensor [n] F64)

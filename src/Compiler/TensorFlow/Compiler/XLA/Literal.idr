@@ -35,11 +35,11 @@ export
 prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "Literal_delete")
-prim__Literal_delete : AnyPtr -> PrimIO ()
+prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
-delete = primIO . prim__Literal_delete
+delete = primIO . prim__delete
 
 %foreign (libxla "Literal_Set_bool")
 prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
@@ -96,8 +96,8 @@ populateLiteral {shape} lit ptr = impl shape [] lit where
 export
 mkLiteral : HasIO io => LiteralPrimitiveRW dtype a => {shape : _} -> Literal shape a -> io GCAnyPtr
 mkLiteral xs = do
-  xla_shape <- mkShape {dtype} shape
-  literal <- primIO $ prim__allocLiteral xla_shape
+  xlaShape <- mkShape {dtype} shape
+  literal <- primIO $ prim__allocLiteral xlaShape
   literal <- onCollectAny literal Literal.delete
   liftIO $ populateLiteral {dtype} xs literal
   pure literal

@@ -28,8 +28,8 @@ import Utils.Comparison
 import Utils.Cases
 
 covering
-test_fromLiteral_toLiteral : Property
-test_fromLiteral_toLiteral = property $ do
+fromLiteralThentoLiteral : Property
+fromLiteralThentoLiteral = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -42,8 +42,8 @@ test_fromLiteral_toLiteral = property $ do
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
 covering
-test_show_graph : Property
-test_show_graph = property $ do
+showForGraph : Property
+showForGraph = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape ints)
@@ -65,8 +65,8 @@ test_show_graph = property $ do
       S32\{show shape} fromLiteral
     """
 
-test_show_graph' : Property
-test_show_graph' = fixedProperty $ do
+showForGraph' : Property
+showForGraph' = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[0, 0, 0], [0, 0, 0]]
       y = fromLiteral [[0], [0], [0]]
   show @{Graph} (x @@ y) ===
@@ -91,8 +91,8 @@ test_show_graph' = fixedProperty $ do
         S32[2, 2] fromLiteral
       """
 
-test_show_xla : Property
-test_show_xla = fixedProperty $ do
+showForXLA : Property
+showForXLA = fixedProperty $ do
   show @{XLA {dtype=S32}} 1 === "constant, shape=[], metadata={:0}"
 
   show @{XLA {dtype=S32}} (1 + 2) ===
@@ -105,8 +105,8 @@ test_show_xla = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
   show @{XLA} x === "constant, shape=[3], metadata={:0}"
 
-test_reshape : Property
-test_reshape = fixedProperty $ do
+reshape : Property
+reshape = fixedProperty $ do
   reshape 3 ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [3, 4, 5]
@@ -117,14 +117,14 @@ test_reshape = fixedProperty $ do
       flipped = fromLiteral [[3, 4], [5, 6], [7, 8]]
   reshape x ===# flipped
 
-  let with_extra_dim = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-  reshape x ===# with_extra_dim
+  let withExtraDim = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+  reshape x ===# withExtraDim
 
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
   reshape x ===# flattened
 
-test_slice : Property
-test_slice = fixedProperty $ do
+slice : Property
+slice = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
   slice 0 0 0 x ===# fromLiteral []
   slice 0 0 1 x ===# fromLiteral [3]
@@ -142,8 +142,8 @@ test_slice = fixedProperty $ do
   slice 1 2 2 x ===# fromLiteral [[], []]
   slice 1 1 3 x ===# fromLiteral [[4, 5], [7, 8]]
 
-test_index : Property
-test_index = fixedProperty $ do
+index : Property
+index = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
   index 0 0 x ===# fromLiteral 3
   index 0 1 x ===# fromLiteral 4
@@ -156,8 +156,8 @@ test_index = fixedProperty $ do
   index 1 1 x ===# fromLiteral [4, 7]
   index 1 2 x ===# fromLiteral [5, 8]
 
-test_split : Property
-test_split = fixedProperty $ do
+split : Property
+split = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let (l, r) = split 0 0 vector
@@ -206,8 +206,8 @@ test_split = fixedProperty $ do
   l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
   r ===# fromLiteral [[], []]
 
-test_concat : Property
-test_concat = fixedProperty $ do
+concat : Property
+concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let l = fromLiteral {shape=[0]} []
@@ -256,8 +256,8 @@ test_concat = fixedProperty $ do
       r = fromLiteral {shape=[2, 0]} [[], []]
   concat 1 l r ===# arr
 
-test_diag : Property
-test_diag = fixedProperty $ do
+diag : Property
+diag = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
   diag x ===# fromLiteral []
 
@@ -267,8 +267,8 @@ test_diag = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
   diag x ===# fromLiteral [1, 4]
 
-test_triangle : Property
-test_triangle = fixedProperty $ do
+triangle : Property
+triangle = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
   triangle Upper x ===# fromLiteral []
   triangle Lower x ===# fromLiteral []
@@ -285,8 +285,8 @@ test_triangle = fixedProperty $ do
   triangle Upper x ===# fromLiteral [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
   triangle Lower x ===# fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
-test_identity : Property
-test_identity = fixedProperty $ do
+identity : Property
+identity = fixedProperty $ do
   identity ===# fromLiteral {dtype=S32} []
   identity ===# fromLiteral {dtype=S32} [[1]]
   identity ===# fromLiteral {dtype=S32} [[1, 0], [0, 1]]
@@ -299,16 +299,16 @@ test_identity = fixedProperty $ do
       [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]
     ]
 
-test_expand : Property
-test_expand = fixedProperty $ do
+expand : Property
+expand = fixedProperty $ do
   expand 0 3 ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-      with_extra_dim = fromLiteral [[[3, 4, 5]], [[6, 7, 8]]]
-  expand 1 x ===# with_extra_dim
+      withExtraDim = fromLiteral [[[3, 4, 5]], [[6, 7, 8]]]
+  expand 1 x ===# withExtraDim
 
-test_broadcast : Property
-test_broadcast = fixedProperty $ do
+broadcast : Property
+broadcast = fixedProperty $ do
   broadcast {to=[]} {dtype=S32} 7 ===# 7
   broadcast {to=[1]} {dtype=S32} 7 ===# fromLiteral [7]
   broadcast {to=[2, 3]} 7 ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
@@ -356,8 +356,8 @@ test_broadcast = fixedProperty $ do
       ]
   broadcast {to=[2, 2, 5, 3]} x ===# expected
 
-test_dimbroadcastable : List (a ** b ** DimBroadcastable a b)
-test_dimbroadcastable = [
+dimBroadcastable : List (a ** b ** DimBroadcastable a b)
+dimBroadcastable = [
   (0 ** 0 ** Same),
   (1 ** 1 ** Same),
   (3 ** 3 ** Same),
@@ -369,8 +369,8 @@ test_dimbroadcastable = [
   (3 ** 0 ** Zero)
 ]
 
-test_broadcastable : List (from : Shape ** to : Shape ** Broadcastable from to)
-test_broadcastable = [
+broadcastable : List (from : Shape ** to : Shape ** Broadcastable from to)
+broadcastable = [
   ([] ** [] ** Same),
   ([3, 2, 5] ** [3, 2, 5] ** Same),
   ([] ** [3, 2, 5] ** Nest $ Nest $ Nest Same),
@@ -379,18 +379,18 @@ test_broadcastable = [
   ([3, 2, 5] ** [7, 3, 2, 5] ** Nest Same)
 ]
 
-test_broadcastable_cannot_reduce_rank0 : Broadcastable [5] [] -> Void
-test_broadcastable_cannot_reduce_rank0 _ impossible
+broadcastableCannotReduceRank0 : Broadcastable [5] [] -> Void
+broadcastableCannotReduceRank0 _ impossible
 
-test_broadcastable_cannot_reduce_rank1 : Broadcastable [3, 2, 5] [] -> Void
-test_broadcastable_cannot_reduce_rank1 _ impossible
+broadcastableCannotReduceRank1 : Broadcastable [3, 2, 5] [] -> Void
+broadcastableCannotReduceRank1 _ impossible
 
-test_broadcastable_cannot_stack_dimension_gt_one : Broadcastable [3, 2] [3, 7] -> Void
-test_broadcastable_cannot_stack_dimension_gt_one (Match Same) impossible
-test_broadcastable_cannot_stack_dimension_gt_one (Nest Same) impossible
+broadcastableCannotStackDimensionGtOne : Broadcastable [3, 2] [3, 7] -> Void
+broadcastableCannotStackDimensionGtOne (Match Same) impossible
+broadcastableCannotStackDimensionGtOne (Nest Same) impossible
 
-test_squeeze : Property
-test_squeeze = fixedProperty $ do
+squeeze : Property
+squeeze = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[3]]
   squeeze x ===# 3
 
@@ -403,11 +403,11 @@ test_squeeze = fixedProperty $ do
   let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
   squeeze x ===# fill {shape=[3, 2, 5]} {dtype=S32} 0
 
-test_squeezable_cannot_remove_non_ones : Squeezable [1, 2] [] -> Void
-test_squeezable_cannot_remove_non_ones (Nest _) impossible
+squeezableCannotRemoveNonOnes : Squeezable [1, 2] [] -> Void
+squeezableCannotRemoveNonOnes (Nest _) impossible
 
-test_T : Property
-test_T = fixedProperty $ do
+(.T) : Property
+(.T) = fixedProperty $ do
   (fromLiteral {dtype=S32} []).T ===# fromLiteral []
   (fromLiteral {dtype=S32} [[3]]).T ===# fromLiteral [[3]]
 
@@ -456,8 +456,8 @@ map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
   map2 (\x, y => x + x + y + y) 1 2 ===# 6
 
-test_reduce : Property
-test_reduce = fixedProperty $ do
+reduce : Property
+reduce = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
   reduce @{Sum} 1 x ===# fromLiteral [6.6, -6.6]
 
@@ -469,16 +469,16 @@ test_reduce = fixedProperty $ do
 
 namespace Vector
   export
-  test_dot : Property
-  test_dot = fixedProperty $ do
+  (@@) : Property
+  (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [-2, 0, 1]
         r = fromLiteral {dtype=S32} [3, 1, 2]
     l @@ r ===# -4
 
 namespace Matrix
   export
-  test_dot : Property
-  test_dot = fixedProperty $ do
+  (@@) : Property
+  (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [3, 3, -1]
     l @@ r ===# fromLiteral [-7, 8]
@@ -636,8 +636,8 @@ testElementwiseBinaryCases = [
   or x y = x || y
 
 covering
-test_minF64 : Property
-test_minF64 = property $ do
+minF64 : Property
+minF64 = property $ do
   shape <- forAll shapes
   -- XLA has a bug for nan values
   let doubles = literal shape doublesWithoutNan
@@ -647,8 +647,8 @@ test_minF64 = property $ do
   [| min x y |] ==~ toLiteral (min x' y')
 
 covering
-test_maxF64 : Property
-test_maxF64 = property $ do
+maxF64 : Property
+maxF64 = property $ do
   shape <- forAll shapes
   -- XLA has a bug for nan values
   let doubles = literal shape doublesWithoutNan
@@ -658,8 +658,8 @@ test_maxF64 = property $ do
   [| max x y |] ==~ toLiteral (max x' y')
 
 covering
-test_scalar_multiplication : Property
-test_scalar_multiplication = property $ do
+scalarMultiplication : Property
+scalarMultiplication = property $ do
   shape <- forAll shapes
   case shape of
     [] => success
@@ -670,8 +670,8 @@ test_scalar_multiplication = property $ do
       map (scalar *) lit ==~ toLiteral (scalar' * lit')
 
 covering
-test_scalar_division : Property
-test_scalar_division = property $ do
+scalarDivision : Property
+scalarDivision = property $ do
   shape <- forAll shapes
   case shape of
     [] => success
@@ -682,8 +682,8 @@ test_scalar_division = property $ do
       map (/ scalar) lit ==~ toLiteral (lit' / scalar')
 
 covering
-test_Sum : Property
-test_Sum = property $ do
+neutralIsNeutralForSum : Property
+neutralIsNeutralForSum = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -701,8 +701,8 @@ test_Sum = property $ do
   toLiteral left === x
 
 covering
-test_Prod : Property
-test_Prod = property $ do
+neutralIsNeutralForProd : Property
+neutralIsNeutralForProd = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -720,8 +720,8 @@ test_Prod = property $ do
   toLiteral left === x
 
 covering
-test_Any : Property
-test_Any = property $ do
+neutralIsNeutralForAny : Property
+neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
@@ -731,8 +731,8 @@ test_Any = property $ do
   toLiteral left === x
 
 covering
-test_All : Property
-test_All = property $ do
+neutralIsNeutralForAll : Property
+neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
@@ -742,8 +742,8 @@ test_All = property $ do
   toLiteral left === x
 
 covering
-test_Min : Property
-test_Min = property $ do
+neutralIsNeutralForMin : Property
+neutralIsNeutralForMin = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
@@ -753,8 +753,8 @@ test_Min = property $ do
   toLiteral left ==~ x
 
 covering
-test_Max : Property
-test_Max = property $ do
+neutralIsNeutralForMax : Property
+neutralIsNeutralForMax = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
@@ -818,8 +818,8 @@ testElementwiseComparatorCases = [
     ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
   ]
 
-test_select : Property
-test_select = fixedProperty $ do
+select : Property
+select = fixedProperty $ do
   let onTrue = fromLiteral {dtype=S32} 1
       onFalse = fromLiteral 0
   select (fromLiteral True) onTrue onFalse ===# onTrue
@@ -854,14 +854,14 @@ condResultWithReusedArgs = fixedProperty $ do
   cond (fromLiteral True) (\z => z + z) x (\z => z * z) y ===# 2
   cond (fromLiteral False) (\z => z + z) x (\z => z * z) y ===# 9
 
-test_erf : Property
-test_erf = fixedProperty $ do
+erf : Property
+erf = fixedProperty $ do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
   erf x ===# expected
 
-test_cholesky : Property
-test_cholesky = fixedProperty $ do
+cholesky : Property
+cholesky = fixedProperty $ do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
       expected = fromLiteral [[nan, 0], [nan, nan]]
   cholesky x ===# expected
@@ -912,65 +912,65 @@ triangularSolveResultAndInverse = fixedProperty $ do
 triangularSolveIgnoresOppositeElems : Property
 triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = fromLiteral [[1.0, 2.0], [3.0, 4.0]]
-      a_lt = fromLiteral [[1.0, 0.0], [3.0, 4.0]]
+      aLower = fromLiteral [[1.0, 0.0], [3.0, 4.0]]
       b = fromLiteral [5.0, 6.0]
-  a |\ b ===# a_lt |\ b
+  a |\ b ===# aLower |\ b
 
-  let a_ut = fromLiteral [[1.0, 2.0], [0.0, 4.0]]
-  a \| b ===# a_ut \| b
+  let aUpper = fromLiteral [[1.0, 2.0], [0.0, 4.0]]
+  a \| b ===# aUpper \| b
 
-test_trace : Property
-test_trace = fixedProperty $ do
+trace : Property
+trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
   trace x ===# 3
 
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
-      ("toLiteral . fromLiteral", test_fromLiteral_toLiteral)
-    , ("show @{Graph}", test_show_graph)
-    , ("show @{Graph} 2", test_show_graph')
-    , ("show @{XLA}", test_show_xla)
-    , ("reshape", test_reshape)
-    , ("slice", test_slice)
-    , ("index", test_index)
-    , ("split", test_split)
-    , ("concat", test_concat)
-    , ("diag", test_diag)
-    , ("triangle", test_triangle)
-    , ("identity", test_identity)
-    , ("expand", test_expand)
-    , ("broadcast", test_broadcast)
-    , ("squeeze", test_squeeze)
-    , ("(.T)", test_T)
+      ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
+    , ("show @{Graph}", showForGraph)
+    , ("show @{Graph} 2", showForGraph')
+    , ("show @{XLA}", showForXLA)
+    , ("reshape", reshape)
+    , ("slice", slice)
+    , ("index", index)
+    , ("split", split)
+    , ("concat", concat)
+    , ("diag", diag)
+    , ("triangle", triangle)
+    , ("identity", identity)
+    , ("expand", expand)
+    , ("broadcast", broadcast)
+    , ("squeeze", squeeze)
+    , ("(.T)", (.T))
     , ("map", mapResult)
     , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
-    , ("reduce", test_reduce)
-    , ("Vector.(@@)", Vector.test_dot)
-    , ("Matrix.(@@)", Matrix.test_dot)
+    , ("reduce", reduce)
+    , ("Vector.(@@)", Vector.(@@))
+    , ("Matrix.(@@)", Matrix.(@@))
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
   ++ testElementwiseBinaryCases
   ++ [
-      ("Scalarwise.(*)", test_scalar_multiplication)
-    , ("Scalarwise.(/)", test_scalar_division)
-    , ("Sum", test_Sum)
-    , ("Prod", test_Prod)
-    , ("min F64", test_minF64)
-    , ("max F64", test_maxF64)
-    , ("Min", test_Min)
-    , ("Max", test_Max)
-    , ("Any", test_Any)
-    , ("All", test_All)
-    , ("select", test_select)
+      ("Scalarwise.(*)", scalarMultiplication)
+    , ("Scalarwise.(/)", scalarDivision)
+    , ("Sum", neutralIsNeutralForSum)
+    , ("Prod", neutralIsNeutralForProd)
+    , ("min F64", minF64)
+    , ("max F64", maxF64)
+    , ("Min", neutralIsNeutralForMin)
+    , ("Max", neutralIsNeutralForMax)
+    , ("Any", neutralIsNeutralForAny)
+    , ("All", neutralIsNeutralForAll)
+    , ("select", select)
     , ("cond for trivial usage", condResultTrivialUsage)
     , ("cond for re-used arguments", condResultWithReusedArgs)
-    , ("erf", test_erf)
-    , ("cholesky", test_cholesky)
+    , ("erf", erf)
+    , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-    , ("trace", test_trace)
+    , ("trace", trace)
   ]

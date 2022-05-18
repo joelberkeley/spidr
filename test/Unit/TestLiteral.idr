@@ -20,21 +20,21 @@ import Literal
 import Utils.Comparison
 import Utils.Cases
 
-test_map : Property
-test_map = fixedProperty $ do
+map : Property
+map = fixedProperty $ do
   map (+ 1) (Scalar 2) === Scalar 3
   (map (+ 1) $ the (Literal [0] _) []) === []
   (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === [[1, 2, 3], [4, 5, 6]]
 
-test_pure : Property
-test_pure = fixedProperty $ do
+pure : Property
+pure = fixedProperty $ do
   the (Literal [] Nat) (pure 0) === Scalar 0
   the (Literal [0] Nat) (pure 0) === []
   the (Literal [0, 2] Nat) (pure 0) === []
   the (Literal [2, 3] Nat) (pure 0) === [[0, 0, 0], [0, 0, 0]]
 
-test_apply : Property
-test_apply = fixedProperty $ do
+(<*>) : Property
+(<*>) = fixedProperty $ do
   (Scalar (+ 1) <*> Scalar 2) === Scalar 3
   (Scalar (+) <*> Scalar 1 <*> Scalar 2) === Scalar 3
   let f : Literal [0] (() -> ()) = []
@@ -43,8 +43,8 @@ test_apply = fixedProperty $ do
   ([Scalar (+ 1), Scalar (+ 1)] <*> [0, 1]) === [1, 2]
   ([Scalar (+), Scalar (+)] <*> [0, 1] <*> [2, 3]) === [2, 4]
 
-test_foldr : Property
-test_foldr = fixedProperty $ do
+foldr : Property
+foldr = fixedProperty $ do
   let xs : Literal [0] String = []
   foldr (++) "!" xs === "!"
 
@@ -57,8 +57,8 @@ test_foldr = fixedProperty $ do
   let xs = [[Scalar "a", Scalar "b"], [Scalar "c", Scalar "d"]]
   foldr String.(++) "!" xs === "abcd!"
 
-test_all : Property
-test_all = fixedProperty $ do
+all : Property
+all = fixedProperty $ do
   all True === True
   all False === False
   all (the (Literal [0] Bool) []) === True
@@ -66,8 +66,8 @@ test_all = fixedProperty $ do
   all [True, False] === False
   all [False, False] === False
 
-test_show : Property
-test_show = fixedProperty $ do
+show : Property
+show = fixedProperty $ do
   show (Scalar $ the Int 1) === "1"
   show (Scalar $ the Double 1.2) === "1.2"
   show Literal.True === "True"
@@ -87,8 +87,8 @@ test_show = fixedProperty $ do
   let xs : Literal [3, 2, 2] Nat = [[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]
   show xs === "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
 
-test_cast : Property
-test_cast = fixedProperty $ do
+cast : Property
+cast = fixedProperty $ do
   let lit : Literal [] Nat = Scalar 1
       arr : Array [] Nat = 1
   cast @{toArray} lit === arr
@@ -107,10 +107,10 @@ test_cast = fixedProperty $ do
 export
 group : Group
 group = MkGroup "Literal" $ [
-      ("map", test_map)
-    , ("pure", test_pure)
-    , ("(<*>)", test_apply)
-    , ("foldr", test_foldr)
-    , ("all", test_all)
-    , ("show", test_show)
+      ("map", map)
+    , ("pure", pure)
+    , ("(<*>)", (<*>))
+    , ("foldr", foldr)
+    , ("all", all)
+    , ("show", show)
   ]
