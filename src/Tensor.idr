@@ -25,7 +25,6 @@ import public Data.List.Elem
 import Decidable.Equality
 import System.FFI
 
-import Error
 import Literal
 import public Primitive
 import public Types

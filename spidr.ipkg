@@ -27,7 +27,6 @@ modules =
 
   Data,
   Distribution,
-  Error,
   Literal,
 
   Model,
