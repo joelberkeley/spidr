@@ -79,11 +79,11 @@ Distribution Gaussian where
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x =
-    let chol_cov = cholesky (squeeze {to=[S d, S d]} cov)
-        tri = chol_cov |\ squeeze (x - mean)
+    let cholCov = cholesky (squeeze {to=[S d, S d]} cov)
+        tri = cholCov |\ squeeze (x - mean)
         exponent = - tri @@ tri / 2.0
-        cov_sqrt_det = reduce @{Prod} 0 (diag chol_cov)
-        denominator = ((2.0 * pi) ^ fromDouble (cast (S d) / 2)) * cov_sqrt_det
+        covSqrtDet = reduce @{Prod} 0 (diag cholCov)
+        denominator = ((2.0 * pi) ^ fromDouble (cast (S d) / 2)) * covSqrtDet
      in exp exponent / denominator
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf

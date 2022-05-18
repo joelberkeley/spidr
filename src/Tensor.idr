@@ -123,9 +123,9 @@ export covering
 
 reshapeImpl : (from, to : Shape) -> ComputationComponent -> ComputationComponent
 reshapeImpl from to xs = do
-  dim_order <- mkIntArray (range (length from))
+  dimOrder <- mkIntArray (range (length from))
   cto <- mkIntArray to
-  reshaped <- primIO $ prim__reshape !xs dim_order (cast (length from)) cto (cast (length to))
+  reshaped <- primIO $ prim__reshape !xs dimOrder (cast (length from)) cto (cast (length to))
   onCollectAny reshaped XlaOp.delete
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
@@ -233,8 +233,8 @@ slice : (axis, from, to : Nat) -> from `LTE` to => InBounds axis shape
         => (isWithinAxis : to `LTE` index axis shape) => Primitive dtype
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor graph xs) =
-  let to_shape = (replaceAt axis (to `minus` from) shape)
-      graph = Operation "slice" [graph] to_shape (typeString {dtype})
+  let toShape = (replaceAt axis (to `minus` from) shape)
+      graph = Operation "slice" [graph] toShape (typeString {dtype})
    in MkTensor graph $ cached graph $ do
         let rank = length shape
         start <- mkIntArray (replicate axis 0 ++ [from] ++ replicate (rank `minus` axis) 0)
@@ -296,8 +296,8 @@ concat : Primitive dtype => (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
          -> (InBounds axis s, InBounds axis s') => deleteAt axis s = deleteAt axis s'
          => Tensor (replaceAt axis (index axis s + index axis s') s) dtype
 concat axis (MkTensor {shape=s} graphL l) (MkTensor {shape=s'} graphR r) =
-  let to_shape = replaceAt axis (index axis s + index axis s') s
-      graph = Operation "concat" [graphL, graphR] to_shape (typeString {dtype})
+  let toShape = replaceAt axis (index axis s + index axis s') s
+      graph = Operation "concat" [graphL, graphR] toShape (typeString {dtype})
    in MkTensor graph $ cached graph $ do
         operands <- mkXlaOpArray [!l, !r]
         MkXlaBuilder ptr _ <- get
@@ -429,8 +429,8 @@ empty : Primitive dtype => {shape : _} -> {auto 0 isEmpty : Elem 0 shape} -> Ten
 empty = 
   let graph = Leaf "identity" 0 shape (typeString {dtype})
    in MkTensor graph $ cached graph $ do
-        xla_shape <- mkShape {dtype} shape
-        literal <- primIO $ prim__allocLiteral xla_shape
+        xlaShape <- mkShape {dtype} shape
+        literal <- primIO $ prim__allocLiteral xlaShape
         literal <- onCollectAny literal Literal.delete
         prim__constantLiteral literal graph
 
@@ -457,29 +457,29 @@ broadcast xs with (xs)
 
     where
     broadcast : List Nat -> ComputationComponent -> ComputationComponent
-    broadcast broadcast_sizes xs = do
-      broadcast_sizes_ptr <- mkIntArray broadcast_sizes
-      op <- primIO (prim__broadcast !xs broadcast_sizes_ptr (cast $ length broadcast_sizes))
+    broadcast broadcastSizes xs = do
+      broadcastSizesPtr <- mkIntArray broadcastSizes
+      op <- primIO (prim__broadcast !xs broadcastSizesPtr (cast $ length broadcastSizes))
       onCollectAny op XlaOp.delete
 
     broadcastInDim : Shape -> Shape -> ComputationComponent -> ComputationComponent
     broadcastInDim ods bcd xs = do
-      ods_ptr <- mkIntArray ods
-      bcd_ptr <- mkIntArray bcd
+      odsPtr <- mkIntArray ods
+      bcdPtr <- mkIntArray bcd
       let len = cast (length ods)
-      op <- primIO (prim__broadcastInDim !xs ods_ptr len bcd_ptr len)
+      op <- primIO (prim__broadcastInDim !xs odsPtr len bcdPtr len)
       onCollectAny op XlaOp.delete
 
-    impl : {from, to : _} -> (to_leading, to_trailing : List Nat)
-      -> {auto prf : Broadcastable from to_trailing} -> Tensor from dtype -> Tensor to dtype
-    impl to_leading _ {prf=Same} (MkTensor graph mkOp) =
+    impl : {from, to : _} -> (toLeading, toTrailing : List Nat)
+      -> {auto prf : Broadcastable from toTrailing} -> Tensor from dtype -> Tensor to dtype
+    impl toLeading _ {prf=Same} (MkTensor graph mkOp) =
       let graph = Operation "broadcast" [graph] to (typeString {dtype})
-       in MkTensor graph $ if (length to_leading == 0) then mkOp else broadcast to_leading mkOp
-    impl to_leading (th' :: tt') {prf=(Match _)} (MkTensor graph mkOp) =
+       in MkTensor graph $ if (length toLeading == 0) then mkOp else broadcast toLeading mkOp
+    impl toLeading (th' :: tt') {prf=(Match _)} (MkTensor graph mkOp) =
       let graph = Operation "broadcast" [graph] to (typeString {dtype})
        in MkTensor graph $
-            broadcast to_leading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
-    impl to_leading (th' :: tt') {prf=(Nest _)} xs = impl (to_leading ++ [th']) tt' xs
+            broadcast toLeading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
+    impl toLeading (th' :: tt') {prf=(Nest _)} xs = impl (toLeading ++ [th']) tt' xs
 
 %hint
 export
@@ -600,18 +600,18 @@ reduce axis (MkTensor {shape} graph xs) =
 ----------------------------- numeric operations ----------------------------
 
 unaryOp : Primitive b => String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
-unaryOp fn_name prim_operator (MkTensor {shape} graph xs) =
-  let graph = Operation fn_name [graph] shape (typeString {dtype=b})
+unaryOp fnName primOperator (MkTensor {shape} graph xs) =
+  let graph = Operation fnName [graph] shape (typeString {dtype=b})
    in MkTensor graph $ cached graph $ do
-        op <- primIO (prim_operator !xs)
+        op <- primIO (primOperator !xs)
         onCollectAny op XlaOp.delete
 
 binaryOp : Primitive c => String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
            -> Tensor shape a -> Tensor shape b -> Tensor shape c
-binaryOp fn_name prim_operator (MkTensor {shape} graphL l) (MkTensor graphR r) =
-  let graph = Operation fn_name [graphL, graphR] shape (typeString {dtype=c})
+binaryOp fnName primOperator (MkTensor {shape} graphL l) (MkTensor graphR r) =
+  let graph = Operation fnName [graphL, graphR] shape (typeString {dtype=c})
    in MkTensor graph $ cached graph $ do
-        op <- primIO (prim_operator !l !r)
+        op <- primIO (primOperator !l !r)
         onCollectAny op XlaOp.delete
 
 ||| Element-wise equality. For example, `fromLiteral [1, 2] == fromLiteral [1, 3]` is

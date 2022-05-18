@@ -47,37 +47,37 @@ cached : Graph -> ComputationComponent -> ComputationComponent
 cached graph xs = let graphHash = assert_total $ hash graph in do
   builder <- get
   case cacheLookup builder graphHash of
-    Just op_ptr => pure op_ptr
+    Just opPtr => pure opPtr
     Nothing => do
-      op_ptr <- xs
+      opPtr <- xs
       builder <- get
-      put (cacheInsert builder graphHash op_ptr)
-      pure op_ptr
+      put (cacheInsert builder graphHash opPtr)
+      pure opPtr
 
 mkXlaBuilder : String -> IO XlaBuilder
 mkXlaBuilder computation_name = do
-  ptr <- primIO (prim__mkXlaBuilder computation_name)
+  ptr <- primIO (prim__mkXlaBuilder computationName)
   ptr <- onCollectAny ptr XlaBuilder.delete
   pure (MkXlaBuilder ptr empty)
 
 export
 build : String -> ComputationComponent -> IO GCAnyPtr
-build computation_name x = do
-  builder <- mkXlaBuilder computation_name
+build computationName x = do
+  builder <- mkXlaBuilder computationName
   (MkXlaBuilder ptr _) <- execStateT builder x
   onCollectAny (prim__build ptr) XlaComputation.delete
 
 export
 buildWithSubBuilder :
   String -> List ComputationComponent -> ComputationComponent -> ComputationComponent
-buildWithSubBuilder computation_name args res = do
+buildWithSubBuilder computationName args res = do
   MkXlaBuilder ptr _ <- get
-  sub_ptr <- primIO (prim__createSubBuilder ptr computation_name)
-  sub_ptr <- onCollectAny sub_ptr XlaBuilder.delete
-  let sub_builder = MkXlaBuilder sub_ptr empty
-      all_ops = sequence_ (args ++ [res])
-  MkXlaBuilder sub_ptr _ <- liftIO $ execStateT sub_builder all_ops
-  let computation = prim__build sub_ptr
+  subPtr <- primIO (prim__createSubBuilder ptr computationName)
+  subPtr <- onCollectAny subPtr XlaBuilder.delete
+  let subBuilder = MkXlaBuilder subPtr empty
+      allOps = sequence_ (args ++ [res])
+  MkXlaBuilder subPtr _ <- liftIO $ execStateT subBuilder allOps
+  let computation = prim__build subPtr
   onCollectAny computation XlaComputation.delete
 
 export
@@ -98,6 +98,6 @@ export
 prim__parameter : Primitive dtype => Int -> Shape -> String -> ComputationComponent
 prim__parameter position shape name = do
   (MkXlaBuilder ptr _) <- get
-  xla_shape <- mkShape {dtype} shape
-  op <- primIO $ prim__parameter ptr position xla_shape name
+  xlaShape <- mkShape {dtype} shape
+  op <- primIO $ prim__parameter ptr position xlaShape name
   onCollectAny op XlaOp.delete

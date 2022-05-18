@@ -25,7 +25,7 @@ import Utils.Cases
 covering
 rbfMatchesTFP : Property
 rbfMatchesTFP = fixedProperty $ do
-  let length_scale = fromLiteral 0.4
+  let lengthScale = fromLiteral 0.4
       x = fromLiteral [[-1.2], [-0.5], [0.3], [1.2]]
       x' = fromLiteral [[-1.2], [-0.2], [0.8]]
       -- calculated with tensorflow probability
@@ -39,7 +39,7 @@ rbfMatchesTFP = fixedProperty $ do
           [8.83826492e-04, 4.57833372e-01, 4.57833372e-01],
           [1.52299879e-08, 2.18749152e-03, 6.06530669e-01]
         ]
-  rbf length_scale x x' ===# expected
+  rbf lengthScale x x' ===# expected
 
 export covering
 group : Group

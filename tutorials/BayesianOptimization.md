@@ -67,8 +67,8 @@ and model that data
 
 ```idris
 model : ConjugateGPRegression [2]
-model = let mk_gp = \len => MkGP zero (matern52 1.0 $ squeeze len)
-            model = MkConjugateGPR mk_gp (fromLiteral [0.5]) 0.2
+model = let mkGP = \len => MkGP zero (matern52 1.0 $ squeeze len)
+            model = MkConjugateGPR mkGP (fromLiteral [0.5]) 0.2
          in fit model lbfgs historicData
 ```
 
@@ -181,8 +181,8 @@ failureData : Dataset [2] [1]
 failureData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]) (fromLiteral [[0], [0], [0], [1]])
 
 failureModel : ConjugateGPRegression [2]
-failureModel = let mk_gp = \len => MkGP zero (rbf $ squeeze len)
-                   model = MkConjugateGPR mk_gp (fromLiteral [0.2]) 0.1
+failureModel = let mkGP = \len => MkGP zero (rbf $ squeeze len)
+                   model = MkConjugateGPR mkGP (fromLiteral [0.2]) 0.1
                 in fit model lbfgs failureData
 ```
 
@@ -219,8 +219,8 @@ at these points. We can then update our historical data and models with these ne
 ```idris
 observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
                             -> (Dataset [2] [1], ConjugateGPRegression [2])
-observe point (dataset, model) = let new_data = MkDataset point (objective point)
-                                  in (dataset <+> new_data, fit model lbfgs new_data)
+observe point (dataset, model) = let newData = MkDataset point (objective point)
+                                  in (dataset <+> newData, fit model lbfgs newData)
 ```
 
 We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) F64` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.

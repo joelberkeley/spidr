@@ -38,7 +38,7 @@ cIntToBool x =
   in (assert_total idris_crash) msg
 
 %foreign (libxla "sizeof_int")
-sizeof_int : Int
+sizeofInt : Int
 
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()

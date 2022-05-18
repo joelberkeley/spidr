@@ -28,6 +28,6 @@ prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 export
 mkShape : HasIO io => Primitive dtype => Shape -> io GCAnyPtr
 mkShape shape = do
-  let dtype_enum = xlaIdentifier {dtype}
-  shape_ptr <- primIO $ prim__mkShape dtype_enum !(mkIntArray shape) (cast (length shape))
-  onCollectAny shape_ptr Shape.delete
+  let dtypeEnum = xlaIdentifier {dtype}
+  shapePtr <- primIO $ prim__mkShape dtypeEnum !(mkIntArray shape) (cast (length shape))
+  onCollectAny shapePtr Shape.delete
