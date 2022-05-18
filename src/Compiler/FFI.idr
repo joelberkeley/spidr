@@ -46,7 +46,7 @@ prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 export
 mkIntArray : HasIO io => Cast ty Int => List ty -> io (GCPtr Int)
 mkIntArray xs = do
-  ptr <- malloc (cast (length xs) * sizeof_int)
+  ptr <- malloc (cast (length xs) * sizeofInt)
   let ptr = prim__castPtr ptr
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
   onCollect ptr free
