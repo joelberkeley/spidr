@@ -13,14 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
-
-import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.XlaComputation
+module Compiler.TensorFlow.StreamExecutor.Platform
 
 public export
-data XlaComputation : Type where
-  MkXlaComputation : GCAnyPtr -> XlaComputation
-
-export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+data Platform : Type where
+  MkPlatform : AnyPtr -> Platform

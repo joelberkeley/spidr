@@ -13,14 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+module Compiler.Foreign.Util
 
-import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.XlaComputation
+import System.FFI
 
 public export
-data XlaComputation : Type where
-  MkXlaComputation : GCAnyPtr -> XlaComputation
+libxla : String -> String
+libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+%foreign (libxla "sizeof_int")
+sizeofInt : Int
+
+export
+%foreign (libxla "set_array_int")
+prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()

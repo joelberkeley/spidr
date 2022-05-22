@@ -15,54 +15,53 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 
-import System.FFI
-
-import Compiler.FFI
-
-export
-%foreign (libxla "Square")
-prim__square : GCAnyPtr -> PrimIO AnyPtr
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.Lib.Math
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
 
 export
-%foreign (libxla "Reciprocal")
-prim__reciprocal : GCAnyPtr -> PrimIO AnyPtr
+square : HasIO io => XlaOp -> io XlaOp
+square = unaryOp prim__square
 
 export
-%foreign (libxla "Acos")
-prim__acos : GCAnyPtr -> PrimIO AnyPtr
+reciprocal : HasIO io => XlaOp -> io XlaOp
+reciprocal = unaryOp prim__reciprocal
 
 export
-%foreign (libxla "Asin")
-prim__asin : GCAnyPtr -> PrimIO AnyPtr
+acos : HasIO io => XlaOp -> io XlaOp
+acos = unaryOp prim__acos
 
 export
-%foreign (libxla "Atan")
-prim__atan : GCAnyPtr -> PrimIO AnyPtr
+asin : HasIO io => XlaOp -> io XlaOp
+asin = unaryOp prim__asin
 
 export
-%foreign (libxla "Tan")
-prim__tan : GCAnyPtr -> PrimIO AnyPtr
+atan : HasIO io => XlaOp -> io XlaOp
+atan = unaryOp prim__atan
 
 export
-%foreign (libxla "Acosh")
-prim__acosh : GCAnyPtr -> PrimIO AnyPtr
+tan : HasIO io => XlaOp -> io XlaOp
+tan = unaryOp prim__tan
 
 export
-%foreign (libxla "Asinh")
-prim__asinh : GCAnyPtr -> PrimIO AnyPtr
+acosh : HasIO io => XlaOp -> io XlaOp
+acosh = unaryOp prim__acosh
 
 export
-%foreign (libxla "Atanh")
-prim__atanh : GCAnyPtr -> PrimIO AnyPtr
+asinh : HasIO io => XlaOp -> io XlaOp
+asinh = unaryOp prim__asinh
 
 export
-%foreign (libxla "Cosh")
-prim__cosh : GCAnyPtr -> PrimIO AnyPtr
+atanh : HasIO io => XlaOp -> io XlaOp
+atanh = unaryOp prim__atanh
 
 export
-%foreign (libxla "Sinh")
-prim__sinh : GCAnyPtr -> PrimIO AnyPtr
+cosh : HasIO io => XlaOp -> io XlaOp
+cosh = unaryOp prim__cosh
 
 export
-%foreign (libxla "Erf")
-prim__erf : GCAnyPtr -> PrimIO AnyPtr
+sinh : HasIO io => XlaOp -> io XlaOp
+sinh = unaryOp prim__sinh
+
+export
+erf : HasIO io => XlaOp -> io XlaOp
+erf = unaryOp prim__erf

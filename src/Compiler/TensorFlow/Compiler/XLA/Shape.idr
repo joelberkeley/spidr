@@ -15,12 +15,12 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Shape
 
-import System.FFI
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Shape
 
-import Compiler.FFI
-
-%foreign (libxla "Shape_delete")
-prim__delete : AnyPtr -> PrimIO ()
+namespace XLA
+  public export
+  data Shape : Type where
+    MkShape : GCAnyPtr -> Shape
 
 export
 delete : AnyPtr -> IO ()

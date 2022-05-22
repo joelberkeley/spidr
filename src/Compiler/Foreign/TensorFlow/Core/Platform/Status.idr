@@ -13,14 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+module Compiler.Foreign.TensorFlow.Core.Platform.Status
 
-import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.XlaComputation
+import System.FFI
 
-public export
-data XlaComputation : Type where
-  MkXlaComputation : GCAnyPtr -> XlaComputation
+import Compiler.Foreign.Util
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+%foreign (libxla "Status_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
+export
+%foreign (libxla "Status_ok")
+prim__ok : GCAnyPtr -> Int

@@ -22,82 +22,126 @@ import Data.SortedMap
 import Compiler.Graph
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+import Compiler.TensorFlow.Compiler.XLA.Shape
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
+import Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.XlaData
+import Literal
 import Types
+import Util
 
 public export
-data XlaBuilder : Type where
-  MkXlaBuilder : GCAnyPtr -> SortedMap Bits64 GCAnyPtr -> XlaBuilder
+data CachingBuilder : Type where
+  MkCachingBuilder : XlaBuilder -> SortedMap Bits64 XlaOp -> CachingBuilder
 
--- note, the type of thing pointed to by the GCAnyPtr can be anything, and must be inferred from the
--- context.
 public export
-ComputationComponent : Type
-ComputationComponent = StateT XlaBuilder IO GCAnyPtr
+ComputationContext : Type -> Type
+ComputationContext = StateT CachingBuilder IO
 
-cacheInsert : XlaBuilder -> Bits64 -> GCAnyPtr -> XlaBuilder
-cacheInsert (MkXlaBuilder ptr cache) k v = MkXlaBuilder ptr (insert k v cache)
+cacheInsert : CachingBuilder -> Bits64 -> XlaOp -> CachingBuilder
+cacheInsert (MkCachingBuilder builder cache) key xlaOp =
+  MkCachingBuilder builder (insert key xlaOp cache)
 
-cacheLookup : XlaBuilder -> Bits64 -> Maybe GCAnyPtr
-cacheLookup (MkXlaBuilder _ cache) k = lookup k cache
+cacheLookup : CachingBuilder -> Bits64 -> Maybe XlaOp
+cacheLookup (MkCachingBuilder _ cache) key = lookup key cache
 
 export
-cached : Graph -> ComputationComponent -> ComputationComponent
-cached graph xs = let graphHash = assert_total $ hash graph in do
+cached : Graph -> ComputationContext XlaOp -> ComputationContext XlaOp
+cached graph xs = assert_total $ let graphHash = hash graph in do
   builder <- get
   case cacheLookup builder graphHash of
-    Just opPtr => pure opPtr
+    Just op => pure op
     Nothing => do
-      opPtr <- xs
+      op <- xs
       builder <- get
-      put (cacheInsert builder graphHash opPtr)
-      pure opPtr
-
-mkXlaBuilder : String -> IO XlaBuilder
-mkXlaBuilder computationName = do
-  ptr <- primIO (prim__mkXlaBuilder computationName)
-  ptr <- onCollectAny ptr XlaBuilder.delete
-  pure (MkXlaBuilder ptr empty)
+      put (cacheInsert builder graphHash op)
+      pure op
 
 export
-build : String -> ComputationComponent -> IO GCAnyPtr
+build : HasIO io => String -> ComputationContext XlaOp -> io XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
-  (MkXlaBuilder ptr _) <- execStateT builder x
-  onCollectAny (prim__build ptr) XlaComputation.delete
+  MkCachingBuilder builder _ <- liftIO $ execStateT (MkCachingBuilder builder empty) x
+  build builder
 
 export
 buildWithSubBuilder :
-  String -> List ComputationComponent -> ComputationComponent -> ComputationComponent
-buildWithSubBuilder computationName args res = do
-  MkXlaBuilder ptr _ <- get
-  subPtr <- primIO (prim__createSubBuilder ptr computationName)
-  subPtr <- onCollectAny subPtr XlaBuilder.delete
-  let subBuilder = MkXlaBuilder subPtr empty
-      allOps = sequence_ (args ++ [res])
-  MkXlaBuilder subPtr _ <- liftIO $ execStateT subBuilder allOps
-  let computation = prim__build subPtr
-  onCollectAny computation XlaComputation.delete
+  String ->
+  List (ComputationContext XlaOp) ->
+  ComputationContext XlaOp ->
+  ComputationContext XlaComputation
+buildWithSubBuilder computationName computationArguments computationResult = do
+  MkCachingBuilder builder _ <- get
+  subBuilder <- createSubBuilder builder computationName
+  let cachingSubBuilder = MkCachingBuilder subBuilder empty
+      allOps = sequence_ (computationArguments ++ [computationResult])
+  MkCachingBuilder subBuilder _ <- liftIO $ execStateT cachingSubBuilder allOps
+  build subBuilder
 
 export
-prim__opToString : ComputationComponent -> IO String
-prim__opToString xs = do
+opToString : ComputationContext XlaOp -> String
+opToString x = unsafePerformIO $ do
   builder <- mkXlaBuilder "toString"
-  (MkXlaBuilder ptr _, op) <- runStateT builder xs
-  pure (XlaBuilder.prim__opToString ptr op)
+  (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) x
+  pure $ opToString builder xlaOp
 
 export
-prim__constantLiteral : GCAnyPtr -> Graph -> ComputationComponent
-prim__constantLiteral literal graph = do
-  MkXlaBuilder ptr _ <- get
-  op <- primIO $ prim__constantLiteral ptr literal
-  onCollectAny op XlaOp.delete
+parameter : Primitive dtype => Nat -> List Nat -> String -> (Graph, ComputationContext XlaOp)
+parameter position shape name =
+  let graph = Leaf "parameter" (cast position) shape (typeString {dtype})
+
+      param : ComputationContext XlaOp
+      param = do
+        MkCachingBuilder builder _ <- get
+        xlaShape <- mkShape {dtype} shape
+        cached graph $ parameter builder position xlaShape name
+
+   in (graph, param)
 
 export
-prim__parameter : Primitive dtype => Int -> Shape -> String -> ComputationComponent
-prim__parameter position shape name = do
-  (MkXlaBuilder ptr _) <- get
-  xlaShape <- mkShape {dtype} shape
-  op <- primIO $ prim__parameter ptr position xlaShape name
-  onCollectAny op XlaOp.delete
+interface Primitive dtype => LiteralPrimitiveRW dtype ty where
+  set : Literal -> List Nat -> ty -> IO ()
+  get : Literal -> List Nat -> ty
+
+indexed : {shape : _} -> Literal shape (List Nat)
+indexed = go shape []
+  where
+  concat : Literal [d] (Literal ds a) -> Literal (d :: ds) a
+  concat [] = []
+  concat (Scalar x :: xs) = x :: concat xs
+
+  go : (shape : Types.Shape) -> List Nat -> Literal shape (List Nat)
+  go [] idxs = Scalar idxs
+  go (0 :: _) _ = []
+  go (S d :: ds) idxs = concat $ map (\i => go ds (snoc idxs i)) (range (S d))
+
+export
+toXLA : HasIO io => LiteralPrimitiveRW dtype a => {shape : _} -> Literal shape a -> io Literal
+toXLA xs = liftIO $ do
+  literal <- allocLiteral {dtype} shape
+  sequence_ [| (\idxs => set {dtype} literal idxs) indexed xs |]
+  pure literal
+
+export
+fromXLA : LiteralPrimitiveRW dtype a => Literal -> {shape : _} -> Literal shape a
+fromXLA lit = map (get {dtype} lit) indexed
+
+export
+LiteralPrimitiveRW PRED Bool where
+  set = set
+  get = get
+
+export
+LiteralPrimitiveRW F64 Double where
+  set = set
+  get = get
+
+export
+LiteralPrimitiveRW S32 Int where
+  set = set
+  get = get
+
+export
+LiteralPrimitiveRW U32 Nat where
+  set lit idx x = Int.set lit idx (cast x)
+  get = cast .: Int.get

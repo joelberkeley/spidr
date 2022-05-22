@@ -18,8 +18,12 @@ module Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
 import System.FFI
 
 import Compiler.FFI
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.ClientLibrary
 import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
+import Compiler.TensorFlow.StreamExecutor.Platform
 
 export
-%foreign (libxla "ClientLibrary_GetOrCreateLocalClient")
-prim__getOrCreateLocalClient : AnyPtr -> AnyPtr -> Int -> PrimIO LocalClient
+getOrCreateLocalClient : Platform -> IO LocalClient
+getOrCreateLocalClient (MkPlatform platform) = do
+  client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
+  pure (MkLocalClient client)

@@ -15,101 +15,66 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Literal
 
-import System.FFI
-
 import Compiler.FFI
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.Shape
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 import Compiler.TensorFlow.Compiler.XLA.XlaData
-import Literal
 import Types
 import Util
 
-export
-interface Primitive dtype => LiteralPrimitiveRW dtype ty where
-  set : GCAnyPtr -> GCPtr Int -> ty -> PrimIO ()
-  get : GCAnyPtr -> GCPtr Int -> ty
-
-export
-%foreign (libxla "Literal_new")
-prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
-
-%foreign (libxla "Literal_delete")
-prim__delete : AnyPtr -> PrimIO ()
+namespace XLA
+  public export
+  data Literal : Type where
+    MkLiteral : GCAnyPtr -> Literal
 
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
-%foreign (libxla "Literal_Set_bool")
-prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
-
-%foreign (libxla "Literal_Get_bool")
-literalGetBool : GCAnyPtr -> GCPtr Int -> Int
-
 export
-LiteralPrimitiveRW PRED Bool where
-  set lit idxs x = prim__literalSetBool lit idxs (if x then 1 else 0)
-  get lit idxs = cIntToBool (literalGetBool lit idxs)
+allocLiteral : HasIO io => Primitive dtype => Types.Shape -> io Literal
+allocLiteral shape = do
+  MkShape shapePtr <- mkShape {dtype} shape
+  litPtr <- primIO $ prim__allocLiteral shapePtr
+  litPtr <- onCollectAny litPtr Literal.delete
+  pure (MkLiteral litPtr)
 
-%foreign (libxla "Literal_Set_double")
-prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()
+namespace Bool
+  export
+  set : Literal -> List Nat -> Bool -> IO ()
+  set (MkLiteral lit) idxs value = do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    primIO $ prim__literalSetBool lit idxsArrayPtr (if value then 1 else 0)
 
-%foreign (libxla "Literal_Get_double")
-literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
+  export
+  get : Literal -> List Nat -> Bool
+  get (MkLiteral lit) idxs = unsafePerformIO $ do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    pure $ cIntToBool $ literalGetBool lit idxsArrayPtr
 
-export
-LiteralPrimitiveRW F64 Double where
-  set = prim__literalSetDouble
-  get = literalGetDouble
+namespace Double
+  export
+  set : Literal -> List Nat -> Double -> IO ()
+  set (MkLiteral lit) idxs value = do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    primIO $ prim__literalSetDouble lit idxsArrayPtr value
 
-%foreign (libxla "Literal_Set_int")
-prim__literalSetInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+  export
+  get : Literal -> List Nat -> Double
+  get (MkLiteral lit) idxs = unsafePerformIO $ do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    pure $ literalGetDouble lit idxsArrayPtr
 
-%foreign (libxla "Literal_Get_int")
-literalGetInt : GCAnyPtr -> GCPtr Int -> Int
+namespace Int
+  export
+  set : Literal -> List Nat -> Int -> IO ()
+  set (MkLiteral lit) idxs value = do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    primIO $ prim__literalSetInt lit idxsArrayPtr value
 
-export
-LiteralPrimitiveRW S32 Int where
-  set = prim__literalSetInt
-  get = literalGetInt
-
-export
-LiteralPrimitiveRW U32 Nat where
-  set lit idx x = prim__literalSetInt lit idx (cast x)
-  get = cast .: literalGetInt
-
-enumerate : {d : _} -> {ds : _} -> Literal (d :: ds) dtype -> Vect d (Nat, Literal ds dtype)
-enumerate xs = Vect.enumerate (toVect xs) where
-  toVect : {0 d : _} -> Literal (d :: ds) dtype -> Vect d (Literal ds dtype)
-  toVect {d=0} [] = []
-  toVect (x :: xs) = x :: toVect xs
-
-populateLiteral : {shape : _} -> LiteralPrimitiveRW dtype a => Literal shape a -> GCAnyPtr -> IO ()
-populateLiteral {shape} lit ptr = impl shape [] lit where
-  impl : (shape', idxs : Shape) -> Literal shape' a -> IO ()
-  impl [] idxs (Scalar x) = primIO (set {dtype} ptr !(mkIntArray idxs) x)
-  impl (0 :: _) _ _ = pure ()
-  impl (S _ :: ds) idxs (x :: xs) =
-    traverse_ (\(idx, ys) => impl ds (idxs ++ [idx]) ys) (enumerate (x :: xs))
-
-export
-mkLiteral : HasIO io => LiteralPrimitiveRW dtype a => {shape : _} -> Literal shape a -> io GCAnyPtr
-mkLiteral xs = do
-  xlaShape <- mkShape {dtype} shape
-  literal <- primIO $ prim__allocLiteral xlaShape
-  literal <- onCollectAny literal Literal.delete
-  liftIO $ populateLiteral {dtype} xs literal
-  pure literal
-
-concat : Vect d (Literal ds a) -> Literal (d :: ds) a
-concat [] = []
-concat (x :: xs) = x :: concat xs
-
-export
-toLiteral : {shape : _} -> GCAnyPtr -> LiteralPrimitiveRW dtype a => Literal shape a
-toLiteral lit = impl shape [] where
-  impl : (shape', idxs : Shape) -> Literal shape' a
-  impl [] idxs = Scalar (unsafePerformIO $ (map (get {dtype} lit) (mkIntArray idxs)))
-  impl (0 :: ds) idxs = []
-  impl (S d :: ds) idxs = concat $ map (\i => impl ds (snoc idxs i)) (range (S d))
+  export
+  get : Literal -> List Nat -> Int
+  get (MkLiteral lit) idxs = unsafePerformIO $ do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    pure $ literalGetInt lit idxsArrayPtr

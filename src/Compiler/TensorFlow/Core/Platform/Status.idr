@@ -15,20 +15,17 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Core.Platform.Status
 
-import System.FFI
-
+import Compiler.Foreign.TensorFlow.Core.Platform.Status
 import Compiler.FFI
 
-%foreign (libxla "Status_delete")
-prim__delete : AnyPtr -> PrimIO ()
+public export
+data Status : Type where
+  MkStatus : GCAnyPtr -> Status
 
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
-%foreign (libxla "Status_ok")
-prim__okImpl : GCAnyPtr -> Int
-
 export
-prim__ok : GCAnyPtr -> Bool
-prim__ok = cIntToBool . prim__okImpl
+ok : Status -> Bool
+ok (MkStatus ptr) = cIntToBool (prim__ok ptr)

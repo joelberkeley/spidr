@@ -32,6 +32,7 @@ import public Util
 import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
@@ -39,6 +40,7 @@ import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
 import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
 import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.StreamExecutor.Platform
 import Compiler.TensorFlow.Core.Platform.Status
 import public Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
@@ -53,7 +55,7 @@ import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Graph -> ComputationComponent -> Tensor shape dtype
+  MkTensor : {shape : _} -> Graph -> ComputationContext XlaOp -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
@@ -61,8 +63,9 @@ fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor sh
 fromLiteral xs = 
   let graph = FromLiteral {dtype} shape (hashWithSalt defaultSalt xs)
    in MkTensor graph $ cached graph $ do
-        lit <- mkLiteral {dtype} xs
-        prim__constantLiteral lit graph
+        literal <- toXLA {dtype} xs
+        MkCachingBuilder builder _ <- get
+        constantLiteral builder literal
 
 namespace F64
   export
@@ -89,32 +92,24 @@ namespace S32
 export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
-  gpuStatus <- primIO prim__validateGPUMachineManager
-  gpuStatus <- onCollectAny gpuStatus Status.delete
-  platform <-
-    if prim__ok gpuStatus
-    then primIO prim__gpuMachineManager
-    else primIO (prim__getPlatform "Host")
-
+  gpuStatus <- validateGPUMachineManager
+  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   computation <- build "" xs
-  client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
-  lit <- prim__executeAndTransfer client computation prim__getNullAnyPtr 0
-  pure (toLiteral {dtype} lit)
+  client <- getOrCreateLocalClient platform
+  lit <- executeAndTransfer client computation
+  pure (fromXLA {dtype} lit)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued XLA operations.
 ||| Useful for debugging.
 export
 Show (Tensor shape dtype) where
-  show (MkTensor _ xs) = unsafePerformIO (prim__opToString xs)
+  show (MkTensor _ xs) = opToString xs
 
 ----------------------------- structural operations ----------------------------
 
-reshapeImpl : (from, to : Shape) -> ComputationComponent -> ComputationComponent
-reshapeImpl from to xs = do
-  dimOrder <- mkIntArray (range (length from))
-  cto <- mkIntArray to
-  reshaped <- primIO $ prim__reshape !xs dimOrder (cast (length from)) cto (cast (length to))
-  onCollectAny reshaped XlaOp.delete
+reshapeWithDefaultOrdering :
+  (from, to : Shape) -> ComputationContext XlaOp -> ComputationContext XlaOp
+reshapeWithDefaultOrdering from to xs = reshape !xs (range $ length from) to
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
 ||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
@@ -123,7 +118,7 @@ reshape : Primitive dtype => {to : _} -> product from = product to
           => Tensor from dtype -> Tensor to dtype
 reshape (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
-   in MkTensor graph $ cached graph $ reshapeImpl from to xs
+   in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -135,7 +130,7 @@ expand : Primitive dtype => (axis : Nat) -> axis `LTE` length shape => Tensor sh
 expand axis (MkTensor {shape} graph xs) =
   let to = insertAt axis 1 shape
       graph = Reshape to graph
-   in MkTensor graph $ cached graph $ reshapeImpl shape to xs
+   in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering shape to xs
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -177,9 +172,9 @@ namespace Squeezable
 ||| ```
 export
 squeeze : Primitive dtype => {to : _} -> Squeezable from to => Tensor from dtype -> Tensor to dtype
-squeeze (MkTensor graph xs) =
+squeeze (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
-   in MkTensor graph $ cached graph $ reshapeImpl from to xs
+   in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
 
 ||| Take a slice from a single `Tensor` axis. For example, for
 ||| ```
@@ -223,13 +218,11 @@ slice : (axis, from, to : Nat) -> from `LTE` to => InBounds axis shape
         => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor graph xs) =
   let graph = Slice axis from to graph
-   in MkTensor graph $ cached graph $ do
-        let rank = length shape
-        start <- mkIntArray (replicate axis 0 ++ [from] ++ replicate (rank `minus` axis) 0)
-        stop <- mkIntArray (replaceAt axis to shape)
-        strides <- mkIntArray (the (List Int) $ replicate rank 1)
-        sliced <- primIO $ prim__slice !xs start (cast rank) stop (cast rank) strides (cast rank)
-        onCollectAny sliced XlaOp.delete
+      rank = length shape
+      start = replicate axis 0 ++ [from] ++ replicate (rank `minus` (S axis)) 0
+      stop = replaceAt axis to shape
+      strides = replicate rank 1
+   in MkTensor graph $ cached graph $ do slice !xs start stop strides
 
 ||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
 ||| `index 0 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is `fromLiteral [3, 4]`, and
@@ -246,7 +239,7 @@ index axis idx xs with (xs)
           slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
         to = deleteAt axis shape
         graph = Reshape to graph
-    in MkTensor graph $ cached graph $ reshapeImpl shape to sliced
+    in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering shape to sliced
 
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
@@ -288,10 +281,8 @@ concat : Primitive dtype => (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
 concat axis (MkTensor graphL l) (MkTensor graphR r) =
   let graph = Concat axis graphL graphR
    in MkTensor graph $ cached graph $ do
-        operands <- mkXlaOpArray [!l, !r]
-        MkXlaBuilder ptr _ <- get
-        res <- primIO $ prim__concatInDim ptr operands 2 (cast axis)
-        onCollectAny res XlaOp.delete
+        MkCachingBuilder builder _ <- get
+        concatInDim builder [!l, !r] (cast axis)
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -305,9 +296,7 @@ export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
 diag (MkTensor graph xs) =
   let graph = Diag graph
-   in MkTensor graph $ cached graph $ do
-        xs <- primIO (prim__getMatrixDiagonal !xs)
-        onCollectAny xs XlaOp.delete
+   in MkTensor graph $ cached graph $ do getMatrixDiagonal !xs
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -331,9 +320,7 @@ export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
 triangle tri (MkTensor graph xs) =
   let graph = Triangle (case tri of Upper => False; Lower => True) graph
-   in MkTensor graph $ cached graph $ do
-        op <- primIO $ prim__triangle !xs (case tri of Upper => 0; Lower => 1)
-        onCollectAny op XlaOp.delete
+   in MkTensor graph $ cached graph $ do triangle !xs (case tri of Upper => False; Lower => True)
 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
@@ -341,10 +328,7 @@ export
 (.T) : Primitive dtype => Tensor [m, n] dtype -> Tensor [n, m] dtype
 (MkTensor graph xs).T =
   let graph = Transpose graph
-   in MkTensor graph $ cached graph $ do
-        permutations <- mkIntArray $ the (List Int) $ [1, 0]
-        op <- primIO $ prim__transpose !xs permutations 2
-        onCollectAny op XlaOp.delete
+   in MkTensor graph $ cached graph $ do transpose !xs [1, 0]
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -363,9 +347,8 @@ identity =
   let graph = Identity {dtype} n
       n = cast n
    in MkTensor graph $ cached graph $ do
-        MkXlaBuilder ptr _ <- get
-        op <- primIO $ prim__identityMatrix ptr (xlaIdentifier {dtype}) n n
-        onCollectAny op XlaOp.delete
+        MkCachingBuilder builder _ <- get
+        identityMatrix {dtype} builder n n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -442,30 +425,18 @@ broadcast xs with (xs)
           _ => impl [] to xs
 
     where
-    broadcast : List Nat -> ComputationComponent -> ComputationComponent
-    broadcast broadcastSizes xs = do
-      broadcastSizesPtr <- mkIntArray broadcastSizes
-      op <- primIO (prim__broadcast !xs broadcastSizesPtr (cast $ length broadcastSizes))
-      onCollectAny op XlaOp.delete
-
-    broadcastInDim : Shape -> Shape -> ComputationComponent -> ComputationComponent
-    broadcastInDim ods bcd xs = do
-      odsPtr <- mkIntArray ods
-      bcdPtr <- mkIntArray bcd
-      let len = cast (length ods)
-      op <- primIO (prim__broadcastInDim !xs odsPtr len bcdPtr len)
-      onCollectAny op XlaOp.delete
 
     impl : {from, to : _} -> (toLeading, toTrailing : List Nat)
       -> {auto prf : Broadcastable from toTrailing} -> Tensor from dtype -> Tensor to dtype
     impl toLeading _ {prf=Same} (MkTensor _ mkOp) =
       let graph = Broadcast to graph
-        in MkTensor graph $ cached graph $
-            if (length toLeading == 0) then mkOp else broadcast toLeading mkOp
+       in MkTensor graph $ cached graph $
+            if (length toLeading == 0) then mkOp else do broadcast !mkOp toLeading
     impl toLeading (th' :: tt') {prf=Match _} (MkTensor _ mkOp) =
       let graph = Broadcast to graph
-        in MkTensor graph $ cached graph $
-            broadcast toLeading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
+       in MkTensor graph $ cached graph $ do
+            x <- broadcastInDim !mkOp (th' :: tt') (range (length from))
+            broadcast x toLeading
     impl toLeading (th' :: tt') {prf=Nest _} xs = impl (toLeading ++ [th']) tt' xs
 
 %hint
@@ -502,26 +473,13 @@ fill = broadcast {prf=scalarToAnyOk shape} . fromLiteral . Scalar
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor graph xs) =
-  let graph0 = Parameter {dtype=a} [] 0
-      p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
+  let (graph0, p0) = parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f (MkTensor graph0 p0)
       graph = Map graphf [graph]
    in MkTensor graph $ cached graph $ do
         computation <- buildWithSubBuilder "computation" [p0] res
-
-        operands <- mkXlaOpArray [!xs]
-        let rank = length shape
-        dimensions <- mkIntArray (range rank)
-        MkXlaBuilder ptr _ <- get
-
-        res <- primIO (prim__map
-            ptr
-            operands 1
-            computation
-            dimensions (cast rank)
-            prim__getNullAnyPtr 0
-          )
-        onCollectAny res XlaOp.delete
+        MkCachingBuilder builder _ <- get
+        map builder [!xs] computation (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -536,28 +494,14 @@ export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
        -> Tensor shape a -> Tensor shape b -> Tensor shape c
 map2 f (MkTensor graphL l) (MkTensor graphR r) =
-  let graph0 = Parameter {dtype=a} [] 0
-      graph1 = Parameter {dtype=b} [] 1
-      p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
-      p1 = cached graph1 $ prim__parameter 1 [] "" {dtype=b}
+  let (graph0, p0) = parameter 0 [] "" {dtype=a}
+      (graph1, p1) = parameter 1 [] "" {dtype=b}
       MkTensor graphf res = f (MkTensor graph0 p0) (MkTensor graph1 p1)
       graph = Map graphf [graphL, graphR]
    in MkTensor graph $ cached graph $ do
         computation <- buildWithSubBuilder "computation" [p0, p1] res
-
-        operands <- mkXlaOpArray [!l, !r]
-        let rank = length shape
-        dimensions <- mkIntArray (range rank)
-        MkXlaBuilder ptr _ <- get
-
-        res <- primIO (prim__map
-            ptr
-            operands 2
-            computation
-            dimensions (cast rank)
-            prim__getNullAnyPtr 0
-          )
-        onCollectAny res XlaOp.delete
+        MkCachingBuilder builder _ <- get
+        map builder [!l, !r] computation (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
@@ -572,77 +516,75 @@ reduce axis (MkTensor graph xs) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-   in let graph0 = Parameter {dtype} [] 0
-          graph1 = Parameter {dtype} [] 1
-          p0 = cached graph0 $ prim__parameter 0 [] "" {dtype}
-          p1 = cached graph1 $ prim__parameter 1 [] "" {dtype}
-          MkTensor graphf resf = (<+>) @{semigroup reducer} (MkTensor graph0 p0) (MkTensor graph1 p1)
+   in let (graph0, p0) = parameter 0 [] "" {dtype}
+          (graph1, p1) = parameter 1 [] "" {dtype}
+          MkTensor graphf resf =
+            (<+>) @{semigroup reducer} (MkTensor graph0 p0) (MkTensor graph1 p1)
           graph = Reduce graphf axis graph
        in MkTensor graph $ cached graph $ do
             computation <- buildWithSubBuilder "computation" [p0, p1] resf
             let MkTensor _ init = neutral @{reducer}
-            op <- primIO $ prim__reduce !xs !init computation !(mkIntArray [axis]) 1
-            onCollectAny op XlaOp.delete
+            reduce !xs !init computation [axis]
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp : String -> (GCAnyPtr -> PrimIO AnyPtr) -> Tensor shape a -> Tensor shape b
-unaryOp fnName primOperator (MkTensor graph xs) =
+unaryOp :
+  Primitive b => String -> (XlaOp -> ComputationContext XlaOp) -> Tensor shape a -> Tensor shape b
+unaryOp fnName xlaOperation (MkTensor graph xs) =
   let graph = ElementwiseUnary fnName graph
-   in MkTensor graph $ cached graph $ do
-        op <- primIO (primOperator !xs)
-        onCollectAny op XlaOp.delete
+   in MkTensor graph $ cached graph $ do xlaOperation !xs
 
-binaryOp : String -> (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr)
-           -> Tensor shape a -> Tensor shape b -> Tensor shape c
-binaryOp fnName primOperator (MkTensor graphL l) (MkTensor graphR r) =
+binaryOp :
+  Primitive c =>
+  String ->
+  (XlaOp -> XlaOp -> ComputationContext XlaOp) ->
+  Tensor shape a -> Tensor shape b -> Tensor shape c
+binaryOp fnName xlaOperation (MkTensor graphL l) (MkTensor graphR r) =
   let graph = ElementwiseBinary fnName graphL graphR
-   in MkTensor graph $ cached graph $ do
-        op <- primIO (primOperator !l !r)
-        onCollectAny op XlaOp.delete
+   in MkTensor graph $ cached graph $ do xlaOperation !l !r
 
 ||| Element-wise equality. For example, `fromLiteral [1, 2] == fromLiteral [1, 3]` is
 ||| `fromLiteral [True, False]`.
 export
 (==) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(==) = binaryOp "(==)" prim__eq
+(==) = binaryOp "(==)" eq
 
 ||| Element-wise inequality. For example, `fromLiteral [1, 2] /= fromLiteral [1, 3]` is
 ||| `fromLiteral [False, True]`.
 export
 (/=) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(/=) = binaryOp "(/=)" prim__ne
+(/=) = binaryOp "(/=)" ne
 
 ||| Element-wise less than. For example, `fromLiteral [1, 2, 3] < fromLiteral [2, 2, 2]` is
 ||| `fromLiteral [True, False, False]`.
 export
 (<) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<) = binaryOp "(<)" prim__lt
+(<) = binaryOp "(<)" lt
 
 ||| Element-wise greater than. For example, `fromLiteral [1, 2, 3] > fromLiteral [2, 2, 2]` is
 ||| `fromLiteral [False, False, True]`.
 export
 (>) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>) = binaryOp "(>)" prim__gt
+(>) = binaryOp "(>)" gt
 
 ||| Element-wise less than or equal. For example, `fromLiteral [1, 2, 3] <= fromLiteral [2, 2, 2]`
 ||| is `fromLiteral [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<=) = binaryOp "(<=)" prim__le
+(<=) = binaryOp "(<=)" le
 
 ||| Element-wise greater than or equal. For example,
 ||| `fromLiteral [1, 2, 3] >= fromLiteral [2, 2, 2]` is `fromLiteral [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>=) = binaryOp "(>=)" prim__ge
+(>=) = binaryOp "(>=)" ge
 
 ||| Element-wise boolean and. For example,
 ||| `fromLiteral [True, True, False, False] && fromLiteral [True, False, True, False]` is
 ||| `fromLiteral [True, False, False, False]`.
 export
 (&&) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(&&) = binaryOp "(&&)" prim__and
+(&&) = binaryOp "(&&)" and
 
 namespace Semigroup
   export
@@ -659,7 +601,7 @@ namespace Monoid
 ||| `fromLiteral [True, True, True, False]`.
 export
 (||) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(||) = binaryOp "(||)" prim__or
+(||) = binaryOp "(||)" or
 
 namespace Semigroup
   export
@@ -675,7 +617,7 @@ namespace Monoid
 ||| `fromLiteral [False, True]`.
 export
 not : Tensor shape PRED -> Tensor shape PRED
-not = unaryOp "not" prim__not
+not = unaryOp "not" not
 
 ||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
 ||| predicates, the output will use the corresponding element from `onTrue` if the element is
@@ -699,9 +641,7 @@ select : Primitive dtype => Tensor shape PRED
          -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype) -> Tensor shape dtype
 select (MkTensor gPred pred) (MkTensor gTrue true) (MkTensor gFalse false) =
   let graph = Select gPred gTrue gFalse
-   in MkTensor graph $ cached graph $ do
-        op <- primIO $ prim__select !pred !true !false
-        onCollectAny op XlaOp.delete
+   in MkTensor graph $ cached graph $ do select !pred !true !false
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -732,18 +672,15 @@ cond
   (MkTensor graphPred pred)
   onTrue (MkTensor graphTrue true)
   onFalse (MkTensor graphFalse false) =
-    let grapht = Parameter {dtype=tt} ts 0
-        graphf = Parameter {dtype=ft} fs 0
-        pt = cached grapht $ prim__parameter 0 ts "" {dtype}
-        pf = cached graphf $ prim__parameter 0 fs "" {dtype}
+    let (grapht, pt) = parameter 0 ts "" {dtype=tt}
+        (graphf, pf) = parameter 0 fs "" {dtype=ft}
         MkTensor graphOnTrue trueRes = onTrue (MkTensor grapht pt)
         MkTensor graphOnFalse falseRes = onFalse (MkTensor graphf pf)
         graph = Cond graphPred graphOnTrue graphTrue graphOnFalse graphFalse
      in MkTensor graph $ cached graph $ do
           trueComp <- buildWithSubBuilder "truthy computation" [pt] trueRes
           falseComp <- buildWithSubBuilder "falsy computation" [pf] falseRes
-          op <- primIO $ prim__conditional !pred !true trueComp !false falseComp
-          onCollectAny op XlaOp.delete
+          conditional !pred !true trueComp !false falseComp
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -758,9 +695,7 @@ namespace Vector
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
   (MkTensor graphL l) @@ (MkTensor graphR r) =
     let graph = Dot graphL graphR
-     in MkTensor graph $ cached graph $ do
-          op <- primIO $ prim__dot !l !r
-          onCollectAny op XlaOp.delete
+     in MkTensor graph $ cached graph $ do dot !l !r
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
@@ -791,15 +726,13 @@ namespace Matrix
          -> length tl `LTE` 1 => Tensor (n :: tl) dtype
   (MkTensor graphL l) @@ (MkTensor graphR r) =
     let graph = Dot graphL graphR
-     in MkTensor graph $ cached graph $ do
-          op <- primIO $ prim__dot !l !r
-          onCollectAny op XlaOp.delete
+     in MkTensor graph $ cached graph $ do dot !l !r
 
 ||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
 ||| `fromLiteral [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) = binaryOp "(+)" prim__add
+(+) = binaryOp "(+)" add
 
 namespace Semigroup
   export
@@ -815,19 +748,19 @@ namespace Monoid
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate = unaryOp "negate" prim__neg
+negate = unaryOp "negate" neg
 
 ||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
 ||| `fromLiteral [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) = binaryOp "(-)" prim__sub
+(-) = binaryOp "(-)" sub
 
 ||| Element-wise multiplication. For example, `fromLiteral [2, 3] * fromLiteral [4, 5]` is
 ||| `fromLiteral [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) = binaryOp "(*)" prim__mul
+(*) = binaryOp "(*)" mul
 
 namespace Scalarwise
   ||| Multiplication by a scalar. For example, `fromLiteral 2 * fromLiteral [3, 5]` is
@@ -854,7 +787,7 @@ namespace Monoid
 ||| `fromLiteral [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(/) = binaryOp "(/)" prim__div
+(/) = binaryOp "(/)" div
 
 namespace Scalarwise
   ||| Floating point division by a scalar. For example, `fromLiteral [3.4, -5.6] / fromLiteral 2` is
@@ -871,7 +804,7 @@ namespace Scalarwise
 ||| is `fromLiteral [-0.5, nan, 5]`.
 export
 recip : Tensor shape F64 -> Tensor shape F64
-recip = unaryOp "recip" prim__reciprocal
+recip = unaryOp "recip" reciprocal
 
 infixr 9 ^
 
@@ -884,121 +817,121 @@ infixr 9 ^
 ||| Note: The first root is used.
 export
 (^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
-(^) = binaryOp "(^)" prim__pow
+(^) = binaryOp "(^)" pow
 
 ||| Element-wise absolute value. For example, `abs (fromLiteral [-2, 3])` is
 ||| `fromLiteral [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-abs = unaryOp "abs" prim__abs
+abs = unaryOp "abs" abs
 
 ||| The element-wise natural exponential. For example, `exp (fromLiteral [-1, 0, 2])` is
 ||| `fromLiteral [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Tensor shape F64
-exp = unaryOp "exp" prim__exp
+exp = unaryOp "exp" exp
 
 ||| The element-wise floor function. For example,
 ||| `floor (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Tensor shape F64
-floor = unaryOp "floor" prim__floor
+floor = unaryOp "floor" floor
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Tensor shape F64
-ceil = unaryOp "ceil" prim__ceil
+ceil = unaryOp "ceil" ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log (fromLiteral [1 / euler, 1, euler * euler])` is `fromLiteral [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Tensor shape F64
-log = unaryOp "log" prim__log
+log = unaryOp "log" log
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp (-x)`.
 export
 logistic : Tensor shape F64 -> Tensor shape F64
-logistic = unaryOp "logistic" prim__logistic
+logistic = unaryOp "logistic" logistic
 
 ||| The element-wise sine.
 export
 sin : Tensor shape F64 -> Tensor shape F64
-sin = unaryOp "sin" prim__sin
+sin = unaryOp "sin" sin
 
 ||| The element-wise cosine.
 export
 cos : Tensor shape F64 -> Tensor shape F64
-cos = unaryOp "cos" prim__cos
+cos = unaryOp "cos" cos
 
 ||| The element-wise tangent.
 export
 tan : Tensor shape F64 -> Tensor shape F64
-tan = unaryOp "tan" prim__tan
+tan = unaryOp "tan" tan
 
 ||| The element-wise inverse sine.
 export
 asin : Tensor shape F64 -> Tensor shape F64
-asin = unaryOp "asin" prim__asin
+asin = unaryOp "asin" asin
 
 ||| The element-wise inverse cosine.
 export
 acos : Tensor shape F64 -> Tensor shape F64
-acos = unaryOp "acos" prim__acos
+acos = unaryOp "acos" acos
 
 ||| The element-wise inverse tangent.
 export
 atan : Tensor shape F64 -> Tensor shape F64
-atan = unaryOp "atan" prim__atan
+atan = unaryOp "atan" atan
 
 ||| The element-wise hyperbolic sine.
 export
 sinh : Tensor shape F64 -> Tensor shape F64
-sinh = unaryOp "sinh" prim__sinh
+sinh = unaryOp "sinh" sinh
 
 ||| The element-wise hyperbolic cosine.
 export
 cosh : Tensor shape F64 -> Tensor shape F64
-cosh = unaryOp "cosh" prim__cosh
+cosh = unaryOp "cosh" cosh
 
 ||| The element-wise hyperbolic tangent.
 export
 tanh : Tensor shape F64 -> Tensor shape F64
-tanh = unaryOp "tanh" prim__tanh
+tanh = unaryOp "tanh" tanh
 
 ||| The element-wise inverse hyperbolic sine.
 export
 asinh : Tensor shape F64 -> Tensor shape F64
-asinh = unaryOp "asinh" prim__asinh
+asinh = unaryOp "asinh" asinh
 
 ||| The element-wise inverse hyperbolic cosine.
 export
 acosh : Tensor shape F64 -> Tensor shape F64
-acosh = unaryOp "acosh" prim__acosh
+acosh = unaryOp "acosh" acosh
 
 ||| The element-wise inverse hyperbolic tangent.
 export
 atanh : Tensor shape F64 -> Tensor shape F64
-atanh = unaryOp "atanh" prim__atanh
+atanh = unaryOp "atanh" atanh
 
 ||| An approximation to the element-wise error function.
 export
 erf : Tensor shape F64 -> Tensor shape F64
-erf = unaryOp "erf" prim__erf
+erf = unaryOp "erf" erf
 
 ||| The element-wise square. For example, `square (fromLiteral [-2, 0, 3])`
 ||| is `fromLiteral [4, 0, 9]`.
 export
 square : Tensor shape F64 -> Tensor shape F64
-square = unaryOp "square" prim__square
+square = unaryOp "square" square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Tensor shape F64
-sqrt = unaryOp "sqrt" prim__sqrt
+sqrt = unaryOp "sqrt" sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
@@ -1006,7 +939,7 @@ sqrt = unaryOp "sqrt" prim__sqrt
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-min = binaryOp "min" prim__min
+min = binaryOp "min" min
 
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 namespace Semigroup
@@ -1027,7 +960,7 @@ namespace Monoid
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-max = binaryOp "max" prim__max
+max = binaryOp "max" max
 
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 namespace Semigroup
@@ -1052,9 +985,7 @@ export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 cholesky (MkTensor graph xs) =
   let graph = Cholesky graph
-   in triangle Lower $ MkTensor graph $ cached graph $ do
-        res <- primIO $ prim__cholesky !xs 1
-        onCollectAny res XlaOp.delete
+   in triangle Lower $ MkTensor graph $ cached graph $ do cholesky !xs True
 
 infix 9 |\, \|
 
@@ -1071,8 +1002,7 @@ namespace Matrix
   (MkTensor graphA a) |\ (MkTensor graphB b) =
     let graph = TriangularSolve True graphA graphB
      in MkTensor graph $ cached graph $ do
-          op <- primIO $ prim__triangularSolve !a !b 1 1 0 1
-          onCollectAny op XlaOp.delete
+          triangularSolve !a !b True True False NoTranspose
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1086,8 +1016,7 @@ namespace Matrix
   (MkTensor graphA a) \| (MkTensor graphB b) =
     let graph = TriangularSolve False graphA graphB
      in MkTensor graph $ cached graph $ do
-          op <- primIO $ prim__triangularSolve !a !b 1 0 0 1
-          onCollectAny op XlaOp.delete
+          triangularSolve !a !b True False False NoTranspose
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.

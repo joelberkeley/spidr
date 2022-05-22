@@ -15,19 +15,17 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 
-import System.FFI
-
 import Compiler.FFI
+import Compiler.Foreign.TensorFlow.Compiler.XLA.ShapeUtil
 import Compiler.TensorFlow.Compiler.XLA.Shape
 import Compiler.TensorFlow.Compiler.XLA.XlaData
 import Types
 
-%foreign (libxla "MakeShape")
-prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
-
 export
-mkShape : HasIO io => Primitive dtype => Shape -> io GCAnyPtr
+mkShape : (HasIO io, Primitive dtype) => Types.Shape -> io XLA.Shape
 mkShape shape = do
   let dtypeEnum = xlaIdentifier {dtype}
-  shapePtr <- primIO $ prim__mkShape dtypeEnum !(mkIntArray shape) (cast (length shape))
-  onCollectAny shapePtr Shape.delete
+  MkIntArray shapeArrayPtr <- mkIntArray shape
+  shapePtr <- primIO $ prim__mkShape dtypeEnum shapeArrayPtr (cast $ length shape)
+  shapePtr <- onCollectAny shapePtr Shape.delete
+  pure (MkShape shapePtr)

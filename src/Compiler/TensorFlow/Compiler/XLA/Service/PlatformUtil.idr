@@ -15,10 +15,11 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
 
-import System.FFI
-
-import Compiler.FFI
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Service.PlatformUtil
+import Compiler.TensorFlow.StreamExecutor.Platform
 
 export
-%foreign (libxla "PlatformUtil_GetPlatform")
-prim__getPlatform : String -> PrimIO AnyPtr
+getPlatform : String -> IO Platform
+getPlatform platformName = do
+  platform <- primIO $ prim__getPlatform platformName
+  pure (MkPlatform platform)

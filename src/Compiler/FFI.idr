@@ -18,16 +18,9 @@ module Compiler.FFI
 import Data.Vect
 import System.FFI
 
+import Compiler.Foreign.Util
 import Types
 import Util
-
-export
-free : Ptr t -> IO ()
-free = System.FFI.free . prim__forgetPtr
-
-public export
-libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 export
 cIntToBool : Int -> Bool
@@ -37,16 +30,20 @@ cIntToBool x =
   let msg = "Internal error: expected 0 or 1 from XLA C API for boolean conversion, got " ++ show x
   in (assert_total idris_crash) msg
 
-%foreign (libxla "sizeof_int")
-sizeofInt : Int
+export
+boolToCInt : Bool -> Int
+boolToCInt True = 1
+boolToCInt False = 0
 
-%foreign (libxla "set_array_int")
-prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
+public export
+data IntArray : Type where
+  MkIntArray : GCPtr Int -> IntArray
 
 export
-mkIntArray : HasIO io => Cast ty Int => List ty -> io (GCPtr Int)
+mkIntArray : (HasIO io, Cast a Int) => List a -> io IntArray
 mkIntArray xs = do
   ptr <- malloc (cast (length xs) * sizeofInt)
   let ptr = prim__castPtr ptr
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
-  onCollect ptr free
+  ptr <- onCollect ptr (free . prim__forgetPtr)
+  pure (MkIntArray ptr)

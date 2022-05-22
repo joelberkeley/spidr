@@ -15,18 +15,28 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 
-import System.FFI
-
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.Lib.Matrix
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
+import Compiler.TensorFlow.Compiler.XLA.XlaData
 import Compiler.FFI
 
 export
-%foreign (libxla "IdentityMatrix")
-prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
+identityMatrix : HasIO io => Primitive dtype => XlaBuilder -> Nat -> Nat -> io XlaOp
+identityMatrix (MkXlaBuilder builder) m n = do
+  opPtr <- primIO $ prim__identityMatrix builder (xlaIdentifier {dtype}) (cast m) (cast n)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
 
 export
-%foreign (libxla "GetMatrixDiagonal")
-prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
+getMatrixDiagonal : HasIO io => XlaOp -> io XlaOp
+getMatrixDiagonal (MkXlaOp x) = do
+  opPtr <- primIO $ prim__getMatrixDiagonal x
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
 
 export
-%foreign (libxla "Triangle")
-prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr
+triangle : HasIO io => XlaOp -> Bool -> io XlaOp
+triangle (MkXlaOp x) lower = do
+  opPtr <- primIO $ prim__triangle x (boolToCInt lower)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)

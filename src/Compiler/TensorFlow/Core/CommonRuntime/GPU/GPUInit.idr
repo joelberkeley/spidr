@@ -15,14 +15,19 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 
-import System.FFI
-
-import Compiler.FFI
-
-export
-%foreign (libxla "ValidateGPUMachineManager")
-prim__validateGPUMachineManager : PrimIO AnyPtr
+import Compiler.Foreign.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.StreamExecutor.Platform
+import Compiler.TensorFlow.Core.Platform.Status
 
 export
-%foreign (libxla "GPUMachineManager")
-prim__gpuMachineManager : PrimIO AnyPtr
+validateGPUMachineManager : IO Status
+validateGPUMachineManager = do
+  status <- primIO prim__validateGPUMachineManager
+  status <- onCollectAny status Status.delete
+  pure (MkStatus status)
+
+export
+gpuMachineManager : IO Platform
+gpuMachineManager = do
+  platform <- primIO prim__gpuMachineManager
+  pure (MkPlatform platform)

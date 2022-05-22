@@ -13,14 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+module Compiler.Foreign.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 
-import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.XlaComputation
+import System.FFI
 
-public export
-data XlaComputation : Type where
-  MkXlaComputation : GCAnyPtr -> XlaComputation
+import Compiler.Foreign.Util
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+%foreign (libxla "IdentityMatrix")
+prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "GetMatrixDiagonal")
+prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Triangle")
+prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr
