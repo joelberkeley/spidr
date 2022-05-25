@@ -17,6 +17,7 @@ limitations under the License.
 module Util
 
 import public Data.List
+import Data.List.Elem
 import public Data.Nat
 import public Data.Vect
 
@@ -80,3 +81,15 @@ namespace List
   replaceAt : (idx : Nat) -> a -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
   replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
+
+  export
+  productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
+  productZero = foldlMulAnyZero 1
+    where
+    foldlMulInitZero : (xs : List Nat) -> foldl (*) 0 xs = 0
+    foldlMulInitZero [] = Refl
+    foldlMulInitZero (_ :: tl) = rewrite foldlMulInitZero tl in Refl
+
+    foldlMulAnyZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
+    foldlMulAnyZero @{Here} x (0 :: tl) = rewrite multZeroRightZero x in foldlMulInitZero tl
+    foldlMulAnyZero @{There prf} x (hd :: tl) = foldlMulAnyZero (x * hd) tl
