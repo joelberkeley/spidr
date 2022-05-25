@@ -415,17 +415,6 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
-productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
-productZero = foldlMulAnyZero 1
-  where
-  foldlMulInitZero : (xs : List Nat) -> foldl (*) 0 xs = 0
-  foldlMulInitZero [] = Refl
-  foldlMulInitZero (_ :: tl) = rewrite foldlMulInitZero tl in Refl
-
-  foldlMulAnyZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
-  foldlMulAnyZero @{Here} x (0 :: tl) = rewrite multZeroRightZero x in foldlMulInitZero tl
-  foldlMulAnyZero @{There prf} x (hd :: tl) = foldlMulAnyZero (x * hd) tl
-
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
 ||| ```idris
@@ -443,18 +432,15 @@ export
 broadcast : Primitive dtype => {to : _} -> {auto prf : Broadcastable from to}
             -> Tensor from dtype -> Tensor to dtype
 broadcast xs with (xs)
-  _ | MkTensor {shape=from} _ _ = case (isElem 0 to, toList from == toList to) of
-    (Yes _, False) => case from of
-      [] => let empty = slice 0 0 0 $ reshape {to=[1]} xs
-             in reshape @{%search} @{rewrite productZero to in %search} empty
-      (_ :: ds) =>
-        let prf =
-              Calc $
-              |~ product (0 :: ds)
-              ~~ 0  ... (productZero (0 :: ds))
-              ~~ product to  ... (sym $ productZero to)
-         in reshape @{%search} @{prf} (slice 0 0 0 xs)
-    _ => impl [] to xs
+  _ | (MkTensor {shape=from} graph _) =
+    let graph = Broadcast to graph
+     in case (isElem 0 to, from == to) of
+          (Yes _, False) => MkTensor graph $ cached graph $ do
+            xlaShape <- mkShape {dtype} to
+            literal <- primIO $ prim__allocLiteral xlaShape
+            literal <- onCollectAny literal Literal.delete
+            prim__constantLiteral literal graph
+          _ => impl [] to xs
 
     where
     broadcast : List Nat -> ComputationComponent -> ComputationComponent
@@ -473,15 +459,15 @@ broadcast xs with (xs)
 
     impl : {from, to : _} -> (toLeading, toTrailing : List Nat)
       -> {auto prf : Broadcastable from toTrailing} -> Tensor from dtype -> Tensor to dtype
-    impl toLeading _ {prf=Same} (MkTensor graph mkOp) =
+    impl toLeading _ {prf=Same} (MkTensor _ mkOp) =
       let graph = Broadcast to graph
-       in MkTensor graph $ cached graph $
+        in MkTensor graph $ cached graph $
             if (length toLeading == 0) then mkOp else broadcast toLeading mkOp
-    impl toLeading (th' :: tt') {prf=(Match _)} (MkTensor graph mkOp) =
+    impl toLeading (th' :: tt') {prf=Match _} (MkTensor _ mkOp) =
       let graph = Broadcast to graph
-       in MkTensor graph $ cached graph $
+        in MkTensor graph $ cached graph $
             broadcast toLeading (broadcastInDim (th' :: tt') (range (length from)) mkOp)
-    impl toLeading (th' :: tt') {prf=(Nest _)} xs = impl (toLeading ++ [th']) tt' xs
+    impl toLeading (th' :: tt') {prf=Nest _} xs = impl (toLeading ++ [th']) tt' xs
 
 %hint
 export
