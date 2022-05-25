@@ -24,6 +24,8 @@ import Util
 ||| A `Graph` represents a computational graph used to compute a tensor value. It is defined as
 ||| follows: For any two `Graph`s gx and gy that compute tensors x and y respectively, if gx is
 ||| equal to gy, then the values of x and y are equal.
+|||
+||| It is primarily used for memoization in constructing the computation graph.
 public export
 data Graph : Type where
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
