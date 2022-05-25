@@ -28,7 +28,7 @@ import Util
 public export
 data Graph : Type where
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
-  Parameter : Primitive dtype => Nat -> Shape -> Graph
+  Parameter : Primitive dtype => Shape -> Nat -> Graph
   Reshape : Shape -> Graph -> Graph
   Slice : Nat -> Nat -> Nat -> Graph -> Graph
   Concat : Nat -> Graph -> Graph -> Graph
@@ -51,11 +51,8 @@ export covering
 Prelude.Eq Graph where
   FromLiteral {dtype} shape hash == FromLiteral {dtype=dtype'} shape' hash' =
     (typeString {dtype}, shape, hash) == (typeString {dtype=dtype'}, shape', hash')
-  Parameter {dtype} position shape == Parameter {dtype=dtype'} position' shape' =
-    -- can we not just use position for parameter, since only one parameter can exist at a given
-    -- position? what would this mean for graphs that use this parameter, which need to know the
-    -- parameter shape and type? This indicates something's amiss
-    (typeString {dtype}, position, shape) == (typeString {dtype=dtype'}, position', shape')
+  Parameter {dtype} shape position == Parameter {dtype=dtype'} shape' position' =
+    (typeString {dtype}, shape, position) == (typeString {dtype=dtype'}, shape', position')
   Reshape to x == Reshape to' x' = to == to' && x == x'
   Slice axis from to x == Slice axis' from' to' x' = (axis, from, to, x) == (axis', from', to', x')
   Concat axis x y == Concat axis' x' y' = (axis, x, y) == (axis', x', y')
@@ -81,8 +78,8 @@ export covering
 Hashable Graph where
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
     salt `hashWithSalt` "FromLiteral" `hashWithSalt`  (typeString {dtype}, shape, hash)
-  hashWithSalt salt (Parameter {dtype} position shape) =
-    salt `hashWithSalt` "Parameter" `hashWithSalt` (typeString {dtype}, position, shape)
+  hashWithSalt salt (Parameter {dtype} shape position) =
+    salt `hashWithSalt` "Parameter" `hashWithSalt` (typeString {dtype}, shape, position)
   hashWithSalt salt (Reshape to x) = salt `hashWithSalt` "Reshape" `hashWithSalt` (to, x)
   hashWithSalt salt (Slice axis from to x) =
     salt `hashWithSalt` "Slice" `hashWithSalt` (axis, from, to)

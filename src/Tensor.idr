@@ -515,7 +515,7 @@ fill = broadcast {prf=scalarToAnyOk shape} . fromLiteral . Scalar
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} graph xs) =
-  let graph0 = Parameter {dtype=a} 0 []
+  let graph0 = Parameter {dtype=a} [] 0
       p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f (MkTensor graph0 p0)
       graph = Map graphf [graph]
@@ -549,8 +549,8 @@ export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
        -> Tensor shape a -> Tensor shape b -> Tensor shape c
 map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
-  let graph0 = Parameter {dtype=a} 0 []
-      graph1 = Parameter {dtype=b} 1 []
+  let graph0 = Parameter {dtype=a} [] 0
+      graph1 = Parameter {dtype=b} [] 1
       p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
       p1 = cached graph1 $ prim__parameter 1 [] "" {dtype=b}
       MkTensor graphf res = f (MkTensor graph0 p0) (MkTensor graph1 p1)
@@ -585,8 +585,8 @@ reduce axis (MkTensor {shape} graph xs) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-   in let graph0 = Parameter {dtype} 0 []
-          graph1 = Parameter {dtype} 1 []
+   in let graph0 = Parameter {dtype} [] 0
+          graph1 = Parameter {dtype} [] 1
           p0 = cached graph0 $ prim__parameter 0 [] "" {dtype}
           p1 = cached graph1 $ prim__parameter 1 [] "" {dtype}
           MkTensor graphf resf = (<+>) @{semigroup reducer} (MkTensor graph0 p0) (MkTensor graph1 p1)
@@ -745,8 +745,8 @@ cond
   (MkTensor graphPred pred)
   onTrue (MkTensor graphTrue true)
   onFalse (MkTensor graphFalse false) =
-    let grapht = Parameter {dtype=tt} 0 ts
-        graphf = Parameter {dtype=ft} 0 fs
+    let grapht = Parameter {dtype=tt} ts 0
+        graphf = Parameter {dtype=ft} fs 0
         pt = cached grapht $ prim__parameter 0 ts "" {dtype}
         pf = cached graphf $ prim__parameter 0 fs "" {dtype}
         MkTensor graphOnTrue trueRes = onTrue (MkTensor grapht pt)
