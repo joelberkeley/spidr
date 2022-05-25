@@ -21,6 +21,7 @@ modules =
   Compiler.Foreign.TensorFlow.Compiler.XLA.Shape,
   Compiler.Foreign.TensorFlow.Compiler.XLA.ShapeUtil,
   Compiler.Foreign.TensorFlow.Core.CommonRuntime.GPU.GPUInit,
+  Compiler.Foreign.TensorFlow.Core.Platform.Status.idr,
   Compiler.Foreign.Util,
   Compiler.Graph,
   Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math,
