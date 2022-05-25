@@ -21,10 +21,13 @@ import Data.Stream
 import Types
 import Util
 
-||| A `Graph` represents the graph computation of a tensor value. It is equivalent to the
-||| computation graph used at runtime, but might not be an exact representation. Specifically, given
-||| two `Graph`s gx and gy that compute tensors x and y respectively, if gx is equal to gy, then x
-||| is equal to y, but the computations used to compute x and y may be different.
+||| A `Graph` is a tree representation of the computational graph of a tensor value.
+||| It is not intended to represent the actual computation graph executed at runtime, rather its
+||| primary purpose is to avoid duplication within the graph.
+|||
+||| For any two `Graph` objects gx and gy, which correspond to computational graphs computing
+||| tensors x and y respectively, if gx is equal to gy, then x is equal to y, though the
+||| computations used to compute x and y may be different.
 public export
 data Graph : Type where
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph

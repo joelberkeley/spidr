@@ -134,8 +134,9 @@ export
 expand : Primitive dtype => (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
          -> Tensor (insertAt axis 1 shape) dtype
 expand axis (MkTensor {shape} graph xs) =
-  let graph = Reshape (insertAt axis 1 shape) graph
-   in MkTensor graph $ cached graph $ reshapeImpl shape (insertAt axis 1 shape) xs
+  let to = insertAt axis 1 shape
+      graph = Reshape to graph
+   in MkTensor graph $ cached graph $ reshapeImpl shape to xs
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -244,8 +245,9 @@ index axis idx xs with (xs)
   _ | (MkTensor {shape} _ _) =
     let MkTensor graph sliced =
           slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
-        graph = Reshape (deleteAt axis shape) graph
-    in MkTensor graph $ cached graph $ reshapeImpl shape (deleteAt axis shape) sliced
+        to = deleteAt axis shape
+        graph = Reshape to graph
+    in MkTensor graph $ cached graph $ reshapeImpl shape to sliced
 
 ||| Split a `Tensor` along a given axis at the specified index. For example,
 ||| `split 0 2 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
@@ -302,7 +304,7 @@ concat axis (MkTensor graphL l) (MkTensor graphR r) =
 ||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
-diag (MkTensor {shape=[n, n]} graph xs) =
+diag (MkTensor graph xs) =
   let graph = Diag graph
    in MkTensor graph $ cached graph $ do
         xs <- primIO (prim__getMatrixDiagonal !xs)
@@ -328,7 +330,7 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
-triangle tri (MkTensor {shape=[n, n]} graph xs) =
+triangle tri (MkTensor graph xs) =
   let graph = Triangle (case tri of Upper => False; Lower => True) graph
    in MkTensor graph $ cached graph $ do
         op <- primIO $ prim__triangle !xs (case tri of Upper => 0; Lower => 1)
@@ -338,7 +340,7 @@ triangle tri (MkTensor {shape=[n, n]} graph xs) =
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Primitive dtype => Tensor [m, n] dtype -> Tensor [n, m] dtype
-(MkTensor {shape=[m, n]} graph xs).T =
+(MkTensor graph xs).T =
   let graph = Transpose graph
    in MkTensor graph $ cached graph $ do
         permutations <- mkIntArray $ the (List Int) $ [1, 0]
@@ -514,7 +516,7 @@ fill = broadcast {prf=scalarToAnyOk shape} . fromLiteral . Scalar
 ||| which is `fromLiteral [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
-map f (MkTensor {shape} graph xs) =
+map f (MkTensor graph xs) =
   let graph0 = Parameter {dtype=a} [] 0
       p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f (MkTensor graph0 p0)
@@ -548,7 +550,7 @@ map f (MkTensor {shape} graph xs) =
 export
 map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
        -> Tensor shape a -> Tensor shape b -> Tensor shape c
-map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
+map2 f (MkTensor graphL l) (MkTensor graphR r) =
   let graph0 = Parameter {dtype=a} [] 0
       graph1 = Parameter {dtype=b} [] 1
       p0 = cached graph0 $ prim__parameter 0 [] "" {dtype=a}
@@ -581,7 +583,7 @@ map2 f (MkTensor {shape} graphL l) (MkTensor graphR r) =
 export
 reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) ->
   InBounds axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
-reduce axis (MkTensor {shape} graph xs) =
+reduce axis (MkTensor graph xs) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
@@ -738,9 +740,9 @@ select (MkTensor gPred pred) (MkTensor gTrue true) (MkTensor gFalse false) =
 ||| @onFalse The function to execute if the predicate is falsy.
 export
 cond : (Primitive tt, Primitive ft, Primitive dtype) => {shape, ts, fs : _} -> Tensor [] PRED
-  -> (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt
-  -> (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft
-  -> Tensor shape dtype
+       -> (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt
+       -> (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft
+       -> Tensor shape dtype
 cond
   (MkTensor graphPred pred)
   onTrue (MkTensor graphTrue true)
@@ -802,7 +804,7 @@ namespace Matrix
   (@@) : Primitive dtype => Primitive.Num dtype
          => Tensor [n, S m] dtype -> Tensor (S m :: tl) dtype
          -> length tl `LTE` 1 => Tensor (n :: tl) dtype
-  (MkTensor {shape=[n, _]} graphL l) @@ (MkTensor {shape=_ :: tl} graphR r) =
+  (MkTensor graphL l) @@ (MkTensor graphR r) =
     let graph = Dot graphL graphR
      in MkTensor graph $ cached graph $ do
           op <- primIO $ prim__dot !l !r
