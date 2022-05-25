@@ -23,7 +23,6 @@ import Data.Hashable
 import public Data.List
 import public Data.List.Elem
 import Decidable.Equality
-import Syntax.PreorderReasoning
 import System.FFI
 
 import Literal
