@@ -78,28 +78,25 @@ Prelude.Eq Graph where
 export covering
 Hashable Graph where
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
-    salt `hashWithSalt` "FromLiteral" `hashWithSalt`  (typeString {dtype}, shape, hash)
+    salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
   hashWithSalt salt (Parameter {dtype} shape position) =
-    salt `hashWithSalt` "Parameter" `hashWithSalt` (typeString {dtype}, shape, position)
-  hashWithSalt salt (Reshape to x) = salt `hashWithSalt` "Reshape" `hashWithSalt` (to, x)
-  hashWithSalt salt (Slice axis from to x) =
-    salt `hashWithSalt` "Slice" `hashWithSalt` (axis, from, to)
-  hashWithSalt salt (Concat axis x y) = salt `hashWithSalt` "Concat" `hashWithSalt` (axis, x, y)
-  hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
-  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` "Triangle" `hashWithSalt` (lower, x)
-  hashWithSalt salt (Transpose x) = salt `hashWithSalt` "Transpose" `hashWithSalt` x
-  hashWithSalt salt (Identity {dtype} n) =
-    salt `hashWithSalt` "Identity" `hashWithSalt` (typeString {dtype}, n)
-  hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` "Broadcast" `hashWithSalt` (to, x)
-  hashWithSalt salt (Map f xs) = salt `hashWithSalt` "Map" `hashWithSalt` (f, xs)
-  hashWithSalt salt (Reduce monoid axis x) =
-    salt `hashWithSalt` "Reduce" `hashWithSalt` (monoid, axis, x)
+    salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position)
+  hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to, x)
+  hashWithSalt salt (Slice axis from to x) = salt `hashWithSalt` ("Slice", axis, from, to)
+  hashWithSalt salt (Concat axis x y) = salt `hashWithSalt` ("Concat", axis, x, y)
+  hashWithSalt salt (Diag x) = salt `hashWithSalt` ("Diag", x)
+  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` ("Triangle", lower, x)
+  hashWithSalt salt (Transpose x) = salt `hashWithSalt` ("Transpose", x)
+  hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
+  hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` ("Broadcast", to, x)
+  hashWithSalt salt (Map f xs) = salt `hashWithSalt` ("Map", f, xs)
+  hashWithSalt salt (Reduce monoid axis x) = salt `hashWithSalt` ("Reduce", monoid, axis, x)
   hashWithSalt salt (ElementwiseBinary name x y) = hashWithSalt salt (name, x, y)
   hashWithSalt salt (ElementwiseUnary name x) = hashWithSalt salt (name, x)
-  hashWithSalt salt (Select pred f t) = salt `hashWithSalt` "Select" `hashWithSalt` (pred, t, f)
+  hashWithSalt salt (Select pred f t) = salt `hashWithSalt` ("Select", pred, f, t)
   hashWithSalt salt (Cond pred fTrue true fFalse false) =
-    salt `hashWithSalt` "Cond" `hashWithSalt` (pred, fTrue, true, fFalse, false)
-  hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` (x, y)
-  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
+    salt `hashWithSalt` ("Cond", pred, fTrue, true, fFalse, false)
+  hashWithSalt salt (Dot x y) = salt `hashWithSalt` ("Dot", x, y)
+  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` ("Cholesky", x)
   hashWithSalt salt (TriangularSolve lower x y) =
-    salt `hashWithSalt` "TriangularSolve" `hashWithSalt` (lower, x, y)
+    salt `hashWithSalt` ("TriangularSolve", lower, x, y)
