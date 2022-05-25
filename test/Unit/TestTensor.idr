@@ -41,61 +41,13 @@ fromLiteralThentoLiteral = property $ do
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
-covering
-showForGraph : Property
-showForGraph = property $ do
-  shape <- forAll shapes
+show : Property
+show = fixedProperty $ do
+  let x : Tensor [] S32 = 1
+  show x === "constant, shape=[], metadata={:0}"
 
-  x <- forAll (literal shape ints)
-  let x = fromLiteral {dtype=S32} x
-  show @{Graph} x === "S32\{show shape} fromLiteral"
-
-  x <- forAll (literal shape doubles)
-  let x = fromLiteral {dtype=F64} x
-  show @{Graph} x === "F64\{show shape} fromLiteral"
-
-  let ints = literal shape ints
-  [x, y] <- forAll (np [ints, ints])
-  let x = fromLiteral {dtype=S32} x
-      y = fromLiteral {dtype=S32} y
-  show @{Graph {dtype=S32}} (x + y) ===
-    """
-    S32\{show shape} (+)
-      S32\{show shape} fromLiteral
-      S32\{show shape} fromLiteral
-    """
-
-showForGraph' : Property
-showForGraph' = fixedProperty $ do
-  let x = fromLiteral {dtype=S32} [[0, 0, 0], [0, 0, 0]]
-      y = fromLiteral [[0], [0], [0]]
-  show @{Graph} (x @@ y) ===
-    """
-    S32[2, 1] (@@)
-      S32[2, 3] fromLiteral
-      S32[3, 1] fromLiteral
-    """
-
-  let x = fromLiteral {dtype=S32} [0, 0]
-      y = fromLiteral [[0, 0], [0, 0]]
-  show @{Graph} (cond (fromLiteral True) (fromLiteral [0, 0] *) x diag y) ===
-      """
-      S32[2] cond
-        PRED[] fromLiteral
-        S32[2] (*)
-          S32[2] fromLiteral
-          S32[2] parameter
-        S32[2] fromLiteral
-        S32[2] diag
-          S32[2, 2] parameter
-        S32[2, 2] fromLiteral
-      """
-
-showForXLA : Property
-showForXLA = fixedProperty $ do
-  show @{XLA {dtype=S32}} 1 === "constant, shape=[], metadata={:0}"
-
-  show @{XLA {dtype=S32}} (1 + 2) ===
+  let x : Tensor [] S32 = 1 + 2
+  show x ===
     """
     add, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
@@ -103,7 +55,7 @@ showForXLA = fixedProperty $ do
     """
 
   let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
-  show @{XLA} x === "constant, shape=[3], metadata={:0}"
+  show x === "constant, shape=[3], metadata={:0}"
 
 reshape : Property
 reshape = fixedProperty $ do
@@ -928,9 +880,7 @@ export covering
 group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
-    , ("show @{Graph}", showForGraph)
-    , ("show @{Graph} 2", showForGraph')
-    , ("show @{XLA}", showForXLA)
+    , ("show", show)
     , ("reshape", reshape)
     , ("slice", slice)
     , ("index", index)

@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Compiler.Graph
 
+import Primitive
 import Data.Hashable
 import Data.Stream
 import Types
@@ -26,51 +27,81 @@ import Util
 ||| is equal to y, but the computations used to compute x and y may be different.
 public export
 data Graph : Type where
-  ||| Represents a function application.
-  |||
-  ||| @name The name of the operation.
-  ||| @arguments The arguments the operation is called on.
-  ||| @shape The shape of the resulting tensor.
-  ||| @type A string representation of the data type of the resulting tensor.
-  Operation :
-    (name : String) ->
-    (arguments : List Graph) ->
-    (shape : Shape) ->
-    (type : String) ->
-    Graph
-
-  ||| Represents a tensor value. This tensor can have a concrete value, or correspond to a
-  ||| function argument.
-  |||
-  ||| @name The name of the method of instantiating the tensor.
-  ||| @id_ An identifier to differentiate this tensor from other tensors.
-  ||| @shape The shape of this tensor.
-  ||| @type A string representation of the data type of the tensor.
-  Leaf : (name : String) -> (id_ : Bits64) -> (shape : Shape) -> (type : String) -> Graph
+  FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
+  Parameter : Primitive dtype => Nat -> Shape -> Graph
+  Reshape : Shape -> Graph -> Graph
+  Slice : Nat -> Nat -> Nat -> Graph -> Graph
+  Concat : Nat -> Graph -> Graph -> Graph
+  Diag : Graph -> Graph
+  Triangle : (lower : Bool) -> Graph -> Graph
+  Transpose : Graph -> Graph
+  Identity : Primitive dtype => Nat -> Graph
+  Broadcast : Shape -> Graph -> Graph
+  Map : Graph -> List Graph -> Graph
+  Reduce : Graph -> Nat -> Graph -> Graph
+  ElementwiseBinary : (name : String) -> Graph -> Graph -> Graph
+  ElementwiseUnary : (name : String) -> Graph -> Graph
+  Select : Graph -> Graph -> Graph -> Graph
+  Cond : Graph -> Graph -> Graph -> Graph -> Graph -> Graph
+  Dot : Graph -> Graph -> Graph
+  Cholesky : Graph -> Graph
+  TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
 
 export covering
-Eq Graph where
-  Operation lname largs lshape ltype == Operation rname rargs rshape rtype =
-    lname == rname && largs == rargs && lshape == rshape && ltype == rtype
-  Leaf lname lhash lshape ltype == Leaf rname rhash rshape rtype =
-    lname == rname && lhash == rhash && lshape == rshape && ltype == rtype
+Prelude.Eq Graph where
+  FromLiteral {dtype} shape hash == FromLiteral {dtype=dtype'} shape' hash' =
+    (typeString {dtype}, shape, hash) == (typeString {dtype=dtype'}, shape', hash')
+  Parameter {dtype} position shape == Parameter {dtype=dtype'} position' shape' =
+    -- can we not just use position for parameter, since only one parameter can exist at a given
+    -- position? what would this mean for graphs that use this parameter, which need to know the
+    -- parameter shape and type? This indicates something's amiss
+    (typeString {dtype}, position, shape) == (typeString {dtype=dtype'}, position', shape')
+  Reshape to x == Reshape to' x' = to == to' && x == x'
+  Slice axis from to x == Slice axis' from' to' x' = (axis, from, to, x) == (axis', from', to', x')
+  Concat axis x y == Concat axis' x' y' = (axis, x, y) == (axis', x', y')
+  Diag x == Diag x' = x == x'
+  Triangle lower x == Triangle lower' x' = (lower, x) == (lower', x')
+  Transpose x == Transpose x' = x == x'
+  Identity {dtype} n == Identity {dtype=dtype'} n' =
+    (typeString {dtype}, n) == (typeString {dtype=dtype'}, n')
+  Broadcast to x == Broadcast to' x' = (to, x) == (to', x')
+  Map f xs == Map f' xs' = (f, xs) == (f', xs')
+  Reduce monoid axis x == Reduce monoid' axis' x' = (monoid, axis, x) == (monoid', axis', x')
+  ElementwiseBinary name x y == ElementwiseBinary name' x' y' = (name, x, y) == (name', x', y')
+  ElementwiseUnary name x == ElementwiseUnary name' x' = (name, x) == (name', x')
+  Select pred t f == Select pred' t' f' = (pred, t, f) == (pred', t', f')
+  Cond pred fTrue true fFalse false == Cond pred' fTrue' true' fFalse' false' =
+    (pred, fTrue, true, fFalse, false) == (pred', fTrue', true', fFalse', false')
+  Dot x y == Dot x' y' = (x, y) == (x', y')
+  Cholesky x == Cholesky x' = x == x'
+  TriangularSolve lower x y == TriangularSolve lower' x' y' = (lower, x, y) == (lower', x', y')
   _ == _ = False
 
 export covering
-Show Graph where
-  show xs = impl 0 xs where
-    impl : Nat -> Graph -> String
-    impl depth =
-      let indent = pack $ take (2 * depth) (repeat ' ')
-       in \case
-            Operation name args shape type =>
-              let init = indent ++ "\{type}\{show shape} \{name}"
-               in foldl (\acc, g => acc ++ "\n" ++ impl (S depth) g) init args
-            Leaf name hash shape type => indent ++ "\{type}\{show shape} \{name}"
-
-export covering
 Hashable Graph where
-  hashWithSalt salt (Operation name arguments shape type) =
-    salt `hashWithSalt` name `hashWithSalt` arguments `hashWithSalt` shape `hashWithSalt` type
-  hashWithSalt salt (Leaf name id_ shape type) =
-    salt `hashWithSalt` name `hashWithSalt` id_ `hashWithSalt` shape `hashWithSalt` type
+  hashWithSalt salt (FromLiteral {dtype} hash shape) =
+    salt `hashWithSalt` "FromLiteral" `hashWithSalt`  (typeString {dtype}, shape, hash)
+  hashWithSalt salt (Parameter {dtype} position shape) =
+    salt `hashWithSalt` "Parameter" `hashWithSalt` (typeString {dtype}, position, shape)
+  hashWithSalt salt (Reshape to x) = salt `hashWithSalt` "Reshape" `hashWithSalt` (to, x)
+  hashWithSalt salt (Slice axis from to x) =
+    salt `hashWithSalt` "Slice" `hashWithSalt` (axis, from, to)
+  hashWithSalt salt (Concat axis x y) = salt `hashWithSalt` "Concat" `hashWithSalt` (axis, x, y)
+  hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
+  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` "Triangle" `hashWithSalt` (lower, x)
+  hashWithSalt salt (Transpose x) = salt `hashWithSalt` "Transpose" `hashWithSalt` x
+  hashWithSalt salt (Identity {dtype} n) =
+    salt `hashWithSalt` "Identity" `hashWithSalt` (typeString {dtype}, n)
+  hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` "Broadcast" `hashWithSalt` (to, x)
+  hashWithSalt salt (Map f xs) = salt `hashWithSalt` "Map" `hashWithSalt` (f, xs)
+  hashWithSalt salt (Reduce monoid axis x) =
+    salt `hashWithSalt` "Reduce" `hashWithSalt` (monoid, axis, x)
+  hashWithSalt salt (ElementwiseBinary name x y) = hashWithSalt salt (name, x, y)
+  hashWithSalt salt (ElementwiseUnary name x) = hashWithSalt salt (name, x)
+  hashWithSalt salt (Select pred f t) = salt `hashWithSalt` "Select" `hashWithSalt` (pred, t, f)
+  hashWithSalt salt (Cond pred fTrue true fFalse false) =
+    salt `hashWithSalt` "Cond" `hashWithSalt` (pred, fTrue, true, fFalse, false)
+  hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` (x, y)
+  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
+  hashWithSalt salt (TriangularSolve lower x y) =
+    salt `hashWithSalt` "TriangularSolve" `hashWithSalt` (lower, x, y)
