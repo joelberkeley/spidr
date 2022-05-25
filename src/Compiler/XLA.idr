@@ -88,7 +88,7 @@ opToString x = unsafePerformIO $ do
 export
 parameter : Primitive dtype => Nat -> List Nat -> String -> (Graph, ComputationContext XlaOp)
 parameter position shape name =
-  let graph = Leaf "parameter" (cast position) shape (typeString {dtype})
+  let graph = Parameter {dtype} shape position
 
       param : ComputationContext XlaOp
       param = do

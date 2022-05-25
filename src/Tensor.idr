@@ -63,8 +63,8 @@ fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor sh
 fromLiteral xs = 
   let graph = FromLiteral {dtype} shape (hashWithSalt defaultSalt xs)
    in MkTensor graph $ cached graph $ do
-        literal <- toXLA {dtype} xs
         MkCachingBuilder builder _ <- get
+        literal <- toXLA {dtype} xs
         constantLiteral builder literal
 
 namespace F64
@@ -418,10 +418,9 @@ broadcast xs with (xs)
     let graph = Broadcast to graph
      in case (isElem 0 to, from == to) of
           (Yes _, False) => MkTensor graph $ cached graph $ do
-            xlaShape <- mkShape {dtype} to
-            literal <- primIO $ prim__allocLiteral xlaShape
-            literal <- onCollectAny literal Literal.delete
-            prim__constantLiteral literal graph
+            MkCachingBuilder builder _ <- get
+            literal <- allocLiteral {dtype} to
+            constantLiteral builder literal
           _ => impl [] to xs
 
     where
