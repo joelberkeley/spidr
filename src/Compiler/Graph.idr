@@ -49,33 +49,6 @@ data Graph : Type where
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
 
 export covering
-Prelude.Eq Graph where
-  FromLiteral {dtype} shape hash == FromLiteral {dtype=dtype'} shape' hash' =
-    (typeString {dtype}, shape, hash) == (typeString {dtype=dtype'}, shape', hash')
-  Parameter {dtype} shape position == Parameter {dtype=dtype'} shape' position' =
-    (typeString {dtype}, shape, position) == (typeString {dtype=dtype'}, shape', position')
-  Reshape to x == Reshape to' x' = to == to' && x == x'
-  Slice axis from to x == Slice axis' from' to' x' = (axis, from, to, x) == (axis', from', to', x')
-  Concat axis x y == Concat axis' x' y' = (axis, x, y) == (axis', x', y')
-  Diag x == Diag x' = x == x'
-  Triangle lower x == Triangle lower' x' = (lower, x) == (lower', x')
-  Transpose x == Transpose x' = x == x'
-  Identity {dtype} n == Identity {dtype=dtype'} n' =
-    (typeString {dtype}, n) == (typeString {dtype=dtype'}, n')
-  Broadcast to x == Broadcast to' x' = (to, x) == (to', x')
-  Map f xs == Map f' xs' = (f, xs) == (f', xs')
-  Reduce monoid axis x == Reduce monoid' axis' x' = (monoid, axis, x) == (monoid', axis', x')
-  ElementwiseBinary name x y == ElementwiseBinary name' x' y' = (name, x, y) == (name', x', y')
-  ElementwiseUnary name x == ElementwiseUnary name' x' = (name, x) == (name', x')
-  Select pred t f == Select pred' t' f' = (pred, t, f) == (pred', t', f')
-  Cond pred fTrue true fFalse false == Cond pred' fTrue' true' fFalse' false' =
-    (pred, fTrue, true, fFalse, false) == (pred', fTrue', true', fFalse', false')
-  Dot x y == Dot x' y' = (x, y) == (x', y')
-  Cholesky x == Cholesky x' = x == x'
-  TriangularSolve lower x y == TriangularSolve lower' x' y' = (lower, x, y) == (lower', x', y')
-  _ == _ = False
-
-export covering
 Hashable Graph where
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
@@ -95,7 +68,7 @@ Hashable Graph where
   hashWithSalt salt (ElementwiseUnary name x) = hashWithSalt salt (name, x)
   hashWithSalt salt (Select pred f t) = salt `hashWithSalt` ("Select", pred, f, t)
   hashWithSalt salt (Cond pred fTrue true fFalse false) =
-    salt `hashWithSalt` ("Cond", pred, fTrue, true, fFalse, false)
+    salt `hashWithSalt` "Cond" `hashWithSalt` (pred, fTrue, true, fFalse, false)
   hashWithSalt salt (Dot x y) = salt `hashWithSalt` ("Dot", x, y)
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` ("Cholesky", x)
   hashWithSalt salt (TriangularSolve lower x y) =
