@@ -13,12 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains Idris types that represent primitive types supported by the XLA backend.
-||| These Idris types have no values (at least not Idris values). Instead they carry metadata that
-||| allows us to manage memory layouts in the backend.
 module Compiler.TensorFlow.Compiler.XLA.XlaData
 
-||| A `Primitive` is an Idris representation of a primitive type supported by the XLA backend.
 export
 interface Primitive dtype where
   xlaIdentifier : Int

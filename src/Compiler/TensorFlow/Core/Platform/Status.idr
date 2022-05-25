@@ -15,8 +15,8 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Core.Platform.Status
 
-import Compiler.Foreign.TensorFlow.Core.Platform.Status
 import Compiler.FFI
+import Compiler.Foreign.TensorFlow.Core.Platform.Status
 
 public export
 data Status : Type where

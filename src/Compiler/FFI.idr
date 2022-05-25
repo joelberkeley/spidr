@@ -15,11 +15,9 @@ limitations under the License.
 --}
 module Compiler.FFI
 
-import Data.Vect
 import System.FFI
 
 import Compiler.Foreign.Util
-import Types
 import Util
 
 export

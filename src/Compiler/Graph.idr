@@ -18,9 +18,7 @@ module Compiler.Graph
 import Data.Hashable
 
 import Compiler.TensorFlow.Compiler.XLA.XlaData
-import Data.Stream
 import Types
-import Util
 import Util.Hashable
 
 ||| A `Graph` represents a computational graph used to compute a tensor value. It is defined by

@@ -16,8 +16,8 @@ limitations under the License.
 module Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 
 import Compiler.Foreign.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.TensorFlow.StreamExecutor.Platform
 import Compiler.TensorFlow.Core.Platform.Status
+import Compiler.TensorFlow.StreamExecutor.Platform
 
 export
 validateGPUMachineManager : IO Status

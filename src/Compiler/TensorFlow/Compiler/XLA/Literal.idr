@@ -21,7 +21,6 @@ import Compiler.TensorFlow.Compiler.XLA.Shape
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
 import Compiler.TensorFlow.Compiler.XLA.XlaData
 import Types
-import Util
 
 namespace XLA
   public export

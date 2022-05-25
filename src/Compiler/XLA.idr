@@ -15,9 +15,10 @@ limitations under the License.
 --}
 module Compiler.XLA
 
-import Data.Hashable
 import Control.Monad.State
 import Data.SortedMap
+
+import Data.Hashable
 
 import Compiler.Graph
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder

@@ -15,10 +15,10 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 
+import Compiler.FFI
 import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
 import Compiler.TensorFlow.Compiler.XLA.XlaData
-import Compiler.FFI
 
 export
 identityMatrix : HasIO io => Primitive dtype => XlaBuilder -> Nat -> Nat -> io XlaOp

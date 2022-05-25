@@ -15,15 +15,13 @@ limitations under the License.
 --}
 module Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
 
-import Data.List
-import Data.Vect
 import System.FFI
 
 import Compiler.FFI
+import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.XlaBuilder
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
 import Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.Shape
-import Compiler.Foreign.TensorFlow.Compiler.XLA.Client.XlaBuilder
 import Types
 import Util
 

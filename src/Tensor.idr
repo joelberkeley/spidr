@@ -17,33 +17,33 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import Data.SortedMap
 import Control.Monad.State
-import Data.Hashable
 import public Data.List
 import public Data.List.Elem
 import Decidable.Equality
 import System.FFI
 
-import Literal
-import public Primitive
-import public Types
-import public Util
+import Data.Hashable
+
 import Compiler.XLA
 import Compiler.FFI
 import Compiler.Graph
-import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
 import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
 import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
+import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
+import Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
-import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.TensorFlow.StreamExecutor.Platform
-import Compiler.TensorFlow.Core.Platform.Status
-import public Compiler.TensorFlow.Compiler.XLA.Literal
 import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
+import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.Core.Platform.Status
+import Compiler.TensorFlow.StreamExecutor.Platform
+import Literal
+import public Primitive
+import public Types
+import public Util
 
 ----------------------------- core definitions ----------------------------
 
