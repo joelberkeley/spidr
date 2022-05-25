@@ -104,6 +104,13 @@ interface Primitive dtype => LiteralPrimitiveRW dtype ty where
   set : Literal -> List Nat -> ty -> IO ()
   get : Literal -> List Nat -> ty
 
+range : (n : Nat) -> Literal [n] Nat
+range n = impl n []
+  where
+  impl : (p : Nat) -> Literal [q] Nat -> Literal [q + p] Nat
+  impl Z xs = rewrite plusZeroRightNeutral q in xs
+  impl (S p) xs = rewrite sym $ plusSuccRightSucc q p in impl p (Scalar p :: xs)
+
 indexed : {shape : _} -> Literal shape (List Nat)
 indexed = go shape []
   where

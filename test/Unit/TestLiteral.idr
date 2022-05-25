@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module Unit.TestLiteral
 
-import Compiler.XLA
 import Literal
 
 import Utils.Comparison
