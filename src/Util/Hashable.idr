@@ -23,3 +23,7 @@ import Types
 export
 Hashable Double where
   hashWithSalt s x = s `combine` hash (show x)
+
+export
+(Hashable a, Hashable b) => Hashable (a, b) where
+    hashWithSalt s (a, b) = s `hashWithSalt` a `hashWithSalt` b
