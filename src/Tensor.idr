@@ -413,20 +413,16 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
-foldlMulZero : (xs : List Nat) -> foldl (*) 0 xs = 0
-foldlMulZero [] = Refl
-foldlMulZero (x :: xs) = rewrite foldlMulZero xs in Refl
+foldlMulInitZero : (xs : List Nat) -> foldl (*) 0 xs = 0
+foldlMulInitZero [] = Refl
+foldlMulInitZero (_ :: tl) = rewrite foldlMulInitZero tl in Refl
 
-productNZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
-productNZero @{Here} x (0 :: xs) = rewrite multZeroRightZero x in foldlMulZero xs
-productNZero @{There prf} x (hd :: tl) = productNZero (x * hd) tl
+foldlMulAnyZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
+foldlMulAnyZero @{Here} x (0 :: xs) = rewrite multZeroRightZero x in foldlMulInitZero xs
+foldlMulAnyZero @{There prf} x (hd :: tl) = foldlMulAnyZero (x * hd) tl
 
 productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
-productZero @{Here} (0 :: xs) = foldlMulZero xs
-productZero @{There prf} (hd :: tl) =
-  rewrite multZeroLeftZero hd in
-  rewrite plusZeroRightNeutral hd in
-  productNZero hd tl
+productZero = foldlMulAnyZero 1
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
