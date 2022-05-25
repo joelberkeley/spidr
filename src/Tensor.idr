@@ -445,7 +445,7 @@ export
 broadcast :
   Primitive dtype =>
   {to : _} ->
-  {auto ok : Broadcastable from to} ->
+  {auto shapesOK : Broadcastable from to} ->
   Tensor from dtype ->
   Tensor to dtype
 broadcast xs with (xs)
@@ -496,7 +496,7 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| ```
 export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
-fill = broadcast {ok=scalarToAnyOk shape} . fromLiteral . Scalar
+fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
@@ -830,7 +830,7 @@ namespace Scalarwise
   export
   (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
   l * r with (r)
-    _ | (MkTensor {shape=(d :: ds)} _ _) = (broadcast {ok=scalarToAnyOk (d :: ds)} l) * r
+    _ | (MkTensor {shape=(d :: ds)} _ _) = (broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
 
 namespace Semigroup
   export
@@ -865,7 +865,7 @@ namespace Scalarwise
     Tensor [] dtype ->
     Tensor (d :: ds) dtype
   l / r with (l)
-    _ | (MkTensor {shape=(d :: ds)} _ _) = l / (broadcast {ok=scalarToAnyOk (d :: ds)} r)
+    _ | (MkTensor {shape=(d :: ds)} _ _) = l / (broadcast {shapesOK=scalarToAnyOk (d :: ds)} r)
 
 ||| The element-wise reciprocal. For example, `recip (fromLiteral [-2, 0, 0.2])`
 ||| is `fromLiteral [-0.5, nan, 5]`.
