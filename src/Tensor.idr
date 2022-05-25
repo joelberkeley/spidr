@@ -120,7 +120,7 @@ reshapeImpl from to xs = do
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
 ||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
 export
-reshape : Primitive dtype => {to : _} -> Prelude.product from = Prelude.product to
+reshape : Primitive dtype => {to : _} -> product from = product to
           => Tensor from dtype -> Tensor to dtype
 reshape (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
@@ -421,7 +421,7 @@ productNZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
 productNZero @{Here} x (0 :: xs) = rewrite multZeroRightZero x in foldlMulZero xs
 productNZero @{There prf} x (hd :: tl) = productNZero (x * hd) tl
 
-productZero : (xs : List Nat) -> Elem 0 xs => Prelude.product xs = 0
+productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
 productZero @{Here} (0 :: xs) = foldlMulZero xs
 productZero @{There prf} (hd :: tl) =
   rewrite multZeroLeftZero hd in
@@ -447,7 +447,7 @@ broadcast : Primitive dtype => {to : _} -> {auto prf : Broadcastable from to}
 broadcast xs with (xs)
   _ | MkTensor {shape=from} _ _ = case (isElem 0 to, toList from == toList to) of
     (Yes _, False) => case from of
-      [] => let empty : Tensor [0] dtype = slice 0 0 0 $ reshape {to=[1]} xs
+      [] => let empty = slice 0 0 0 $ reshape {to=[1]} xs
              in reshape @{%search} @{rewrite productZero to in %search} empty
       (_ :: ds) =>
         let prf =
