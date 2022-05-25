@@ -2,6 +2,6 @@
 
 The `Foreign` directory contains the bare foreign functions to the C wrapper around XLA.
 
-The `TensorFlow` directory contains functionality that wraps the foreign functions in `Foreign` such that the type signature express contracts of the XLA API. It is not opinionated, in that it only attempts to provide a reasonably type-safe Idris interface to XLA, and does not attempt to reinterpret the API in a more idiomatic or convenient form.
+Functionality in the `TensorFlow` directory wraps the foreign functions in `Foreign` to improve the type safety of the interface with XLA by expressing contracts of the XLA API. It tries to be unopinionated, in that it wraps the functionality as-is, but with extra type information.
 
-The `XLA` module wraps the functionality in `TensorFlow` in a convenient form that diverges from the XLA API.
+Functionality in the `XLA` module wraps that in `TensorFlow` in a more convenient, safer, or more idiomatic form. It may diverge from the XLA API.
