@@ -31,8 +31,12 @@ import BayesianOptimization.Morphisms
 ||| @out The type of the value constructed by the `Empiric`.
 public export 0
 Empiric : Distribution marginal => (0 features, targets : Shape) -> (0 out : Type) -> Type
-Empiric features targets out = {0 model : _}
-  -> ProbabilisticModel features targets marginal model => Dataset features targets -> model -> out
+Empiric features targets out =
+  {0 model : _} ->
+  ProbabilisticModel features targets marginal model =>
+  Dataset features targets ->
+  model ->
+  out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
@@ -50,8 +54,11 @@ Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tensor []
 ||| @model The model over the historic data.
 ||| @best The current best observation.
 export
-expectedImprovement : ProbabilisticModel features [1] Gaussian m => (model : m) ->
-                      (best : Tensor [] F64) -> Acquisition 1 features
+expectedImprovement :
+  ProbabilisticModel features [1] Gaussian m =>
+  (model : m) ->
+  (best : Tensor [] F64) ->
+  Acquisition 1 features
 expectedImprovement model best at =
   let marginal = marginalise model at
       best' = broadcast {to=[_, 1]} best
@@ -72,8 +79,10 @@ expectedImprovementByModel (MkDataset queryPoints _) model at =
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
 export
-probabilityOfFeasibility : (limit : Tensor [] F64) -> ClosedFormDistribution [1] d =>
-                           Empiric features [1] {marginal=d} $ Acquisition 1 features
+probabilityOfFeasibility :
+  (limit : Tensor [] F64) ->
+  ClosedFormDistribution [1] d =>
+  Empiric features [1] {marginal=d} $ Acquisition 1 features
 probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadcast {to=[_, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
@@ -81,7 +90,9 @@ probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadca
 |||
 ||| @beta The weighting given to the variance contribution.
 export
-negativeLowerConfidenceBound : (beta : Double) -> (0 _ : beta >= 0 = True) =>
+negativeLowerConfidenceBound :
+  (beta : Double) ->
+  {auto 0 betaNonNegative : beta >= 0 = True} ->
   Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
 negativeLowerConfidenceBound beta _ model at =
   let marginal = marginalise model at
@@ -94,5 +105,6 @@ negativeLowerConfidenceBound beta _ model at =
 |||
 ||| **NOTE** This function is not yet implemented.
 export
-expectedConstrainedImprovement : (limit : Tensor [] F64) ->
+expectedConstrainedImprovement :
+  (limit : Tensor [] F64) ->
   Empiric features [1] {marginal=Gaussian} $ (Acquisition 1 features -> Acquisition 1 features)

@@ -26,9 +26,10 @@ import Tensor
 ||| @targets The shape of the target domain.
 ||| @marginal The type of mulitvariate marginal distribution over the target domain.
 public export
-interface Distribution marginal =>
-  ProbabilisticModel (0 features, targets : Shape)
-    (0 marginal : (0 event : Shape) -> (0 dim : Nat) -> Type) model | model
+interface Distribution marginal => ProbabilisticModel
+    (0 features, targets : Shape)
+    (0 marginal : (0 event : Shape) -> (0 dim : Nat) -> Type)
+    model | model
   where
     ||| Return the marginal distribution over the target domain at the specified feature values.
     marginalise : model -> {n : _} -> Tensor (S n :: features) F64 -> marginal targets (S n)

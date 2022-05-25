@@ -37,10 +37,10 @@ data GaussianProcess : (0 features : Shape) -> Type where
   MkGP : MeanFunction features -> Kernel features -> GaussianProcess features
 
 posterior :
+  GaussianProcess features ->
+  Tensor [] F64 ->
+  {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
   GaussianProcess features
-  -> Tensor [] F64
-  -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
-  -> GaussianProcess features
 posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) =
   let l = cholesky (priorKernel xTrain xTrain + noise * identity)
       alpha = l.T \| (l |\ yTrain)
@@ -55,10 +55,10 @@ posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) =
    in MkGP posteriorMeanf posteriorKernel
 
 logMarginalLikelihood :
-  GaussianProcess features
-  -> Tensor [] F64
-  -> {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64)
-  -> Tensor [] F64
+  GaussianProcess features ->
+  Tensor [] F64 ->
+  {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
+  Tensor [] F64
 logMarginalLikelihood (MkGP _ kernel) noise (x, y) =
   let l = cholesky (kernel x x + noise * identity)
       alpha = l.T \| (l |\ y)
@@ -81,11 +81,12 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
   |||   a vector)
   ||| @hyperparameters The hyperparameters (excluding noise) presented as a vector.
   ||| @noise The likehood amplitude, or observation noise.
-  MkConjugateGPR : {p : _}
-    -> (gpFromHyperparameters : Tensor [p] F64 -> GaussianProcess features)
-    -> (hyperparameters : Tensor [p] F64)
-    -> (noise : Tensor [] F64)
-    -> ConjugateGPRegression features
+  MkConjugateGPR :
+    {p : _} ->
+    (gpFromHyperparameters : Tensor [p] F64 -> GaussianProcess features) ->
+    (hyperparameters : Tensor [p] F64) ->
+    (noise : Tensor [] F64) ->
+    ConjugateGPRegression features
 
 ||| A probabilistic model from feature values to a distribution over latent target values.
 export

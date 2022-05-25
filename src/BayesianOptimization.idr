@@ -36,6 +36,9 @@ import public BayesianOptimization.Morphisms as BayesianOptimization
 ||| @observer A function which evaluates the optimization objective at the recommended points, then
 |||   updates the values (typically data and models).
 export
-loop : (tactic : i ~> Tensor shape dtype)
-  -> (observer : Tensor shape dtype -> i -> i) -> i -> Stream i
+loop :
+  (tactic : i ~> Tensor shape dtype) ->
+  (observer : Tensor shape dtype -> i -> i) ->
+  i ->
+  Stream i
 loop tactic observer = iterate (\ii => observer (run tactic ii) ii)
