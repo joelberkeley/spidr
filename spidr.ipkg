@@ -10,6 +10,9 @@ modules =
   BayesianOptimization.Morphisms,
 
   Compiler.ComputationContext,
+  Compiler.Graph,
+  Compiler.LiteralRW,
+
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Math,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Matrix,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.ClientLibrary,
@@ -23,9 +26,7 @@ modules =
   Compiler.Xla.Prim.TensorFlow.Core.CommonRuntime.GPU.GPUInit,
   Compiler.Xla.Prim.TensorFlow.Core.Platform.Status,
   Compiler.Xla.Prim.Util,
-  Compiler.Graph,
-  Compiler.LiteralRW,
-  Compiler.Xla.Util,
+
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary,
@@ -40,6 +41,7 @@ modules =
   Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit,
   Compiler.Xla.TensorFlow.Core.Platform.Status,
   Compiler.Xla.TensorFlow.StreamExecutor.Platform,
+  Compiler.Xla.Util,
 
   Data,
   Distribution,
