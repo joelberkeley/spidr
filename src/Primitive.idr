@@ -23,8 +23,8 @@ module Primitive
 
 import Data.Hashable
 
-import Compiler.TensorFlow.Compiler.XLA.Literal
-import public Compiler.TensorFlow.Compiler.XLA.XlaData
+import Compiler.LiteralRW
+import public Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import public Util.Hashable
 
 %hide Prelude.Num
@@ -81,7 +81,7 @@ export Ord F64 where
 ||| A `PrimitiveRW dtype idr` means that values of type `idr` can be used to construct backend
 ||| data with data type `dtype`.
 export
-interface Hashable idr => LiteralPrimitiveRW dtype idr => PrimitiveRW dtype idr | dtype where
+interface Hashable idr => LiteralRW dtype idr => PrimitiveRW dtype idr | dtype where
 
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where
