@@ -9,7 +9,7 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
-  Compiler.ComputationContext,
+  Compiler.Computation,
   Compiler.Graph,
   Compiler.LiteralRW,
 

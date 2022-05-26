@@ -25,7 +25,7 @@ import System.FFI
 
 import Data.Hashable
 
-import Compiler.ComputationContext
+import Compiler.Computation
 import Compiler.NameMe.Util
 import Compiler.Graph
 import Compiler.LiteralRW
@@ -56,7 +56,7 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Graph -> ComputationContext XlaOp -> Tensor shape dtype
+  MkTensor : {shape : _} -> Graph -> Computation XlaOp -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
@@ -109,7 +109,7 @@ Show (Tensor shape dtype) where
 ----------------------------- structural operations ----------------------------
 
 reshapeWithDefaultOrdering :
-  (from, to : Shape) -> ComputationContext XlaOp -> ComputationContext XlaOp
+  (from, to : Shape) -> Computation XlaOp -> Computation XlaOp
 reshapeWithDefaultOrdering from to xs = reshape !xs (range $ length from) to
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
@@ -529,7 +529,7 @@ reduce axis (MkTensor graph xs) =
 ----------------------------- numeric operations ----------------------------
 
 unaryOp :
-  Primitive b => String -> (XlaOp -> ComputationContext XlaOp) -> Tensor shape a -> Tensor shape b
+  Primitive b => String -> (XlaOp -> Computation XlaOp) -> Tensor shape a -> Tensor shape b
 unaryOp fnName xlaOperation (MkTensor graph xs) =
   let graph = ElementwiseUnary fnName graph
    in MkTensor graph $ cached graph $ do xlaOperation !xs
@@ -537,7 +537,7 @@ unaryOp fnName xlaOperation (MkTensor graph xs) =
 binaryOp :
   Primitive c =>
   String ->
-  (XlaOp -> XlaOp -> ComputationContext XlaOp) ->
+  (XlaOp -> XlaOp -> Computation XlaOp) ->
   Tensor shape a -> Tensor shape b -> Tensor shape c
 binaryOp fnName xlaOperation (MkTensor graphL l) (MkTensor graphR r) =
   let graph = ElementwiseBinary fnName graphL graphR

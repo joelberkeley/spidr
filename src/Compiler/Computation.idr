@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.ComputationContext
+module Compiler.Computation
 
 import Control.Monad.State
 import Data.SortedMap
@@ -33,11 +33,11 @@ data CachingBuilder : Type where
   MkCachingBuilder : XlaBuilder -> SortedMap Bits64 XlaOp -> CachingBuilder
 
 public export
-ComputationContext : Type -> Type
-ComputationContext = StateT CachingBuilder IO
+Computation : Type -> Type
+Computation = StateT CachingBuilder IO
 
 export
-cached : Graph -> ComputationContext XlaOp -> ComputationContext XlaOp
+cached : Graph -> Computation XlaOp -> Computation XlaOp
 cached graph xs = assert_total $ let graphHash = hash graph in do
   builder <- get
   case cacheLookup builder graphHash of
@@ -57,7 +57,7 @@ cached graph xs = assert_total $ let graphHash = hash graph in do
   cacheLookup (MkCachingBuilder _ cache) key = lookup key cache
 
 export
-build : HasIO io => String -> ComputationContext XlaOp -> io XlaComputation
+build : HasIO io => String -> Computation XlaOp -> io XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
   MkCachingBuilder builder _ <- liftIO $ execStateT (MkCachingBuilder builder empty) x
@@ -65,10 +65,7 @@ build computationName x = do
 
 export
 buildWithSubBuilder :
-  String ->
-  List (ComputationContext XlaOp) ->
-  ComputationContext XlaOp ->
-  ComputationContext XlaComputation
+  String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
 buildWithSubBuilder computationName computationArguments computationResult = do
   MkCachingBuilder builder _ <- get
   subBuilder <- createSubBuilder builder computationName
@@ -78,18 +75,18 @@ buildWithSubBuilder computationName computationArguments computationResult = do
   build subBuilder
 
 export
-opToString : ComputationContext XlaOp -> String
+opToString : Computation XlaOp -> String
 opToString x = unsafePerformIO $ do
   builder <- mkXlaBuilder "toString"
   (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) x
   pure $ opToString builder xlaOp
 
 export
-parameter : Primitive dtype => Nat -> Types.Shape -> String -> (Graph, ComputationContext XlaOp)
+parameter : Primitive dtype => Nat -> Types.Shape -> String -> (Graph, Computation XlaOp)
 parameter position shape name =
   let graph = Parameter {dtype} shape position
 
-      param : ComputationContext XlaOp
+      param : Computation XlaOp
       param = do
         MkCachingBuilder builder _ <- get
         xlaShape <- mkShape {dtype} shape
