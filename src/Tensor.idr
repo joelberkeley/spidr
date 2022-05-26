@@ -25,9 +25,10 @@ import System.FFI
 
 import Data.Hashable
 
-import Compiler.XLA
+import Compiler.ComputationContext
 import Compiler.FFI
 import Compiler.Graph
+import Compiler.LiteralRW
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
 import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
 import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
@@ -64,7 +65,7 @@ fromLiteral xs =
   let graph = FromLiteral {dtype} shape (hashWithSalt defaultSalt xs)
    in MkTensor graph $ cached graph $ do
         MkCachingBuilder builder _ <- get
-        literal <- toXLA {dtype} xs
+        literal <- write {dtype} xs
         constantLiteral builder literal
 
 namespace F64
@@ -97,7 +98,7 @@ toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   computation <- build "" xs
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
-  pure (fromXLA {dtype} lit)
+  pure (read {dtype} lit)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued XLA operations.
 ||| Useful for debugging.

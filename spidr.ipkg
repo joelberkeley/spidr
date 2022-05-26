@@ -9,6 +9,7 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
+  Compiler.ComputationContext,
   Compiler.FFI,
   Compiler.Foreign.TensorFlow.Compiler.XLA.Client.Lib.Math,
   Compiler.Foreign.TensorFlow.Compiler.XLA.Client.Lib.Matrix,
@@ -24,6 +25,7 @@ modules =
   Compiler.Foreign.TensorFlow.Core.Platform.Status,
   Compiler.Foreign.Util,
   Compiler.Graph,
+  Compiler.LiteralRW,
   Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math,
   Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix,
   Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary,
@@ -38,7 +40,6 @@ modules =
   Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit,
   Compiler.TensorFlow.Core.Platform.Status,
   Compiler.TensorFlow.StreamExecutor.Platform,
-  Compiler.XLA,
 
   Data,
   Distribution,
