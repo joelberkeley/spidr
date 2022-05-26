@@ -26,7 +26,6 @@ import System.FFI
 import Data.Hashable
 
 import Compiler.Computation
-import Compiler.NameMe.Util
 import Compiler.Graph
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math

@@ -17,11 +17,11 @@ module Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 
 import System.FFI
 
-import Compiler.NameMe.Util
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
+import Compiler.Xla.Util
 import Types
 import Util
 

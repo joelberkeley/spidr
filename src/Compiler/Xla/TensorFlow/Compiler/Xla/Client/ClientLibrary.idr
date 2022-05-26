@@ -17,7 +17,6 @@ module Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
 
 import System.FFI
 
-import Compiler.NameMe.Util
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.ClientLibrary
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
 import Compiler.Xla.TensorFlow.StreamExecutor.Platform

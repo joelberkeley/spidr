@@ -15,8 +15,8 @@ limitations under the License.
 --}
 module Compiler.Xla.TensorFlow.Core.Platform.Status
 
-import Compiler.NameMe.Util
 import Compiler.Xla.Prim.TensorFlow.Core.Platform.Status
+import Compiler.Xla.Util
 
 public export
 data Status : Type where

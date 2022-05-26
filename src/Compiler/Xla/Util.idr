@@ -25,7 +25,7 @@ cIntToBool : Int -> Bool
 cIntToBool 0 = False
 cIntToBool 1 = True
 cIntToBool x =
-  let msg = "Internal error: expected 0 or 1 from Xla C API for boolean conversion, got " ++ show x
+  let msg = "Internal error: expected 0 or 1 from XLA C API for boolean conversion, got " ++ show x
   in (assert_total idris_crash) msg
 
 export

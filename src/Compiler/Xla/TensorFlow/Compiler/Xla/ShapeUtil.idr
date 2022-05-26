@@ -15,10 +15,10 @@ limitations under the License.
 --}
 module Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 
-import Compiler.NameMe.Util
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
+import Compiler.Xla.Util
 import Types
 
 export
