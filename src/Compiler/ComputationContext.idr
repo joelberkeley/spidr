@@ -21,11 +21,11 @@ import Data.SortedMap
 import Data.Hashable
 
 import Compiler.Graph
-import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
-import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
-import Compiler.TensorFlow.Compiler.XLA.Shape
-import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
-import Compiler.TensorFlow.Compiler.XLA.XlaData
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
+import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
+import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Types
 
 public export

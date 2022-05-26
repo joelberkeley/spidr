@@ -17,7 +17,7 @@ module Compiler.Graph
 
 import Data.Hashable
 
-import Compiler.TensorFlow.Compiler.XLA.XlaData
+import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Types
 import Util.Hashable
 

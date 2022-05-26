@@ -19,7 +19,7 @@ limitations under the License.
 ||| * `Literal` offers a convenient syntax for constructing `Literal`s with boolean and numeric
 |||   contents. For example, `True`, `1` and `[1, 2, 3]` are all valid `Literal`s. This makes it
 |||   useful for constructing `Tensor`s.
-||| * `Literal` is *not* accelerated by XLA, so operations on large `Literal`s, and large sequences
+||| * `Literal` is *not* accelerated by Xla, so operations on large `Literal`s, and large sequences
 |||   of operations on any `Literal`, can be expected to be slower than they would on an equivalent
 |||   `Tensor`.
 ||| * A `Literal` is implemented in pure Idris. As such, it can contain elements of any type, and

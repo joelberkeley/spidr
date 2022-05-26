@@ -24,7 +24,7 @@ module Primitive
 import Data.Hashable
 
 import Compiler.LiteralRW
-import public Compiler.TensorFlow.Compiler.XLA.XlaData
+import public Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import public Util.Hashable
 
 %hide Prelude.Num

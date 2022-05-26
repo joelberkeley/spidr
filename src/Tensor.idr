@@ -26,21 +26,21 @@ import System.FFI
 import Data.Hashable
 
 import Compiler.ComputationContext
-import Compiler.FFI
+import Compiler.NameMe.Util
 import Compiler.Graph
 import Compiler.LiteralRW
-import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Math
-import Compiler.TensorFlow.Compiler.XLA.Client.Lib.Matrix
-import Compiler.TensorFlow.Compiler.XLA.Client.ClientLibrary
-import Compiler.TensorFlow.Compiler.XLA.Client.LocalClient
-import Compiler.TensorFlow.Compiler.XLA.Client.XlaBuilder
-import Compiler.TensorFlow.Compiler.XLA.Client.XlaComputation
-import Compiler.TensorFlow.Compiler.XLA.Literal
-import Compiler.TensorFlow.Compiler.XLA.Service.PlatformUtil
-import Compiler.TensorFlow.Compiler.XLA.ShapeUtil
-import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.TensorFlow.Core.Platform.Status
-import Compiler.TensorFlow.StreamExecutor.Platform
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
+import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
+import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
+import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.Xla.TensorFlow.Core.Platform.Status
+import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 import Literal
 import public Primitive
 import public Types
@@ -100,7 +100,7 @@ toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)
 
-||| A string representation of an unevaluated `Tensor`, detailing all enqueued XLA operations.
+||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
 export
 Show (Tensor shape dtype) where
