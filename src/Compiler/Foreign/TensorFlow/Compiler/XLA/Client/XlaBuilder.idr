@@ -40,12 +40,6 @@ export
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : GCAnyPtr -> GCAnyPtr -> String
 
-{-
- -
- - XlaOp
- -
- -}
-
 namespace XlaOp
   export
   %foreign (libxla "XlaOp_delete")
