@@ -114,8 +114,12 @@ reshapeWithDefaultOrdering from to xs = reshape !xs (range $ length from) to
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
 ||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
 export
-reshape : Primitive dtype => {to : _} -> product from = product to
-          => Tensor from dtype -> Tensor to dtype
+reshape :
+  Primitive dtype =>
+  {to : _} ->
+  {auto 0 sizesEqual : product from = product to} ->
+  Tensor from dtype ->
+  Tensor to dtype
 reshape (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
    in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
@@ -125,8 +129,12 @@ reshape (MkTensor {shape=from} graph xs) =
 ||| `expand 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is
 ||| `fromLiteral [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
-expand : Primitive dtype => (axis : Nat) -> axis `LTE` length shape => Tensor shape dtype
-         -> Tensor (insertAt axis 1 shape) dtype
+expand :
+  Primitive dtype =>
+  (axis : Nat) ->
+  {auto 0 inBounds : axis `LTE` length shape} ->
+  Tensor shape dtype ->
+  Tensor (insertAt axis 1 shape) dtype
 expand axis (MkTensor {shape} graph xs) =
   let to = insertAt axis 1 shape
       graph = Reshape to graph
@@ -171,7 +179,12 @@ namespace Squeezable
 ||| y = fromLiteral [[[4, 5, 6]], [[7, 8, 9]]]
 ||| ```
 export
-squeeze : Primitive dtype => {to : _} -> Squeezable from to => Tensor from dtype -> Tensor to dtype
+squeeze :
+  Primitive dtype =>
+  {to : _} ->
+  {auto 0 shapesSqueezable : Squeezable from to} ->
+  Tensor from dtype ->
+  Tensor to dtype
 squeeze (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
    in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
@@ -213,9 +226,14 @@ squeeze (MkTensor {shape=from} graph xs) =
 ||| @from The inclusive lower bound of the slice along the specified `axis`.
 ||| @to The exclusive upper bound of the slice along the specified `axis`.
 export
-slice : (axis, from, to : Nat) -> from `LTE` to => InBounds axis shape
-        => (isWithinAxis : to `LTE` index axis shape) => Primitive dtype
-        => Tensor shape dtype -> Tensor (replaceAt axis (to `minus` from) shape) dtype
+slice :
+  (axis, from, to : Nat) ->
+  {auto 0 fromLTEto : from `LTE` to} ->
+  {auto 0 axisInBounds : InBounds axis shape} ->
+  {auto 0 isWithinAxis : to `LTE` index axis shape} ->
+  Primitive dtype =>
+  Tensor shape dtype ->
+  Tensor (replaceAt axis (to `minus` from) shape) dtype
 slice axis from to (MkTensor graph xs) =
   let graph = Slice axis from to graph
       rank = length shape
@@ -231,8 +249,13 @@ slice axis from to (MkTensor graph xs) =
 ||| @axis The axis to index.
 ||| @idx Where along the specified `axis` to fetch elements.
 export
-index : Primitive dtype => (axis, idx : Nat) -> InBounds axis shape => idx `LT` index axis shape
-        => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
+index :
+  Primitive dtype =>
+  (axis, idx : Nat) ->
+  {auto 0 axisInBounds : InBounds axis shape} ->
+  {auto 0 idxInBounds : idx `LT` index axis shape} ->
+  Tensor shape dtype ->
+  Tensor (deleteAt axis shape) dtype
 index axis idx xs with (xs)
   _ | (MkTensor {shape} _ _) =
     let MkTensor graph sliced =
@@ -251,12 +274,14 @@ index axis idx xs with (xs)
 ||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
 |||   index will appear in the right-hand `Tensor`.
 export
-split : forall shape . (axis, idx : Nat) -> InBounds axis shape
-        => idx + remaining = index axis shape => Primitive dtype => Tensor shape dtype
-        -> (
-            Tensor (replaceAt axis idx shape) dtype,
-            Tensor (replaceAt axis remaining shape) dtype
-          )
+split :
+  forall shape .
+  (axis, idx : Nat) ->
+  {auto 0 axisInBounds : InBounds axis shape} ->
+  {auto 0 idxInBounds : idx + remaining = index axis shape} ->
+  Primitive dtype =>
+  Tensor shape dtype ->
+  (Tensor (replaceAt axis idx shape) dtype, Tensor (replaceAt axis remaining shape) dtype)
 split @{_} @{sums} axis idx xs with (xs)
   _ | MkTensor {shape} _ _ =
     let %hint
@@ -275,9 +300,14 @@ split @{_} @{sums} axis idx xs with (xs)
 ||| `concat 1 (fromLiteral [[3], [6]]) fromLiteral ([[4, 5], [7, 8]])` are both
 ||| `fromLiteral [[1, 2], [3, 4], [5, 6]]`.
 export
-concat : Primitive dtype => (axis : Nat) -> Tensor s dtype -> Tensor s' dtype
-         -> (InBounds axis s, InBounds axis s') => deleteAt axis s = deleteAt axis s'
-         => Tensor (replaceAt axis (index axis s + index axis s') s) dtype
+concat :
+  Primitive dtype =>
+  (axis : Nat) ->
+  Tensor s dtype ->
+  Tensor s' dtype ->
+  {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
+  {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
+  Tensor (replaceAt axis (index axis s + index axis s') s) dtype
 concat axis (MkTensor graphL l) (MkTensor graphR r) =
   let graph = Concat axis graphL graphR
    in MkTensor graph $ cached graph $ do
@@ -386,10 +416,11 @@ namespace Broadcastable
     ||| [2, 3] to [2, 3]
     ||| [2, 1] to [2, 3]
     ||| [2, 1] to [2, 0]
-    Match : forall from, to . length from = length to
-            => {auto 0 _ : DimBroadcastable f t}
-            -> Broadcastable from to
-            -> Broadcastable (f :: from) (t :: to)
+    Match : forall from, to .
+            {auto 0 ranksEq : length from = length to} ->
+            {auto 0 dimBroadcastable : DimBroadcastable f t} ->
+            Broadcastable from to ->
+            Broadcastable (f :: from) (t :: to)
 
     ||| Proof that broadcasting can add outer dimensions i.e. nesting. For example:
     |||
@@ -411,8 +442,12 @@ namespace Broadcastable
 ||| x = fromLiteral [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
-broadcast : Primitive dtype => {to : _} -> {auto prf : Broadcastable from to}
-            -> Tensor from dtype -> Tensor to dtype
+broadcast :
+  Primitive dtype =>
+  {to : _} ->
+  {auto shapesOK : Broadcastable from to} ->
+  Tensor from dtype ->
+  Tensor to dtype
 broadcast xs with (xs)
   _ | (MkTensor {shape=from} graph _) =
     let graph = Broadcast to graph
@@ -425,8 +460,12 @@ broadcast xs with (xs)
 
     where
 
-    impl : {from, to : _} -> (toLeading, toTrailing : List Nat)
-      -> {auto prf : Broadcastable from toTrailing} -> Tensor from dtype -> Tensor to dtype
+    impl :
+      {from, to : _} ->
+      (toLeading, toTrailing : List Nat) ->
+      {auto prf : Broadcastable from toTrailing} ->
+      Tensor from dtype ->
+      Tensor to dtype
     impl toLeading _ {prf=Same} (MkTensor _ mkOp) =
       let graph = Broadcast to graph
        in MkTensor graph $ cached graph $
@@ -457,7 +496,7 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| ```
 export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
-fill = broadcast {prf=scalarToAnyOk shape} . fromLiteral . Scalar
+fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
@@ -490,8 +529,12 @@ map f (MkTensor graph xs) =
 ||| `map2 addRecip (fromLiteral [3.0, -3.0]) (fromLiteral [-2.0, 0.4])`, which is
 ||| `fromLiteral [2.5, -0.5]`.
 export
-map2 : (Primitive a, Primitive b, Primitive c) => (Tensor [] a -> Tensor [] b -> Tensor [] c)
-       -> Tensor shape a -> Tensor shape b -> Tensor shape c
+map2 :
+  (Primitive a, Primitive b, Primitive c) =>
+  (Tensor [] a -> Tensor [] b -> Tensor [] c) ->
+  Tensor shape a ->
+  Tensor shape b ->
+  Tensor shape c
 map2 f (MkTensor graphL l) (MkTensor graphR r) =
   let (graph0, p0) = parameter 0 [] "" {dtype=a}
       (graph1, p1) = parameter 1 [] "" {dtype=b}
@@ -509,8 +552,13 @@ map2 f (MkTensor graphL l) (MkTensor graphR r) =
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
 export
-reduce : (reducer : Monoid (Tensor [] dtype)) => Primitive dtype => (axis : Nat) ->
-  InBounds axis shape => Tensor shape dtype -> Tensor (deleteAt axis shape) dtype
+reduce :
+  (reducer : Monoid (Tensor [] dtype)) =>
+  Primitive dtype =>
+  (axis : Nat) ->
+  {auto 0 inBounds : InBounds axis shape} ->
+  Tensor shape dtype ->
+  Tensor (deleteAt axis shape) dtype
 reduce axis (MkTensor graph xs) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
@@ -636,8 +684,12 @@ not = unaryOp "not" not
 ||| @onTrue The elements to choose where the predicate elements are truthy.
 ||| @onFalse The elements to choose where the predicate elements are falsy.
 export
-select : Primitive dtype => Tensor shape PRED
-         -> (onTrue : Tensor shape dtype) -> (onFalse : Tensor shape dtype) -> Tensor shape dtype
+select :
+  Primitive dtype =>
+  Tensor shape PRED ->
+  (onTrue : Tensor shape dtype) ->
+  (onFalse : Tensor shape dtype) ->
+  Tensor shape dtype
 select (MkTensor gPred pred) (MkTensor gTrue true) (MkTensor gFalse false) =
   let graph = Select gPred gTrue gFalse
    in MkTensor graph $ cached graph $ do select !pred !true !false
@@ -663,10 +715,13 @@ select (MkTensor gPred pred) (MkTensor gTrue true) (MkTensor gFalse false) =
 ||| @onTrue The function to execute if the predicate is truthy.
 ||| @onFalse The function to execute if the predicate is falsy.
 export
-cond : (Primitive tt, Primitive ft, Primitive dtype) => {shape, ts, fs : _} -> Tensor [] PRED
-       -> (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt
-       -> (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft
-       -> Tensor shape dtype
+cond :
+  (Primitive tt, Primitive ft, Primitive dtype) =>
+  {shape, ts, fs : _} ->
+  Tensor [] PRED ->
+  (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt ->
+  (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft ->
+  Tensor shape dtype
 cond
   (MkTensor graphPred pred)
   onTrue (MkTensor graphTrue true)
@@ -720,9 +775,12 @@ namespace Matrix
   |||
   ||| **WARNING** Not well tested
   export
-  (@@) : Primitive dtype => Primitive.Num dtype
-         => Tensor [n, S m] dtype -> Tensor (S m :: tl) dtype
-         -> length tl `LTE` 1 => Tensor (n :: tl) dtype
+  (@@) :
+    (Primitive dtype, Primitive.Num dtype) =>
+    Tensor [n, S m] dtype ->
+    Tensor (S m :: tl) dtype ->
+    {auto 0 vectorTail : length tl `LTE` 1} ->
+    Tensor (n :: tl) dtype
   (MkTensor graphL l) @@ (MkTensor graphR r) =
     let graph = Dot graphL graphR
      in MkTensor graph $ cached graph $ do dot !l !r
@@ -740,7 +798,10 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Sum] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
+  [Sum] {shape : _} ->
+        Prelude.Num a =>
+        PrimitiveRW dtype a =>
+        Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
@@ -769,7 +830,7 @@ namespace Scalarwise
   export
   (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
   l * r with (r)
-    _ | (MkTensor {shape=(d :: ds)} _ _) = (broadcast {prf=scalarToAnyOk (d :: ds)} l) * r
+    _ | (MkTensor {shape=(d :: ds)} _ _) = (broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
 
 namespace Semigroup
   export
@@ -778,7 +839,11 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Prod] {shape : _} -> Prelude.Num a => PrimitiveRW dtype a => Primitive.Num dtype =>
+  [Prod]
+      {shape : _} ->
+      Prelude.Num a =>
+      PrimitiveRW dtype a =>
+      Primitive.Num dtype =>
     Monoid (Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
@@ -794,10 +859,13 @@ namespace Scalarwise
   |||
   ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
   export
-  (/) : Primitive.Fractional dtype
-        => Tensor (d :: ds) dtype -> Tensor [] dtype -> Tensor (d :: ds) dtype
+  (/) :
+    Primitive.Fractional dtype =>
+    Tensor (d :: ds) dtype ->
+    Tensor [] dtype ->
+    Tensor (d :: ds) dtype
   l / r with (l)
-    _ | (MkTensor {shape=(d :: ds)} _ _) = l / (broadcast {prf=scalarToAnyOk (d :: ds)} r)
+    _ | (MkTensor {shape=(d :: ds)} _ _) = l / (broadcast {shapesOK=scalarToAnyOk (d :: ds)} r)
 
 ||| The element-wise reciprocal. For example, `recip (fromLiteral [-2, 0, 0.2])`
 ||| is `fromLiteral [-0.5, nan, 5]`.
@@ -948,8 +1016,10 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Min] {shape : _} -> PrimitiveRW dtype Double =>
-        Primitive.Fractional dtype => Primitive.Ord dtype => 
+  [Min] {shape : _} ->
+        PrimitiveRW dtype Double =>
+        Primitive.Fractional dtype =>
+        Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Min where
       neutral = fill (1.0 / 0.0)
 
@@ -969,8 +1039,10 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Max] {shape : _} -> PrimitiveRW dtype Double =>
-        Primitive.Fractional dtype => Primitive.Ord dtype => 
+  [Max] {shape : _} ->
+        PrimitiveRW dtype Double =>
+        Primitive.Fractional dtype =>
+        Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
 
@@ -1045,7 +1117,10 @@ namespace Vector
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
 export
-trace : (Primitive.Num dtype, Prelude.Num a) => PrimitiveRW dtype a
-        => Tensor [S n, S n] dtype -> Tensor [] dtype
+trace :
+  (Primitive.Num dtype, Prelude.Num a) =>
+  PrimitiveRW dtype a =>
+  Tensor [S n, S n] dtype ->
+  Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))

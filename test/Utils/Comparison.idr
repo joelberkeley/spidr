@@ -38,8 +38,13 @@ sufficientlyEq x y =
 infix 1 ==~
 
 export covering
-(==~) : Monad m => {default floatingPointTolerance tol : Double} -> {shape : _} ->
-        Literal shape Double -> Literal shape Double -> TestT m ()
+(==~) :
+  Monad m =>
+  {default floatingPointTolerance tol : Double} ->
+  {shape : _} ->
+  Literal shape Double ->
+  Literal shape Double ->
+  TestT m ()
 (==~) x y = diff x sufficientlyEq' y
   where
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
