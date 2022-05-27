@@ -74,6 +74,13 @@ namespace List
     List.replaceAt 2 5 [6, 7, 8] === [6, 7, 5]
     List.replaceAt 0 5 [6] === [5]
 
+scanrIsScanlReversed : Property
+scanrIsScanlReversed = property $ do
+  q <- forAll ints
+  len <- forAll (nat $ linear (-20) 20)
+  xs <- forAll (vect len ints)
+  scanr (*) q xs === reverse (scanl (*) q (reverse xs))
+
 export
 group : Group
 group = MkGroup "Util" $ [
@@ -83,4 +90,5 @@ group = MkGroup "Util" $ [
     , ("List.enumerate", List.enumerate)
     , ("insertAt", insertAt)
     , ("deleteAt", deleteAt)
+    , ("scanr is scanl reversed", scanrIsScanlReversed)
   ]

@@ -45,7 +45,7 @@ cached graph xs = let graphHash = hash graph in do
     Nothing => do
       op <- xs
       builder <- get
-      put (cacheInsert builder graphHash op)
+      put (cacheInsert builder  graphHash op)
       pure op
 
   where
@@ -56,23 +56,23 @@ cached graph xs = let graphHash = hash graph in do
   cacheLookup : CachingBuilder -> Bits64 -> Maybe XlaOp
   cacheLookup (MkCachingBuilder _ cache) key = lookup key cache
 
-export
-build : HasIO io => String -> Computation XlaOp -> io XlaComputation
-build computationName x = do
-  builder <- mkXlaBuilder computationName
-  MkCachingBuilder builder _ <- liftIO $ execStateT (MkCachingBuilder builder empty) x
+buildImpl : HasIO io => XlaBuilder -> List (Computation XlaOp) -> Computation XlaOp -> io XlaComputation
+buildImpl builder args res = do
+  let cachingBuilder = MkCachingBuilder builder empty
+  MkCachingBuilder builder _ <- liftIO $ execStateT cachingBuilder (sequence (args ++ [res]))
   build builder
+
+export
+build : HasIO io => String -> List (Computation XlaOp) -> Computation XlaOp -> io XlaComputation
+build computationName args res = buildImpl !(mkXlaBuilder computationName) args res
 
 export
 buildWithSubBuilder :
   String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
-buildWithSubBuilder computationName computationArguments computationResult = do
+buildWithSubBuilder computationName args res = do
   MkCachingBuilder builder _ <- get
   subBuilder <- createSubBuilder builder computationName
-  let cachingSubBuilder = MkCachingBuilder subBuilder empty
-      allOps = sequence_ (computationArguments ++ [computationResult])
-  MkCachingBuilder subBuilder _ <- liftIO $ execStateT cachingSubBuilder allOps
-  build subBuilder
+  buildImpl subBuilder args res
 
 export
 opToString : Computation XlaOp -> String
@@ -80,6 +80,23 @@ opToString x = unsafePerformIO $ do
   builder <- mkXlaBuilder "toString"
   (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) x
   pure $ opToString builder xlaOp
+
+namespace Tuple
+  export
+  parameter : Nat -> List ShapeDtypePair -> String -> (Graph, Computation XlaOp)
+  parameter position shapesAndDtypes name =
+    let graph = TupleParameter shapesAndDtypes position
+
+        param : Computation XlaOp
+        param = do
+          MkCachingBuilder builder _ <- get
+          shapesAndDtypes <- traverse (
+              \(MkShapeDtypePair dtype shape) => mkShape {dtype} shape
+            ) shapesAndDtypes
+          tupleShape <- mkTupleShape shapesAndDtypes
+          cached graph $ parameter builder position tupleShape name
+
+      in (graph, param)
 
 export
 parameter : Primitive dtype => Nat -> Types.Shape -> String -> (Graph, Computation XlaOp)

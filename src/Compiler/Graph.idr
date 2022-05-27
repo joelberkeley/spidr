@@ -21,6 +21,14 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Types
 import Util.Hashable
 
+public export
+data ShapeDtypePair : Type where
+  MkShapeDtypePair : (0 dtype : Type) -> Primitive dtype => Types.Shape -> ShapeDtypePair
+
+export
+typeString : ShapeDtypePair -> (String, Types.Shape)
+typeString (MkShapeDtypePair dtype shape) = (typeString {dtype}, shape)
+
 ||| A `Graph` represents a computational graph used to compute a tensor value. It is defined by
 ||| the following proprty: For any two `Graph`s gx and gy that compute tensors x and y respectively,
 ||| if gx is identical to gy, then the values of x and y are equal.
@@ -30,8 +38,12 @@ public export
 data Graph : Type where
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
   Parameter : Primitive dtype => Shape -> Nat -> Graph
+  TupleParameter : List ShapeDtypePair -> Nat -> Graph
+  Tuple : List Graph -> Graph
+  GetTupleElement : Graph -> Nat -> Graph
   Reshape : Shape -> Graph -> Graph
   Slice : Nat -> Nat -> Nat -> Graph -> Graph
+  DynamicSlice : Graph -> List Graph -> List Nat -> Graph
   Concat : Nat -> Graph -> Graph -> Graph
   Diag : Graph -> Graph
   Triangle : (lower : Bool) -> Graph -> Graph
@@ -54,9 +66,20 @@ Hashable Graph where
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
   hashWithSalt salt (Parameter {dtype} shape position) =
     salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position)
+  hashWithSalt salt (TupleParameter metadata position) =
+    hashWithSalt salt ("TupleParameter", map typeString metadata, position)
+  hashWithSalt salt (Tuple operands) =
+    let salt' = salt `hashWithSalt` "Tuple"
+     in assert_total $ salt' `hashWithSalt` operands
+  hashWithSalt salt (GetTupleElement tuple index) =
+    hashWithSalt salt ("GetTupleElement", index) `hashWithSalt` tuple
   hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to) `hashWithSalt` x
   hashWithSalt salt (Slice axis from to x) =
     salt `hashWithSalt` ("Slice", axis, from, to) `hashWithSalt` x
+  hashWithSalt salt (DynamicSlice x startIndices sizeIndices) =
+    let salt' = salt `hashWithSalt` ("DynamicSlice", sizeIndices)
+        salt'' = assert_total $ salt' `hashWithSalt` startIndices
+     in salt'' `hashWithSalt` x
   hashWithSalt salt (Concat axis x y) =
     salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x

@@ -72,7 +72,7 @@ extern "C" {
     void Literal_Set_int(Literal& lit, int* indices, int value) {
         Literal_Set<int>(lit, indices, value);
     }
-
+ 
     void Literal_Set_unsigned_int(Literal& lit, int* indices, int value) {
         Literal_Set<unsigned int>(lit, indices, (unsigned int) value);
     }

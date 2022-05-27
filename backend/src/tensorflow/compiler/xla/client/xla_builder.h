@@ -80,8 +80,22 @@ extern "C" {
         int strides_len
     );
 
+    XlaOp* DynamicSlice(
+        XlaOp& operand,
+        XlaOp* start_indices,
+        int start_indices_len,
+        int* slice_sizes,
+        int slice_sizes_len
+    );
+
+    XlaOp* DynamicUpdateSlice(
+        XlaOp& operand, XlaOp& update, XlaOp* start_indices, int start_indices_len
+    );
+
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
     XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len);
+    XlaOp* GetTupleElement(XlaOp& tuple_data, int index);
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand);
@@ -154,4 +168,6 @@ extern "C" {
         XlaOp& false_operand,
         const XlaComputation& false_computation
     );
+
+    XlaOp* While(const XlaComputation& condition, const XlaComputation& body, XlaOp& init);
 }

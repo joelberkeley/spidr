@@ -78,12 +78,28 @@ export
 prim__slice : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
+%foreign (libxla "DynamicSlice")
+prim__dynamicSlice : GCAnyPtr -> GCAnyPtr -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "DynamicUpdateSlice")
+prim__dynamicUpdateSlice : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "ConcatInDim")
 prim__concatInDim : GCAnyPtr -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Select")
 prim__select : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Tuple")
+prim__tuple : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "GetTupleElement")
+prim__getTupleElement : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Eq")
@@ -136,6 +152,10 @@ prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 export
 %foreign (libxla "Div")
 prim__div : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "Rem")
+prim__rem : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Max")
@@ -221,3 +241,7 @@ prim__map :
 export
 %foreign (libxla "Conditional")
 prim__conditional : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "While")
+prim__while : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr

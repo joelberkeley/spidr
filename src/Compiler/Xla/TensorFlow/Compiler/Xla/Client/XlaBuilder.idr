@@ -142,6 +142,27 @@ slice (MkXlaOp opPtr) startIndices limitIndices strides = do
   pure (MkXlaOp opPtr)
 
 export
+dynamicSlice : HasIO io => XlaOp -> List XlaOp -> List Nat -> io XlaOp
+dynamicSlice (MkXlaOp operand) startIndices sizeIndices = do
+  MkXlaOpArray startIndicesArrayPtr <- mkXlaOpArray startIndices
+  MkIntArray sizeIndicesArrayPtr <- mkIntArray sizeIndices
+  opPtr <- primIO $ prim__dynamicSlice
+    operand
+    startIndicesArrayPtr (cast $ length startIndices)
+    sizeIndicesArrayPtr (cast $ length sizeIndices)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
+dynamicUpdateSlice : HasIO io => XlaOp -> XlaOp -> List XlaOp -> io XlaOp
+dynamicUpdateSlice (MkXlaOp operand) (MkXlaOp update) startIndices = do
+  MkXlaOpArray startIndicesArrayPtr <- mkXlaOpArray startIndices
+  opPtr <- primIO $ prim__dynamicUpdateSlice
+    operand update startIndicesArrayPtr (cast $ length startIndices)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 concatInDim :
   HasIO io =>
   XlaBuilder ->
@@ -160,6 +181,21 @@ export
 select : HasIO io => XlaOp -> XlaOp -> XlaOp -> io XlaOp
 select (MkXlaOp pred) (MkXlaOp onTrue) (MkXlaOp onFalse) = do
   opPtr <- primIO $ prim__select pred onTrue onFalse
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
+tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
+tuple (MkXlaBuilder builder) ops = do
+  MkXlaOpArray opsArray <- mkXlaOpArray ops
+  opPtr <- primIO $ prim__tuple builder opsArray (cast $ length ops)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
+getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
+getTupleElement (MkXlaOp tuple_) index = do
+  opPtr <- primIO $ prim__getTupleElement tuple_ (cast index)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
@@ -234,6 +270,10 @@ mul = binaryOp prim__mul
 export
 div : HasIO io => XlaOp -> XlaOp -> io XlaOp
 div = binaryOp prim__div
+
+export
+rem : HasIO io => XlaOp -> XlaOp -> io XlaOp
+rem = binaryOp prim__rem
 
 export
 max : HasIO io => XlaOp -> XlaOp -> io XlaOp
@@ -357,3 +397,10 @@ conditional
       falseComputation
     opPtr <- onCollectAny opPtr XlaOp.delete
     pure (MkXlaOp opPtr)
+
+export
+while : HasIO io => XlaComputation -> XlaComputation -> XlaOp -> io XlaOp
+while (MkXlaComputation condition) (MkXlaComputation body) (MkXlaOp init) = do
+  opPtr <- primIO $ prim__while condition body init
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)

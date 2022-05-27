@@ -14,10 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "tensorflow/compiler/xla/shape.h"
+#include "tensorflow/compiler/xla/shape_util.h"
 
 #include "shape.h"
 
 extern "C" {
+    int sizeof_Shape() {
+        return sizeof(xla::Shape);
+    }
+
+    void set_array_Shape(Shape* arr, int idx, Shape* shape) {
+        auto arr_ = reinterpret_cast<xla::Shape*>(arr);
+        auto shape_ = reinterpret_cast<xla::Shape*>(shape);
+        new(arr_ + idx) xla::Shape(*shape_);
+    }
+
     void Shape_delete(Shape* s) {
         delete reinterpret_cast<xla::Shape*>(s);
     }

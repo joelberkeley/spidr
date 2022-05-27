@@ -17,6 +17,7 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
+import Data.SortedMap
 import Control.Monad.State
 import public Data.List
 import public Data.List.Elem
@@ -94,7 +95,7 @@ toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
 toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" xs
+  computation <- build "root" [] xs
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)
@@ -500,17 +501,12 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
-||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
-||| For example,
-||| ```idris
-||| recip : Tensor [] F64 -> Tensor [] F64
-||| recip = (1.0 /)
-||| ```
-||| can be lifted to an element-wise reciprocal function as `map recip (fromLiteral [-2, 0.4])`,
-||| which is `fromLiteral [-0.5, 2.5]`.
-export
-map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
-map f (MkTensor graph xs) =
+mapScalar :
+  (Primitive a, Primitive b) =>
+  (Tensor [] a -> Tensor [] b) ->
+  Tensor shape a ->
+  Tensor shape b
+mapScalar f (MkTensor graph xs) =
   let (graph0, p0) = parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f (MkTensor graph0 p0)
       graph = Map graphf [graph]
@@ -518,6 +514,107 @@ map f (MkTensor graph xs) =
         computation <- buildWithSubBuilder "computation" [p0] res
         MkCachingBuilder builder _ <- get
         map builder [!xs] computation (range $ length shape)
+
+mapGeneral :
+  Primitive dtype =>
+  {fs, ts, leading : _} ->
+  (Tensor fs dtype -> Tensor ts dtype) ->
+  Tensor (leading ++ fs) dtype ->
+  Tensor (leading ++ ts) dtype
+mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
+    let leadingLen = length leading
+        fsLen = length fs
+        tsLen = length ts
+        fRank = leadingLen + fsLen
+        tRank = leadingLen + tsLen
+        (graph0, p0) = parameter 0 fs "" {dtype}
+        MkTensor graphf _ = f (MkTensor graph0 p0)
+        mapGraph = Map graphf [graph]
+
+        (cag, counterAccTuple) =
+          parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (leading ++ ts)] ""
+
+        condition : Computation XlaOp = do
+          lt !(getTupleElement !counterAccTuple 0) !(scalarU32 (product leading))
+
+        body : Computation XlaOp = do
+          counter <- getTupleElement !counterAccTuple 0
+          multiIndex <- sequence $
+            zipWith (\dim, prod =>
+                -- does div work on U32 as intended?
+                rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
+              )
+            leading (toList $ tail $ scanr (*) 1 (fromList leading))
+          zeroesLikefs <- traverse scalarU32 (List.replicate fsLen Z)
+          sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate 1 leadingLen ++ fs)
+          sliced <- reshape sliced (range fRank) fs
+
+          let counterGraph = GetTupleElement cag 0
+              multiIndexGraphs = zipWith (\dim, prod =>
+                  let dimGraph = FromLiteral {dtype=U32} [] (hash dim)
+                      prodGraph = FromLiteral {dtype=U32} [] (hash prod)
+                      divGraph = ElementwiseBinary "div" counterGraph prodGraph
+                  in ElementwiseBinary "rem" divGraph dimGraph
+                ) leading (toList $ tail $ scanr (*) 1 (fromList leading))
+
+              zeroesLikefsGraphs = List.replicate fsLen $ (FromLiteral {dtype=U32} [] (hash Z))
+              dynamicSlicedGraph = DynamicSlice
+                graph (multiIndexGraphs ++ zeroesLikefsGraphs) (replicate 1 leadingLen ++ fs)
+              slicedGraph = Reshape fs dynamicSlicedGraph
+
+              MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
+
+          zeroesLikets <- traverse scalarU32 (replicate tsLen 0)
+          fSliced <- reshape !fSliced (range tsLen) (replicate leadingLen 1 ++ ts)
+          acc <- getTupleElement !counterAccTuple 1
+          acc <- dynamicUpdateSlice acc fSliced (toList $ multiIndex ++ zeroesLikets)
+          counter' <- add counter !(scalarU32 1)
+          MkCachingBuilder builder _ <- get
+          tuple builder [counter', acc]
+
+        init : Computation XlaOp = do
+          startingCounter <- scalarU32 0
+          acc <- slice !xs (replicate fRank 0) (leading ++ replicate fsLen 1) (replicate fRank 1)
+          acc <- reshape acc (range fRank) leading
+          acc <- broadcastInDim acc (leading ++ ts) (range tRank)
+          (MkCachingBuilder builder _) <- the (Computation _) get
+          tuple builder [startingCounter, acc]
+
+     in MkTensor mapGraph $ cached mapGraph $ do
+          condition <- buildWithSubBuilder "condition" [] condition
+          body <- buildWithSubBuilder "body" [] body
+          getTupleElement !(while condition body !init) 1
+
+        where
+        scalarU32 : Nat -> Computation XlaOp
+        scalarU32 x = do
+          (MkCachingBuilder builder _) <- get
+          literal <- write {dtype=U32} (Scalar x)
+          constantLiteral builder literal
+
+||| Apply a function between `Tensor`s to the trailing dimensions of a `Tensor`. For example, for
+||| ```
+||| x : Tensor [2, 3, 3] S32
+||| x = const [[[ 0,  1,  2],
+|||             [ 3,  4,  5],
+|||             [ 6,  7,  8]],
+|||            [[ 9, 10, 11],
+|||             [12, 13, 14],
+|||             [15, 16, 17]]]
+||| ```
+||| `map diag x` is equivalent to `const [[0, 4, 8], [9, 13, 17]]`.
+|||
+||| **Note:** This function is efficiently optimized for scalar-wise operations where `from` and
+||| `to` are `[]`. We do not guarantee performance for other shapes.
+export
+map :
+  Primitive dtype =>
+  {from, to, leading : _} ->
+  (Tensor from dtype -> Tensor to dtype) ->
+  Tensor (leading ++ from) dtype ->
+  Tensor (leading ++ to) dtype
+map {from=[]} {to=[]} f x = mapScalar f x
+map f x = mapGeneral f x
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,

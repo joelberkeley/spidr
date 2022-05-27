@@ -16,5 +16,6 @@ limitations under the License.
 #include "shape.h"
 
 extern "C" {
+    Shape* MakeTupleShape(Shape* shapes, int shapes_len);
     Shape* MakeShape(int primitive_type, int* shape, int rank);
 }

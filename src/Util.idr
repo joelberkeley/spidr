@@ -80,3 +80,10 @@ namespace List
   replaceAt : (idx : Nat) -> a -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
   replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
+
+  ||| Like `foldr`, but returns a vector of all intermediate accumulated states. The first
+  ||| state appears last in the result, and the last state appears first.
+  public export
+  scanr : (elem -> res -> res) -> res -> Vect len elem -> Vect (S len) res
+  scanr _ q [] = [q]
+  scanr f q (x :: xs) = let qs'@(q' :: _) = scanr f q xs in f x q' :: qs'

@@ -371,23 +371,40 @@ squeezableCannotRemoveNonOnes (Nest _) impossible
   x.T ===# expected
 
 covering
-mapResult : Property
-mapResult = property $ do
+map : Property
+map = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  let x' = fromLiteral x
-  map (1.0 /) x ==~ toLiteral (map (1.0 /) x')
+  let x' = rewrite emptyAppendNeutral shape in fromLiteral x
+      x = rewrite emptyAppendNeutral shape in x
+  map (1.0 /) x ==~ toLiteral (map {leading=shape} (1.0 /) x')
 
   x <- forAll (literal shape ints)
-  let x' = fromLiteral {dtype=S32} x
-  map (+ 1) x === toLiteral (map (+ 1) x')
+  let x' = rewrite emptyAppendNeutral shape in fromLiteral {dtype=S32} x
+      x = rewrite emptyAppendNeutral shape in x
+  map (+ 1) x === toLiteral (map {leading=shape} (+ 1) x')
+
+  where
+
+  %hint
+  emptyAppendNeutral : (xs : List Nat) -> xs ++ [] = xs
 
 mapNonTrivial : Property
 mapNonTrivial = fixedProperty $ do
-  map {a=S32} (\x => x + x) 1 ===# 2
-  map {a=S32} (\_ => 2) 1 ===# 2
-  map {a=S32} (map (+ 1)) 1 ===# 2
+  -- test is failing only for leading=[0]
+  let x = fromLiteral {shape=[0, 2, 2]} {dtype=F64} []
+  map {leading=[0]} trace x ===# fromLiteral []
+
+  let x = fromLiteral {dtype=F64} [[[1, 2], [3, 4]]]
+  map {leading=[1]} trace x ===# fromLiteral [5]
+
+  let x = fromLiteral {dtype=F64} [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]]
+  map {leading=[3]} trace x ===# fromLiteral [5, 13, 21]
+
+  map {leading=[]} {dtype=S32} (\x => x + x) 1 ===# 2
+  map {leading=[]} {dtype=S32} (\_ => 2) 1 ===# 2
+  map {leading=[]} {dtype=S32} (Tensor.map {leading=[]} (+ 1)) 1 ===# 2
 
 covering
 map2Result : Property
@@ -896,7 +913,7 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
-    , ("map", mapResult)
+    , ("map", map)
     , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
