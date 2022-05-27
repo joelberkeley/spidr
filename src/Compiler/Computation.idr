@@ -38,7 +38,7 @@ Computation = StateT CachingBuilder IO
 
 export
 cached : Graph -> Computation XlaOp -> Computation XlaOp
-cached graph xs = assert_total $ let graphHash = hash graph in do
+cached graph xs = let graphHash = hash graph in do
   builder <- get
   case cacheLookup builder graphHash of
     Just op => pure op

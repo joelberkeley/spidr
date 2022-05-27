@@ -38,7 +38,8 @@ data Graph : Type where
   Transpose : Graph -> Graph
   Identity : Primitive dtype => Nat -> Graph
   Broadcast : Shape -> Graph -> Graph
-  Map : Graph -> List Graph -> Graph
+  Map : Graph -> Graph -> Graph
+  Map2 : Graph -> Graph -> Graph -> Graph
   Reduce : Graph -> Nat -> Graph -> Graph
   ElementwiseBinary : (name : String) -> Graph -> Graph -> Graph
   ElementwiseUnary : (name : String) -> Graph -> Graph
@@ -48,28 +49,40 @@ data Graph : Type where
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
 
-export covering
+export
 Hashable Graph where
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
   hashWithSalt salt (Parameter {dtype} shape position) =
     salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position)
-  hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to, x)
-  hashWithSalt salt (Slice axis from to x) = salt `hashWithSalt` ("Slice", axis, from, to)
-  hashWithSalt salt (Concat axis x y) = salt `hashWithSalt` ("Concat", axis, x, y)
-  hashWithSalt salt (Diag x) = salt `hashWithSalt` ("Diag", x)
-  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` ("Triangle", lower, x)
-  hashWithSalt salt (Transpose x) = salt `hashWithSalt` ("Transpose", x)
+  hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to) `hashWithSalt` x
+  hashWithSalt salt (Slice axis from to x) =
+    salt `hashWithSalt` ("Slice", axis, from, to) `hashWithSalt` x
+  hashWithSalt salt (Concat axis x y) =
+    salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
+  hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
+  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` ("Triangle", lower) `hashWithSalt` x
+  hashWithSalt salt (Transpose x) = salt `hashWithSalt` "Transpose" `hashWithSalt` x
   hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
-  hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` ("Broadcast", to, x)
-  hashWithSalt salt (Map f xs) = salt `hashWithSalt` ("Map", f, xs)
-  hashWithSalt salt (Reduce monoid axis x) = salt `hashWithSalt` ("Reduce", monoid, axis, x)
-  hashWithSalt salt (ElementwiseBinary name x y) = hashWithSalt salt (name, x, y)
-  hashWithSalt salt (ElementwiseUnary name x) = hashWithSalt salt (name, x)
-  hashWithSalt salt (Select pred f t) = salt `hashWithSalt` ("Select", pred, f, t)
-  hashWithSalt salt (Cond pred fTrue true fFalse false) =
-    salt `hashWithSalt` "Cond" `hashWithSalt` (pred, fTrue, true, fFalse, false)
-  hashWithSalt salt (Dot x y) = salt `hashWithSalt` ("Dot", x, y)
-  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` ("Cholesky", x)
+  hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` ("Broadcast", to) `hashWithSalt` x
+  hashWithSalt salt (Map f x) = salt `hashWithSalt` "Map" `hashWithSalt` f `hashWithSalt` x
+  hashWithSalt salt (Map2 f x y) =
+    salt `hashWithSalt` "Map" `hashWithSalt` f `hashWithSalt` x `hashWithSalt` y
+  hashWithSalt salt (Reduce monoid axis x) =
+    salt `hashWithSalt` "Reduce" `hashWithSalt` monoid `hashWithSalt` axis `hashWithSalt` x
+  hashWithSalt salt (ElementwiseBinary name x y) =
+    salt `hashWithSalt` name `hashWithSalt` x `hashWithSalt` y
+  hashWithSalt salt (ElementwiseUnary name x) = salt `hashWithSalt` name `hashWithSalt` x
+  hashWithSalt salt (Select pred f t) =
+    salt `hashWithSalt` "Select" `hashWithSalt` pred `hashWithSalt` f `hashWithSalt` t
+  hashWithSalt salt (Cond pred fTrue true fFalse false) = salt
+    `hashWithSalt` "Cond"
+    `hashWithSalt` pred
+    `hashWithSalt` fTrue
+    `hashWithSalt` true
+    `hashWithSalt` fFalse
+    `hashWithSalt` false
+  hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` x `hashWithSalt` y
+  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve lower x y) =
-    salt `hashWithSalt` ("TriangularSolve", lower, x, y)
+    salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y

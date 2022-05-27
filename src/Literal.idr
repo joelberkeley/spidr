@@ -68,7 +68,7 @@ export
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
-    (S _ :: _) => assert_total $ pure x :: pure x
+    (S d :: ds) => pure x :: (the (Literal (d :: ds) _) $ pure x)
 
   (<*>) = apply
 
@@ -132,7 +132,7 @@ export
 Hashable a => Hashable (Literal shape a) where
   hashWithSalt salt (Scalar x) = hashWithSalt salt x
   hashWithSalt salt [] = hashWithSalt salt (the Bits64 0)
-  hashWithSalt salt (x :: xs) = assert_total $ salt
+  hashWithSalt salt (x :: xs) = salt
     `hashWithSalt` 1
     `hashWithSalt` x
     `hashWithSalt` xs
