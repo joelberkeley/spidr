@@ -57,6 +57,10 @@ extern "C" {
         return Literal_Get<int>(lit, indices);
     }
 
+    int Literal_Get_unsigned_int(Literal& lit, int* indices) {
+        return (int) Literal_Get<unsigned int>(lit, indices);
+    }
+
     double Literal_Get_double(Literal& lit, int* indices) {
         return Literal_Get<double>(lit, indices);
     }
@@ -67,6 +71,10 @@ extern "C" {
 
     void Literal_Set_int(Literal& lit, int* indices, int value) {
         Literal_Set<int>(lit, indices, value);
+    }
+
+    void Literal_Set_unsigned_int(Literal& lit, int* indices, int value) {
+        Literal_Set<unsigned int>(lit, indices, (unsigned int) value);
     }
 
     void Literal_Set_double(Literal& lit, int* indices, double value) {

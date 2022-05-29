@@ -77,3 +77,16 @@ namespace Int
   get (MkLiteral lit) idxs = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
     pure $ literalGetInt lit idxsArrayPtr
+
+namespace Nat
+  export
+  set : Literal -> List Nat -> Nat -> IO ()
+  set (MkLiteral lit) idxs value = do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    primIO $ prim__literalSetUInt lit idxsArrayPtr (cast value)
+
+  export
+  get : Literal -> List Nat -> Nat
+  get (MkLiteral lit) idxs = unsafePerformIO $ do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    pure $ cast $ literalGetUInt lit idxsArrayPtr

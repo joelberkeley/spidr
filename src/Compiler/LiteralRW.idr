@@ -72,5 +72,5 @@ LiteralRW S32 Int where
 
 export
 LiteralRW U32 Nat where
-  set lit idx x = Int.set lit idx (cast x)
-  get = cast .: Int.get
+  set = set
+  get = get
