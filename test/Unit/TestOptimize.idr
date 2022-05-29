@@ -13,30 +13,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Main
+module Unit.TestOptimize
 
-import Data.SOP
-import Hedgehog
+import Literal
+import Optimize
+import Tensor
 
-import TestUtils
-import Utils.TestComparison
+import Utils.Cases
+import Utils.Comparison
 
-import Unit.Model.TestKernel
-import Unit.TestDistribution
-import Unit.TestOptimize
-import Unit.TestTensor
-import Unit.TestLiteral
-import Unit.TestUtil
+gridSearch : Property
+gridSearch = fixedProperty $ do
+  let lower = fromLiteral [-1.0, -1.0]
+      upper = fromLiteral [1.0, 1.0]
+      offset = fromLiteral [0.2, -0.1]
 
-partial
-main : IO ()
-main = test [
-      Utils.TestComparison.group
-    -- , TestUtils.group
-    -- , Unit.TestUtil.group
-    -- , Unit.TestLiteral.group
-    -- , Unit.TestTensor.group
-    , Unit.TestOptimize.group
-    , Unit.TestDistribution.group
-    , Unit.Model.TestKernel.group
+      f : Tensor [2] F64 -> Tensor [] F64
+      f x = reduce @{Sum} [0] $ (x - offset) ^ fill 2.0
+
+  gridSearch [100, 100] lower upper f ===# offset
+
+export covering
+group : Group
+group = MkGroup "Optimize" $ [
+    ("grid search", gridSearch)
   ]

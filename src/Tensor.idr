@@ -629,6 +629,9 @@ arg = do
   i <- new
   pure (MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
 
+export
+vmap : (Tensor s d -> Ref $ Tensor s' d') -> Tensor (n :: s) d -> Ref $ Tensor (n :: s') d'
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
@@ -1305,6 +1308,15 @@ argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Ref $ Tensor [] U64
 argmax x = do
   MkTensor i env <- highlightNan False x
   env `end` Argmax {out=U64} 0 i
+
+export
+div : Primitive.Integral dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+div (MkTensor exprl) (MkTensor exprr) = MkTensor $ Div exprl exprr
+
+-- be sure to test negative S32 values
+export
+rem : Primitive.Integral dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+rem (MkTensor exprl) (MkTensor exprr) = MkTensor $ Rem exprl exprr
 
 ---------------------------- other ----------------------------------
 
