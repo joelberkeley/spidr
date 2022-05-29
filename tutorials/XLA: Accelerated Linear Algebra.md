@@ -44,18 +44,18 @@ Let's take a look at these, starting from C++ and going left along the diagram t
 
 ### C++ overloading and extern
 
-C++ supports overloading, so functions names are always not enough to determine which function is being referred to. As such, names are mangled in such as way as to differentiate overload variants. C doesn't do this, and so it doesn't know how to use the mangled names. The solution is to wrap all C++ code in `extern "C" { <C++ code goes here> }`. This tells the compiler not to mangle names, which makes the API compatible with C.
+C++ supports overloading, so functions names are always not enough to determine which function is being referred to. As such, names are mangled in such as way as to differentiate overload variants. C doesn't do this, and so it doesn't know how to use the mangled names. The solution is to give each overload a unique name and wrap all C++ code in `extern "C" { <C++ code goes here> }`. This tells the compiler not to mangle names.
 
 ### C++ classes
 
-C++ is object-oriented. It has objects and classes. C does not. Let's look at how we can make a method compatible with C. Suppose we have the following simple C++ class
+C++ is object-oriented. It has objects and classes. C does not. Let's look at how we can make a method on a C++ class compatible with C. Suppose we have the following simple C++ class
 ```cpp
 class Foo {
   public:
     double Bar(int x);
 }
 ```
-we can start by making the presence of the class explicit
+we can start by making the class explicit in the function signature
 ```cpp
 extern "C" {
   double Bar(Foo* foo, int x) {
@@ -63,14 +63,14 @@ extern "C" {
   }
 }
 ```
-This is good, as we've hidden the method resolution machinery, but we still have a reference to the class `Foo`, and C doesn't use classes. We could resolve this by simply typing `foo` as a `void*`, but we can be clearer and marginally safer by creating an _opaque pointer_ `c__Foo`, and casting to and from that, as
+This is good, as we've hidden the method resolution machinery, but we still have a reference to the class `Foo`, and C doesn't use classes. We could resolve this by simply typing `foo` as a `void*`, but we can be clearer and safer by creating an _opaque pointer_ `c__Foo`, and casting to and from that, as
 ```cpp
 extern "C" {
   struct c__Foo;
 
   double Bar(c__Foo* foo, int x) {
     Foo* foo_ = reinterpret_cast<Foo*>(foo);
-    return foo_->Bar(x):
+    return foo_->Bar(x);
   }
 }
 ```
@@ -88,3 +88,7 @@ Calling into C is, on the whole, relatively simple in Idris. [The docs](https://
   }
   ```
   where here we're setting values in a list of `double`s. Similar functions can be used to get values from, and free arrays.
+
+## A total API to foreign functions
+
+The subset of Idris types allowed in foreign functions provide very little type and memory safety. spidr's approach to this is to wrap foreign functions with a well-typed interface, which captures all the requirements for the XLA API. Such a well-typed wrapper gives us confidence that our Idris interface to XLA is total. In spidr, we choose to write these functions to align closely with the C++ API, so that it's clear where we have re-interpreted the API to be more idiomatic or convenient.
