@@ -65,6 +65,10 @@ export
 ints : Gen Int
 ints = int $ linear (-intBound) intBound
 
+export
+nats : Gen Nat
+nats = nat $ linear 0 (pow 2 10)
+
 doubleBound : Double
 doubleBound = 9999
 

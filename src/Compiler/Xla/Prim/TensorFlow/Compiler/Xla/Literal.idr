@@ -50,3 +50,11 @@ prim__literalSetInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 export
 %foreign (libxla "Literal_Get_int")
 literalGetInt : GCAnyPtr -> GCPtr Int -> Int
+
+export
+%foreign (libxla "Literal_Set_unsigned_int")
+prim__literalSetUnsignedInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+
+export
+%foreign (libxla "Literal_Get_unsigned_int")
+literalGetUnsignedInt : GCAnyPtr -> GCPtr Int -> Int

@@ -38,6 +38,9 @@ fromLiteralThentoLiteral = property $ do
   x <- forAll (literal shape ints)
   x === toLiteral (fromLiteral {dtype=S32} x)
 
+  x <- forAll (literal shape nats)
+  x === toLiteral (fromLiteral {dtype=U32} x)
+
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
