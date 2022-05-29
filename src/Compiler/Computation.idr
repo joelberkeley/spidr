@@ -45,7 +45,7 @@ cached graph xs = let graphHash = hash graph in do
     Nothing => do
       op <- xs
       builder <- get
-      put (cacheInsert builder  graphHash op)
+      put (cacheInsert builder graphHash op)
       pure op
 
   where
