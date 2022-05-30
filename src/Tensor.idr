@@ -513,7 +513,7 @@ map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape
 map f (MkTensor graph xs) =
   let (graph0, p0) = parameter 0 [] "" {dtype=a}
       MkTensor graphf res = f (MkTensor graph0 p0)
-      graph = Map graphf graph
+      graph = Map graphf [graph]
    in MkTensor graph $ cached graph $ do
         computation <- buildWithSubBuilder "computation" [p0] res
         MkCachingBuilder builder _ <- get
@@ -539,7 +539,7 @@ map2 f (MkTensor graphL l) (MkTensor graphR r) =
   let (graph0, p0) = parameter 0 [] "" {dtype=a}
       (graph1, p1) = parameter 1 [] "" {dtype=b}
       MkTensor graphf res = f (MkTensor graph0 p0) (MkTensor graph1 p1)
-      graph = Map2 graphf graphL graphR
+      graph = Map graphf [graphL, graphR]
    in MkTensor graph $ cached graph $ do
         computation <- buildWithSubBuilder "computation" [p0, p1] res
         MkCachingBuilder builder _ <- get

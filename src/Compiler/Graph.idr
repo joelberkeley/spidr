@@ -38,8 +38,7 @@ data Graph : Type where
   Transpose : Graph -> Graph
   Identity : Primitive dtype => Nat -> Graph
   Broadcast : Shape -> Graph -> Graph
-  Map : Graph -> Graph -> Graph
-  Map2 : Graph -> Graph -> Graph -> Graph
+  Map : Graph -> List Graph -> Graph
   Reduce : Graph -> Nat -> Graph -> Graph
   ElementwiseBinary : (name : String) -> Graph -> Graph -> Graph
   ElementwiseUnary : (name : String) -> Graph -> Graph
@@ -65,9 +64,8 @@ Hashable Graph where
   hashWithSalt salt (Transpose x) = salt `hashWithSalt` "Transpose" `hashWithSalt` x
   hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
   hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` ("Broadcast", to) `hashWithSalt` x
-  hashWithSalt salt (Map f x) = salt `hashWithSalt` "Map" `hashWithSalt` f `hashWithSalt` x
-  hashWithSalt salt (Map2 f x y) =
-    salt `hashWithSalt` "Map" `hashWithSalt` f `hashWithSalt` x `hashWithSalt` y
+  hashWithSalt salt (Map f x) = assert_total $
+    salt `hashWithSalt` "Map" `hashWithSalt` f `hashWithSalt` x
   hashWithSalt salt (Reduce monoid axis x) =
     salt `hashWithSalt` "Reduce" `hashWithSalt` monoid `hashWithSalt` axis `hashWithSalt` x
   hashWithSalt salt (ElementwiseBinary name x y) =
