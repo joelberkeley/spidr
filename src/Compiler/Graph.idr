@@ -64,9 +64,9 @@ Hashable Graph where
   hashWithSalt salt (Transpose x) = salt `hashWithSalt` "Transpose" `hashWithSalt` x
   hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
   hashWithSalt salt (Broadcast to x) = salt `hashWithSalt` ("Broadcast", to) `hashWithSalt` x
-  hashWithSalt salt (Map f x) =
+  hashWithSalt salt (Map f xs) =
     let salt' = salt `hashWithSalt` "Map" `hashWithSalt` f
-     in assert_total $ salt' `hashWithSalt` x
+     in assert_total $ salt' `hashWithSalt` xs
   hashWithSalt salt (Reduce monoid axis x) =
     salt `hashWithSalt` "Reduce" `hashWithSalt` monoid `hashWithSalt` axis `hashWithSalt` x
   hashWithSalt salt (ElementwiseBinary name x y) =
