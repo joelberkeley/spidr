@@ -522,75 +522,79 @@ mapGeneral :
   Tensor (leading ++ fs) dtype ->
   Tensor (leading ++ ts) dtype
 mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
-    let leadingLen = length leading
-        fsLen = length fs
-        tsLen = length ts
-        fRank = leadingLen + fsLen
-        tRank = leadingLen + tsLen
-        (graph0, p0) = parameter 0 fs "" {dtype}
-        MkTensor graphf _ = f (MkTensor graph0 p0)
-        mapGraph = Map graphf [graph]
+  let leadingLen = length leading
+      fsLen = length fs
+      tsLen = length ts
+      fRank = leadingLen + fsLen
+      tRank = leadingLen + tsLen
+      (graph0, p0) = parameter 0 fs "" {dtype}
+      MkTensor graphf _ = f (MkTensor graph0 p0)
+      mapGraph = Map graphf [graph]
 
-        (cag, counterAccTuple) =
-          parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (leading ++ ts)] ""
+      (cag, counterAccTuple) =
+        parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (leading ++ ts)] ""
 
-        condition : Computation XlaOp = do
-          lt !(getTupleElement !counterAccTuple 0) !(scalarU32 (product leading))
+      condition : Computation XlaOp = do
+        lt !(getTupleElement !counterAccTuple 0) !(scalarU32 (product leading))
 
-        body : Computation XlaOp = do
-          counter <- getTupleElement !counterAccTuple 0
-          multiIndex <- sequence $
-            zipWith (\dim, prod =>
-                -- does div work on U32 as intended?
-                rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
-              )
-            leading (toList $ tail $ scanr (*) 1 (fromList leading))
-          zeroesLikefs <- traverse scalarU32 (List.replicate fsLen Z)
-          sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate 1 leadingLen ++ fs)
-          sliced <- reshape sliced (range fRank) fs
+      body : Computation XlaOp = do
+        counter <- getTupleElement !counterAccTuple 0
+        multiIndex <- sequence $
+          zipWith (\dim, prod =>
+              -- does div work on U32 as intended?
+              rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
+            ) leading (toList $ tail $ scanr (*) 1 (fromList leading))
+        zeroesLikefs <- traverse scalarU32 (List.replicate fsLen Z)
+        sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate 1 leadingLen ++ fs)
+        sliced <- reshape sliced (range fRank) fs
 
-          let counterGraph = GetTupleElement cag 0
-              multiIndexGraphs = zipWith (\dim, prod =>
-                  let dimGraph = FromLiteral {dtype=U32} [] (hash dim)
-                      prodGraph = FromLiteral {dtype=U32} [] (hash prod)
-                      divGraph = ElementwiseBinary "div" counterGraph prodGraph
-                  in ElementwiseBinary "rem" divGraph dimGraph
-                ) leading (toList $ tail $ scanr (*) 1 (fromList leading))
+        let counterGraph = GetTupleElement cag 0
+            multiIndexGraphs = zipWith (\dim, prod =>
+                let dimGraph = FromLiteral {dtype=U32} [] (hash dim)
+                    prodGraph = FromLiteral {dtype=U32} [] (hash prod)
+                    divGraph = ElementwiseBinary "div" counterGraph prodGraph
+                in ElementwiseBinary "rem" divGraph dimGraph
+              ) leading (toList $ tail $ scanr (*) 1 (fromList leading))
 
-              zeroesLikefsGraphs = List.replicate fsLen $ (FromLiteral {dtype=U32} [] (hash Z))
-              dynamicSlicedGraph = DynamicSlice
-                graph (multiIndexGraphs ++ zeroesLikefsGraphs) (replicate 1 leadingLen ++ fs)
-              slicedGraph = Reshape fs dynamicSlicedGraph
+            zeroesLikefsGraphs = List.replicate fsLen $ (FromLiteral {dtype=U32} [] (hash Z))
+            dynamicSlicedGraph = DynamicSlice
+              graph (multiIndexGraphs ++ zeroesLikefsGraphs) (replicate 1 leadingLen ++ fs)
+            slicedGraph = Reshape fs dynamicSlicedGraph
 
-              MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
+            MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
 
-          zeroesLikets <- traverse scalarU32 (replicate tsLen 0)
-          fSliced <- reshape !fSliced (range tsLen) (replicate leadingLen 1 ++ ts)
-          acc <- getTupleElement !counterAccTuple 1
-          acc <- dynamicUpdateSlice acc fSliced (toList $ multiIndex ++ zeroesLikets)
-          counter' <- add counter !(scalarU32 1)
-          MkCachingBuilder builder _ <- get
-          tuple builder [counter', acc]
+        zeroesLikets <- traverse scalarU32 (replicate tsLen 0)
+        fSliced <- reshape !fSliced (range tsLen) (replicate leadingLen 1 ++ ts)
+        acc <- getTupleElement !counterAccTuple 1
+        acc <- dynamicUpdateSlice acc fSliced (toList $ multiIndex ++ zeroesLikets)
+        counter' <- add counter !(scalarU32 1)
+        MkCachingBuilder builder _ <- get
+        tuple builder [counter', acc]
 
-        init : Computation XlaOp = do
-          startingCounter <- scalarU32 0
-          acc <- slice !xs (replicate fRank 0) (leading ++ replicate fsLen 1) (replicate fRank 1)
-          acc <- reshape acc (range fRank) leading
-          acc <- broadcastInDim acc (leading ++ ts) (range tRank)
-          (MkCachingBuilder builder _) <- the (Computation _) get
-          tuple builder [startingCounter, acc]
+      init : Computation XlaOp = do
+        startingCounter <- scalarU32 0
+        acc <- slice !xs (replicate fRank 0) (leading ++ replicate fsLen 1) (replicate fRank 1)
+        acc <- reshape acc (range fRank) leading
+        acc <- broadcastInDim acc (leading ++ ts) (range tRank)
+        (MkCachingBuilder builder _) <- the (Computation _) get
+        tuple builder [startingCounter, acc]
 
-     in MkTensor mapGraph $ cached mapGraph $ do
-          condition <- buildWithSubBuilder "condition" [] condition
-          body <- buildWithSubBuilder "body" [] body
-          getTupleElement !(while condition body !init) 1
+    in case product leading of
+        0 =>
+          MkTensor mapGraph $ cached mapGraph $
+            reshapeWithDefaultOrdering (leading ++ fs) (leading ++ ts) xs
+        _ =>
+          MkTensor mapGraph $ cached mapGraph $ do
+            condition <- buildWithSubBuilder "condition" [] condition
+            body <- buildWithSubBuilder "body" [] body
+            getTupleElement !(while condition body !init) 1
 
-        where
-        scalarU32 : Nat -> Computation XlaOp
-        scalarU32 x = do
-          (MkCachingBuilder builder _) <- get
-          literal <- write {dtype=U32} (Scalar x)
-          constantLiteral builder literal
+      where
+      scalarU32 : Nat -> Computation XlaOp
+      scalarU32 x = do
+        (MkCachingBuilder builder _) <- get
+        literal <- write {dtype=U32} (Scalar x)
+        constantLiteral builder literal
 
 ||| Apply a function between `Tensor`s to the trailing dimensions of a `Tensor`. For example, for
 ||| ```
