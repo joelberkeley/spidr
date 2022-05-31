@@ -17,7 +17,6 @@ limitations under the License.
 ||| number of functions operating on numeric `Tensor`s.
 module Tensor
 
-import Data.SortedMap
 import Control.Monad.State
 import public Data.List
 import public Data.List.Elem

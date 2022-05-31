@@ -392,7 +392,6 @@ map = property $ do
 
 mapNonTrivial : Property
 mapNonTrivial = fixedProperty $ do
-  -- test is failing only for leading=[0]
   let x = fromLiteral {shape=[0, 2, 2]} {dtype=F64} []
   map {leading=[0]} trace x ===# fromLiteral []
 
