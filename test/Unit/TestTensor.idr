@@ -401,6 +401,17 @@ mapNonTrivial = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]]
   map {leading=[3]} trace x ===# fromLiteral [5, 13, 21]
 
+  let x = fromLiteral {dtype=F64} [[
+        [[ 1,  2], [ 3,  4]],
+        [[ 5,  6], [ 7,  8]],
+        [[ 9, 10], [11, 12]]
+      ], [
+        [[13, 14], [15, 16]],
+        [[17, 18], [19, 20]],
+        [[21, 22], [23, 24]]
+    ]]
+  map {leading=[2, 3]} trace x ===# fromLiteral [[5, 13, 21], [29, 37, 45]]
+
   map {leading=[]} {dtype=S32} (\x => x + x) 1 ===# 2
   map {leading=[]} {dtype=S32} (\_ => 2) 1 ===# 2
   map {leading=[]} {dtype=S32} (Tensor.map {leading=[]} (+ 1)) 1 ===# 2
