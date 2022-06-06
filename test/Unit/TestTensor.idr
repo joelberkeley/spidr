@@ -412,7 +412,7 @@ mapNonTrivial : Property
 mapNonTrivial = fixedProperty $ do
   map {leading=[]} {dtype=S32} (\x => x + x) 1 ===# 2
   map {leading=[]} {dtype=S32} (\_ => 2) 1 ===# 2
-  map {leading=[]} {dtype=S32} (Tensor.map {leading=[]} (+ 1)) 1 ===# 2
+  map {leading=[]} {dtype=S32} (map {leading=[]} (+ 1)) 1 ===# 2
 
 covering
 map2Result : Property
