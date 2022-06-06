@@ -530,7 +530,7 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
       MkTensor graphf _ = f (MkTensor graph0 p0)
       mapGraph = Map graphf [graph]
 
-      (cag, counterAccTuple) =
+      (counterAccTupleGraph, counterAccTuple) =
         parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (leading ++ ts)] ""
 
       condition : Computation XlaOp = do
@@ -538,22 +538,21 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
 
       body : Computation XlaOp = do
         counter <- getTupleElement !counterAccTuple 0
-        multiIndex <- sequence $
-          zipWith (\dim, prod =>
-              -- does div work on U32 as intended?
-              rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
-            ) leading (toList $ tail $ scanr (*) 1 (fromList leading))
+        let leadingMovingProduct = toList $ tail $ scanr (*) 1 (fromList leading)
+        multiIndex <- sequence $ zipWith (\dim, prod =>
+            rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
+          ) leading leadingMovingProduct
         zeroesLikefs <- traverse scalarU32 (List.replicate fsLen Z)
         sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate 1 leadingLen ++ fs)
         sliced <- reshape sliced (range fRank) fs
 
-        let counterGraph = GetTupleElement cag 0
+        let counterGraph = GetTupleElement counterAccTupleGraph 0
             multiIndexGraphs = zipWith (\dim, prod =>
                 let dimGraph = FromLiteral {dtype=U32} [] (hash dim)
                     prodGraph = FromLiteral {dtype=U32} [] (hash prod)
                     divGraph = ElementwiseBinary "div" counterGraph prodGraph
-                in ElementwiseBinary "rem" divGraph dimGraph
-              ) leading (toList $ tail $ scanr (*) 1 (fromList leading))
+                 in ElementwiseBinary "rem" divGraph dimGraph
+              ) leading leadingMovingProduct
 
             zeroesLikefsGraphs = List.replicate fsLen $ (FromLiteral {dtype=U32} [] (hash Z))
             dynamicSlicedGraph = DynamicSlice
@@ -575,7 +574,7 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
         acc <- slice !xs (replicate fRank 0) (leading ++ replicate fsLen 1) (replicate fRank 1)
         acc <- reshape acc (range fRank) leading
         acc <- broadcastInDim acc (leading ++ ts) (range tRank)
-        (MkCachingBuilder builder _) <- the (Computation _) get
+        MkCachingBuilder builder _ <- the (Computation _) get
         tuple builder [startingCounter, acc]
 
     in case product leading of
@@ -591,7 +590,7 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
       where
       scalarU32 : Nat -> Computation XlaOp
       scalarU32 x = do
-        (MkCachingBuilder builder _) <- get
+        MkCachingBuilder builder _ <- get
         literal <- write {dtype=U32} (Scalar x)
         constantLiteral builder literal
 
