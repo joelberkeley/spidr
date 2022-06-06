@@ -374,42 +374,51 @@ squeezableCannotRemoveNonOnes (Nest _) impossible
 covering
 map : Property
 map = property $ do
-  shape <- forAll shapes
+  leading <- forAll shapes
 
-  x <- forAll (literal shape doubles)
-  let x' = rewrite appendNilRightNeutral shape in fromLiteral x
-      x = rewrite appendNilRightNeutral shape in x
-  map (1.0 /) x ==~ toLiteral (map {leading=shape} (1.0 /) x')
+  x <- forAll (literal leading doubles)
+  let x' = rewrite appendNilRightNeutral leading in fromLiteral x
+      x = rewrite appendNilRightNeutral leading in x
+  map (1.0 /) x ==~ toLiteral (map {leading} (1.0 /) x')
 
-  x <- forAll (literal shape ints)
-  let x' = rewrite appendNilRightNeutral shape in fromLiteral {dtype=S32} x
-      x = rewrite appendNilRightNeutral shape in x
-  map (+ 1) x === toLiteral (map {leading=shape} (+ 1) x')
+  x <- forAll (literal leading ints)
+  let x' = rewrite appendNilRightNeutral leading in fromLiteral {dtype=S32} x
+      x = rewrite appendNilRightNeutral leading in x
+  map (+ 1) x === toLiteral (map {leading} (+ 1) x')
 
-mapWithLeadingDims : Property
-mapWithLeadingDims = fixedProperty $ do
-  let x = fromLiteral {shape=[0, 2, 2]} {dtype=F64} []
-  map {leading=[0]} trace x ===# fromLiteral []
+  from <- forAll shapes
+  x <- forAll $ literal leading (literal from doubles)
+  let y = rewrite appendNilRightNeutral leading in map sum x
+      x' = fromLiteral (collapse x)
+      y' = map {leading} sumAll x'
+  y ==~ toLiteral y'
 
-  let x = fromLiteral {dtype=F64} [[[1, 2], [3, 4]]]
-  map {leading=[1]} trace x ===# fromLiteral [5]
+  from <- forAll shapes
+  case from of
+    [] => success
+    (d :: ds) => do
+      x <- forAll $ literal leading (literal from doubles)
+      let y = collapse $ map (\z => concat z z) x
+          x' = fromLiteral {dtype=F64} (collapse x)
+          y' = map {leading} (\z => Tensor.concat 0 z z) x'
+      y ==~ toLiteral y'
 
-  let x = fromLiteral {dtype=F64} [[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]]
-  map {leading=[3]} trace x ===# fromLiteral [5, 13, 21]
+  where
+  collapse : Literal p (Literal q a) -> Literal (p ++ q) a
+  collapse (Scalar x) = x
+  collapse [] = []
+  collapse (x :: xs) = collapse x :: collapse xs
 
-  let x = fromLiteral {dtype=F64} [[
-        [[ 1,  2], [ 3,  4]],
-        [[ 5,  6], [ 7,  8]],
-        [[ 9, 10], [11, 12]]
-      ], [
-        [[13, 14], [15, 16]],
-        [[17, 18], [19, 20]],
-        [[21, 22], [23, 24]]
-    ]]
-  map {leading=[2, 3]} trace x ===# fromLiteral [[5, 13, 21], [29, 37, 45]]
+  concat : Literal (m :: tl) a -> Literal (n :: tl) a -> Literal (m + n :: tl) a
+  concat [] y = y
+  concat (x :: xs) y = x :: concat xs y
 
-mapNonTrivial : Property
-mapNonTrivial = fixedProperty $ do
+  sumAll : {shape : _} -> Tensor shape F64 -> Tensor [] F64
+  sumAll {shape=[]} x = x
+  sumAll {shape=d :: ds} x = sumAll (reduce @{Sum} 0 x)
+
+mapWithNonTrivialFunction : Property
+mapWithNonTrivialFunction = fixedProperty $ do
   map {leading=[]} {dtype=S32} (\x => x + x) 1 ===# 2
   map {leading=[]} {dtype=S32} (\_ => 2) 1 ===# 2
   map {leading=[]} {dtype=S32} (map {leading=[]} (+ 1)) 1 ===# 2
@@ -922,8 +931,7 @@ group = MkGroup "Tensor" $ [
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
     , ("map", map)
-    , ("map with leading dims", mapWithLeadingDims)
-    , ("map with non-trivial function", mapNonTrivial)
+    , ("map with non-trivial function", mapWithNonTrivialFunction)
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)

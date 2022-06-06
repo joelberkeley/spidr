@@ -521,11 +521,10 @@ mapGeneral :
   Tensor (leading ++ fs) dtype ->
   Tensor (leading ++ ts) dtype
 mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
-  let leadingLen = length leading
-      fsLen = length fs
-      tsLen = length ts
-      fRank = leadingLen + fsLen
-      tRank = leadingLen + tsLen
+  let lr = length leading
+      fr = length fs
+      tr = length ts
+
       (graph0, p0) = parameter 0 fs "" {dtype}
       MkTensor graphf _ = f (MkTensor graph0 p0)
       mapGraph = Map graphf [graph]
@@ -541,9 +540,9 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
         multiIndex <- sequence $ zipWith (\dim, prod =>
             rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
           ) leading leadingMovingProduct
-        zeroesLikefs <- traverse scalarU32 (List.replicate fsLen Z)
-        sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate leadingLen 1 ++ fs)
-        sliced <- reshape sliced (range fRank) fs
+        zeroesLikefs <- traverse scalarU32 (List.replicate fr Z)
+        sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate lr 1 ++ fs)
+        sliced <- reshape sliced (range (lr + fr)) fs
 
         let counterGraph = GetTupleElement counterAccTupleGraph 0
             multiIndexGraphs = zipWith (\dim, prod =>
@@ -553,15 +552,15 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
                  in ElementwiseBinary "rem" divGraph dimGraph
               ) leading leadingMovingProduct
 
-            zeroesLikefsGraphs = List.replicate fsLen $ (FromLiteral {dtype=U32} [] (hash Z))
+            zeroesLikefsGraphs = List.replicate fr $ (FromLiteral {dtype=U32} [] (hash Z))
             dynamicSlicedGraph = DynamicSlice
-              graph (multiIndexGraphs ++ zeroesLikefsGraphs) (replicate leadingLen 1 ++ fs)
+              graph (multiIndexGraphs ++ zeroesLikefsGraphs) (replicate lr 1 ++ fs)
             slicedGraph = Reshape fs dynamicSlicedGraph
 
             MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
 
-        zeroesLikets <- traverse scalarU32 (replicate tsLen 0)
-        fSliced <- reshape !fSliced (range tsLen) (replicate leadingLen 1 ++ ts)
+        zeroesLikets <- traverse scalarU32 (replicate tr 0)
+        fSliced <- reshape !fSliced (range tr) (replicate lr 1 ++ ts)
         acc <- getTupleElement !counterAccTuple 1
         acc <- dynamicUpdateSlice acc fSliced (toList $ multiIndex ++ zeroesLikets)
         counter' <- add counter !(scalarU32 1)
@@ -570,16 +569,23 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
 
       init = do
         startingCounter <- scalarU32 0
-        acc <- slice !xs (replicate fRank 0) (leading ++ replicate fsLen 1) (replicate fRank 1)
-        acc <- reshape acc (range fRank) leading
-        acc <- broadcastInDim acc (leading ++ ts) (range tRank)
+        acc <- slice !xs (replicate (lr + fr) 0) (leading ++ replicate fr 1) (replicate (lr + fr) 1)
+        acc <- reshape acc (range (lr + fr)) leading
+        acc <- broadcastInDim acc (leading ++ ts) (range lr)
         MkCachingBuilder builder _ <- get {m=Computation}
         tuple builder [startingCounter, acc]
 
-    in case product leading of
-        0 =>
+   in case (product leading, product fs) of
+        -- can we simplify all this, without special-casing anything? May want to change init
+        (0, _) =>
           MkTensor mapGraph $ cached mapGraph $
             reshapeWithDefaultOrdering (leading ++ fs) (leading ++ ts) xs
+        (_, 0) =>
+          MkTensor mapGraph $ cached mapGraph $ do
+            let reshaped = reshapeWithDefaultOrdering (leading ++ fs) fs xs
+                reshapeGraph = Reshape fs graph
+                MkTensor _ fRes = f (MkTensor reshapeGraph $ cached reshapeGraph $ reshaped)
+            broadcast !fRes (leading ++ ts)
         _ =>
           MkTensor mapGraph $ cached mapGraph $ do
             condition <- buildWithSubBuilder "condition" [] condition
