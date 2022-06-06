@@ -19,8 +19,10 @@ module Tensor
 
 import Control.Monad.State
 import public Data.List
-import public Data.List.Elem
+import Data.List.Elem
+import Data.List.Elem.Extra
 import Decidable.Equality
+import Syntax.PreorderReasoning
 import System.FFI
 
 import Data.Hashable
@@ -514,6 +516,21 @@ mapScalar f (MkTensor graph xs) =
         MkCachingBuilder builder _ <- get
         map builder [!xs] computation (range $ length shape)
 
+broadcastAddsLeading : (from, leading : Shape) -> Broadcastable from (leading ++ from)
+broadcastAddsLeading from [] = Same
+broadcastAddsLeading from (d :: ds) = Nest (broadcastAddsLeading from ds)
+
+productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
+productZero = foldlMulAnyZero 1
+  where
+  foldlMulInitZero : (xs : List Nat) -> foldl (*) 0 xs = 0
+  foldlMulInitZero [] = Refl
+  foldlMulInitZero (_ :: tl) = rewrite foldlMulInitZero tl in Refl
+
+  foldlMulAnyZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
+  foldlMulAnyZero @{Here} x (0 :: tl) = rewrite multZeroRightZero x in foldlMulInitZero tl
+  foldlMulAnyZero @{There prf} x (hd :: tl) = foldlMulAnyZero (x * hd) tl
+
 mapGeneral :
   Primitive dtype =>
   {fs, ts, leading : _} ->
@@ -575,17 +592,22 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
         MkCachingBuilder builder _ <- get {m=Computation}
         tuple builder [startingCounter, acc]
 
-   in case (product leading, product fs) of
-        -- can we simplify all this, without special-casing anything? May want to change init
-        (0, _) =>
-          MkTensor mapGraph $ cached mapGraph $
-            reshapeWithDefaultOrdering (leading ++ fs) (leading ++ ts) xs
-        (_, 0) =>
-          MkTensor mapGraph $ cached mapGraph $ do
-            let reshaped = reshapeWithDefaultOrdering (leading ++ fs) fs xs
-                reshapeGraph = Reshape fs graph
-                MkTensor _ fRes = f (MkTensor reshapeGraph $ cached reshapeGraph $ reshaped)
-            broadcast !fRes (leading ++ ts)
+   in case (isElem 0 leading, isElem 0 fs) of
+        -- can we simplify all this, without special-casing anything? May have to change init
+        (Yes zeroInLeading, _) =>
+          let sizesEqual : (product (leading ++ fs) = product (leading ++ ts)) = Calc $
+                |~ product (leading ++ fs)
+                ~~ 0 ... productZero @{elemAppLeft leading fs zeroInLeading} (leading ++ fs)
+                ~~ product (leading ++ ts) ...
+                    sym (productZero @{elemAppLeft leading ts zeroInLeading} (leading ++ ts))
+           in reshape {sizesEqual} (MkTensor {shape=leading ++ fs} graph xs)
+        (_, Yes zeroInfs) =>
+          let sizesEqual = Calc $
+                |~ product (leading ++ fs)
+                ~~ 0 ... productZero @{elemAppRight leading fs zeroInfs} (leading ++ fs)
+                ~~ product fs ... sym (productZero @{zeroInfs} fs)
+              fRes = f (reshape {sizesEqual} $ MkTensor {shape=leading ++ fs} graph xs)
+           in broadcast {shapesOK=broadcastAddsLeading ts leading} fRes
         _ =>
           MkTensor mapGraph $ cached mapGraph $ do
             condition <- buildWithSubBuilder "condition" [] condition
