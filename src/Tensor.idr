@@ -533,10 +533,9 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
       (counterAccTupleGraph, counterAccTuple) =
         parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (leading ++ ts)] ""
 
-      condition : Computation XlaOp = do
-        lt !(getTupleElement !counterAccTuple 0) !(scalarU32 (product leading))
+      condition = do lt !(getTupleElement !counterAccTuple 0) !(scalarU32 (product leading))
 
-      body : Computation XlaOp = do
+      body = do
         counter <- getTupleElement !counterAccTuple 0
         let leadingMovingProduct = toList $ tail $ scanr (*) 1 (fromList leading)
         multiIndex <- sequence $ zipWith (\dim, prod =>
@@ -566,10 +565,10 @@ mapGeneral f (MkTensor {shape=leading ++ fs} graph xs) =
         acc <- getTupleElement !counterAccTuple 1
         acc <- dynamicUpdateSlice acc fSliced (toList $ multiIndex ++ zeroesLikets)
         counter' <- add counter !(scalarU32 1)
-        MkCachingBuilder builder _ <- get
+        MkCachingBuilder builder _ <- get {m=Computation}
         tuple builder [counter', acc]
 
-      init : Computation XlaOp = do
+      init = do
         startingCounter <- scalarU32 0
         acc <- slice !xs (replicate fRank 0) (leading ++ replicate fsLen 1) (replicate fRank 1)
         acc <- reshape acc (range fRank) leading
