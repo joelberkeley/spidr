@@ -45,8 +45,12 @@ maxDim : Nat
 maxDim = 10
 
 export
+dims : Gen Nat
+dims = nat $ linear 0 maxDim
+
+export
 shapes : Gen Shape
-shapes = list (linear 0 maxRank) (nat $ linear 0 maxDim)
+shapes = list (linear 0 maxRank) dims
 
 export covering
 literal : (shape : Shape) -> Gen a -> Gen (Literal shape a)

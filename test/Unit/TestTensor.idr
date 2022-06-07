@@ -393,7 +393,7 @@ map = property $ do
       y' = map {leading} sumAll x'
   y ==~ toLiteral y'
 
-  d <- forAll nats
+  d <- forAll dims
   ds <- forAll shapes
   x <- forAll $ literal leading (literal (d :: ds) doubles)
   let y = collapse $ map (\z => concat z z) x
