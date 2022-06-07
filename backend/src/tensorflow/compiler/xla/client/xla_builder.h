@@ -82,6 +82,8 @@ extern "C" {
 
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
     XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len);
+    XlaOp* GetTupleElement(XlaOp& tuple_data, int index);
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand);
@@ -132,6 +134,8 @@ extern "C" {
 
     XlaOp* Pow(XlaOp& lhs, XlaOp& rhs);
 
+    XlaOp* BitcastConvertType(XlaOp& operand, int new_element_type);
+
     XlaOp* Neg(XlaOp& operand);
 
     XlaOp* Transpose(XlaOp& operand, int* permutation, int rank);
@@ -150,6 +154,8 @@ extern "C" {
         XlaOp* static_operands,
         int static_operands_len
     );
+
+    XlaOp* RngBitGenerator(int algorithm, XlaOp& initial_state, Shape& shape);
 
     XlaOp* Conditional(
         XlaOp& predicate,

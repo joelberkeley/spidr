@@ -17,6 +17,7 @@ module Compiler.Graph
 
 import Data.Hashable
 
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Types
 import Util.Hashable
@@ -30,6 +31,8 @@ public export
 data Graph : Type where
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
   Parameter : Primitive dtype => Shape -> Nat -> Graph
+  MinFiniteValue : Primitive dtype => Graph
+  MaxFiniteValue : Primitive dtype => Graph
   Reshape : Shape -> Graph -> Graph
   Slice : Nat -> Nat -> Nat -> Graph -> Graph
   Concat : Nat -> Graph -> Graph -> Graph
@@ -48,6 +51,17 @@ data Graph : Type where
   Dot : Graph -> Graph -> Graph
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
+  Tuple : List Graph -> Graph
+  GetTupleElement : Graph -> Nat -> Graph
+  RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
+  BitcastConvertType : Primitive dtype => Graph -> Graph
+  Sort : List Graph -> Graph -> Nat -> Bool -> Graph
+
+Hashable RandomAlgorithm where
+  hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
+    RngDefault => 0
+    RngThreeFry => 1
+    RngPhilox => 2
 
 export
 Hashable Graph where
@@ -55,6 +69,10 @@ Hashable Graph where
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
   hashWithSalt salt (Parameter {dtype} shape position) =
     salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position)
+  hashWithSalt salt (MinFiniteValue {dtype}) =
+    salt `hashWithSalt` ("MinFiniteValue", typeString {dtype})
+  hashWithSalt salt (MaxFiniteValue {dtype}) =
+    salt `hashWithSalt` ("MaxFiniteValue", typeString {dtype})
   hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to) `hashWithSalt` x
   hashWithSalt salt (Slice axis from to x) =
     salt `hashWithSalt` ("Slice", axis, from, to) `hashWithSalt` x
@@ -90,3 +108,18 @@ Hashable Graph where
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve lower x y) =
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
+  hashWithSalt salt (Tuple operands) =
+    let salt' = salt `hashWithSalt` "Tuple"
+     in assert_total $ salt' `hashWithSalt` operands
+  hashWithSalt salt (GetTupleElement tuple index) =
+    hashWithSalt salt ("GetTupleElement", index) `hashWithSalt` tuple
+  hashWithSalt salt (RngBitGenerator algorithm initialState shape) = salt
+    `hashWithSalt` ("RngBitGenerator", algorithm)
+    `hashWithSalt` initialState
+    `hashWithSalt` shape
+  hashWithSalt salt (BitcastConvertType {dtype} operand) =
+    salt `hashWithSalt` (typeString {dtype}) `hashWithSalt` operand
+  hashWithSalt salt (Sort operands comparator dimension isStable) =
+    let salt' = salt `hashWithSalt` "Sort"
+        salt'' = assert_total $ salt' `hashWithSalt` operands
+     in salt'' `hashWithSalt` (dimension, isStable)

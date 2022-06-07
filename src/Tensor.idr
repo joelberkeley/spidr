@@ -28,6 +28,7 @@ import Data.Hashable
 import Compiler.Computation
 import Compiler.Graph
 import Compiler.LiteralRW
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
@@ -36,6 +37,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
+import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 import Compiler.Xla.TensorFlow.Core.Platform.Status
@@ -54,7 +56,7 @@ import public Util
 ||| @shape The `Tensor` shape.
 ||| @dtype The element type.
 export
-data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
+data Tensor : (0 shape : Types.Shape) -> (0 dtype : Type) -> Type where
   MkTensor : {shape : _} -> Graph -> Computation XlaOp -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
@@ -108,7 +110,7 @@ Show (Tensor shape dtype) where
 ----------------------------- structural operations ----------------------------
 
 reshapeWithDefaultOrdering :
-  (from, to : Shape) -> Computation XlaOp -> Computation XlaOp
+  (from, to : Types.Shape) -> Computation XlaOp -> Computation XlaOp
 reshapeWithDefaultOrdering from to xs = reshape !xs (range $ length from) to
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
@@ -144,7 +146,7 @@ namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
-  data Squeezable : (0 from : Shape) -> (0 to : Shape) -> Type where
+  data Squeezable : (0 from : Types.Shape) -> (0 to : Types.Shape) -> Type where
     ||| Proof that a shape can be squeezed to itself. For example:
     |||
     ||| [] to []
@@ -399,7 +401,7 @@ namespace Broadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
   public export
-  data Broadcastable : (0 from : Shape) -> (0 to : Shape) -> Type where
+  data Broadcastable : (0 from : Types.Shape) -> (0 to : Types.Shape) -> Type where
     ||| Proof that a shape can be broadcast to itself. For example:
     |||
     ||| [] to []
@@ -479,7 +481,7 @@ broadcast xs with (xs)
 
 %hint
 export
-scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+scalarToAnyOk : (to : Types.Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 
@@ -1150,3 +1152,55 @@ trace :
   Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
+
+namespace Bounded
+  public export
+  interface Bounded a where
+    min : a
+    max : a
+
+export
+[Finite] Primitive dtype => Bounded (Tensor [] dtype) where
+  min = let graph = MinFiniteValue {dtype} in
+    MkTensor graph $ cached graph $ do
+      MkCachingBuilder builder _ <- get
+      minFiniteValue {dtype} builder
+
+  max = let graph = MaxFiniteValue {dtype} in
+    MkTensor graph $ cached graph $ do
+      MkCachingBuilder builder _ <- get
+      maxFiniteValue {dtype} builder
+
+public export
+Rand : Type -> Type
+Rand = State (Tensor [2] U64)
+
+export
+uniform : Primitive dtype => {shape : _} -> Rand (Tensor shape dtype)
+uniform = ST $ \(MkTensor initialStateGraph initialState) =>
+  let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
+      rng = cached rngGraph $ do rngBitGenerator RngThreeFry !initialState !(mkShape {dtype} shape)
+      newStateGraph = GetTupleElement rngGraph 0
+      newState = cached newStateGraph $ do getTupleElement !rng 0
+      bitsSampleGraph = GetTupleElement rngGraph 1
+      bitsSample = cached bitsSampleGraph $ do getTupleElement !rng 1
+      sampleGraph = BitcastConvertType {dtype} bitsSampleGraph
+      sample = cached sampleGraph $ do bitcastConvertType {dtype} !bitsSample
+   in Id (MkTensor newStateGraph newState, MkTensor sampleGraph sample)
+
+export
+sort :
+  Primitive dtype =>
+  (Tensor [] dtype -> Tensor [] dtype -> Tensor [] PRED) ->
+  (dimension : Nat) ->
+  Tensor shape dtype ->
+  {auto 0 inBounds : InBounds dimension shape} ->
+  Tensor shape dtype
+sort comp dimension (MkTensor graph xs) =
+  let (graph0, p0) = parameter 0 [] "" {dtype}
+      (graph1, p1) = parameter 1 [] "" {dtype}
+      MkTensor graphf fRes = comp (MkTensor graph0 p0) (MkTensor graph1 p1)
+      sortedGraph = Sort [graph] graphf dimension False
+   in MkTensor sortedGraph $ cached sortedGraph $ do
+        comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
+        sort [!xs] comparator dimension False

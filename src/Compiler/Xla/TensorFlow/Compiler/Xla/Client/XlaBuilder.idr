@@ -19,6 +19,7 @@ import System.FFI
 
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.Util
@@ -160,6 +161,21 @@ export
 select : HasIO io => XlaOp -> XlaOp -> XlaOp -> io XlaOp
 select (MkXlaOp pred) (MkXlaOp onTrue) (MkXlaOp onFalse) = do
   opPtr <- primIO $ prim__select pred onTrue onFalse
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
+tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
+tuple (MkXlaBuilder builder) ops = do
+  MkXlaOpArray opsArray <- mkXlaOpArray ops
+  opPtr <- primIO $ prim__tuple builder opsArray (cast $ length ops)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
+getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
+getTupleElement (MkXlaOp tuple_) index = do
+  opPtr <- primIO $ prim__getTupleElement tuple_ (cast index)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
@@ -316,6 +332,13 @@ pow : HasIO io => XlaOp -> XlaOp -> io XlaOp
 pow = binaryOp prim__pow
 
 export
+bitcastConvertType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
+bitcastConvertType (MkXlaOp operand) = do
+  opPtr <- primIO $ prim__bitcastConvertType operand (xlaIdentifier {dtype})
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 neg : HasIO io => XlaOp -> io XlaOp
 neg = unaryOp prim__neg
 
@@ -350,6 +373,20 @@ map (MkXlaBuilder builder) operands (MkXlaComputation computation) dimensions = 
     computation
     dimensionsIntArrayPtr (cast $ length dimensions)
     prim__getNullAnyPtr 0
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+public export
+data RandomAlgorithm = RngDefault | RngThreeFry | RngPhilox
+
+export
+rngBitGenerator : HasIO io => RandomAlgorithm -> XlaOp -> Xla.Shape -> io XlaOp
+rngBitGenerator algorithm (MkXlaOp initialState) (MkShape shape) = do
+  let algorithm : Int = case algorithm of
+        RngDefault => 0
+        RngThreeFry => 1
+        RngPhilox => 2
+  opPtr <- primIO $ prim__rngBitGenerator algorithm initialState shape
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 

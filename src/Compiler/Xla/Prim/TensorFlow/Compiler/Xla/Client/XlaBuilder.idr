@@ -86,6 +86,14 @@ export
 prim__select : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Tuple")
+prim__tuple : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "GetTupleElement")
+prim__getTupleElement : GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Eq")
 prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -206,6 +214,10 @@ export
 prim__pow : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "BitcastConvertType")
+prim__bitcastConvertType : GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Neg")
 prim__neg : GCAnyPtr -> PrimIO AnyPtr
 
@@ -221,6 +233,10 @@ export
 %foreign (libxla "Map")
 prim__map :
   GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCPtr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "RngBitGenerator")
+prim__rngBitGenerator : Int -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Conditional")
