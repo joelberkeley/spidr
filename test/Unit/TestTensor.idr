@@ -393,15 +393,13 @@ map = property $ do
       y' = map {leading} sumAll x'
   y ==~ toLiteral y'
 
-  from <- forAll shapes
-  case from of
-    [] => success
-    (d :: ds) => do
-      x <- forAll $ literal leading (literal from doubles)
-      let y = collapse $ map (\z => concat z z) x
-          x' = fromLiteral {dtype=F64} (collapse x)
-          y' = map {leading} (\z => Tensor.concat 0 z z) x'
-      y ==~ toLiteral y'
+  d <- forAll nats
+  ds <- forAll shapes
+  x <- forAll $ literal leading (literal (d :: ds) doubles)
+  let y = collapse $ map (\z => concat z z) x
+      x' = fromLiteral {dtype=F64} (collapse x)
+      y' = map {leading} (\z => Tensor.concat 0 z z) x'
+  y ==~ toLiteral y'
 
   where
   collapse : Literal p (Literal q a) -> Literal (p ++ q) a

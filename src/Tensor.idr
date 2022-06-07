@@ -601,11 +601,11 @@ mapGeneral f (MkTensor {shape=leading ++ from} graph xs) =
                 ~~ product (leading ++ to) ...
                     sym (productZero @{elemAppLeft leading to zeroInLeading} (leading ++ to))
            in reshape {sizesEqual} (MkTensor {shape=leading ++ from} graph xs)
-        (_, Yes zeroInfs) =>
+        (_, Yes zeroInFrom) =>
           let sizesEqual = Calc $
                 |~ product (leading ++ from)
-                ~~ 0 ... productZero @{elemAppRight leading from zeroInfs} (leading ++ from)
-                ~~ product from ... sym (productZero @{zeroInfs} from)
+                ~~ 0 ... productZero @{elemAppRight leading from zeroInFrom} (leading ++ from)
+                ~~ product from ... sym (productZero @{zeroInFrom} from)
               fRes = f (reshape {sizesEqual} $ MkTensor {shape=leading ++ from} graph xs)
            in broadcast {shapesOK=broadcastAddsLeading to leading} fRes
         _ =>
