@@ -573,6 +573,28 @@ reduce axis (MkTensor graph xs) =
             let MkTensor _ init = neutral @{reducer}
             reduce !xs !init computation [axis]
 
+||| Sort the elements of a `Tensor` along a specified `dimension` according to a specified
+||| scalar-wise ordering. For example, `sort (<) 0 $ fromLiteral [1, 3, 4, 2]` is
+||| `fromLiteral [1, 2, 3, 4]`.
+export
+sort :
+  Primitive dtype =>
+  (Tensor [] dtype -> Tensor [] dtype -> Tensor [] PRED) ->
+  (dimension : Nat) ->
+  Tensor shape dtype ->
+  {auto 0 dimInBounds : InBounds dimension shape} ->
+  Tensor shape dtype
+sort comp dimension (MkTensor graph xs) =
+  let (graph0, p0) = parameter 0 [] "" {dtype}
+      (graph1, p1) = parameter 1 [] "" {dtype}
+      MkTensor graphf fRes = comp (MkTensor graph0 p0) (MkTensor graph1 p1)
+      sortedGraph = Sort [graph] graphf dimension False
+   in MkTensor sortedGraph $ cached sortedGraph $ do
+        comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
+        -- What is the `False` argument here? What does it do? Should users be able to specify it?
+        -- What if they specify it wrong? Is that undefined behaviour?
+        sort [!xs] comparator dimension False
+
 ----------------------------- numeric operations ----------------------------
 
 unaryOp :

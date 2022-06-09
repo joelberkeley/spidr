@@ -214,6 +214,10 @@ export
 prim__transpose : GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Sort")
+prim__sort : GCAnyPtr -> Int -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Map")
 prim__map :
   GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCPtr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr

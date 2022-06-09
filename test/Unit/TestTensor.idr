@@ -425,6 +425,25 @@ reduce = fixedProperty $ do
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
   reduce @{All} 1 x ===# fromLiteral [False, False]
 
+Prelude.Ord a => Prelude.Ord (Literal [] a) where
+  compare (Scalar x) (Scalar y) = compare x y
+
+sort : Property
+sort = property $ do
+  d <- forAll dims
+  ds <- forAll shapes
+  let rank = length (d :: ds)
+  axis <- forAll (nat $ linear 0 rank)
+  x <- forAll (literal (d :: ds) doubles)
+  let sorted = sort (<) axis (fromLiteral x)
+      dimSize = index axis (d :: ds)
+      init = slice axis 0 dimSize sorted
+      tail = slice axis 1 (S dimSize) sorted
+  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+  let x = fromLiteral {dtype=S32} [1, 3, 4, 2]
+  sort (<) 0 x ===# fromLiteral [1, 2, 3, 4]
+
 namespace Vector
   export
   (@@) : Property
@@ -904,6 +923,7 @@ group = MkGroup "Tensor" $ [
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)
+    , ("sort", sort)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
   ]

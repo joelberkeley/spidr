@@ -40,6 +40,7 @@ data Graph : Type where
   Broadcast : Shape -> Graph -> Graph
   Map : Graph -> List Graph -> Graph
   Reduce : Graph -> Nat -> Graph -> Graph
+  Sort : List Graph -> Graph -> Nat -> Bool -> Graph
   ElementwiseBinary : (name : String) -> Graph -> Graph -> Graph
   ElementwiseUnary : (name : String) -> Graph -> Graph
   Select : Graph -> Graph -> Graph -> Graph
@@ -69,6 +70,10 @@ Hashable Graph where
      in assert_total $ salt' `hashWithSalt` xs
   hashWithSalt salt (Reduce monoid axis x) =
     salt `hashWithSalt` "Reduce" `hashWithSalt` monoid `hashWithSalt` axis `hashWithSalt` x
+  hashWithSalt salt (Sort operands comparator dimension isStable) =
+    let salt' = salt `hashWithSalt` "Sort"
+        salt'' = assert_total $ salt' `hashWithSalt` operands
+     in salt'' `hashWithSalt` (dimension, isStable)
   hashWithSalt salt (ElementwiseBinary name x y) =
     salt `hashWithSalt` name `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (ElementwiseUnary name x) = salt `hashWithSalt` name `hashWithSalt` x
