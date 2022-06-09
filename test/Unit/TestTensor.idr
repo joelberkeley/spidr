@@ -444,6 +444,10 @@ sort = property $ do
   let x = fromLiteral {dtype=S32} [1, 3, 4, 2]
   sort (<) 0 x ===# fromLiteral [1, 2, 3, 4]
 
+  let x = fromLiteral {dtype=S32} [[1, 6, 4], [3, 2, 5]]
+  sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 6, 5]]
+  sort (<) 1 x ===# fromLiteral [[1, 4, 6], [2, 3, 5]]
+
 namespace Vector
   export
   (@@) : Property
