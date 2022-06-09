@@ -72,5 +72,10 @@ LiteralRW S32 Int where
 
 export
 LiteralRW U32 Nat where
-  set = set
-  get = get
+  set = UInt32t.set
+  get = UInt32t.get
+
+export
+LiteralRW U64 Nat where
+  set = UInt64t.set
+  get = UInt64t.get

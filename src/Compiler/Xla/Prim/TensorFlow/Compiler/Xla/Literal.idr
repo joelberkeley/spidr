@@ -44,17 +44,25 @@ export
 literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
 
 export
-%foreign (libxla "Literal_Set_int")
-prim__literalSetInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+%foreign (libxla "Literal_Set_int32_t")
+prim__literalSetInt32t : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 
 export
-%foreign (libxla "Literal_Get_int")
-literalGetInt : GCAnyPtr -> GCPtr Int -> Int
+%foreign (libxla "Literal_Get_int32_t")
+literalGetInt32t : GCAnyPtr -> GCPtr Int -> Int
 
 export
-%foreign (libxla "Literal_Set_unsigned_int")
-prim__literalSetUnsignedInt : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+%foreign (libxla "Literal_Set_uint32_t")
+prim__literalSetUInt32t : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
 
 export
-%foreign (libxla "Literal_Get_unsigned_int")
-literalGetUnsignedInt : GCAnyPtr -> GCPtr Int -> Int
+%foreign (libxla "Literal_Get_uint32_t")
+literalGetUInt32t : GCAnyPtr -> GCPtr Int -> Int
+
+export
+%foreign (libxla "Literal_Set_uint64_t")
+prim__literalSetUInt64t : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+
+export
+%foreign (libxla "Literal_Get_uint64_t")
+literalGetUInt64t : GCAnyPtr -> GCPtr Int -> Int

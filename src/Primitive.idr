@@ -86,4 +86,5 @@ interface Hashable idr => LiteralRW dtype idr => PrimitiveRW dtype idr | dtype w
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int where
 export PrimitiveRW U32 Nat where
+export PrimitiveRW U64 Nat where
 export PrimitiveRW F64 Double where
