@@ -441,6 +441,8 @@ sort = property $ do
       tail = slice axis 1 (S dimSize) sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
+  -- test with duplicate values
+
   let x = fromLiteral {dtype=S32} [1, 3, 4, 2]
   sort (<) 0 x ===# fromLiteral [1, 2, 3, 4]
 
