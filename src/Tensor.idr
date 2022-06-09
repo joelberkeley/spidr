@@ -573,9 +573,8 @@ reduce axis (MkTensor graph xs) =
             let MkTensor _ init = neutral @{reducer}
             reduce !xs !init computation [axis]
 
-||| Sort the elements of a `Tensor` along a specified `dimension` according to a specified
-||| scalar-wise ordering. For example, `sort (<) 0 $ fromLiteral [1, 3, 4, 2]` is
-||| `fromLiteral [1, 2, 3, 4]`.
+||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
+||| ordering. For example, `sort (<) 0 $ fromLiteral [1, 3, 4, 2]` is `fromLiteral [1, 2, 3, 4]`.
 export
 sort :
   Primitive dtype =>
