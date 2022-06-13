@@ -428,27 +428,74 @@ reduce = fixedProperty $ do
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
 
+covering
 sort : Property
-sort = property $ do
+sort = withTests 20 . property $ do
   d <- forAll dims
-  ds <- forAll shapes
-  let rank = length (d :: ds)
-  axis <- forAll (nat $ linear 0 rank)
-  x <- forAll (literal (d :: ds) doubles)
-  let sorted = sort (<) axis (fromLiteral x)
-      dimSize = index axis (d :: ds)
-      init = slice axis 0 dimSize sorted
-      tail = slice axis 1 (S dimSize) sorted
+  dd <- forAll dims
+  ddd <- forAll dims
+
+  x <- forAll (literal [S d] ints)
+  let x = fromLiteral {dtype=S32} x
+
+  let sorted = sort (<) 0 x
+      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
+      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  -- test with duplicate values
+  x <- forAll (literal [S d, S dd] ints)
+  let x = fromLiteral {dtype=S32} x
 
-  let x = fromLiteral {dtype=S32} [1, 3, 4, 2]
-  sort (<) 0 x ===# fromLiteral [1, 2, 3, 4]
+  let sorted = sort (<) 0 x
+      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
+      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let x = fromLiteral {dtype=S32} [[1, 6, 4], [3, 2, 5]]
-  sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 6, 5]]
-  sort (<) 1 x ===# fromLiteral [[1, 4, 6], [2, 3, 5]]
+  let sorted = sort (<) 1 x
+      init = slice 1 0 dd {isWithinAxis=lteSuccRight (reflexive {x=dd})} sorted
+      tail = slice 1 1 (S dd) {isWithinAxis=reflexive {x=S dd}} sorted
+  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+  x <- forAll (literal [S d, S dd, S ddd] ints)
+  let x = fromLiteral {dtype=S32} x
+
+  let sorted = sort (<) 0 x
+      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
+      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+  let sorted = sort (<) 1 x
+      init = slice 1 0 dd {isWithinAxis=lteSuccRight (reflexive {x=dd})} sorted
+      tail = slice 1 1 (S dd) {isWithinAxis=reflexive {x=S dd}} sorted
+  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+  let sorted = sort (<) 2 x
+      init = slice 2 0 ddd {isWithinAxis=lteSuccRight (reflexive {x=ddd})} sorted
+      tail = slice 2 1 (S ddd) {isWithinAxis=reflexive {x=S ddd}} sorted
+  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+sortWithEmptyAxis : Property
+sortWithEmptyAxis = fixedProperty $ do
+  let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
+  sort (<) 0 x ===# x
+
+  let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
+  sort (<) 1 x ===# x
+
+  let x = fromLiteral {shape=[2, 0, 3]} {dtype=S32} [[], []]
+  sort (<) 0 x ===# x
+
+  let x = fromLiteral {shape=[2, 0, 3]} {dtype=S32} [[], []]
+  sort (<) 1 x ===# x
+
+sortWithRepeatedElements : Property
+sortWithRepeatedElements = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [1, 3, 4, 3, 2]
+  sort (<) 0 x ===# fromLiteral [1, 2, 3, 3, 4]
+
+  let x = fromLiteral {dtype=S32} [[1, 4, 4], [3, 2, 5]]
+  sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
+  sort (<) 1 x ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
 
 namespace Vector
   export
@@ -930,6 +977,8 @@ group = MkGroup "Tensor" $ [
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)
     , ("sort", sort)
+    , ("sort with empty axis", sortWithEmptyAxis)
+    , ("sort with repeated elements", sortWithRepeatedElements)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
   ]
