@@ -65,28 +65,41 @@ namespace Double
     MkIntArray idxsArrayPtr <- mkIntArray idxs
     pure $ literalGetDouble lit idxsArrayPtr
 
-namespace Int
+namespace Int32t
   export
   set : Literal -> List Nat -> Int -> IO ()
   set (MkLiteral lit) idxs value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetInt lit idxsArrayPtr value
+    primIO $ prim__literalSetInt32t lit idxsArrayPtr value
 
   export
   get : Literal -> List Nat -> Int
   get (MkLiteral lit) idxs = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ literalGetInt lit idxsArrayPtr
+    pure $ literalGetInt32t lit idxsArrayPtr
 
-namespace Nat
+namespace UInt32t
   export
   set : Literal -> List Nat -> Nat -> IO ()
   set (MkLiteral lit) idxs value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetUnsignedInt lit idxsArrayPtr (cast value)
+    primIO $ prim__literalSetUInt32t lit idxsArrayPtr (cast value)
 
   export
   get : Literal -> List Nat -> Nat
   get (MkLiteral lit) idxs = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ cast $ literalGetUnsignedInt lit idxsArrayPtr
+    pure $ cast $ literalGetUInt32t lit idxsArrayPtr
+
+namespace UInt64t
+  export
+  set : Literal -> List Nat -> Nat -> IO ()
+  set (MkLiteral lit) idxs value = do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    primIO $ prim__literalSetUInt64t lit idxsArrayPtr (cast value)
+
+  export
+  get : Literal -> List Nat -> Nat
+  get (MkLiteral lit) idxs = unsafePerformIO $ do
+    MkIntArray idxsArrayPtr <- mkIntArray idxs
+    pure $ cast $ literalGetUInt64t lit idxsArrayPtr
