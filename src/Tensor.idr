@@ -1187,20 +1187,3 @@ uniform = ST $ \(MkTensor initialStateGraph initialState) =>
       sampleGraph = BitcastConvertType {dtype} bitsSampleGraph
       sample = cached sampleGraph $ do bitcastConvertType {dtype} !bitsSample
    in Id (MkTensor newStateGraph newState, MkTensor sampleGraph sample)
-
-export
-sort :
-  Primitive dtype =>
-  (Tensor [] dtype -> Tensor [] dtype -> Tensor [] PRED) ->
-  (dimension : Nat) ->
-  Tensor shape dtype ->
-  {auto 0 inBounds : InBounds dimension shape} ->
-  Tensor shape dtype
-sort comp dimension (MkTensor graph xs) =
-  let (graph0, p0) = parameter 0 [] "" {dtype}
-      (graph1, p1) = parameter 1 [] "" {dtype}
-      MkTensor graphf fRes = comp (MkTensor graph0 p0) (MkTensor graph1 p1)
-      sortedGraph = Sort [graph] graphf dimension False
-   in MkTensor sortedGraph $ cached sortedGraph $ do
-        comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
-        sort [!xs] comparator dimension False
