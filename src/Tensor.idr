@@ -574,7 +574,10 @@ reduce axis (MkTensor graph xs) =
             reduce !xs !init computation [axis]
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
-||| ordering. For example, for `x = fromLiteral [1, 3, 4, 2]`, `sort (<) 0 x` is
+||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
+||| elements `a` and `b`, either `f a b` is true, or `f a b` *and* `f b a` are false.
+|||
+||| For example, for `x = fromLiteral [1, 3, 4, 2]`, `sort (<) 0 x` is
 ||| `fromLiteral [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 x` is `fromLiteral [[1, 4, 6], [2, 3, 5]]`.
 export
 sort :
