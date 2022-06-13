@@ -332,6 +332,13 @@ pow : HasIO io => XlaOp -> XlaOp -> io XlaOp
 pow = binaryOp prim__pow
 
 export
+convertElementType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
+convertElementType (MkXlaOp operand) = do
+  opPtr <- primIO $ prim__convertElementType operand (xlaIdentifier {dtype})
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 bitcastConvertType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
 bitcastConvertType (MkXlaOp operand) = do
   opPtr <- primIO $ prim__bitcastConvertType operand (xlaIdentifier {dtype})

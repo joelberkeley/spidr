@@ -321,6 +321,13 @@ extern "C" {
 
     XlaOp* Pow(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Pow, lhs, rhs); }
 
+    XlaOp* ConvertElementType(XlaOp& operand, int new_element_type) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto new_element_type_ = (xla::PrimitiveType) new_element_type;
+        xla::XlaOp res = xla::ConvertElementType(operand_, new_element_type_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* BitcastConvertType(XlaOp& operand, int new_element_type) {
         auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
         auto new_element_type_ = (xla::PrimitiveType) new_element_type;

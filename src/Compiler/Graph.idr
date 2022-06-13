@@ -54,8 +54,8 @@ data Graph : Type where
   Tuple : List Graph -> Graph
   GetTupleElement : Graph -> Nat -> Graph
   RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
+  ConvertElementType : Primitive dtype => Graph -> Graph
   BitcastConvertType : Primitive dtype => Graph -> Graph
-  Sort : List Graph -> Graph -> Nat -> Bool -> Graph
 
 Hashable RandomAlgorithm where
   hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
@@ -117,9 +117,7 @@ Hashable Graph where
     `hashWithSalt` ("RngBitGenerator", algorithm)
     `hashWithSalt` initialState
     `hashWithSalt` shape
+  hashWithSalt salt (ConvertElementType {dtype} operand) =
+    salt `hashWithSalt` ("ConvertElementType", typeString {dtype}) `hashWithSalt` operand
   hashWithSalt salt (BitcastConvertType {dtype} operand) =
-    salt `hashWithSalt` (typeString {dtype}) `hashWithSalt` operand
-  hashWithSalt salt (Sort operands comparator dimension isStable) =
-    let salt' = salt `hashWithSalt` "Sort"
-        salt'' = assert_total $ salt' `hashWithSalt` operands
-     in salt'' `hashWithSalt` (dimension, isStable)
+    salt `hashWithSalt` ("BitcastConvertType", typeString {dtype}) `hashWithSalt` operand

@@ -134,6 +134,7 @@ extern "C" {
 
     XlaOp* Pow(XlaOp& lhs, XlaOp& rhs);
 
+    XlaOp* ConvertElementType(XlaOp& operand, int new_element_type);
     XlaOp* BitcastConvertType(XlaOp& operand, int new_element_type);
 
     XlaOp* Neg(XlaOp& operand);

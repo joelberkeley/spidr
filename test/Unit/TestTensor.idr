@@ -970,32 +970,24 @@ ks samples cdf =
 
 covering
 uniform : Property
-uniform = fixedProperty $ do
-  let seed = fromLiteral {a=Nat} [0, 0]
-      -- it's clear looking at the samples that we're not generating uniform F64 samples, as they
-      -- would be predominantly ~1e308. My guess is BitCastConvert doesn't preserve uniformity, and
-      -- we'll need another way to convert from U64.
-      samples : Tensor [20] F64 = evalState seed uniform
+uniform = property $ do
+  -- test with non-scalar lower and upper
+  lower <- forAll (literal [] doubles)
+  size <- forAll (literal [] doubles)
 
-      uniformCdf : {d : _} -> Tensor [20, S d] F64 -> Tensor [20] F64
-      uniformCdf x =
-        let min : Tensor [] F64 = Bounded.min @{Finite} -- - 10.0 ^ 300.0 
-            max : Tensor [] F64 = Bounded.max @{Finite} -- 10.0 ^ 300.0
-            -- are we? ---> we're getting overflow in max - min. How to handle?
-         in reduce 1 @{Prod} $ (x - broadcast min) / (max - min)
+  let lower = fromLiteral lower
+      upper = lower + (fromLiteral $ map abs $ size)
+      seed = fromLiteral {a=Nat} [0, 0]
+
+      -- test with arbitrary shapes
+      samples : Tensor [10_000] F64 = evalState seed (uniform (broadcast lower) (broadcast upper))
+
+      uniformCdf : {d : _} -> Tensor [10_000, S d] F64 -> Tensor [10_000] F64
+      uniformCdf x = reduce 1 @{Prod} $ (x - broadcast lower) / (upper - lower)
 
       ltBound : Literal [] Double -> Literal [] Double -> Bool
       ltBound (Scalar x) (Scalar y) = x < y
 
-  Bounded.max @{Finite} ===# 0.0
-  Bounded.max @{Finite} / Bounded.min @{Finite} ===# -1.0
-  (
-    concat 1
-      (expand 1 samples) $ let sorted = expand 1 $ sort (<) 0 samples in
-      concat 1
-        sorted
-        (expand 1 $ uniformCdf sorted)
-    ) ===# fill 0
   diff (toLiteral (ks samples uniformCdf)) ltBound 0.01
 
 export covering

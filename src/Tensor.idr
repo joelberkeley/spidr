@@ -1171,19 +1171,30 @@ export
       MkCachingBuilder builder _ <- get
       maxFiniteValue {dtype} builder
 
+export
+Cast (Tensor shape U64) (Tensor shape F64) where
+  cast (MkTensor graph xs) =
+    let graph' = ConvertElementType {dtype=F64} graph
+     in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
+
 public export
 Rand : Type -> Type
 Rand = State (Tensor [2] U64)
 
+-- we need lower to be higher than upper. how to do that?
 export
-uniform : Primitive dtype => {shape : _} -> Rand (Tensor shape dtype)
-uniform = ST $ \(MkTensor initialStateGraph initialState) =>
+uniform : {shape : _} -> (lower, upper : Tensor shape F64) -> Rand (Tensor shape F64)
+uniform lower upper = ST $ \(MkTensor initialStateGraph initialState) =>
   let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
-      rng = cached rngGraph $ do rngBitGenerator RngThreeFry !initialState !(mkShape {dtype} shape)
+      rng = cached rngGraph $ do rngBitGenerator RngThreeFry !initialState !(mkShape {dtype=F64} shape)
       newStateGraph = GetTupleElement rngGraph 0
       newState = cached newStateGraph $ do getTupleElement !rng 0
       bitsSampleGraph = GetTupleElement rngGraph 1
       bitsSample = cached bitsSampleGraph $ do getTupleElement !rng 1
-      sampleGraph = BitcastConvertType {dtype} bitsSampleGraph
-      sample = cached sampleGraph $ do bitcastConvertType {dtype} !bitsSample
-   in Id (MkTensor newStateGraph newState, MkTensor sampleGraph sample)
+      sampleGraph = ConvertElementType {dtype=F64} bitsSampleGraph
+      sample : Tensor shape U64 = MkTensor sampleGraph $ cached sampleGraph $ bitsSample
+      u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
+      u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
+      f64sample = lower + (upper - lower) *
+        (cast sample - broadcast u64minAsF64) / (broadcast {to=shape} $ u64maxAsF64 - u64minAsF64)
+   in Id (MkTensor newStateGraph newState, f64sample)
