@@ -573,6 +573,32 @@ reduce axis (MkTensor graph xs) =
             let MkTensor _ init = neutral @{reducer}
             reduce !xs !init computation [axis]
 
+||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
+||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
+||| elements `a` and `b`, either `f a b` is true, or `f a b` *and* `f b a` are false.
+|||
+||| **Note:** Sorting is not stable, meaning elements that compare equal according the ordering may
+||| be sorted in a different order to the order they appear in the input.
+|||
+||| For example, for `x = fromLiteral [1, 3, 4, 2]`, `sort (<) 0 x` is
+||| `fromLiteral [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 x` is `fromLiteral [[1, 4, 6], [2, 3, 5]]`.
+export
+sort :
+  Primitive dtype =>
+  (Tensor [] dtype -> Tensor [] dtype -> Tensor [] PRED) ->
+  (dimension : Nat) ->
+  Tensor shape dtype ->
+  {auto 0 dimInBounds : InBounds dimension shape} ->
+  Tensor shape dtype
+sort comp dimension (MkTensor graph xs) =
+  let (graph0, p0) = parameter 0 [] "" {dtype}
+      (graph1, p1) = parameter 1 [] "" {dtype}
+      MkTensor graphf fRes = comp (MkTensor graph0 p0) (MkTensor graph1 p1)
+      sortedGraph = Sort [graph] graphf dimension False
+   in MkTensor sortedGraph $ cached sortedGraph $ do
+        comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
+        sort [!xs] comparator dimension False
+
 ----------------------------- numeric operations ----------------------------
 
 unaryOp :

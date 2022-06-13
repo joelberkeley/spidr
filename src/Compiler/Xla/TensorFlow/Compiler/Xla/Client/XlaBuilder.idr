@@ -328,6 +328,18 @@ transpose (MkXlaOp operand) permutation = do
   pure (MkXlaOp opPtr)
 
 export
+sort : HasIO io => List XlaOp -> XlaComputation -> Nat -> Bool -> io XlaOp
+sort operands (MkXlaComputation comparator) dimension isStable = do
+  MkXlaOpArray operandsXlaOpArrayPtr <- mkXlaOpArray operands
+  opPtr <- primIO $ prim__sort
+    operandsXlaOpArrayPtr (cast $ length operands)
+    comparator
+    (cast dimension)
+    (boolToCInt isStable)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 map : HasIO io => XlaBuilder -> List XlaOp -> XlaComputation -> List Nat -> io XlaOp
 map (MkXlaBuilder builder) operands (MkXlaComputation computation) dimensions = do
   MkXlaOpArray operandsXlaOpArrayPtr <- mkXlaOpArray operands

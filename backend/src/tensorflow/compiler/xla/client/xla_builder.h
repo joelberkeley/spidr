@@ -136,6 +136,10 @@ extern "C" {
 
     XlaOp* Transpose(XlaOp& operand, int* permutation, int rank);
 
+    XlaOp* Sort(
+        XlaOp* operands, int operands_len, XlaComputation& comparator, int dimension, int is_stable
+    );
+
     XlaOp* Map(
         XlaBuilder* builder,
         XlaOp* operands,

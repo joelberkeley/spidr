@@ -320,6 +320,16 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* Sort(
+        XlaOp* operands, int operands_len, XlaComputation& comparator, int dimension, int is_stable
+    ) {
+        xla::XlaOp* operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+        auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
+        auto& comparator_ = reinterpret_cast<xla::XlaComputation&>(comparator);
+        xla::XlaOp res = xla::Sort(operands_span, comparator_, dimension, (bool) is_stable);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Map(
         XlaBuilder* builder,
         XlaOp* operands,
