@@ -1185,11 +1185,13 @@ public export
 Rand : Type -> Type
 Rand = State (Tensor [2] U64)
 
-||| Generate independent and identically distributed (IID) uniform samples.
+||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
+||| between `bound` and `bound'`. Note `bound` and `bound'` need not be ordered in any way.
 |||
 ||| The generated samples are a deterministic function of the input seed, but may vary between
 ||| backends and library versions.
 export
+-- what if bound == bound'?
 uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
 uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
   let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
