@@ -1187,6 +1187,9 @@ public export
 Rand : Type -> Type
 Rand = State (Tensor [2] U64)
 
+inf : Tensor [] F64
+inf = fromDouble (1.0 / 0.0)
+
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
 ||| between `bound` and `bound'` (inclusive). Note `bound` and `bound'` need not be ordered.
 |||
@@ -1205,6 +1208,7 @@ uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
         MkTensor bitsSampleGraph $ cached bitsSampleGraph $ do getTupleElement !rng 1
       u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
       u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
-      f64sample = bound + (bound' - bound) *
+      finiteSamples = bound + (bound' - bound) *
         (cast bitsSample - broadcast u64minAsF64) / (broadcast $ u64maxAsF64 - u64minAsF64)
+      f64sample = select (bound == bound' && abs bound == broadcast inf) bound finiteSamples
    in Id (MkTensor newStateGraph newState, f64sample)
