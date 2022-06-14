@@ -107,6 +107,32 @@ export
 Show (Tensor shape dtype) where
   show (MkTensor _ xs) = opToString xs
 
+namespace Bounded
+  ||| A type `a` satisfying `Bounded a` has a minimum and maximum value.
+  public export
+  interface Bounded a where
+    min : a
+    max : a
+
+||| Finite bounds for numeric tensors.
+export
+[Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
+  min = let graph = MinFiniteValue {dtype} in
+    MkTensor graph $ cached graph $ do
+      MkCachingBuilder builder _ <- get
+      minFiniteValue {dtype} builder
+
+  max = let graph = MaxFiniteValue {dtype} in
+    MkTensor graph $ cached graph $ do
+      MkCachingBuilder builder _ <- get
+      maxFiniteValue {dtype} builder
+
+export
+Cast (Tensor shape U64) (Tensor shape F64) where
+  cast (MkTensor graph xs) =
+    let graph' = ConvertElementType {dtype=F64} graph
+     in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
+
 ----------------------------- structural operations ----------------------------
 
 reshapeWithDefaultOrdering :
@@ -1153,32 +1179,6 @@ trace :
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
 
-namespace Bounded
-  ||| A type `a` satisfying `Bounded a` has a minimum and maximum value.
-  public export
-  interface Bounded a where
-    min : a
-    max : a
-
-||| Finite bounds for numeric tensors.
-export
-[Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
-  min = let graph = MinFiniteValue {dtype} in
-    MkTensor graph $ cached graph $ do
-      MkCachingBuilder builder _ <- get
-      minFiniteValue {dtype} builder
-
-  max = let graph = MaxFiniteValue {dtype} in
-    MkTensor graph $ cached graph $ do
-      MkCachingBuilder builder _ <- get
-      maxFiniteValue {dtype} builder
-
-export
-Cast (Tensor shape U64) (Tensor shape F64) where
-  cast (MkTensor graph xs) =
-    let graph' = ConvertElementType {dtype=F64} graph
-     in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
-
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [2] U64` seed.
 ||| The seed is updated each time a new value is generated.
 public export
@@ -1186,12 +1186,11 @@ Rand : Type -> Type
 Rand = State (Tensor [2] U64)
 
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
-||| between `bound` and `bound'`. Note `bound` and `bound'` need not be ordered in any way.
+||| between `bound` and `bound'` (inclusive). Note `bound` and `bound'` need not be ordered.
 |||
 ||| The generated samples are a deterministic function of the input seed, but may vary between
 ||| backends and library versions.
 export
--- what if bound == bound'?
 uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
 uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
   let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape

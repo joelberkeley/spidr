@@ -959,10 +959,7 @@ range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 
 kolmogorovSmirnov :
-  {n : _} ->
-  Tensor [n, 1] F64 ->
-  ({n' : _} -> Tensor [n', 1] F64 -> Tensor [n'] F64) ->
-  Tensor [] F64
+  {n : _} -> Tensor [n] F64 -> ({n' : _} -> Tensor [n'] F64 -> Tensor [n'] F64) -> Tensor [] F64
 kolmogorovSmirnov samples cdf =
   let indices : Tensor [n] F64 = cast (fromLiteral {dtype=U64} (range n))
       sampleSize : Tensor [] F64 = cast (fromLiteral {dtype=U64} (Scalar n))
@@ -972,29 +969,36 @@ kolmogorovSmirnov samples cdf =
 covering
 uniform : Property
 uniform = withTests 20 . property $ do
-  -- CHECK SHAPES. I'M STILL UNSURE
-
-  -- event shape []
-  -- dependent variables 1
-  -- independent samples 10000
-
-  bound <- forAll (literal [1] doubles)
-  bound' <- forAll (literal [1] doubles)
+  bound <- forAll (literal [] doubles)
+  bound' <- forAll (literal [] doubles)
   seed <- forAll (literal [2] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
       seed = fromLiteral seed
 
-      samples : Tensor [10_000, 1] F64 =
+      samples : Tensor [10_000] F64 =
         evalState seed (uniform (broadcast bound) (broadcast bound'))
 
-      uniformCdf : {n : _} -> Tensor [n, 1] F64 -> Tensor [n] F64
-      uniformCdf x = (squeeze x - broadcast bound) / (broadcast $ bound' - bound)
+      uniformCdf : {n : _} -> Tensor [n] F64 -> Tensor [n] F64
+      uniformCdf x = (x - broadcast bound) / (bound' - bound)
 
       ksTest := kolmogorovSmirnov samples uniformCdf
 
   diff (toLiteral ksTest) (<) 0.01
+
+covering
+uniformForEqualBounds : Property
+uniformForEqualBounds = fixedProperty $ do
+  bound <- forAll (literal [] doubles)
+  seed <- forAll (literal [2] nats)
+
+  let bound = broadcast $ fromLiteral bound
+      seed = fromLiteral seed
+
+      samples : Tensor [10] F64 = evalState seed (uniform bound bound)
+
+  samples ===# bound
 
 export covering
 group : Group
@@ -1002,49 +1006,50 @@ group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
     , ("show", show)
     , ("uniform", uniform)
-  --   , ("reshape", reshape)
-  --   , ("slice", slice)
-  --   , ("index", index)
-  --   , ("split", split)
-  --   , ("concat", concat)
-  --   , ("diag", diag)
-  --   , ("triangle", triangle)
-  --   , ("identity", identity)
-  --   , ("expand", expand)
-  --   , ("broadcast", broadcast)
-  --   , ("squeeze", squeeze)
-  --   , ("(.T)", (.T))
-  --   , ("map", mapResult)
-  --   , ("map with non-trivial function", mapNonTrivial)
-  --   , ("map2", map2Result)
-  --   , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
-  --   , ("reduce", reduce)
-  --   , ("sort", sort)
-  --   , ("sort with empty axis", sortWithEmptyAxis)
-  --   , ("sort with repeated elements", sortWithRepeatedElements)
-  --   , ("Vector.(@@)", Vector.(@@))
-  --   , ("Matrix.(@@)", Matrix.(@@))
-  -- ]
-  -- ++ testElementwiseComparatorCases
-  -- ++ testElementwiseUnaryCases
-  -- ++ testElementwiseBinaryCases
-  -- ++ [
-  --     ("Scalarwise.(*)", scalarMultiplication)
-  --   , ("Scalarwise.(/)", scalarDivision)
-  --   , ("Sum", neutralIsNeutralForSum)
-  --   , ("Prod", neutralIsNeutralForProd)
-  --   , ("min F64", minF64)
-  --   , ("max F64", maxF64)
-  --   , ("Min", neutralIsNeutralForMin)
-  --   , ("Max", neutralIsNeutralForMax)
-  --   , ("Any", neutralIsNeutralForAny)
-  --   , ("All", neutralIsNeutralForAll)
-  --   , ("select", select)
-  --   , ("cond for trivial usage", condResultTrivialUsage)
-  --   , ("cond for re-used arguments", condResultWithReusedArgs)
-  --   , ("erf", erf)
-  --   , ("cholesky", cholesky)
-  --   , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
-  --   , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-  --   , ("trace", trace)
+    , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
+    , ("reshape", reshape)
+    , ("slice", slice)
+    , ("index", index)
+    , ("split", split)
+    , ("concat", concat)
+    , ("diag", diag)
+    , ("triangle", triangle)
+    , ("identity", identity)
+    , ("expand", expand)
+    , ("broadcast", broadcast)
+    , ("squeeze", squeeze)
+    , ("(.T)", (.T))
+    , ("map", mapResult)
+    , ("map with non-trivial function", mapNonTrivial)
+    , ("map2", map2Result)
+    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+    , ("reduce", reduce)
+    , ("sort", sort)
+    , ("sort with empty axis", sortWithEmptyAxis)
+    , ("sort with repeated elements", sortWithRepeatedElements)
+    , ("Vector.(@@)", Vector.(@@))
+    , ("Matrix.(@@)", Matrix.(@@))
+  ]
+  ++ testElementwiseComparatorCases
+  ++ testElementwiseUnaryCases
+  ++ testElementwiseBinaryCases
+  ++ [
+      ("Scalarwise.(*)", scalarMultiplication)
+    , ("Scalarwise.(/)", scalarDivision)
+    , ("Sum", neutralIsNeutralForSum)
+    , ("Prod", neutralIsNeutralForProd)
+    , ("min F64", minF64)
+    , ("max F64", maxF64)
+    , ("Min", neutralIsNeutralForMin)
+    , ("Max", neutralIsNeutralForMax)
+    , ("Any", neutralIsNeutralForAny)
+    , ("All", neutralIsNeutralForAll)
+    , ("select", select)
+    , ("cond for trivial usage", condResultTrivialUsage)
+    , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("erf", erf)
+    , ("cholesky", cholesky)
+    , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
+    , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
+    , ("trace", trace)
   ]
