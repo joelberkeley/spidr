@@ -1202,6 +1202,6 @@ uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
         MkTensor bitsSampleGraph $ cached bitsSampleGraph $ do getTupleElement !rng 1
       u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
       u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
-      f64sample = bound + (bound - bound') *
-        (cast bitsSample - broadcast u64minAsF64) / (broadcast {to=shape} $ u64maxAsF64 - u64minAsF64)
+      f64sample = bound + (bound' - bound) *
+        (cast bitsSample - broadcast u64minAsF64) / (broadcast $ u64maxAsF64 - u64minAsF64)
    in Id (MkTensor newStateGraph newState, f64sample)
