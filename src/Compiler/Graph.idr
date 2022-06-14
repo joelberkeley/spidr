@@ -33,6 +33,8 @@ data Graph : Type where
   Parameter : Primitive dtype => Shape -> Nat -> Graph
   MinFiniteValue : Primitive dtype => Graph
   MaxFiniteValue : Primitive dtype => Graph
+  ConvertElementType : Primitive dtype => Graph -> Graph
+  GetTupleElement : Graph -> Nat -> Graph
   Reshape : Shape -> Graph -> Graph
   Slice : Nat -> Nat -> Nat -> Graph -> Graph
   Concat : Nat -> Graph -> Graph -> Graph
@@ -51,9 +53,7 @@ data Graph : Type where
   Dot : Graph -> Graph -> Graph
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
-  GetTupleElement : Graph -> Nat -> Graph
   RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
-  ConvertElementType : Primitive dtype => Graph -> Graph
 
 Hashable RandomAlgorithm where
   hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
@@ -71,6 +71,10 @@ Hashable Graph where
     salt `hashWithSalt` ("MinFiniteValue", typeString {dtype})
   hashWithSalt salt (MaxFiniteValue {dtype}) =
     salt `hashWithSalt` ("MaxFiniteValue", typeString {dtype})
+  hashWithSalt salt (ConvertElementType {dtype} operand) =
+    salt `hashWithSalt` ("ConvertElementType", typeString {dtype}) `hashWithSalt` operand
+  hashWithSalt salt (GetTupleElement tuple index) =
+    hashWithSalt salt ("GetTupleElement", index) `hashWithSalt` tuple
   hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to) `hashWithSalt` x
   hashWithSalt salt (Slice axis from to x) =
     salt `hashWithSalt` ("Slice", axis, from, to) `hashWithSalt` x
@@ -106,11 +110,7 @@ Hashable Graph where
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve lower x y) =
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (GetTupleElement tuple index) =
-    hashWithSalt salt ("GetTupleElement", index) `hashWithSalt` tuple
   hashWithSalt salt (RngBitGenerator algorithm initialState shape) = salt
     `hashWithSalt` ("RngBitGenerator", algorithm)
     `hashWithSalt` initialState
     `hashWithSalt` shape
-  hashWithSalt salt (ConvertElementType {dtype} operand) =
-    salt `hashWithSalt` ("ConvertElementType", typeString {dtype}) `hashWithSalt` operand
