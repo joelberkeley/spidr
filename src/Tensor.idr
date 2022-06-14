@@ -1179,8 +1179,8 @@ Cast (Tensor shape U64) (Tensor shape F64) where
     let graph' = ConvertElementType {dtype=F64} graph
      in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
 
-||| A `Rand a` produces a value of type `a`. It does this using a `Tensor [2] U64` seed, which is
-||| updated each time new samples are generated.
+||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [2] U64` seed.
+||| The seed is updated each time a new value is generated.
 public export
 Rand : Type -> Type
 Rand = State (Tensor [2] U64)
@@ -1198,11 +1198,10 @@ uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
       newStateGraph = GetTupleElement rngGraph 0
       newState = cached newStateGraph $ do getTupleElement !rng 0
       bitsSampleGraph = GetTupleElement rngGraph 1
-      bitsSample = cached bitsSampleGraph $ do getTupleElement !rng 1
-      sampleGraph = ConvertElementType {dtype=F64} bitsSampleGraph
-      sample : Tensor shape U64 = MkTensor sampleGraph $ cached sampleGraph $ bitsSample
+      bitsSample : Tensor shape U64 =
+        MkTensor bitsSampleGraph $ cached bitsSampleGraph $ do getTupleElement !rng 1
       u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
       u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
       f64sample = bound + (bound - bound') *
-        (cast sample - broadcast u64minAsF64) / (broadcast {to=shape} $ u64maxAsF64 - u64minAsF64)
+        (cast bitsSample - broadcast u64minAsF64) / (broadcast {to=shape} $ u64maxAsF64 - u64minAsF64)
    in Id (MkTensor newStateGraph newState, f64sample)
