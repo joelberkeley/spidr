@@ -1005,8 +1005,6 @@ group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
     , ("show", show)
-    , ("uniform", uniform)
-    , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
     , ("reshape", reshape)
     , ("slice", slice)
     , ("index", index)
@@ -1052,4 +1050,6 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
+    , ("uniform", uniform)
+    , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
   ]

@@ -47,6 +47,8 @@ import public Primitive
 import public Types
 import public Util
 
+%hide Xla.Shape
+
 ----------------------------- core definitions ----------------------------
 
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
@@ -56,7 +58,7 @@ import public Util
 ||| @shape The `Tensor` shape.
 ||| @dtype The element type.
 export
-data Tensor : (0 shape : Types.Shape) -> (0 dtype : Type) -> Type where
+data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : {shape : _} -> Graph -> Computation XlaOp -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
@@ -136,7 +138,7 @@ Cast (Tensor shape U64) (Tensor shape F64) where
 ----------------------------- structural operations ----------------------------
 
 reshapeWithDefaultOrdering :
-  (from, to : Types.Shape) -> Computation XlaOp -> Computation XlaOp
+  (from, to : Shape) -> Computation XlaOp -> Computation XlaOp
 reshapeWithDefaultOrdering from to xs = reshape !xs (range $ length from) to
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
@@ -172,7 +174,7 @@ namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
   ||| shape `to`. Squeezing is the process of removing any number of dimensions of length one.
   public export
-  data Squeezable : (0 from : Types.Shape) -> (0 to : Types.Shape) -> Type where
+  data Squeezable : (0 from : Shape) -> (0 to : Shape) -> Type where
     ||| Proof that a shape can be squeezed to itself. For example:
     |||
     ||| [] to []
@@ -427,7 +429,7 @@ namespace Broadcastable
   ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
   ||| shape `to`.
   public export
-  data Broadcastable : (0 from : Types.Shape) -> (0 to : Types.Shape) -> Type where
+  data Broadcastable : (0 from : Shape) -> (0 to : Shape) -> Type where
     ||| Proof that a shape can be broadcast to itself. For example:
     |||
     ||| [] to []
@@ -507,7 +509,7 @@ broadcast xs with (xs)
 
 %hint
 export
-scalarToAnyOk : (to : Types.Shape) -> Broadcastable [] to
+scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 
