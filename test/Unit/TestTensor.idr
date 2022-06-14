@@ -955,40 +955,47 @@ trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
   trace x ===# 3
 
-ks :
+kolmogorovSmirnov :
   {n : _} ->
-  Tensor [S n] F64 ->
-  ({d : _} -> Tensor [S n, S d] F64 -> Tensor [S n] F64) ->
+  Tensor [n, 1] F64 ->
+  ({n' : _} -> Tensor [n', 1] F64 -> Tensor [n'] F64) ->
   Tensor [] F64
-ks samples cdf =
+kolmogorovSmirnov samples cdf =
   let proportion = fromLiteral $
-        cast {to=Literal [S n] Double} $
-        map (\x => cast {to=Double} x / cast (S n)) $
-        Vect.range (S n)
-      deviationFromCDF : Tensor _ _ = proportion - (cdf $ expand 1 $ sort (<) 0 samples)
+        cast {to=Literal [n] Double} $
+        map (\x => cast {to=Double} x / cast n) $
+        Vect.range n
+      deviationFromCDF : Tensor _ _ = proportion - (cdf $ sort (<) 0 samples)
    in reduce @{Max} 0 (abs deviationFromCDF)
 
 covering
 uniform : Property
 uniform = property $ do
-  -- test with non-scalar lower and upper
-  lower <- forAll (literal [] doubles)
-  size <- forAll (literal [] doubles)
+  -- CHECK SHAPES. I'M STILL VERY UNSURE
+
+  -- event shape []
+  -- dependent variables 1
+  -- independent samples 10000
+
+  lower <- forAll (literal [1] doubles)
+  size <- forAll (literal [1] doubles)
+  seed <- forAll (literal [2] nats)
 
   let lower = fromLiteral lower
-      upper = lower + (fromLiteral $ map abs $ size)
-      seed = fromLiteral {a=Nat} [0, 0]
+      size = abs $ fromLiteral size
+      upper = lower + size
+      seed = fromLiteral seed
 
-      -- test with arbitrary shapes
-      samples : Tensor [10_000] F64 = evalState seed (uniform (broadcast lower) (broadcast upper))
+      samples : Tensor [10_000, 1] F64 =
+        evalState seed (uniform (broadcast lower) (broadcast upper))
 
-      uniformCdf : {d : _} -> Tensor [10_000, S d] F64 -> Tensor [10_000] F64
-      uniformCdf x = reduce 1 @{Prod} $ (x - broadcast lower) / (upper - lower)
+      uniformCdf : {n : _} -> Tensor [n, 1] F64 -> Tensor [n] F64
+      uniformCdf x = Tensor.(/) (squeeze x - broadcast lower) (broadcast $ upper - lower)
 
       ltBound : Literal [] Double -> Literal [] Double -> Bool
       ltBound (Scalar x) (Scalar y) = x < y
 
-  diff (toLiteral (ks samples uniformCdf)) ltBound 0.01
+  diff (toLiteral (kolmogorovSmirnov samples uniformCdf)) ltBound 0.01
 
 export covering
 group : Group
