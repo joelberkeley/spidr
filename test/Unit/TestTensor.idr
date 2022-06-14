@@ -955,53 +955,53 @@ trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
   trace x ===# 3
 
+range : (n : Nat) -> Literal [n] Nat
+range n = cast (Vect.range n)
+
 kolmogorovSmirnov :
   {n : _} ->
   Tensor [n, 1] F64 ->
   ({n' : _} -> Tensor [n', 1] F64 -> Tensor [n'] F64) ->
   Tensor [] F64
 kolmogorovSmirnov samples cdf =
-  let proportion = fromLiteral $
-        cast {to=Literal [n] Double} $
-        map (\x => cast {to=Double} x / cast n) $
-        Vect.range n
-      deviationFromCDF : Tensor _ _ = proportion - (cdf $ sort (<) 0 samples)
+  let indices : Tensor [n] F64 = cast (fromLiteral {dtype=U64} (range n))
+      sampleSize : Tensor [] F64 = cast (fromLiteral {dtype=U64} (Scalar n))
+      deviationFromCDF : Tensor [n] F64 = indices / sampleSize - cdf (sort (<) 0 samples)
    in reduce @{Max} 0 (abs deviationFromCDF)
 
 covering
 uniform : Property
-uniform = property $ do
-  -- CHECK SHAPES. I'M STILL VERY UNSURE
+uniform = withTests 20 . property $ do
+  -- CHECK SHAPES. I'M STILL UNSURE
 
   -- event shape []
   -- dependent variables 1
   -- independent samples 10000
 
-  lower <- forAll (literal [1] doubles)
-  size <- forAll (literal [1] doubles)
+  bound <- forAll (literal [1] doubles)
+  bound' <- forAll (literal [1] doubles)
   seed <- forAll (literal [2] nats)
 
-  let lower = fromLiteral lower
-      size = abs $ fromLiteral size
-      upper = lower + size
+  let bound = fromLiteral bound
+      bound' = fromLiteral bound'
       seed = fromLiteral seed
 
       samples : Tensor [10_000, 1] F64 =
-        evalState seed (uniform (broadcast lower) (broadcast upper))
+        evalState seed (uniform (broadcast bound) (broadcast bound'))
 
       uniformCdf : {n : _} -> Tensor [n, 1] F64 -> Tensor [n] F64
-      uniformCdf x = Tensor.(/) (squeeze x - broadcast lower) (broadcast $ upper - lower)
+      uniformCdf x = (squeeze x - broadcast bound) / (broadcast $ bound' - bound)
 
-      ltBound : Literal [] Double -> Literal [] Double -> Bool
-      ltBound (Scalar x) (Scalar y) = x < y
+      ksTest := kolmogorovSmirnov samples uniformCdf
 
-  diff (toLiteral (kolmogorovSmirnov samples uniformCdf)) ltBound 0.01
+  diff (toLiteral ksTest) (<) 0.01
 
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
-  --   , ("show", show)
+    , ("show", show)
+    , ("uniform", uniform)
   --   , ("reshape", reshape)
   --   , ("slice", slice)
   --   , ("index", index)
@@ -1019,9 +1019,9 @@ group = MkGroup "Tensor" $ [
   --   , ("map2", map2Result)
   --   , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
   --   , ("reduce", reduce)
-    -- , ("sort", sort)
-    -- , ("sort with empty axis", sortWithEmptyAxis)
-    -- , ("sort with repeated elements", sortWithRepeatedElements)
+  --   , ("sort", sort)
+  --   , ("sort with empty axis", sortWithEmptyAxis)
+  --   , ("sort with repeated elements", sortWithRepeatedElements)
   --   , ("Vector.(@@)", Vector.(@@))
   --   , ("Matrix.(@@)", Matrix.(@@))
   -- ]
@@ -1047,5 +1047,4 @@ group = MkGroup "Tensor" $ [
   --   , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
   --   , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
   --   , ("trace", trace)
-    , ("uniform", uniform)
   ]

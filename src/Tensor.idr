@@ -1154,13 +1154,15 @@ trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
 
 namespace Bounded
+  ||| A type `a` satisfying `Bounded a` has a minimum and maximum value.
   public export
   interface Bounded a where
     min : a
     max : a
 
+||| Finite bounds for numeric tensors.
 export
-[Finite] Primitive dtype => Bounded (Tensor [] dtype) where
+[Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
   min = let graph = MinFiniteValue {dtype} in
     MkTensor graph $ cached graph $ do
       MkCachingBuilder builder _ <- get
@@ -1177,16 +1179,22 @@ Cast (Tensor shape U64) (Tensor shape F64) where
     let graph' = ConvertElementType {dtype=F64} graph
      in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
 
+||| A `Rand a` produces a value of type `a`. It does this using a `Tensor [2] U64` seed, which is
+||| updated each time new samples are generated.
 public export
 Rand : Type -> Type
 Rand = State (Tensor [2] U64)
 
--- we need lower to be higher than upper. how to do that?
+||| Generate independent and identically distributed (IID) uniform samples.
+|||
+||| The generated samples are a deterministic function of the input seed, but may vary between
+||| backends and library versions.
 export
-uniform : {shape : _} -> (lower, upper : Tensor shape F64) -> Rand (Tensor shape F64)
-uniform lower upper = ST $ \(MkTensor initialStateGraph initialState) =>
+uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
+uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
   let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
-      rng = cached rngGraph $ do rngBitGenerator RngThreeFry !initialState !(mkShape {dtype=F64} shape)
+      rng = cached rngGraph $ do
+        rngBitGenerator RngThreeFry !initialState !(mkShape {dtype=F64} shape)
       newStateGraph = GetTupleElement rngGraph 0
       newState = cached newStateGraph $ do getTupleElement !rng 0
       bitsSampleGraph = GetTupleElement rngGraph 1
@@ -1195,6 +1203,6 @@ uniform lower upper = ST $ \(MkTensor initialStateGraph initialState) =>
       sample : Tensor shape U64 = MkTensor sampleGraph $ cached sampleGraph $ bitsSample
       u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
       u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
-      f64sample = lower + (upper - lower) *
+      f64sample = bound + (bound - bound') *
         (cast sample - broadcast u64minAsF64) / (broadcast {to=shape} $ u64maxAsF64 - u64minAsF64)
    in Id (MkTensor newStateGraph newState, f64sample)
