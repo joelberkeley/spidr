@@ -189,14 +189,6 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
-    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len) {
-        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
-        auto elements_ = reinterpret_cast<xla::XlaOp*>(elements);
-        auto elements_span = absl::Span<const xla::XlaOp>(elements_, elements_len);
-        xla::XlaOp res = xla::Tuple(builder_, elements_span);
-        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
-    }
-
     XlaOp* GetTupleElement(XlaOp& tuple_data, int index) {
         auto& tuple_data_ = reinterpret_cast<xla::XlaOp&>(tuple_data);
         xla::XlaOp res = xla::GetTupleElement(tuple_data_, (int64_t) index);
@@ -325,13 +317,6 @@ extern "C" {
         auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
         auto new_element_type_ = (xla::PrimitiveType) new_element_type;
         xla::XlaOp res = xla::ConvertElementType(operand_, new_element_type_);
-        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
-    }
-
-    XlaOp* BitcastConvertType(XlaOp& operand, int new_element_type) {
-        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
-        auto new_element_type_ = (xla::PrimitiveType) new_element_type;
-        xla::XlaOp res = xla::BitcastConvertType(operand_, new_element_type_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 

@@ -51,11 +51,9 @@ data Graph : Type where
   Dot : Graph -> Graph -> Graph
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
-  Tuple : List Graph -> Graph
   GetTupleElement : Graph -> Nat -> Graph
   RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
   ConvertElementType : Primitive dtype => Graph -> Graph
-  BitcastConvertType : Primitive dtype => Graph -> Graph
 
 Hashable RandomAlgorithm where
   hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
@@ -108,9 +106,6 @@ Hashable Graph where
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve lower x y) =
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (Tuple operands) =
-    let salt' = salt `hashWithSalt` "Tuple"
-     in assert_total $ salt' `hashWithSalt` operands
   hashWithSalt salt (GetTupleElement tuple index) =
     hashWithSalt salt ("GetTupleElement", index) `hashWithSalt` tuple
   hashWithSalt salt (RngBitGenerator algorithm initialState shape) = salt
@@ -119,5 +114,3 @@ Hashable Graph where
     `hashWithSalt` shape
   hashWithSalt salt (ConvertElementType {dtype} operand) =
     salt `hashWithSalt` ("ConvertElementType", typeString {dtype}) `hashWithSalt` operand
-  hashWithSalt salt (BitcastConvertType {dtype} operand) =
-    salt `hashWithSalt` ("BitcastConvertType", typeString {dtype}) `hashWithSalt` operand

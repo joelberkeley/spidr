@@ -86,10 +86,6 @@ export
 prim__select : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
-%foreign (libxla "Tuple")
-prim__tuple : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
-
-export
 %foreign (libxla "GetTupleElement")
 prim__getTupleElement : GCAnyPtr -> Int -> PrimIO AnyPtr
 
@@ -216,10 +212,6 @@ prim__pow : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 export
 %foreign (libxla "ConvertElementType")
 prim__convertElementType : GCAnyPtr -> Int -> PrimIO AnyPtr
-
-export
-%foreign (libxla "BitcastConvertType")
-prim__bitcastConvertType : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "Neg")

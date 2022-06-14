@@ -165,14 +165,6 @@ select (MkXlaOp pred) (MkXlaOp onTrue) (MkXlaOp onFalse) = do
   pure (MkXlaOp opPtr)
 
 export
-tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
-tuple (MkXlaBuilder builder) ops = do
-  MkXlaOpArray opsArray <- mkXlaOpArray ops
-  opPtr <- primIO $ prim__tuple builder opsArray (cast $ length ops)
-  opPtr <- onCollectAny opPtr XlaOp.delete
-  pure (MkXlaOp opPtr)
-
-export
 getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
 getTupleElement (MkXlaOp tuple_) index = do
   opPtr <- primIO $ prim__getTupleElement tuple_ (cast index)
@@ -335,13 +327,6 @@ export
 convertElementType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
 convertElementType (MkXlaOp operand) = do
   opPtr <- primIO $ prim__convertElementType operand (xlaIdentifier {dtype})
-  opPtr <- onCollectAny opPtr XlaOp.delete
-  pure (MkXlaOp opPtr)
-
-export
-bitcastConvertType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
-bitcastConvertType (MkXlaOp operand) = do
-  opPtr <- primIO $ prim__bitcastConvertType operand (xlaIdentifier {dtype})
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
