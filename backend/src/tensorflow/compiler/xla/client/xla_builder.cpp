@@ -188,6 +188,12 @@ extern "C" {
         xla::XlaOp res = xla::Select(pred_, on_true_, on_false_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
+
+    XlaOp* GetTupleElement(XlaOp& tuple_data, int index) {
+        auto& tuple_data_ = reinterpret_cast<xla::XlaOp&>(tuple_data);
+        xla::XlaOp res = xla::GetTupleElement(tuple_data_, (int64_t) index);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 }
 
 XlaOp* unaryOp(std::function<xla::XlaOp(xla::XlaOp)> op, XlaOp& operand) {
@@ -307,6 +313,13 @@ extern "C" {
 
     XlaOp* Pow(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Pow, lhs, rhs); }
 
+    XlaOp* ConvertElementType(XlaOp& operand, int new_element_type) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto new_element_type_ = (xla::PrimitiveType) new_element_type;
+        xla::XlaOp res = xla::ConvertElementType(operand_, new_element_type_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Neg(XlaOp& operand) { return unaryOp(xla::Neg, operand); }
 
     XlaOp* Transpose(XlaOp& operand, int* permutation, int rank) {
@@ -357,6 +370,14 @@ extern "C" {
             builder_, operands_span, computation_, dimensions_span, static_operands_span
         );
 
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* RngBitGenerator(int algorithm, XlaOp& initial_state, Shape& shape) {
+        auto algorithm_ = (xla::RandomAlgorithm) algorithm;
+        auto initial_state_ = reinterpret_cast<xla::XlaOp&>(initial_state);
+        auto shape_ = reinterpret_cast<xla::Shape&>(shape);
+        xla::XlaOp res = xla::RngBitGenerator(algorithm_, initial_state_, shape_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 

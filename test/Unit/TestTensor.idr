@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Unit.TestTensor
 
+import Control.Monad.State
 import Data.Nat
 import Data.Vect
 import System
@@ -62,6 +63,23 @@ show = fixedProperty $ do
 
   let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
   show x === "constant, shape=[3], metadata={:0}"
+
+covering
+cast : Property
+cast = property $ do
+  shape <- forAll shapes
+
+  lit <- forAll (literal shape nats)
+  let x : Tensor shape F64 = cast (fromLiteral {dtype=U32} lit)
+  x ===# fromLiteral (map (cast {to=Double}) lit)
+
+  lit <- forAll (literal shape nats)
+  let x : Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
+  x ===# fromLiteral (map (cast {to=Double}) lit)
+
+  lit <- forAll (literal shape ints)
+  let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
+  x ===# fromLiteral (map (cast {to=Double}) lit)
 
 reshape : Property
 reshape = fixedProperty $ do
@@ -954,11 +972,57 @@ trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
   trace x ===# 3
 
+range : (n : Nat) -> Literal [n] Nat
+range n = cast (Vect.range n)
+
+kolmogorovSmirnov :
+  {n : _} -> Tensor [n] F64 -> ({n' : _} -> Tensor [n'] F64 -> Tensor [n'] F64) -> Tensor [] F64
+kolmogorovSmirnov samples cdf =
+  let indices : Tensor [n] F64 = cast (fromLiteral {dtype=U64} (range n))
+      sampleSize : Tensor [] F64 = cast (fromLiteral {dtype=U64} (Scalar n))
+      deviationFromCDF : Tensor [n] F64 = indices / sampleSize - cdf (sort (<) 0 samples)
+   in reduce @{Max} 0 (abs deviationFromCDF)
+
+covering
+uniform : Property
+uniform = withTests 20 . property $ do
+  bound <- forAll (literal [] doubles)
+  bound' <- forAll (literal [] doubles)
+  seed <- forAll (literal [2] nats)
+
+  let bound = fromLiteral bound
+      bound' = fromLiteral bound'
+      seed = fromLiteral seed
+
+      samples : Tensor [10_000] F64 =
+        evalState seed (uniform (broadcast bound) (broadcast bound'))
+
+      uniformCdf : {n : _} -> Tensor [n] F64 -> Tensor [n] F64
+      uniformCdf x = (x - broadcast bound) / (bound' - bound)
+
+      ksTest := kolmogorovSmirnov samples uniformCdf
+
+  diff (toLiteral ksTest) (<) 0.01
+
+covering
+uniformForEqualBounds : Property
+uniformForEqualBounds = fixedProperty $ do
+  bound <- forAll (literal [] doubles)
+  seed <- forAll (literal [2] nats)
+
+  let bound = broadcast $ fromLiteral bound
+      seed = fromLiteral seed
+
+      samples : Tensor [10] F64 = evalState seed (uniform bound bound)
+
+  samples ===# bound
+
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
     , ("show", show)
+    , ("cast", cast)
     , ("reshape", reshape)
     , ("slice", slice)
     , ("index", index)
@@ -1004,4 +1068,6 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
+    , ("uniform", uniform)
+    , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
   ]

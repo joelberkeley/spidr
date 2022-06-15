@@ -28,6 +28,7 @@ import Data.Hashable
 import Compiler.Computation
 import Compiler.Graph
 import Compiler.LiteralRW
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
@@ -36,6 +37,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
+import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 import Compiler.Xla.TensorFlow.Core.Platform.Status
@@ -44,6 +46,8 @@ import Literal
 import public Primitive
 import public Types
 import public Util
+
+%hide Xla.Shape
 
 ----------------------------- core definitions ----------------------------
 
@@ -104,6 +108,32 @@ toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
 export
 Show (Tensor shape dtype) where
   show (MkTensor _ xs) = opToString xs
+
+namespace Bounded
+  ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
+  public export
+  interface Bounded a where
+    min : a
+    max : a
+
+||| Finite bounds for numeric tensors.
+export
+[Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
+  min = let graph = MinFiniteValue {dtype} in
+    MkTensor graph $ cached graph $ do
+      MkCachingBuilder builder _ <- get
+      minFiniteValue {dtype} builder
+
+  max = let graph = MaxFiniteValue {dtype} in
+    MkTensor graph $ cached graph $ do
+      MkCachingBuilder builder _ <- get
+      maxFiniteValue {dtype} builder
+
+export
+Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
+  cast (MkTensor graph xs) =
+    let graph' = ConvertElementType {dtype=F64} graph
+     in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
 
 ----------------------------- structural operations ----------------------------
 
@@ -1150,3 +1180,35 @@ trace :
   Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
+
+||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [2] U64` seed.
+||| The seed is updated each time a new value is generated.
+public export
+Rand : Type -> Type
+Rand = State (Tensor [2] U64)
+
+inf : Tensor [] F64
+inf = fromDouble (1.0 / 0.0)
+
+||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
+||| between `bound` and `bound'` (inclusive). Note `bound` and `bound'` need not be ordered.
+|||
+||| The generated samples are a deterministic function of the input seed, but may vary between
+||| backends and library versions.
+export
+uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
+uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
+  let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
+      rng = cached rngGraph $ do
+        rngBitGenerator RngThreeFry !initialState !(mkShape {dtype=F64} shape)
+      newStateGraph = GetTupleElement rngGraph 0
+      newState = cached newStateGraph $ do getTupleElement !rng 0
+      bitsSampleGraph = GetTupleElement rngGraph 1
+      bitsSample : Tensor shape U64 =
+        MkTensor bitsSampleGraph $ cached bitsSampleGraph $ do getTupleElement !rng 1
+      u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
+      u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
+      finiteSamples = bound + (bound' - bound) *
+        (cast bitsSample - broadcast u64minAsF64) / (broadcast $ u64maxAsF64 - u64minAsF64)
+      f64sample = select (bound == bound' && abs bound == broadcast inf) bound finiteSamples
+   in Id (MkTensor newStateGraph newState, f64sample)

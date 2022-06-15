@@ -30,11 +30,13 @@ import public Util.Hashable
 %hide Prelude.Num
 %hide Prelude.Neg
 %hide Prelude.Abs
+%hide Prelude.Integral
 %hide Prelude.Fractional
 
 export interface Primitive dtype => Num dtype where
 export interface Num dtype => Neg dtype where
 export interface Num dtype => Abs dtype where
+export interface Num dtype => Integral dtype where
 export interface Num dtype => Fractional dtype where
 
 export Num U32 where
@@ -53,6 +55,11 @@ export Abs S32 where
 export Abs S64 where
 export Abs F32 where
 export Abs F64 where
+
+export Integral U32 where
+export Integral U64 where
+export Integral S32 where
+export Integral S64 where
 
 export Fractional F32 where
 export Fractional F64 where
