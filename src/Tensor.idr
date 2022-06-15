@@ -110,7 +110,7 @@ Show (Tensor shape dtype) where
   show (MkTensor _ xs) = opToString xs
 
 namespace Bounded
-  ||| A type `a` satisfying `Bounded a` has a minimum and maximum value.
+  ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
   public export
   interface Bounded a where
     min : a
