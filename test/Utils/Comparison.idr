@@ -62,6 +62,11 @@ namespace S32
   (===#) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
   x ===# y = (toLiteral x) === (toLiteral y)
 
+namespace U64
+  export
+  (===#) : Monad m => {shape : _} -> Tensor shape U64 -> Tensor shape U64 -> TestT m ()
+  x ===# y = (toLiteral x) === (toLiteral y)
+
 namespace F64
   export
   (===#) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->

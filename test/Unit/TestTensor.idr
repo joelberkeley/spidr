@@ -64,6 +64,23 @@ show = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
   show x === "constant, shape=[3], metadata={:0}"
 
+covering
+cast : Property
+cast = property $ do
+  shape <- forAll shapes
+
+  lit <- forAll (literal shape nats)
+  let x : Tensor shape F64 = cast (fromLiteral {dtype=U32} lit)
+  x ===# fromLiteral (map (cast {to=Double}) lit)
+
+  lit <- forAll (literal shape nats)
+  let x : Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
+  x ===# fromLiteral (map (cast {to=Double}) lit)
+
+  lit <- forAll (literal shape ints)
+  let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
+  x ===# fromLiteral (map (cast {to=Double}) lit)
+
 reshape : Property
 reshape = fixedProperty $ do
   reshape 3 ===# fromLiteral {dtype=S32} [3]
@@ -1005,6 +1022,7 @@ group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
     , ("show", show)
+    , ("cast", cast)
     , ("reshape", reshape)
     , ("slice", slice)
     , ("index", index)

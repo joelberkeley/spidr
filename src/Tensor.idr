@@ -130,7 +130,7 @@ export
       maxFiniteValue {dtype} builder
 
 export
-Cast (Tensor shape U64) (Tensor shape F64) where
+Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
   cast (MkTensor graph xs) =
     let graph' = ConvertElementType {dtype=F64} graph
      in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
