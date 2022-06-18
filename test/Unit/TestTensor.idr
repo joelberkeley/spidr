@@ -16,6 +16,7 @@ limitations under the License.
 module Unit.TestTensor
 
 import Control.Monad.State
+import Data.List.Quantifiers
 import Data.Nat
 import Data.Vect
 import System
@@ -514,6 +515,26 @@ sortWithRepeatedElements = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[1, 4, 4], [3, 2, 5]]
   sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
   sort (<) 1 x ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
+
+reverse : Property
+reverse = fixedProperty $ do
+  let x = fromLiteral {shape=[0]} {dtype=S32} []
+  reverse [0] x ===# x
+
+  let x = fromLiteral {shape=[0, 3]} {dtype=S32} []
+  reverse [0] x ===# x
+  reverse [1] x ===# x
+  reverse [0, 1] x ===# x
+  reverse [1, 0] x ===# x
+
+  let x = fromLiteral {dtype=S32} [-2, 0, 1]
+  reverse [0] x ===# fromLiteral [1, 0, -2]
+
+  let x = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
+  reverse [0] x ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
+  reverse [1] x ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
+  reverse [0, 1] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  reverse [1, 0] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
 
 namespace Vector
   export
@@ -1043,6 +1064,7 @@ group = MkGroup "Tensor" $ [
     , ("sort", sort)
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
+    , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
   ]

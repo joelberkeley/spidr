@@ -333,6 +333,17 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* Rev(XlaOp& operand, int* dimensions, int dimensions_len) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        int64_t dimensions64[dimensions_len];
+        std::copy(dimensions, dimensions + dimensions_len, dimensions64);
+        auto dimensions_span = absl::Span<const int64_t>(dimensions64, dimensions_len);
+
+        xla::XlaOp res = xla::Rev(operand_, dimensions_span);
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Sort(
         XlaOp* operands, int operands_len, XlaComputation& comparator, int dimension, int is_stable
     ) {

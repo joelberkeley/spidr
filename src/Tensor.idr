@@ -20,6 +20,7 @@ module Tensor
 import Control.Monad.State
 import public Data.List
 import public Data.List.Elem
+import Data.List.Quantifiers
 import Decidable.Equality
 import System.FFI
 
@@ -628,6 +629,18 @@ sort comp dimension (MkTensor graph xs) =
    in MkTensor sortedGraph $ cached sortedGraph $ do
         comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
         sort [!xs] comparator dimension False
+
+||| Reverse elements along the specified axes.
+export
+reverse :
+  -- ensure axes are unique
+  (axes : List Nat) ->
+  {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
+  Tensor shape dtype ->
+  Tensor shape dtype
+reverse axes (MkTensor graph xs) =
+  let graph = Reverse axes graph
+   in MkTensor graph $ cached graph $ do rev !xs axes
 
 ----------------------------- numeric operations ----------------------------
 
