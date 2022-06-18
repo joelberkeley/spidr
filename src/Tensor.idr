@@ -665,7 +665,7 @@ sort comp dimension (MkTensor graph xs) =
 |||
 ||| **Note:** This function requires `axes` is ordered simply so that elements are unique.
 ||| The ordering itself is irrelevant to the implementation, but ensures uniqueness without using
-||| proofs of contradiction which can be difficult for Idris to construct.
+||| proofs of contradiction that can be difficult for Idris to construct.
 export
 reverse :
   (axes : List Nat) ->
