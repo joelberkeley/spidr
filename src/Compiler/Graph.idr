@@ -17,6 +17,7 @@ module Compiler.Graph
 
 import Data.Hashable
 
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Types
@@ -29,6 +30,7 @@ import Util.Hashable
 ||| It is primarily used for memoization in constructing the computation graph.
 public export
 data Graph : Type where
+  GraphIndex : Nat -> Graph -> Graph -- this feels really hacky
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
   Parameter : Primitive dtype => Shape -> Nat -> Graph
   MinFiniteValue : Primitive dtype => Graph
@@ -55,6 +57,8 @@ data Graph : Type where
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
   RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
+  UniformFloatingPointDistribution :
+    Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
 
 Eq RandomAlgorithm where
   RngDefault == RngDefault = True
@@ -118,6 +122,7 @@ Hashable RandomAlgorithm where
 
 export
 Hashable Graph where
+  hashWithSalt salt (GraphIndex idx graph) = salt `hashWithSalt` idx `hashWithSalt` graph
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
   hashWithSalt salt (Parameter {dtype} shape position) =
@@ -170,4 +175,12 @@ Hashable Graph where
   hashWithSalt salt (RngBitGenerator algorithm initialState shape) = salt
     `hashWithSalt` ("RngBitGenerator", algorithm)
     `hashWithSalt` initialState
+    `hashWithSalt` shape
+  hashWithSalt salt (UniformFloatingPointDistribution key initialState _ minval maxval shape) =
+    salt
+    `hashWithSalt` key
+    `hashWithSalt` initialState
+    `hashWithSalt` 0 -- cast bitGenerator
+    `hashWithSalt` minval
+    `hashWithSalt` maxval
     `hashWithSalt` shape

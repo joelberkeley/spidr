@@ -32,6 +32,7 @@ import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
@@ -1233,7 +1234,7 @@ trace x with (x)
 ||| The seed is updated each time a new value is generated.
 public export
 Rand : Type -> Type
-Rand = State (Tensor [2] U64)
+Rand = State (Tensor [1] U64)
 
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
@@ -1245,18 +1246,20 @@ inf = fromDouble (1.0 / 0.0)
 ||| backends and library versions.
 export
 uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
-uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
-  let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
-      rng = cached rngGraph $ do
-        rngBitGenerator RngThreeFry !initialState !(mkShape {dtype=F64} shape)
-      newStateGraph = GetTupleElement rngGraph 0
-      newState = cached newStateGraph $ do getTupleElement !rng 0
-      bitsSampleGraph = GetTupleElement rngGraph 1
-      bitsSample : Tensor shape U64 =
-        MkTensor bitsSampleGraph $ cached bitsSampleGraph $ do getTupleElement !rng 1
-      u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
-      u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
-      finiteSamples = bound + (bound' - bound) *
-        (cast bitsSample - broadcast u64minAsF64) / (broadcast $ u64maxAsF64 - u64minAsF64)
-      f64sample = select (bound == bound' && abs bound == broadcast inf) bound finiteSamples
-   in Id (MkTensor newStateGraph newState, f64sample)
+uniform (MkTensor boundGraph bound) (MkTensor boundGraph' bound') =
+  let MkTensor keyGraph key = fromLiteral {shape=[]} {dtype=U64} 0
+   in ST $ \(MkTensor initialStateGraph initialState) =>
+        let valueStatePairGraph = UniformFloatingPointDistribution
+              keyGraph initialStateGraph ThreeFry boundGraph boundGraph' shape
+            valueStatePair = do
+              uniformFloatingPointDistribution
+                !key !initialState ThreeFry !bound !bound' !(mkShape {dtype=F64} shape)
+            sampleGraph = GraphIndex 0 valueStatePairGraph
+            newStateGraph = GraphIndex 1 valueStatePairGraph
+         in Id (
+              MkTensor newStateGraph $ cached newStateGraph $ do
+                -- why on earth does this pass only if i reshape it to the same shape?
+                -- is there something about dynamic shapes that's causing this?
+                reshapeWithDefaultOrdering [1] [1] (map snd valueStatePair),
+              MkTensor sampleGraph $ cached sampleGraph $ map fst valueStatePair
+            )

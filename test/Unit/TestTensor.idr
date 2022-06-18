@@ -1024,7 +1024,7 @@ uniform : Property
 uniform = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
-  seed <- forAll (literal [2] nats)
+  seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
@@ -1044,7 +1044,7 @@ covering
 uniformForEqualBounds : Property
 uniformForEqualBounds = fixedProperty $ do
   bound <- forAll (literal [] doubles)
-  seed <- forAll (literal [2] nats)
+  seed <- forAll (literal [1] nats)
 
   let bound = broadcast $ fromLiteral bound
       seed = fromLiteral seed
@@ -1055,10 +1055,10 @@ uniformForEqualBounds = fixedProperty $ do
 
 covering
 uniformSeedIsUpdated : Property
-uniformSeedIsUpdated = property $ do
+uniformSeedIsUpdated = fixedProperty $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
-  seed <- forAll (literal [2] nats)
+  seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
