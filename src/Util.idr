@@ -17,7 +17,7 @@ limitations under the License.
 module Util
 
 import public Data.List
-import public Data.List.Elem
+import public Data.List.Quantifiers
 import public Data.Nat
 import public Data.Vect
 
@@ -82,13 +82,14 @@ namespace List
   replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
   replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
 
-  ||| A `Unique xs` consitutes proof that all elements in `xs` are unique, i.e. that there are no
-  ||| repeated elements.
+  ||| A `Sorted f (x :: xs)` proves that `(x :: xs)` is sorted such that `f x y` exists for all `y`
+  ||| in `xs`. For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing
+  ||| numerical order.
   public export
-  data Unique : List a -> Type where
-    ||| An empty list has no repeated elements.
-    UNil : Unique []
+  data Sorted : (a -> a -> Type) -> List a -> Type where
+    ||| An empty list is sorted.
+    SNil : Sorted f []
 
-    ||| The elements of a list are unique iff the elements in the tail are unique and the head does
-    ||| not appear in the tail.
-    UCons : (x : a) -> Not (Elem x xs) -> Unique xs -> Unique (x :: xs)
+    ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. all elements in the
+    ||| tail.
+    SCons : (x : Nat) -> Sorted f xs -> All (f x) xs -> Sorted f (x :: xs)

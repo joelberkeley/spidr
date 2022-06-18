@@ -630,12 +630,46 @@ sort comp dimension (MkTensor graph xs) =
         comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
         sort [!xs] comparator dimension False
 
-||| Reverse elements along the specified axes.
+||| Reverse elements along the specified axes. For example, for
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [-2, -1,  0],
+|||   [ 1,  2,  3]
+||| ]
+||| ```
+||| `reverse [0] x` is
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [ 1,  2,  3]
+|||   [-2, -1,  0],
+||| ]
+||| ```
+||| `reverse [1] x` is
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [ 0, -1, -2],
+|||   [ 3,  2,  1]
+||| ]
+||| ```
+||| and `reverse [0, 1] x` is
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [ 3,  2,  1]
+|||   [ 0, -1, -2],
+||| ]
+||| ```
+|||
+||| **Note:** This function requires `axes` is ordered simply so that elements are unique.
+||| The ordering itself is irrelevant to the implementation, but ordering ensures uniqueness
+||| without using proofs of contradiction which can be difficult for Idris to construct.
 export
 reverse :
-  -- ensure axes are unique
   (axes : List Nat) ->
-  {auto 0 axesUnique : Unique axes} ->
+  {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Tensor shape dtype

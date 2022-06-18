@@ -525,8 +525,7 @@ reverse = fixedProperty $ do
   let x = fromLiteral {shape=[0, 3]} {dtype=S32} []
   reverse [0] x ===# x
   reverse [1] x ===# x
-  reverse {axesUnique=unique2 0 1 neq} [0, 1] x ===# x
-  reverse {axesUnique=unique2 1 0 (negEqSym neq)} [1, 0] x ===# x
+  reverse [0, 1] x ===# x
 
   let x = fromLiteral {dtype=S32} [-2, 0, 1]
   reverse [0] x ===# fromLiteral [1, 0, -2]
@@ -534,23 +533,16 @@ reverse = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
   reverse [0] x ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
   reverse [1] x ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
-  reverse [0, 1] {axesUnique=unique2 0 1 neq} x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
-  reverse [1, 0] {axesUnique=unique2 1 0 (negEqSym neq)} x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  reverse [0, 1] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
 
-  where
-  neq : Not (the Nat 0 === 1)
-  neq _ impossible
-
-  notInNil : (x : a) -> Not (Elem x [])
-  notInNil x _ impossible
-
-  %hint
-  unique1 : (x : a) -> Unique [x]
-  unique1 x = UCons x (notInNil x) UNil
-
-  %hint
-  unique2 : (x, y : a) -> Not (x = y) -> Unique [x, y]
-  unique2 x y xyNeq = UCons x (neitherHereNorThere xyNeq (notInNil x)) (unique1 y)
+  let x = fromLiteral {dtype=S32} [
+    [[[ 0,  1], [ 2,  3]], [[ 4,  5], [ 6,  7]], [[ 8,  9], [10, 11]]],
+    [[[12, 13], [14, 15]], [[16, 17], [18, 19]], [[20, 21], [22, 23]]]
+  ]
+  reverse [0, 3] x ===# fromLiteral [
+    [[[13, 12], [15, 14]], [[17, 16], [19, 18]], [[21, 20], [23, 22]]],
+    [[[ 1,  0], [ 3,  2]], [[ 5,  4], [ 7,  6]], [[ 9,  8], [11, 10]]]
+  ]
 
 namespace Vector
   export
