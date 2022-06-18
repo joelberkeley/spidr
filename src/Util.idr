@@ -17,6 +17,7 @@ limitations under the License.
 module Util
 
 import public Data.List
+import public Data.List.Elem
 import public Data.Nat
 import public Data.Vect
 
@@ -80,3 +81,14 @@ namespace List
   replaceAt : (idx : Nat) -> a -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
   replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
+
+  ||| A `Unique xs` consitutes proof that all elements in `xs` are unique, i.e. that there are no
+  ||| repeated elements.
+  public export
+  data Unique : List a -> Type where
+    ||| An empty list has no repeated elements.
+    UNil : Unique []
+
+    ||| The elements of a list are unique iff the elements in the tail are unique and the head does
+    ||| not appear in the tail.
+    UCons : (x : a) -> Not (Elem x xs) -> Unique xs -> Unique (x :: xs)

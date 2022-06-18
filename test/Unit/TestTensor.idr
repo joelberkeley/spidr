@@ -19,6 +19,7 @@ import Control.Monad.State
 import Data.List.Quantifiers
 import Data.Nat
 import Data.Vect
+import Decidable.Equality
 import System
 
 import Literal
@@ -524,8 +525,8 @@ reverse = fixedProperty $ do
   let x = fromLiteral {shape=[0, 3]} {dtype=S32} []
   reverse [0] x ===# x
   reverse [1] x ===# x
-  reverse [0, 1] x ===# x
-  reverse [1, 0] x ===# x
+  reverse {axesUnique=unique2 0 1 neq} [0, 1] x ===# x
+  reverse {axesUnique=unique2 1 0 (negEqSym neq)} [1, 0] x ===# x
 
   let x = fromLiteral {dtype=S32} [-2, 0, 1]
   reverse [0] x ===# fromLiteral [1, 0, -2]
@@ -533,8 +534,23 @@ reverse = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
   reverse [0] x ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
   reverse [1] x ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
-  reverse [0, 1] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
-  reverse [1, 0] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  reverse [0, 1] {axesUnique=unique2 0 1 neq} x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  reverse [1, 0] {axesUnique=unique2 1 0 (negEqSym neq)} x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+
+  where
+  neq : Not (the Nat 0 === 1)
+  neq _ impossible
+
+  notInNil : (x : a) -> Not (Elem x [])
+  notInNil x _ impossible
+
+  %hint
+  unique1 : (x : a) -> Unique [x]
+  unique1 x = UCons x (notInNil x) UNil
+
+  %hint
+  unique2 : (x, y : a) -> Not (x = y) -> Unique [x, y]
+  unique2 x y xyNeq = UCons x (neitherHereNorThere xyNeq (notInNil x)) (unique1 y)
 
 namespace Vector
   export

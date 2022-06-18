@@ -635,6 +635,7 @@ export
 reverse :
   -- ensure axes are unique
   (axes : List Nat) ->
+  {auto 0 axesUnique : Unique axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Tensor shape dtype
