@@ -19,7 +19,6 @@ import Control.Monad.State
 import Data.List.Quantifiers
 import Data.Nat
 import Data.Vect
-import Decidable.Equality
 import System
 
 import Literal
