@@ -42,7 +42,7 @@ cached : Graph -> Computation XlaOp -> Computation XlaOp
 cached graph xs = let graphHash = hash graph in do
   builder <- get
   case cacheLookup builder graphHash of
-    Just candidates => case find (\e => assert_total $ fst e == graph) candidates of
+    Just candidates => case find (\e => fst e == graph) candidates of
       Just (_, op) => pure op
       Nothing => runOp xs graphHash graph candidates
     Nothing => runOp xs graphHash graph []
