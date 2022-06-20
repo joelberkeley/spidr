@@ -516,10 +516,6 @@ mapScalar f (MkTensor graph xs) =
         MkCachingBuilder builder _ <- get
         map builder [!xs] computation (range $ length shape)
 
-broadcastAddsLeading : (from, leading : Shape) -> Broadcastable from (leading ++ from)
-broadcastAddsLeading from [] = Same
-broadcastAddsLeading from (d :: ds) = Nest (broadcastAddsLeading from ds)
-
 productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
 productZero = foldlMulAnyZero 1
   where
@@ -531,15 +527,15 @@ productZero = foldlMulAnyZero 1
   foldlMulAnyZero @{Here} x (0 :: tl) = rewrite multZeroRightZero x in foldlMulInitZero tl
   foldlMulAnyZero @{There prf} x (hd :: tl) = foldlMulAnyZero (x * hd) tl
 
-mapGeneral :
+mapN :
   Primitive dtype =>
-  {from, to, leading : _} ->
+  {n : _} ->
+  {from, to : _} ->
   (Tensor from dtype -> Tensor to dtype) ->
-  Tensor (leading ++ from) dtype ->
-  Tensor (leading ++ to) dtype
-mapGeneral f (MkTensor {shape=leading ++ from} graph xs) =
-  let lr = length leading
-      fr = length from
+  Tensor (n :: from) dtype ->
+  Tensor (n :: to) dtype
+mapN f (MkTensor {shape=n :: from} graph xs) =
+  let fr = length from
       tr = length to
 
       (graph0, p0) = parameter 0 from "" {dtype}
@@ -547,67 +543,56 @@ mapGeneral f (MkTensor {shape=leading ++ from} graph xs) =
       mapGraph = Map graphf [graph]
 
       (counterAccTupleGraph, counterAccTuple) =
-        parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (leading ++ to)] ""
+        parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (n :: to)] ""
 
-      condition = do lt !(getTupleElement !counterAccTuple 0) !(scalarU32 (product leading))
+      condition = do lt !(getTupleElement !counterAccTuple 0) !(scalarU32 n)
 
       body = do
         counter <- getTupleElement !counterAccTuple 0
-        let leadingMovingProduct = toList $ tail $ scanr (*) 1 (fromList leading)
-        multiIndex <- sequence $ zipWith (\dim, prod =>
-            rem !(the (Computation _) $ div counter !(scalarU32 prod)) !(scalarU32 dim)
-          ) leading leadingMovingProduct
-        zeroesLikefs <- traverse scalarU32 (List.replicate fr Z)
-        sliced <- dynamicSlice !xs (multiIndex ++ zeroesLikefs) (replicate lr 1 ++ from)
-        sliced <- reshape sliced (range (lr + fr)) from
+
+        zeroesLikefrom <- traverse scalarU32 (List.replicate fr Z)
+        sliced <- dynamicSlice !xs (counter :: zeroesLikefrom) (1 :: from)
+        sliced <- reshape sliced (range (fr + 1)) from
 
         let counterGraph = GetTupleElement counterAccTupleGraph 0
-            multiIndexGraphs = zipWith (\dim, prod =>
-                let dimGraph = FromLiteral {dtype=U32} [] (hash dim)
-                    prodGraph = FromLiteral {dtype=U32} [] (hash prod)
-                    divGraph = ElementwiseBinary "div" counterGraph prodGraph
-                 in ElementwiseBinary "rem" divGraph dimGraph
-              ) leading leadingMovingProduct
-
-            zeroesLikefsGraphs = List.replicate fr $ (FromLiteral {dtype=U32} [] (hash Z))
-            dynamicSlicedGraph = DynamicSlice
-              graph (multiIndexGraphs ++ zeroesLikefsGraphs) (replicate lr 1 ++ from)
+            zeroesLikefromGraphs = List.replicate fr $ (FromLiteral {dtype=U32} [] (hash Z))
+            dynamicSlicedGraph =
+              DynamicSlice graph (counterGraph :: zeroesLikefromGraphs) (1 :: from)
             slicedGraph = Reshape from dynamicSlicedGraph
 
             MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
 
-        zeroesLikets <- traverse scalarU32 (replicate tr 0)
-        fSliced <- reshape !fSliced (range tr) (replicate lr 1 ++ to)
+        zeroesLiketo <- traverse scalarU32 (List.replicate tr Z)
+        fSliced <- reshape !fSliced (range tr) (1 :: to)
         acc <- getTupleElement !counterAccTuple 1
-        acc <- dynamicUpdateSlice acc fSliced (toList $ multiIndex ++ zeroesLikets)
+        acc <- dynamicUpdateSlice acc fSliced (counter :: zeroesLiketo)
         counter' <- add counter !(scalarU32 1)
         MkCachingBuilder builder _ <- get {m=Computation}
         tuple builder [counter', acc]
 
       init = do
         startingCounter <- scalarU32 0
-        acc <- slice !xs (replicate (lr + fr) 0) (leading ++ replicate fr 1) (replicate (lr + fr) 1)
-        acc <- reshape acc (range (lr + fr)) leading
-        acc <- broadcastInDim acc (leading ++ to) (range lr)
+        acc <- slice !xs (replicate (fr + 1) 0) (n :: replicate fr 1) (replicate (fr + 1) 1)
+        acc <- reshape acc (range (fr + 1)) [n]
+        acc <- broadcastInDim acc (n :: to) [0]
         MkCachingBuilder builder _ <- get {m=Computation}
         tuple builder [startingCounter, acc]
 
-   in case (isElem 0 leading, isElem 0 from) of
+   in case (decEq n 0, isElem 0 from) of
         -- can we simplify all this, without special-casing anything? May have to change init
-        (Yes zeroInLeading, _) =>
+        (Yes nIsZero, _) =>
           let sizesEqual = Calc $
-                |~ product (leading ++ from)
-                ~~ 0 ... productZero @{elemAppLeft leading from zeroInLeading} (leading ++ from)
-                ~~ product (leading ++ to) ...
-                    sym (productZero @{elemAppLeft leading to zeroInLeading} (leading ++ to))
-           in reshape {sizesEqual} (MkTensor {shape=leading ++ from} graph xs)
+                |~ product (n :: from)
+                ~~ 0 ... productZero @{rewrite nIsZero in Here} (n :: from)
+                ~~ product (n :: to) ... sym (productZero @{rewrite nIsZero in Here} (n :: to))
+           in reshape {sizesEqual} (MkTensor {shape=n :: from} graph xs)
         (_, Yes zeroInFrom) =>
           let sizesEqual = Calc $
-                |~ product (leading ++ from)
-                ~~ 0 ... productZero @{elemAppRight leading from zeroInFrom} (leading ++ from)
+                |~ product (n :: from)
+                ~~ 0 ... productZero (n :: from)
                 ~~ product from ... sym (productZero @{zeroInFrom} from)
-              fRes = f (reshape {sizesEqual} $ MkTensor {shape=leading ++ from} graph xs)
-           in broadcast {shapesOK=broadcastAddsLeading to leading} fRes
+              fRes = f (reshape {sizesEqual} $ MkTensor {shape=n :: from} graph xs)
+           in broadcast fRes
         _ =>
           MkTensor mapGraph $ cached mapGraph $ do
             condition <- buildWithSubBuilder "condition" [] condition
@@ -642,8 +627,22 @@ map :
   (Tensor from dtype -> Tensor to dtype) ->
   Tensor (leading ++ from) dtype ->
   Tensor (leading ++ to) dtype
+map {leading=[]} f x = f x
 map {from=[]} {to=[]} f x = mapScalar f x
-map f x = mapGeneral f x
+map {leading=leading@(_ :: _)} f x =
+  reshape {sizesEqual=sym $ productLeading leading to}
+    (mapN f (reshape {sizesEqual=productLeading leading from} x))
+
+  where
+  productHead : (x : Nat) -> (xs : List Nat) -> product (x :: xs) = x * product xs
+
+  productApp : (xs, ys : List Nat) -> product (xs ++ ys) = product xs * product ys
+
+  productLeading : (xs, ys : List Nat) -> product (xs ++ ys) = product (product xs :: ys)
+  productLeading xs ys = Calc $
+    |~ product (xs ++ ys)
+    ~~ product xs * product ys ... productApp xs ys
+    ~~ product (product xs :: ys) ... sym (productHead (product xs) ys)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
