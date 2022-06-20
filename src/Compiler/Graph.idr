@@ -46,6 +46,7 @@ data Graph : Type where
   Map : Graph -> List Graph -> Graph
   Reduce : Graph -> Nat -> Graph -> Graph
   Sort : List Graph -> Graph -> Nat -> Bool -> Graph
+  Reverse : List Nat -> Graph -> Graph
   ElementwiseBinary : (name : String) -> Graph -> Graph -> Graph
   ElementwiseUnary : (name : String) -> Graph -> Graph
   Select : Graph -> Graph -> Graph -> Graph
@@ -94,6 +95,8 @@ Hashable Graph where
     let salt' = salt `hashWithSalt` "Sort"
         salt'' = assert_total $ salt' `hashWithSalt` operands
      in salt'' `hashWithSalt` (dimension, isStable)
+  hashWithSalt salt (Reverse axes operand) =
+    salt `hashWithSalt` ("Reverse", axes) `hashWithSalt` operand
   hashWithSalt salt (ElementwiseBinary name x y) =
     salt `hashWithSalt` name `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (ElementwiseUnary name x) = salt `hashWithSalt` name `hashWithSalt` x

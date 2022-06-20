@@ -20,6 +20,7 @@ module Tensor
 import Control.Monad.State
 import public Data.List
 import public Data.List.Elem
+import Data.List.Quantifiers
 import Decidable.Equality
 import System.FFI
 
@@ -628,6 +629,53 @@ sort comp dimension (MkTensor graph xs) =
    in MkTensor sortedGraph $ cached sortedGraph $ do
         comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
         sort [!xs] comparator dimension False
+
+||| Reverse elements along the specified axes. For example, for
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [-2, -1,  0],
+|||   [ 1,  2,  3]
+||| ]
+||| ```
+||| `reverse [0] x` is
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [ 1,  2,  3]
+|||   [-2, -1,  0],
+||| ]
+||| ```
+||| `reverse [1] x` is
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [ 0, -1, -2],
+|||   [ 3,  2,  1]
+||| ]
+||| ```
+||| and `reverse [0, 1] x` is
+||| ```
+||| x : Tensor [2, 3] S32
+||| x = fromLiteral [
+|||   [ 3,  2,  1]
+|||   [ 0, -1, -2],
+||| ]
+||| ```
+|||
+||| **Note:** This function requires `axes` is ordered simply so that elements are unique.
+||| The ordering itself is irrelevant to the implementation, but ensures uniqueness without using
+||| proofs of contradiction that can be difficult for Idris to construct.
+export
+reverse :
+  (axes : List Nat) ->
+  {auto 0 axesUnique : Sorted LT axes} ->
+  {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
+  Tensor shape dtype ->
+  Tensor shape dtype
+reverse axes (MkTensor graph xs) =
+  let graph = Reverse axes graph
+   in MkTensor graph $ cached graph $ do rev !xs axes
 
 ----------------------------- numeric operations ----------------------------
 
