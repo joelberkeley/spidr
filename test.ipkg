@@ -16,6 +16,7 @@ executable = test
 main = Main
 
 modules =
+  Unit.Compiler.TestDebug,
   Unit.Model.TestKernel,
   Unit.Util.TestHashable,
   Unit.TestDistribution,

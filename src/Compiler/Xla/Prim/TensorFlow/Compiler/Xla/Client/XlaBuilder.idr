@@ -37,6 +37,10 @@ export
 prim__build : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
 export
+%foreign (libxla "XlaBuilder_GetShape")
+prim__getShape : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
 %foreign (libxla "XlaBuilder_OpToString")
 prim__opToString : GCAnyPtr -> GCAnyPtr -> String
 

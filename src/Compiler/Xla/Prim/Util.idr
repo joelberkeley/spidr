@@ -22,6 +22,10 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 export
+%foreign (libxla "print_address")
+prim__printAddress : GCAnyPtr -> PrimIO ()
+
+export
 %foreign (libxla "sizeof_int")
 sizeofInt : Int
 
