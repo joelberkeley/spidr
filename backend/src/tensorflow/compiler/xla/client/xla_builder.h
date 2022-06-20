@@ -48,6 +48,7 @@ extern "C" {
     const char* XlaBuilder_name(XlaBuilder& s);
     XlaBuilder* CreateSubBuilder(XlaBuilder& s, const char* computation_name);
     XlaComputation* XlaBuilder_Build(XlaBuilder& s);
+    Shape* XlaBuilder_GetShape(XlaBuilder& s, XlaOp& op);
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op);
 
     /*

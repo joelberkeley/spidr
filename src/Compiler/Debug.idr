@@ -13,19 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.TensorFlow.Compiler.Xla.Shape
+module Compiler.Debug
 
-import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Shape
-
-namespace Xla
-  public export
-  data Shape : Type where
-    MkShape : GCAnyPtr -> Shape
+import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 
 export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
-
-export
-debugString : Shape -> String
-debugString (MkShape shape) = prim__debugString shape
+shapeString : XlaBuilder -> XlaOp -> IO String
+shapeString builder op = map debugString (getShape builder op)

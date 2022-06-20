@@ -75,6 +75,13 @@ extern "C" {
         return reinterpret_cast<XlaComputation*>(non_stack);
     }
 
+    Shape* XlaBuilder_GetShape(XlaBuilder& s, XlaOp& op) {
+        auto& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
+        auto& op_ = reinterpret_cast<xla::XlaOp&>(op);
+        xla::Shape shape = s_.GetShape(op_).ConsumeValueOrDie();
+        return reinterpret_cast<Shape*>(new xla::Shape(shape));
+    }
+
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {
         auto& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
         auto& op_ = reinterpret_cast<xla::XlaOp&>(op);
