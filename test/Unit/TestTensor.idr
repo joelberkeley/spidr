@@ -1004,29 +1004,37 @@ range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 
 kolmogorovSmirnov :
-  {n : _} -> Tensor [n] F64 -> ({n' : _} -> Tensor [n'] F64 -> Tensor [n'] F64) -> Tensor [] F64
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
 kolmogorovSmirnov samples cdf =
-  let indices : Tensor [n] F64 = cast (fromLiteral {dtype=U64} (range n))
-      sampleSize : Tensor [] F64 = cast (fromLiteral {dtype=U64} (Scalar n))
-      deviationFromCDF : Tensor [n] F64 = indices / sampleSize - cdf (sort (<) 0 samples)
+  let n : Nat
+      n = product shape
+
+      indices : Tensor [n] F64 := cast (fromLiteral {dtype=U64} (range n))
+      sampleSize : Tensor [] F64 := cast (fromLiteral {dtype=U64} (Scalar n))
+      samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
+      deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
    in reduce @{Max} 0 (abs deviationFromCDF)
+
+    where
+    product1 : (x : Nat) -> product (the (List Nat) [x]) = x
+    product1 x = rewrite plusZeroRightNeutral x in Refl
 
 covering
 uniform : Property
 uniform = withTests 20 . property $ do
-  bound <- forAll (literal [] doubles)
-  bound' <- forAll (literal [] doubles)
+  bound <- forAll (literal [10] doubles)
+  bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [2] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
       seed = fromLiteral seed
 
-      samples : Tensor [10_000] F64 =
+      samples : Tensor [1000, 10] F64 :=
         evalState seed (uniform (broadcast bound) (broadcast bound'))
 
-      uniformCdf : {n : _} -> Tensor [n] F64 -> Tensor [n] F64
-      uniformCdf x = (x - broadcast bound) / (bound' - bound)
+      uniformCdf : Tensor [1000, 10] F64 -> Tensor [1000, 10] F64
+      uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
 
       ksTest := kolmogorovSmirnov samples uniformCdf
 
@@ -1044,6 +1052,42 @@ uniformForEqualBounds = fixedProperty $ do
       samples : Tensor [10] F64 = evalState seed (uniform bound bound)
 
   samples ===# bound
+
+covering
+uniformSeedIsUpdated : Property
+uniformSeedIsUpdated = property $ do
+  bound <- forAll (literal [10] doubles)
+  bound' <- forAll (literal [10] doubles)
+  seed <- forAll (literal [2] nats)
+
+  let bound = fromLiteral bound
+      bound' = fromLiteral bound'
+      seed = fromLiteral seed
+
+      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound')
+      (seed', sample) = runState seed rng
+      (seed'', sample') = runState seed' rng
+
+  diff (toLiteral seed') (/=) (toLiteral seed)
+  diff (toLiteral seed'') (/=) (toLiteral seed')
+  diff (toLiteral sample) (/=) (toLiteral sample')
+
+covering
+uniformIsReproducible : Property
+uniformIsReproducible = property $ do
+  bound <- forAll (literal [10] doubles)
+  bound' <- forAll (literal [10] doubles)
+  seed <- forAll (literal [2] nats)
+
+  let bound = fromLiteral bound
+      bound' = fromLiteral bound'
+      seed = fromLiteral seed
+
+      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound')
+      sample = evalState seed rng
+      sample' = evalState seed rng
+
+  sample ===# sample'
 
 export covering
 group : Group
@@ -1099,4 +1143,6 @@ group = MkGroup "Tensor" $ [
     , ("trace", trace)
     , ("uniform", uniform)
     , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
+    , ("uniform updates seed", uniformSeedIsUpdated)
+    , ("uniform produces same samples for same seed", uniformIsReproducible)
   ]
