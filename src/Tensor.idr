@@ -579,7 +579,6 @@ mapN f (MkTensor {shape=n :: from} graph xs) =
         tuple builder [startingCounter, acc]
 
    in case (decEq n 0, isElem 0 from) of
-        -- can we simplify all this, without special-casing anything? May have to change init
         (Yes nIsZero, _) =>
           let sizesEqual = Calc $
                 |~ product (n :: from)
