@@ -1087,7 +1087,7 @@ uniformIsReproducible = property $ do
       sample = evalState seed rng
       sample' = evalState seed rng
 
-  diff (toLiteral sample) (/=) (toLiteral sample')
+  sample ===# sample'
 
 export covering
 group : Group
