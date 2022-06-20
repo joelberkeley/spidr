@@ -1072,6 +1072,23 @@ uniformSeedIsUpdated = property $ do
   diff (toLiteral seed'') (/=) (toLiteral seed')
   diff (toLiteral sample) (/=) (toLiteral sample')
 
+covering
+uniformIsReproducible : Property
+uniformIsReproducible = property $ do
+  bound <- forAll (literal [10] doubles)
+  bound' <- forAll (literal [10] doubles)
+  seed <- forAll (literal [2] nats)
+
+  let bound = fromLiteral bound
+      bound' = fromLiteral bound'
+      seed = fromLiteral seed
+
+      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound')
+      sample = evalState seed rng
+      sample' = evalState seed rng
+
+  diff (toLiteral sample) (/=) (toLiteral sample')
+
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
@@ -1126,5 +1143,6 @@ group = MkGroup "Tensor" $ [
     , ("trace", trace)
     , ("uniform", uniform)
     , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
-    , ("uniform seed is updated", uniformSeedIsUpdated)
+    , ("uniform updates seed", uniformSeedIsUpdated)
+    , ("uniform produces same samples for same seed", uniformIsReproducible)
   ]
