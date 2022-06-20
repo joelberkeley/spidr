@@ -56,6 +56,54 @@ data Graph : Type where
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
   RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
 
+Eq RandomAlgorithm where
+  RngDefault == RngDefault = True
+  RngThreeFry == RngThreeFry = True
+  RngPhilox == RngPhilox = True
+  _ == _ = False
+
+export covering
+Eq Graph where
+  (FromLiteral {dtype} hash shape) == (FromLiteral {dtype=dtype'} hash' shape') =
+     (typeString {dtype}, shape, hash) == (typeString {dtype=dtype'}, shape', hash')
+  (Parameter {dtype} shape position) == (Parameter {dtype=dtype'} shape' position') =
+    (typeString {dtype}, shape, position) == (typeString {dtype=dtype'}, shape', position')
+  (MinFiniteValue {dtype}) == (MinFiniteValue {dtype=dtype'}) =
+    typeString {dtype} == typeString {dtype=dtype'}
+  (MaxFiniteValue {dtype}) == (MaxFiniteValue {dtype=dtype'}) =
+    typeString {dtype} == typeString {dtype=dtype'}
+  (ConvertElementType {dtype} operand) == (ConvertElementType {dtype=dtype'} operand') =
+    (typeString {dtype}, operand) == (typeString {dtype=dtype'}, operand')
+  (GetTupleElement tuple index) == (GetTupleElement tuple' index') =
+    (tuple, index) == (tuple', index')
+  (Reshape to x) == (Reshape to' x') = (to, x) == (to', x')
+  (Slice axis from to x) == (Slice axis' from' to' x') =
+    (axis, from, to, x) == (axis', from', to', x')
+  (Concat axis x y) == (Concat axis' x' y') = (axis, x, y) == (axis', x', y')
+  (Diag x) == (Diag x') = x == x'
+  (Triangle lower x) == (Triangle lower' x') = (lower, x) == (lower', x')
+  (Transpose x) == (Transpose x') = x == x'
+  (Identity {dtype} n) == (Identity {dtype=dtype'} n') =
+    (typeString {dtype}, n) == (typeString {dtype=dtype'}, n')
+  (Broadcast to x) == (Broadcast to' x') = (to, x) == (to', x')
+  (Map f xs) == (Map f' xs') = (f, xs) == (f', xs')
+  (Reduce monoid axis x) == (Reduce monoid' axis' x') =
+    (monoid, axis, x) == (monoid', axis', x')
+  (Sort operands comparator dimension isStable) == (Sort operands' comparator' dimension' isStable')
+    = (operands, comparator, dimension, isStable) == (operands', comparator', dimension', isStable')
+  (ElementwiseBinary name x y) == (ElementwiseBinary name' x' y') = (name, x, y) == (name', x', y')
+  (ElementwiseUnary name x) == (ElementwiseUnary name' x') = (name, x) == (name', x')
+  (Select pred f t) == (Select pred' f' t') = (pred, f, t) == (pred', f', t')
+  (Cond pred fTrue true fFalse false) == (Cond pred' fTrue' true' fFalse' false') =
+    (pred, fTrue, true, fFalse, false) == (pred', fTrue', true', fFalse', false')
+  (Dot x y) == (Dot x' y') = (x, y) == (x', y')
+  (Cholesky x) == (Cholesky x') = x == x'
+  (TriangularSolve lower x y) == (TriangularSolve lower' x' y') = (lower, x, y) == (lower', x', y')
+  (RngBitGenerator algorithm initialState shape)
+    == (RngBitGenerator algorithm' initialState' shape') =
+      (algorithm, initialState, shape) == (algorithm', initialState', shape')
+  _ == _ = False
+
 Hashable RandomAlgorithm where
   hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
     RngDefault => 0
