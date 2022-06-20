@@ -1260,6 +1260,6 @@ uniform (MkTensor boundGraph bound) (MkTensor boundGraph' bound') =
               MkTensor newStateGraph $ cached newStateGraph $ do
                 -- why on earth does this pass only if i reshape it to the same shape?
                 -- is there something about dynamic shapes that's causing this?
-                reshapeWithDefaultOrdering [1] [1] (map snd valueStatePair),
+                (map snd valueStatePair),
               MkTensor sampleGraph $ cached sampleGraph $ map fst valueStatePair
             )
