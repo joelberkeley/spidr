@@ -16,6 +16,7 @@ limitations under the License.
 module Compiler.Computation
 
 import Control.Monad.State
+import Data.List
 import Data.SortedMap
 
 import Data.Hashable
@@ -30,7 +31,7 @@ import Types
 
 public export
 data CachingBuilder : Type where
-  MkCachingBuilder : XlaBuilder -> SortedMap Bits64 XlaOp -> CachingBuilder
+  MkCachingBuilder : XlaBuilder -> SortedMap Bits64 (List (Graph, XlaOp)) -> CachingBuilder
 
 public export
 Computation : Type -> Type
@@ -41,20 +42,25 @@ cached : Graph -> Computation XlaOp -> Computation XlaOp
 cached graph xs = let graphHash = hash graph in do
   builder <- get
   case cacheLookup builder graphHash of
-    Just op => pure op
-    Nothing => do
-      op <- xs
-      builder <- get
-      put (cacheInsert builder graphHash op)
-      pure op
+    Just candidates => case find (\(graph', _) => graph' == graph) candidates of
+      Just (_, op) => pure op
+      Nothing => runOp xs graphHash graph candidates
+    Nothing => runOp xs graphHash graph []
 
   where
-  cacheInsert : CachingBuilder -> Bits64 -> XlaOp -> CachingBuilder
-  cacheInsert (MkCachingBuilder builder cache) key xlaOp =
-    MkCachingBuilder builder (insert key xlaOp cache)
+  cacheUpdate : CachingBuilder -> Bits64 -> List (Graph, XlaOp) -> CachingBuilder
+  cacheUpdate (MkCachingBuilder builder cache) key graphOps =
+    MkCachingBuilder builder (insert key graphOps cache)
 
-  cacheLookup : CachingBuilder -> Bits64 -> Maybe XlaOp
+  cacheLookup : CachingBuilder -> Bits64 -> Maybe (List (Graph, XlaOp))
   cacheLookup (MkCachingBuilder _ cache) key = lookup key cache
+
+  runOp : Computation XlaOp -> Bits64 -> Graph -> List (Graph, XlaOp) -> Computation XlaOp
+  runOp xs key graph graphOps = do
+    op <- xs
+    builder <- get
+    put (cacheUpdate builder key ((graph, op) :: graphOps))
+    pure op
 
 export
 build : HasIO io => String -> Computation XlaOp -> io XlaComputation
