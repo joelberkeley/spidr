@@ -39,6 +39,7 @@ extern "C" {
                 break;
             case 1:
                 bit_generator_ = xla::PhiloxBitGenerator;
+                break;
             default:
                 break;
         };
