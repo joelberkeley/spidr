@@ -24,13 +24,13 @@ import Types
 import Util.Hashable
 
 ||| A `Graph` represents a computational graph used to compute a tensor value. It is defined by
-||| the following proprty: For any two `Graph`s gx and gy that compute tensors x and y respectively,
+||| the following property: For any two `Graph`s gx and gy that compute tensors x and y respectively,
 ||| if gx is identical to gy, then the values of x and y are equal.
 |||
 ||| It is primarily used for memoization in constructing the computation graph.
 public export
 data Graph : Type where
-  GraphIndex : Nat -> Graph -> Graph -- this feels really hacky
+  GraphIndex : Nat -> Graph -> Graph -- this feels hacky
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
   Parameter : Primitive dtype => Shape -> Nat -> Graph
   MinFiniteValue : Primitive dtype => Graph
