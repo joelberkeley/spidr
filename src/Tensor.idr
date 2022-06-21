@@ -1230,7 +1230,7 @@ trace :
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
 
-||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [2] U64` seed.
+||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` seed.
 ||| The seed is updated each time a new value is generated.
 public export
 Rand : Type -> Type
@@ -1240,7 +1240,7 @@ inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
-||| between `bound` and `bound'` (inclusive). Note `bound` and `bound'` need not be ordered.
+||| between `bound` and `bound'`. Note `bound` and `bound'` need not be ordered.
 |||
 ||| The generated samples are a deterministic function of the input seed, but may vary between
 ||| backends and library versions.
