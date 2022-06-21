@@ -56,14 +56,12 @@ data Graph : Type where
   Dot : Graph -> Graph -> Graph
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
-  RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
   UniformFloatingPointDistribution :
     Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
 
-Eq RandomAlgorithm where
-  RngDefault == RngDefault = True
-  RngThreeFry == RngThreeFry = True
-  RngPhilox == RngPhilox = True
+Eq BitGenerator where
+  ThreeFry == ThreeFry = True
+  Philox == Philox = True
   _ == _ = False
 
 export
@@ -109,16 +107,19 @@ Eq Graph where
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve lower x y) == (TriangularSolve lower' x' y') =
     lower == lower' && x == x' && y == y'
-  (RngBitGenerator algorithm initialState shape)
-    == (RngBitGenerator algorithm' initialState' shape') =
-      algorithm == algorithm' && initialState == initialState' && shape == shape'
+  (UniformFloatingPointDistribution key initialState bitGenerator minval maxval shape) ==
+    (UniformFloatingPointDistribution key' initialState' bitGenerator' minval' maxval' shape') =
+      key == key'
+      && initialState == initialState'
+      && bitGenerator == bitGenerator'
+      && minval == minval'
+      && maxval == maxval'
   _ == _ = False
 
-Hashable RandomAlgorithm where
+Hashable BitGenerator where
   hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
-    RngDefault => 0
-    RngThreeFry => 1
-    RngPhilox => 2
+    ThreeFry => 1
+    Philox => 2
 
 export
 Hashable Graph where
@@ -172,15 +173,11 @@ Hashable Graph where
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve lower x y) =
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (RngBitGenerator algorithm initialState shape) = salt
-    `hashWithSalt` ("RngBitGenerator", algorithm)
-    `hashWithSalt` initialState
-    `hashWithSalt` shape
-  hashWithSalt salt (UniformFloatingPointDistribution key initialState _ minval maxval shape) =
-    salt
-    `hashWithSalt` key
-    `hashWithSalt` initialState
-    `hashWithSalt` 0 -- cast bitGenerator
-    `hashWithSalt` minval
-    `hashWithSalt` maxval
-    `hashWithSalt` shape
+  hashWithSalt salt
+    (UniformFloatingPointDistribution key initialState bitGenerator minval maxval shape) = salt
+      `hashWithSalt` key
+      `hashWithSalt` initialState
+      `hashWithSalt` bitGenerator
+      `hashWithSalt` minval
+      `hashWithSalt` maxval
+      `hashWithSalt` shape

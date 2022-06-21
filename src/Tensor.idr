@@ -1256,13 +1256,6 @@ uniform (MkTensor boundGraph bound) (MkTensor boundGraph' bound') =
                 !key !initialState ThreeFry !bound !bound' !(mkShape {dtype=F64} shape)
             sampleGraph = GraphIndex 0 valueStatePairGraph
             newStateGraph = GraphIndex 1 valueStatePairGraph
-            -- the problem is in toLiteral. We pass the state to toLiteral, but that just enqueues a
-            -- bunch of operations, one of which computed the state, but the last of which appears
-            -- to be for the value, so when we build the computation and run it, we get the `value`
-            -- back. If we reshape the state, this makes the reshaped state the return value
-            --
-            -- when we reshape the state we can still get the samples because we *only* reshape
-            -- when we access the state, not when we access the samples.
          in Id (
               MkTensor newStateGraph $ cached newStateGraph $ map snd valueStatePair,
               MkTensor sampleGraph $ cached sampleGraph $ map fst valueStatePair

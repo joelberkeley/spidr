@@ -15,10 +15,9 @@ limitations under the License.
 */
 #include "tensorflow/compiler/xla/client/lib/prng.h"
 
-#include "prng.h"
-
 #include "../../shape.h"
 #include "../xla_builder.h"
+#include "prng.h"
 
 extern "C" {
     RngOutput* UniformFloatingPointDistribution(
@@ -42,10 +41,6 @@ extern "C" {
                 bit_generator_ = xla::PhiloxBitGenerator;
             default:
                 break;
-            // what to do? really i'd like to be packaging errors as optionals and passing them
-            // as structs up to idris, but that's a lot of not very important work. We could expose
-            // pointers to xla::ThreeFryBitGenerator and xla::PhiloxBitGenerator to Idris and pass
-            // them explicitly
         };
 
         auto& minval_ = reinterpret_cast<xla::XlaOp&>(minval);
