@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 extern "C" {
-    void print_address(void* ptr);  // doesn't belong here?
-
     int sizeof_int();
 
     void set_array_int(int* arr, int idx, int value);

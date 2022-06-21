@@ -43,7 +43,9 @@ extern "C" {
             default:
                 break;
             // what to do? really i'd like to be packaging errors as optionals and passing them
-            // as structs up to idris, but that's a lot of not very important work
+            // as structs up to idris, but that's a lot of not very important work. We could expose
+            // pointers to xla::ThreeFryBitGenerator and xla::PhiloxBitGenerator to Idris and pass
+            // them explicitly
         };
 
         auto& minval_ = reinterpret_cast<xla::XlaOp&>(minval);
@@ -54,16 +56,9 @@ extern "C" {
             key_, initial_state_, bit_generator_, minval_, maxval_, shape_
         );
 
-        auto value_ = new xla::XlaOp(res.value);
-        auto state_ = new xla::XlaOp(res.state);
-
-        std::cout << "UniformFloatingPointDistribution ..." << std::endl;
-        std::cout << "  value_ " << *value_ << " " << value_ << std::endl;
-        std::cout << "  state_ " << *state_ << " " << state_ << std::endl;
-
         return new RngOutput {
-            value: reinterpret_cast<XlaOp*>(value_),
-            state: reinterpret_cast<XlaOp*>(state_)
+            value: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.value)),
+            state: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.state))
         };
     }
 }

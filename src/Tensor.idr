@@ -27,10 +27,8 @@ import System.FFI
 import Data.Hashable
 
 import Compiler.Computation
-import Compiler.Debug
 import Compiler.Graph
 import Compiler.LiteralRW
-import Compiler.Xla.Util
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix

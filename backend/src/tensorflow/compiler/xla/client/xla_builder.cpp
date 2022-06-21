@@ -37,11 +37,6 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
-    void print_address(XlaOp* ptr) {
-        std::cout << "handle " << *reinterpret_cast<xla::XlaOp*>(ptr) << std::endl;
-        std::cout << "address " << std::addressof(*reinterpret_cast<xla::XlaOp*>(ptr)) << std::endl;
-    }
-
     int sizeof_XlaOp() {
         return sizeof(xla::XlaOp);
     }
@@ -79,13 +74,6 @@ extern "C" {
         xla::XlaComputation computation = s_.Build(root_).ConsumeValueOrDie();
         xla::XlaComputation* non_stack = new xla::XlaComputation(std::move(computation));
         return reinterpret_cast<XlaComputation*>(non_stack);
-    }
-
-    Shape* XlaBuilder_GetShape(XlaBuilder& s, XlaOp& op) {
-        auto& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
-        auto& op_ = reinterpret_cast<xla::XlaOp&>(op);
-        xla::Shape shape = s_.GetShape(op_).ConsumeValueOrDie();
-        return reinterpret_cast<Shape*>(new xla::Shape(shape));
     }
 
     const char* XlaBuilder_OpToString(XlaBuilder& s, XlaOp& op) {

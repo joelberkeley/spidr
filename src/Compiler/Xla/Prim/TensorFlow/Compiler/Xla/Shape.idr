@@ -22,7 +22,3 @@ import Compiler.Xla.Prim.Util
 export
 %foreign (libxla "Shape_delete")
 prim__delete : AnyPtr -> PrimIO ()
-
-export
-%foreign (libxla "Shape_DebugString")
-prim__debugString : GCAnyPtr -> String
