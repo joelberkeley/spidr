@@ -1042,7 +1042,7 @@ uniform = withTests 20 . property $ do
 
 covering
 uniformForEqualBounds : Property
-uniformForEqualBounds = fixedProperty $ do
+uniformForEqualBounds = property $ do
   bound <- forAll (literal [] doubles)
   seed <- forAll (literal [1] nats)
 
@@ -1055,7 +1055,7 @@ uniformForEqualBounds = fixedProperty $ do
 
 covering
 uniformSeedIsUpdated : Property
-uniformSeedIsUpdated = fixedProperty $ do
+uniformSeedIsUpdated = property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [1] nats)

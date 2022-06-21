@@ -22,7 +22,7 @@ extern "C" {
         XlaOp* state;
     };
 
-    void delete_RngOutput (RngOutput* rngOutput) {
+    void delete_RngOutput(RngOutput* rngOutput) {
         free(rngOutput);
     }
 
