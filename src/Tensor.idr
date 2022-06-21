@@ -1266,7 +1266,6 @@ uniform (MkTensor boundGraph bound) (MkTensor boundGraph' bound') =
             -- when we reshape the state we can still get the samples because we *only* reshape
             -- when we access the state, not when we access the samples.
          in Id (
-              MkTensor newStateGraph $ cached newStateGraph $
-                reshapeWithDefaultOrdering [1] [1] $ map snd valueStatePair,
+              MkTensor newStateGraph $ cached newStateGraph $ map snd valueStatePair,
               MkTensor sampleGraph $ cached sampleGraph $ map fst valueStatePair
             )

@@ -34,7 +34,7 @@ prim__createSubBuilder : GCAnyPtr -> String -> PrimIO AnyPtr
 
 export
 %foreign (libxla "XlaBuilder_Build")
-prim__build : GCAnyPtr -> AnyPtr
+prim__build : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
 export
 %foreign (libxla "XlaBuilder_GetShape")
