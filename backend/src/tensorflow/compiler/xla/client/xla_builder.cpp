@@ -37,6 +37,11 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
+    void print_address(XlaOp* ptr) {
+        std::cout << "handle " << *reinterpret_cast<xla::XlaOp*>(ptr) << std::endl;
+        std::cout << "address " << std::addressof(*reinterpret_cast<xla::XlaOp*>(ptr)) << std::endl;
+    }
+
     int sizeof_XlaOp() {
         return sizeof(xla::XlaOp);
     }

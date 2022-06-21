@@ -1070,7 +1070,7 @@ uniformSeedIsUpdated = fixedProperty $ do
 
   diff (toLiteral seed') (/=) (toLiteral seed)
   diff (toLiteral seed'') (/=) (toLiteral seed')
-  diff (toLiteral sample) (/=) (toLiteral sample')
+  diff (toLiteral sample') (/=) (toLiteral sample)
 
 covering
 uniformIsReproducible : Property

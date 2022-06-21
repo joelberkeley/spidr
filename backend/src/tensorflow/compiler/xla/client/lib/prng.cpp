@@ -54,9 +54,16 @@ extern "C" {
             key_, initial_state_, bit_generator_, minval_, maxval_, shape_
         );
 
+        auto value_ = new xla::XlaOp(res.value);
+        auto state_ = new xla::XlaOp(res.state);
+
+        std::cout << "UniformFloatingPointDistribution ..." << std::endl;
+        std::cout << "  value_ " << *value_ << " " << value_ << std::endl;
+        std::cout << "  state_ " << *state_ << " " << state_ << std::endl;
+
         return new RngOutput {
-            value: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.value)),
-            state: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.state))
+            value: reinterpret_cast<XlaOp*>(value_),
+            state: reinterpret_cast<XlaOp*>(state_)
         };
     }
 }

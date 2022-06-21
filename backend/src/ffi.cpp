@@ -16,10 +16,6 @@ limitations under the License.
 #include <iostream>
 
 extern "C" {
-    void print_address(void* ptr) {
-        std::cout << ptr << std::endl;
-    }
-
     int sizeof_int() {
         return sizeof(int);
     }
