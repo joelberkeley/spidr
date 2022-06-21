@@ -1021,7 +1021,7 @@ kolmogorovSmirnov samples cdf =
 
 covering
 uniform : Property
-uniform = withTests 10 . property $ do
+uniform = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [1] nats)
@@ -1054,7 +1054,7 @@ uniformForEqualBounds = withTests 20 . property $ do
 
 covering
 uniformSeedIsUpdated : Property
-uniformSeedIsUpdated = withTests 10 . property $ do
+uniformSeedIsUpdated = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [1] nats)
