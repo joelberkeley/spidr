@@ -1240,20 +1240,26 @@ inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
-||| between `bound` and `bound'`. Note `bound` and `bound'` need not be ordered.
+||| between `bound` and `bound'`.
+|||
+||| `bound` and `bound'` need not be ordered, and samples will be generated, elementwise, in
+||| [min bound bound', max bound bound'). The exception is where the bounds are equal, in which
+||| case: if the bounds are finite, samples are generated at the common bound, else samples are NaN.
 |||
 ||| The generated samples are a deterministic function of the input seed, but may vary between
 ||| backends and library versions.
 export
 uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
-uniform (MkTensor boundGraph bound) (MkTensor boundGraph' bound') =
+uniform bound bound' =
   let MkTensor keyGraph key = fromLiteral {shape=[]} {dtype=U64} 0
+      MkTensor minvalGraph minval = min bound bound'
+      MkTensor maxvalGraph' maxval = max bound bound'
    in ST $ \(MkTensor initialStateGraph initialState) =>
         let valueStatePairGraph = UniformFloatingPointDistribution
-              keyGraph initialStateGraph ThreeFry boundGraph boundGraph' shape
+              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph' shape
             valueStatePair = do
               uniformFloatingPointDistribution
-                !key !initialState ThreeFry !bound !bound' !(mkShape {dtype=F64} shape)
+                !key !initialState ThreeFry !minval !maxval !(mkShape {dtype=F64} shape)
             sampleGraph = GraphIndex 0 valueStatePairGraph
             newStateGraph = GraphIndex 1 valueStatePairGraph
          in Id (

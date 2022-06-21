@@ -1021,7 +1021,7 @@ kolmogorovSmirnov samples cdf =
 
 covering
 uniform : Property
-uniform = withTests 20 . property $ do
+uniform = withTests 10 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [1] nats)
@@ -1042,20 +1042,19 @@ uniform = withTests 20 . property $ do
 
 covering
 uniformForEqualBounds : Property
-uniformForEqualBounds = property $ do
-  bound <- forAll (literal [] doubles)
+uniformForEqualBounds = withTests 20 . property $ do
   seed <- forAll (literal [1] nats)
 
-  let bound = broadcast $ fromLiteral bound
+  let bound = fromLiteral [nan, -inf, inf, -1.0, 0.0, 1.0]
       seed = fromLiteral seed
 
-      samples : Tensor [10] F64 = evalState seed (uniform bound bound)
+      samples : Tensor [6] F64 = evalState seed (uniform bound bound)
 
-  samples ===# bound
+  samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
 
 covering
 uniformSeedIsUpdated : Property
-uniformSeedIsUpdated = property $ do
+uniformSeedIsUpdated = withTests 10 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [1] nats)
@@ -1074,7 +1073,7 @@ uniformSeedIsUpdated = property $ do
 
 covering
 uniformIsReproducible : Property
-uniformIsReproducible = property $ do
+uniformIsReproducible = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   seed <- forAll (literal [1] nats)
