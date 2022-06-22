@@ -17,13 +17,14 @@ module Compiler.Graph
 
 import Data.Hashable
 
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Types
 import Util.Hashable
 
 ||| A `Graph` represents a computational graph used to compute a tensor value. It is defined by
-||| the following proprty: For any two `Graph`s gx and gy that compute tensors x and y respectively,
+||| the following property: For any two `Graph`s gx and gy that compute tensors x and y respectively,
 ||| if gx is identical to gy, then the values of x and y are equal.
 |||
 ||| It is primarily used for memoization in constructing the computation graph.
@@ -54,12 +55,14 @@ data Graph : Type where
   Dot : Graph -> Graph -> Graph
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
-  RngBitGenerator : RandomAlgorithm -> Graph -> Shape -> Graph
+  UniformFloatingPointDistributionValue :
+    Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
+  UniformFloatingPointDistributionState :
+    Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
 
-Eq RandomAlgorithm where
-  RngDefault == RngDefault = True
-  RngThreeFry == RngThreeFry = True
-  RngPhilox == RngPhilox = True
+Eq BitGenerator where
+  ThreeFry == ThreeFry = True
+  Philox == Philox = True
   _ == _ = False
 
 export
@@ -105,16 +108,26 @@ Eq Graph where
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve lower x y) == (TriangularSolve lower' x' y') =
     lower == lower' && x == x' && y == y'
-  (RngBitGenerator algorithm initialState shape)
-    == (RngBitGenerator algorithm' initialState' shape') =
-      algorithm == algorithm' && initialState == initialState' && shape == shape'
+  (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) ==
+    (UniformFloatingPointDistributionValue key' initialState' bitGenerator' minval' maxval' shape')
+      = key == key'
+        && initialState == initialState'
+        && bitGenerator == bitGenerator'
+        && minval == minval'
+        && maxval == maxval'
+  (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) ==
+    (UniformFloatingPointDistributionState key' initialState' bitGenerator' minval' maxval' shape')
+      = key == key'
+        && initialState == initialState'
+        && bitGenerator == bitGenerator'
+        && minval == minval'
+        && maxval == maxval'
   _ == _ = False
 
-Hashable RandomAlgorithm where
+Hashable BitGenerator where
   hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
-    RngDefault => 0
-    RngThreeFry => 1
-    RngPhilox => 2
+    ThreeFry => 1
+    Philox => 2
 
 export
 Hashable Graph where
@@ -167,7 +180,21 @@ Hashable Graph where
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve lower x y) =
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (RngBitGenerator algorithm initialState shape) = salt
-    `hashWithSalt` ("RngBitGenerator", algorithm)
-    `hashWithSalt` initialState
-    `hashWithSalt` shape
+  hashWithSalt salt
+    (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) = salt
+      `hashWithSalt` "UniformFloatingPointDistributionValue"
+      `hashWithSalt` key
+      `hashWithSalt` initialState
+      `hashWithSalt` bitGenerator
+      `hashWithSalt` minval
+      `hashWithSalt` maxval
+      `hashWithSalt` shape
+  hashWithSalt salt
+    (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) = salt
+      `hashWithSalt` "UniformFloatingPointDistributionState"
+      `hashWithSalt` key
+      `hashWithSalt` initialState
+      `hashWithSalt` bitGenerator
+      `hashWithSalt` minval
+      `hashWithSalt` maxval
+      `hashWithSalt` shape

@@ -66,8 +66,8 @@ export
 build : HasIO io => String -> Computation XlaOp -> io XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
-  MkCachingBuilder builder _ <- liftIO $ execStateT (MkCachingBuilder builder empty) x
-  build builder
+  (MkCachingBuilder builder _, root) <- liftIO $ runStateT (MkCachingBuilder builder empty) x
+  build builder root
 
 export
 buildWithSubBuilder :
@@ -76,9 +76,9 @@ buildWithSubBuilder computationName computationArguments computationResult = do
   MkCachingBuilder builder _ <- get
   subBuilder <- createSubBuilder builder computationName
   let cachingSubBuilder = MkCachingBuilder subBuilder empty
-      allOps = sequence_ (computationArguments ++ [computationResult])
-  MkCachingBuilder subBuilder _ <- liftIO $ execStateT cachingSubBuilder allOps
-  build subBuilder
+  cachingSubBuilder <- liftIO $ execStateT cachingSubBuilder (sequence_ computationArguments)
+  (MkCachingBuilder subBuilder _, root) <- liftIO $ runStateT cachingSubBuilder computationResult
+  build subBuilder root
 
 export
 opToString : Computation XlaOp -> String

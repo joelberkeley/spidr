@@ -68,9 +68,10 @@ extern "C" {
         return reinterpret_cast<XlaBuilder*>(sub_builder.release());
     }
 
-    XlaComputation* XlaBuilder_Build(XlaBuilder& s) {
-        xla::XlaBuilder& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
-        xla::XlaComputation computation = s_.Build().ConsumeValueOrDie();
+    XlaComputation* XlaBuilder_Build(XlaBuilder& s, XlaOp& root) {
+        auto& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
+        auto& root_ = reinterpret_cast<xla::XlaOp&>(root);
+        xla::XlaComputation computation = s_.Build(root_).ConsumeValueOrDie();
         xla::XlaComputation* non_stack = new xla::XlaComputation(std::move(computation));
         return reinterpret_cast<XlaComputation*>(non_stack);
     }

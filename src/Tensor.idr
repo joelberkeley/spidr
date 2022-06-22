@@ -32,6 +32,7 @@ import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
@@ -1229,34 +1230,58 @@ trace :
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
 
-||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [2] U64` seed.
-||| The seed is updated each time a new value is generated.
+||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
+||| The state is updated each time a new value is generated.
 public export
 Rand : Type -> Type
-Rand = State (Tensor [2] U64)
+Rand = State (Tensor [1] U64)
 
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
-||| between `bound` and `bound'` (inclusive). Note `bound` and `bound'` need not be ordered.
+||| between `bound` and `bound'`.
 |||
-||| The generated samples are a deterministic function of the input seed, but may vary between
-||| backends and library versions.
+||| `bound` and `bound'` need not be ordered, and samples will be generated, elementwise, in
+||| [min bound bound', max bound bound'). The exception is where the bounds are equal, in which
+||| case: if the bounds are finite, samples are generated at the common bound, else samples are NaN.
+|||
+||| The generated samples are a deterministic function of the input key and state, but may vary
+||| between backends and library versions.
+|||
+||| Example usage, multiplying two uniform samples
+||| ```
+||| x : Tensor [3] F64
+||| x = let key = fromLiteral 2
+|||         rng = uniform key (fill 0.0) (fill 1.0)
+|||         initialState = fromLiteral [0]
+|||      in evalState initialState [| rng * rng |]
+||| ```
+|||
+||| @key Determines the stream of generated samples.
+||| @bound A bound of the samples. See full docstring for details.
+||| @bound' A bound of the samples. See full docstring for details.
 export
-uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
-uniform bound bound' = ST $ \(MkTensor initialStateGraph initialState) =>
-  let rngGraph = RngBitGenerator RngThreeFry initialStateGraph shape
-      rng = cached rngGraph $ do
-        rngBitGenerator RngThreeFry !initialState !(mkShape {dtype=F64} shape)
-      newStateGraph = GetTupleElement rngGraph 0
-      newState = cached newStateGraph $ do getTupleElement !rng 0
-      bitsSampleGraph = GetTupleElement rngGraph 1
-      bitsSample : Tensor shape U64 =
-        MkTensor bitsSampleGraph $ cached bitsSampleGraph $ do getTupleElement !rng 1
-      u64minAsF64 : Tensor [] F64 = cast $ min @{Finite {dtype=U64}}
-      u64maxAsF64 : Tensor [] F64 = cast $ max @{Finite {dtype=U64}}
-      finiteSamples = bound + (bound' - bound) *
-        (cast bitsSample - broadcast u64minAsF64) / (broadcast $ u64maxAsF64 - u64minAsF64)
-      f64sample = select (bound == bound' && abs bound == broadcast inf) bound finiteSamples
-   in Id (MkTensor newStateGraph newState, f64sample)
+uniform :
+  {shape : _} ->
+  (key : Tensor [] U64) ->
+  (bound, bound' : Tensor shape F64) ->
+  Rand (Tensor shape F64)
+uniform (MkTensor keyGraph key) bound bound' =
+  let MkTensor minvalGraph minval = min bound bound'
+      MkTensor maxvalGraph maxval = max bound bound'
+   in ST $ \(MkTensor initialStateGraph initialState) =>
+        let valueGraph = UniformFloatingPointDistributionValue
+              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph shape
+            stateGraph = UniformFloatingPointDistributionState
+              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph shape
+            valueStatePair = do
+              uniformFloatingPointDistribution
+                !key !initialState ThreeFry !minval !maxval !(mkShape {dtype=F64} shape)
+            state = MkTensor stateGraph $ do
+              ignore $ cached valueGraph $ map fst valueStatePair
+              cached stateGraph $ map snd valueStatePair
+            value = MkTensor valueGraph $ do
+              ignore $ cached stateGraph $ map snd valueStatePair
+              cached valueGraph $ map fst valueStatePair
+         in Id (state, value)
