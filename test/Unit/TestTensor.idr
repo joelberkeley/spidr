@@ -1024,14 +1024,16 @@ uniform : Property
 uniform = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
+  key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
+      key = fromLiteral key
       seed = fromLiteral seed
 
       samples : Tensor [1000, 10] F64 :=
-        evalState seed (uniform (broadcast bound) (broadcast bound'))
+        evalState seed (uniform key (broadcast bound) (broadcast bound'))
 
       uniformCdf : Tensor [1000, 10] F64 -> Tensor [1000, 10] F64
       uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
@@ -1043,12 +1045,14 @@ uniform = withTests 20 . property $ do
 covering
 uniformForEqualBounds : Property
 uniformForEqualBounds = withTests 20 . property $ do
+  key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral [nan, -inf, inf, -1.0, 0.0, 1.0]
+      key = fromLiteral key
       seed = fromLiteral seed
 
-      samples : Tensor [6] F64 = evalState seed (uniform bound bound)
+      samples : Tensor [6] F64 = evalState seed (uniform key bound bound)
 
   samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
 
@@ -1057,13 +1061,15 @@ uniformSeedIsUpdated : Property
 uniformSeedIsUpdated = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
+  key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
+      key = fromLiteral key
       seed = fromLiteral seed
 
-      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound')
+      rng = uniform key {shape=[10]} (broadcast bound) (broadcast bound')
       (seed', sample) = runState seed rng
       (seed'', sample') = runState seed' rng
 
@@ -1076,13 +1082,15 @@ uniformIsReproducible : Property
 uniformIsReproducible = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
+  key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
+      key = fromLiteral key
       seed = fromLiteral seed
 
-      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound')
+      rng = uniform {shape=[10]} key (broadcast bound) (broadcast bound')
       sample = evalState seed rng
       sample' = evalState seed rng
 

@@ -1230,8 +1230,8 @@ trace :
 trace x with (x)
   _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
 
-||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` seed.
-||| The seed is updated each time a new value is generated.
+||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
+||| The state is updated each time a new value is generated.
 public export
 Rand : Type -> Type
 Rand = State (Tensor [1] U64)
@@ -1246,13 +1246,20 @@ inf = fromDouble (1.0 / 0.0)
 ||| [min bound bound', max bound bound'). The exception is where the bounds are equal, in which
 ||| case: if the bounds are finite, samples are generated at the common bound, else samples are NaN.
 |||
-||| The generated samples are a deterministic function of the input seed, but may vary between
-||| backends and library versions.
+||| The generated samples are a deterministic function of the input key and state, but may vary
+||| between backends and library versions.
+|||
+||| @key Determines the stream of generated samples.
+||| @bound A bound of the samples. See full docstring for details.
+||| @bound' A bound of the samples. See full docstring for details.
 export
-uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
-uniform bound bound' =
-  let MkTensor keyGraph key = fromLiteral {shape=[]} {dtype=U64} 0
-      MkTensor minvalGraph minval = min bound bound'
+uniform :
+  {shape : _} ->
+  (key : Tensor [] U64) ->
+  (bound, bound' : Tensor shape F64) ->
+  Rand (Tensor shape F64)
+uniform (MkTensor keyGraph key) bound bound' =
+  let MkTensor minvalGraph minval = min bound bound'
       MkTensor maxvalGraph maxval = max bound bound'
    in ST $ \(MkTensor initialStateGraph initialState) =>
         let valueGraph = UniformFloatingPointDistributionValue
