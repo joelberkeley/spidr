@@ -34,4 +34,8 @@ extern "C" {
         XlaOp& maxval,
         Shape& shape
     );
+
+    RngOutput* NormalFloatingPointDistribution(
+        XlaOp& key, XlaOp& initial_state, int bit_generator, Shape& shape
+    );
 }

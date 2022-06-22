@@ -59,6 +59,8 @@ data Graph : Type where
     Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
   UniformFloatingPointDistributionState :
     Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
+  NormalFloatingPointDistributionValue : Graph -> Graph -> BitGenerator -> Shape -> Graph
+  NormalFloatingPointDistributionState : Graph -> Graph -> BitGenerator -> Shape -> Graph
 
 Eq BitGenerator where
   ThreeFry == ThreeFry = True
@@ -122,6 +124,12 @@ Eq Graph where
         && bitGenerator == bitGenerator'
         && minval == minval'
         && maxval == maxval'
+  (NormalFloatingPointDistributionValue key initialState bitGenerator shape) ==
+    (NormalFloatingPointDistributionValue key' initialState' bitGenerator' shape')
+      = key == key' && initialState == initialState' && bitGenerator == bitGenerator'
+  (NormalFloatingPointDistributionState key initialState bitGenerator shape) ==
+    (NormalFloatingPointDistributionState key' initialState' bitGenerator' shape')
+      = key == key' && initialState == initialState' && bitGenerator == bitGenerator'
   _ == _ = False
 
 Hashable BitGenerator where
@@ -197,4 +205,18 @@ Hashable Graph where
       `hashWithSalt` bitGenerator
       `hashWithSalt` minval
       `hashWithSalt` maxval
+      `hashWithSalt` shape
+  hashWithSalt salt
+    (NormalFloatingPointDistributionValue key initialState bitGenerator shape) = salt
+      `hashWithSalt` "NormalFloatingPointDistributionValue"
+      `hashWithSalt` key
+      `hashWithSalt` initialState
+      `hashWithSalt` bitGenerator
+      `hashWithSalt` shape
+  hashWithSalt salt
+    (NormalFloatingPointDistributionState key initialState bitGenerator shape) = salt
+      `hashWithSalt` "NormalFloatingPointDistributionState"
+      `hashWithSalt` key
+      `hashWithSalt` initialState
+      `hashWithSalt` bitGenerator
       `hashWithSalt` shape

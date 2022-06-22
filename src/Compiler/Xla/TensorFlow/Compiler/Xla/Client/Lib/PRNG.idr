@@ -45,3 +45,19 @@ uniformFloatingPointDistribution
     value <- onCollectAny value XlaOp.delete
     state <- onCollectAny state XlaOp.delete
     pure (MkXlaOp value, MkXlaOp state)
+
+export
+normalFloatingPointDistribution :
+  HasIO io => XlaOp -> XlaOp -> BitGenerator -> Shape -> io (XlaOp, XlaOp)
+normalFloatingPointDistribution
+  (MkXlaOp key) (MkXlaOp initialState) bitGenerator (MkShape shape) = do
+    let bitGenerator = case bitGenerator of
+                            ThreeFry => 0
+                            Philox => 1
+    rngOutput <- primIO $ prim__normalFloatingPointDistribution key initialState bitGenerator shape
+    let value = getField rngOutput "value"
+        state = getField rngOutput "state"
+    primIO $ prim__delete rngOutput
+    value <- onCollectAny value XlaOp.delete
+    state <- onCollectAny state XlaOp.delete
+    pure (MkXlaOp value, MkXlaOp state)
