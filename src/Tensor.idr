@@ -1249,6 +1249,15 @@ inf = fromDouble (1.0 / 0.0)
 ||| The generated samples are a deterministic function of the input key and state, but may vary
 ||| between backends and library versions.
 |||
+||| Example usage, multiplying two uniform samples
+||| ```
+||| x : Tensor [3] F64
+||| x = let key = fromLiteral 2
+|||         rng = uniform key (fill 0.0) (fill 1.0)
+|||         initialState = fromLiteral [0]
+|||      in evalState initialState [| rng * rng |]
+||| ```
+|||
 ||| @key Determines the stream of generated samples.
 ||| @bound A bound of the samples. See full docstring for details.
 ||| @bound' A bound of the samples. See full docstring for details.
