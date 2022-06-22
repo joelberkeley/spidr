@@ -22,7 +22,6 @@ import Data.Vect
 import System
 
 import Literal
-
 import Tensor
 
 import Utils
@@ -1003,6 +1002,9 @@ trace = fixedProperty $ do
 range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 
+product1 : (x : Nat) -> product (the (List Nat) [x]) = x
+product1 x = rewrite plusZeroRightNeutral x in Refl
+
 iidKolmogorovSmirnov :
   {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
 iidKolmogorovSmirnov samples cdf =
@@ -1014,10 +1016,6 @@ iidKolmogorovSmirnov samples cdf =
       samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
       deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
    in reduce @{Max} 0 (abs deviationFromCDF)
-
-    where
-    product1 : (x : Nat) -> product (the (List Nat) [x]) = x
-    product1 x = rewrite plusZeroRightNeutral x in Refl
 
 covering
 uniform : Property
@@ -1096,6 +1094,23 @@ uniformIsReproducible = withTests 20 . property $ do
 
   sample ===# sample'
 
+iidAndersonDarling :
+  {shape : _} -> Tensor shape F64 -> ({s : _} -> Tensor s F64 -> Tensor s F64) -> Tensor [] F64
+iidAndersonDarling samples cdf =
+  let n : Nat
+      n = product shape
+
+      samplesFlat := reshape {sizesEqual=sym (product1 n)} samples
+      cdfs := cdf (sort (<) 0 samplesFlat)
+      cdfPart := log cdfs + log (fill 1.0 - reverse [0] cdfs)
+      idxs : Tensor [n] U64 = fromLiteral $ range n
+      idxPart : Tensor [n] F64 = 2.0 * cast idxs + fill 1.0
+      nF64 := fromLiteral (Scalar (cast {to=Double} n))
+   in - nF64 - reduce @{Sum} 0 (idxPart * cdfPart) / nF64
+
+andersonDarling2p5pc : Literal [] Double
+andersonDarling2p5pc = 3.070
+
 covering
 normal : Property
 normal = withTests 20 . property $ do
@@ -1107,12 +1122,12 @@ normal = withTests 20 . property $ do
 
       samples : Tensor [100, 100] F64 = evalState seed (normal key)
 
-      normalCdf : Tensor [100, 100] F64 -> Tensor [100, 100] F64
-      normalCdf x = (fill 1.0 + erf (x / sqrt 2.0)) / 2.0
+      normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
+      normalCdf x = (fill 1.0 + erf (x / sqrt (fill 2.0))) / fill 2.0
 
-      ksTest := iidKolmogorovSmirnov samples normalCdf
+      adTest := iidAndersonDarling samples normalCdf
 
-  diff (toLiteral ksTest) (<) 0.015
+  diff (toLiteral adTest) (<) andersonDarling2p5pc
 
 covering
 normalSeedIsUpdated : Property
