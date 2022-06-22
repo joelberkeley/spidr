@@ -182,6 +182,7 @@ Hashable Graph where
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt
     (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) = salt
+      `hashWithSalt` "UniformFloatingPointDistributionValue"
       `hashWithSalt` key
       `hashWithSalt` initialState
       `hashWithSalt` bitGenerator
@@ -190,6 +191,7 @@ Hashable Graph where
       `hashWithSalt` shape
   hashWithSalt salt
     (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) = salt
+      `hashWithSalt` "UniformFloatingPointDistributionState"
       `hashWithSalt` key
       `hashWithSalt` initialState
       `hashWithSalt` bitGenerator
