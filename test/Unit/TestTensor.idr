@@ -29,8 +29,8 @@ import Utils.Comparison
 import Utils.Cases
 
 covering
-fromLiteralThentoLiteral : Property
-fromLiteralThentoLiteral = property $ do
+fromLiteralThenToLiteral : Property
+fromLiteralThenToLiteral = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -47,6 +47,43 @@ fromLiteralThentoLiteral = property $ do
 
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
+
+canConvertNumericBounds : Property
+canConvertNumericBounds = fixedProperty $ do
+  let f64lim : Literal [] Double = 1.7976931348623157e308
+      min' : Tensor [] F64 = Bounded.min @{Finite}
+      max' : Tensor [] F64 = Bounded.max @{Finite}
+  toLiteral min' === -f64lim
+  toLiteral max' === f64lim
+  toLiteral (fromLiteral (-f64lim) == min') === True
+  toLiteral (fromLiteral f64lim == max') === True
+
+  let s32min : Literal [] Int = -2147483648
+      s32max : Literal [] Int = 2147483647
+      min' : Tensor [] S32 = Bounded.min @{Finite}
+      max' : Tensor [] S32 = Bounded.max @{Finite}
+  toLiteral min' === s32min
+  toLiteral max' === s32max
+  toLiteral (fromLiteral (-s32min) == min') === True
+  toLiteral (fromLiteral s32max == max') === True
+
+  let u32min : Literal [] Nat = 0
+      u32max : Literal [] Nat = 4294967295
+      min' : Tensor [] U32 = Bounded.min @{Finite}
+      max' : Tensor [] U32 = Bounded.max @{Finite}
+  toLiteral min' === u32min
+  toLiteral max' === u32max
+  toLiteral (fromLiteral u32min == min') === True
+  toLiteral (fromLiteral u32max == max') === True
+
+  let u64min : Literal [] Nat = 0
+      u64max : Literal [] Nat = 18446744073709551615
+      min' : Tensor [] U64 = Bounded.min @{Finite}
+      max' : Tensor [] U64 = Bounded.max @{Finite}
+  toLiteral min' === u64min
+  toLiteral max' === u64max
+  toLiteral (fromLiteral u64min == min') === True
+  toLiteral (fromLiteral u64max == max') === True
 
 show : Property
 show = fixedProperty $ do
@@ -1146,7 +1183,8 @@ normalIsReproducible = withTests 20 . property $ do
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
-      ("toLiteral . fromLiteral", fromLiteralThentoLiteral)
+      ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
+    , ("can read/write finite numeric bounds to/from XLA", canConvertNumericBounds)
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
