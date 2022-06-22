@@ -133,9 +133,7 @@ Eq Graph where
   _ == _ = False
 
 Hashable BitGenerator where
-  hashWithSalt salt algorithm = hashWithSalt salt $ the Int $ case algorithm of
-    ThreeFry => 1
-    Philox => 2
+  hashWithSalt salt bitGenerator = hashWithSalt salt (cast {to=Int} bitGenerator)
 
 export
 Hashable Graph where
