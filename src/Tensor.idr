@@ -1253,16 +1253,19 @@ uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shap
 uniform bound bound' =
   let MkTensor keyGraph key = fromLiteral {shape=[]} {dtype=U64} 0
       MkTensor minvalGraph minval = min bound bound'
-      MkTensor maxvalGraph' maxval = max bound bound'
+      MkTensor maxvalGraph maxval = max bound bound'
    in ST $ \(MkTensor initialStateGraph initialState) =>
-        let valueStatePairGraph = UniformFloatingPointDistribution
-              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph' shape
+        let valueGraph = UniformFloatingPointDistributionValue
+              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph shape
+            stateGraph = UniformFloatingPointDistributionState
+              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph shape
             valueStatePair = do
               uniformFloatingPointDistribution
                 !key !initialState ThreeFry !minval !maxval !(mkShape {dtype=F64} shape)
-            sampleGraph = GraphIndex 0 valueStatePairGraph
-            newStateGraph = GraphIndex 1 valueStatePairGraph
-         in Id (
-              MkTensor newStateGraph $ cached newStateGraph $ map snd valueStatePair,
-              MkTensor sampleGraph $ cached sampleGraph $ map fst valueStatePair
-            )
+            state = MkTensor stateGraph $ do
+              ignore $ cached valueGraph $ map fst valueStatePair
+              cached stateGraph $ map snd valueStatePair
+            value = MkTensor valueGraph $ do
+              ignore $ cached stateGraph $ map snd valueStatePair
+              cached valueGraph $ map fst valueStatePair
+         in Id (state, value)

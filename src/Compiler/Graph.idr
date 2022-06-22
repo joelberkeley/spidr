@@ -30,7 +30,6 @@ import Util.Hashable
 ||| It is primarily used for memoization in constructing the computation graph.
 public export
 data Graph : Type where
-  GraphIndex : Nat -> Graph -> Graph -- this feels hacky
   FromLiteral : Primitive dtype => Shape -> (hash : Bits64) -> Graph
   Parameter : Primitive dtype => Shape -> Nat -> Graph
   MinFiniteValue : Primitive dtype => Graph
@@ -56,7 +55,9 @@ data Graph : Type where
   Dot : Graph -> Graph -> Graph
   Cholesky : Graph -> Graph
   TriangularSolve : (lower : Bool) -> Graph -> Graph -> Graph
-  UniformFloatingPointDistribution :
+  UniformFloatingPointDistributionValue :
+    Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
+  UniformFloatingPointDistributionState :
     Graph -> Graph -> BitGenerator -> Graph -> Graph -> Shape -> Graph
 
 Eq BitGenerator where
@@ -107,13 +108,20 @@ Eq Graph where
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve lower x y) == (TriangularSolve lower' x' y') =
     lower == lower' && x == x' && y == y'
-  (UniformFloatingPointDistribution key initialState bitGenerator minval maxval shape) ==
-    (UniformFloatingPointDistribution key' initialState' bitGenerator' minval' maxval' shape') =
-      key == key'
-      && initialState == initialState'
-      && bitGenerator == bitGenerator'
-      && minval == minval'
-      && maxval == maxval'
+  (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) ==
+    (UniformFloatingPointDistributionValue key' initialState' bitGenerator' minval' maxval' shape')
+      = key == key'
+        && initialState == initialState'
+        && bitGenerator == bitGenerator'
+        && minval == minval'
+        && maxval == maxval'
+  (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) ==
+    (UniformFloatingPointDistributionState key' initialState' bitGenerator' minval' maxval' shape')
+      = key == key'
+        && initialState == initialState'
+        && bitGenerator == bitGenerator'
+        && minval == minval'
+        && maxval == maxval'
   _ == _ = False
 
 Hashable BitGenerator where
@@ -123,7 +131,6 @@ Hashable BitGenerator where
 
 export
 Hashable Graph where
-  hashWithSalt salt (GraphIndex idx graph) = salt `hashWithSalt` idx `hashWithSalt` graph
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, hash)
   hashWithSalt salt (Parameter {dtype} shape position) =
@@ -174,7 +181,15 @@ Hashable Graph where
   hashWithSalt salt (TriangularSolve lower x y) =
     salt `hashWithSalt` ("TriangularSolve", lower) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt
-    (UniformFloatingPointDistribution key initialState bitGenerator minval maxval shape) = salt
+    (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) = salt
+      `hashWithSalt` key
+      `hashWithSalt` initialState
+      `hashWithSalt` bitGenerator
+      `hashWithSalt` minval
+      `hashWithSalt` maxval
+      `hashWithSalt` shape
+  hashWithSalt salt
+    (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) = salt
       `hashWithSalt` key
       `hashWithSalt` initialState
       `hashWithSalt` bitGenerator
