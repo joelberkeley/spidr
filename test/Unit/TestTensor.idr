@@ -138,31 +138,31 @@ reshape = fixedProperty $ do
 
 multiSliceShape : Property
 multiSliceShape = fixedProperty $ do
-  multiSliceShape [3] [(0, 0)] === [0]
+  multiSliceShape [3] [0.to 0] === [0]
 
 slice : Property
 slice = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
-  slice [(0, 0)] x ===# fromLiteral []
-  slice [(0, 1)] x ===# fromLiteral [3]
-  slice [(0, 2)] x ===# fromLiteral [3, 4]
-  slice [(0, 3)] x ===# fromLiteral [3, 4, 5]
-  slice [(1, 1)] x ===# fromLiteral []
-  slice [(1, 2)] x ===# fromLiteral [4]
-  slice [(1, 3)] x ===# fromLiteral [4, 5]
-  slice [(2, 2)] x ===# fromLiteral []
-  slice [(2, 3)] x ===# fromLiteral [5]
+  slice [0.to 0] x ===# fromLiteral []
+  slice [0.to 1] x ===# fromLiteral [3]
+  slice [0.to 2] x ===# fromLiteral [3, 4]
+  slice [0.to 3] x ===# fromLiteral [3, 4, 5]
+  slice [1.to 1] x ===# fromLiteral []
+  slice [1.to 2] x ===# fromLiteral [4]
+  slice [1.to 3] x ===# fromLiteral [4, 5]
+  slice [2.to 2] x ===# fromLiteral []
+  slice [2.to 3] x ===# fromLiteral [5]
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  slice [(0, 1)] x ===# fromLiteral [[3, 4, 5]]
-  slice [(1, 1)] x ===# fromLiteral []
-  -- slice [all, (2, 2)] x ===# fromLiteral [[], []]
-  -- slice [all, (1, 3)] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [0.to 1] x ===# fromLiteral [[3, 4, 5]]
+  slice [1.to 1] x ===# fromLiteral []
+  slice [all, 2.to 2] x ===# fromLiteral [[], []]
+  slice [all, 1.to 3] x ===# fromLiteral [[4, 5], [7, 8]]
 
   let x : Array [60] Int = fromList [0..59]
       x = reshape {to=[4, 5, 3]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
   -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4:2, 2]
-  Utils.Comparison.S32.(===#) (slice [(1, 3), (0, 4, 2), 2] x) (fromLiteral [[17, 23], [32, 38]])
+  slice [1.to 3, (0.to 4).by 2, 2] x ===# fromLiteral [[17, 23], [32, 38]]
 
 split : Property
 split = fixedProperty $ do
@@ -489,40 +489,49 @@ sort = withTests 20 . property $ do
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
-      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
-      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+      init = slice [0.to d] sorted
+      tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd] ints)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
-      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
-      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+      init = slice [0.to d] sorted
+      tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   let sorted = sort (<) 1 x
-      init = slice 1 0 dd {isWithinAxis=lteSuccRight (reflexive {x=dd})} sorted
-      tail = slice 1 1 (S dd) {isWithinAxis=reflexive {x=S dd}} sorted
+      init = slice [all, 0.to dd] sorted
+      tail = slice [all, 1.to (S dd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd, S ddd] ints)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
-      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
-      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+      init = slice [0.to d] sorted
+      tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   let sorted = sort (<) 1 x
-      init = slice 1 0 dd {isWithinAxis=lteSuccRight (reflexive {x=dd})} sorted
-      tail = slice 1 1 (S dd) {isWithinAxis=reflexive {x=S dd}} sorted
+      init = slice [all, 0.to dd] sorted
+      tail = slice [all, 1.to (S dd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   let sorted = sort (<) 2 x
-      init = slice 2 0 ddd {isWithinAxis=lteSuccRight (reflexive {x=ddd})} sorted
-      tail = slice 2 1 (S ddd) {isWithinAxis=reflexive {x=S ddd}} sorted
+      init = slice [all, all, 0.to ddd] sorted
+      tail = slice [all, all, 1.to (S ddd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+  where
+  %hint
+  lteSucc : {n : _} -> LTE n (S n)
+  lteSucc = lteSuccRight (reflexive {ty=Nat})
+
+  %hint
+  reflex : {n : _} -> LTE n n
+  reflex = reflexive {ty=Nat}
 
 sortWithEmptyAxis : Property
 sortWithEmptyAxis = fixedProperty $ do
