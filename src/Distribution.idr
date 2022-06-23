@@ -52,8 +52,7 @@ public export
 interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
-      ||| Produce `n` IID samples from this distribution, where each sample's mean and covariance
-      ||| approximate that of the distribution.
+      ||| Produce `n` IID samples from this distribution.
       -- which interface does this belong to?
       sample : dist event dim -> {n : _} -> Rand $ Tensor (n :: dim :: event) F64
 
