@@ -1279,10 +1279,7 @@ inf = fromDouble (1.0 / 0.0)
 ||| @bound A bound of the samples. See full docstring for details.
 ||| @bound' A bound of the samples. See full docstring for details.
 export
-uniform :
-  {shape : _} ->
-  (bound, bound' : Tensor shape F64) ->
-  Rand (Tensor shape F64)
+uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
 uniform bound bound' (MkTensor keyGraph key) =
   let MkTensor minvalGraph minval = min bound bound'
       MkTensor maxvalGraph maxval = max bound bound'
