@@ -53,6 +53,8 @@ interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| Sample from this distribution.
+      -- which interface does this belong to?
+      --
       -- feels wrong putting key in here
       sample : dist event dim -> {n : _} -> Tensor [] U64 -> Rand $ Tensor (n :: dim :: event) F64
 
@@ -83,7 +85,6 @@ Distribution Gaussian where
 ||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
-  -- which interface does this belong to?
   sample {n} (MkGaussian {d} mean cov) key = do
     let cholCov = cholesky (squeeze {to=[S d, S d]} cov + 0.0001 * identity)
     univariate <- normal key
