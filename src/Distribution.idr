@@ -83,9 +83,8 @@ Distribution Gaussian where
 ||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
-  sample {n} (MkGaussian {d} mean cov) key = do
-    univariate <- normal key
-    pure $ expand 2 $ (broadcast mean + cholesky (squeeze cov) @@ univariate).T
+  sample {n} (MkGaussian {d} mean cov) key =
+    pure $ expand 2 $ (broadcast mean + cholesky (squeeze cov) @@ !(normal key)).T
 
   pdf (MkGaussian {d} mean cov) x =
     let cholCov = cholesky (squeeze {to=[S d, S d]} cov)
