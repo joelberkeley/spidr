@@ -23,7 +23,7 @@ import public Data.Vect
 
 ||| Integer division of naturals.
 public export
-div : Nat -> (denominator : Nat) -> IsSucc denominator => Nat
+div : Nat -> (denominator : Nat) -> {auto 0 ok : IsSucc denominator} -> Nat
 div n d = assert_total $ if n < d then 0 else 1 + div (n `minus` d) d
 
 namespace Vect

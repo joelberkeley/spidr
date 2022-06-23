@@ -221,66 +221,17 @@ squeeze (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
    in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
 
-public export
-data Slice : Nat -> Type where
-  MkSlice : (from, to, stride : Nat) -> from `LTE` to => to `LTE` d => IsSucc stride => Slice d
-
-infix 9 ~~
-
-namespace Slice
-  public export
-  (~~) : (from, to : Nat) -> from `LTE` to => to `LTE` d => Slice d
-  from ~~ to = MkSlice from to 1
-
-infix 8 //
-
-namespace Stride
-  public export
-  (//) : Slice d -> (stride : Nat) -> IsSucc stride => Slice d
-  (MkSlice from to _) // stride = MkSlice from to stride
-
--- export
--- rangeFromTo : (from, to : Nat) -> from `LTE` to => to `LTE` d => Slice d
--- rangeFromTo from to = MkSlice from to 1
-
--- minusSmallerIsSucc : (x, y : Nat) -> y `LT` x => IsSucc (minus x y)
--- minusSmallerIsSucc (S x) 0 = ItIsSucc
--- minusSmallerIsSucc @{LTESucc _} (S x) (S y) = minusSmallerIsSucc x y
-
--- export
--- rangeFromThenTo :
---   (from, next, to : Nat) -> (S from) `LTE` next => from `LTE` to => to `LTE` d => Slice d
--- rangeFromThenTo @{prf} from next to =
---   let %hint
---       prf' : LTE from next
---       prf' = lteSuccLeft prf
-
---    in MkSlice from to @{%search} @{%search} @{minusSmallerIsSucc next from} (next `minus` from)
-
--- export
--- rangeFrom : (from : Nat) -> {d : _} -> from `LTE` d => Slice d
--- rangeFrom from = MkSlice @{%search} @{reflexive {x=d}} from d 1
-
--- export
--- rangeFromThen : (from, next : Nat) -> from `LT` next => {to : _} -> from `LTE` to => Slice to
--- rangeFromThen @{prf} from next =
---   let %hint
---       prf' : LTE from next
---       prf' = lteSuccLeft prf
-
---    in MkSlice @{%search} @{reflexive {x=to}} from to
---         @{minusSmallerIsSucc next from} (next `minus` from)
-
-||| A slice of all indices in the given dimension.
-public export
-all : {d : _} -> Slice d
-all = MkSlice @{%search} @{reflexive {x=d}} 0 d 1
-
-public export
+export
 data Multislice : Shape -> Type where
   Empty : Multislice ds
-  ConsSlice : Slice d -> Multislice ds -> Multislice (d :: ds)
-  ConsIndex : (i : Nat) -> Multislice ds -> i `LT` d => Multislice (d :: ds)
+  ConsSlice :
+    (from, to, stride : Nat) ->
+    {auto 0 _ : from `LTE` to} ->
+    {auto 0 _ : to `LTE` d} ->
+    {auto 0 _ : IsSucc stride} ->
+    Multislice ds ->
+    Multislice (d :: ds)
+  ConsIndex : (i : Nat) -> Multislice ds -> {auto 0 _ : i `LT` d} -> Multislice (d :: ds)
 
 public export
 Nil : Multislice ds
@@ -288,18 +239,32 @@ Nil = Empty
 
 namespace Slice
   public export
-  (::) : Slice d -> Multislice ds -> Multislice (d :: ds)
-  (::) = ConsSlice
+  (::) : forall d .
+    (slice : (Nat, Nat)) ->
+    {auto 0 _ : fst slice `LTE` snd slice} ->
+    {auto 0 _ : snd slice `LTE` d} ->
+    Multislice ds ->
+    Multislice (d :: ds)
+  slice :: ds = ConsSlice (fst slice) (snd slice) 1 ds
+
+namespace StridedSlice
+  public export
+  (::) :
+    (slice : (Nat, Nat, Nat)) ->
+    {auto 0 _ : let (from, to, stride) = slice in (from `LTE` to, to `LTE` d, IsSucc stride)} ->
+    Multislice ds ->
+    Multislice (d :: ds)
+  (from, to, stride) :: ds = ConsSlice from to stride ds
 
 namespace Index
   public export
-  (::) : (i : Nat) -> Multislice ds -> i `LT` d => Multislice (d :: ds)
+  (::) : (i : Nat) -> Multislice ds -> {auto 0 _ : i `LT` d} -> Multislice (d :: ds)
   (::) = ConsIndex
 
 public export
 multiSliceShape : (shape : Shape) -> Multislice shape -> Shape
 multiSliceShape shape Empty = shape
-multiSliceShape (d :: ds) (ConsSlice (MkSlice from to stride) xs) =
+multiSliceShape (d :: ds) (ConsSlice from to stride xs) =
   ((to `minus` from) `div` stride) :: multiSliceShape ds xs
 multiSliceShape (d :: ds) (ConsIndex _ xs) = multiSliceShape ds xs
 
@@ -346,35 +311,35 @@ slice :
   Tensor shape dtype ->
   Tensor (multiSliceShape shape at) dtype
 slice at (MkTensor graph xs) =
-  let mss = multiSliceShape shape at
-      graph = Operation "slice" [graph] mss (typeString {dtype})
-   in MkTensor graph $ reshapeImpl (sliceShape shape at) mss $ cached graph $ do
-        start <- mkIntArray (starts shape at)
-        stop <- mkIntArray (stops shape at)
-        strides <- mkIntArray (strides shape at)
-        let rank = cast (length shape)
-        sliced <- primIO $ prim__slice !xs start rank stop rank strides rank
-        onCollectAny sliced XlaOp.delete
+  let toShape = multiSliceShape shape at
+      graph = Slice (serialize at) graph
+   in MkTensor graph $ reshapeWithDefaultOrdering (sliceShape shape at) toShape $ cached graph $ do
+        slice !xs (starts shape at) (stops shape at) (strides shape at)
 
       where
+      serialize : Multislice ds -> List (Either (Nat, Nat, Nat) Nat)
+      serialize Empty = []
+      serialize (ConsSlice from to stride xs) = Left (from, to, stride) :: serialize xs
+      serialize (ConsIndex i xs) = Right i :: serialize xs
+
       starts : (shape : Shape) -> Multislice shape -> List Nat
       starts shape Empty = replicate (length shape) 0
-      starts (_ :: ds) (ConsSlice (MkSlice from _ _) xs) = from :: starts ds xs
+      starts (_ :: ds) (ConsSlice from _ _ xs) = from :: starts ds xs
       starts (_ :: ds) (ConsIndex i xs) = cast i :: starts ds xs
 
       stops : (shape : Shape) -> Multislice shape -> List Nat
       stops shape Empty = shape
-      stops (_ :: ds) (ConsSlice (MkSlice _ to _) xs) = to :: stops ds xs
+      stops (_ :: ds) (ConsSlice _ to _ xs) = to :: stops ds xs
       stops (_ :: ds) (ConsIndex i xs) = S (cast i) :: stops ds xs
 
       strides : (shape : Shape) -> Multislice shape -> List Nat
       strides shape Empty = replicate (length shape) 1
-      strides (_ :: ds) (ConsSlice (MkSlice _ _ stride) xs) = stride :: strides ds xs
+      strides (_ :: ds) (ConsSlice _ _ stride xs) = stride :: strides ds xs
       strides (_ :: ds) (ConsIndex _ xs) = 1 :: strides ds xs
 
       sliceShape : (shape : Shape) -> Multislice shape -> Shape
       sliceShape shape Empty = shape
-      sliceShape (d :: ds) (ConsSlice (MkSlice from to stride) xs) =
+      sliceShape (d :: ds) (ConsSlice from to stride xs) =
         ((to `minus` from) `div` stride) :: sliceShape ds xs
       sliceShape (d :: ds) (ConsIndex _ xs) = 1 :: sliceShape ds xs
 
@@ -396,12 +361,6 @@ split :
   Primitive dtype =>
   Tensor shape dtype ->
   (Tensor (replaceAt axis idx shape) dtype, Tensor (replaceAt axis remaining shape) dtype)
-split axis idx x = (slice start x, slice end x)
-
-  where
-  start : {shape : _} -> Multislice shape
-
-  end : (shape : Shape) -> Multislice shape
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
