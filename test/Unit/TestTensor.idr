@@ -48,8 +48,8 @@ fromLiteralThenToLiteral = property $ do
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
-canConvertNumericBounds : Property
-canConvertNumericBounds = fixedProperty $ do
+canConvertAtXlaNumericBounds : Property
+canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64lim : Literal [] Double = 1.7976931348623157e308
       min' : Tensor [] F64 = Bounded.min @{Finite}
       max' : Tensor [] F64 = Bounded.max @{Finite}
@@ -1184,7 +1184,7 @@ export covering
 group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
-    , ("can read/write finite numeric bounds to/from XLA", canConvertNumericBounds)
+    , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
