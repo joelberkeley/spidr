@@ -1094,23 +1094,6 @@ uniformIsReproducible = withTests 20 . property $ do
 
   sample ===# sample'
 
-iidAndersonDarling :
-  {shape : _} -> Tensor shape F64 -> ({s : _} -> Tensor s F64 -> Tensor s F64) -> Tensor [] F64
-iidAndersonDarling samples cdf =
-  let n : Nat
-      n = product shape
-
-      samplesFlat := reshape {sizesEqual=sym (product1 n)} samples
-      cdfs := cdf (sort (<) 0 samplesFlat)
-      cdfPart := log cdfs + log (fill 1.0 - reverse [0] cdfs)
-      idxs : Tensor [n] U64 = fromLiteral $ range n
-      idxPart : Tensor [n] F64 = 2.0 * cast idxs + fill 1.0
-      nF64 := fromLiteral (Scalar (cast {to=Double} n))
-   in - nF64 - reduce @{Sum} 0 (idxPart * cdfPart) / nF64
-
-andersonDarling2p5pc : Literal [] Double
-andersonDarling2p5pc = 3.070
-
 covering
 normal : Property
 normal = withTests 20 . property $ do
@@ -1125,9 +1108,9 @@ normal = withTests 20 . property $ do
       normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
       normalCdf x = (fill 1.0 + erf (x / sqrt (fill 2.0))) / fill 2.0
 
-      adTest := iidAndersonDarling samples normalCdf
+      ksTest := iidKolmogorovSmirnov samples normalCdf
 
-  diff (toLiteral adTest) (<) andersonDarling2p5pc
+  diff (toLiteral ksTest) (<) 0.017
 
 covering
 normalSeedIsUpdated : Property
