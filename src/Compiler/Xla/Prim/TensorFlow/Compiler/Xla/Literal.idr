@@ -53,16 +53,16 @@ literalGetInt32t : GCAnyPtr -> GCPtr Int -> Int
 
 export
 %foreign (libxla "Literal_Set_uint32_t")
-prim__literalSetUInt32t : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+prim__literalSetUInt32t : GCAnyPtr -> GCPtr Int -> Bits32 -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_uint32_t")
-literalGetUInt32t : GCAnyPtr -> GCPtr Int -> Int
+literalGetUInt32t : GCAnyPtr -> GCPtr Int -> Bits32
 
 export
 %foreign (libxla "Literal_Set_uint64_t")
-prim__literalSetUInt64t : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+prim__literalSetUInt64t : GCAnyPtr -> GCPtr Int -> Bits64 -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_uint64_t")
-literalGetUInt64t : GCAnyPtr -> GCPtr Int -> Int
+literalGetUInt64t : GCAnyPtr -> GCPtr Int -> Bits64
