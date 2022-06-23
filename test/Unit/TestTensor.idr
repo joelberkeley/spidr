@@ -22,7 +22,6 @@ import Data.Vect
 import System
 
 import Literal
-
 import Tensor
 
 import Utils
@@ -1003,9 +1002,12 @@ trace = fixedProperty $ do
 range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 
-kolmogorovSmirnov :
+product1 : (x : Nat) -> product (the (List Nat) [x]) = x
+product1 x = rewrite plusZeroRightNeutral x in Refl
+
+iidKolmogorovSmirnov :
   {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
-kolmogorovSmirnov samples cdf =
+iidKolmogorovSmirnov samples cdf =
   let n : Nat
       n = product shape
 
@@ -1014,10 +1016,6 @@ kolmogorovSmirnov samples cdf =
       samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
       deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
    in reduce @{Max} 0 (abs deviationFromCDF)
-
-    where
-    product1 : (x : Nat) -> product (the (List Nat) [x]) = x
-    product1 x = rewrite plusZeroRightNeutral x in Refl
 
 covering
 uniform : Property
@@ -1038,7 +1036,7 @@ uniform = withTests 20 . property $ do
       uniformCdf : Tensor [1000, 10] F64 -> Tensor [1000, 10] F64
       uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
 
-      ksTest := kolmogorovSmirnov samples uniformCdf
+      ksTest := iidKolmogorovSmirnov samples uniformCdf
 
   diff (toLiteral ksTest) (<) 0.01
 
@@ -1091,6 +1089,55 @@ uniformIsReproducible = withTests 20 . property $ do
       seed = fromLiteral seed
 
       rng = uniform {shape=[10]} key (broadcast bound) (broadcast bound')
+      sample = evalState seed rng
+      sample' = evalState seed rng
+
+  sample ===# sample'
+
+covering
+normal : Property
+normal = withTests 20 . property $ do
+  key <- forAll (literal [] nats)
+  seed <- forAll (literal [1] nats)
+
+  let key = fromLiteral key
+      seed = fromLiteral seed
+
+      samples : Tensor [100, 100] F64 = evalState seed (normal key)
+
+      normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
+      normalCdf x = (fill 1.0 + erf (x / sqrt (fill 2.0))) / fill 2.0
+
+      ksTest := iidKolmogorovSmirnov samples normalCdf
+
+  diff (toLiteral ksTest) (<) 0.017
+
+covering
+normalSeedIsUpdated : Property
+normalSeedIsUpdated = withTests 20 . property $ do
+  key <- forAll (literal [] nats)
+  seed <- forAll (literal [1] nats)
+
+  let key = fromLiteral key
+      seed = fromLiteral seed
+      rng = normal key {shape=[10]}
+      (seed', sample) = runState seed rng
+      (seed'', sample') = runState seed' rng
+
+  diff (toLiteral seed') (/=) (toLiteral seed)
+  diff (toLiteral seed'') (/=) (toLiteral seed')
+  diff (toLiteral sample') (/=) (toLiteral sample)
+
+covering
+normalIsReproducible : Property
+normalIsReproducible = withTests 20 . property $ do
+  key <- forAll (literal [] nats)
+  seed <- forAll (literal [1] nats)
+
+  let key = fromLiteral key
+      seed = fromLiteral seed
+
+      rng = normal {shape=[10]} key
       sample = evalState seed rng
       sample' = evalState seed rng
 
@@ -1152,4 +1199,7 @@ group = MkGroup "Tensor" $ [
     , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
     , ("uniform updates seed", uniformSeedIsUpdated)
     , ("uniform produces same samples for same seed", uniformIsReproducible)
+    , ("normal", normal)
+    , ("normal updates seed", normalSeedIsUpdated)
+    , ("normal produces same samples for same seed", normalIsReproducible)
   ]

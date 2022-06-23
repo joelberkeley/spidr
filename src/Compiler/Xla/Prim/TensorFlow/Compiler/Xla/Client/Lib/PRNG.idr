@@ -31,3 +31,7 @@ export
 %foreign (libxla "UniformFloatingPointDistribution")
 prim__uniformFloatingPointDistribution:
   GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO RngOutput
+
+export
+%foreign (libxla "NormalFloatingPointDistribution")
+prim__normalFloatingPointDistribution: GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> PrimIO RngOutput

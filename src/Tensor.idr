@@ -1285,3 +1285,35 @@ uniform (MkTensor keyGraph key) bound bound' =
               ignore $ cached stateGraph $ map snd valueStatePair
               cached valueGraph $ map fst valueStatePair
          in Id (state, value)
+
+||| Generate independent and identically distributed (IID) samples from the standard normal
+||| distribution.
+|||
+||| The generated samples are a deterministic function of the input key and state, but may vary
+||| between backends and library versions.
+|||
+||| Example usage, multiplying two normal samples
+||| ```
+||| x : Tensor [3] F64
+||| x = let key = fromLiteral 2
+|||         rng = normal key
+|||         initialState = fromLiteral [0]
+|||      in evalState initialState [| rng * rng |]
+||| ```
+|||
+||| @key Determines the stream of generated samples.
+export
+normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
+normal (MkTensor keyGraph key) =
+  ST $ \(MkTensor initialStateGraph initialState) =>
+    let valueGraph = NormalFloatingPointDistributionValue keyGraph initialStateGraph ThreeFry shape
+        stateGraph = NormalFloatingPointDistributionState keyGraph initialStateGraph ThreeFry shape
+        valueStatePair = do
+          normalFloatingPointDistribution !key !initialState ThreeFry !(mkShape {dtype=F64} shape)
+        state = MkTensor stateGraph $ do
+          ignore $ cached valueGraph $ map fst valueStatePair
+          cached stateGraph $ map snd valueStatePair
+        value = MkTensor valueGraph $ do
+          ignore $ cached stateGraph $ map snd valueStatePair
+          cached valueGraph $ map fst valueStatePair
+     in Id (state, value)

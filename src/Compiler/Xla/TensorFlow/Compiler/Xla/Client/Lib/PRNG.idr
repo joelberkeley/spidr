@@ -25,6 +25,11 @@ public export
 data BitGenerator = ThreeFry | Philox
 
 export
+Cast BitGenerator Int where
+  cast ThreeFry = 0
+  cast Philox = 1
+
+export
 uniformFloatingPointDistribution :
   HasIO io => XlaOp -> XlaOp -> BitGenerator -> XlaOp -> XlaOp -> Shape -> io (XlaOp, XlaOp)
 uniformFloatingPointDistribution
@@ -34,11 +39,22 @@ uniformFloatingPointDistribution
   (MkXlaOp minval)
   (MkXlaOp maxval)
   (MkShape shape) = do
-    let bitGenerator = case bitGenerator of
-                            ThreeFry => 0
-                            Philox => 1
     rngOutput <- primIO $ prim__uniformFloatingPointDistribution
-      key initialState bitGenerator minval maxval shape
+      key initialState (cast bitGenerator) minval maxval shape
+    let value = getField rngOutput "value"
+        state = getField rngOutput "state"
+    primIO $ prim__delete rngOutput
+    value <- onCollectAny value XlaOp.delete
+    state <- onCollectAny state XlaOp.delete
+    pure (MkXlaOp value, MkXlaOp state)
+
+export
+normalFloatingPointDistribution :
+  HasIO io => XlaOp -> XlaOp -> BitGenerator -> Shape -> io (XlaOp, XlaOp)
+normalFloatingPointDistribution
+  (MkXlaOp key) (MkXlaOp initialState) bitGenerator (MkShape shape) = do
+    rngOutput <- primIO $
+      prim__normalFloatingPointDistribution key initialState (cast bitGenerator) shape
     let value = getField rngOutput "value"
         state = getField rngOutput "state"
     primIO $ prim__delete rngOutput
