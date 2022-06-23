@@ -1286,7 +1286,7 @@ uniform (MkTensor keyGraph key) bound bound' =
               cached valueGraph $ map fst valueStatePair
          in Id (state, value)
 
-||| Generate independent and identically distributed (IID) samples from the unit normal
+||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
 |||
 ||| The generated samples are a deterministic function of the input key and state, but may vary
