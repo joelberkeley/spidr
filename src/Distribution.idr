@@ -18,9 +18,10 @@ module Distribution
 
 import Control.Monad.State
 import Data.Nat
+
+import Constants
 import Literal
 import Tensor
-import Constants
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the first
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
