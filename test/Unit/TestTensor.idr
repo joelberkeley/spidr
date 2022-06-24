@@ -140,7 +140,7 @@ namespace MultiSlice
   export
   slice : Property
   slice = fixedProperty $ do
-    slice [3] [0.to 0] === [0]
+    slice {shape=[3]} [0.to 0] === [0]
 
 slice : Property
 slice = fixedProperty $ do
@@ -158,7 +158,10 @@ slice = fixedProperty $ do
   slice [2.to 2] x ===# fromLiteral []
   slice [2.to 3] x ===# fromLiteral [5]
 
-  let idx : Nat = 2
+  -- make this a property test instead, so that we're actually dealing with symbols?
+  let idx : Nat
+      idx = 2
+
   slice [at idx] x ===# fromLiteral 5
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
