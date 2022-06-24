@@ -115,14 +115,14 @@ fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] F64 -> Tensor [] F64
       objective params =
         let priorParams = slice [1.to (S p)] params
-         in logMarginalLikelihood (mkPrior priorParams) (slice [0] params) (x, squeeze y)
+         in logMarginalLikelihood (mkPrior priorParams) (slice [at 0] params) (x, squeeze y)
 
       params := optimizer (concat 0 (expand 0 noise) gpParams) objective
 
       mkPosterior : Tensor [p] F64 -> GaussianProcess features
       mkPosterior params' = posterior (mkPrior params') (squeeze noise) (x, squeeze y)
 
-   in MkConjugateGPR mkPosterior (slice [1.to (S p)] params) (slice [0] params)
+   in MkConjugateGPR mkPosterior (slice [1.to (S p)] params) (slice [at 0] params)
 
       where
       %hint

@@ -232,9 +232,8 @@ data SliceOrIndex : Nat -> Type where
   Index : (idx : Nat) -> {auto 0 _ : LT idx d} -> SliceOrIndex d
 
 public export
-fromInteger :
-  (idx : Integer) -> {auto 0 _ : LTE 0 (cast idx)} -> {auto 0 _ : LT (cast idx) d} -> SliceOrIndex d
-fromInteger idx = Index (cast idx)
+at : (idx : Nat) -> {auto 0 _ : LT idx d} -> SliceOrIndex d
+at = Index
 
 public export
 (.to) :
@@ -243,7 +242,7 @@ public export
   {auto 0 _ : from + size = to} ->
   {auto 0 _ : LTE to d} ->
   SliceOrIndex d
-from.to to = Slice {size} from to
+(.to) = Slice
 
 public export
 all : {d : _} -> SliceOrIndex d
@@ -304,9 +303,9 @@ slice :
   Tensor shape dtype ->
   Tensor (slice shape at) dtype
 slice at (MkTensor graph xs) =
-  let toShape = slice shape at
+  let toShape = MultiSlice.slice shape at
       graph = Slice (serialize at) graph
-   in MkTensor graph $ reshapeWithDefaultOrdering (slice shape at) toShape $ cached graph $ do
+   in MkTensor graph $ reshapeWithDefaultOrdering (slice' shape at) toShape $ cached graph $ do
         slice !xs (starts shape at) (stops shape at) (replicate (length shape) 1)
 
       where
@@ -325,10 +324,10 @@ slice at (MkTensor graph xs) =
       stops (_ :: ds) (Slice _ to :: xs) = to :: stops ds xs
       stops (_ :: ds) (Index i :: xs) = S (cast i) :: stops ds xs
 
-      slice : (shape : Shape) -> MultiSlice shape -> Shape
-      slice shape [] = shape
-      slice (d :: ds) (Slice {size} _ _ :: xs) = size :: slice ds xs
-      slice (d :: ds) (Index _ :: xs) = 1 :: slice ds xs
+      slice' : (shape : Shape) -> MultiSlice shape -> Shape
+      slice' shape [] = shape
+      slice' (d :: ds) (Slice {size} _ _ :: xs) = size :: slice' ds xs
+      slice' (d :: ds) (Index _ :: xs) = 1 :: slice' ds xs
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and

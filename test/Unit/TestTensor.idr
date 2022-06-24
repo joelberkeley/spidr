@@ -136,13 +136,18 @@ reshape = fixedProperty $ do
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
   reshape x ===# flattened
 
-sliceShape : Property
-sliceShape = fixedProperty $ do
-  sliceShape [3] [0.to 0] === [0]
+namespace MultiSlice
+  export
+  slice : Property
+  slice = fixedProperty $ do
+    slice [3] [0.to 0] === [0]
 
 slice : Property
 slice = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
+  slice [at 0] x ===# fromLiteral 3
+  slice [at 1] x ===# fromLiteral 4
+  slice [at 2] x ===# fromLiteral 5
   slice [0.to 0] x ===# fromLiteral []
   slice [0.to 1] x ===# fromLiteral [3]
   slice [0.to 2] x ===# fromLiteral [3, 4]
@@ -153,16 +158,29 @@ slice = fixedProperty $ do
   slice [2.to 2] x ===# fromLiteral []
   slice [2.to 3] x ===# fromLiteral [5]
 
+  let idx : Nat = 2
+  slice [at idx] x ===# fromLiteral 5
+
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
   slice [0.to 1] x ===# fromLiteral [[3, 4, 5]]
   slice [1.to 1] x ===# fromLiteral []
   slice [all, 2.to 2] x ===# fromLiteral [[], []]
   slice [all, 1.to 3] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [at 0, 2.to 2] x ===# fromLiteral []
+  slice [at 0, 1.to 3] x ===# fromLiteral [4, 5]
+  slice [at 1, 2.to 2] x ===# fromLiteral []
+  slice [at 1, 1.to 3] x ===# fromLiteral [7, 8]
+  slice [0.to 1, at 0] x ===# fromLiteral [3]
+  slice [0.to 1, at 1] x ===# fromLiteral [4]
+  slice [0.to 1, at 2] x ===# fromLiteral [5]
+  slice [1.to 2, at 0] x ===# fromLiteral [6]
+  slice [1.to 2, at 1] x ===# fromLiteral [7]
+  slice [1.to 2, at 2] x ===# fromLiteral [8]
 
   let x : Array [60] Int = fromList [0..59]
       x = reshape {to=[4, 5, 3]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
   -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4:2, 2]
-  slice [1.to 3, 0.to 4, 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
+  slice [1.to 3, 0.to 4, at 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
 
 concat : Property
 concat = fixedProperty $ do
@@ -1142,8 +1160,8 @@ group = MkGroup "Tensor" $ [
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
-    , ("sliceShape", sliceShape)
-    , ("slice", slice)
+    , ("MultiSlice.slice", MultiSlice.slice)
+    , ("slice", TestTensor.slice)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
