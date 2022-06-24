@@ -228,14 +228,14 @@ data SliceOrIndex : Nat -> Type where
   Slice :
     (from, to : Nat) ->
     {size : _} ->
-    {auto 0 _ : from + size = to} ->
-    {auto 0 _ : LTE to d} ->
+    {auto 0 fromTo : from + size = to} ->
+    {auto 0 inDim : LTE to d} ->
     SliceOrIndex d
-  Index : (idx : Nat) -> {auto 0 _ : LT idx d} -> SliceOrIndex d
+  Index : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
 
 ||| Index at `idx`. See `slice` for details.
 public export
-at : (idx : Nat) -> {auto 0 _ : LT idx d} -> SliceOrIndex d
+at : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
 at = Index
 
 ||| Slice from `from` (inclusive) to `to` (exclusive). See `slice` for details.
@@ -243,12 +243,12 @@ public export
 (.to) :
   (from, to : Nat) ->
   {size : _} ->
-  {auto 0 _ : from + size = to} ->
-  {auto 0 _ : LTE to d} ->
+  {auto 0 fromTo : from + size = to} ->
+  {auto 0 inDim : LTE to d} ->
   SliceOrIndex d
 (.to) = Slice
 
-||| Slice across all dimensions in this axis. See `slice` for details.
+||| Slice across all indices along an axis. See `slice` for details.
 public export
 all : {d : _} -> SliceOrIndex d
 all = Slice 0 @{%search} @{reflexive {ty=Nat}} d
@@ -261,7 +261,8 @@ data MultiSlice : Shape -> Type where
   (::) : SliceOrIndex d -> MultiSlice ds -> MultiSlice (d :: ds)
 
 namespace MultiSlice
-  ||| The shape of a tensor produced by slicing with the specified multi-dimensional slice. 
+  ||| The shape of a tensor produced by slicing with the specified multi-dimensional slice. See
+  ||| `Tensor.slice` for details.
   public export
   slice : {shape : _} -> MultiSlice shape -> Shape
   slice {shape} [] = shape
@@ -293,8 +294,8 @@ namespace MultiSlice
 |||     ]
 ||| ```
 ||| Note that in `2.to 4`, the 2 is inclusive, and the 4 exclusive, so we return indices 2 and 3.
-||| We can also slice and index across multiple consecutive axes at once as `slice [2.to 4, at 1] x`
-||| to get
+||| We can also slice and index across multiple consecutive axes at once, for example as
+||| `slice [2.to 4, at 1] x` to get
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [13, 19]
@@ -306,15 +307,15 @@ namespace MultiSlice
 ||| ```
 ||| Slices and indices apply to the leading axes of the tensor. For trailing axes omitted from the
 ||| multi-dimensional slice, the whole of the axis is returned. If we want to slice over
-||| later axes and leave the initial ones as is, we can use the convenience function `all`, as
-||| `slice [all, at 3] x` to get
+||| later axes and retain all indices in a leading axis, we can use the convenience function `all`,
+||| as `slice [all, at 3] x` to get
 ||| ```
 ||| x : Tensor [5] S32
 ||| x = fromLiteral [[3], [9], [15], [21], [27]]
 ||| ```
-||| This is exactly the same as the more manual approach of `slice [0.to 5, at 3] x`.
+||| This is exactly the same as the more manual approach `slice [0.to 5, at 3] x`.
 |||
-||| @at The multi-dimensional slices/indices at which to slice the tensor.
+||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
 slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
 slice at (MkTensor graph xs) =
