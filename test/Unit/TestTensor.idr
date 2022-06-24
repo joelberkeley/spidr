@@ -483,56 +483,6 @@ sort = withTests 20 . property $ do
   reflex : {n : _} -> LTE n n
   reflex = reflexive {ty=Nat}
 
-split : Property
-split = fixedProperty $ do
-  let vector = fromLiteral {dtype=S32} [3, 4, 5]
-
-  let (l, r) = split 0 0 vector
-  l ===# fromLiteral []
-  r ===# fromLiteral [3, 4, 5]
-
-  let (l, r) = split 0 1 vector
-  l ===# fromLiteral [3]
-  r ===# fromLiteral [4, 5]
-
-  let (l, r) = split 0 2 vector
-  l ===# fromLiteral [3, 4]
-  r ===# fromLiteral [5]
-
-  let (l, r) = split 0 3 vector
-  l ===# fromLiteral [3, 4, 5]
-  r ===# fromLiteral []
-
-  let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-
-  let (l, r) = split 0 0 arr
-  l ===# fromLiteral []
-  r ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-
-  let (l, r) = split 0 1 arr
-  l ===# fromLiteral [[3, 4, 5]]
-  r ===# fromLiteral [[6, 7, 8]]
-
-  let (l, r) = split 0 2 arr
-  l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-  r ===# fromLiteral []
-
-  let (l, r) = split 1 0 arr
-  l ===# fromLiteral [[], []]
-  r ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-
-  let (l, r) = split 1 1 arr
-  l ===# fromLiteral [[3], [6]]
-  r ===# fromLiteral [[4, 5], [7, 8]]
-
-  let (l, r) = split 1 2 arr
-  l ===# fromLiteral [[3, 4], [6, 7]]
-  r ===# fromLiteral [[5], [8]]
-
-  let (l, r) = split 1 3 arr
-  l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-  r ===# fromLiteral [[], []]
-
 sortWithEmptyAxis : Property
 sortWithEmptyAxis = fixedProperty $ do
   let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
@@ -1194,7 +1144,6 @@ group = MkGroup "Tensor" $ [
     , ("reshape", reshape)
     , ("sliceShape", sliceShape)
     , ("slice", slice)
-    , ("split", split)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)

@@ -254,11 +254,12 @@ data MultiSlice : Shape -> Type where
   Nil : MultiSlice ds
   (::) : SliceOrIndex d -> MultiSlice ds -> MultiSlice (d :: ds)
 
-public export
-sliceShape : (shape : Shape) -> MultiSlice shape -> Shape
-sliceShape shape [] = shape
-sliceShape (_ :: ds) (Slice {size} _ _ :: xs) = size :: sliceShape ds xs
-sliceShape (_ :: ds) (Index _ :: xs) = sliceShape ds xs
+namespace MultiSlice
+  public export
+  slice : (shape : Shape) -> MultiSlice shape -> Shape
+  slice shape [] = shape
+  slice (_ :: ds) (Slice {size} _ _ :: xs) = size :: slice ds xs
+  slice (_ :: ds) (Index _ :: xs) = slice ds xs
 
 ||| Take a slice from a single `Tensor` axis. For example, for
 ||| ```
@@ -301,11 +302,11 @@ slice :
   Primitive dtype =>
   (at : MultiSlice shape) ->
   Tensor shape dtype ->
-  Tensor (sliceShape shape at) dtype
+  Tensor (slice shape at) dtype
 slice at (MkTensor graph xs) =
-  let toShape = sliceShape shape at
+  let toShape = slice shape at
       graph = Slice (serialize at) graph
-   in MkTensor graph $ reshapeWithDefaultOrdering (sliceShape shape at) toShape $ cached graph $ do
+   in MkTensor graph $ reshapeWithDefaultOrdering (slice shape at) toShape $ cached graph $ do
         slice !xs (starts shape at) (stops shape at) (replicate (length shape) 1)
 
       where
@@ -324,75 +325,10 @@ slice at (MkTensor graph xs) =
       stops (_ :: ds) (Slice _ to :: xs) = to :: stops ds xs
       stops (_ :: ds) (Index i :: xs) = S (cast i) :: stops ds xs
 
-      sliceShape : (shape : Shape) -> MultiSlice shape -> Shape
-      sliceShape shape [] = shape
-      sliceShape (d :: ds) (Slice {size} _ _ :: xs) = size :: sliceShape ds xs
-      sliceShape (d :: ds) (Index _ :: xs) = 1 :: sliceShape ds xs
-
-export
-split :
-  forall shape .
-  (axis, idx : Nat) -> {remaining : _} ->
-  {auto 0 axisInBounds : InBounds axis shape} ->
-  {auto 0 idxInBounds : idx + remaining = index axis shape} ->
-  Primitive dtype =>
-  Tensor shape dtype ->
-  (Tensor (replaceAt axis idx shape) dtype, Tensor (replaceAt axis remaining shape) dtype)
-split axis idx xs {idxInBounds} with (xs)
-  _ | (MkTensor {shape} _ _) = (
-        slice (replaceAt axis (0.to @{%search} @{addlte idx remaining (index axis shape) idxInBounds} idx) (allN shape)) xs,
-        slice (replaceAt axis (idx.to @{%search} @{rewrite idxInBounds in reflexive} {size=remaining} (idx + remaining)) (allN shape)) xs
-      )
-
-      where
-      %hint
-      reflexive : {n : _} -> LTE n n
-      reflexive = Relation.reflexive {ty=Nat}
-
-      addlte : (x, y, z : Nat) -> x + y = z -> LTE x z
-      addlte 0 y z prf = LTEZero
-      addlte (S k) 0 (S k + 0) Refl = LTESucc (addlte k 0 (plus k 0) Refl)
-      addlte (S k) (S j) (S k + S j) Refl = LTESucc (addlte k (S j) (plus k (S j)) Refl)
-
-      replaceAt :
-        (idx : Nat) ->
-        {shape : _} ->
-        {auto 0 ok : InBounds idx shape} ->
-        SliceOrIndex (index idx shape) ->
-        (ms : MultiSlice shape) ->
-        MultiSlice (List.replaceAt idx d shape)
-
-      allN : (shape : Shape) -> MultiSlice shape
-      allN [] = []
-      allN (d :: ds) = all :: allN ds
-
-      foo : (shape : Shape) -> sliceShape shape (allN shape) = shape
-
-      topPrf :
-        (idx, d : Nat) ->
-        {shape : _} ->
-        {auto 0 ok : InBounds idx shape} ->
-        (ms : MultiSlice shape) ->
-        sliceShape shape (replaceAt idx [0.to d] ms) = List.replaceAt idx d shape
-
-      endPrf :
-        (idx, d : Nat) ->
-        {shape : _} ->
-        {auto 0 ok : InBounds idx shape} ->
-        {auto 0 idxInBounds : d + remaining = index axis shape} ->
-        (ms : MultiSlice shape) ->
-        sliceShape shape (replaceAt idx [d.to (index idx shape)] ms) = List.replaceAt idx remaining shape
-
-      -- top : (shape : Shape) -> (axis, idx : Nat) -> {auto 0 axisInBounds : InBounds axis shape} ->
-      --   {auto 0 idxInBounds : idx + remaining = index axis shape} -> MultiSlice shape
-      -- top {axisInBounds=InFirst} {idxInBounds} (d :: ds) Z idx =
-      --   0.to @{%search} @{addlte idx remaining d idxInBounds} idx :: allN ds 
-      -- top {axisInBounds=InLater _} (_ :: ds) (S k) idx = all :: top ds k idx
-
-      -- end : (shape : Shape) -> (axis, idx : Nat) -> {auto 0 axisInBounds : InBounds axis shape} ->
-      --   {auto 0 idxInBounds : idx + remaining = index axis shape} -> MultiSlice shape
-      -- end {axisInBounds=InFirst} (d :: ds) Z idx = idx.to {size=remaining} d :: allN ds 
-      -- end {axisInBounds=InLater _} (_ :: ds) (S k) idx = all :: end ds k idx
+      slice : (shape : Shape) -> MultiSlice shape -> Shape
+      slice shape [] = shape
+      slice (d :: ds) (Slice {size} _ _ :: xs) = size :: slice ds xs
+      slice (d :: ds) (Index _ :: xs) = 1 :: slice ds xs
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
