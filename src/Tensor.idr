@@ -265,8 +265,8 @@ namespace MultiSlice
   public export
   slice : {shape : _} -> MultiSlice shape -> Shape
   slice {shape} [] = shape
-  slice {shape=(_ :: ds)} (Slice {size} _ _ :: xs) = size :: slice ds xs
-  slice {shape=(_ :: ds)} (Index _ :: xs) = slice ds xs
+  slice {shape=(_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
+  slice {shape=(_ :: _)} (Index _ :: xs) = slice xs
 
 ||| Slice or index `Tensor` axes. For example, for
 ||| ```
