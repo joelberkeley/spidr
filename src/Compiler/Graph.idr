@@ -134,10 +134,6 @@ Eq Graph where
 Hashable BitGenerator where
   hashWithSalt salt bitGenerator = hashWithSalt salt (cast {to=Int} bitGenerator)
 
-(Hashable a, Hashable b) => Hashable (Either a b) where
-  hashWithSalt salt (Left l) = salt `hashWithSalt` 0 `hashWithSalt` l
-  hashWithSalt salt (Right r) = salt `hashWithSalt` 1 `hashWithSalt` r
-
 export
 Hashable Graph where
   hashWithSalt salt (FromLiteral {dtype} hash shape) =
