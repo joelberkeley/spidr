@@ -77,8 +77,7 @@ namespace List
 export
 group : Group
 group = MkGroup "Util" $ [
-      ("div is floored division", divIsFlooredDivision)
-    , ("Vect.range", Vect.range)
+      ("Vect.range", Vect.range)
     , ("Vect.enumerate", Vect.enumerate)
     , ("List.range", List.range)
     , ("List.enumerate", List.enumerate)

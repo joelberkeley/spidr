@@ -329,25 +329,6 @@ slice at (MkTensor graph xs) =
       sliceShape (d :: ds) (Slice {size} _ _ :: xs) = size :: sliceShape ds xs
       sliceShape (d :: ds) (Index _ :: xs) = 1 :: sliceShape ds xs
 
-||| Split a `Tensor` along a given axis at the specified index. For example,
-||| `split 0 2 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
-||| `(fromLiteral [[1, 2], [3, 4]], fromLiteral [[5, 6]])`, and
-||| `split 1 1 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
-||| `(fromLiteral [[1], [3], [5]], fromLiteral [[2], [4], [6]])`.
-|||
-||| @axis The axis on which to split.
-||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
-|||   index will appear in the right-hand `Tensor`.
-export
-split :
-  forall shape .
-  (axis, idx : Nat) ->
-  {auto 0 axisInBounds : InBounds axis shape} ->
-  {auto 0 idxInBounds : idx + remaining = index axis shape} ->
-  Primitive dtype =>
-  Tensor shape dtype ->
-  (Tensor (replaceAt axis idx shape) dtype, Tensor (replaceAt axis remaining shape) dtype)
-
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
 ||| `concat 1 (fromLiteral [[3], [6]]) fromLiteral ([[4, 5], [7, 8]])` are both
