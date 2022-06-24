@@ -25,6 +25,7 @@ import Model.Kernel
 import Model.MeanFunction
 import Optimize
 import Distribution
+import Util.Hints
 
 ||| A Gaussian process is a collection of random variables, any finite number of which have joint
 ||| Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian
@@ -111,7 +112,7 @@ fit : ConjugateGPRegression features
 fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) =
   let objective : Tensor [S p] F64 -> Tensor [] F64
       objective params =
-        let priorParams = slice [1.to (S p)] params
+        let priorParams = slice [1.to @{%search} @{reflexive {ty=Nat}} (S p)] params
          in logMarginalLikelihood (mkPrior priorParams) (slice [0] params) (x, squeeze y)
 
       (noise, gpParams) := split 0 1 $ optimizer (concat 0 (expand 0 noise) gpParams) objective
