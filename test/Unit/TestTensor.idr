@@ -185,6 +185,24 @@ slice = fixedProperty $ do
   -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4:2, 2]
   slice [1.to 3, 0.to 4, at 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
 
+index : (idx : Nat) -> {auto 0 ok : LT idx n} -> Literal [n] a -> Literal [] a
+index {ok = (LTESucc _)} 0 (y :: _) = y
+index {ok = (LTESucc _)} (S k) (_ :: xs) = index k xs
+
+covering
+sliceForVariableIndex : Property
+sliceForVariableIndex = property $ do
+  idx <- forAll dims
+  rem <- forAll dims
+  lit <- forAll (literal [idx + S rem] nats)
+  index @{prf} idx lit === toLiteral (slice [at @{prf} idx] $ fromLiteral {dtype=U32} lit)
+
+  where
+  %hint
+  prf : {idx, rem : _} -> LTE (S idx) (idx + S rem)
+  prf {idx = 0} = LTESucc LTEZero
+  prf {idx = (S k)} = LTESucc prf
+
 concat : Property
 concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
@@ -1165,6 +1183,7 @@ group = MkGroup "Tensor" $ [
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
     , ("slice", TestTensor.slice)
+    , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
