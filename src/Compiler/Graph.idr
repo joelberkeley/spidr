@@ -37,7 +37,7 @@ data Graph : Type where
   ConvertElementType : Primitive dtype => Graph -> Graph
   GetTupleElement : Graph -> Nat -> Graph
   Reshape : Shape -> Graph -> Graph
-  Slice : List (Either (Nat, Nat, Nat) Nat) -> Graph -> Graph
+  Slice : List (Either (Nat, Nat) Nat) -> Graph -> Graph
   Concat : Nat -> Graph -> Graph -> Graph
   Diag : Graph -> Graph
   Triangle : (lower : Bool) -> Graph -> Graph

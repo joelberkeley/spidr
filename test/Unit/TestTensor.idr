@@ -162,7 +162,7 @@ slice = fixedProperty $ do
   let x : Array [60] Int = fromList [0..59]
       x = reshape {to=[4, 5, 3]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
   -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4:2, 2]
-  slice [1.to 3, (0.to 4).by 2, 2] x ===# fromLiteral [[17, 23], [32, 38]]
+  slice [1.to 3, 0.to 4, 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
 
 split : Property
 split = fixedProperty $ do
