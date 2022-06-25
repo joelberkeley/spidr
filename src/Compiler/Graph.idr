@@ -37,7 +37,7 @@ data Graph : Type where
   ConvertElementType : Primitive dtype => Graph -> Graph
   GetTupleElement : Graph -> Nat -> Graph
   Reshape : Shape -> Graph -> Graph
-  Slice : Nat -> Nat -> Nat -> Graph -> Graph
+  Slice : List (Either (Nat, Nat) Nat) -> Graph -> Graph
   Concat : Nat -> Graph -> Graph -> Graph
   Diag : Graph -> Graph
   Triangle : (lower : Bool) -> Graph -> Graph
@@ -82,8 +82,7 @@ Eq Graph where
   (GetTupleElement tuple index) == (GetTupleElement tuple' index') =
     assert_total $ (tuple, index) == (tuple', index')
   (Reshape to x) == (Reshape to' x') = to == to' && x == x'
-  (Slice axis from to x) == (Slice axis' from' to' x') =
-    assert_total $ (axis, from, to, x) == (axis', from', to', x')
+  (Slice at x) == (Slice at' x') = at == at' && x == x'
   (Concat axis x y) == (Concat axis' x' y') = axis == axis' && x == x' && y == y'
   (Diag x) == (Diag x') = x == x'
   (Triangle lower x) == (Triangle lower' x') = lower == lower' && x == x'
@@ -150,8 +149,7 @@ Hashable Graph where
   hashWithSalt salt (GetTupleElement tuple index) =
     hashWithSalt salt ("GetTupleElement", index) `hashWithSalt` tuple
   hashWithSalt salt (Reshape to x) = salt `hashWithSalt` ("Reshape", to) `hashWithSalt` x
-  hashWithSalt salt (Slice axis from to x) =
-    salt `hashWithSalt` ("Slice", axis, from, to) `hashWithSalt` x
+  hashWithSalt salt (Slice at x) = salt `hashWithSalt` ("Slice", at) `hashWithSalt` x
   hashWithSalt salt (Concat axis x y) =
     salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x

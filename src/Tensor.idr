@@ -221,7 +221,55 @@ squeeze (MkTensor {shape=from} graph xs) =
   let graph = Reshape to graph
    in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
 
-||| Take a slice from a single `Tensor` axis. For example, for
+||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
+||| details.
+export
+data SliceOrIndex : Nat -> Type where
+  Slice :
+    (from, to : Nat) ->
+    {size : _} ->
+    {auto 0 fromTo : from + size = to} ->
+    {auto 0 inDim : LTE to d} ->
+    SliceOrIndex d
+  Index : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
+
+||| Index at `idx`. See `slice` for details.
+public export
+at : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
+at = Index
+
+||| Slice from `from` (inclusive) to `to` (exclusive). See `slice` for details.
+public export
+(.to) :
+  (from, to : Nat) ->
+  {size : _} ->
+  {auto 0 fromTo : from + size = to} ->
+  {auto 0 inDim : LTE to d} ->
+  SliceOrIndex d
+(.to) = Slice
+
+||| Slice across all indices along an axis. See `slice` for details.
+public export
+all : {d : _} -> SliceOrIndex d
+all = Slice 0 @{%search} @{reflexive {ty=Nat}} d
+
+||| A `MultiSlice shape` is a valid multi-dimensionsal slice into a tensor with shape `shape`.
+||| See `slice` for details.
+public export
+data MultiSlice : Shape -> Type where
+  Nil : MultiSlice ds
+  (::) : SliceOrIndex d -> MultiSlice ds -> MultiSlice (d :: ds)
+
+namespace MultiSlice
+  ||| The shape of a tensor produced by slicing with the specified multi-dimensional slice. See
+  ||| `Tensor.slice` for details.
+  public export
+  slice : {shape : _} -> MultiSlice shape -> Shape
+  slice {shape} [] = shape
+  slice {shape=(_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
+  slice {shape=(_ :: _)} (Index _ :: xs) = slice xs
+
+||| Slice or index `Tensor` axes. For example, for
 ||| ```
 ||| x : Tensor [5, 6] S32
 ||| x = fromLiteral [
@@ -232,100 +280,69 @@ squeeze (MkTensor {shape=from} graph xs) =
 |||       [24, 25, 26, 27, 28, 29]
 |||     ]
 ||| ```
-||| `slice 0 1 3 x` is
+||| we can index as `slice [at 1] x` to get
 ||| ```
-||| y : Tensor [2, 6] S32
-||| y = fromLiteral [
-|||       [ 6,  7,  8,  9, 10, 11],
-|||       [12, 13, 14, 15, 16, 17]
+||| x : Tensor [6] S32
+||| x = fromLiteral [6, 7, 8, 9, 10, 11]
+||| ```
+||| or we can slice as `slice [2.to 4] x` to get
+||| ```
+||| x : Tensor [2, 6] S32
+||| x = fromLiteral [
+|||       [12, 13, 14, 15, 16, 17],
+|||       [18, 19, 20, 21, 22, 23]
 |||     ]
 ||| ```
-||| and `slice 1 0 4 x` to
+||| Note that in `2.to 4`, the 2 is inclusive, and the 4 exclusive, so we return indices 2 and 3.
+||| We can also slice and index across multiple consecutive axes at once, for example as
+||| `slice [2.to 4, at 1] x` to get
 ||| ```
-||| z : Tensor [5, 6] S32
-||| z = fromLiteral [
-|||       [ 0,  1,  2,  3],
-|||       [ 6,  7,  8,  9],
-|||       [12, 13, 14, 15],
-|||       [18, 19, 20, 21],
-|||       [24, 25, 26, 27]
-|||     ]
+||| x : Tensor [2] S32
+||| x = fromLiteral [13, 19]
 ||| ```
-||| Equal bounds will result in an empty array. For example, `slice 1 2 2 xs` is
-||| `fromLiteral [[], [], [], [], []]`.
+||| or as `slice [at 1, 2.to 4] x` to get
+||| ```
+||| x : Tensor [2] S32
+||| x = fromLiteral [7, 8]
+||| ```
+||| Slices and indices apply to the leading axes of the tensor. For trailing axes omitted from the
+||| multi-dimensional slice, the whole of the axis is returned. If we want to slice over
+||| later axes and retain all indices in a leading axis, we can use the convenience function `all`,
+||| as `slice [all, at 3] x` to get
+||| ```
+||| x : Tensor [5] S32
+||| x = fromLiteral [[3], [9], [15], [21], [27]]
+||| ```
+||| This is exactly the same as the more manual approach `slice [0.to 5, at 3] x`.
 |||
-||| @axis The `Tensor` axis to slice.
-||| @from The inclusive lower bound of the slice along the specified `axis`.
-||| @to The exclusive upper bound of the slice along the specified `axis`.
+||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
-slice :
-  (axis, from, to : Nat) ->
-  {auto 0 fromLTEto : from `LTE` to} ->
-  {auto 0 axisInBounds : InBounds axis shape} ->
-  {auto 0 isWithinAxis : to `LTE` index axis shape} ->
-  Primitive dtype =>
-  Tensor shape dtype ->
-  Tensor (replaceAt axis (to `minus` from) shape) dtype
-slice axis from to (MkTensor graph xs) =
-  let graph = Slice axis from to graph
-      rank = length shape
-      start = replicate axis 0 ++ [from] ++ replicate (rank `minus` (S axis)) 0
-      stop = replaceAt axis to shape
-      strides = replicate rank 1
-   in MkTensor graph $ cached graph $ do slice !xs start stop strides
+slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
+slice at (MkTensor graph xs) =
+  let graph = Slice (serialize at) graph
+   in MkTensor graph $ reshapeWithDefaultOrdering (slice' shape at) (MultiSlice.slice at) $
+        cached graph $ do slice !xs (starts shape at) (stops shape at) (replicate (length shape) 1)
 
-||| Get the `idx`-th element from the specified `axis` of a tensor. For example,
-||| `index 0 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is `fromLiteral [3, 4]`, and
-||| `index 1 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is `fromLiteral [2, 4, 6]`.
-|||
-||| @axis The axis to index.
-||| @idx Where along the specified `axis` to fetch elements.
-export
-index :
-  Primitive dtype =>
-  (axis, idx : Nat) ->
-  {auto 0 axisInBounds : InBounds axis shape} ->
-  {auto 0 idxInBounds : idx `LT` index axis shape} ->
-  Tensor shape dtype ->
-  Tensor (deleteAt axis shape) dtype
-index axis idx xs with (xs)
-  _ | (MkTensor {shape} _ _) =
-    let MkTensor graph sliced =
-          slice @{lteSuccRight (reflexive {ty=Nat})} axis idx (S idx) xs
-        to = deleteAt axis shape
-        graph = Reshape to graph
-    in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering shape to sliced
+      where
+      serialize : MultiSlice ds -> List (Either (Nat, Nat) Nat)
+      serialize [] = []
+      serialize (Slice from to :: xs) = Left (from, to) :: serialize xs
+      serialize (Index i :: xs) = Right i :: serialize xs
 
-||| Split a `Tensor` along a given axis at the specified index. For example,
-||| `split 0 2 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
-||| `(fromLiteral [[1, 2], [3, 4]], fromLiteral [[5, 6]])`, and
-||| `split 1 1 fromLiteral [[1, 2], [3, 4], [5, 6]]` is
-||| `(fromLiteral [[1], [3], [5]], fromLiteral [[2], [4], [6]])`.
-|||
-||| @axis The axis on which to split.
-||| @idx The index of the row at which to split the `Tensor`. The elements at the given axis and
-|||   index will appear in the right-hand `Tensor`.
-export
-split :
-  forall shape .
-  (axis, idx : Nat) ->
-  {auto 0 axisInBounds : InBounds axis shape} ->
-  {auto 0 idxInBounds : idx + remaining = index axis shape} ->
-  Primitive dtype =>
-  Tensor shape dtype ->
-  (Tensor (replaceAt axis idx shape) dtype, Tensor (replaceAt axis remaining shape) dtype)
-split @{_} @{sums} axis idx xs with (xs)
-  _ | MkTensor {shape} _ _ =
-    let %hint
-        isWithinAxis : LTE idx (index axis shape)
-        isWithinAxis = rewrite sym sums in lteAddRight idx
+      starts : (shape : Shape) -> MultiSlice shape -> List Nat
+      starts shape [] = replicate (length shape) 0
+      starts (_ :: ds) (Slice from _ :: xs) = from :: starts ds xs
+      starts (_ :: ds) (Index i :: xs) = cast i :: starts ds xs
 
-        sums' : remaining = minus (index axis shape) idx
-        sums' = rewrite sym sums in sym (minusPlus idx)
-    in (
-          rewrite sym (minusZeroRight idx) in slice axis 0 idx xs,
-          rewrite sums' in slice axis idx {isWithinAxis=reflexive {ty=Nat}} (index axis shape) xs
-        )
+      stops : (shape : Shape) -> MultiSlice shape -> List Nat
+      stops shape [] = shape
+      stops (_ :: ds) (Slice _ to :: xs) = to :: stops ds xs
+      stops (_ :: ds) (Index i :: xs) = S (cast i) :: stops ds xs
+
+      slice' : (shape : Shape) -> MultiSlice shape -> Shape
+      slice' shape [] = shape
+      slice' (d :: ds) (Slice {size} _ _ :: xs) = size :: slice' ds xs
+      slice' (d :: ds) (Index _ :: xs) = 1 :: slice' ds xs
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and

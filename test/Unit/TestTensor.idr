@@ -136,88 +136,93 @@ reshape = fixedProperty $ do
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
   reshape x ===# flattened
 
+
+namespace MultiSlice
+  indexFirstDim :
+    (n, idx : Nat) ->
+    (shape : Shape) ->
+    LT idx n ->
+    MultiSlice.slice {shape=n :: shape} [at idx] === shape
+  indexFirstDim n idx shape x = Refl
+
+  sliceFirstDim :
+    (n, from, size : Nat) ->
+    (shape : Shape) ->
+    LTE (from + size) n ->
+    MultiSlice.slice {shape=n :: shape} [from.to {size} (from + size)] === (size :: shape)
+  sliceFirstDim n from size shape x = Refl
+
+  export
+  slice : Property
+  slice = fixedProperty $ do
+    slice {shape=[3, 4]} [0.to 3, 0.to 0] === [3, 0]
+    slice {shape=[3, 4]} [0.to 3, 0.to 1] === [3, 1]
+    slice {shape=[3, 4]} [0.to 3, 0.to 4] === [3, 4]
+
+    slice {shape=[3, 4]} [at 1, 0.to 3] === [3]
+    slice {shape=[3, 4]} [0.to 2, at 2] === [2]
+    slice {shape=[3, 4]} [at 1, at 2] === Prelude.Nil
+
 slice : Property
 slice = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
-  slice 0 0 0 x ===# fromLiteral []
-  slice 0 0 1 x ===# fromLiteral [3]
-  slice 0 0 2 x ===# fromLiteral [3, 4]
-  slice 0 0 3 x ===# fromLiteral [3, 4, 5]
-  slice 0 1 1 x ===# fromLiteral []
-  slice 0 1 2 x ===# fromLiteral [4]
-  slice 0 1 3 x ===# fromLiteral [4, 5]
-  slice 0 2 2 x ===# fromLiteral []
-  slice 0 2 3 x ===# fromLiteral [5]
+  slice [at 0] x ===# fromLiteral 3
+  slice [at 1] x ===# fromLiteral 4
+  slice [at 2] x ===# fromLiteral 5
+  slice [0.to 0] x ===# fromLiteral []
+  slice [0.to 1] x ===# fromLiteral [3]
+  slice [0.to 2] x ===# fromLiteral [3, 4]
+  slice [0.to 3] x ===# fromLiteral [3, 4, 5]
+  slice [1.to 1] x ===# fromLiteral []
+  slice [1.to 2] x ===# fromLiteral [4]
+  slice [1.to 3] x ===# fromLiteral [4, 5]
+  slice [2.to 2] x ===# fromLiteral []
+  slice [2.to 3] x ===# fromLiteral [5]
+
+  let idx : Nat
+      idx = 2
+
+  slice [at idx] x ===# fromLiteral 5
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  slice 0 0 1 x ===# fromLiteral [[3, 4, 5]]
-  slice 0 1 1 x ===# fromLiteral []
-  slice 1 2 2 x ===# fromLiteral [[], []]
-  slice 1 1 3 x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [0.to 1] x ===# fromLiteral [[3, 4, 5]]
+  slice [1.to 1] x ===# fromLiteral []
+  slice [all, 2.to 2] x ===# fromLiteral [[], []]
+  slice [all, 1.to 3] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [at 0, 2.to 2] x ===# fromLiteral []
+  slice [at 0, 1.to 3] x ===# fromLiteral [4, 5]
+  slice [at 1, 2.to 2] x ===# fromLiteral []
+  slice [at 1, 1.to 3] x ===# fromLiteral [7, 8]
+  slice [0.to 1, at 0] x ===# fromLiteral [3]
+  slice [0.to 1, at 1] x ===# fromLiteral [4]
+  slice [0.to 1, at 2] x ===# fromLiteral [5]
+  slice [1.to 2, at 0] x ===# fromLiteral [6]
+  slice [1.to 2, at 1] x ===# fromLiteral [7]
+  slice [1.to 2, at 2] x ===# fromLiteral [8]
 
-index : Property
-index = fixedProperty $ do
-  let x = fromLiteral {dtype=S32} [3, 4, 5]
-  index 0 0 x ===# fromLiteral 3
-  index 0 1 x ===# fromLiteral 4
-  index 0 2 x ===# fromLiteral 5
+  let x : Array [60] Int = fromList [0..59]
+      x = reshape {to=[4, 5, 3]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
+  -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4, 2]
+  slice [1.to 3, 0.to 4, at 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
 
-  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  index 0 0 x ===# fromLiteral [3, 4, 5]
-  index 0 1 x ===# fromLiteral [6, 7, 8]
-  index 1 0 x ===# fromLiteral [3, 6]
-  index 1 1 x ===# fromLiteral [4, 7]
-  index 1 2 x ===# fromLiteral [5, 8]
+index : (idx : Nat) -> {auto 0 inDim : LT idx n} -> Literal [n] a -> Literal [] a
+index {inDim = (LTESucc _)} 0 (y :: _) = y
+index {inDim = (LTESucc _)} (S k) (_ :: xs) = index k xs
 
-split : Property
-split = fixedProperty $ do
-  let vector = fromLiteral {dtype=S32} [3, 4, 5]
+covering
+sliceForVariableIndex : Property
+sliceForVariableIndex = property $ do
+  idx <- forAll dims
+  rem <- forAll dims
+  lit <- forAll (literal [idx + S rem] nats)
+  let x = fromLiteral {dtype=U32} lit
+  index @{inDim} idx lit === toLiteral (slice [at @{inDim} idx] x)
 
-  let (l, r) = split 0 0 vector
-  l ===# fromLiteral []
-  r ===# fromLiteral [3, 4, 5]
-
-  let (l, r) = split 0 1 vector
-  l ===# fromLiteral [3]
-  r ===# fromLiteral [4, 5]
-
-  let (l, r) = split 0 2 vector
-  l ===# fromLiteral [3, 4]
-  r ===# fromLiteral [5]
-
-  let (l, r) = split 0 3 vector
-  l ===# fromLiteral [3, 4, 5]
-  r ===# fromLiteral []
-
-  let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-
-  let (l, r) = split 0 0 arr
-  l ===# fromLiteral []
-  r ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-
-  let (l, r) = split 0 1 arr
-  l ===# fromLiteral [[3, 4, 5]]
-  r ===# fromLiteral [[6, 7, 8]]
-
-  let (l, r) = split 0 2 arr
-  l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-  r ===# fromLiteral []
-
-  let (l, r) = split 1 0 arr
-  l ===# fromLiteral [[], []]
-  r ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-
-  let (l, r) = split 1 1 arr
-  l ===# fromLiteral [[3], [6]]
-  r ===# fromLiteral [[4, 5], [7, 8]]
-
-  let (l, r) = split 1 2 arr
-  l ===# fromLiteral [[3, 4], [6, 7]]
-  r ===# fromLiteral [[5], [8]]
-
-  let (l, r) = split 1 3 arr
-  l ===# fromLiteral [[3, 4, 5], [6, 7, 8]]
-  r ===# fromLiteral [[], []]
+  where
+  %hint
+  inDim : {idx, rem : _} -> LTE (S idx) (idx + S rem)
+  inDim {idx = 0} = LTESucc LTEZero
+  inDim {idx = (S k)} = LTESucc inDim
 
 concat : Property
 concat = fixedProperty $ do
@@ -494,40 +499,49 @@ sort = withTests 20 . property $ do
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
-      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
-      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+      init = slice [0.to d] sorted
+      tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd] ints)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
-      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
-      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+      init = slice [0.to d] sorted
+      tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   let sorted = sort (<) 1 x
-      init = slice 1 0 dd {isWithinAxis=lteSuccRight (reflexive {x=dd})} sorted
-      tail = slice 1 1 (S dd) {isWithinAxis=reflexive {x=S dd}} sorted
+      init = slice [all, 0.to dd] sorted
+      tail = slice [all, 1.to (S dd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd, S ddd] ints)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
-      init = slice 0 0 d {isWithinAxis=lteSuccRight (reflexive {x=d})} sorted
-      tail = slice 0 1 (S d) {isWithinAxis=reflexive {x=S d}} sorted
+      init = slice [0.to d] sorted
+      tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   let sorted = sort (<) 1 x
-      init = slice 1 0 dd {isWithinAxis=lteSuccRight (reflexive {x=dd})} sorted
-      tail = slice 1 1 (S dd) {isWithinAxis=reflexive {x=S dd}} sorted
+      init = slice [all, 0.to dd] sorted
+      tail = slice [all, 1.to (S dd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   let sorted = sort (<) 2 x
-      init = slice 2 0 ddd {isWithinAxis=lteSuccRight (reflexive {x=ddd})} sorted
-      tail = slice 2 1 (S ddd) {isWithinAxis=reflexive {x=S ddd}} sorted
+      init = slice [all, all, 0.to ddd] sorted
+      tail = slice [all, all, 1.to (S ddd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+
+  where
+  %hint
+  lteSucc : {n : _} -> LTE n (S n)
+  lteSucc = lteSuccRight (reflexive {ty=Nat})
+
+  %hint
+  reflex : {n : _} -> LTE n n
+  reflex = reflexive {ty=Nat}
 
 sortWithEmptyAxis : Property
 sortWithEmptyAxis = fixedProperty $ do
@@ -1188,9 +1202,9 @@ group = MkGroup "Tensor" $ [
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
-    , ("slice", slice)
-    , ("index", index)
-    , ("split", split)
+    , ("MultiSlice.slice", MultiSlice.slice)
+    , ("slice", TestTensor.slice)
+    , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
