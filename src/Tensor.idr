@@ -1251,7 +1251,7 @@ trace x with (x)
 ||| The state is updated each time a new value is generated.
 public export
 Rand : Type -> Type
-Rand = State (Tensor [1] U64)
+Rand a = Tensor [] U64 -> State (Tensor [1] U64) a
 
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
@@ -1279,12 +1279,8 @@ inf = fromDouble (1.0 / 0.0)
 ||| @bound A bound of the samples. See full docstring for details.
 ||| @bound' A bound of the samples. See full docstring for details.
 export
-uniform :
-  {shape : _} ->
-  (key : Tensor [] U64) ->
-  (bound, bound' : Tensor shape F64) ->
-  Rand (Tensor shape F64)
-uniform (MkTensor keyGraph key) bound bound' =
+uniform : {shape : _} -> (bound, bound' : Tensor shape F64) -> Rand (Tensor shape F64)
+uniform bound bound' (MkTensor keyGraph key) =
   let MkTensor minvalGraph minval = min bound bound'
       MkTensor maxvalGraph maxval = max bound bound'
    in ST $ \(MkTensor initialStateGraph initialState) =>
@@ -1320,7 +1316,7 @@ uniform (MkTensor keyGraph key) bound bound' =
 |||
 ||| @key Determines the stream of generated samples.
 export
-normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
+normal : {shape : _} -> Rand (Tensor shape F64)
 normal (MkTensor keyGraph key) =
   ST $ \(MkTensor initialStateGraph initialState) =>
     let valueGraph = NormalFloatingPointDistributionValue keyGraph initialStateGraph ThreeFry shape

@@ -16,10 +16,12 @@ limitations under the License.
 ||| This module contains definitions for probability distributions.
 module Distribution
 
+import Control.Monad.State
 import Data.Nat
+
+import Constants
 import Literal
 import Tensor
-import Constants
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the first
 ||| two central moments (mean and covariance) are known. Every sub-event is assumed to have the
@@ -51,6 +53,10 @@ public export
 interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
+      ||| Produce `n` IID samples from this distribution.
+      -- which interface does this belong to?
+      sample : dist event dim -> {n : _} -> Rand $ Tensor (n :: dim :: event) F64
+
       ||| The probability density function of the distribution at the specified point.
       pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tensor [] F64
 
@@ -78,6 +84,9 @@ Distribution Gaussian where
 ||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
+  sample (MkGaussian mean cov) key =
+    pure $ expand 2 $ (broadcast mean + cholesky (squeeze cov) @@ !(normal key)).T
+
   pdf (MkGaussian {d} mean cov) x =
     let cholCov = cholesky (squeeze {to=[S d, S d]} cov)
         tri = cholCov |\ squeeze (x - mean)

@@ -1082,7 +1082,7 @@ uniform = withTests 20 . property $ do
       seed = fromLiteral seed
 
       samples : Tensor [1000, 10] F64 :=
-        evalState seed (uniform key (broadcast bound) (broadcast bound'))
+        evalState seed (uniform (broadcast bound) (broadcast bound') key)
 
       uniformCdf : Tensor [1000, 10] F64 -> Tensor [1000, 10] F64
       uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
@@ -1101,7 +1101,7 @@ uniformForEqualBounds = withTests 20 . property $ do
       key = fromLiteral key
       seed = fromLiteral seed
 
-      samples : Tensor [6] F64 = evalState seed (uniform key bound bound)
+      samples : Tensor [6] F64 = evalState seed (uniform bound bound key)
 
   samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
 
@@ -1118,7 +1118,7 @@ uniformSeedIsUpdated = withTests 20 . property $ do
       key = fromLiteral key
       seed = fromLiteral seed
 
-      rng = uniform key {shape=[10]} (broadcast bound) (broadcast bound')
+      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound') key
       (seed', sample) = runState seed rng
       (seed'', sample') = runState seed' rng
 
@@ -1139,7 +1139,7 @@ uniformIsReproducible = withTests 20 . property $ do
       key = fromLiteral key
       seed = fromLiteral seed
 
-      rng = uniform {shape=[10]} key (broadcast bound) (broadcast bound')
+      rng = uniform {shape=[10]} (broadcast bound) (broadcast bound') key
       sample = evalState seed rng
       sample' = evalState seed rng
 
