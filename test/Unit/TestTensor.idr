@@ -136,32 +136,32 @@ reshape = fixedProperty $ do
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
   reshape x ===# flattened
 
+
 namespace MultiSlice
+  indexFirstDim :
+    (n, idx : Nat) ->
+    (shape : Shape) ->
+    LT idx n ->
+    MultiSlice.slice {shape=n :: shape} [at idx] === shape
+  indexFirstDim n idx shape x = Refl
+
+  sliceFirstDim :
+    (n, from, size : Nat) ->
+    (shape : Shape) ->
+    LTE (from + size) n ->
+    MultiSlice.slice {shape=n :: shape} [from.to {size} (from + size)] === (size :: shape)
+  sliceFirstDim n from size shape x = Refl
+
   export
   slice : Property
   slice = fixedProperty $ do
-    slice {shape=[3]} [0] === []
-    slice {shape=[3]} [1] === []
-    slice {shape=[3]} [2] === []
-
-    slice {shape=[3]} [0.to 0] === [0]
-    slice {shape=[3]} [0.to 0] === [0]
-    slice {shape=[3]} [0.to 1] === [1]
-    slice {shape=[3]} [0.to 3] === [3]
-
-    slice {shape=[3, 4]} [0] === [4]
-    slice {shape=[3, 4]} [1] === [4]
-    slice {shape=[3, 4]} [2] === [4]
-    slice {shape=[3, 4]} [0.to 0] === [0, 4]
-    slice {shape=[3, 4]} [0.to 1] === [1, 4]
-    slice {shape=[3, 4]} [0.to 3] === [3, 4]
     slice {shape=[3, 4]} [0.to 3, 0.to 0] === [3, 0]
     slice {shape=[3, 4]} [0.to 3, 0.to 1] === [3, 1]
     slice {shape=[3, 4]} [0.to 3, 0.to 4] === [3, 4]
 
-    slice {shape=[3, 4]} [1, 0.to 3] === [3]
-    slice {shape=[3, 4]} [0.to 2, 2] === [2]
-    slice {shape=[3, 4]} [1, 2] === Prelude.Nil
+    slice {shape=[3, 4]} [at 1, 0.to 3] === [3]
+    slice {shape=[3, 4]} [0.to 2, at 2] === [2]
+    slice {shape=[3, 4]} [at 1, at 2] === Prelude.Nil
 
 slice : Property
 slice = fixedProperty $ do
