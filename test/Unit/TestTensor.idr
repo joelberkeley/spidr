@@ -140,7 +140,28 @@ namespace MultiSlice
   export
   slice : Property
   slice = fixedProperty $ do
+    slice {shape=[3]} [0] === []
+    slice {shape=[3]} [1] === []
+    slice {shape=[3]} [2] === []
+
     slice {shape=[3]} [0.to 0] === [0]
+    slice {shape=[3]} [0.to 0] === [0]
+    slice {shape=[3]} [0.to 1] === [1]
+    slice {shape=[3]} [0.to 3] === [3]
+
+    slice {shape=[3, 4]} [0] === [4]
+    slice {shape=[3, 4]} [1] === [4]
+    slice {shape=[3, 4]} [2] === [4]
+    slice {shape=[3, 4]} [0.to 0] === [0, 4]
+    slice {shape=[3, 4]} [0.to 1] === [1, 4]
+    slice {shape=[3, 4]} [0.to 3] === [3, 4]
+    slice {shape=[3, 4]} [0.to 3, 0.to 0] === [3, 0]
+    slice {shape=[3, 4]} [0.to 3, 0.to 1] === [3, 1]
+    slice {shape=[3, 4]} [0.to 3, 0.to 4] === [3, 4]
+
+    slice {shape=[3, 4]} [1, 0.to 3] === [3]
+    slice {shape=[3, 4]} [0.to 2, 2] === [2]
+    slice {shape=[3, 4]} [1, 2] === []
 
 slice : Property
 slice = fixedProperty $ do
