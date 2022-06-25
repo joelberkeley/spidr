@@ -161,7 +161,7 @@ namespace MultiSlice
 
     slice {shape=[3, 4]} [1, 0.to 3] === [3]
     slice {shape=[3, 4]} [0.to 2, 2] === [2]
-    slice {shape=[3, 4]} [1, 2] === []
+    slice {shape=[3, 4]} [1, 2] === Prelude.Nil
 
 slice : Property
 slice = fixedProperty $ do
