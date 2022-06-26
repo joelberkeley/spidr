@@ -1,5 +1,5 @@
 {--
-Copyright 2021 Joel Berkeley
+Cceopyright 2021 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import System.FFI
 import Data.Hashable
 
 import Compiler.Computation
-import Compiler.Graph
+import Compiler.Expr
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
@@ -61,17 +61,12 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Graph -> Computation XlaOp -> Tensor shape dtype
+  MkTensor : {shape : _} -> Expr -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
 fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor shape dtype
-fromLiteral xs = 
-  let graph = FromLiteral {dtype} shape (hashWithSalt defaultSalt xs)
-   in MkTensor graph $ cached graph $ do
-        MkCachingBuilder builder _ <- get
-        literal <- write {dtype} xs
-        constantLiteral builder literal
+fromLiteral lit = MkTensor $ FromLiteral {dtype} {shape} lit
 
 namespace F64
   export
@@ -97,10 +92,10 @@ namespace S32
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
-toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
+toLiteral (MkTensor {shape} expr) = unsafePerformIO $ do
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" xs
+  computation <- build "" (assert_total $ eval expr)
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)
@@ -109,7 +104,7 @@ toLiteral (MkTensor {shape} _ xs) = unsafePerformIO $ do
 ||| Useful for debugging.
 export
 Show (Tensor shape dtype) where
-  show (MkTensor _ xs) = opToString xs
+  show (MkTensor expr) = opToString (assert_total $ eval expr)
 
 namespace Bounded
   ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
@@ -121,27 +116,14 @@ namespace Bounded
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
-  min = let graph = MinFiniteValue {dtype} in
-    MkTensor graph $ cached graph $ do
-      MkCachingBuilder builder _ <- get
-      minFiniteValue {dtype} builder
-
-  max = let graph = MaxFiniteValue {dtype} in
-    MkTensor graph $ cached graph $ do
-      MkCachingBuilder builder _ <- get
-      maxFiniteValue {dtype} builder
+  min = MkTensor $ MinFiniteValue {dtype}
+  max = MkTensor $ MaxFiniteValue {dtype}
 
 export
 Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
-  cast (MkTensor graph xs) =
-    let graph' = ConvertElementType {dtype=F64} graph
-     in MkTensor graph' $ cached graph' $ do convertElementType {dtype=F64} !xs
+  cast (MkTensor expr) = MkTensor $ ConvertElementType {dtype=F64} expr 
 
 ----------------------------- structural operations ----------------------------
-
-reshapeWithDefaultOrdering :
-  (from, to : Shape) -> Computation XlaOp -> Computation XlaOp
-reshapeWithDefaultOrdering from to xs = reshape !xs (range $ length from) to
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
 ||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
@@ -152,9 +134,7 @@ reshape :
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
   Tensor to dtype
-reshape (MkTensor {shape=from} graph xs) =
-  let graph = Reshape to graph
-   in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
+reshape (MkTensor {shape} expr) = MkTensor $ Reshape shape to expr
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -167,10 +147,7 @@ expand :
   {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
   Tensor (insertAt axis 1 shape) dtype
-expand axis (MkTensor {shape} graph xs) =
-  let to = insertAt axis 1 shape
-      graph = Reshape to graph
-   in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering shape to xs
+expand axis (MkTensor {shape} expr) = MkTensor $ Reshape shape (insertAt axis 1 shape) expr
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -217,9 +194,7 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Tensor to dtype
-squeeze (MkTensor {shape=from} graph xs) =
-  let graph = Reshape to graph
-   in MkTensor graph $ cached graph $ reshapeWithDefaultOrdering from to xs
+squeeze (MkTensor {shape} expr) = MkTensor $ Reshape shape to expr 
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -318,17 +293,11 @@ namespace MultiSlice
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
 slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
-slice at (MkTensor graph xs) =
-  let graph = Slice (serialize at) graph
-   in MkTensor graph $ reshapeWithDefaultOrdering (slice' shape at) (MultiSlice.slice at) $
-        cached graph $ do slice !xs (starts shape at) (stops shape at) (replicate (length shape) 1)
+slice at (MkTensor expr) =
+  let sliced = Slice (starts shape at) (stops shape at) (replicate (length shape) 1) expr
+   in MkTensor $ Reshape (slice' shape at) (MultiSlice.slice at) sliced
 
       where
-      serialize : MultiSlice ds -> List (Either (Nat, Nat) Nat)
-      serialize [] = []
-      serialize (Slice from to :: xs) = Left (from, to) :: serialize xs
-      serialize (Index i :: xs) = Right i :: serialize xs
-
       starts : (shape : Shape) -> MultiSlice shape -> List Nat
       starts shape [] = replicate (length shape) 0
       starts (_ :: ds) (Slice from _ :: xs) = from :: starts ds xs
@@ -357,11 +326,7 @@ concat :
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
   Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor graphL l) (MkTensor graphR r) =
-  let graph = Concat axis graphL graphR
-   in MkTensor graph $ cached graph $ do
-        MkCachingBuilder builder _ <- get
-        concatInDim builder [!l, !r] (cast axis)
+concat axis (MkTensor expr) (MkTensor expr') = MkTensor $ Concat axis expr expr'
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -373,9 +338,7 @@ concat axis (MkTensor graphL l) (MkTensor graphR r) =
 ||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
-diag (MkTensor graph xs) =
-  let graph = Diag graph
-   in MkTensor graph $ cached graph $ do getMatrixDiagonal !xs
+diag (MkTensor expr) = MkTensor $ Diag expr
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -397,17 +360,13 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
-triangle tri (MkTensor graph xs) =
-  let graph = Triangle (case tri of Upper => False; Lower => True) graph
-   in MkTensor graph $ cached graph $ do triangle !xs (case tri of Upper => False; Lower => True)
+triangle tri (MkTensor expr) = MkTensor $ Triangle (case tri of Upper => False; Lower => True) expr 
 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Primitive dtype => Tensor [m, n] dtype -> Tensor [n, m] dtype
-(MkTensor graph xs).T =
-  let graph = Transpose graph
-   in MkTensor graph $ cached graph $ do transpose !xs [1, 0]
+(MkTensor expr).T = MkTensor $ Transpose expr
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -422,12 +381,7 @@ export
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Tensor [n, n] dtype
-identity =
-  let graph = Identity {dtype} n
-      n = cast n
-   in MkTensor graph $ cached graph $ do
-        MkCachingBuilder builder _ <- get
-        identityMatrix {dtype} builder n n
+identity = MkTensor $ Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -498,33 +452,7 @@ broadcast :
   Tensor from dtype ->
   Tensor to dtype
 broadcast xs with (xs)
-  _ | (MkTensor {shape=from} graph _) =
-    let graph = Broadcast to graph
-     in case (isElem 0 to, from == to) of
-          (Yes _, False) => MkTensor graph $ cached graph $ do
-            MkCachingBuilder builder _ <- get
-            literal <- allocLiteral {dtype} to
-            constantLiteral builder literal
-          _ => impl [] to xs
-
-    where
-
-    impl :
-      {from, to : _} ->
-      (toLeading, toTrailing : List Nat) ->
-      {auto prf : Broadcastable from toTrailing} ->
-      Tensor from dtype ->
-      Tensor to dtype
-    impl toLeading _ {prf=Same} (MkTensor _ mkOp) =
-      let graph = Broadcast to graph
-       in MkTensor graph $ cached graph $
-            if (length toLeading == 0) then mkOp else do broadcast !mkOp toLeading
-    impl toLeading (th' :: tt') {prf=Match _} (MkTensor _ mkOp) =
-      let graph = Broadcast to graph
-       in MkTensor graph $ cached graph $ do
-            x <- broadcastInDim !mkOp (th' :: tt') (range (length from))
-            broadcast x toLeading
-    impl toLeading (th' :: tt') {prf=Nest _} xs = impl (toLeading ++ [th']) tt' xs
+  _ | (MkTensor {shape=from} expr) = MkTensor $ Broadcast {dtype} from to expr
 
 %hint
 export
@@ -559,14 +487,13 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 ||| which is `fromLiteral [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
-map f (MkTensor graph xs) =
-  let (graph0, p0) = parameter 0 [] "" {dtype=a}
-      MkTensor graphf res = f (MkTensor graph0 p0)
-      graph = Map graphf [graph]
-   in MkTensor graph $ cached graph $ do
-        computation <- buildWithSubBuilder "computation" [p0] res
-        MkCachingBuilder builder _ <- get
-        map builder [!xs] computation (range $ length shape)
+map f (MkTensor {shape} expr) =
+  -- this really doesn't feel right, passing in the p0, as `Map` is unambiguous w/o it,
+  -- and also passing a `List Expr -> Expr` feels more aligned with the meaning.
+  -- We see similar problems in `Reduce`
+  let p0 = Parameter 0 [] "" {dtype=a}
+      MkTensor exprf = f (MkTensor p0)
+   in MkTensor $ Map [p0] exprf [expr] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -584,15 +511,11 @@ map2 :
   Tensor shape a ->
   Tensor shape b ->
   Tensor shape c
-map2 f (MkTensor graphL l) (MkTensor graphR r) =
-  let (graph0, p0) = parameter 0 [] "" {dtype=a}
-      (graph1, p1) = parameter 1 [] "" {dtype=b}
-      MkTensor graphf res = f (MkTensor graph0 p0) (MkTensor graph1 p1)
-      graph = Map graphf [graphL, graphR]
-   in MkTensor graph $ cached graph $ do
-        computation <- buildWithSubBuilder "computation" [p0, p1] res
-        MkCachingBuilder builder _ <- get
-        map builder [!l, !r] computation (range $ length shape)
+map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
+  let p0 = Parameter 0 [] "" {dtype=a}
+      p1 = Parameter 1 [] "" {dtype=b}
+      MkTensor exprf = f (MkTensor p0) (MkTensor p1)
+   in MkTensor $ Map [p0, p1] exprf [expr0, expr1] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
@@ -608,19 +531,15 @@ reduce :
   {auto 0 inBounds : InBounds axis shape} ->
   Tensor shape dtype ->
   Tensor (deleteAt axis shape) dtype
-reduce axis (MkTensor graph xs) =
+reduce axis (MkTensor expr) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-   in let (graph0, p0) = parameter 0 [] "" {dtype}
-          (graph1, p1) = parameter 1 [] "" {dtype}
-          MkTensor graphf resf =
-            (<+>) @{semigroup reducer} (MkTensor graph0 p0) (MkTensor graph1 p1)
-          graph = Reduce graphf axis graph
-       in MkTensor graph $ cached graph $ do
-            computation <- buildWithSubBuilder "computation" [p0, p1] resf
-            let MkTensor _ init = neutral @{reducer}
-            reduce !xs !init computation [axis]
+      p0 := Parameter 0 [] "" {dtype}
+      p1 := Parameter 1 [] "" {dtype}
+      MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
+      MkTensor neutral := neutral @{reducer}
+   in MkTensor $ Reduce p0 p1 exprf neutral axis expr
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -639,14 +558,11 @@ sort :
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Tensor shape dtype
-sort comp dimension (MkTensor graph xs) =
-  let (graph0, p0) = parameter 0 [] "" {dtype}
-      (graph1, p1) = parameter 1 [] "" {dtype}
-      MkTensor graphf fRes = comp (MkTensor graph0 p0) (MkTensor graph1 p1)
-      sortedGraph = Sort [graph] graphf dimension False
-   in MkTensor sortedGraph $ cached sortedGraph $ do
-        comparator <- buildWithSubBuilder "comparator" [p0, p1] fRes
-        sort [!xs] comparator dimension False
+sort comp dimension (MkTensor expr) =
+  let p0 = Parameter 0 [] "" {dtype}
+      p1 = Parameter 1 [] "" {dtype}
+      MkTensor exprComp = comp (MkTensor p0) (MkTensor p1)
+   in MkTensor $ Sort p0 p1 exprComp dimension False [expr]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -691,69 +607,51 @@ reverse :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Tensor shape dtype
-reverse axes (MkTensor graph xs) =
-  let graph = Reverse axes graph
-   in MkTensor graph $ cached graph $ do rev !xs axes
+reverse axes (MkTensor expr) = MkTensor $ Reverse axes expr 
 
 ----------------------------- numeric operations ----------------------------
 
-unaryOp :
-  Primitive b => String -> (XlaOp -> Computation XlaOp) -> Tensor shape a -> Tensor shape b
-unaryOp fnName xlaOperation (MkTensor graph xs) =
-  let graph = ElementwiseUnary fnName graph
-   in MkTensor graph $ cached graph $ do xlaOperation !xs
-
-binaryOp :
-  Primitive c =>
-  String ->
-  (XlaOp -> XlaOp -> Computation XlaOp) ->
-  Tensor shape a -> Tensor shape b -> Tensor shape c
-binaryOp fnName xlaOperation (MkTensor graphL l) (MkTensor graphR r) =
-  let graph = ElementwiseBinary fnName graphL graphR
-   in MkTensor graph $ cached graph $ do xlaOperation !l !r
-
-||| Element-wise equality. For example, `fromLiteral [1, 2] == fromLiteral [1, 3]` is
 ||| `fromLiteral [True, False]`.
 export
 (==) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(==) = binaryOp "(==)" eq
+(MkTensor exprl) == (MkTensor exprr) = MkTensor $ Eq exprl exprr
 
 ||| Element-wise inequality. For example, `fromLiteral [1, 2] /= fromLiteral [1, 3]` is
 ||| `fromLiteral [False, True]`.
 export
 (/=) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(/=) = binaryOp "(/=)" ne
+(MkTensor exprl) /= (MkTensor exprr) = MkTensor $ Ne exprl exprr
 
 ||| Element-wise less than. For example, `fromLiteral [1, 2, 3] < fromLiteral [2, 2, 2]` is
 ||| `fromLiteral [True, False, False]`.
 export
 (<) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<) = binaryOp "(<)" lt
+(MkTensor exprl) < (MkTensor exprr) = MkTensor $ Lt exprl exprr
 
 ||| Element-wise greater than. For example, `fromLiteral [1, 2, 3] > fromLiteral [2, 2, 2]` is
 ||| `fromLiteral [False, False, True]`.
 export
 (>) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>) = binaryOp "(>)" gt
+(MkTensor exprl) > (MkTensor exprr) = MkTensor $ Gt exprl exprr
 
 ||| Element-wise less than or equal. For example, `fromLiteral [1, 2, 3] <= fromLiteral [2, 2, 2]`
 ||| is `fromLiteral [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<=) = binaryOp "(<=)" le
+(MkTensor exprl) <= (MkTensor exprr) = MkTensor $ Le exprl exprr
 
 ||| Element-wise greater than or equal. For example,
 ||| `fromLiteral [1, 2, 3] >= fromLiteral [2, 2, 2]` is `fromLiteral [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>=) = binaryOp "(>=)" ge
+(MkTensor exprl) >= (MkTensor exprr) = MkTensor $ Ge exprl exprr
 
 ||| Element-wise boolean and. For example,
 ||| `fromLiteral [True, True, False, False] && fromLiteral [True, False, True, False]` is
 ||| `fromLiteral [True, False, False, False]`.
 export
 (&&) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(&&) = binaryOp "(&&)" and
+(MkTensor exprl) && (MkTensor exprr) = MkTensor $ And exprl exprr
 
 namespace Semigroup
   export
@@ -770,7 +668,7 @@ namespace Monoid
 ||| `fromLiteral [True, True, True, False]`.
 export
 (||) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(||) = binaryOp "(||)" or
+(MkTensor exprl) || (MkTensor exprr) = MkTensor $ Or exprl exprr
 
 namespace Semigroup
   export
@@ -786,7 +684,7 @@ namespace Monoid
 ||| `fromLiteral [False, True]`.
 export
 not : Tensor shape PRED -> Tensor shape PRED
-not = unaryOp "not" not
+not (MkTensor expr) = MkTensor $ Not expr
 
 ||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
 ||| predicates, the output will use the corresponding element from `onTrue` if the element is
@@ -812,9 +710,7 @@ select :
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
   Tensor shape dtype
-select (MkTensor gPred pred) (MkTensor gTrue true) (MkTensor gFalse false) =
-  let graph = Select gPred gTrue gFalse
-   in MkTensor graph $ cached graph $ do select !pred !true !false
+select (MkTensor pred) (MkTensor true) (MkTensor false) = MkTensor $ Select pred true false
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -844,19 +740,12 @@ cond :
   (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft ->
   Tensor shape dtype
-cond
-  (MkTensor graphPred pred)
-  onTrue (MkTensor graphTrue true)
-  onFalse (MkTensor graphFalse false) =
-    let (grapht, pt) = parameter 0 ts "" {dtype=tt}
-        (graphf, pf) = parameter 0 fs "" {dtype=ft}
-        MkTensor graphOnTrue trueRes = onTrue (MkTensor grapht pt)
-        MkTensor graphOnFalse falseRes = onFalse (MkTensor graphf pf)
-        graph = Cond graphPred graphOnTrue graphTrue graphOnFalse graphFalse
-     in MkTensor graph $ cached graph $ do
-          trueComp <- buildWithSubBuilder "truthy computation" [pt] trueRes
-          falseComp <- buildWithSubBuilder "falsy computation" [pf] falseRes
-          conditional !pred !true trueComp !false falseComp
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
+    let pt = Parameter 0 ts "" {dtype=tt}
+        pf = Parameter 0 fs "" {dtype=ft}
+        MkTensor exprTrue = onTrue (MkTensor pt)
+        MkTensor exprFalse = onFalse (MkTensor pf)
+     in MkTensor $ Cond pred pt exprTrue true pf exprFalse false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -869,9 +758,7 @@ namespace Vector
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
-  (MkTensor graphL l) @@ (MkTensor graphR r) =
-    let graph = Dot graphL graphR
-     in MkTensor graph $ cached graph $ do dot !l !r
+  (MkTensor l) @@ (MkTensor r) = MkTensor $ Dot l r
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
@@ -903,15 +790,13 @@ namespace Matrix
     Tensor (S m :: tl) dtype ->
     {auto 0 vectorTail : length tl `LTE` 1} ->
     Tensor (n :: tl) dtype
-  (MkTensor graphL l) @@ (MkTensor graphR r) =
-    let graph = Dot graphL graphR
-     in MkTensor graph $ cached graph $ do dot !l !r
+  (MkTensor l) @@ (MkTensor r) = MkTensor $ Dot l r 
 
 ||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
 ||| `fromLiteral [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) = binaryOp "(+)" add
+(MkTensor exprl) + (MkTensor exprr) = MkTensor $ Add exprl exprr
 
 namespace Semigroup
   export
@@ -930,19 +815,19 @@ namespace Monoid
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate = unaryOp "negate" neg
+negate (MkTensor expr) = MkTensor $ Neg expr
 
 ||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
 ||| `fromLiteral [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) = binaryOp "(-)" sub
+(MkTensor exprl) - (MkTensor exprr) = MkTensor $ Sub exprl exprr
 
 ||| Element-wise multiplication. For example, `fromLiteral [2, 3] * fromLiteral [4, 5]` is
 ||| `fromLiteral [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) = binaryOp "(*)" mul
+(MkTensor exprl) * (MkTensor exprr) = MkTensor $ Mul exprl exprr
 
 namespace Scalarwise
   ||| Multiplication by a scalar. For example, `fromLiteral 2 * fromLiteral [3, 5]` is
@@ -952,7 +837,7 @@ namespace Scalarwise
   export
   (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
   l * r with (r)
-    _ | (MkTensor {shape=(d :: ds)} _ _) = (broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
+    _ | (MkTensor {shape=(d :: ds)} _) = (broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
 
 namespace Semigroup
   export
@@ -973,7 +858,7 @@ namespace Monoid
 ||| `fromLiteral [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(/) = binaryOp "(/)" div
+(MkTensor exprl) / (MkTensor exprr) = MkTensor $ Div exprl exprr
 
 namespace Scalarwise
   ||| Floating point division by a scalar. For example, `fromLiteral [3.4, -5.6] / fromLiteral 2` is
@@ -987,13 +872,13 @@ namespace Scalarwise
     Tensor [] dtype ->
     Tensor (d :: ds) dtype
   l / r with (l)
-    _ | (MkTensor {shape=(d :: ds)} _ _) = l / (broadcast {shapesOK=scalarToAnyOk (d :: ds)} r)
+    _ | (MkTensor {shape=(d :: ds)} _) = l / (broadcast {shapesOK=scalarToAnyOk (d :: ds)} r)
 
 ||| The element-wise reciprocal. For example, `recip (fromLiteral [-2, 0, 0.2])`
 ||| is `fromLiteral [-0.5, nan, 5]`.
 export
 recip : Tensor shape F64 -> Tensor shape F64
-recip = unaryOp "recip" reciprocal
+recip (MkTensor expr) = MkTensor $ Reciprocal expr
 
 infixr 9 ^
 
@@ -1006,121 +891,121 @@ infixr 9 ^
 ||| Note: The first root is used.
 export
 (^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
-(^) = binaryOp "(^)" pow
+(MkTensor exprl) ^ (MkTensor exprr) = MkTensor $ Pow exprl exprr
 
 ||| Element-wise absolute value. For example, `abs (fromLiteral [-2, 3])` is
 ||| `fromLiteral [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-abs = unaryOp "abs" abs
+abs (MkTensor expr) = MkTensor $ Abs expr
 
 ||| The element-wise natural exponential. For example, `exp (fromLiteral [-1, 0, 2])` is
 ||| `fromLiteral [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Tensor shape F64
-exp = unaryOp "exp" exp
+exp (MkTensor expr) = MkTensor $ Exp expr
 
 ||| The element-wise floor function. For example,
 ||| `floor (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Tensor shape F64
-floor = unaryOp "floor" floor
+floor (MkTensor expr) = MkTensor $ Floor expr
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Tensor shape F64
-ceil = unaryOp "ceil" ceil
+ceil (MkTensor expr) = MkTensor $ Ceil expr
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log (fromLiteral [1 / euler, 1, euler * euler])` is `fromLiteral [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Tensor shape F64
-log = unaryOp "log" log
+log (MkTensor expr) = MkTensor $ Log expr
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp (-x)`.
 export
 logistic : Tensor shape F64 -> Tensor shape F64
-logistic = unaryOp "logistic" logistic
+logistic (MkTensor expr) = MkTensor $ Logistic expr
 
 ||| The element-wise sine.
 export
 sin : Tensor shape F64 -> Tensor shape F64
-sin = unaryOp "sin" sin
+sin (MkTensor expr) = MkTensor $ Sin expr
 
 ||| The element-wise cosine.
 export
 cos : Tensor shape F64 -> Tensor shape F64
-cos = unaryOp "cos" cos
+cos (MkTensor expr) = MkTensor $ Cos expr
 
 ||| The element-wise tangent.
 export
 tan : Tensor shape F64 -> Tensor shape F64
-tan = unaryOp "tan" tan
+tan (MkTensor expr) = MkTensor $ Tan expr
 
 ||| The element-wise inverse sine.
 export
 asin : Tensor shape F64 -> Tensor shape F64
-asin = unaryOp "asin" asin
+asin (MkTensor expr) = MkTensor $ Asin expr
 
 ||| The element-wise inverse cosine.
 export
 acos : Tensor shape F64 -> Tensor shape F64
-acos = unaryOp "acos" acos
+acos (MkTensor expr) = MkTensor $ Acos expr
 
 ||| The element-wise inverse tangent.
 export
 atan : Tensor shape F64 -> Tensor shape F64
-atan = unaryOp "atan" atan
+atan (MkTensor expr) = MkTensor $ Atan expr
 
 ||| The element-wise hyperbolic sine.
 export
 sinh : Tensor shape F64 -> Tensor shape F64
-sinh = unaryOp "sinh" sinh
+sinh (MkTensor expr) = MkTensor $ Sinh expr
 
 ||| The element-wise hyperbolic cosine.
 export
 cosh : Tensor shape F64 -> Tensor shape F64
-cosh = unaryOp "cosh" cosh
+cosh (MkTensor expr) = MkTensor $ Cosh expr
 
 ||| The element-wise hyperbolic tangent.
 export
 tanh : Tensor shape F64 -> Tensor shape F64
-tanh = unaryOp "tanh" tanh
+tanh (MkTensor expr) = MkTensor $ Tanh expr
 
 ||| The element-wise inverse hyperbolic sine.
 export
 asinh : Tensor shape F64 -> Tensor shape F64
-asinh = unaryOp "asinh" asinh
+asinh (MkTensor expr) = MkTensor $ Asinh expr
 
 ||| The element-wise inverse hyperbolic cosine.
 export
 acosh : Tensor shape F64 -> Tensor shape F64
-acosh = unaryOp "acosh" acosh
+acosh (MkTensor expr) = MkTensor $ Acosh expr
 
 ||| The element-wise inverse hyperbolic tangent.
 export
 atanh : Tensor shape F64 -> Tensor shape F64
-atanh = unaryOp "atanh" atanh
+atanh (MkTensor expr) = MkTensor $ Atanh expr
 
 ||| An approximation to the element-wise error function.
 export
 erf : Tensor shape F64 -> Tensor shape F64
-erf = unaryOp "erf" erf
+erf (MkTensor expr) = MkTensor $ Erf expr
 
 ||| The element-wise square. For example, `square (fromLiteral [-2, 0, 3])`
 ||| is `fromLiteral [4, 0, 9]`.
 export
 square : Tensor shape F64 -> Tensor shape F64
-square = unaryOp "square" square
+square (MkTensor expr) = MkTensor $ Square expr
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Tensor shape F64
-sqrt = unaryOp "sqrt" sqrt
+sqrt (MkTensor expr) = MkTensor $ Sqrt expr
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
@@ -1128,7 +1013,7 @@ sqrt = unaryOp "sqrt" sqrt
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-min = binaryOp "min" min
+min (MkTensor exprl) (MkTensor exprr) = MkTensor $ Min exprl exprr
 
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 namespace Semigroup
@@ -1151,7 +1036,7 @@ namespace Monoid
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-max = binaryOp "max" max
+max (MkTensor exprl) (MkTensor exprr) = MkTensor $ Max exprl exprr
 
 ||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 namespace Semigroup
@@ -1176,9 +1061,7 @@ namespace Monoid
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
-cholesky (MkTensor graph xs) =
-  let graph = Cholesky graph
-   in triangle Lower $ MkTensor graph $ cached graph $ do cholesky !xs True
+cholesky (MkTensor expr) = triangle Lower $ MkTensor $ Cholesky expr
 
 infix 9 |\, \|
 
@@ -1192,10 +1075,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor graphA a) |\ (MkTensor graphB b) =
-    let graph = TriangularSolve True graphA graphB
-     in MkTensor graph $ cached graph $ do
-          triangularSolve !a !b True True False NoTranspose
+  (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True True False NoTranspose
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1206,10 +1086,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor graphA a) \| (MkTensor graphB b) =
-    let graph = TriangularSolve False graphA graphB
-     in MkTensor graph $ cached graph $ do
-          triangularSolve !a !b True False False NoTranspose
+  (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b True False False NoTranspose
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1222,7 +1099,7 @@ namespace Vector
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
   a |\ b with (b)
-    _ | MkTensor {shape=[m]} _ _ = squeeze (a |\ (expand 1 b))
+    _ | MkTensor {shape=[m]} _ = squeeze (a |\ (expand 1 b))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1234,7 +1111,7 @@ namespace Vector
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
   a \| b with (b)
-    _ | MkTensor {shape=[m]} _ _ = squeeze (a \| (expand 1 b))
+    _ | MkTensor {shape=[m]} _ = squeeze (a \| (expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1245,7 +1122,7 @@ trace :
   Tensor [S n, S n] dtype ->
   Tensor [] dtype
 trace x with (x)
-  _ | MkTensor {shape=[S n, S n]} _ _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
+  _ | MkTensor {shape=[S n, S n]} _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
@@ -1284,24 +1161,15 @@ uniform :
   (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
   Rand (Tensor shape F64)
-uniform (MkTensor keyGraph key) bound bound' =
-  let MkTensor minvalGraph minval = min bound bound'
-      MkTensor maxvalGraph maxval = max bound bound'
-   in ST $ \(MkTensor initialStateGraph initialState) =>
-        let valueGraph = UniformFloatingPointDistributionValue
-              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph shape
-            stateGraph = UniformFloatingPointDistributionState
-              keyGraph initialStateGraph ThreeFry minvalGraph maxvalGraph shape
-            valueStatePair = do
-              uniformFloatingPointDistribution
-                !key !initialState ThreeFry !minval !maxval !(mkShape {dtype=F64} shape)
-            state = MkTensor stateGraph $ do
-              ignore $ cached valueGraph $ map fst valueStatePair
-              cached stateGraph $ map snd valueStatePair
-            value = MkTensor valueGraph $ do
-              ignore $ cached stateGraph $ map snd valueStatePair
-              cached valueGraph $ map fst valueStatePair
-         in Id (state, value)
+uniform (MkTensor key) bound bound' =
+  let MkTensor minval = min bound bound'
+      MkTensor maxval = max bound bound'
+   in ST $ \(MkTensor initialState) =>
+      let value = MkTensor $ UniformFloatingPointDistributionValue
+            key initialState ThreeFry minval maxval shape
+          state = MkTensor $ UniformFloatingPointDistributionState
+            key initialState ThreeFry minval maxval shape
+       in Id (state, value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1321,16 +1189,8 @@ uniform (MkTensor keyGraph key) bound bound' =
 ||| @key Determines the stream of generated samples.
 export
 normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
-normal (MkTensor keyGraph key) =
-  ST $ \(MkTensor initialStateGraph initialState) =>
-    let valueGraph = NormalFloatingPointDistributionValue keyGraph initialStateGraph ThreeFry shape
-        stateGraph = NormalFloatingPointDistributionState keyGraph initialStateGraph ThreeFry shape
-        valueStatePair = do
-          normalFloatingPointDistribution !key !initialState ThreeFry !(mkShape {dtype=F64} shape)
-        state = MkTensor stateGraph $ do
-          ignore $ cached valueGraph $ map fst valueStatePair
-          cached stateGraph $ map snd valueStatePair
-        value = MkTensor valueGraph $ do
-          ignore $ cached stateGraph $ map snd valueStatePair
-          cached valueGraph $ map fst valueStatePair
+normal (MkTensor key) =
+  ST $ \(MkTensor initialState) =>
+    let value = MkTensor $ NormalFloatingPointDistributionValue key initialState ThreeFry shape
+        state = MkTensor $ NormalFloatingPointDistributionState key initialState ThreeFry shape
      in Id (state, value)
