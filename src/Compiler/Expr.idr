@@ -17,7 +17,7 @@ module Compiler.Expr
 
 import Data.Hashable
 
--- Expr can be independent of XLA
+-- Expr should be independent of XLA
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
@@ -112,6 +112,7 @@ Prelude.Eq Transpose where
 
 export
 Prelude.Eq Expr where
+  -- we're missing `Reverse`
   (FromLiteral {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
     (typeString {dtype}, shape, hash lit) == (typeString {dtype=dtype'}, shape', hash lit')
   (Parameter {dtype} position shape name) == (Parameter {dtype=dtype'} position' shape' name') =

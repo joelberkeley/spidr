@@ -26,31 +26,15 @@ import System.FFI
 
 import Data.Hashable
 
-import Compiler.Computation
 import Compiler.Expr
 import Compiler.Eval
 import Compiler.LiteralRW
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
-import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
-import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
-import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
-import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
-import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.Xla.TensorFlow.Core.Platform.Status
-import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 import Literal
 import public Primitive
 import public Types
 import public Util
-
-%hide Xla.Shape
 
 ----------------------------- core definitions ----------------------------
 
@@ -93,13 +77,10 @@ namespace S32
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
-toLiteral (MkTensor {shape} expr) = unsafePerformIO $ do
-  gpuStatus <- validateGPUMachineManager
-  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" (assert_total $ eval expr)
-  client <- getOrCreateLocalClient platform
-  lit <- executeAndTransfer client computation
-  pure (read {dtype} lit)
+-- we can make `run` a method on the backend provided by the `PrimitiveRW` interface
+-- (or whatever we want to call it), then we aren't confined to the XLA backend.
+-- Note this could open the doorway to writing a pure Idris backend.
+toLiteral (MkTensor {shape} expr) = run {dtype} expr
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
@@ -1076,6 +1057,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
+  -- how can we remove the dependency on XlaBuilder due to NoTranspose?
   (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True True False NoTranspose
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
@@ -1167,6 +1149,7 @@ uniform (MkTensor key) bound bound' =
       MkTensor maxval = max bound bound'
    in ST $ \(MkTensor initialState) =>
       let value = MkTensor $ UniformFloatingPointDistributionValue
+          -- how can we remove ThreeFry such that we don't import PRNG?
             key initialState ThreeFry minval maxval shape
           state = MkTensor $ UniformFloatingPointDistributionState
             key initialState ThreeFry minval maxval shape

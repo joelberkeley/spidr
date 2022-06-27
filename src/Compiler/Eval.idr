@@ -35,6 +35,13 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
+import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
+import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.Xla.TensorFlow.Core.Platform.Status
+import Compiler.Xla.TensorFlow.StreamExecutor.Platform
+
 import Literal
 import Primitive
 import Types
@@ -239,3 +246,13 @@ eval e@(NormalFloatingPointDistributionState key initialState bitGenerator shape
           !(eval key) !(eval initialState) bitGenerator !(mkShape {dtype=F64} shape)
   ignore $ map fst valueStatePair
   map snd valueStatePair
+
+export
+run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a
+run expr = unsafePerformIO $ do
+  gpuStatus <- validateGPUMachineManager
+  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
+  computation <- build "" (assert_total $ eval expr)
+  client <- getOrCreateLocalClient platform
+  lit <- executeAndTransfer client computation
+  pure (read {dtype} lit)
