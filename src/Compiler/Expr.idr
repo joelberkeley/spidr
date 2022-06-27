@@ -29,7 +29,7 @@ import Util.Hashable
 
 public export
 data Fn : Nat -> Type -> Type where
-  MkFn : {arity : _} -> (Vect arity a) -> a -> Fn arity a
+  MkFn : {arity : _} -> Vect arity a -> a -> Fn arity a
 
 public export
 data Expr : Type where
