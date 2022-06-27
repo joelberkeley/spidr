@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Compiler.Expr
 
+import Decidable.Equality
 import Data.Hashable
 
 import Compiler.LiteralRW
@@ -25,6 +26,10 @@ import Primitive
 import Types
 import Util
 import Util.Hashable
+
+public export
+data Fn : Nat -> Type -> Type where
+  MkFn : {arity : _} -> (Vect arity a) -> a -> Fn arity a
 
 public export
 data Expr : Type where
@@ -41,9 +46,9 @@ data Expr : Type where
   Transpose : Expr -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Expr -> Expr
-  Map : List Expr -> Expr -> List Expr -> Shape -> Expr
-  Reduce : Expr -> Expr -> Expr -> Expr -> Nat -> Expr -> Expr
-  Sort : Expr -> Expr -> Expr -> Nat -> Bool -> List Expr -> Expr
+  Map : Fn n Expr -> Vect n Expr -> Shape -> Expr
+  Reduce : Fn 2 Expr -> Expr -> Nat -> Expr -> Expr
+  Sort : Fn 2 Expr -> Nat -> Bool -> List Expr -> Expr
   Reverse : List Nat -> Expr -> Expr
   Eq : Expr -> Expr -> Expr
   Ne : Expr -> Expr -> Expr
@@ -85,7 +90,7 @@ data Expr : Type where
   Acosh : Expr -> Expr
   Atanh : Expr -> Expr
   Select : Expr -> Expr -> Expr -> Expr
-  Cond : Expr -> Expr -> Expr -> Expr -> Expr -> Expr -> Expr -> Expr
+  Cond : Expr -> Fn 1 Expr -> Expr -> Fn 1 Expr -> Expr -> Expr
   Dot : Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
   TriangularSolve : Expr -> Expr -> Bool -> Expr
@@ -117,12 +122,19 @@ Prelude.Eq Expr where
   (Identity {dtype} n) == (Identity {dtype=dtype'} n') =
     (typeString {dtype}, n) == (typeString {dtype=dtype'}, n')
   (Broadcast from to x) == (Broadcast from' to' x') = (from, to) == (from', to') && x == x'
-  (Map params f xs dims) == (Map params' f' xs' dims') =
-    (assert_total $ params == params') && f == f' && (assert_total $ xs == xs') && dims == dims'
-  (Reduce p0 p1 monoid neutral axis x) == (Reduce p0' p1' monoid' neutral' axis' x') =
-    p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axis == axis' && x == x'
-  (Sort p0 p1 comparator dimension isStable operands) ==
-    (Sort p0' p1' comparator' dimension' isStable' operands') =
+  (Map {n} (MkFn params f) xs dims) == (Map {n=n'} (MkFn params' f') xs' dims') =
+    case decEq n n' of
+      Yes eq =>
+        (assert_total $ params == rewrite eq in params')
+        && f == f'
+        && (assert_total $ xs == rewrite eq in xs')
+        && dims == dims'
+      No _ => False
+  (Reduce (MkFn [p0, p1] monoid) neutral axis x) ==
+    (Reduce (MkFn [p0', p1'] monoid') neutral' axis' x') =
+      p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axis == axis' && x == x'
+  (Sort (MkFn [p0, p1] comparator) dimension isStable operands) ==
+    (Sort (MkFn [p0', p1'] comparator') dimension' isStable' operands') =
       p0 == p0'
       && p1 == p1'
       && comparator == comparator'
@@ -170,14 +182,15 @@ Prelude.Eq Expr where
   (Acosh expr) == (Acosh expr') = expr == expr'
   (Atanh expr) == (Atanh expr') = expr == expr'
   (Select pred f t) == (Select pred' f' t') = pred == pred' && f == f' && t == t'
-  (Cond pred pt fTrue true pf fFalse false) == (Cond pred' pt' fTrue' true' pf' fFalse' false') =
-    pred == pred'
-    && pt == pt'
-    && fTrue == fTrue'
-    && true == true'
-    && pf == pf'
-    && fFalse == fFalse'
-    && false == false'
+  (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) ==
+    (Cond pred' (MkFn [pt'] fTrue') true' (MkFn [pf'] fFalse') false') =
+      pred == pred'
+      && pt == pt'
+      && fTrue == fTrue'
+      && true == true'
+      && pf == pf'
+      && fFalse == fFalse'
+      && false == false'
   (Dot x y) == (Dot x' y') = x == x' && y == y'
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve x y lower) == (TriangularSolve x' y' lower') =
@@ -220,13 +233,13 @@ Hashable Expr where
   hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
   hashWithSalt salt (Broadcast from to x) =
     salt `hashWithSalt` ("Broadcast", from, to) `hashWithSalt` x
-  hashWithSalt salt (Map params f xs dims) =
+  hashWithSalt salt (Map (MkFn params f) xs dims) =
     let salt = salt `hashWithSalt` "Map"
         salt = assert_total $ salt `hashWithSalt` params
         salt = salt `hashWithSalt` f
         salt = assert_total $ salt `hashWithSalt` xs
      in salt `hashWithSalt` dims
-  hashWithSalt salt (Reduce p0 p1 monoid neutral axis x) = salt
+  hashWithSalt salt (Reduce (MkFn [p0, p1] monoid) neutral axis x) = salt
     `hashWithSalt` "Reduce"
     `hashWithSalt` p0
     `hashWithSalt` p1
@@ -234,7 +247,7 @@ Hashable Expr where
     `hashWithSalt` neutral 
     `hashWithSalt` axis
     `hashWithSalt` x
-  hashWithSalt salt (Sort p0 p1 comparator dimension isStable operands) =
+  hashWithSalt salt (Sort (MkFn [p0, p1] comparator) dimension isStable operands) =
     let salt = salt
           `hashWithSalt` "Sort"
           `hashWithSalt` p0
@@ -284,7 +297,7 @@ Hashable Expr where
   hashWithSalt salt (Atanh expr) = salt `hashWithSalt` "Atanh" `hashWithSalt` expr
   hashWithSalt salt (Select pred f t) =
     salt `hashWithSalt` "Select" `hashWithSalt` pred `hashWithSalt` f `hashWithSalt` t
-  hashWithSalt salt (Cond pred pt fTrue true pf fFalse false) = salt
+  hashWithSalt salt (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) = salt
     `hashWithSalt` "Cond"
     `hashWithSalt` pred
     `hashWithSalt` pt

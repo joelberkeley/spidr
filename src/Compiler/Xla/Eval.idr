@@ -147,14 +147,14 @@ enqueue e@(Broadcast {dtype} from to expr) = cached e $
     _ =>
       let broadcastDims = map (+ length to `minus` length from) $ range $ length from
        in broadcastInDim !(enqueue expr) to broadcastDims
-enqueue e@(Map exprParams exprf exprs dims) = cached e $ do
-  computation <- buildWithSubBuilder "computation" (map enqueue exprParams) (enqueue exprf)
+enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
+  computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
   MkCachingBuilder builder _ <- get
-  map builder !(traverse enqueue exprs) computation dims 
-enqueue e@(Reduce p0 p1 exprf neutral axis expr) = cached e $ do
+  map builder !(traverse enqueue $ toList exprs) computation dims 
+enqueue e@(Reduce (MkFn [p0, p1] exprf) neutral axis expr) = cached e $ do
   computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
   reduce !(enqueue expr) !(enqueue neutral) computation [axis]
-enqueue e@(Sort p0 p1 exprComp axis isStable exprs) = cached e $ do
+enqueue e@(Sort (MkFn [p0, p1] exprComp) axis isStable exprs) = cached e $ do
   comparator <- buildWithSubBuilder "comparator" [(enqueue p0), (enqueue p1)] (enqueue exprComp)
   sort !(traverse enqueue exprs) comparator axis isStable 
 enqueue e@(Reverse axes expr) = cached e $ rev !(enqueue expr) axes
@@ -198,7 +198,7 @@ enqueue e@(Asinh expr) = cached e $ asinh !(enqueue expr)
 enqueue e@(Acosh expr) = cached e $ acosh !(enqueue expr)
 enqueue e@(Atanh expr) = cached e $ atanh !(enqueue expr)
 enqueue e@(Select pred true false) = cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
-enqueue e@(Cond pred pt exprTrue true pf exprFalse false) = cached e $ do
+enqueue e@(Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = cached e $ do
   trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
   falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
   conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp

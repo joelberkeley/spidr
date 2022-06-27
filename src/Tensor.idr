@@ -74,9 +74,6 @@ namespace S32
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
--- we can make `run` a method on the backend provided by the `PrimitiveRW` interface
--- (or whatever we want to call it), then we aren't confined to the XLA backend.
--- Note this could open the doorway to writing a pure Idris backend.
 toLiteral (MkTensor {shape} expr) = run {dtype} expr
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
@@ -467,12 +464,9 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} expr) =
-  -- this really doesn't feel right, passing in the p0, as `Map` is unambiguous w/o it,
-  -- and also passing a `List Expr -> Expr` feels more aligned with the meaning.
-  -- We see similar problems in `Reduce`
   let p0 = Parameter 0 [] "" {dtype=a}
       MkTensor exprf = f (MkTensor p0)
-   in MkTensor $ Map [p0] exprf [expr] (range $ length shape)
+   in MkTensor $ Map (MkFn [p0] exprf) [expr] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -494,7 +488,7 @@ map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
   let p0 = Parameter 0 [] "" {dtype=a}
       p1 = Parameter 1 [] "" {dtype=b}
       MkTensor exprf = f (MkTensor p0) (MkTensor p1)
-   in MkTensor $ Map [p0, p1] exprf [expr0, expr1] (range $ length shape)
+   in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
@@ -518,7 +512,7 @@ reduce axis (MkTensor expr) =
       p1 := Parameter 1 [] "" {dtype}
       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
       MkTensor neutral := neutral @{reducer}
-   in MkTensor $ Reduce p0 p1 exprf neutral axis expr
+   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axis expr
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -541,7 +535,7 @@ sort comp dimension (MkTensor expr) =
   let p0 = Parameter 0 [] "" {dtype}
       p1 = Parameter 1 [] "" {dtype}
       MkTensor exprComp = comp (MkTensor p0) (MkTensor p1)
-   in MkTensor $ Sort p0 p1 exprComp dimension False [expr]
+   in MkTensor $ Sort (MkFn [p0, p1] exprComp) dimension False [expr]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -724,7 +718,7 @@ cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
         pf = Parameter 0 fs "" {dtype=ft}
         MkTensor exprTrue = onTrue (MkTensor pt)
         MkTensor exprFalse = onFalse (MkTensor pf)
-     in MkTensor $ Cond pred pt exprTrue true pf exprFalse false
+     in MkTensor $ Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
