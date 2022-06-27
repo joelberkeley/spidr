@@ -27,9 +27,6 @@ import Util
 import Util.Hashable
 
 public export
-data BitGenerator = ThreeFry | Philox
-
-public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => Primitive dtype => {shape : _} -> Literal shape ty -> Expr
   Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
@@ -92,17 +89,10 @@ data Expr : Type where
   Dot : Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
   TriangularSolve : Expr -> Expr -> Bool -> Expr
-  UniformFloatingPointDistributionValue :
-    Expr -> Expr -> BitGenerator -> Expr -> Expr -> Shape -> Expr
-  UniformFloatingPointDistributionState :
-    Expr -> Expr -> BitGenerator -> Expr -> Expr -> Shape -> Expr
-  NormalFloatingPointDistributionValue : Expr -> Expr -> BitGenerator -> Shape -> Expr
-  NormalFloatingPointDistributionState : Expr -> Expr -> BitGenerator -> Shape -> Expr
-
-Prelude.Eq BitGenerator where
-  ThreeFry == ThreeFry = True
-  Philox == Philox = True
-  _ == _ = False
+  UniformFloatingPointDistributionValue : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
+  UniformFloatingPointDistributionState : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
+  NormalFloatingPointDistributionValue : Expr -> Expr -> Shape -> Expr
+  NormalFloatingPointDistributionState : Expr -> Expr -> Shape -> Expr
 
 export
 Prelude.Eq Expr where
@@ -192,31 +182,19 @@ Prelude.Eq Expr where
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve x y lower) == (TriangularSolve x' y' lower') =
     x == x' && y == y' && lower == lower'
-  (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) ==
-    (UniformFloatingPointDistributionValue key' initialState' bitGenerator' minval' maxval' shape')
-      = key == key'
-        && initialState == initialState'
-        && bitGenerator == bitGenerator'
-        && minval == minval'
-        && maxval == maxval'
-  (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) ==
-    (UniformFloatingPointDistributionState key' initialState' bitGenerator' minval' maxval' shape')
-      = key == key'
-        && initialState == initialState'
-        && bitGenerator == bitGenerator'
-        && minval == minval'
-        && maxval == maxval'
-  (NormalFloatingPointDistributionValue key initialState bitGenerator shape) ==
-    (NormalFloatingPointDistributionValue key' initialState' bitGenerator' shape')
-      = key == key' && initialState == initialState' && bitGenerator == bitGenerator'
-  (NormalFloatingPointDistributionState key initialState bitGenerator shape) ==
-    (NormalFloatingPointDistributionState key' initialState' bitGenerator' shape')
-      = key == key' && initialState == initialState' && bitGenerator == bitGenerator'
+  (UniformFloatingPointDistributionValue key initialState minval maxval shape) ==
+    (UniformFloatingPointDistributionValue key' initialState' minval' maxval' shape') =
+      key == key' && initialState == initialState' && minval == minval' && maxval == maxval'
+  (UniformFloatingPointDistributionState key initialState minval maxval shape) ==
+    (UniformFloatingPointDistributionState key' initialState' minval' maxval' shape') =
+      key == key' && initialState == initialState' && minval == minval' && maxval == maxval'
+  (NormalFloatingPointDistributionValue key initialState shape) ==
+    (NormalFloatingPointDistributionValue key' initialState' shape') =
+      key == key' && initialState == initialState'
+  (NormalFloatingPointDistributionState key initialState shape) ==
+    (NormalFloatingPointDistributionState key' initialState' shape') =
+      key == key' && initialState == initialState'
   _ == _ = False
-
-Hashable BitGenerator where
-  hashWithSalt salt ThreeFry = hashWithSalt salt 0
-  hashWithSalt salt Philox = hashWithSalt salt 1
 
 export
 Hashable Expr where
@@ -320,34 +298,30 @@ Hashable Expr where
   hashWithSalt salt (TriangularSolve x y lower) =
     salt `hashWithSalt` "TriangularSolve" `hashWithSalt` x `hashWithSalt` y `hashWithSalt` lower
   hashWithSalt salt
-    (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) = salt
+    (UniformFloatingPointDistributionValue key initialState minval maxval shape) = salt
       `hashWithSalt` "UniformFloatingPointDistributionValue"
       `hashWithSalt` key
       `hashWithSalt` initialState
-      `hashWithSalt` bitGenerator
       `hashWithSalt` minval
       `hashWithSalt` maxval
       `hashWithSalt` shape
   hashWithSalt salt
-    (UniformFloatingPointDistributionState key initialState bitGenerator minval maxval shape) = salt
+    (UniformFloatingPointDistributionState key initialState minval maxval shape) = salt
       `hashWithSalt` "UniformFloatingPointDistributionState"
       `hashWithSalt` key
       `hashWithSalt` initialState
-      `hashWithSalt` bitGenerator
       `hashWithSalt` minval
       `hashWithSalt` maxval
       `hashWithSalt` shape
   hashWithSalt salt
-    (NormalFloatingPointDistributionValue key initialState bitGenerator shape) = salt
+    (NormalFloatingPointDistributionValue key initialState shape) = salt
       `hashWithSalt` "NormalFloatingPointDistributionValue"
       `hashWithSalt` key
       `hashWithSalt` initialState
-      `hashWithSalt` bitGenerator
       `hashWithSalt` shape
   hashWithSalt salt
-    (NormalFloatingPointDistributionState key initialState bitGenerator shape) = salt
+    (NormalFloatingPointDistributionState key initialState shape) = salt
       `hashWithSalt` "NormalFloatingPointDistributionState"
       `hashWithSalt` key
       `hashWithSalt` initialState
-      `hashWithSalt` bitGenerator
       `hashWithSalt` shape

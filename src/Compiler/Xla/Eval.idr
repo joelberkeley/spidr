@@ -207,9 +207,7 @@ eval e@(Dot l r) = cached e $ dot !(eval l) !(eval r)
 eval e@(Cholesky expr) = cached e $ cholesky !(eval expr) True
 eval e@(TriangularSolve a b lower) =
   cached e $ triangularSolve !(eval a) !(eval b) True lower False NoTranspose
-eval e@(UniformFloatingPointDistributionValue
-    key initialState bitGenerator minval maxval shape
-  ) = cached e $ do
+eval e@(UniformFloatingPointDistributionValue key initialState minval maxval shape) = cached e $ do
   let valueStatePair = do
         uniformFloatingPointDistribution
           !(eval key)
@@ -221,9 +219,7 @@ eval e@(UniformFloatingPointDistributionValue
   -- are we calculating value and state only once per sample?
   ignore $ map snd valueStatePair
   map fst valueStatePair
-eval e@(UniformFloatingPointDistributionState
-    key initialState bitGenerator minval maxval shape
-  ) = cached e $ do
+eval e@(UniformFloatingPointDistributionState key initialState minval maxval shape) = cached e $ do
   let valueStatePair = do
         uniformFloatingPointDistribution
           !(eval key)
@@ -234,16 +230,16 @@ eval e@(UniformFloatingPointDistributionState
           !(mkShape {dtype=F64} shape)
   ignore $ map fst valueStatePair
   map snd valueStatePair
-eval e@(NormalFloatingPointDistributionValue key initialState bitGenerator shape) = cached e $ do
+eval e@(NormalFloatingPointDistributionValue key initialState shape) = cached e $ do
   let valueStatePair = do
         normalFloatingPointDistribution
-          !(eval key) !(eval initialState) bitGenerator !(mkShape {dtype=F64} shape)
+          !(eval key) !(eval initialState) ThreeFry !(mkShape {dtype=F64} shape)
   ignore $ map snd valueStatePair
   map fst valueStatePair
-eval e@(NormalFloatingPointDistributionState key initialState bitGenerator shape) = cached e $ do
+eval e@(NormalFloatingPointDistributionState key initialState shape) = cached e $ do
   let valueStatePair = do
         normalFloatingPointDistribution
-          !(eval key) !(eval initialState) bitGenerator !(mkShape {dtype=F64} shape)
+          !(eval key) !(eval initialState) ThreeFry !(mkShape {dtype=F64} shape)
   ignore $ map fst valueStatePair
   map snd valueStatePair
 

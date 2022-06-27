@@ -1148,9 +1148,9 @@ uniform (MkTensor key) bound bound' =
       MkTensor maxval = max bound bound'
    in ST $ \(MkTensor initialState) =>
       let value = MkTensor $ UniformFloatingPointDistributionValue
-            key initialState ThreeFry minval maxval shape
+            key initialState minval maxval shape
           state = MkTensor $ UniformFloatingPointDistributionState
-            key initialState ThreeFry minval maxval shape
+            key initialState minval maxval shape
        in Id (state, value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
@@ -1173,6 +1173,6 @@ export
 normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
 normal (MkTensor key) =
   ST $ \(MkTensor initialState) =>
-    let value = MkTensor $ NormalFloatingPointDistributionValue key initialState ThreeFry shape
-        state = MkTensor $ NormalFloatingPointDistributionState key initialState ThreeFry shape
+    let value = MkTensor $ NormalFloatingPointDistributionValue key initialState shape
+        state = MkTensor $ NormalFloatingPointDistributionState key initialState shape
      in Id (state, value)
