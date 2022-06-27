@@ -11,6 +11,7 @@ modules =
 
   Compiler.Computation,
   Compiler.Expr,
+  Compiler.Eval,
   Compiler.LiteralRW,
 
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Constants,

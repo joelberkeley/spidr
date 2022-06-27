@@ -28,6 +28,7 @@ import Data.Hashable
 
 import Compiler.Computation
 import Compiler.Expr
+import Compiler.Eval
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
