@@ -542,7 +542,7 @@ eval e@(TriangularSolve a b leftSide lower unitDiagonal transposeA) =
   cached e $ triangularSolve !(eval a) !(eval b) leftSide lower unitDiagonal transposeA
 eval e@(UniformFloatingPointDistributionValue
     key initialState bitGenerator minval maxval shape
-  ) = do
+  ) = cached e $ do
   let valueStatePair = do
         uniformFloatingPointDistribution
           !(eval key)
@@ -556,7 +556,7 @@ eval e@(UniformFloatingPointDistributionValue
   map fst valueStatePair
 eval e@(UniformFloatingPointDistributionState
     key initialState bitGenerator minval maxval shape
-  ) = do
+  ) = cached e $ do
   let valueStatePair = do
         uniformFloatingPointDistribution
           !(eval key)
@@ -567,13 +567,13 @@ eval e@(UniformFloatingPointDistributionState
           !(mkShape {dtype=F64} shape)
   ignore $ map fst valueStatePair
   map snd valueStatePair
-eval e@(NormalFloatingPointDistributionValue key initialState bitGenerator shape) = do
+eval e@(NormalFloatingPointDistributionValue key initialState bitGenerator shape) = cached e $ do
   let valueStatePair = do
         normalFloatingPointDistribution
           !(eval key) !(eval initialState) bitGenerator !(mkShape {dtype=F64} shape)
   ignore $ map snd valueStatePair
   map fst valueStatePair
-eval e@(NormalFloatingPointDistributionState key initialState bitGenerator shape) = do
+eval e@(NormalFloatingPointDistributionState key initialState bitGenerator shape) = cached e $ do
   let valueStatePair = do
         normalFloatingPointDistribution
           !(eval key) !(eval initialState) bitGenerator !(mkShape {dtype=F64} shape)
