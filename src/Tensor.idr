@@ -28,7 +28,6 @@ import Data.Hashable
 import Compiler.Expr
 import Compiler.LiteralRW
 import Compiler.Xla.Eval
-
 import Literal
 import public Primitive
 import public Types
