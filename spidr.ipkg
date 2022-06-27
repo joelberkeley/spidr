@@ -10,7 +10,7 @@ modules =
   BayesianOptimization.Morphisms,
 
   Compiler.Expr,
-  Compiler.Eval,
+  Compiler.Xla.Eval,
   Compiler.LiteralRW,
 
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Constants,

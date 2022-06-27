@@ -17,6 +17,7 @@ module Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 
 import System.FFI
 
+import Compiler.Expr
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData

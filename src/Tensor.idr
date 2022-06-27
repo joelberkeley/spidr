@@ -22,15 +22,15 @@ import public Data.List
 import public Data.List.Elem
 import Data.List.Quantifiers
 import Decidable.Equality
-import System.FFI
 
 import Data.Hashable
 
 import Compiler.Expr
-import Compiler.Eval
+-- these (toString, run etc.) can be moved to be methods on PrimitiveRW, thus removing the
+-- dependency on XLA
+import Compiler.Xla.Eval
 import Compiler.LiteralRW
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
+
 import Literal
 import public Primitive
 import public Types
@@ -86,7 +86,7 @@ toLiteral (MkTensor {shape} expr) = run {dtype} expr
 ||| Useful for debugging.
 export
 Show (Tensor shape dtype) where
-  show (MkTensor expr) = opToString (assert_total $ eval expr)
+  show (MkTensor expr) = toString expr
 
 namespace Bounded
   ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
@@ -1057,8 +1057,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  -- how can we remove the dependency on XlaBuilder due to NoTranspose?
-  (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True True False NoTranspose
+  (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1069,7 +1068,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b True False False NoTranspose
+  (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b False
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1149,7 +1148,6 @@ uniform (MkTensor key) bound bound' =
       MkTensor maxval = max bound bound'
    in ST $ \(MkTensor initialState) =>
       let value = MkTensor $ UniformFloatingPointDistributionValue
-          -- how can we remove ThreeFry such that we don't import PRNG?
             key initialState ThreeFry minval maxval shape
           state = MkTensor $ UniformFloatingPointDistributionState
             key initialState ThreeFry minval maxval shape

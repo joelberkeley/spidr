@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Eval
+module Compiler.Xla.Eval
 
 import Control.Monad.State
 import Data.List
@@ -205,8 +205,8 @@ eval e@(Cond pred pt exprTrue true pf exprFalse false) = cached e $ do
   conditional !(eval pred) !(eval true) trueComp !(eval false) falseComp
 eval e@(Dot l r) = cached e $ dot !(eval l) !(eval r)
 eval e@(Cholesky expr) = cached e $ cholesky !(eval expr) True
-eval e@(TriangularSolve a b leftSide lower unitDiagonal transposeA) =
-  cached e $ triangularSolve !(eval a) !(eval b) leftSide lower unitDiagonal transposeA
+eval e@(TriangularSolve a b lower) =
+  cached e $ triangularSolve !(eval a) !(eval b) True lower False NoTranspose
 eval e@(UniformFloatingPointDistributionValue
     key initialState bitGenerator minval maxval shape
   ) = cached e $ do
@@ -246,6 +246,10 @@ eval e@(NormalFloatingPointDistributionState key initialState bitGenerator shape
           !(eval key) !(eval initialState) bitGenerator !(mkShape {dtype=F64} shape)
   ignore $ map fst valueStatePair
   map snd valueStatePair
+
+export
+toString : Expr -> String
+toString expr = opToString $ assert_total (eval expr)
 
 export
 run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a

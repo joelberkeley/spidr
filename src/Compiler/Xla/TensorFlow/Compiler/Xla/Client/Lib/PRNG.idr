@@ -17,14 +17,11 @@ module Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 
 import System.FFI
 
+import Compiler.Expr
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 
-public export
-data BitGenerator = ThreeFry | Philox
-
-export
 Cast BitGenerator Int where
   cast ThreeFry = 0
   cast Philox = 1

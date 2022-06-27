@@ -17,10 +17,7 @@ module Compiler.Expr
 
 import Data.Hashable
 
--- Expr should be independent of XLA
 import Compiler.LiteralRW
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 
 import Literal
@@ -30,21 +27,24 @@ import Util
 import Util.Hashable
 
 public export
+data BitGenerator = ThreeFry | Philox
+
+public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => Primitive dtype => {shape : _} -> Literal shape ty -> Expr
-  Parameter : Primitive dtype => Nat -> Types.Shape -> String -> Expr
+  Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
   ConvertElementType : Primitive dtype => Expr -> Expr
-  Reshape : Types.Shape -> Types.Shape -> Expr -> Expr
+  Reshape : Shape -> Shape -> Expr -> Expr
   Slice : List Nat -> List Nat -> List Nat -> Expr -> Expr
   Concat : Nat -> Expr -> Expr -> Expr
   Diag : Expr -> Expr
   Triangle : (lower : Bool) -> Expr -> Expr
   Transpose : Expr -> Expr
   Identity : Primitive dtype => Nat -> Expr
-  Broadcast : Primitive dtype => Types.Shape -> Types.Shape -> Expr -> Expr
-  Map : List Expr -> Expr -> List Expr -> Types.Shape -> Expr
+  Broadcast : Primitive dtype => Shape -> Shape -> Expr -> Expr
+  Map : List Expr -> Expr -> List Expr -> Shape -> Expr
   Reduce : Expr -> Expr -> Expr -> Expr -> Nat -> Expr -> Expr
   Sort : Expr -> Expr -> Expr -> Nat -> Bool -> List Expr -> Expr
   Reverse : List Nat -> Expr -> Expr
@@ -91,28 +91,21 @@ data Expr : Type where
   Cond : Expr -> Expr -> Expr -> Expr -> Expr -> Expr -> Expr -> Expr
   Dot : Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
-  TriangularSolve : Expr -> Expr -> Bool -> Bool -> Bool -> Transpose -> Expr
+  TriangularSolve : Expr -> Expr -> Bool -> Expr
   UniformFloatingPointDistributionValue :
-    Expr -> Expr -> BitGenerator -> Expr -> Expr -> Types.Shape -> Expr
+    Expr -> Expr -> BitGenerator -> Expr -> Expr -> Shape -> Expr
   UniformFloatingPointDistributionState :
-    Expr -> Expr -> BitGenerator -> Expr -> Expr -> Types.Shape -> Expr
-  NormalFloatingPointDistributionValue : Expr -> Expr -> BitGenerator -> Types.Shape -> Expr
-  NormalFloatingPointDistributionState : Expr -> Expr -> BitGenerator -> Types.Shape -> Expr
+    Expr -> Expr -> BitGenerator -> Expr -> Expr -> Shape -> Expr
+  NormalFloatingPointDistributionValue : Expr -> Expr -> BitGenerator -> Shape -> Expr
+  NormalFloatingPointDistributionState : Expr -> Expr -> BitGenerator -> Shape -> Expr
 
 Prelude.Eq BitGenerator where
   ThreeFry == ThreeFry = True
   Philox == Philox = True
   _ == _ = False
 
-Prelude.Eq Transpose where
-  NoTranspose == NoTranspose = True
-  Transpose_ == Transpose_ = True
-  Adjoint == Adjoint = True
-  _ == _ = False
-
 export
 Prelude.Eq Expr where
-  -- we're missing `Reverse`
   (FromLiteral {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
     (typeString {dtype}, shape, hash lit) == (typeString {dtype=dtype'}, shape', hash lit')
   (Parameter {dtype} position shape name) == (Parameter {dtype=dtype'} position' shape' name') =
@@ -146,6 +139,7 @@ Prelude.Eq Expr where
       && dimension == dimension'
       && isStable == isStable'
       && (assert_total $ operands == operands')
+  (Reverse axes expr) == (Reverse axes' expr') = axes == axes' && expr == expr'
   (Eq l r) == (Eq l' r') = l == l' && r == r'
   (Ne l r) == (Ne l' r') = l == l' && r == r'
   (Add l r) == (Add l' r') = l == l' && r == r'
@@ -196,10 +190,8 @@ Prelude.Eq Expr where
     && false == false'
   (Dot x y) == (Dot x' y') = x == x' && y == y'
   (Cholesky x) == (Cholesky x') = x == x'
-  (TriangularSolve x y leftSide lower unitDiagonal transposeA) ==
-    (TriangularSolve x' y' leftSide' lower' unitDiagonal' transposeA') =
-      x == x' && y == y' &&
-        (leftSide, lower, unitDiagonal, transposeA) == (leftSide', lower', unitDiagonal', transposeA')
+  (TriangularSolve x y lower) == (TriangularSolve x' y' lower') =
+    x == x' && y == y' && lower == lower'
   (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) ==
     (UniformFloatingPointDistributionValue key' initialState' bitGenerator' minval' maxval' shape')
       = key == key'
@@ -223,12 +215,8 @@ Prelude.Eq Expr where
   _ == _ = False
 
 Hashable BitGenerator where
-  hashWithSalt salt bitGenerator = hashWithSalt salt (cast {to=Int} bitGenerator)
-
-Hashable Transpose where
-  hashWithSalt salt NoTranspose = hashWithSalt salt 0
-  hashWithSalt salt Transpose_ = hashWithSalt salt 1
-  hashWithSalt salt Adjoint = hashWithSalt salt 2
+  hashWithSalt salt ThreeFry = hashWithSalt salt 0
+  hashWithSalt salt Philox = hashWithSalt salt 1
 
 export
 Hashable Expr where
@@ -329,11 +317,8 @@ Hashable Expr where
     `hashWithSalt` false
   hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
-  hashWithSalt salt (TriangularSolve x y leftSide lower unitDiagonal transposeA) = salt
-    `hashWithSalt` "TriangularSolve"
-    `hashWithSalt` x
-    `hashWithSalt` y
-    `hashWithSalt` (leftSide, lower, unitDiagonal, transposeA)
+  hashWithSalt salt (TriangularSolve x y lower) =
+    salt `hashWithSalt` "TriangularSolve" `hashWithSalt` x `hashWithSalt` y `hashWithSalt` lower
   hashWithSalt salt
     (UniformFloatingPointDistributionValue key initialState bitGenerator minval maxval shape) = salt
       `hashWithSalt` "UniformFloatingPointDistributionValue"
