@@ -26,10 +26,8 @@ import Decidable.Equality
 import Data.Hashable
 
 import Compiler.Expr
--- these (toString, run etc.) can be moved to be methods on PrimitiveRW, thus removing the
--- dependency on XLA
-import Compiler.Xla.Eval
 import Compiler.LiteralRW
+import Compiler.Xla.Eval
 
 import Literal
 import public Primitive
