@@ -106,7 +106,7 @@ Prelude.Eq Expr where
   (MaxFiniteValue {dtype}) == (MaxFiniteValue {dtype=dtype'}) =
     typeString {dtype} == typeString {dtype=dtype'}
   (ConvertElementType {dtype} operand) == (ConvertElementType {dtype=dtype'} operand') =
-    assert_total $ (typeString {dtype}, operand) == (typeString {dtype=dtype'}, operand')
+    typeString {dtype} == typeString {dtype=dtype'} && operand == operand'
   (Reshape from to x) == (Reshape from' to' x') = (from, to) == (from', to') && x == x'
   (Slice starts stops strides x) == (Slice starts' stops' strides' x') =
     (starts, stops, strides) == (starts', stops', strides') && x == x'
@@ -121,8 +121,8 @@ Prelude.Eq Expr where
     (assert_total $ params == params') && f == f' && (assert_total $ xs == xs') && dims == dims'
   (Reduce p0 p1 monoid neutral axis x) == (Reduce p0' p1' monoid' neutral' axis' x') =
     p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axis == axis' && x == x'
-  (Sort p0 p1 comparator dimension isStable operands)
-    == (Sort p0' p1' comparator' dimension' isStable' operands') =
+  (Sort p0 p1 comparator dimension isStable operands) ==
+    (Sort p0' p1' comparator' dimension' isStable' operands') =
       p0 == p0'
       && p1 == p1'
       && comparator == comparator'

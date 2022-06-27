@@ -50,7 +50,6 @@ import Util.Hashable
 
 public export
 data CachingBuilder : Type where
-  -- can we can now separate the builder and cache?
   MkCachingBuilder : XlaBuilder -> SortedMap Bits64 (List (Expr, XlaOp)) -> CachingBuilder
 
 public export
@@ -115,31 +114,31 @@ parameter position shape name = do
   parameter builder position xlaShape name
 
 export covering
-eval : Expr -> Computation XlaOp
-eval e@(FromLiteral {dtype} lit) = cached e $ do
+enqueue : Expr -> Computation XlaOp
+enqueue e@(FromLiteral {dtype} lit) = cached e $ do
   MkCachingBuilder builder _ <- get
   literal <- write {dtype} lit 
   constantLiteral builder literal
-eval e@(Parameter {dtype} position shape name) = cached e $ parameter {dtype} position shape name
-eval e@(MinFiniteValue {dtype}) = cached e $ do
+enqueue e@(Parameter {dtype} position shape name) = cached e $ parameter {dtype} position shape name
+enqueue e@(MinFiniteValue {dtype}) = cached e $ do
   MkCachingBuilder builder _ <- get
   minFiniteValue {dtype} builder
-eval e@(MaxFiniteValue {dtype}) = cached e $ do
+enqueue e@(MaxFiniteValue {dtype}) = cached e $ do
   MkCachingBuilder builder _ <- get
   maxFiniteValue {dtype} builder
-eval e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(eval expr)
-eval e@(Reshape from to expr) = cached e $ reshape !(eval expr) (range $ length from) to
-eval e@(Slice starts stops strides expr) = cached e $ slice !(eval expr) starts stops strides 
-eval e@(Concat axis expr expr') = cached e $ do
+enqueue e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(enqueue expr)
+enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ length from) to
+enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
+enqueue e@(Concat axis expr expr') = cached e $ do
   MkCachingBuilder builder _ <- get
-  concatInDim builder [!(eval expr), !(eval expr')] (cast axis)
-eval e@(Diag expr) = cached e $ getMatrixDiagonal !(eval expr)
-eval e@(Triangle tri expr) = cached e $ triangle !(eval expr) tri
-eval e@(Transpose expr) = cached e $ transpose !(eval expr) [1, 0]
-eval e@(Identity {dtype} n) = cached e $ let n = cast n in do
+  concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)
+enqueue e@(Diag expr) = cached e $ getMatrixDiagonal !(enqueue expr)
+enqueue e@(Triangle tri expr) = cached e $ triangle !(enqueue expr) tri
+enqueue e@(Transpose expr) = cached e $ transpose !(enqueue expr) [1, 0]
+enqueue e@(Identity {dtype} n) = cached e $ let n = cast n in do
   MkCachingBuilder builder _ <- get
   identityMatrix {dtype} builder n n
-eval e@(Broadcast {dtype} from to expr) = cached e $
+enqueue e@(Broadcast {dtype} from to expr) = cached e $
   case elem 0 to && from /= to of
     True => do
       MkCachingBuilder builder _ <- get
@@ -147,112 +146,117 @@ eval e@(Broadcast {dtype} from to expr) = cached e $
       constantLiteral builder literal
     _ =>
       let broadcastDims = map (+ length to `minus` length from) $ range $ length from
-       in broadcastInDim !(eval expr) to broadcastDims
-eval e@(Map exprParams exprf exprs dims) = cached e $ do
-  computation <- buildWithSubBuilder "computation" (map eval exprParams) (eval exprf)
+       in broadcastInDim !(enqueue expr) to broadcastDims
+enqueue e@(Map exprParams exprf exprs dims) = cached e $ do
+  computation <- buildWithSubBuilder "computation" (map enqueue exprParams) (enqueue exprf)
   MkCachingBuilder builder _ <- get
-  map builder !(traverse eval exprs) computation dims 
-eval e@(Reduce p0 p1 exprf neutral axis expr) = cached e $ do
-  computation <- buildWithSubBuilder "computation" [(eval p0), (eval p1)] (eval exprf) 
-  reduce !(eval expr) !(eval neutral) computation [axis]
-eval e@(Sort p0 p1 exprComp axis isStable exprs) = cached e $ do
-  comparator <- buildWithSubBuilder "comparator" [(eval p0), (eval p1)] (eval exprComp)
-  sort !(traverse eval exprs) comparator axis isStable 
-eval e@(Reverse axes expr) = cached e $ rev !(eval expr) axes
-eval e@(Eq l r) = cached e $ eq !(eval l) !(eval r)
-eval e@(Ne l r) = cached e $ ne !(eval l) !(eval r)
-eval e@(Add l r) = cached e $ add !(eval l) !(eval r)
-eval e@(Sub l r) = cached e $ sub !(eval l) !(eval r)
-eval e@(Mul l r) = cached e $ mul !(eval l) !(eval r)
-eval e@(Div l r) = cached e $ div !(eval l) !(eval r)
-eval e@(Pow l r) = cached e $ pow !(eval l) !(eval r)
-eval e@(Lt l r) = cached e $ lt !(eval l) !(eval r)
-eval e@(Gt l r) = cached e $ gt !(eval l) !(eval r)
-eval e@(Le l r) = cached e $ le !(eval l) !(eval r)
-eval e@(Ge l r) = cached e $ ge !(eval l) !(eval r)
-eval e@(And l r) = cached e $ and !(eval l) !(eval r)
-eval e@(Or l r) = cached e $ or !(eval l) !(eval r)
-eval e@(Min l r) = cached e $ min !(eval l) !(eval r)
-eval e@(Max l r) = cached e $ max !(eval l) !(eval r)
-eval e@(Not expr) = cached e $ not !(eval expr)
-eval e@(Neg expr) = cached e $ neg !(eval expr)
-eval e@(Reciprocal expr) = cached e $ reciprocal !(eval expr)
-eval e@(Abs expr) = cached e $ abs !(eval expr)
-eval e@(Ceil expr) = cached e $ ceil !(eval expr)
-eval e@(Floor expr) = cached e $ floor !(eval expr)
-eval e@(Exp expr) = cached e $ exp !(eval expr)
-eval e@(Log expr) = cached e $ log !(eval expr)
-eval e@(Logistic expr) = cached e $ logistic !(eval expr)
-eval e@(Erf expr) = cached e $ erf !(eval expr)
-eval e@(Square expr) = cached e $ square !(eval expr)
-eval e@(Sqrt expr) = cached e $ sqrt !(eval expr)
-eval e@(Sin expr) = cached e $ sin !(eval expr)
-eval e@(Cos expr) = cached e $ cos !(eval expr)
-eval e@(Tan expr) = cached e $ tan !(eval expr)
-eval e@(Asin expr) = cached e $ asin !(eval expr)
-eval e@(Acos expr) = cached e $ acos !(eval expr)
-eval e@(Atan expr) = cached e $ atan !(eval expr)
-eval e@(Sinh expr) = cached e $ sinh !(eval expr)
-eval e@(Cosh expr) = cached e $ cosh !(eval expr)
-eval e@(Tanh expr) = cached e $ tanh !(eval expr)
-eval e@(Asinh expr) = cached e $ asinh !(eval expr)
-eval e@(Acosh expr) = cached e $ acosh !(eval expr)
-eval e@(Atanh expr) = cached e $ atanh !(eval expr)
-eval e@(Select pred true false) = cached e $ select !(eval pred) !(eval true) !(eval false)
-eval e@(Cond pred pt exprTrue true pf exprFalse false) = cached e $ do
-  trueComp <- buildWithSubBuilder "truthy computation" [eval pt] (eval exprTrue)
-  falseComp <- buildWithSubBuilder "falsy computation" [eval pf] (eval exprFalse)
-  conditional !(eval pred) !(eval true) trueComp !(eval false) falseComp
-eval e@(Dot l r) = cached e $ dot !(eval l) !(eval r)
-eval e@(Cholesky expr) = cached e $ cholesky !(eval expr) True
-eval e@(TriangularSolve a b lower) =
-  cached e $ triangularSolve !(eval a) !(eval b) True lower False NoTranspose
-eval e@(UniformFloatingPointDistributionValue key initialState minval maxval shape) = cached e $ do
-  let valueStatePair = do
-        uniformFloatingPointDistribution
-          !(eval key)
-          !(eval initialState)
-          ThreeFry
-          !(eval minval)
-          !(eval maxval)
-          !(mkShape {dtype=F64} shape)
-  -- are we calculating value and state only once per sample?
-  ignore $ map snd valueStatePair
-  map fst valueStatePair
-eval e@(UniformFloatingPointDistributionState key initialState minval maxval shape) = cached e $ do
-  let valueStatePair = do
-        uniformFloatingPointDistribution
-          !(eval key)
-          !(eval initialState)
-          ThreeFry
-          !(eval minval)
-          !(eval maxval)
-          !(mkShape {dtype=F64} shape)
-  ignore $ map fst valueStatePair
-  map snd valueStatePair
-eval e@(NormalFloatingPointDistributionValue key initialState shape) = cached e $ do
-  let valueStatePair = do
-        normalFloatingPointDistribution
-          !(eval key) !(eval initialState) ThreeFry !(mkShape {dtype=F64} shape)
-  ignore $ map snd valueStatePair
-  map fst valueStatePair
-eval e@(NormalFloatingPointDistributionState key initialState shape) = cached e $ do
+  map builder !(traverse enqueue exprs) computation dims 
+enqueue e@(Reduce p0 p1 exprf neutral axis expr) = cached e $ do
+  computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
+  reduce !(enqueue expr) !(enqueue neutral) computation [axis]
+enqueue e@(Sort p0 p1 exprComp axis isStable exprs) = cached e $ do
+  comparator <- buildWithSubBuilder "comparator" [(enqueue p0), (enqueue p1)] (enqueue exprComp)
+  sort !(traverse enqueue exprs) comparator axis isStable 
+enqueue e@(Reverse axes expr) = cached e $ rev !(enqueue expr) axes
+enqueue e@(Eq l r) = cached e $ eq !(enqueue l) !(enqueue r)
+enqueue e@(Ne l r) = cached e $ ne !(enqueue l) !(enqueue r)
+enqueue e@(Add l r) = cached e $ add !(enqueue l) !(enqueue r)
+enqueue e@(Sub l r) = cached e $ sub !(enqueue l) !(enqueue r)
+enqueue e@(Mul l r) = cached e $ mul !(enqueue l) !(enqueue r)
+enqueue e@(Div l r) = cached e $ div !(enqueue l) !(enqueue r)
+enqueue e@(Pow l r) = cached e $ pow !(enqueue l) !(enqueue r)
+enqueue e@(Lt l r) = cached e $ lt !(enqueue l) !(enqueue r)
+enqueue e@(Gt l r) = cached e $ gt !(enqueue l) !(enqueue r)
+enqueue e@(Le l r) = cached e $ le !(enqueue l) !(enqueue r)
+enqueue e@(Ge l r) = cached e $ ge !(enqueue l) !(enqueue r)
+enqueue e@(And l r) = cached e $ and !(enqueue l) !(enqueue r)
+enqueue e@(Or l r) = cached e $ or !(enqueue l) !(enqueue r)
+enqueue e@(Min l r) = cached e $ min !(enqueue l) !(enqueue r)
+enqueue e@(Max l r) = cached e $ max !(enqueue l) !(enqueue r)
+enqueue e@(Not expr) = cached e $ not !(enqueue expr)
+enqueue e@(Neg expr) = cached e $ neg !(enqueue expr)
+enqueue e@(Reciprocal expr) = cached e $ reciprocal !(enqueue expr)
+enqueue e@(Abs expr) = cached e $ abs !(enqueue expr)
+enqueue e@(Ceil expr) = cached e $ ceil !(enqueue expr)
+enqueue e@(Floor expr) = cached e $ floor !(enqueue expr)
+enqueue e@(Exp expr) = cached e $ exp !(enqueue expr)
+enqueue e@(Log expr) = cached e $ log !(enqueue expr)
+enqueue e@(Logistic expr) = cached e $ logistic !(enqueue expr)
+enqueue e@(Erf expr) = cached e $ erf !(enqueue expr)
+enqueue e@(Square expr) = cached e $ square !(enqueue expr)
+enqueue e@(Sqrt expr) = cached e $ sqrt !(enqueue expr)
+enqueue e@(Sin expr) = cached e $ sin !(enqueue expr)
+enqueue e@(Cos expr) = cached e $ cos !(enqueue expr)
+enqueue e@(Tan expr) = cached e $ tan !(enqueue expr)
+enqueue e@(Asin expr) = cached e $ asin !(enqueue expr)
+enqueue e@(Acos expr) = cached e $ acos !(enqueue expr)
+enqueue e@(Atan expr) = cached e $ atan !(enqueue expr)
+enqueue e@(Sinh expr) = cached e $ sinh !(enqueue expr)
+enqueue e@(Cosh expr) = cached e $ cosh !(enqueue expr)
+enqueue e@(Tanh expr) = cached e $ tanh !(enqueue expr)
+enqueue e@(Asinh expr) = cached e $ asinh !(enqueue expr)
+enqueue e@(Acosh expr) = cached e $ acosh !(enqueue expr)
+enqueue e@(Atanh expr) = cached e $ atanh !(enqueue expr)
+enqueue e@(Select pred true false) = cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
+enqueue e@(Cond pred pt exprTrue true pf exprFalse false) = cached e $ do
+  trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
+  falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
+  conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp
+enqueue e@(Dot l r) = cached e $ dot !(enqueue l) !(enqueue r)
+enqueue e@(Cholesky expr) = cached e $ cholesky !(enqueue expr) True
+enqueue e@(TriangularSolve a b lower) =
+  cached e $ triangularSolve !(enqueue a) !(enqueue b) True lower False NoTranspose
+enqueue e@(UniformFloatingPointDistributionValue key initialState minval maxval shape) =
+  cached e $ do
+    let valueStatePair = do
+          uniformFloatingPointDistribution
+            !(enqueue key)
+            !(enqueue initialState)
+            ThreeFry
+            !(enqueue minval)
+            !(enqueue maxval)
+            !(mkShape {dtype=F64} shape)
+        stateExpr = UniformFloatingPointDistributionState key initialState minval maxval shape
+    ignore $ cached stateExpr $ map snd valueStatePair
+    map fst valueStatePair
+enqueue e@(UniformFloatingPointDistributionState key initialState minval maxval shape) =
+  cached e $ do
+    let valueStatePair = do
+          uniformFloatingPointDistribution
+            !(enqueue key)
+            !(enqueue initialState)
+            ThreeFry
+            !(enqueue minval)
+            !(enqueue maxval)
+            !(mkShape {dtype=F64} shape)
+        valueExpr = UniformFloatingPointDistributionValue key initialState minval maxval shape
+    ignore $ cached valueExpr $ map fst valueStatePair
+    map snd valueStatePair
+enqueue e@(NormalFloatingPointDistributionValue key initialState shape) = cached e $ do
   let valueStatePair = do
         normalFloatingPointDistribution
-          !(eval key) !(eval initialState) ThreeFry !(mkShape {dtype=F64} shape)
-  ignore $ map fst valueStatePair
+          !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
+      stateExpr = NormalFloatingPointDistributionState key initialState shape
+  ignore $ cached stateExpr $ map snd valueStatePair
+  map fst valueStatePair
+enqueue e@(NormalFloatingPointDistributionState key initialState shape) = cached e $ do
+  let valueStatePair = do
+        normalFloatingPointDistribution
+          !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
+      valueExpr = NormalFloatingPointDistributionValue key initialState shape
+  ignore $ cached valueExpr $ map fst valueStatePair
   map snd valueStatePair
 
 export
 toString : Expr -> String
-toString expr = opToString $ assert_total (eval expr)
+toString expr = opToString (assert_total $ enqueue expr)
 
 export
 run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a
 run expr = unsafePerformIO $ do
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" (assert_total $ eval expr)
+  computation <- build "" (assert_total $ enqueue expr)
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)
