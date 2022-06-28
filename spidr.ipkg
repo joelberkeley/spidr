@@ -9,6 +9,7 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
+  Compiler.Eval,
   Compiler.Expr,
   Compiler.LiteralRW,
 
@@ -28,7 +29,6 @@ modules =
   Compiler.Xla.Prim.TensorFlow.Core.Platform.Status,
   Compiler.Xla.Prim.Util,
 
-  Compiler.Xla.Eval,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix,
