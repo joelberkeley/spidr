@@ -48,15 +48,12 @@ import Types
 import Util
 import Util.Hashable
 
-public export
 data CachingBuilder : Type where
   MkCachingBuilder : XlaBuilder -> SortedMap Bits64 (List (Expr, XlaOp)) -> CachingBuilder
 
-public export
 Computation : Type -> Type
 Computation = StateT CachingBuilder IO
 
-export
 cached : Expr -> Computation XlaOp -> Computation XlaOp
 cached graph xs = let graphHash = hash graph in do
   builder <- get
@@ -81,14 +78,12 @@ cached graph xs = let graphHash = hash graph in do
     put (cacheUpdate builder key ((graph, op) :: graphOps))
     pure op
 
-export
 build : HasIO io => String -> Computation XlaOp -> io XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
   (MkCachingBuilder builder _, root) <- liftIO $ runStateT (MkCachingBuilder builder empty) x
   build builder root
 
-export
 buildWithSubBuilder :
   String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
 buildWithSubBuilder computationName computationArguments computationResult = do
@@ -99,21 +94,19 @@ buildWithSubBuilder computationName computationArguments computationResult = do
   (MkCachingBuilder subBuilder _, root) <- liftIO $ runStateT cachingSubBuilder computationResult
   build subBuilder root
 
-export
 opToString : Computation XlaOp -> String
 opToString x = unsafePerformIO $ do
   builder <- mkXlaBuilder "toString"
   (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) x
   pure $ opToString builder xlaOp
 
-export
 parameter : Primitive dtype => Nat -> Types.Shape -> String -> Computation XlaOp
 parameter position shape name = do
   MkCachingBuilder builder _ <- get
   xlaShape <- mkShape {dtype} shape
   parameter builder position xlaShape name
 
-export covering
+covering
 enqueue : Expr -> Computation XlaOp
 enqueue e@(FromLiteral {dtype} lit) = cached e $ do
   MkCachingBuilder builder _ <- get
