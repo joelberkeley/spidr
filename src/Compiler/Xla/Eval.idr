@@ -74,7 +74,7 @@ cached graph xs = let graphHash = hash graph in do
 build : HasIO io => String -> Computation XlaOp -> io XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
-  ((builder, _), root) <- liftIO $ runStateT (builder, empty) x
+  (_, root) <- liftIO $ runStateT (builder, empty) x
   build builder root
 
 buildWithSubBuilder :
@@ -82,8 +82,8 @@ buildWithSubBuilder :
 buildWithSubBuilder computationName computationArguments computationResult = do
   (builder, _) <- get
   subBuilder <- createSubBuilder builder computationName
-  (subBuilder, cache) <- liftIO $ execStateT (subBuilder, empty) (sequence_ computationArguments)
-  ((subBuilder, _), root) <- liftIO $ runStateT (subBuilder, cache) computationResult
+  (_, cache) <- liftIO $ execStateT (subBuilder, empty) (sequence_ computationArguments)
+  (_, root) <- liftIO $ runStateT (subBuilder, cache) computationResult
   build subBuilder root
 
 covering
