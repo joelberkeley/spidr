@@ -48,84 +48,76 @@ import Types
 import Util
 import Util.Hashable
 
-data CachingBuilder : Type where
-  MkCachingBuilder : XlaBuilder -> SortedMap Bits64 (List (Expr, XlaOp)) -> CachingBuilder
+Cache : Type
+Cache = SortedMap Bits64 (List (Expr, XlaOp))
 
 Computation : Type -> Type
-Computation = StateT CachingBuilder IO
+Computation = StateT (XlaBuilder, Cache) IO
 
 cached : Expr -> Computation XlaOp -> Computation XlaOp
 cached graph xs = let graphHash = hash graph in do
-  builder <- get
-  case cacheLookup builder graphHash of
+  (_, cache) <- get
+  case lookup graphHash cache of
     Just candidates => case find (\(graph', _) => graph' == graph) candidates of
       Just (_, op) => pure op
       Nothing => runOp xs graphHash graph candidates
     Nothing => runOp xs graphHash graph []
 
   where
-  cacheUpdate : CachingBuilder -> Bits64 -> List (Expr, XlaOp) -> CachingBuilder
-  cacheUpdate (MkCachingBuilder builder cache) key graphOps =
-    MkCachingBuilder builder (insert key graphOps cache)
-
-  cacheLookup : CachingBuilder -> Bits64 -> Maybe (List (Expr, XlaOp))
-  cacheLookup (MkCachingBuilder _ cache) key = lookup key cache
-
   runOp : Computation XlaOp -> Bits64 -> Expr -> List (Expr, XlaOp) -> Computation XlaOp
   runOp xs key graph graphOps = do
     op <- xs
-    builder <- get
-    put (cacheUpdate builder key ((graph, op) :: graphOps))
+    (builder, cache) <- get
+    put (builder, insert key ((graph, op) :: graphOps) cache)
     pure op
 
 build : HasIO io => String -> Computation XlaOp -> io XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
-  (MkCachingBuilder builder _, root) <- liftIO $ runStateT (MkCachingBuilder builder empty) x
+  ((builder, _), root) <- liftIO $ runStateT (builder, empty) x
   build builder root
 
 buildWithSubBuilder :
   String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
 buildWithSubBuilder computationName computationArguments computationResult = do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   subBuilder <- createSubBuilder builder computationName
-  let cachingSubBuilder = MkCachingBuilder subBuilder empty
-  cachingSubBuilder <- liftIO $ execStateT cachingSubBuilder (sequence_ computationArguments)
-  (MkCachingBuilder subBuilder _, root) <- liftIO $ runStateT cachingSubBuilder computationResult
+  (subBuilder, cache) <- liftIO $ execStateT (subBuilder, empty) (sequence_ computationArguments)
+  ((subBuilder, _), root) <- liftIO $ runStateT (subBuilder, cache) computationResult
   build subBuilder root
 
 covering
 enqueue : Expr -> Computation XlaOp
 enqueue e@(FromLiteral {dtype} lit) = cached e $ do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   literal <- write {dtype} lit 
   constantLiteral builder literal
 enqueue e@(Parameter {dtype} position shape name) = cached e $ do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   xlaShape <- mkShape {dtype} shape
   parameter builder position xlaShape name
 enqueue e@(MinFiniteValue {dtype}) = cached e $ do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   minFiniteValue {dtype} builder
 enqueue e@(MaxFiniteValue {dtype}) = cached e $ do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   maxFiniteValue {dtype} builder
 enqueue e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(enqueue expr)
 enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ length from) to
 enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
 enqueue e@(Concat axis expr expr') = cached e $ do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)
 enqueue e@(Diag expr) = cached e $ getMatrixDiagonal !(enqueue expr)
 enqueue e@(Triangle tri expr) = cached e $ triangle !(enqueue expr) tri
 enqueue e@(Transpose expr) = cached e $ transpose !(enqueue expr) [1, 0]
 enqueue e@(Identity {dtype} n) = cached e $ let n = cast n in do
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   identityMatrix {dtype} builder n n
 enqueue e@(Broadcast {dtype} from to expr) = cached e $
   case elem 0 to && from /= to of
     True => do
-      MkCachingBuilder builder _ <- get
+      (builder, _) <- get
       literal <- allocLiteral {dtype} to
       constantLiteral builder literal
     _ =>
@@ -133,7 +125,7 @@ enqueue e@(Broadcast {dtype} from to expr) = cached e $
        in broadcastInDim !(enqueue expr) to broadcastDims
 enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
   computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
-  MkCachingBuilder builder _ <- get
+  (builder, _) <- get
   map builder !(traverse enqueue $ toList exprs) computation dims 
 enqueue e@(Reduce (MkFn [p0, p1] exprf) neutral axis expr) = cached e $ do
   computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
@@ -236,7 +228,7 @@ toString : Expr -> String
 toString expr = unsafePerformIO $ do
   builder <- mkXlaBuilder "toString"
   let comp = assert_total (enqueue expr)
-  (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) comp
+  ((builder, _), xlaOp) <- runStateT (builder, empty) comp
   pure $ opToString builder xlaOp
 
 export
