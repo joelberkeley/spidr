@@ -25,9 +25,9 @@ import Decidable.Equality
 
 import Data.Hashable
 
+import Compiler.Eval
 import Compiler.Expr
 import Compiler.LiteralRW
-import Compiler.Eval
 import Literal
 import public Primitive
 import public Types
