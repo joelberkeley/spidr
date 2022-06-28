@@ -115,14 +115,14 @@ enqueue e@(Identity {dtype} n) = cached e $ let n = cast n in do
   (builder, _) <- get
   identityMatrix {dtype} builder n n
 enqueue e@(Broadcast {dtype} from to expr) = cached e $
-  case elem 0 to && from /= to of
-    True => do
-      (builder, _) <- get
-      literal <- allocLiteral {dtype} to
-      constantLiteral builder literal
-    _ =>
-      let broadcastDims = map (+ length to `minus` length from) $ range $ length from
-       in broadcastInDim !(enqueue expr) to broadcastDims
+  if elem 0 to && from /= to
+  then do
+    (builder, _) <- get
+    literal <- allocLiteral {dtype} to
+    constantLiteral builder literal
+  else
+    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
+     in broadcastInDim !(enqueue expr) to broadcastDims
 enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
   computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
   (builder, _) <- get
