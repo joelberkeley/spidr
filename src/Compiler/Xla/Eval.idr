@@ -94,25 +94,16 @@ buildWithSubBuilder computationName computationArguments computationResult = do
   (MkCachingBuilder subBuilder _, root) <- liftIO $ runStateT cachingSubBuilder computationResult
   build subBuilder root
 
-opToString : Computation XlaOp -> String
-opToString x = unsafePerformIO $ do
-  builder <- mkXlaBuilder "toString"
-  (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) x
-  pure $ opToString builder xlaOp
-
-parameter : Primitive dtype => Nat -> Types.Shape -> String -> Computation XlaOp
-parameter position shape name = do
-  MkCachingBuilder builder _ <- get
-  xlaShape <- mkShape {dtype} shape
-  parameter builder position xlaShape name
-
 covering
 enqueue : Expr -> Computation XlaOp
 enqueue e@(FromLiteral {dtype} lit) = cached e $ do
   MkCachingBuilder builder _ <- get
   literal <- write {dtype} lit 
   constantLiteral builder literal
-enqueue e@(Parameter {dtype} position shape name) = cached e $ parameter {dtype} position shape name
+enqueue e@(Parameter {dtype} position shape name) = cached e $ do
+  MkCachingBuilder builder _ <- get
+  xlaShape <- mkShape {dtype} shape
+  parameter builder position xlaShape name
 enqueue e@(MinFiniteValue {dtype}) = cached e $ do
   MkCachingBuilder builder _ <- get
   minFiniteValue {dtype} builder
@@ -242,7 +233,11 @@ enqueue e@(NormalFloatingPointDistributionState key initialState shape) = cached
 
 export
 toString : Expr -> String
-toString expr = opToString (assert_total $ enqueue expr)
+toString expr = unsafePerformIO $ do
+  builder <- mkXlaBuilder "toString"
+  let comp = assert_total (enqueue expr)
+  (MkCachingBuilder builder _, xlaOp) <- runStateT (MkCachingBuilder builder empty) comp
+  pure $ opToString builder xlaOp
 
 export
 run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a
