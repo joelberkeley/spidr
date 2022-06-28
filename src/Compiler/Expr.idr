@@ -71,10 +71,10 @@ data Expr : Type where
   Abs : Expr -> Expr
   Ceil : Expr -> Expr
   Floor : Expr -> Expr
-  Exp : Expr -> Expr
-  Erf : Expr -> Expr
   Log : Expr -> Expr
+  Exp : Expr -> Expr
   Logistic : Expr -> Expr
+  Erf : Expr -> Expr
   Square : Expr -> Expr
   Sqrt : Expr -> Expr
   Sin : Expr -> Expr
