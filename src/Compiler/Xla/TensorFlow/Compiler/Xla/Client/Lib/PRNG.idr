@@ -24,7 +24,6 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 public export
 data BitGenerator = ThreeFry | Philox
 
-export
 Cast BitGenerator Int where
   cast ThreeFry = 0
   cast Philox = 1
