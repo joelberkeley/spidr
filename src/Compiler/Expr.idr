@@ -33,7 +33,7 @@ data Fn : Nat -> Type -> Type where
 
 public export
 data Expr : Type where
-  FromLiteral : PrimitiveRW dtype ty => Primitive dtype => {shape : _} -> Literal shape ty -> Expr
+  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
   Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
