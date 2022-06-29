@@ -21,6 +21,7 @@ import Data.Nat
 import Data.Vect
 import System
 
+import Constants
 import Literal
 import Tensor
 
@@ -118,6 +119,31 @@ cast = property $ do
   lit <- forAll (literal shape int32s)
   let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
   x ===# fromLiteral (map (cast {to=Double}) lit)
+
+grad : Property
+grad = fixedProperty $ do
+  grad id 0.0 ===# 1.0
+  grad id 5.0 ===# 1.0
+
+  grad (* 2.0) 0.0 ===# 2.0
+  grad (/ 2.0) 0.0 ===# 0.5
+
+  grad sin 0.0 ===# 1.0
+  grad sin pi ===# -1.0
+  grad sin (2.0 * pi) ===# 1.0
+
+  grad cos 0.0 ===# 0.0
+  grad cos (pi / 2.0) ===# -1.0
+  -- grad cos (2.0 * pi) ===# 2.449e-16
+
+  grad (\x => sin (square x / pi)) pi ===# -2.0
+  grad (\x => sin (square x / pi)) (fromLiteral [Scalar pi, 0.0, Scalar (pi / 2.0)])
+    ===# fromLiteral [-2.0, 0.0, Scalar (sqrt 0.5)]
+
+  grad (\x => x * sin x) (fromLiteral [Scalar pi, 0.0, Scalar (pi / 2.0)])
+    ===# fromLiteral [- Scalar pi, 0.0, 1.0]
+
+  grad (\x => )
 
 reshape : Property
 reshape = fixedProperty $ do
@@ -1322,6 +1348,7 @@ group = MkGroup "Tensor" $ [
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("show", show)
     , ("cast", cast)
+    , ("grad", grad)
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
     , ("slice", TestTensor.slice)

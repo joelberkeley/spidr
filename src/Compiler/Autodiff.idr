@@ -31,7 +31,7 @@ call (Concat k y z) x = Concat k (call y x) (call z x)
 call (Diag y) x = Diag (call y x)
 call (Triangle lower y) x = Triangle lower (call y x)
 call (Transpose y) x = Transpose (call y x)
-call y@(Identity k) _ = y
+call y@(Identity _) _ = y
 call (Broadcast {dtype} from to y) x = Broadcast {dtype} from to (call y x)
 call (Map y xs ys) x = ?call__14
 call (Reduce y z k w) x = ?call__15
@@ -93,14 +93,14 @@ grad (Parameter _ _ _) x = FromLiteral {dtype=F64} 1.0
 grad MinFiniteValue x = FromLiteral {dtype=F64} 0.0
 grad MaxFiniteValue x = FromLiteral {dtype=F64} 0.0
 grad (ConvertElementType y) x = ?res_5
-grad (Reshape xs ys y) x = ?res_6
-grad (Slice xs ys zs y) x = ?res_7
-grad (Concat k y z) x = ?res_8
-grad (Diag y) x = ?res_9
-grad (Triangle lower y) x = ?res_10
-grad (Transpose y) x = ?res_11
-grad (Identity k) x = ?res_12
-grad (Broadcast xs ys y) x = ?res_13
+grad (Reshape from to y) x = Reshape from to (call y x) -- correct?
+grad (Slice start stop stride y) x = Slice start stop stride (call y x)
+grad (Concat k y z) x = Concat k (grad y x) (grad z x)
+grad (Diag y) x = Diag (grad y x)
+grad (Triangle lower y) x = Triangle lower (grad y x)
+grad (Transpose y) x = Transpose (grad y x)
+grad (Identity k) x = FromLiteral {dtype=F64} 0.0
+grad (Broadcast {dtype} from to y) x = Broadcast {dtype} from to (grad y x)
 grad (Map y xs ys) x = ?res_14
 grad (Reduce y z k w) x = ?res_15
 grad (Sort y k z xs) x = ?res_16
@@ -122,7 +122,7 @@ grad (Or y z) x = ?res_30
 grad (Min y z) x = ?res_31
 grad (Max y z) x = ?res_32
 grad (Not y) x = ?res_33
-grad (Neg y) x = ?res_34
+grad (Neg y) x = Neg (grad y x)
 grad (Reciprocal y) x = ?res_35
 grad (Abs y) x = ?res_36
 grad (Ceil y) x = ?res_37

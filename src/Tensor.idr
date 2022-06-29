@@ -94,8 +94,8 @@ Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
   cast (MkTensor expr) = MkTensor $ ConvertElementType {dtype=F64} expr 
 
 export
-grad : (Tensor [] F64 -> Tensor [] F64) -> Tensor [] F64 -> Tensor [] F64
-grad f (MkTensor x) = MkTensor (grad (let MkTensor res = f (MkTensor $ Parameter {dtype=F64} 0 [] "") in res) x)
+grad : {shape, shape' : _} -> (Tensor shape F64 -> Tensor shape' F64) -> Tensor shape F64 -> Tensor shape' F64
+grad f (MkTensor x) = MkTensor (grad (let MkTensor res = f (MkTensor $ Parameter {dtype=F64} 0 shape "") in res) x)
 
 ----------------------------- structural operations ----------------------------
 
