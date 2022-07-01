@@ -32,7 +32,7 @@ product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
+  {shape : _} -> Tensor shape dtype -> (Tensor shape dtype -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
 iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
@@ -46,103 +46,189 @@ iidKolmogorovSmirnov samples cdf = do
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
 
-partial
-uniform : Property
-uniform = withTests 20 . property $ do
-  bound <- forAll (literal [5] finiteDoubles)
-  bound' <- forAll (literal [5] finiteDoubles)
-  key <- forAll (literal [] nats)
-  seed <- forAll (literal [1] nats)
+namespace F64
+  export partial
+  uniform : Property
+  uniform = withTests 20 . property $ do
+    bound <- forAll (literal [5] finiteDoubles)
+    bound' <- forAll (literal [5] finiteDoubles)
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
 
-  let ksTest = do
-    let bound = tensor bound
-        bound' = tensor bound'
-        bound' = select !(bound' == bound) !(bound' + fill 1.0e-9) !bound'
-    key <- tensor key
-    seed <- tensor seed
-    samples <- evalStateT seed !(uniform key !(broadcast !bound) !(broadcast !bound'))
+    let ksTest = do
+      let bound = tensor bound
+          bound' = tensor bound'
+          bound' = select !(bound' == bound) !(bound' + fill 1.0e-9) !bound'
+      key <- tensor key
+      seed <- tensor seed
+      samples <- evalStateT seed !(uniform key !(broadcast !bound) !(broadcast !bound'))
 
-    let uniformCdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
-        uniformCdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
+      let uniformCdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
+          uniformCdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
 
-    iidKolmogorovSmirnov samples uniformCdf
+      iidKolmogorovSmirnov samples uniformCdf
 
-  diff (unsafeEval ksTest) (<) 0.015
+    diff (unsafeEval ksTest) (<) 0.015
 
-partial
-uniformForNonFiniteBounds : Property
-uniformForNonFiniteBounds = property $ do
-  key <- forAll (literal [] nats)
-  seed <- forAll (literal [1] nats)
+  export partial
+  uniformForNonFiniteBounds : Property
+  uniformForNonFiniteBounds = property $ do
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
 
-  let samples = do
-    bound <- tensor [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
-    bound' <- tensor [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
-    key <- tensor key
-    seed <- tensor seed
-    evalStateT seed !(uniform key !(broadcast bound) !(broadcast bound'))
+    let samples = do
+      bound <- tensor [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
+      bound' <- tensor [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
+      key <- tensor key
+      seed <- tensor seed
+      evalStateT seed !(uniform key !(broadcast bound) !(broadcast bound'))
 
-  samples ===# tensor [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
+    samples ===# tensor [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
 
-partial
-uniformForFiniteEqualBounds : Property
-uniformForFiniteEqualBounds = withTests 20 . property $ do
-  key <- forAll (literal [] nats)
-  seed <- forAll (literal [1] nats)
+  export partial
+  uniformForFiniteEqualBounds : Property
+  uniformForFiniteEqualBounds = withTests 20 . property $ do
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
 
-  let bound = tensor [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
-      samples = do evalStateT !(tensor seed) !(uniform !(tensor key) !bound !bound)
+    let bound = tensor [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
+        samples = do evalStateT !(tensor seed) !(uniform !(tensor key) !bound !bound)
 
-  samples ===# bound
+    samples ===# bound
 
-partial
-uniformSeedIsUpdated : Property
-uniformSeedIsUpdated = withTests 20 . property $ do
-  bound <- forAll (literal [10] doubles)
-  bound' <- forAll (literal [10] doubles)
-  key <- forAll (literal [] nats)
-  seed <- forAll (literal [1] nats)
+  export partial
+  uniformSeedIsUpdated : Property
+  uniformSeedIsUpdated = withTests 20 . property $ do
+    bound <- forAll (literal [10] doubles)
+    bound' <- forAll (literal [10] doubles)
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
 
-  let everything = do
-        bound <- tensor bound
-        bound' <- tensor bound'
-        key <- tensor key
-        seed <- tensor seed
+    let everything = do
+          bound <- tensor bound
+          bound' <- tensor bound'
+          key <- tensor key
+          seed <- tensor seed
 
-        rng <- uniform key {shape=[10]} !(broadcast bound) !(broadcast bound')
-        (seed', sample) <- runStateT seed rng
-        (seed'', sample') <- runStateT seed' rng
-        seeds <- concat 0 !(concat 0 seed seed') seed''
-        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
-        pure (seeds, samples)
+          rng <- uniform key {shape=[10]} !(broadcast bound) !(broadcast bound')
+          (seed', sample) <- runStateT seed rng
+          (seed'', sample') <- runStateT seed' rng
+          seeds <- concat 0 !(concat 0 seed seed') seed''
+          samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
+          pure (seeds, samples)
 
-      [seed, seed', seed''] = unsafeEval (do (seeds, _) <- everything; pure seeds)
-      [sample, sample'] = unsafeEval (do (_, samples) <- everything; pure samples)
+        [seed, seed', seed''] = unsafeEval (do (seeds, _) <- everything; pure seeds)
+        [sample, sample'] = unsafeEval (do (_, samples) <- everything; pure samples)
 
-  diff seed' (/=) seed
-  diff seed'' (/=) seed'
-  diff sample' (/=) sample
+    diff seed' (/=) seed
+    diff seed'' (/=) seed'
+    diff sample' (/=) sample
 
-partial
-uniformIsReproducible : Property
-uniformIsReproducible = withTests 20 . property $ do
-  bound <- forAll (literal [10] doubles)
-  bound' <- forAll (literal [10] doubles)
-  key <- forAll (literal [] nats)
-  seed <- forAll (literal [1] nats)
+  export partial
+  uniformIsReproducible : Property
+  uniformIsReproducible = withTests 20 . property $ do
+    bound <- forAll (literal [10] doubles)
+    bound' <- forAll (literal [10] doubles)
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafeEval $ do
-        bound <- tensor bound
-        bound' <- tensor bound'
-        key <- tensor key
-        seed <- tensor seed
+    let [sample, sample'] = unsafeEval $ do
+          bound <- tensor bound
+          bound' <- tensor bound'
+          key <- tensor key
+          seed <- tensor seed
 
-        rng <- uniform {shape=[10]} key !(broadcast bound) !(broadcast bound')
-        sample <- evalStateT seed rng
-        sample' <- evalStateT seed rng
-        concat 0 !(expand 0 sample) !(expand 0 sample')
+          rng <- uniform {shape=[10]} key !(broadcast bound) !(broadcast bound')
+          sample <- evalStateT seed rng
+          sample' <- evalStateT seed rng
+          concat 0 !(expand 0 sample) !(expand 0 sample')
 
-  sample ==~ sample'
+    sample ==~ sample'
+
+Show (Compare p xs ys) where
+  show _ = ""
+
+orderedPair : (shape : Shape) -> Gen (as : Literal shape Nat ** bs : Literal shape Nat ** Compare LT as bs)
+
+namespace U64
+  export partial
+  uniform : Property
+  uniform = withTests 20 . property $ do
+    (lower ** upper ** ordered) <- forAll (orderedPair [10])
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
+
+    let ksTest = do
+      samples <- evalStateT !(tensor seed) !(U64.uniform !(tensor key) [lower] [upper])
+
+      let uniformCdf : Tensor [1, 10] U64 -> Ref $ Tensor [1, 10] F64
+          uniformCdf x = do
+            lower <- castDtype !(tensor {dtype = U64} [lower])
+            let upper = castDtype !(tensor {dtype = U64} [upper])
+            (castDtype x - pure lower) / (upper - pure lower)
+
+      iidKolmogorovSmirnov samples uniformCdf
+
+    -- samples ===# fill 0
+    diff (unsafeEval ksTest) (<) 0.01
+{-
+  export covering
+  uniformBoundsAreInclusive : Property
+  uniformBoundsAreInclusive = property $ do
+    bound <- forAll (literal [100] nats)
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
+
+    let bound = fromLiteral bound
+        bound' = bound + fill 2
+        key = fromLiteral key
+        seed = fromLiteral seed
+
+        samples = evalState seed (U64.uniform key bound bound')
+
+    diff (toLiteral samples) (\x, y => any id [| x == y |]) (toLiteral bound)
+    diff (toLiteral samples) (\x, y => any id [| x == y |]) (toLiteral bound')
+
+  export covering
+  uniformSeedIsUpdated : Property
+  uniformSeedIsUpdated = withTests 20 . property $ do
+    bound <- forAll (literal [10] nats)
+    bound' <- forAll (literal [10] nats)
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
+
+    let bound = fromLiteral bound
+        bound' = fromLiteral bound'
+        key = fromLiteral key
+        seed = fromLiteral seed
+
+        rng = U64.uniform key {shape=[10]} (broadcast bound) (broadcast bound')
+        (seed', sample) = runState seed rng
+        (seed'', sample') = runState seed' rng
+
+    diff (toLiteral seed') (/=) (toLiteral seed)
+    diff (toLiteral seed'') (/=) (toLiteral seed')
+    diff (toLiteral sample') (/=) (toLiteral sample)
+
+  export covering
+  uniformIsReproducible : Property
+  uniformIsReproducible = withTests 20 . property $ do
+    bound <- forAll (literal [10] nats)
+    bound' <- forAll (literal [10] nats)
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
+
+    let bound = fromLiteral bound
+        bound' = fromLiteral bound'
+        key = fromLiteral key
+        seed = fromLiteral seed
+
+        rng = U64.uniform {shape=[10]} key (broadcast bound) (broadcast bound')
+        sample = evalState seed rng
+        sample' = evalState seed rng
+
+    sample ===# sample'
+-}
 
 partial
 normal : Property
@@ -206,11 +292,15 @@ normalIsReproducible = withTests 20 . property $ do
 export partial
 all : List (PropertyName, Property)
 all = [
-      ("uniform", uniform)
-    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
-    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
-    , ("uniform updates seed", uniformSeedIsUpdated)
-    , ("uniform produces same samples for same seed", uniformIsReproducible)
+      ("uniform F64", F64.uniform)
+    , ("uniform F64 for infinite and NaN bounds", uniformForNonFiniteBounds)
+    , ("uniform F64 is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
+    , ("uniform F64 updates seed", F64.uniformSeedIsUpdated)
+    , ("uniform F64 produces same samples for same seed", F64.uniformIsReproducible)
+    , ("uniform U64", U64.uniform)
+    -- , ("uniform U64 bounds are inclusive", uniformBoundsAreInclusive)
+    -- , ("uniform U64 updates seed", U64.uniformSeedIsUpdated)
+    -- , ("uniform U64 produces same samples for same seed", U64.uniformIsReproducible)
     , ("normal", normal)
     , ("normal updates seed", normalSeedIsUpdated)
     , ("normal produces same samples for same seed", normalIsReproducible)

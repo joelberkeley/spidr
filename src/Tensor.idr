@@ -1393,52 +1393,91 @@ Rand = StateT (Tensor [1] U64) Ref
 inf : Ref $ Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
-||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
-||| between `bound` and `bound'`.
-|||
-||| `bound` and `bound'` need not be ordered, and samples will be generated, elementwise, in
-||| [min !bound !bound', max !bound !bound'). The exception is where the bounds are equal, in which
-||| case: if the bounds are finite, samples are generated at the common bound, else samples are NaN.
-|||
-||| The generated samples are a deterministic function of the input key and state, but may vary
-||| between backends and library versions.
-|||
-||| Example usage, multiplying two uniform samples
-||| ```
-||| x : Ref $ Tensor [3] F64
-||| x = do key <- tensor (Scalar 2)
-|||        rng <- uniform key !(fill 0.0) !(fill 1.0)
-|||        initialState <- tensor [Scalar 0]
-|||        evalStateT initialState (do lift $ pure !rng * pure !rng)
-||| ```
-|||
-||| @key Determines the stream of generated samples.
-||| @bound A bound of the samples. See full docstring for details.
-||| @bound' A bound of the samples. See full docstring for details.
-export
-uniform :
-  {shape : _} ->
-  (key : Tensor [] U64) ->
-  (bound, bound' : Tensor shape F64) ->
-  Ref $ Rand $ Tensor shape F64
-uniform (MkTensor iKey envKey) bound bound' = do
-  minval@(MkTensor iMinval envMinval) <- min bound bound'
-  maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
-  let inf = broadcast !inf
-  let env = mergeLeft (mergeLeft envKey envMinval) envMaxval
-  pure $ ST $ \(MkTensor iState envState) => do
-    i <- new
-    let env = mergeLeft envState env
-        env = insert i (UniformFloatingPoint iKey iState iMinval iMaxval shape) env
-        state = env `end` GetTupleElement 1 i
-        value = env `end` GetTupleElement 0 i
-        -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
-        -- samples between -inf and 0 should be at -inf, but XLA produces nan
-        -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
-        value = select !((pure minval == - inf) && (pure maxval == fill 0)) !(- inf) !value
-        value = select !((pure minval == inf) && (pure maxval == inf)) !inf !value
-        value = select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) !value
-    pure (!state, !value)
+namespace F64
+  ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
+  ||| between `bound` and `bound'`.
+  |||
+  ||| `bound` and `bound'` need not be ordered, and samples will be generated, elementwise, in
+  ||| [min !bound !bound', max !bound !bound'). The exception is where the bounds are equal, in which
+  ||| case: if the bounds are finite, samples are generated at the common bound, else samples are NaN.
+  |||
+  ||| The generated samples are a deterministic function of the input key and state, but may vary
+  ||| between backends and library versions.
+  |||
+  ||| Example usage, multiplying two uniform samples
+  ||| ```
+  ||| x : Ref $ Tensor [3] F64
+  ||| x = do key <- tensor (Scalar 2)
+  |||        rng <- uniform key !(fill 0.0) !(fill 1.0)
+  |||        initialState <- tensor [Scalar 0]
+  |||        evalStateT initialState (do lift $ pure !rng * pure !rng)
+  ||| ```
+  |||
+  ||| @key Determines the stream of generated samples.
+  ||| @bound A bound of the samples. See full docstring for details.
+  ||| @bound' A bound of the samples. See full docstring for details.
+  export
+  uniform :
+    (key : Tensor [] U64) ->
+    (bound, bound' : Tensor shape F64) ->
+    Ref $ Rand $ Tensor shape F64
+  uniform (MkTensor iKey envKey) bound bound' = do
+    minval@(MkTensor {shape = _} iMinval envMinval) <- min bound bound'
+    maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
+    let inf = broadcast !inf
+    let env = mergeLeft (mergeLeft envKey envMinval) envMaxval
+    pure $ ST $ \(MkTensor iState envState) => do
+      i <- new
+      let env = mergeLeft envState env
+          env = insert i (UniformFloatingPoint iKey iState iMinval iMaxval shape) env
+          state = env `end` GetTupleElement 1 i
+          value = env `end` GetTupleElement 0 i
+          -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
+          -- samples between -inf and 0 should be at -inf, but XLA produces nan
+          -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
+          value = select !((pure minval == - inf) && (pure maxval == fill 0)) !(- inf) !value
+          value = select !((pure minval == inf) && (pure maxval == inf)) !inf !value
+          value = select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) !value
+      pure (!state, !value)
+
+namespace U64
+  ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
+  ||| between `bound` and `bound'`. `bound` and `bound'` need not be ordered, and are both
+  ||| inclusive bounds.
+  |||
+  ||| The generated samples are a deterministic function of the input key and state, but may vary
+  ||| between backends and library versions.
+  |||
+  ||| Example usage, multiplying two uniform samples
+  ||| ```
+  ||| x : Tensor [3] U64
+  ||| x = let key = fromLiteral 2
+  |||         rng = uniform key (fill 0) (fill 100)
+  |||         initialState = fromLiteral [0]
+  |||      in evalState initialState [| rng * rng |]
+  ||| ```
+  |||
+  ||| @key Determines the stream of generated samples.
+  ||| @bound A bound of the samples. See full docstring for details.
+  ||| @bound' A bound of the samples. See full docstring for details.
+  export
+  uniform :
+    (key : Tensor [] U64) ->
+    (lower, upper : Literal shape Nat) ->
+    {auto 0 boundsOrdered : Compare LT lower upper} ->
+    Ref $ Rand $ Tensor shape U64
+  uniform (MkTensor iKey envKey) lower upper = do
+    let (shape' ** shapesEq) = lower.shape
+    MkTensor iLower envLower <- tensor {dtype = U64} {shape = shape'} (rewrite shapesEq in lower)
+    MkTensor iUpper envUpper <- tensor {dtype = U64} {shape = shape'} (rewrite shapesEq in upper)
+    let env = mergeLeft (mergeLeft envKey envLower) envUpper
+    pure $ ST $ \(MkTensor iState envState) => do
+      i <- new
+      let env = mergeLeft envState env
+          env = insert i (UniformUInt iKey iState iLower iUpper shape') env
+          state = env `end` GetTupleElement 1 i
+          value = env `end` GetTupleElement 0 i
+      pure (!state, rewrite sym shapesEq in !value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.

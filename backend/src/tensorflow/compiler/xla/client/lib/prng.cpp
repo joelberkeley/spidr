@@ -36,6 +36,32 @@ xla::BitGeneratorTy BitGenerator(int bit_generator) {
     return bit_generator_;
 }
 
+RngOutput* UniformDistribution(
+    std::function<xla::RngOutput(
+        xla::XlaOp, xla::XlaOp, xla::BitGeneratorTy, xla::XlaOp, xla::XlaOp, const xla::Shape&
+    )> f,
+    XlaOp& key,
+    XlaOp& initial_state,
+    int bit_generator,
+    XlaOp& minval,
+    XlaOp& maxval,
+    Shape& shape
+) {
+    auto& key_ = reinterpret_cast<xla::XlaOp&>(key);
+    auto& initial_state_ = reinterpret_cast<xla::XlaOp&>(initial_state);
+    xla::BitGeneratorTy bit_generator_ = BitGenerator(bit_generator);
+    auto& minval_ = reinterpret_cast<xla::XlaOp&>(minval);
+    auto& maxval_ = reinterpret_cast<xla::XlaOp&>(maxval);
+    auto& shape_ = reinterpret_cast<xla::Shape&>(shape);
+
+    xla::RngOutput res = f(key_, initial_state_, bit_generator_, minval_, maxval_, shape_);
+
+    return new RngOutput {
+        value: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.value)),
+        state: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.state))
+    };
+}
+
 extern "C" {
     RngOutput* UniformFloatingPointDistribution(
         XlaOp& key,
@@ -45,21 +71,34 @@ extern "C" {
         XlaOp& maxval,
         Shape& shape
     ) {
-        auto& key_ = reinterpret_cast<xla::XlaOp&>(key);
-        auto& initial_state_ = reinterpret_cast<xla::XlaOp&>(initial_state);
-        xla::BitGeneratorTy bit_generator_ = BitGenerator(bit_generator);
-        auto& minval_ = reinterpret_cast<xla::XlaOp&>(minval);
-        auto& maxval_ = reinterpret_cast<xla::XlaOp&>(maxval);
-        auto& shape_ = reinterpret_cast<xla::Shape&>(shape);
-
-        xla::RngOutput res = xla::UniformFloatingPointDistribution(
-            key_, initial_state_, bit_generator_, minval_, maxval_, shape_
+        return UniformDistribution(
+            xla::UniformFloatingPointDistribution,
+            key,
+            initial_state,
+            bit_generator,
+            minval,
+            maxval,
+            shape
         );
+    }
 
-        return new RngOutput {
-            value: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.value)),
-            state: reinterpret_cast<XlaOp*>(new xla::XlaOp(res.state))
-        };
+    RngOutput* UniformIntDistribution(
+        XlaOp& key,
+        XlaOp& initial_state,
+        int bit_generator,
+        XlaOp& minval,
+        XlaOp& maxval,
+        Shape& shape
+    ) {
+        return UniformDistribution(
+            xla::UniformIntDistribution,
+            key,
+            initial_state,
+            bit_generator,
+            minval,
+            maxval,
+            shape
+        );
     }
 
     RngOutput* NormalFloatingPointDistribution(
