@@ -1115,12 +1115,12 @@ uniformForEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [nan, -inf, inf, -9999.0, -1.0, 0.0, 1.0]
+  let bound = fromLiteral [nan, -inf, inf, -1.0, 0.0, 1.0]
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key bound bound)
 
-  samples ===# fromLiteral [nan, nan, nan, -9999.0, -1.0, 0.0, 1.0]
+  samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
 
 covering
 uniformSeedIsUpdated : Property
