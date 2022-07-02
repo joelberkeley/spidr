@@ -1085,7 +1085,7 @@ iidKolmogorovSmirnov samples cdf =
 
 covering
 uniform : Property
-uniform = withTests 10 . property $ do
+uniform = withTests 20 . property $ do
   bound <- forAll (literal [5] finiteDoubles)
   bound' <- forAll (literal [5] finiteDoubles)
   key <- forAll (literal [] nats)
