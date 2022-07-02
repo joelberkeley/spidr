@@ -35,6 +35,8 @@ public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
   Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
+  Tuple : List Expr -> Expr
+  GetTupleElement : Nat -> Expr -> Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
   ConvertElementType : Primitive dtype => Expr -> Expr
@@ -94,10 +96,8 @@ data Expr : Type where
   Dot : Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
   TriangularSolve : Expr -> Expr -> Bool -> Expr
-  UniformFloatingPointDistributionValue : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
-  UniformFloatingPointDistributionState : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
-  NormalFloatingPointDistributionValue : Expr -> Expr -> Shape -> Expr
-  NormalFloatingPointDistributionState : Expr -> Expr -> Shape -> Expr
+  UniformFloatingPoint : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
+  NormalFloatingPoint : Expr -> Expr -> Shape -> Expr
 
 export
 Prelude.Eq Expr where
@@ -106,6 +106,8 @@ Prelude.Eq Expr where
   (Parameter {dtype} position shape name) == (Parameter {dtype=dtype'} position' shape' name') =
     (typeString {dtype}, position, shape, name) ==
       (typeString {dtype=dtype'}, position', shape', name')
+  (Tuple xs) == (Tuple xs') = assert_total $ xs == xs'
+  (GetTupleElement idx tuple) == (GetTupleElement idx' tuple') = idx == idx' && tuple == tuple'
   (MinFiniteValue {dtype}) == (MinFiniteValue {dtype=dtype'}) =
     typeString {dtype} == typeString {dtype=dtype'}
   (MaxFiniteValue {dtype}) == (MaxFiniteValue {dtype=dtype'}) =
@@ -195,17 +197,10 @@ Prelude.Eq Expr where
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve x y lower) == (TriangularSolve x' y' lower') =
     x == x' && y == y' && lower == lower'
-  (UniformFloatingPointDistributionValue key initialState minval maxval shape) ==
-    (UniformFloatingPointDistributionValue key' initialState' minval' maxval' shape') =
+  (UniformFloatingPoint key initialState minval maxval shape) ==
+    (UniformFloatingPoint key' initialState' minval' maxval' shape') =
       key == key' && initialState == initialState' && minval == minval' && maxval == maxval'
-  (UniformFloatingPointDistributionState key initialState minval maxval shape) ==
-    (UniformFloatingPointDistributionState key' initialState' minval' maxval' shape') =
-      key == key' && initialState == initialState' && minval == minval' && maxval == maxval'
-  (NormalFloatingPointDistributionValue key initialState shape) ==
-    (NormalFloatingPointDistributionValue key' initialState' shape') =
-      key == key' && initialState == initialState'
-  (NormalFloatingPointDistributionState key initialState shape) ==
-    (NormalFloatingPointDistributionState key' initialState' shape') =
+  (NormalFloatingPoint key initialState shape) == (NormalFloatingPoint key' initialState' shape') =
       key == key' && initialState == initialState'
   _ == _ = False
 
@@ -215,6 +210,11 @@ Hashable Expr where
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, lit)
   hashWithSalt salt (Parameter {dtype} position shape name) =
     salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position, name)
+  hashWithSalt salt (Tuple xs) =
+    let salt = salt `hashWithSalt` "Tuple"
+     in assert_total $ hashWithSalt salt xs
+  hashWithSalt salt (GetTupleElement idx tuple) =
+    salt `hashWithSalt` ("GetTupleElement", idx) `hashWithSalt` tuple
   hashWithSalt salt (MinFiniteValue {dtype}) =
     salt `hashWithSalt` ("MinFiniteValue", typeString {dtype})
   hashWithSalt salt (MaxFiniteValue {dtype}) =
@@ -310,31 +310,15 @@ Hashable Expr where
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve x y lower) =
     salt `hashWithSalt` "TriangularSolve" `hashWithSalt` x `hashWithSalt` y `hashWithSalt` lower
-  hashWithSalt salt
-    (UniformFloatingPointDistributionValue key initialState minval maxval shape) = salt
-      `hashWithSalt` "UniformFloatingPointDistributionValue"
+  hashWithSalt salt (UniformFloatingPoint key initialState minval maxval shape) = salt
+      `hashWithSalt` "UniformFloatingPoint"
       `hashWithSalt` key
       `hashWithSalt` initialState
       `hashWithSalt` minval
       `hashWithSalt` maxval
       `hashWithSalt` shape
-  hashWithSalt salt
-    (UniformFloatingPointDistributionState key initialState minval maxval shape) = salt
-      `hashWithSalt` "UniformFloatingPointDistributionState"
-      `hashWithSalt` key
-      `hashWithSalt` initialState
-      `hashWithSalt` minval
-      `hashWithSalt` maxval
-      `hashWithSalt` shape
-  hashWithSalt salt
-    (NormalFloatingPointDistributionValue key initialState shape) = salt
-      `hashWithSalt` "NormalFloatingPointDistributionValue"
-      `hashWithSalt` key
-      `hashWithSalt` initialState
-      `hashWithSalt` shape
-  hashWithSalt salt
-    (NormalFloatingPointDistributionState key initialState shape) = salt
-      `hashWithSalt` "NormalFloatingPointDistributionState"
+  hashWithSalt salt (NormalFloatingPoint key initialState shape) = salt
+      `hashWithSalt` "NormalFloatingPoint"
       `hashWithSalt` key
       `hashWithSalt` initialState
       `hashWithSalt` shape

@@ -82,6 +82,7 @@ extern "C" {
 
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
     XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len);
     XlaOp* GetTupleElement(XlaOp& tuple_data, int index);
 }
 

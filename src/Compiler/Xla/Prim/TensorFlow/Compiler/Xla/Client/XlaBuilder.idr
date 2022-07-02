@@ -86,6 +86,10 @@ export
 prim__select : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Tuple")
+prim__tuple : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "GetTupleElement")
 prim__getTupleElement : GCAnyPtr -> Int -> PrimIO AnyPtr
 

@@ -1085,26 +1085,29 @@ iidKolmogorovSmirnov samples cdf =
 
 covering
 uniform : Property
-uniform = withTests 20 . property $ do
-  bound <- forAll (literal [10] doubles)
-  bound' <- forAll (literal [10] doubles)
+uniform = withTests 10 . property $ do
+  bound <- forAll (literal [5] finiteDoubles)
+  bound' <- forAll (literal [5] finiteDoubles)
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
+      bound' = select (bound == bound')
+        (select (bound == fill 0.0) (fill 0.001) (1.1 * bound'))
+        bound'
       key = fromLiteral key
       seed = fromLiteral seed
+      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
 
-      samples : Tensor [1000, 10] F64 :=
-        evalState seed (uniform key (broadcast bound) (broadcast bound'))
-
-      uniformCdf : Tensor [1000, 10] F64 -> Tensor [1000, 10] F64
+      uniformCdf : Tensor [2000, 5] F64 -> Tensor [2000, 5] F64
       uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
 
       ksTest := iidKolmogorovSmirnov samples uniformCdf
 
-  diff (toLiteral ksTest) (<) 0.01
+  diff (toLiteral ksTest) (<) 0.015
+
+-- test uniform for nan, inf, -inf bounds
 
 covering
 uniformForEqualBounds : Property
@@ -1112,13 +1115,12 @@ uniformForEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [nan, -inf, inf, -1.0, 0.0, 1.0]
+  let bound = fromLiteral [nan, -inf, inf, -9999.0, -1.0, 0.0, 1.0]
       key = fromLiteral key
       seed = fromLiteral seed
+      samples = evalState seed (uniform key bound bound)
 
-      samples : Tensor [6] F64 = evalState seed (uniform key bound bound)
-
-  samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
+  samples ===# fromLiteral [nan, nan, nan, -9999.0, -1.0, 0.0, 1.0]
 
 covering
 uniformSeedIsUpdated : Property

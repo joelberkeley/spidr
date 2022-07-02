@@ -165,6 +165,14 @@ select (MkXlaOp pred) (MkXlaOp onTrue) (MkXlaOp onFalse) = do
   pure (MkXlaOp opPtr)
 
 export
+tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
+tuple (MkXlaBuilder builder) elements = do
+  MkXlaOpArray xlaOpArrayPtr <- mkXlaOpArray elements
+  opPtr <- primIO $ prim__tuple builder xlaOpArrayPtr (cast $ length elements)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
 getTupleElement (MkXlaOp tuple_) index = do
   opPtr <- primIO $ prim__getTupleElement tuple_ (cast index)
