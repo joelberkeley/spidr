@@ -1085,7 +1085,7 @@ iidKolmogorovSmirnov samples cdf =
 
 covering
 uniform : Property
-uniform = withTests 20 . property $ do
+uniform = withTests 10 . property $ do
   bound <- forAll (literal [5] finiteDoubles)
   bound' <- forAll (literal [5] finiteDoubles)
   key <- forAll (literal [] nats)
@@ -1107,20 +1107,38 @@ uniform = withTests 20 . property $ do
 
   diff (toLiteral ksTest) (<) 0.015
 
--- test uniform for nan, inf, -inf bounds
-
 covering
-uniformForEqualBounds : Property
-uniformForEqualBounds = withTests 20 . property $ do
+uniformForNonFiniteBounds : Property
+uniformForNonFiniteBounds = property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [nan, -inf, inf, -1.0, 0.0, 1.0]
+  let bound = fromLiteral [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
+      bound' = fromLiteral [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
+      key = fromLiteral key
+      seed = fromLiteral seed
+      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
+
+  -- XLA is inconsistent in how it handles (-inf, 0) and (0, inf)
+  -- XLA says (-inf, -inf) and (inf, inf) samples are nan. That could be argued since we can't
+  --   assert inf and inf are ordered and therefore that the bounds are indeed the min and max.
+  --   That said, that seems like weak argument since it seems more reasonable to interpret them as
+  --   ordered since there's no way for the user to specify anything else. I'm going to call this
+  --   a bug in XLA.
+  samples ===# fromLiteral [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
+
+covering
+uniformForFiniteEqualBounds : Property
+uniformForFiniteEqualBounds = withTests 20 . property $ do
+  key <- forAll (literal [] nats)
+  seed <- forAll (literal [1] nats)
+
+  let bound = fromLiteral [-1.0, 0.0, 1.0]
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key bound bound)
 
-  samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
+  samples ===# fromLiteral [-1.0, 0.0, 1.0]
 
 covering
 uniformSeedIsUpdated : Property
@@ -1265,7 +1283,8 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
     , ("uniform", uniform)
-    , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
+    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
+    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
     , ("uniform updates seed", uniformSeedIsUpdated)
     , ("uniform produces same samples for same seed", uniformIsReproducible)
     , ("normal", normal)
