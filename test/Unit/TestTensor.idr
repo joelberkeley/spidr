@@ -1119,12 +1119,6 @@ uniformForNonFiniteBounds = property $ do
       seed = fromLiteral seed
       samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
 
-  -- XLA is inconsistent in how it handles (-inf, 0) and (0, inf)
-  -- XLA says (-inf, -inf) and (inf, inf) samples are nan. That could be argued since we can't
-  --   assert inf and inf are ordered and therefore that the bounds are indeed the min and max.
-  --   That said, that seems like weak argument since it seems more reasonable to interpret them as
-  --   ordered since there's no way for the user to specify anything else. I'm going to call this
-  --   a bug in XLA.
   samples ===# fromLiteral [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
 
 covering
