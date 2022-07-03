@@ -63,15 +63,6 @@ namespace List
   insertAt Z x xs = x :: xs
   insertAt {prf=LTESucc _} (S n) x (y :: ys) = y :: (insertAt n x ys)
 
-  ||| Delete a value from a list. For example, `deleteAt 1 [3, 4, 5]` is `[3, 5]`.
-  |||
-  ||| @idx The index of the value to delete.
-  ||| @xs The list to delete the value from.
-  public export
-  deleteAt : (idx : Nat) -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
-  deleteAt {prf=InFirst} Z (_ :: xs) = xs
-  deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs
-
   ||| Replace an element in a list. For example, `replaceAt 2 6 [1, 2, 3, 4]` is `[1, 2, 6, 4]`.
   |||
   ||| @idx The index of the value to replace.
@@ -81,6 +72,16 @@ namespace List
   replaceAt : (idx : Nat) -> a -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
   replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
+
+  ||| Delete a value from a list at specified indices. For example, `deleteAt 1 [3, 4, 5]` is
+  ||| `[3, 5]`.
+  |||
+  ||| @idx The index of the value to delete.
+  ||| @xs The list to delete the value from.
+  public export
+  deleteAt : (idx : Nat) -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
+  deleteAt {prf=InFirst} Z (_ :: xs) = xs
+  deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs
 
   ||| A `Sorted f (x :: xs)` proves that `(x :: xs)` is sorted such that `f x y` exists for all `y`
   ||| in `xs`. For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing
@@ -93,3 +94,23 @@ namespace List
     ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. all elements in the
     ||| tail.
     SCons : (x : Nat) -> Sorted f xs -> All (f x) xs -> Sorted f (x :: xs)
+
+  namespace Many
+    ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
+    ||| is `[6, 8]`.
+    |||
+    ||| @idxs The indices of the values to delete.
+    ||| @xs The list to delete values from.
+    public export
+    deleteAt :
+      (idxs : List Nat) ->
+      (xs : List a) ->
+      {auto 0 unique : Sorted LT idxs} ->
+      {auto 0 inBounds : All (flip InBounds xs) idxs} ->
+      List a
+    deleteAt idxs xs = impl 0 idxs xs where
+      impl : Nat -> List Nat -> List a -> List a
+      impl _ _ [] = []
+      impl _ [] xs = xs
+      impl j (i :: is) (x :: xs) =
+        ifThenElse (i == j) (impl (S j) is xs) (x :: impl (S j) (i :: is) xs)
