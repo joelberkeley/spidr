@@ -1085,7 +1085,7 @@ iidKolmogorovSmirnov samples cdf =
 
 covering
 uniform : Property
-uniform = withTests 10 . property $ do
+uniform = withTests 20 . property $ do
   bound <- forAll (literal [5] finiteDoubles)
   bound' <- forAll (literal [5] finiteDoubles)
   key <- forAll (literal [] nats)
@@ -1093,9 +1093,6 @@ uniform = withTests 10 . property $ do
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
-      bound' = select (bound == bound')
-        (select (bound == fill 0.0) (fill 0.001) (1.1 * bound'))
-        bound'
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
@@ -1105,7 +1102,7 @@ uniform = withTests 10 . property $ do
 
       ksTest := iidKolmogorovSmirnov samples uniformCdf
 
-  diff (toLiteral ksTest) (<) 0.015
+  diff (toLiteral ksTest) (<) 0.01
 
 covering
 uniformForNonFiniteBounds : Property
