@@ -500,11 +500,12 @@ export
 reduce :
   (reducer : Monoid (Tensor [] dtype)) =>
   Primitive dtype =>
-  (axis : Nat) ->
-  {auto 0 inBounds : InBounds axis shape} ->
+  (axes : List Nat) ->
+  {auto 0 axesUnique : Sorted LT axes} ->
+  {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
-  Tensor (deleteAt axis shape) dtype
-reduce axis (MkTensor expr) =
+  Tensor (deleteAt axes shape) dtype
+reduce axes (MkTensor expr) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
@@ -512,7 +513,7 @@ reduce axis (MkTensor expr) =
       p1 := Parameter 1 [] "" {dtype}
       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
       MkTensor neutral := neutral @{reducer}
-   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axis expr
+   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -1095,7 +1096,7 @@ trace :
   Tensor [S n, S n] dtype ->
   Tensor [] dtype
 trace x with (x)
-  _ | MkTensor {shape=[S n, S n]} _ = reduce @{Sum} 0 (reduce @{Sum} 1 (x * identity))
+  _ | MkTensor {shape=[S n, S n]} _ = reduce @{Sum} [0, 1] (x * identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.

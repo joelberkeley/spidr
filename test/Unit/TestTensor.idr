@@ -476,14 +476,29 @@ map2ResultWithReusedFnArgs = fixedProperty $ do
 
 reduce : Property
 reduce = fixedProperty $ do
-  let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-  reduce @{Sum} 1 x ===# fromLiteral [6.6, -6.6]
+  let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
+  reduce @{Sum} [1] x ===# fromLiteral [6, -6]
 
-  let x = fromLiteral {dtype=F64} [[1.1, 2.2, 3.3], [-1.1, -2.2, -3.3]]
-  reduce @{Sum} 0 x ===# fromLiteral [0.0, 0.0, 0.0]
+  let x = fromLiteral {dtype=S32} [[1, 2, 3], [-2, -3, -4]]
+  reduce @{Sum} [0, 1] x ===# fromLiteral (-3)
+
+  let x = fromLiteral {dtype=S32} [[[1], [2], [3]], [[-2], [-3], [-4]]]
+  reduce @{Sum} [0, 1] x ===# fromLiteral [-3]
+
+  let x = fromLiteral {dtype=S32} [[[1, 2, 3]], [[-2, -3, -4]]]
+  reduce @{Sum} [0, 2] x ===# fromLiteral [-3]
+
+  let x = fromLiteral {dtype=S32} [[[1, 2, 3], [-2, -3, -4]]]
+  reduce @{Sum} [1, 2] x ===# fromLiteral [-3]
+
+  let x = fromLiteral {dtype=S32} [[[1, 2, 3], [4, 5, 6]], [[-2, -3, -4], [-6, -7, -8]]]
+  reduce @{Sum} [0, 2] x ===# fromLiteral [-3, -6]
+
+  let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
+  reduce @{Sum} [0] x ===# fromLiteral [0, 0, 0]
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
-  reduce @{All} 1 x ===# fromLiteral [False, False]
+  reduce @{All} [1] x ===# fromLiteral [False, False]
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
@@ -1066,7 +1081,7 @@ iidKolmogorovSmirnov samples cdf =
       sampleSize : Tensor [] F64 := cast (fromLiteral {dtype=U64} (Scalar n))
       samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
       deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
-   in reduce @{Max} 0 (abs deviationFromCDF)
+   in reduce @{Max} [0] (abs deviationFromCDF)
 
 covering
 uniform : Property

@@ -47,7 +47,7 @@ data Expr : Type where
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Expr -> Expr
   Map : Fn n Expr -> Vect n Expr -> Shape -> Expr
-  Reduce : Fn 2 Expr -> Expr -> Nat -> Expr -> Expr
+  Reduce : Fn 2 Expr -> Expr -> List Nat -> Expr -> Expr
   Sort : Fn 2 Expr -> Nat -> Bool -> List Expr -> Expr
   Reverse : List Nat -> Expr -> Expr
   Eq : Expr -> Expr -> Expr
@@ -130,9 +130,9 @@ Prelude.Eq Expr where
         && (assert_total $ xs == rewrite eq in xs')
         && dims == dims'
       No _ => False
-  (Reduce (MkFn [p0, p1] monoid) neutral axis x) ==
-    (Reduce (MkFn [p0', p1'] monoid') neutral' axis' x') =
-      p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axis == axis' && x == x'
+  (Reduce (MkFn [p0, p1] monoid) neutral axes x) ==
+    (Reduce (MkFn [p0', p1'] monoid') neutral' axes' x') =
+      p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axes == axes' && x == x'
   (Sort (MkFn [p0, p1] comparator) dimension isStable operands) ==
     (Sort (MkFn [p0', p1'] comparator') dimension' isStable' operands') =
       p0 == p0'
@@ -239,13 +239,13 @@ Hashable Expr where
         salt = salt `hashWithSalt` f
         salt = assert_total $ salt `hashWithSalt` xs
      in salt `hashWithSalt` dims
-  hashWithSalt salt (Reduce (MkFn [p0, p1] monoid) neutral axis x) = salt
+  hashWithSalt salt (Reduce (MkFn [p0, p1] monoid) neutral axes x) = salt
     `hashWithSalt` "Reduce"
     `hashWithSalt` p0
     `hashWithSalt` p1
     `hashWithSalt` monoid
     `hashWithSalt` neutral 
-    `hashWithSalt` axis
+    `hashWithSalt` axes
     `hashWithSalt` x
   hashWithSalt salt (Sort (MkFn [p0, p1] comparator) dimension isStable operands) =
     let salt = salt

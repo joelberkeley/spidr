@@ -127,9 +127,9 @@ enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
   computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
   (builder, _) <- get
   map builder !(traverse enqueue $ toList exprs) computation dims 
-enqueue e@(Reduce (MkFn [p0, p1] exprf) neutral axis expr) = cached e $ do
+enqueue e@(Reduce (MkFn [p0, p1] exprf) neutral axes expr) = cached e $ do
   computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
-  reduce !(enqueue expr) !(enqueue neutral) computation [axis]
+  reduce !(enqueue expr) !(enqueue neutral) computation axes
 enqueue e@(Sort (MkFn [p0, p1] exprComp) axis isStable exprs) = cached e $ do
   comparator <- buildWithSubBuilder "comparator" [(enqueue p0), (enqueue p1)] (enqueue exprComp)
   sort !(traverse enqueue exprs) comparator axis isStable 
