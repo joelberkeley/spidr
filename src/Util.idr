@@ -110,6 +110,5 @@ namespace List
       List a
     deleteAt idxs xs = go 0 idxs xs where
       go : Nat -> List Nat -> List a -> List a
-      go _ _ [] = []
-      go _ [] xs = xs
       go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
+      go _ _ xs = xs
