@@ -87,7 +87,8 @@ namespace List
     deleteAtLater _ _ [] = Refl
     deleteAtLater _ _ (_ :: _) = Refl
 
-    deleteAtHeadAndLater : (x, y, z : a) -> (xs : List a) -> deleteAt [0, 2] (x :: y :: z :: xs) = (y :: xs)
+    deleteAtHeadAndLater :
+      (x, y, z : a) -> (xs : List a) -> deleteAt [0, 2] (x :: y :: z :: xs) = (y :: xs)
     deleteAtHeadAndLater _ _ _ [] = Refl
     deleteAtHeadAndLater _ _ _ (_ :: _) = Refl
 
