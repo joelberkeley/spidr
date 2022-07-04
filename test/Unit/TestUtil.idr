@@ -74,7 +74,7 @@ namespace List
     List.replaceAt 2 5 [6, 7, 8] === [6, 7, 5]
     List.replaceAt 0 5 [6] === [5]
 
-  namespace Multi
+  namespace Many
     deleteAtForNoIndices : (xs : List a) -> deleteAt [] xs = xs
     deleteAtForNoIndices [] = Refl
     deleteAtForNoIndices (_ :: _) = Refl
