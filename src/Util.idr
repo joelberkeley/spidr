@@ -73,7 +73,7 @@ namespace List
   replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
   replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
 
-  ||| Delete a value from a list at specified indices. For example, `deleteAt 1 [3, 4, 5]` is
+  ||| Delete a value from a list at the specified index. For example, `deleteAt 1 [3, 4, 5]` is
   ||| `[3, 5]`.
   |||
   ||| @idx The index of the value to delete.
@@ -108,9 +108,8 @@ namespace List
       {auto 0 unique : Sorted LT idxs} ->
       {auto 0 inBounds : All (flip InBounds xs) idxs} ->
       List a
-    deleteAt idxs xs = impl 0 idxs xs where
-      impl : Nat -> List Nat -> List a -> List a
-      impl _ _ [] = []
-      impl _ [] xs = xs
-      impl j (i :: is) (x :: xs) =
-        ifThenElse (i == j) (impl (S j) is xs) (x :: impl (S j) (i :: is) xs)
+    deleteAt idxs xs = go 0 idxs xs where
+      go : Nat -> List Nat -> List a -> List a
+      go _ _ [] = []
+      go _ [] xs = xs
+      go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
