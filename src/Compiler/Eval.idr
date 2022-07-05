@@ -96,6 +96,10 @@ enqueue e@(Parameter {dtype} position shape name) = cached e $ do
   (builder, _) <- get
   xlaShape <- mkShape {dtype} shape
   parameter builder position xlaShape name
+enqueue e@(Tuple exprs) = cached e $ do
+  (builder, _) <- get
+  tuple builder !(traverse enqueue exprs)
+enqueue e@(GetTupleElement idx expr) = cached e $ getTupleElement !(enqueue expr) idx
 enqueue e@(MinFiniteValue {dtype}) = cached e $ do
   (builder, _) <- get
   minFiniteValue {dtype} builder
@@ -182,46 +186,21 @@ enqueue e@(Dot l r) = cached e $ dot !(enqueue l) !(enqueue r)
 enqueue e@(Cholesky expr) = cached e $ cholesky !(enqueue expr) True
 enqueue e@(TriangularSolve a b lower) =
   cached e $ triangularSolve !(enqueue a) !(enqueue b) True lower False NoTranspose
-enqueue e@(UniformFloatingPointDistributionValue key initialState minval maxval shape) =
-  cached e $ do
-    let valueStatePair = do
-          uniformFloatingPointDistribution
-            !(enqueue key)
-            !(enqueue initialState)
-            ThreeFry
-            !(enqueue minval)
-            !(enqueue maxval)
-            !(mkShape {dtype=F64} shape)
-        stateExpr = UniformFloatingPointDistributionState key initialState minval maxval shape
-    ignore $ cached stateExpr $ map snd valueStatePair
-    map fst valueStatePair
-enqueue e@(UniformFloatingPointDistributionState key initialState minval maxval shape) =
-  cached e $ do
-    let valueStatePair = do
-          uniformFloatingPointDistribution
-            !(enqueue key)
-            !(enqueue initialState)
-            ThreeFry
-            !(enqueue minval)
-            !(enqueue maxval)
-            !(mkShape {dtype=F64} shape)
-        valueExpr = UniformFloatingPointDistributionValue key initialState minval maxval shape
-    ignore $ cached valueExpr $ map fst valueStatePair
-    map snd valueStatePair
-enqueue e@(NormalFloatingPointDistributionValue key initialState shape) = cached e $ do
-  let valueStatePair = do
-        normalFloatingPointDistribution
-          !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
-      stateExpr = NormalFloatingPointDistributionState key initialState shape
-  ignore $ cached stateExpr $ map snd valueStatePair
-  map fst valueStatePair
-enqueue e@(NormalFloatingPointDistributionState key initialState shape) = cached e $ do
-  let valueStatePair = do
-        normalFloatingPointDistribution
-          !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
-      valueExpr = NormalFloatingPointDistributionValue key initialState shape
-  ignore $ cached valueExpr $ map fst valueStatePair
-  map snd valueStatePair
+enqueue e@(UniformFloatingPoint key initialState minval maxval shape) = cached e $ do
+  rngOutput <- uniformFloatingPointDistribution
+    !(enqueue key)
+    !(enqueue initialState)
+    ThreeFry
+    !(enqueue minval)
+    !(enqueue maxval)
+    !(mkShape {dtype=F64} shape)
+  (builder, _) <- get
+  tuple builder [value rngOutput, state rngOutput]
+enqueue e@(NormalFloatingPoint key initialState shape) = cached e $ do
+  rngOutput <- normalFloatingPointDistribution
+    !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
+  (builder, _) <- get
+  tuple builder [value rngOutput, state rngOutput]
 
 export
 toString : Expr -> String

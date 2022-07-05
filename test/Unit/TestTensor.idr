@@ -1086,8 +1086,8 @@ iidKolmogorovSmirnov samples cdf =
 covering
 uniform : Property
 uniform = withTests 20 . property $ do
-  bound <- forAll (literal [10] doubles)
-  bound' <- forAll (literal [10] doubles)
+  bound <- forAll (literal [5] finiteDoubles)
+  bound' <- forAll (literal [5] finiteDoubles)
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
@@ -1095,11 +1095,9 @@ uniform = withTests 20 . property $ do
       bound' = fromLiteral bound'
       key = fromLiteral key
       seed = fromLiteral seed
+      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
 
-      samples : Tensor [1000, 10] F64 :=
-        evalState seed (uniform key (broadcast bound) (broadcast bound'))
-
-      uniformCdf : Tensor [1000, 10] F64 -> Tensor [1000, 10] F64
+      uniformCdf : Tensor [2000, 5] F64 -> Tensor [2000, 5] F64
       uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
 
       ksTest := iidKolmogorovSmirnov samples uniformCdf
@@ -1107,18 +1105,31 @@ uniform = withTests 20 . property $ do
   diff (toLiteral ksTest) (<) 0.01
 
 covering
-uniformForEqualBounds : Property
-uniformForEqualBounds = withTests 20 . property $ do
+uniformForNonFiniteBounds : Property
+uniformForNonFiniteBounds = property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [nan, -inf, inf, -1.0, 0.0, 1.0]
+  let bound = fromLiteral [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
+      bound' = fromLiteral [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
       key = fromLiteral key
       seed = fromLiteral seed
+      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
 
-      samples : Tensor [6] F64 = evalState seed (uniform key bound bound)
+  samples ===# fromLiteral [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
 
-  samples ===# fromLiteral [nan, nan, nan, -1.0, 0.0, 1.0]
+covering
+uniformForFiniteEqualBounds : Property
+uniformForFiniteEqualBounds = withTests 20 . property $ do
+  key <- forAll (literal [] nats)
+  seed <- forAll (literal [1] nats)
+
+  let bound = fromLiteral [-1.0, 0.0, 1.0]
+      key = fromLiteral key
+      seed = fromLiteral seed
+      samples = evalState seed (uniform key bound bound)
+
+  samples ===# fromLiteral [-1.0, 0.0, 1.0]
 
 covering
 uniformSeedIsUpdated : Property
@@ -1263,7 +1274,8 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
     , ("uniform", uniform)
-    , ("uniform is not NaN for equal bounds", uniformForEqualBounds)
+    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
+    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
     , ("uniform updates seed", uniformSeedIsUpdated)
     , ("uniform produces same samples for same seed", uniformIsReproducible)
     , ("normal", normal)

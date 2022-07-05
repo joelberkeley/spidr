@@ -190,6 +190,15 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        auto elements_ = reinterpret_cast<xla::XlaOp*>(elements);
+        auto elements_span = absl::Span<const xla::XlaOp>(elements_, elements_len);
+
+        xla::XlaOp res = xla::Tuple(builder_, elements_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* GetTupleElement(XlaOp& tuple_data, int index) {
         auto& tuple_data_ = reinterpret_cast<xla::XlaOp&>(tuple_data);
         xla::XlaOp res = xla::GetTupleElement(tuple_data_, (int64_t) index);

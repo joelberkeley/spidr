@@ -28,9 +28,17 @@ Cast BitGenerator Int where
   cast ThreeFry = 0
   cast Philox = 1
 
+%hide Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.PRNG.RngOutput
+
+public export
+record RngOutput where
+  constructor MkRngOutput
+  value : XlaOp
+  state : XlaOp
+
 export
 uniformFloatingPointDistribution :
-  HasIO io => XlaOp -> XlaOp -> BitGenerator -> XlaOp -> XlaOp -> Shape -> io (XlaOp, XlaOp)
+  HasIO io => XlaOp -> XlaOp -> BitGenerator -> XlaOp -> XlaOp -> Shape -> io RngOutput
 uniformFloatingPointDistribution
   (MkXlaOp key)
   (MkXlaOp initialState)
@@ -45,11 +53,11 @@ uniformFloatingPointDistribution
     primIO $ prim__delete rngOutput
     value <- onCollectAny value XlaOp.delete
     state <- onCollectAny state XlaOp.delete
-    pure (MkXlaOp value, MkXlaOp state)
+    pure (MkRngOutput {value = MkXlaOp value} {state = MkXlaOp state})
 
 export
 normalFloatingPointDistribution :
-  HasIO io => XlaOp -> XlaOp -> BitGenerator -> Shape -> io (XlaOp, XlaOp)
+  HasIO io => XlaOp -> XlaOp -> BitGenerator -> Shape -> io RngOutput
 normalFloatingPointDistribution
   (MkXlaOp key) (MkXlaOp initialState) bitGenerator (MkShape shape) = do
     rngOutput <- primIO $
@@ -59,4 +67,4 @@ normalFloatingPointDistribution
     primIO $ prim__delete rngOutput
     value <- onCollectAny value XlaOp.delete
     state <- onCollectAny state XlaOp.delete
-    pure (MkXlaOp value, MkXlaOp state)
+    pure (MkRngOutput {value = MkXlaOp value} {state = MkXlaOp state})

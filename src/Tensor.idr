@@ -1136,14 +1136,19 @@ uniform :
   (bound, bound' : Tensor shape F64) ->
   Rand (Tensor shape F64)
 uniform (MkTensor key) bound bound' =
-  let MkTensor minval = min bound bound'
-      MkTensor maxval = max bound bound'
+  let minval@(MkTensor minvalExpr) = min bound bound'
+      maxval@(MkTensor maxvalExpr) = max bound bound'
    in ST $ \(MkTensor initialState) =>
-      let value = MkTensor $ UniformFloatingPointDistributionValue
-            key initialState minval maxval shape
-          state = MkTensor $ UniformFloatingPointDistributionState
-            key initialState minval maxval shape
-       in Id (state, value)
+      let valueState = UniformFloatingPoint key initialState minvalExpr maxvalExpr shape
+          value = MkTensor $ GetTupleElement 0 valueState
+          -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
+          -- samples between -inf and 0 should be at -inf, but XLA produces nan
+          -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
+          inf = broadcast inf
+          value = select (minval == - inf && maxval == fill 0) (- inf) value
+          value = select (minval == inf && maxval == inf) inf value
+          value = select (minval == - inf && maxval == - inf) (- inf) value
+       in Id (MkTensor $ GetTupleElement 1 valueState, value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1165,6 +1170,5 @@ export
 normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
 normal (MkTensor key) =
   ST $ \(MkTensor initialState) =>
-    let value = MkTensor $ NormalFloatingPointDistributionValue key initialState shape
-        state = MkTensor $ NormalFloatingPointDistributionState key initialState shape
-     in Id (state, value)
+    let valueState = NormalFloatingPoint key initialState shape
+     in Id (MkTensor $ GetTupleElement 1 valueState, MkTensor $ GetTupleElement 0 valueState)
