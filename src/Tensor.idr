@@ -31,7 +31,7 @@ import Compiler.LiteralRW
 import Literal
 import public Primitive
 import public Types
-import public Util
+import public Util.List
 
 ----------------------------- core definitions ----------------------------
 
@@ -466,7 +466,7 @@ map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape
 map f (MkTensor {shape} expr) =
   let p0 = Parameter 0 [] "" {dtype=a}
       MkTensor exprf = f (MkTensor p0)
-   in MkTensor $ Map (MkFn [p0] exprf) [expr] (range $ length shape)
+   in MkTensor $ Map (MkFn [p0] exprf) [expr] (indices shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -488,7 +488,7 @@ map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
   let p0 = Parameter 0 [] "" {dtype=a}
       p1 = Parameter 1 [] "" {dtype=b}
       MkTensor exprf = f (MkTensor p0) (MkTensor p1)
-   in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
+   in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (indices shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is

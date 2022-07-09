@@ -1066,7 +1066,10 @@ trace = fixedProperty $ do
   trace x ===# 3
 
 range : (n : Nat) -> Literal [n] Nat
-range n = cast (Vect.range n)
+range n = cast (vrange n) where
+  vrange : (n : Nat) -> Vect n Nat
+  vrange Z = []
+  vrange (S n) = snoc (vrange n) n
 
 product1 : (x : Nat) -> product (the (List Nat) [x]) = x
 product1 x = rewrite plusZeroRightNeutral x in Refl

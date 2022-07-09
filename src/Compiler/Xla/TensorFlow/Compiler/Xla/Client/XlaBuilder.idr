@@ -24,7 +24,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.Util
 import Types
-import Util
+import Util.List
 
 public export
 data XlaBuilder : Type where
@@ -77,7 +77,7 @@ mkXlaOpArray : HasIO io => List XlaOp -> io XlaOpArray
 mkXlaOpArray ops = do
   arr <- malloc (cast (length ops) * sizeOfXlaOp)
   traverse_ (\(idx, (MkXlaOp opPtr)) =>
-    primIO $ prim__setArrayXlaOp arr (cast idx) opPtr) (enumerate (fromList ops))
+    primIO $ prim__setArrayXlaOp arr (cast idx) opPtr) (enumerate ops)
   arr <- onCollectAny arr free
   pure (MkXlaOpArray arr)
 

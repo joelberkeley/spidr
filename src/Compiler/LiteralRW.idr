@@ -18,14 +18,13 @@ module Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Literal
-import Util
+import Util.List
 
 range : (n : Nat) -> Literal [n] Nat
-range n = impl n []
-  where
-  impl : (p : Nat) -> Literal [q] Nat -> Literal [q + p] Nat
-  impl Z xs = rewrite plusZeroRightNeutral q in xs
-  impl (S p) xs = rewrite sym $ plusSuccRightSucc q p in impl p (Scalar p :: xs)
+range n = cast (vrange n) where
+  vrange : (n : Nat) -> Vect n Nat
+  vrange Z = []
+  vrange (S n) = snoc (vrange n) n
 
 indexed : {shape : _} -> Literal shape (List Nat)
 indexed = go shape []

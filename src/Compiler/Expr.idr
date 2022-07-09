@@ -24,7 +24,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Literal
 import Primitive
 import Types
-import Util
+import Util.List
 import Util.Hashable
 
 public export

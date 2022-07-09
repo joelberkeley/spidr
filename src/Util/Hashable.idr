@@ -17,7 +17,7 @@ module Util.Hashable
 
 import public Data.Hashable
 
-import Util
+import Util.List
 import Types
 
 export

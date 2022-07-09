@@ -26,7 +26,7 @@ import Unit.Util.TestHashable
 import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestLiteral
-import Unit.TestUtil
+import Unit.Util.TestList
 
 covering
 main : IO ()
@@ -34,7 +34,7 @@ main = test [
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.Util.TestHashable.group
-    , Unit.TestUtil.group
+    , Unit.Util.TestList.group
     , Unit.TestLiteral.group
     , Unit.TestTensor.group
     , Unit.TestDistribution.group

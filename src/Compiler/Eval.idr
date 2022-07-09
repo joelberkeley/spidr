@@ -45,7 +45,7 @@ import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 import Literal
 import Primitive
 import Types
-import Util
+import Util.List
 import Util.Hashable
 
 Cache : Type
@@ -107,7 +107,7 @@ enqueue e@(MaxFiniteValue {dtype}) = cached e $ do
   (builder, _) <- get
   maxFiniteValue {dtype} builder
 enqueue e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(enqueue expr)
-enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ length from) to
+enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (indices from) to
 enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
 enqueue e@(Concat axis expr expr') = cached e $ do
   (builder, _) <- get
@@ -125,7 +125,7 @@ enqueue e@(Broadcast {dtype} from to expr) = cached e $
     literal <- allocLiteral {dtype} to
     constantLiteral builder literal
   else
-    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
+    let broadcastDims = map (+ length to `minus` length from) (indices from)
      in broadcastInDim !(enqueue expr) to broadcastDims
 enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
   computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
