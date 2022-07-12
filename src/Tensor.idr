@@ -341,8 +341,66 @@ triangle tri (MkTensor expr) = MkTensor $ Triangle (case tri of Upper => False; 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
-(.T) : Primitive dtype => Tensor [m, n] dtype -> Tensor [n, m] dtype
-(MkTensor expr).T = MkTensor $ Transpose expr
+(.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
+(MkTensor expr).T = MkTensor $ Transpose [1, 0] expr
+
+public export
+index' : (xs : List Nat) -> (n : Nat) -> {auto 0 ok : InBounds n xs} -> Nat
+index' xs n = index n xs
+
+||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
+||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
+||| corresponds to the `index i ordering`'th axis in the input tensor. For example, for
+||| ```
+||| x : Tensor [2, 3, 4] S32
+||| x = fromLiteral [[[ 0,  1,  2,  3],
+|||                   [ 4,  5,  6,  7],
+|||                   [ 8,  9, 10, 11]],
+|||                  [[12, 13, 14, 15],
+|||                   [16, 17, 18, 19],
+|||                   [20, 21, 22, 23]]]
+||| ```
+||| `transpose [0, 2, 1]` is
+||| ```
+||| x : Tensor [2, 4, 3] S32
+||| x = fromLiteral [[[ 0,  4,  8],
+|||                   [ 1,  5,  9],
+|||                   [ 2,  6, 10],
+|||                   [ 3,  7, 11]],
+|||                  [[12, 16, 20],
+|||                   [13, 17, 21],
+|||                   [14, 18, 22],
+|||                   [15, 19, 23]]]
+||| ```
+||| `transpose [2, 0, 1]` is
+||| ```
+||| x : Tensor [4, 2, 3] S32
+||| x = fromLiteral [[[ 0,  4,  8],
+|||                   [12, 16, 20]],
+|||                  [[ 1,  5,  9],
+|||                   [13, 17, 21]],
+|||                  [[ 2,  6, 10],
+|||                   [14, 18, 22]],
+|||                  [[ 3,  7, 11],
+|||                   [15, 19, 23]]]
+||| ```
+|||
+||| In order to see what effect transposing a tensor has, it can help to bear in mind the following:
+||| * if an element can be found with `slice [at 3, at 4, at 5] x` in the original tensor,
+|||   that same element can instead be found with `slice [at 5, at 3, at 4]` given a
+|||   `transpose [2, 0, 1]`. That is, transposing axes re-orders indices when indexing.
+||| * with `transpose [2, 0, 1]`, traversing the first axis in the result is equivalent to
+|||   traversing the last axis in the input. Similarly, traversing the last axis in the result is
+|||   equivalent to traversing the second axis in the input.
+export
+transpose :
+  (ordering : List Nat) ->
+  Tensor shape dtype ->
+  {auto 0 lengths : length ordering = length shape} ->
+  {auto 0 unique : Sorted Neq ordering} ->
+  {auto 0 inBounds : All (flip InBounds shape) ordering} ->
+  Tensor (map (index' shape) ordering) dtype
+transpose ordering (MkTensor expr) = MkTensor $ Transpose ordering expr
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```

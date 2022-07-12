@@ -136,7 +136,6 @@ reshape = fixedProperty $ do
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
   reshape x ===# flattened
 
-
 namespace MultiSlice
   indexFirstDim :
     (n, idx : Nat) ->
@@ -432,6 +431,44 @@ squeezableCannotRemoveNonOnes (Nest _) impossible
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
       expected = fromLiteral [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
   x.T ===# expected
+
+transpose : Property
+transpose = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [[0, 1], [2, 3]]
+  transpose [0, 1] x ===# x
+  transpose [1, 0] x ===# fromLiteral [[0, 2], [1, 3]]
+
+  let x = fromLiteral {dtype=S32}
+        [[[ 0,  1,  2,  3],
+          [ 4,  5,  6,  7],
+          [ 8,  9, 10, 11]],
+         [[12, 13, 14, 15],
+          [16, 17, 18, 19],
+          [20, 21, 22, 23]]]
+  transpose [0, 2, 1] x ===# fromLiteral
+    [[[ 0,  4,  8],
+      [ 1,  5,  9],
+      [ 2,  6, 10],
+      [ 3,  7, 11]],
+     [[12, 16, 20],
+      [13, 17, 21],
+      [14, 18, 22],
+      [15, 19, 23]]]
+  transpose [2, 0, 1] x ===# fromLiteral
+    [[[ 0,  4,  8],
+      [12, 16, 20]],
+     [[ 1,  5,  9],
+      [13, 17, 21]],
+     [[ 2,  6, 10],
+      [14, 18, 22]],
+     [[ 3,  7, 11],
+      [15, 19, 23]]]
+
+  let x : Array [120] Int = fromList [0..119]
+      x : Tensor [2, 3, 4, 5] S32 = reshape $ fromLiteral {shape=[120]} (cast x)
+  transpose [0, 1, 2, 3] x ===# x
+  slice [all, at 1, at 0] (transpose [0, 2, 1, 3] x) ===# slice [all, at 0, at 1] x
+  slice [at 2, at 4, at 0, at 1] (transpose [2, 3, 1, 0] x) ===# slice [at 1, at 0, at 2, at 4] x
 
 covering
 mapResult : Property
@@ -1239,6 +1276,7 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
+    , ("transpose", transpose)
     , ("map", mapResult)
     , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
