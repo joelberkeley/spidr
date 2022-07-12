@@ -48,6 +48,8 @@ import Types
 import Util
 import Util.Hashable
 
+%hide Util.List.All.map
+
 Cache : Type
 Cache = SortedMap Bits64 (List (Expr, XlaOp))
 
@@ -114,7 +116,7 @@ enqueue e@(Concat axis expr expr') = cached e $ do
   concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)
 enqueue e@(Diag expr) = cached e $ getMatrixDiagonal !(enqueue expr)
 enqueue e@(Triangle tri expr) = cached e $ triangle !(enqueue expr) tri
-enqueue e@(Transpose expr) = cached e $ transpose !(enqueue expr) [1, 0]
+enqueue e@(Transpose ordering expr) = cached e $ transpose !(enqueue expr) ordering
 enqueue e@(Identity {dtype} n) = cached e $ let n = cast n in do
   (builder, _) <- get
   identityMatrix {dtype} builder n n

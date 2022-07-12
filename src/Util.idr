@@ -21,6 +21,11 @@ import public Data.List.Quantifiers
 import public Data.Nat
 import public Data.Vect
 
+||| A `Neq x y` proves `x` is not equal to `y`.
+public export
+Neq : Nat -> Nat -> Type
+Neq x y = Either (LT x y) (GT x y)
+
 namespace Vect
   ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
   |||
@@ -82,6 +87,13 @@ namespace List
   deleteAt : (idx : Nat) -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
   deleteAt {prf=InFirst} Z (_ :: xs) = xs
   deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs
+
+  namespace All
+    ||| Map a constrained function over a list given a list of constraints.
+    public export
+    map : (f : (x : a) -> {0 ok : p x} -> b) -> (xs : List a) -> {auto 0 allOk : All p xs} -> List b
+    map f [] {allOk = []} = []
+    map f (x :: xs) {allOk = ok :: _} = f {ok} x :: map f xs
 
   ||| A `Sorted f (x :: xs)` proves that `(x :: xs)` is sorted such that `f x y` exists for all `y`
   ||| in `xs`. For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing

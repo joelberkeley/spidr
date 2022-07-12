@@ -45,7 +45,7 @@ data Expr : Type where
   Concat : Nat -> Expr -> Expr -> Expr
   Diag : Expr -> Expr
   Triangle : (lower : Bool) -> Expr -> Expr
-  Transpose : Expr -> Expr
+  Transpose : List Nat -> Expr -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Expr -> Expr
   Map : Fn n Expr -> Vect n Expr -> Shape -> Expr
@@ -120,7 +120,7 @@ Prelude.Eq Expr where
   (Concat axis x y) == (Concat axis' x' y') = axis == axis' && x == x' && y == y'
   (Diag x) == (Diag x') = x == x'
   (Triangle lower x) == (Triangle lower' x') = lower == lower' && x == x'
-  (Transpose x) == (Transpose x') = x == x'
+  (Transpose ordering x) == (Transpose ordering' x') = ordering == ordering' && x == x'
   (Identity {dtype} n) == (Identity {dtype=dtype'} n') =
     (typeString {dtype}, n) == (typeString {dtype=dtype'}, n')
   (Broadcast from to x) == (Broadcast from' to' x') = (from, to) == (from', to') && x == x'
@@ -229,7 +229,8 @@ Hashable Expr where
     salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
   hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` ("Triangle", lower) `hashWithSalt` x
-  hashWithSalt salt (Transpose x) = salt `hashWithSalt` "Transpose" `hashWithSalt` x
+  hashWithSalt salt (Transpose ordering x) =
+      salt `hashWithSalt` ("Transpose", ordering) `hashWithSalt` x
   hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
   hashWithSalt salt (Broadcast from to x) =
     salt `hashWithSalt` ("Broadcast", from, to) `hashWithSalt` x
