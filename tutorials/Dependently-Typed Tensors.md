@@ -17,7 +17,7 @@ limitations under the License.
 
 ## What are dependent types?
 
-spidr utilises the dependent types offered by Idris. Dependent types allow you to have values in types (here's an introductory [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU) on dependent types, a [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and a [book](https://www.manning.com/books/type-driven-development-with-idris)). Let's see an example of relevance to spidr. A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
+spidr utilises the dependent types offered by Idris, which allow values in types. In this tutorial, we'll see how this helps use write a well-define tensor API. For more general introductions to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris)). Let's see an example of relevance to spidr. A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
 <!-- idris
 import Data.Vect
 -->
