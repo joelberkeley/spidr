@@ -19,7 +19,7 @@ In this tutorial, we look at how spidr uses dependent types, which allow values 
 
 ## What are dependent types?
 
-Let's explore an example of dependent types relevant to spidr (for a more general introduction to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris)). A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
+Let's explore an example of dependent types relevant to spidr (for a more general introduction to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris)). A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any size
 <!-- idris
 import Data.Vect
 -->
@@ -30,13 +30,13 @@ xs = [0, 1, 2]
 xs' : List Int
 xs' = []
 ```
-It works great for operations that are blind to the number of elements, like iteration and sorting, but if we want to access specific elements, we come across difficulties. We can see this if we try to write a function `head` which gives us the first element of a list:
+It works great for operations that are blind to the list's size, like iteration and sorting, but if we want to access specific elements, we come across difficulties. We can see this if we try to write a function `head` which gives us the first element:
 ```idris
 head : List Int -> Int
 head [] = ?hmmm
 head (x :: _) = x
 ```
-We have a problem. `head` requires there is an initial element to return, which empty lists don't have. Put another way, we don't have any evidence that the list has an element we can return. Dependent types allow us to provide this evidence. Let's see an example. A `Vect n Int` is also a list of integers, but unlike `List Int` it's a dependent type which always contains precisely `n` integers (where `n` is a natural number). Here's an example:
+We have a problem. `head` requires there is an initial element to return, which empty lists don't have. Put another way, we don't have any evidence that the list has an element we can return. Dependent types allow us to provide this evidence. A `Vect n Int` is also a list of integers, but unlike `List Int` it's a dependent type which always contains precisely `n` integers (where `n` is a natural number). Here's an example:
 ```idris
 ys : Vect 3 Int
 ys = [0, 1, 2]
