@@ -36,7 +36,7 @@ head : List Int -> Int
 head [] = ?hmmm
 head (x :: _) = x
 ```
-We have a problem. `head` requires there is an initial element to return, which empty lists don't have. Put another way, we don't have any evidence that the list has an element we can return. Dependent types allow us to provide this evidence. A `Vect n Int` is also a list of integers, but unlike `List Int` it's a dependent type which always contains precisely `n` integers (where `n` is a natural number). Here's an example:
+We have a problem. `head` requires there is an initial element to return, which empty lists don't have. Put another way, we don't have any evidence that the list has an element we can return. Dependent types allow us to provide this evidence. A `Vect n Int` is also a list of integers, but unlike `List Int` it's a dependent type which always contains precisely `n` integers (where `n` is a natural number). The size of the list is verified at compile time. Here's an example:
 ```idris
 ys : Vect 3 Int
 ys = [0, 1, 2]
@@ -48,7 +48,7 @@ namespace Vect
   head [] impossible
   head (x :: _) = x
 ```
-Here, `S n` means any number one greater than another (thus precluding zero), and `impossible` indicates that the particular case of an empty list can never happen. It's important to note that size of the list is now checked at compile time, unlike an exception which we'd only encounter at runtime. The code `Vect.head []` would not compile. This kind of precision can be used not only to constrain arguments, but also function return values. For example, consider the nested list, or matrix
+Here, `S n` means any number one greater than another (thus precluding zero), and `impossible` indicates that the particular case of an empty list can never happen. The code `Vect.head []` would not compile. This kind of precision can be used not only to constrain arguments, but also guarantee function return values. For example, consider the nested list, or matrix
 ```idris
 zs : Vect 2 (Vect 3 Int)
 zs = [[3, 5, 7],
