@@ -19,7 +19,7 @@ In this tutorial, we look at how spidr uses dependent types, which allow values 
 
 ## What are dependent types?
 
-Let's explore an example dependent types relevant to spidr (for a more general introduction to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris)). A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
+Let's explore an example of dependent types relevant to spidr (for a more general introduction to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris)). A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
 <!-- idris
 import Data.Vect
 -->
@@ -30,7 +30,7 @@ xs = [0, 1, 2]
 xs' : List Int
 xs' = []
 ```
-It works great for operations that are blind to the number of elements, like iteration and sorting, but if we want to access specific elements, we come across difficulties. Let's write a function `head` which gives us the first element of a list:
+It works great for operations that are blind to the number of elements, like iteration and sorting, but if we want to access specific elements, we come across difficulties. We can see this if we try to write a function `head` which gives us the first element of a list:
 ```idris
 head : List Int -> Int
 head [] = ?hmmm
