@@ -34,7 +34,7 @@ head : List Int -> Int
 head [] = ?hmmm
 head (x :: _) = x
 ```
-We have a problem. `head` requires there is an initial element to return, which empty lists don't have. Put another way, we don't have any evidence that the list has an element to return. Dependent types allow us to provide this evidence. Let's see an example. A `Vect n Int` is also a list of integers, but unlike `List Int` it's a dependent type which always contains precisely `n` integers (where `n` is a natural number). Here's an example:
+We have a problem. `head` requires there is an initial element to return, which empty lists don't have. Put another way, we don't have any evidence that the list has an element we can return. Dependent types allow us to provide this evidence. Let's see an example. A `Vect n Int` is also a list of integers, but unlike `List Int` it's a dependent type which always contains precisely `n` integers (where `n` is a natural number). Here's an example:
 ```idris
 ys : Vect 3 Int
 ys = [0, 1, 2]
