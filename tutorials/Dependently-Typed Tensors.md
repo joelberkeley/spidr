@@ -15,7 +15,7 @@ limitations under the License.
 -->
 # Dependently-Typed Tensors
 
-In this tutorial, we look at how spidr uses dependent types, which allow values in types, to provide a well-defined tensor API.
+In this tutorial, we look at how spidr uses dependent types to provide a well-defined tensor API.
 
 ## What are dependent types?
 
@@ -41,7 +41,7 @@ We have a problem. `head` requires there is an initial element to return, which 
 ys : Vect 3 Int
 ys = [0, 1, 2]
 ```
-If we tried to implement this with `ys = [0]`, it wouldn't compile, as `[0]` is a `Vect 1 Nat`. With the extra information of how many elements are in the list, we can now define `head` for `Vect`:
+If we tried to implement this with `ys = [0]`, it wouldn't compile, as `[0]` is a `Vect 1 Int`. With the extra information of how many elements are in the list, we can now define `head` for `Vect`:
 ```idris
 namespace Vect
   head : Vect (S n) Int -> Int
