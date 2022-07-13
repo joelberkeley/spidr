@@ -48,7 +48,7 @@ namespace Vect
   head [] impossible
   head (x :: _) = x
 ```
-Here, `S n` means any number one greater than another (thus precluding zero), and `impossible` indicates that the particular case of an empty list can never happen. It's important to note that this is guaranteed at compile time, unlike an exception which we'd only encounter at runtime. This kind of precision can be used not only to constrain arguments, but also function return values. For example, consider the nested list, or matrix
+Here, `S n` means any number one greater than another (thus precluding zero), and `impossible` indicates that the particular case of an empty list can never happen. It's important to note that size of the list is now checked at compile time, unlike an exception which we'd only encounter at runtime. The code `Vect.head []` would not compile. This kind of precision can be used not only to constrain arguments, but also function return values. For example, consider the nested list, or matrix
 ```idris
 zs : Vect 2 (Vect 3 Int)
 zs = [[3, 5, 7],
