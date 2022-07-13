@@ -19,7 +19,7 @@ In this tutorial, we look at how spidr uses dependent types, which allow values 
 
 ## What are dependent types?
 
-In this section, we'll introduce an example dependent types relevant to spidr. For a more general introduction to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris). A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
+Let's explore an example dependent types relevant to spidr (for a more general introduction to dependent types, we recommend this [talk](https://www.youtube.com/watch?v=mOtKD7ml0NU), this [tutorial](https://github.com/stefan-hoeck/idris2-tutorial) and this [book](https://www.manning.com/books/type-driven-development-with-idris)). A `List Int` is a list of integers. These are representable in any language from C++ to Swift. It's not a dependent type, and it can have any number of elements
 <!-- idris
 import Data.Vect
 -->
