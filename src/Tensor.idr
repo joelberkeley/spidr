@@ -344,10 +344,6 @@ export
 (.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
 (MkTensor expr).T = MkTensor $ Transpose [1, 0] expr
 
-public export
-index' : (xs : List Nat) -> (n : Nat) -> {auto 0 ok : InBounds n xs} -> Nat
-index' xs n = index n xs
-
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
 ||| corresponds to the `index i ordering`'th axis in the input tensor. For example, for
@@ -399,7 +395,7 @@ transpose :
   {auto 0 lengths : length ordering = length shape} ->
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
-  Tensor (map (index' shape) ordering) dtype
+  Tensor (map (dflip List.index shape) ordering) dtype
 transpose ordering (MkTensor expr) = MkTensor $ Transpose ordering expr
 
 ||| The identity tensor, with inferred shape and element type. For example,
