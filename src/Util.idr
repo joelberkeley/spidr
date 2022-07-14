@@ -21,8 +21,8 @@ import public Data.List.Quantifiers
 import public Data.Nat
 import public Data.Vect
 
-||| A dependent variant of `flip`, `dflip` flips the order of arguments for a function. That is,
-||| `dflip f x y` is the same as `f y x`.
+||| A dependent variant of `flip` where the return type can depend on the input values. `dflip`
+||| flips the order of arguments for a function, such that, `dflip f x y` is the same as `f y x`.
 public export
 dflip : {0 c : a -> b -> Type} -> ((x : a) -> (y : b) -> c x y) -> (y : b) -> (x : a) -> c x y
 dflip f y x = f x y
