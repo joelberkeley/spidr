@@ -321,7 +321,7 @@ slice at (MkTensor expr) =
       size _ (Slice {size'} _ _) = size'
       size _ (Index _) = 1
       size _ (DynamicSlice _ size') = size'
-      size _ (DynamicIndex idx) = 1
+      size _ (DynamicIndex _) = 1
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
