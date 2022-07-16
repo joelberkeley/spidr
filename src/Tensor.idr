@@ -285,8 +285,8 @@ slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tens
 slice at (MkTensor expr) =
   let sliced =
         Slice (gather start (const 0) at) (gather stop id at) (replicate (length shape) 1) expr
-      sliced = DynamicSlice (gather dynStart (const zero) at) (gather dynSize id at) sliced
-   in MkTensor $ Reshape (gather dynSize id at) (MultiSlice.slice at) sliced
+      sliced = DynamicSlice (gather dynStart (const zero) at) (gather size' id at) sliced
+   in MkTensor $ Reshape (gather size' id at) (MultiSlice.slice at) sliced
 
       -- this feels like I could do better
       where
@@ -317,11 +317,11 @@ slice at (MkTensor expr) =
       dynStart _ (DynamicIndex (MkTensor idx)) = idx
       dynStart f {d} _ = f d
 
-      dynSize : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      dynSize _ (Slice {size} _ _) = size
-      dynSize _ (Index _) = 1
-      dynSize _ (DynamicSlice _ size) = size
-      dynSize _ (DynamicIndex idx) = 1
+      size' : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+      size' _ (Slice {size} _ _) = size
+      size' _ (Index _) = 1
+      size' _ (DynamicSlice _ size) = size
+      size' _ (DynamicIndex idx) = 1
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
