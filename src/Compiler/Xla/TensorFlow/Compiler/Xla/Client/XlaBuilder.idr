@@ -159,6 +159,7 @@ concatInDim :
   HasIO io =>
   XlaBuilder ->
   (operands : List XlaOp) ->
+  {auto 0 _ : NonEmpty operands} ->
   Nat ->
   io XlaOp
 concatInDim (MkXlaBuilder builder) operands dimension = do
