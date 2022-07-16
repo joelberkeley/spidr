@@ -283,21 +283,20 @@ namespace MultiSlice
 export
 slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
 slice at (MkTensor expr) =
-  let sliced =
-        Slice (gather start (const 0) at) (gather stop id at) (replicate (length shape) 1) expr
-      sliced = DynamicSlice (gather dynStart (const zero) at) (gather size id at) sliced
-   in MkTensor $ Reshape (gather size id at) (MultiSlice.slice at) sliced
+  let sliced = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) expr
+      sliced = DynamicSlice (mapd dynStart (const zero) at) (mapd size id at) sliced
+   in MkTensor $ Reshape (mapd size id at) (MultiSlice.slice at) sliced
 
       -- this feels like I could do better
       where
-      gather :
+      mapd :
         ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
         (Nat -> a) ->
         {shape : Shape} ->
         MultiSlice shape ->
         List a
-      gather _ dflt {shape} [] = Prelude.map dflt shape
-      gather f dflt (x :: xs) = f dflt x :: gather f dflt xs
+      mapd _ dflt {shape} [] = Prelude.map dflt shape
+      mapd f dflt (x :: xs) = f dflt x :: mapd f dflt xs
 
       start : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
       start _ (Slice from _) = from
@@ -318,7 +317,7 @@ slice at (MkTensor expr) =
       dynStart f {d} _ = f d
 
       size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      size _ (Slice {size'} _ _) = size'
+      size _ (Slice {size=size'} _ _) = size'
       size _ (Index _) = 1
       size _ (DynamicSlice _ size') = size'
       size _ (DynamicIndex _) = 1
