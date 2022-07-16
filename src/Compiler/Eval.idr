@@ -111,6 +111,8 @@ enqueue e@(MaxFiniteValue {dtype}) = cached e $ do
 enqueue e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(enqueue expr)
 enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ length from) to
 enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
+enqueue e@(DynamicSlice starts sizes expr) =
+  cached e $ dynamicSlice !(enqueue expr) !(traverse enqueue starts) sizes
 enqueue e@(Concat axis expr expr') = cached e $ do
   (builder, _) <- get
   concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)

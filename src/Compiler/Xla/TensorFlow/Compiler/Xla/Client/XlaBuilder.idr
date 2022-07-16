@@ -143,11 +143,22 @@ slice (MkXlaOp opPtr) startIndices limitIndices strides = do
   pure (MkXlaOp opPtr)
 
 export
+dynamicSlice : HasIO io => XlaOp -> List XlaOp -> List Nat -> io XlaOp
+dynamicSlice (MkXlaOp opPtr) startIndices sizeIndices = do
+  MkXlaOpArray startIndicesArrayPtr <- mkXlaOpArray startIndices
+  MkIntArray sizeIndicesArrayPtr <- mkIntArray sizeIndices
+  opPtr <- primIO $ prim__dynamicSlice
+    opPtr
+    startIndicesArrayPtr (cast $ length startIndices)
+    sizeIndicesArrayPtr (cast $ length sizeIndices)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 concatInDim :
   HasIO io =>
   XlaBuilder ->
   (operands : List XlaOp) ->
-  {auto 0 _ : NonEmpty operands} ->
   Nat ->
   io XlaOp
 concatInDim (MkXlaBuilder builder) operands dimension = do

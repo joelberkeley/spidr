@@ -172,6 +172,24 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* DynamicSlice(
+        XlaOp& operand, XlaOp* start_indices, int start_indices_len, int* slice_sizes, int slice_sizes_len
+    ) {
+        auto operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto start_indices_ = reinterpret_cast<xla::XlaOp*>(start_indices);
+
+        int64_t slice_sizes64[slice_sizes_len];
+        std::copy(slice_sizes, slice_sizes + slice_sizes_len, slice_sizes64);
+
+        xla::XlaOp res = xla::DynamicSlice(
+            operand_,
+            absl::Span<xla::XlaOp>(start_indices_, start_indices_len),
+            absl::Span<const int64_t>(slice_sizes64, slice_sizes_len)
+        );
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension) {
         auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);

@@ -223,6 +223,15 @@ sliceForVariableIndex = property $ do
   inDim {idx = 0} = LTESucc LTEZero
   inDim {idx = (S k)} = LTESucc inDim
 
+namespace Dynamic
+  export
+  slice : Property
+  slice = fixedProperty $ do
+    let idx = fromLiteral {dtype=U64} 1
+        start = fromLiteral {dtype=U64} 2
+        xs = fromLiteral {dtype=S32} [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+    slice [at idx, start.sized 2] xs ===# fromLiteral [6, 7]
+
 concat : Property
 concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
@@ -1268,6 +1277,7 @@ group = MkGroup "Tensor" $ [
     , ("MultiSlice.slice", MultiSlice.slice)
     , ("slice", TestTensor.slice)
     , ("slice for variable index", sliceForVariableIndex)
+    , ("Dynamic.slice", TestTensor.Dynamic.slice)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
