@@ -33,10 +33,6 @@ boolToCInt : Bool -> Int
 boolToCInt True = 1
 boolToCInt False = 0
 
-export
-printAddress : GCAnyPtr -> IO ()
-printAddress = primIO . prim__printAddress
-
 public export
 data IntArray : Type where
   MkIntArray : GCPtr Int -> IntArray
