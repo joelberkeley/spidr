@@ -37,7 +37,7 @@ main = test [
     , Unit.Util.TestHashable.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group
-    , Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder
+    , Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder.group
     , Unit.TestTensor.group
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group

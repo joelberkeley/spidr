@@ -15,7 +15,7 @@ limitations under the License.
 --}
 module Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder
 
-import Compiler.Computation
+import Compiler.Eval
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
