@@ -192,6 +192,7 @@ at : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
 at = Index
 
 namespace Dynamic
+  ||| Index at the specified index. See `slice` for details.
   public export
   at : Tensor [] U64 -> SliceOrIndex d
   at = DynamicIndex
