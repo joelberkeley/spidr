@@ -236,9 +236,7 @@ namespace MultiSlice
   slice {shape=(_ :: _)} (DynamicIndex _ :: xs) = slice xs
 
 ||| Slice or index `Tensor` axes. Each axis can either be sliced or indexed (or unaltered), and
-||| this can be done with either static (`Nat`) or dynamic (`Tensor [] U64`) indices. Static and
-||| dynamic slicing are specified in different ways. Slices, indices, static and dynamic can be
-||| mixed arbitrarily in any given call to `slice`.
+||| this can be done with either static (`Nat`) or dynamic (`Tensor [] U64`) indices.
 |||
 ||| **Static indices**
 |||
