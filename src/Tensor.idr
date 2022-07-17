@@ -336,7 +336,6 @@ slice at (MkTensor expr) =
       sliced = DynamicSlice (mapd dynStart (const zero) at) (mapd size id at) sliced
    in MkTensor $ Reshape (mapd size id at) (MultiSlice.slice at) sliced
 
-      -- I want this to be better. It's not very coherent
       where
       mapd :
         ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
