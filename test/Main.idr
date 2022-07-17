@@ -21,7 +21,7 @@ import Hedgehog
 import TestUtils
 import Utils.TestComparison
 
-import Unit.Compiler.TestDebug
+import Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder
 import Unit.Model.TestKernel
 import Unit.Util.TestHashable
 import Unit.TestDistribution
