@@ -65,7 +65,6 @@ build (MkXlaBuilder ptr) (MkXlaOp root)= do
   computationPtr <- onCollectAny computationPtr XlaComputation.delete
   pure (MkXlaComputation computationPtr)
 
--- is this in IO?
 export
 getShape : HasIO io => XlaBuilder -> XlaOp -> io Xla.Shape
 getShape (MkXlaBuilder builder) (MkXlaOp op) = do
