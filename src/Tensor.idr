@@ -233,7 +233,14 @@ namespace MultiSlice
   slice {shape=(_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
   slice {shape=(_ :: _)} (DynamicIndex _ :: xs) = slice xs
 
-||| Slice or index `Tensor` axes. For example, for
+||| Slice or index `Tensor` axes. Each axis can either be sliced or indexed (or unaltered), and
+||| this can be done with either static (`Nat`) or dynamic (`Tensor [] U64`) indices. Static and
+||| dynamic slicing are specified in different ways. Slices, indices, static and dynamic can be
+||| mixed arbitrarily in any given call to `slice`.
+|||
+||| **Static indices**
+|||
+||| Static indices are `Nat`s. For example, for
 ||| ```
 ||| x : Tensor [5, 6] S32
 ||| x = fromLiteral [
@@ -258,26 +265,67 @@ namespace MultiSlice
 |||     ]
 ||| ```
 ||| Note that in `2.to 4`, the 2 is inclusive, and the 4 exclusive, so we return indices 2 and 3.
-||| We can also slice and index across multiple consecutive axes at once, for example as
-||| `slice [2.to 4, at 1] x` to get
+|||
+||| **Dynamic indices**
+|||
+||| Dynamic indices are scalar `U64` values, and the API works slightly differently because we
+||| don't know the value of dynamic indices until the graph is executed. For indexing, with scalar
+||| `U64` index `i` in `slice [at i] x`, `i` is clamped to be a valid index into that dimension.
+||| For example, for `i = fromLiteral 1`, `slice [at i] x` is
+||| ```
+||| x : Tensor [6] S32
+||| x = fromLiteral [6, 7, 8, 9, 10, 11]
+||| ```
+||| as in the static case. However, for `i = fromLiteral 10`, `slice [at i] x` returns the last row
+||| ```
+||| x : Tensor [6] S32
+||| x = fromLiteral [24, 25, 26, 27, 28, 29]
+||| ```
+||| We can also slice by specifying a scalar `U64` start index, and a static size, as
+||| `slice [i.sized 2] x` with `i = fromLiteral 2` to get
+||| ```
+||| x : Tensor [2, 6] S32
+||| x = fromLiteral [
+|||       [12, 13, 14, 15, 16, 17],
+|||       [18, 19, 20, 21, 22, 23]
+|||     ]
+||| ```
+||| For a given slice `size`, the dynamic start index is clamped such that we always get `size`
+||| elements along that axis. For example, `slice [i.sized 2] x` with `i = fromLiteral 4` is
+||| ```
+||| x : Tensor [2, 6] S32
+||| x = fromLiteral [
+|||       [18, 19, 20, 21, 22, 23],
+|||       [24, 25, 26, 27, 28, 29]
+|||     ]
+||| ```
+||| which starts at index 3 rather than index 4.
+|||
+||| **Mixed static, dynamic, slicing and indexing**
+|||
+||| Each axis can only be sliced or indexed, and must use only static or dynamic indices. However,
+||| across axes, we can mix these four arbitrarily. For example, with `slice [2.to 4, at 1] x` to
+||| get
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [13, 19]
 ||| ```
-||| or as `slice [at 1, 2.to 4] x` to get
+||| or with `i = fromLiteral 2` in `slice [at 1, i.sized 2] x` to get
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [7, 8]
 ||| ```
+|||
 ||| Slices and indices apply to the leading axes of the tensor. For trailing axes omitted from the
-||| multi-dimensional slice, the whole of the axis is returned. If we want to slice over
+||| multi-dimensional slice, the whole of the axis is returned. If we want to slice or index over
 ||| later axes and retain all indices in a leading axis, we can use the convenience function `all`,
 ||| as `slice [all, at 3] x` to get
 ||| ```
 ||| x : Tensor [5] S32
 ||| x = fromLiteral [[3], [9], [15], [21], [27]]
 ||| ```
-||| This is exactly the same as the more manual approach `slice [0.to 5, at 3] x`.
+||| This is exactly the same as the more manual `slice [0.to 5, at 3] x` and
+||| `slice [(fromLiteral 0).sized 5, at 3] x`.
 |||
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
