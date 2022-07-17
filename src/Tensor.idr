@@ -207,7 +207,7 @@ public export
   SliceOrIndex d
 (.to) = Slice
 
-||| Slice `size` elements starting at the specified scalar `U64` index.
+||| Slice `size` elements starting at the specified scalar `U64` index. See `slice` for details.
 public export
 (.sized) : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
 (.sized) = DynamicSlice
