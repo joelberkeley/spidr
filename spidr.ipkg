@@ -9,7 +9,6 @@ modules =
   BayesianOptimization.Acquisition,
   BayesianOptimization.Morphisms,
 
-  Compiler.Debug,
   Compiler.Eval,
   Compiler.Expr,
   Compiler.LiteralRW,

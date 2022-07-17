@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Unit.Compiler.TestDebug
+module Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder
 
 import Compiler.Computation
-import Compiler.Debug
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
+import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Literal
@@ -27,13 +27,14 @@ import Utils.Comparison
 import Utils.Cases
 
 export
-shapeString : Property
-shapeString = fixedProperty $ do
+xlaOpShapeDebugString : Property
+xlaOpShapeDebugString = fixedProperty $ do
   let str : String = unsafePerformIO $ do
         lit <- write {dtype=S32} [[0, 1, 2], [3, 4, 5]]
         builder <- mkXlaBuilder ""
         op <- constantLiteral builder lit
-        shapeString builder op
+        shape <- getShape builder op
+        pure (debugString shape)
 
   str ===
     "element_type: S32\n" ++
@@ -50,5 +51,5 @@ shapeString = fixedProperty $ do
 export covering
 group : Group
 group = MkGroup "Debug" $ [
-      ("shape string", shapeString)
+      ("XlaOp shape debug string", xlaOpShapeDebugString)
   ]

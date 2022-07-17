@@ -33,12 +33,12 @@ covering
 main : IO ()
 main = test [
       Utils.TestComparison.group
-    -- , TestUtils.group
-    -- , Unit.Util.TestHashable.group
-    -- , Unit.TestUtil.group
-    -- , Unit.TestLiteral.group
-    , Unit.Compiler.TestDebug.group
-    -- , Unit.TestTensor.group
-    -- , Unit.TestDistribution.group
-    -- , Unit.Model.TestKernel.group
+    , TestUtils.group
+    , Unit.Util.TestHashable.group
+    , Unit.TestUtil.group
+    , Unit.TestLiteral.group
+    , Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder
+    , Unit.TestTensor.group
+    , Unit.TestDistribution.group
+    , Unit.Model.TestKernel.group
   ]

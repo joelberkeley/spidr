@@ -16,7 +16,8 @@ executable = test
 main = Main
 
 modules =
-  Unit.Compiler.TestDebug,
+  Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder,
+
   Unit.Model.TestKernel,
   Unit.Util.TestHashable,
   Unit.TestDistribution,
