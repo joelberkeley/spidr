@@ -79,7 +79,7 @@ export
 Traversable (Literal shape) where
   traverse f (Scalar x) = [| Scalar (f x) |]
   traverse f [] = pure []
-  traverse f (x :: xs) = [| (traverse f x) :: (traverse f xs) |]
+  traverse f (x :: xs) = [| traverse f x :: traverse f xs |]
 
 export
 Zippable (Literal shape) where
