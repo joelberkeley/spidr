@@ -58,11 +58,6 @@ Functor (Literal shape) where
   map _ [] = []
   map f (x :: y) = (map f x) :: (map f y)
 
-apply : Literal shape (a -> b) -> Literal shape a -> Literal shape b
-apply (Scalar f) (Scalar x) = Scalar (f x)
-apply [] [] = []
-apply (f :: fs) (x :: xs) = apply f x :: apply fs xs
-
 export
 {shape : Shape} -> Applicative (Literal shape) where
   pure x = case shape of
@@ -70,13 +65,39 @@ export
     (0 :: _) => []
     (S d :: ds) => pure x :: (the (Literal (d :: ds) _) $ pure x)
 
-  (<*>) = apply
+  (Scalar f) <*> (Scalar x) = Scalar (f x)
+  [] <*> [] = []
+  (f :: fs) <*> (x :: xs) = (f <*> x) :: (fs <*> xs)
 
 export
 Foldable (Literal shape) where
   foldr f acc (Scalar x) = f x acc
   foldr _ acc [] = acc
   foldr f acc (x :: y) = foldr f (foldr f acc y) x
+
+export
+Zippable (Literal shape) where
+  zipWith f (Scalar x) (Scalar y) = Scalar (f x y)
+  zipWith _ [] [] = []
+  zipWith f (x :: xs) (y :: ys) = zipWith f x y :: zipWith f xs ys
+
+  zipWith3 f (Scalar x) (Scalar y) (Scalar z) = Scalar (f x y z)
+  zipWith3 _ [] [] [] = []
+  zipWith3 f (x :: xs) (y :: ys) (z :: zs) = zipWith3 f x y z :: zipWith3 f xs ys zs
+
+  unzipWith f (Scalar x) = let (x, y) = f x in (Scalar x, Scalar y)
+  unzipWith _ [] = ([], [])
+  unzipWith f (x :: xs) =
+    let (x, y) = unzipWith f x
+        (xs, ys) = unzipWith f xs
+     in (x :: xs, y :: ys)
+
+  unzipWith3 f (Scalar x) = let (x, y, z) = f x in (Scalar x, Scalar y, Scalar z)
+  unzipWith3 _ [] = ([], [], [])
+  unzipWith3 f (x :: xs) =
+    let (x, y, z) = unzipWith3 f x
+        (xs, ys, zs) = unzipWith3 f xs
+     in (x :: xs, y :: ys, z :: zs)
 
 ||| `True` if no elements are `False`. `all []` is `True`.
 export
@@ -95,7 +116,7 @@ negate = map negate
 
 export
 Eq a => Eq (Literal shape a) where
-  x == y = all (map (==) x `apply` y)
+  x == y = all (zipWith (==) x y)
 
 toVect : Literal (d :: ds) a -> Vect d (Literal ds a)
 toVect [] = []
