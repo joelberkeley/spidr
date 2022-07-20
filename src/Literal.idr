@@ -63,10 +63,12 @@ mapPreservesIdentity (Scalar _) = Refl
 mapPreservesIdentity [] = Refl
 mapPreservesIdentity (x :: xs) = cong2 (::) (mapPreservesIdentity x) (mapPreservesIdentity xs)
 
-mapPreservesComposition : (xs : Literal shape a) -> (f : a -> b) -> (g : b -> c) -> map (g . f) xs = map g (map f xs)
+mapPreservesComposition :
+  (xs : Literal shape a) -> (f : a -> b) -> (g : b -> c) -> map (g . f) xs = map g (map f xs)
 mapPreservesComposition (Scalar _) _ _ = Refl
 mapPreservesComposition [] _ _ = Refl
-mapPreservesComposition (x :: xs) f g = cong2 (::) (mapPreservesComposition x f g) (mapPreservesComposition xs f g)
+mapPreservesComposition (x :: xs) f g =
+  cong2 (::) (mapPreservesComposition x f g) (mapPreservesComposition xs f g)
 
 export
 {shape : Shape} -> Applicative (Literal shape) where
