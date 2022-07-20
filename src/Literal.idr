@@ -76,6 +76,12 @@ Foldable (Literal shape) where
   foldr f acc (x :: y) = foldr f (foldr f acc y) x
 
 export
+Traversable (Literal shape) where
+  traverse f (Scalar x) = [| Scalar (f x) |]
+  traverse f [] = pure []
+  traverse f (x :: xs) = [| traverse f x :: traverse f xs |]
+
+export
 Zippable (Literal shape) where
   zipWith f (Scalar x) (Scalar y) = Scalar (f x y)
   zipWith _ [] [] = []
