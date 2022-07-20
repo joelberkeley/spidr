@@ -59,6 +59,18 @@ Functor (Literal shape) where
   map f (x :: y) = (map f x) :: (map f y)
 
 export
+mapPreservesIdentity : (xs : Literal shape a) -> map Prelude.id xs = xs
+mapPreservesIdentity (Scalar _) = Refl
+mapPreservesIdentity [] = Refl
+mapPreservesIdentity (x :: xs) = cong2 (::) (mapPreservesIdentity x) (mapPreservesIdentity xs)
+
+export
+mapPreservesComposition : (xs : Literal shape a) -> (f : a -> b) -> (g : b -> c) -> map (g . f) xs = map g (map f xs)
+mapPreservesComposition (Scalar _) _ _ = Refl
+mapPreservesComposition [] _ _ = Refl
+mapPreservesComposition (x :: xs) f g = cong2 (::) (mapPreservesComposition x f g) (mapPreservesComposition xs f g)
+
+export
 {shape : Shape} -> Applicative (Literal shape) where
   pure x = case shape of
     [] => Scalar x
