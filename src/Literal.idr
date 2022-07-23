@@ -56,21 +56,22 @@ export
 Functor (Literal shape) where
   map f (Scalar x) = Scalar (f x)
   map _ [] = []
-  map f (x :: y) = (map f x) :: (map f y)
+  map f (x :: xs) = map f x :: map f xs
 
-mapIdentity : (xs : Literal shape a) -> map Prelude.id xs = xs
-mapIdentity (Scalar _) = Refl
-mapIdentity [] = Refl
-mapIdentity (x :: xs) = cong2 (::) (mapIdentity x) (mapIdentity xs)
+functorIdentity : (xs : Literal shape a) -> map Prelude.id xs = xs
+functorIdentity (Scalar _) = Refl
+functorIdentity [] = Refl
+functorIdentity (x :: xs) = cong2 (::) (functorIdentity x) (functorIdentity xs)
 
-mapComposition :
+functorComposition :
   (xs : Literal shape a) -> (f : a -> b) -> (g : b -> c) -> map (g . f) xs = map g (map f xs)
-mapComposition (Scalar _) _ _ = Refl
-mapComposition [] _ _ = Refl
-mapComposition (x :: xs) f g = cong2 (::) (mapComposition x f g) (mapComposition xs f g)
+functorComposition (Scalar _) _ _ = Refl
+functorComposition [] _ _ = Refl
+functorComposition (x :: xs) f g =
+  cong2 (::) (functorComposition x f g) (functorComposition xs f g)
 
 export
-{shape : Shape} -> Applicative (Literal shape) where
+{shape : _} -> Applicative (Literal shape) where
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
@@ -79,6 +80,42 @@ export
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
   (f :: fs) <*> (x :: xs) = (f <*> x) :: (fs <*> xs)
+
+applicativeIdentity : (xs : Literal shape a) -> pure Prelude.id <*> xs = xs
+applicativeIdentity (Scalar _) = Refl
+applicativeIdentity [] = Refl
+applicativeIdentity (x :: xs) = cong2 (::) (applicativeIdentity x) (applicativeIdentity xs)
+
+applicativeHomomorphism :
+  (shape : Shape) -> (f : a -> b) -> (x : a) -> pure f <*> pure x = pure {f = Literal shape} (f x)
+applicativeHomomorphism [] _ _ = Refl
+applicativeHomomorphism (d :: ds) f x = forCons d ds f x
+  where
+  forCons :
+    (d : Nat) ->
+    (ds : Shape) ->
+    (f : a -> b) ->
+    (x : a) ->
+    pure f <*> pure x = pure {f = Literal (d :: ds)} (f x)
+  forCons 0 _ _ _ = Refl
+  forCons (S d) ds f x = cong2 (::) (applicativeHomomorphism ds f x) (forCons d ds f x)
+
+applicativeInterchange :
+  (fs : Literal shape (a -> b)) -> (x : a) -> fs <*> pure x = pure ($ x) <*> fs
+applicativeInterchange (Scalar _) _ = Refl
+applicativeInterchange [] _ = Refl
+applicativeInterchange (f :: fs) x =
+  cong2 (::) (applicativeInterchange f x) (applicativeInterchange fs x)
+
+applicativeComposition :
+  (xs : Literal shape a) ->
+  (fs : Literal shape (a -> b)) ->
+  (gs : Literal shape (b -> c)) ->
+  pure (.) <*> gs <*> fs <*> xs = gs <*> (fs <*> xs)
+applicativeComposition (Scalar _) (Scalar _) (Scalar _) = Refl
+applicativeComposition [] [] [] = Refl
+applicativeComposition (x :: xs) (f :: fs) (g :: gs) =
+  cong2 (::) (applicativeComposition x f g) (applicativeComposition xs fs gs)
 
 export
 Foldable (Literal shape) where
