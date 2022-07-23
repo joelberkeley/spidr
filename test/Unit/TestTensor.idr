@@ -200,9 +200,11 @@ slice = fixedProperty $ do
   slice [1.to 2, at 2] x ===# fromLiteral [8]
 
   let x : Array [60] Int = fromList [0..59]
-      x = reshape {to=[4, 5, 3]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
-  -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4, 2]
-  slice [1.to 3, 0.to 4, at 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
+      x = reshape {to=[2, 5, 3, 2]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
+
+  let idx = fromLiteral {dtype=U64} 0
+      start = fromLiteral {dtype=U64} 1
+  slice [at 1, 2.to 5, start.sized 2, at idx] x ===# fromLiteral [[44, 46], [50, 52], [56, 58]]
 
 index : (idx : Nat) -> {auto 0 inDim : LT idx n} -> Literal [n] a -> Literal [] a
 index {inDim = (LTESucc _)} 0 (y :: _) = y
@@ -222,15 +224,6 @@ sliceForVariableIndex = property $ do
   inDim : {idx, rem : _} -> LTE (S idx) (idx + S rem)
   inDim {idx = 0} = LTESucc LTEZero
   inDim {idx = (S k)} = LTESucc inDim
-
-namespace Dynamic
-  export
-  slice : Property
-  slice = fixedProperty $ do
-    let idx = fromLiteral {dtype=U64} 1
-        start = fromLiteral {dtype=U64} 2
-        xs = fromLiteral {dtype=S32} [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-    slice [at idx, start.sized 2] xs ===# fromLiteral [6, 7]
 
 concat : Property
 concat = fixedProperty $ do
@@ -1276,7 +1269,6 @@ group = MkGroup "Tensor" $ [
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
     , ("slice", TestTensor.slice)
-    , ("slice dynamic", TestTensor.Dynamic.slice)
     , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
     , ("diag", diag)
