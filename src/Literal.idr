@@ -71,7 +71,7 @@ functorComposition (x :: xs) f g =
   cong2 (::) (functorComposition x f g) (functorComposition xs f g)
 
 export
-{shape : Shape} -> Applicative (Literal shape) where
+{shape : _} -> Applicative (Literal shape) where
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
