@@ -56,7 +56,7 @@ export
 Functor (Literal shape) where
   map f (Scalar x) = Scalar (f x)
   map _ [] = []
-  map f (x :: y) = (map f x) :: (map f y)
+  map f (x :: xs) = map f x :: map f xs
 
 functorIdentity : (xs : Literal shape a) -> map Prelude.id xs = xs
 functorIdentity (Scalar _) = Refl
