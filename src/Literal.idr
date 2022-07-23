@@ -89,16 +89,16 @@ applicativeIdentity (x :: xs) = cong2 (::) (applicativeIdentity x) (applicativeI
 applicativeHomomorphism :
   (shape : Shape) -> (f : a -> b) -> (x : a) -> pure f <*> pure x = pure {f = Literal shape} (f x)
 applicativeHomomorphism [] _ _ = Refl
-applicativeHomomorphism (d :: ds) f x = impl d ds f x
+applicativeHomomorphism (d :: ds) f x = forCons d ds f x
   where
-  impl :
+  forCons :
     (d : Nat) ->
     (ds : Shape) ->
     (f : a -> b) ->
     (x : a) ->
     pure f <*> pure x = pure {f = Literal (d :: ds)} (f x)
-  impl 0 _ _ _ = Refl
-  impl (S d) ds f x = cong2 (::) (applicativeHomomorphism ds f x) (impl d ds f x)
+  forCons 0 _ _ _ = Refl
+  forCons (S d) ds f x = cong2 (::) (applicativeHomomorphism ds f x) (forCons d ds f x)
 
 applicativeInterchange :
   (fs : Literal shape (a -> b)) -> (x : a) -> fs <*> pure x = pure ($ x) <*> fs
