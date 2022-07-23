@@ -106,9 +106,9 @@ applicativeInterchange (f :: fs) x =
 
 applicativeComposition :
   (xs : Literal shape a) ->
-  (f : Literal shape (a -> b)) ->
-  (g : Literal shape (b -> c)) ->
-  pure (.) <*> g <*> f <*> xs = g <*> (f <*> xs)
+  (fs : Literal shape (a -> b)) ->
+  (gs : Literal shape (b -> c)) ->
+  pure (.) <*> gs <*> fs <*> xs = gs <*> (fs <*> xs)
 applicativeComposition (Scalar _) (Scalar _) (Scalar _) = Refl
 applicativeComposition [] [] [] = Refl
 applicativeComposition (x :: xs) (f :: fs) (g :: gs) =
