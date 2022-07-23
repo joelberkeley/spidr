@@ -58,16 +58,17 @@ Functor (Literal shape) where
   map _ [] = []
   map f (x :: y) = (map f x) :: (map f y)
 
-mapIdentity : (xs : Literal shape a) -> map Prelude.id xs = xs
-mapIdentity (Scalar _) = Refl
-mapIdentity [] = Refl
-mapIdentity (x :: xs) = cong2 (::) (mapIdentity x) (mapIdentity xs)
+functorIdentity : (xs : Literal shape a) -> map Prelude.id xs = xs
+functorIdentity (Scalar _) = Refl
+functorIdentity [] = Refl
+functorIdentity (x :: xs) = cong2 (::) (functorIdentity x) (functorIdentity xs)
 
-mapComposition :
+functorComposition :
   (xs : Literal shape a) -> (f : a -> b) -> (g : b -> c) -> map (g . f) xs = map g (map f xs)
-mapComposition (Scalar _) _ _ = Refl
-mapComposition [] _ _ = Refl
-mapComposition (x :: xs) f g = cong2 (::) (mapComposition x f g) (mapComposition xs f g)
+functorComposition (Scalar _) _ _ = Refl
+functorComposition [] _ _ = Refl
+functorComposition (x :: xs) f g =
+  cong2 (::) (functorComposition x f g) (functorComposition xs f g)
 
 export
 {shape : Shape} -> Applicative (Literal shape) where
@@ -79,6 +80,38 @@ export
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
   (f :: fs) <*> (x :: xs) = (f <*> x) :: (fs <*> xs)
+
+applicativeIdentity : (xs : Literal shape a) -> pure Prelude.id <*> xs = xs
+applicativeIdentity (Scalar _) = Refl
+applicativeIdentity [] = Refl
+applicativeIdentity (x :: xs) = cong2 (::) (applicativeIdentity x) (applicativeIdentity xs)
+
+applicativeHomomorphism :
+  (shape : Shape) -> (f : a -> b) -> (x : a) -> pure f <*> pure x = pure {f = Literal shape} (f x)
+applicativeHomomorphism [] _ _ = Refl
+applicativeHomomorphism (0 :: _) _ _ = Refl
+applicativeHomomorphism (S d :: ds) f x =
+  let p = applicativeHomomorphism ds f x
+      -- are we OK with an `assert_smaller` in our proof?
+      ps = applicativeHomomorphism (assert_smaller (S d :: ds) (d :: ds)) f x
+   in cong2 (::) p ps
+
+applicativeInterchange :
+  (fs : Literal shape (a -> b)) -> (x : a) -> fs <*> pure x = pure ($ x) <*> fs
+applicativeInterchange (Scalar _) _ = Refl
+applicativeInterchange [] _ = Refl
+applicativeInterchange (f :: fs) x =
+  cong2 (::) (applicativeInterchange f x) (applicativeInterchange fs x)
+
+applicativeComposition :
+  (xs : Literal shape a) ->
+  (f : Literal shape (a -> b)) ->
+  (g : Literal shape (b -> c)) ->
+  pure (.) <*> g <*> f <*> xs = g <*> (f <*> xs)
+applicativeComposition (Scalar _) (Scalar _) (Scalar _) = Refl
+applicativeComposition [] [] [] = Refl
+applicativeComposition (x :: xs) (f :: fs) (g :: gs) =
+  cong2 (::) (applicativeComposition x f g) (applicativeComposition xs fs gs)
 
 export
 Foldable (Literal shape) where
