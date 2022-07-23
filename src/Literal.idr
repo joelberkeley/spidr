@@ -89,12 +89,16 @@ applicativeIdentity (x :: xs) = cong2 (::) (applicativeIdentity x) (applicativeI
 applicativeHomomorphism :
   (shape : Shape) -> (f : a -> b) -> (x : a) -> pure f <*> pure x = pure {f = Literal shape} (f x)
 applicativeHomomorphism [] _ _ = Refl
-applicativeHomomorphism (0 :: _) _ _ = Refl
-applicativeHomomorphism (S d :: ds) f x =
-  let p = applicativeHomomorphism ds f x
-      -- (d :: ds) is not structurally smaller than (S d :: ds). It needs to be a subterm.
-      ps = applicativeHomomorphism (d :: ds) f x
-   in cong2 (::) p ps
+applicativeHomomorphism (d :: ds) f x = impl d ds f x
+  where
+  impl :
+    (d : Nat) ->
+    (ds : Shape) ->
+    (f : a -> b) ->
+    (x : a) ->
+    pure f <*> pure x = pure {f = Literal (d :: ds)} (f x)
+  impl 0 _ _ _ = Refl
+  impl (S d) ds f x = cong2 (::) (applicativeHomomorphism ds f x) (impl d ds f x)
 
 applicativeInterchange :
   (fs : Literal shape (a -> b)) -> (x : a) -> fs <*> pure x = pure ($ x) <*> fs
