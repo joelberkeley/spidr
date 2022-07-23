@@ -93,6 +93,7 @@ applicativeHomomorphism (0 :: _) _ _ = Refl
 applicativeHomomorphism (S d :: ds) f x =
   let p = applicativeHomomorphism ds f x
       -- are we OK with an `assert_smaller` in our proof?
+      -- can we use WellFounded instead?
       ps = applicativeHomomorphism (assert_smaller (S d :: ds) (d :: ds)) f x
    in cong2 (::) p ps
 
