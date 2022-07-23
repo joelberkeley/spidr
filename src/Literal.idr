@@ -92,9 +92,8 @@ applicativeHomomorphism [] _ _ = Refl
 applicativeHomomorphism (0 :: _) _ _ = Refl
 applicativeHomomorphism (S d :: ds) f x =
   let p = applicativeHomomorphism ds f x
-      -- are we OK with an `assert_smaller` in our proof?
-      -- can we use WellFounded instead?
-      ps = applicativeHomomorphism (assert_smaller (S d :: ds) (d :: ds)) f x
+      -- (d :: ds) is not structurally smaller than (S d :: ds). It needs to be a subterm.
+      ps = applicativeHomomorphism (d :: ds) f x
    in cong2 (::) p ps
 
 applicativeInterchange :
