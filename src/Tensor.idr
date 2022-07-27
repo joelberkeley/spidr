@@ -235,8 +235,8 @@ namespace MultiSlice
   slice {shape=(_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
   slice {shape=(_ :: _)} (DynamicIndex _ :: xs) = slice xs
 
-||| Slice or index `Tensor` axes. Each axis can either be sliced or indexed (or unaltered), and
-||| this can be done with either static (`Nat`) or dynamic (`Tensor [] U64`) indices.
+||| Slice or index `Tensor` axes. Each axis can be sliced or indexed, and this can be done with
+||| either static (`Nat`) or dynamic (scalar `U64`) indices.
 |||
 ||| **Static indices**
 |||
@@ -269,7 +269,7 @@ namespace MultiSlice
 ||| **Dynamic indices**
 |||
 ||| Dynamic indices are scalar `U64` values, and the API works slightly differently because we
-||| don't know the value of dynamic indices until the graph is executed. For indexing, with scalar
+||| can't know the value of dynamic indices until the graph is executed. For indexing, with scalar
 ||| `U64` index `i` in `slice [at i] x`, `i` is clamped to be a valid index into that dimension.
 ||| For example, for `i = fromLiteral 1`, `slice [at i] x` is
 ||| ```
