@@ -209,8 +209,8 @@ public export
 
 ||| Slice `size` elements starting at the specified scalar `U64` index. See `slice` for details.
 public export
-(.sized) : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
-(.sized) = DynamicSlice
+(.size) : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
+(.size) = DynamicSlice
 
 ||| Slice across all indices along an axis. See `slice` for details.
 public export
@@ -282,7 +282,7 @@ namespace MultiSlice
 ||| x = fromLiteral [24, 25, 26, 27, 28, 29]
 ||| ```
 ||| We can also slice by specifying a scalar `U64` start index, and a static size, as
-||| `slice [i.sized 2] x` with `i = fromLiteral 2` to get
+||| `slice [i.size 2] x` with `i = fromLiteral 2` to get
 ||| ```
 ||| x : Tensor [2, 6] S32
 ||| x = fromLiteral [
@@ -291,7 +291,7 @@ namespace MultiSlice
 |||     ]
 ||| ```
 ||| For a given slice `size`, the dynamic start index is clamped such that we always get `size`
-||| elements along that axis. For example, `slice [i.sized 2] x` with `i = fromLiteral 4` is
+||| elements along that axis. For example, `slice [i.size 2] x` with `i = fromLiteral 4` is
 ||| ```
 ||| x : Tensor [2, 6] S32
 ||| x = fromLiteral [
@@ -310,7 +310,7 @@ namespace MultiSlice
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [13, 19]
 ||| ```
-||| or with `i = fromLiteral 2` in `slice [at 1, i.sized 2] x` to get
+||| or with `i = fromLiteral 2` in `slice [at 1, i.size 2] x` to get
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [7, 8]
@@ -325,7 +325,7 @@ namespace MultiSlice
 ||| x = fromLiteral [[3], [9], [15], [21], [27]]
 ||| ```
 ||| This is exactly the same as the more manual `slice [0.to 5, at 3] x` and
-||| `slice [(fromLiteral 0).sized 5, at 3] x`.
+||| `slice [(fromLiteral 0).size 5, at 3] x`.
 |||
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
