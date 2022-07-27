@@ -178,6 +178,20 @@ slice = fixedProperty $ do
   slice [2.to 2] x ===# fromLiteral []
   slice [2.to 3] x ===# fromLiteral [5]
 
+  slice [at (fromLiteral 0)] x ===# fromLiteral 3
+  slice [at (fromLiteral 1)] x ===# fromLiteral 4
+  slice [at (fromLiteral 2)] x ===# fromLiteral 5
+  slice [(fromLiteral 0).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 0).sized 1] x ===# fromLiteral [3]
+  slice [(fromLiteral 0).sized 2] x ===# fromLiteral [3, 4]
+  slice [(fromLiteral 0).sized 3] x ===# fromLiteral [3, 4, 5]
+  slice [(fromLiteral 1).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 1).sized 1] x ===# fromLiteral [4]
+  slice [(fromLiteral 1).sized 2] x ===# fromLiteral [4, 5]
+  slice [(fromLiteral 2).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 2).sized 1] x ===# fromLiteral [5]
+  -- add out of bounds examples
+
   let idx : Nat
       idx = 2
 
@@ -198,6 +212,22 @@ slice = fixedProperty $ do
   slice [1.to 2, at 0] x ===# fromLiteral [6]
   slice [1.to 2, at 1] x ===# fromLiteral [7]
   slice [1.to 2, at 2] x ===# fromLiteral [8]
+
+  slice [(fromLiteral 0).sized 1] x ===# fromLiteral [[3, 4, 5]]
+  slice [(fromLiteral 1).sized 0] x ===# fromLiteral []
+  slice [all, (fromLiteral 2).sized 0] x ===# fromLiteral [[], []]
+  slice [all, (fromLiteral 1).sized 2] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [at 0, (fromLiteral 2).sized 0] x ===# fromLiteral []
+  slice [at 0, (fromLiteral 1).sized 2] x ===# fromLiteral [4, 5]
+  slice [at 1, (fromLiteral 2).sized 0] x ===# fromLiteral []
+  slice [at 1, (fromLiteral 1).sized 2] x ===# fromLiteral [7, 8]
+  slice [(fromLiteral 0).sized 1, at 0] x ===# fromLiteral [3]
+  slice [(fromLiteral 0).sized 1, at 1] x ===# fromLiteral [4]
+  slice [(fromLiteral 0).sized 1, at 2] x ===# fromLiteral [5]
+  slice [(fromLiteral 1).sized 1, at 0] x ===# fromLiteral [6]
+  slice [(fromLiteral 1).sized 1, at 1] x ===# fromLiteral [7]
+  slice [(fromLiteral 1).sized 1, at 2] x ===# fromLiteral [8]
+  -- add out of bounds examples
 
   let x : Array [60] Int = fromList [0..59]
       x = reshape {to=[2, 5, 3, 2]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
