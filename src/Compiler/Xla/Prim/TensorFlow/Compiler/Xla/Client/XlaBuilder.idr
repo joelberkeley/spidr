@@ -78,6 +78,10 @@ export
 prim__slice : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
+%foreign (libxla "DynamicSlice")
+prim__dynamicSlice : GCAnyPtr -> GCAnyPtr -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "ConcatInDim")
 prim__concatInDim : GCAnyPtr -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 

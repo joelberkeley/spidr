@@ -42,6 +42,7 @@ data Expr : Type where
   ConvertElementType : Primitive dtype => Expr -> Expr
   Reshape : Shape -> Shape -> Expr -> Expr
   Slice : List Nat -> List Nat -> List Nat -> Expr -> Expr
+  DynamicSlice : List Expr -> List Nat -> Expr -> Expr
   Concat : Nat -> Expr -> Expr -> Expr
   Diag : Expr -> Expr
   Triangle : (lower : Bool) -> Expr -> Expr
@@ -117,6 +118,8 @@ Prelude.Eq Expr where
   (Reshape from to x) == (Reshape from' to' x') = (from, to) == (from', to') && x == x'
   (Slice starts stops strides x) == (Slice starts' stops' strides' x') =
     (starts, stops, strides) == (starts', stops', strides') && x == x'
+  (DynamicSlice starts sizes x) == (DynamicSlice starts' sizes' x') =
+    (assert_total $ starts == starts') && sizes == sizes' && x == x'
   (Concat axis x y) == (Concat axis' x' y') = axis == axis' && x == x' && y == y'
   (Diag x) == (Diag x') = x == x'
   (Triangle lower x) == (Triangle lower' x') = lower == lower' && x == x'
@@ -225,6 +228,10 @@ Hashable Expr where
     salt `hashWithSalt` ("Reshape", from, to) `hashWithSalt` x
   hashWithSalt salt (Slice starts stops strides x) =
     salt `hashWithSalt` ("Slice", starts, stops, strides) `hashWithSalt` x
+  hashWithSalt salt (DynamicSlice starts sizes x) =
+    let salt = salt `hashWithSalt` "DynamicSlice"
+        salt = assert_total $ salt `hashWithSalt` starts
+     in salt `hashWithSalt` sizes `hashWithSalt` x
   hashWithSalt salt (Concat axis x y) =
     salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x

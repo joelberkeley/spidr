@@ -178,6 +178,28 @@ slice = fixedProperty $ do
   slice [2.to 2] x ===# fromLiteral []
   slice [2.to 3] x ===# fromLiteral [5]
 
+  slice [at (fromLiteral 0)] x ===# fromLiteral 3
+  slice [at (fromLiteral 1)] x ===# fromLiteral 4
+  slice [at (fromLiteral 2)] x ===# fromLiteral 5
+  slice [at (fromLiteral 3)] x ===# fromLiteral 5
+  slice [at (fromLiteral 5)] x ===# fromLiteral 5
+  slice [(fromLiteral 0).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 0).size 1] x ===# fromLiteral [3]
+  slice [(fromLiteral 0).size 2] x ===# fromLiteral [3, 4]
+  slice [(fromLiteral 0).size 3] x ===# fromLiteral [3, 4, 5]
+  slice [(fromLiteral 1).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 1).size 1] x ===# fromLiteral [4]
+  slice [(fromLiteral 1).size 2] x ===# fromLiteral [4, 5]
+  slice [(fromLiteral 1).size 3] x ===# fromLiteral [3, 4, 5]
+  slice [(fromLiteral 2).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 2).size 1] x ===# fromLiteral [5]
+  slice [(fromLiteral 3).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 3).size 1] x ===# fromLiteral [5]
+  slice [(fromLiteral 3).size 3] x ===# fromLiteral [3, 4, 5]
+  slice [(fromLiteral 5).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 5).size 1] x ===# fromLiteral [5]
+  slice [(fromLiteral 5).size 3] x ===# fromLiteral [3, 4, 5]
+
   let idx : Nat
       idx = 2
 
@@ -199,10 +221,45 @@ slice = fixedProperty $ do
   slice [1.to 2, at 1] x ===# fromLiteral [7]
   slice [1.to 2, at 2] x ===# fromLiteral [8]
 
+  slice [(fromLiteral 0).size 1] x ===# fromLiteral [[3, 4, 5]]
+  slice [(fromLiteral 1).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 2).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 2).size 1] x ===# fromLiteral [[6, 7, 8]]
+  slice [(fromLiteral 4).size 0] x ===# fromLiteral []
+  slice [(fromLiteral 4).size 1] x ===# fromLiteral [[6, 7, 8]]
+  slice [all, (fromLiteral 2).size 0] x ===# fromLiteral [[], []]
+  slice [all, (fromLiteral 1).size 2] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [all, (fromLiteral 3).size 0] x ===# fromLiteral [[], []]
+  slice [all, (fromLiteral 3).size 2] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [all, (fromLiteral 5).size 0] x ===# fromLiteral [[], []]
+  slice [all, (fromLiteral 5).size 2] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [at 0, (fromLiteral 2).size 0] x ===# fromLiteral []
+  slice [at 0, (fromLiteral 1).size 2] x ===# fromLiteral [4, 5]
+  slice [at 1, (fromLiteral 2).size 0] x ===# fromLiteral []
+  slice [at 1, (fromLiteral 1).size 2] x ===# fromLiteral [7, 8]
+  slice [at 1, (fromLiteral 3).size 0] x ===# fromLiteral []
+  slice [at 1, (fromLiteral 3).size 2] x ===# fromLiteral [7, 8]
+  slice [at 1, (fromLiteral 5).size 0] x ===# fromLiteral []
+  slice [at 1, (fromLiteral 5).size 2] x ===# fromLiteral [7, 8]
+  slice [(fromLiteral 0).size 1, at 0] x ===# fromLiteral [3]
+  slice [(fromLiteral 0).size 1, at 1] x ===# fromLiteral [4]
+  slice [(fromLiteral 0).size 1, at 2] x ===# fromLiteral [5]
+  slice [(fromLiteral 1).size 1, at 0] x ===# fromLiteral [6]
+  slice [(fromLiteral 1).size 1, at 1] x ===# fromLiteral [7]
+  slice [(fromLiteral 1).size 1, at 2] x ===# fromLiteral [8]
+  slice [(fromLiteral 2).size 1, at 0] x ===# fromLiteral [6]
+  slice [(fromLiteral 2).size 1, at 1] x ===# fromLiteral [7]
+  slice [(fromLiteral 2).size 1, at 2] x ===# fromLiteral [8]
+  slice [(fromLiteral 4).size 1, at 0] x ===# fromLiteral [6]
+  slice [(fromLiteral 4).size 1, at 1] x ===# fromLiteral [7]
+  slice [(fromLiteral 4).size 1, at 2] x ===# fromLiteral [8]
+
   let x : Array [60] Int = fromList [0..59]
-      x = reshape {to=[4, 5, 3]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
-  -- np.arange(60).reshape([4, 5, 3])[1:3, 0:4, 2]
-  slice [1.to 3, 0.to 4, at 2] x ===# fromLiteral [[17, 20, 23, 26], [32, 35, 38, 41]]
+      x = reshape {to=[2, 5, 3, 2]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
+
+  let idx = fromLiteral {dtype=U64} 0
+      start = fromLiteral {dtype=U64} 1
+  slice [at 1, 2.to 5, start.size 2, at idx] x ===# fromLiteral [[44, 46], [50, 52], [56, 58]]
 
 index : (idx : Nat) -> {auto 0 inDim : LT idx n} -> Literal [n] a -> Literal [] a
 index {inDim = (LTESucc _)} 0 (y :: _) = y

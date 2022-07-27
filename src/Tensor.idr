@@ -183,11 +183,19 @@ data SliceOrIndex : Nat -> Type where
     {auto 0 inDim : LTE to d} ->
     SliceOrIndex d
   Index : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
+  DynamicSlice : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
+  DynamicIndex : Tensor [] U64 -> SliceOrIndex d
 
 ||| Index at `idx`. See `slice` for details.
 public export
 at : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
 at = Index
+
+namespace Dynamic
+  ||| Index at the specified index. See `slice` for details.
+  public export
+  at : Tensor [] U64 -> SliceOrIndex d
+  at = DynamicIndex
 
 ||| Slice from `from` (inclusive) to `to` (exclusive). See `slice` for details.
 public export
@@ -198,6 +206,11 @@ public export
   {auto 0 inDim : LTE to d} ->
   SliceOrIndex d
 (.to) = Slice
+
+||| Slice `size` elements starting at the specified scalar `U64` index. See `slice` for details.
+public export
+(.size) : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
+(.size) = DynamicSlice
 
 ||| Slice across all indices along an axis. See `slice` for details.
 public export
@@ -219,8 +232,15 @@ namespace MultiSlice
   slice {shape} [] = shape
   slice {shape=(_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
   slice {shape=(_ :: _)} (Index _ :: xs) = slice xs
+  slice {shape=(_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
+  slice {shape=(_ :: _)} (DynamicIndex _ :: xs) = slice xs
 
-||| Slice or index `Tensor` axes. For example, for
+||| Slice or index `Tensor` axes. Each axis can be sliced or indexed, and this can be done with
+||| either static (`Nat`) or dynamic (scalar `U64`) indices.
+|||
+||| **Static indices**
+|||
+||| Static indices are `Nat`s. For example, for
 ||| ```
 ||| x : Tensor [5, 6] S32
 ||| x = fromLiteral [
@@ -245,49 +265,109 @@ namespace MultiSlice
 |||     ]
 ||| ```
 ||| Note that in `2.to 4`, the 2 is inclusive, and the 4 exclusive, so we return indices 2 and 3.
-||| We can also slice and index across multiple consecutive axes at once, for example as
-||| `slice [2.to 4, at 1] x` to get
+|||
+||| **Dynamic indices**
+|||
+||| Dynamic indices are scalar `U64` values, and the API works slightly differently because we
+||| can't know the value of dynamic indices until the graph is executed. For indexing, with scalar
+||| `U64` index `i` in `slice [at i] x`, `i` is clamped to be a valid index into that dimension.
+||| For example, for `i = fromLiteral 1`, `slice [at i] x` is
+||| ```
+||| x : Tensor [6] S32
+||| x = fromLiteral [6, 7, 8, 9, 10, 11]
+||| ```
+||| as in the static case. However, for `i = fromLiteral 10`, `slice [at i] x` returns the last row
+||| ```
+||| x : Tensor [6] S32
+||| x = fromLiteral [24, 25, 26, 27, 28, 29]
+||| ```
+||| We can also slice by specifying a scalar `U64` start index, and a static size, as
+||| `slice [i.size 2] x` with `i = fromLiteral 2` to get
+||| ```
+||| x : Tensor [2, 6] S32
+||| x = fromLiteral [
+|||       [12, 13, 14, 15, 16, 17],
+|||       [18, 19, 20, 21, 22, 23]
+|||     ]
+||| ```
+||| For a given slice `size`, the dynamic start index is clamped such that we always get `size`
+||| elements along that axis. For example, `slice [i.size 2] x` with `i = fromLiteral 4` is
+||| ```
+||| x : Tensor [2, 6] S32
+||| x = fromLiteral [
+|||       [18, 19, 20, 21, 22, 23],
+|||       [24, 25, 26, 27, 28, 29]
+|||     ]
+||| ```
+||| which starts at index 3 rather than index 4.
+|||
+||| **Mixed static, dynamic, slicing and indexing**
+|||
+||| Each axis can only be sliced or indexed, and must use only static or dynamic indices. However,
+||| across axes, we can mix these four arbitrarily. For example, with `slice [2.to 4, at 1] x` to
+||| get
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [13, 19]
 ||| ```
-||| or as `slice [at 1, 2.to 4] x` to get
+||| or with `i = fromLiteral 2` in `slice [at 1, i.size 2] x` to get
 ||| ```
 ||| x : Tensor [2] S32
 ||| x = fromLiteral [7, 8]
 ||| ```
+|||
 ||| Slices and indices apply to the leading axes of the tensor. For trailing axes omitted from the
-||| multi-dimensional slice, the whole of the axis is returned. If we want to slice over
+||| multi-dimensional slice, the whole of the axis is returned. If we want to slice or index over
 ||| later axes and retain all indices in a leading axis, we can use the convenience function `all`,
 ||| as `slice [all, at 3] x` to get
 ||| ```
 ||| x : Tensor [5] S32
 ||| x = fromLiteral [[3], [9], [15], [21], [27]]
 ||| ```
-||| This is exactly the same as the more manual approach `slice [0.to 5, at 3] x`.
+||| This is exactly the same as the more manual `slice [0.to 5, at 3] x` and
+||| `slice [(fromLiteral 0).size 5, at 3] x`.
 |||
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
 slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
 slice at (MkTensor expr) =
-  let sliced = Slice (starts shape at) (stops shape at) (replicate (length shape) 1) expr
-   in MkTensor $ Reshape (slice' shape at) (MultiSlice.slice at) sliced
+  let sliced = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) expr
+      sliced = DynamicSlice (mapd dynStart (const zero) at) (mapd size id at) sliced
+   in MkTensor $ Reshape (mapd size id at) (MultiSlice.slice at) sliced
 
       where
-      starts : (shape : Shape) -> MultiSlice shape -> List Nat
-      starts shape [] = replicate (length shape) 0
-      starts (_ :: ds) (Slice from _ :: xs) = from :: starts ds xs
-      starts (_ :: ds) (Index i :: xs) = cast i :: starts ds xs
+      mapd :
+        ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
+        (Nat -> a) ->
+        {shape : Shape} ->
+        MultiSlice shape ->
+        List a
+      mapd _ dflt {shape} [] = Prelude.map dflt shape
+      mapd f dflt (x :: xs) = f dflt x :: mapd f dflt xs
 
-      stops : (shape : Shape) -> MultiSlice shape -> List Nat
-      stops shape [] = shape
-      stops (_ :: ds) (Slice _ to :: xs) = to :: stops ds xs
-      stops (_ :: ds) (Index i :: xs) = S (cast i) :: stops ds xs
+      start : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+      start _ (Slice from _) = from
+      start _ (Index idx) = idx
+      start f {d} _ = f d
 
-      slice' : (shape : Shape) -> MultiSlice shape -> Shape
-      slice' shape [] = shape
-      slice' (d :: ds) (Slice {size} _ _ :: xs) = size :: slice' ds xs
-      slice' (d :: ds) (Index _ :: xs) = 1 :: slice' ds xs
+      stop : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+      stop _ (Slice _ to) = to
+      stop _ (Index idx) = S idx
+      stop f {d} _ = f d
+
+      zero : Expr
+      zero = FromLiteral {shape=[]} {dtype=U64} 0
+
+      dynStart : (Nat -> Expr) -> {d : Nat} -> SliceOrIndex d -> Expr
+      dynStart _ (DynamicSlice (MkTensor from) _) = from
+      dynStart _ (DynamicIndex (MkTensor idx)) = idx
+      dynStart f {d} _ = f d
+
+      size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+      size _ (Slice {size=size'} _ _) = size'
+      size _ (Index _) = 1
+      size _ (DynamicSlice _ size') = size'
+      size _ (DynamicIndex _) = 1
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and

@@ -80,6 +80,14 @@ extern "C" {
         int strides_len
     );
 
+    XlaOp* DynamicSlice(
+        XlaOp& operand,
+        XlaOp* start_indices,
+        int start_indices_len,
+        int* slice_sizes,
+        int slice_sizes_len
+    );
+
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
     XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
     XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len);
