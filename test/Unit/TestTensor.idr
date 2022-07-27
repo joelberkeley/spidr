@@ -181,6 +181,8 @@ slice = fixedProperty $ do
   slice [at (fromLiteral 0)] x ===# fromLiteral 3
   slice [at (fromLiteral 1)] x ===# fromLiteral 4
   slice [at (fromLiteral 2)] x ===# fromLiteral 5
+  slice [at (fromLiteral 3)] x ===# fromLiteral 5
+  slice [at (fromLiteral 5)] x ===# fromLiteral 5
   slice [(fromLiteral 0).sized 0] x ===# fromLiteral []
   slice [(fromLiteral 0).sized 1] x ===# fromLiteral [3]
   slice [(fromLiteral 0).sized 2] x ===# fromLiteral [3, 4]
@@ -188,9 +190,15 @@ slice = fixedProperty $ do
   slice [(fromLiteral 1).sized 0] x ===# fromLiteral []
   slice [(fromLiteral 1).sized 1] x ===# fromLiteral [4]
   slice [(fromLiteral 1).sized 2] x ===# fromLiteral [4, 5]
+  slice [(fromLiteral 1).sized 3] x ===# fromLiteral [3, 4, 5]
   slice [(fromLiteral 2).sized 0] x ===# fromLiteral []
   slice [(fromLiteral 2).sized 1] x ===# fromLiteral [5]
-  -- add out of bounds examples
+  slice [(fromLiteral 3).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 3).sized 1] x ===# fromLiteral [5]
+  slice [(fromLiteral 3).sized 3] x ===# fromLiteral [3, 4, 5]
+  slice [(fromLiteral 5).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 5).sized 1] x ===# fromLiteral [5]
+  slice [(fromLiteral 5).sized 3] x ===# fromLiteral [3, 4, 5]
 
   let idx : Nat
       idx = 2
@@ -215,19 +223,36 @@ slice = fixedProperty $ do
 
   slice [(fromLiteral 0).sized 1] x ===# fromLiteral [[3, 4, 5]]
   slice [(fromLiteral 1).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 2).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 2).sized 1] x ===# fromLiteral [[3, 4, 5]]
+  slice [(fromLiteral 4).sized 0] x ===# fromLiteral []
+  slice [(fromLiteral 4).sized 1] x ===# fromLiteral [[3, 4, 5]]
   slice [all, (fromLiteral 2).sized 0] x ===# fromLiteral [[], []]
   slice [all, (fromLiteral 1).sized 2] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [all, (fromLiteral 3).sized 0] x ===# fromLiteral [[], []]
+  slice [all, (fromLiteral 3).sized 2] x ===# fromLiteral [[4, 5], [7, 8]]
+  slice [all, (fromLiteral 5).sized 0] x ===# fromLiteral [[], []]
+  slice [all, (fromLiteral 5).sized 2] x ===# fromLiteral [[4, 5], [7, 8]]
   slice [at 0, (fromLiteral 2).sized 0] x ===# fromLiteral []
   slice [at 0, (fromLiteral 1).sized 2] x ===# fromLiteral [4, 5]
   slice [at 1, (fromLiteral 2).sized 0] x ===# fromLiteral []
   slice [at 1, (fromLiteral 1).sized 2] x ===# fromLiteral [7, 8]
+  slice [at 1, (fromLiteral 3).sized 0] x ===# fromLiteral []
+  slice [at 1, (fromLiteral 3).sized 2] x ===# fromLiteral [7, 8]
+  slice [at 1, (fromLiteral 5).sized 0] x ===# fromLiteral []
+  slice [at 1, (fromLiteral 5).sized 2] x ===# fromLiteral [7, 8]
   slice [(fromLiteral 0).sized 1, at 0] x ===# fromLiteral [3]
   slice [(fromLiteral 0).sized 1, at 1] x ===# fromLiteral [4]
   slice [(fromLiteral 0).sized 1, at 2] x ===# fromLiteral [5]
   slice [(fromLiteral 1).sized 1, at 0] x ===# fromLiteral [6]
   slice [(fromLiteral 1).sized 1, at 1] x ===# fromLiteral [7]
   slice [(fromLiteral 1).sized 1, at 2] x ===# fromLiteral [8]
-  -- add out of bounds examples
+  slice [(fromLiteral 2).sized 1, at 0] x ===# fromLiteral [6]
+  slice [(fromLiteral 2).sized 1, at 1] x ===# fromLiteral [7]
+  slice [(fromLiteral 2).sized 1, at 2] x ===# fromLiteral [8]
+  slice [(fromLiteral 4).sized 1, at 0] x ===# fromLiteral [6]
+  slice [(fromLiteral 4).sized 1, at 1] x ===# fromLiteral [7]
+  slice [(fromLiteral 4).sized 1, at 2] x ===# fromLiteral [8]
 
   let x : Array [60] Int = fromList [0..59]
       x = reshape {to=[2, 5, 3, 2]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
