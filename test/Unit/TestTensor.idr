@@ -50,19 +50,19 @@ fromLiteralThenToLiteral = property $ do
 
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
-  let f64min : Literal [] Double = Scalar Bounded.min
-      f64max : Literal [] Double = Scalar Bounded.max
-      min' : Tensor [] F64 = Bounded.min @{Finite}
-      max' : Tensor [] F64 = Bounded.max @{Finite}
+  let f64min : Literal [] Double = Scalar min
+      f64max : Literal [] Double = Scalar max
+      min' : Tensor [] F64 = Types.min @{Finite}
+      max' : Tensor [] F64 = Types.max @{Finite}
   toLiteral min' === f64min
   toLiteral max' === f64max
   toLiteral (fromLiteral f64min == min') === True
   toLiteral (fromLiteral f64max == max') === True
 
-  let s32min : Literal [] Int32 = Scalar Bounded.min
-      s32max : Literal [] Int32 = Scalar Bounded.max
-      min' : Tensor [] S32 = Bounded.min @{Finite}
-      max' : Tensor [] S32 = Bounded.max @{Finite}
+  let s32min : Literal [] Int32 = Scalar min
+      s32max : Literal [] Int32 = Scalar max
+      min' : Tensor [] S32 = Types.min @{Finite}
+      max' : Tensor [] S32 = Types.max @{Finite}
   toLiteral min' === s32min
   toLiteral max' === s32max
   toLiteral (fromLiteral s32min == min') === True
@@ -70,8 +70,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u32min : Literal [] Nat = 0
       u32max : Literal [] Nat = 4294967295
-      min' : Tensor [] U32 = Bounded.min @{Finite}
-      max' : Tensor [] U32 = Bounded.max @{Finite}
+      min' : Tensor [] U32 = Types.min @{Finite}
+      max' : Tensor [] U32 = Types.max @{Finite}
   toLiteral min' === u32min
   toLiteral max' === u32max
   toLiteral (fromLiteral u32min == min') === True
@@ -79,8 +79,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u64min : Literal [] Nat = 0
       u64max : Literal [] Nat = 18446744073709551615
-      min' : Tensor [] U64 = Bounded.min @{Finite}
-      max' : Tensor [] U64 = Bounded.max @{Finite}
+      min' : Tensor [] U64 = Types.min @{Finite}
+      max' : Tensor [] U64 = Types.max @{Finite}
   toLiteral min' === u64min
   toLiteral max' === u64max
   toLiteral (fromLiteral u64min == min') === True

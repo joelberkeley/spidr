@@ -40,12 +40,11 @@ Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
 Array [] dtype = dtype
 Array (d :: ds) dtype = Vect d (Array ds dtype)
 
-namespace Bounded
-  ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
-  public export
-  interface Bounded a where
-    min : a
-    max : a
+||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
+public export
+interface Bounded a where
+  min : a
+  max : a
 
 export
 Bounded Int32 where
