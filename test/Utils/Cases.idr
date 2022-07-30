@@ -62,12 +62,12 @@ pow : Prelude.Num ty => ty -> Nat -> ty
 pow x Z = x
 pow x (S k) = x * pow x k
 
-intBound : Int
-intBound = pow 2 10
+int32Bound : Int32
+int32Bound = pow 2 10
 
 export
-ints : Gen Int
-ints = int $ linear (-intBound) intBound
+int32s : Gen Int32
+int32s = int32 $ linear (-int32Bound) int32Bound
 
 export
 nats : Gen Nat

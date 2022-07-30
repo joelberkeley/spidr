@@ -67,16 +67,16 @@ namespace Double
 
 namespace Int32t
   export
-  set : Literal -> List Nat -> Int -> IO ()
+  set : Literal -> List Nat -> Int32 -> IO ()
   set (MkLiteral lit) idxs value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetInt32t lit idxsArrayPtr value
+    primIO $ prim__literalSetInt32t lit idxsArrayPtr (cast value)
 
   export
-  get : Literal -> List Nat -> Int
+  get : Literal -> List Nat -> Int32
   get (MkLiteral lit) idxs = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ literalGetInt32t lit idxsArrayPtr
+    pure $ cast $ literalGetInt32t lit idxsArrayPtr
 
 namespace UInt32t
   export

@@ -36,7 +36,7 @@ fromLiteralThenToLiteral = property $ do
   x <- forAll (literal shape doubles)
   x ==~ toLiteral (fromLiteral {dtype=F64} x)
 
-  x <- forAll (literal shape ints)
+  x <- forAll (literal shape int32s)
   x === toLiteral (fromLiteral {dtype=S32} x)
 
   x <- forAll (literal shape nats)
@@ -58,8 +58,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
   toLiteral (fromLiteral (-f64lim) == min') === True
   toLiteral (fromLiteral f64lim == max') === True
 
-  let s32min : Literal [] Int = -2147483648
-      s32max : Literal [] Int = 2147483647
+  let s32min : Literal [] Int32 = -2147483648
+      s32max : Literal [] Int32 = 2147483647
       min' : Tensor [] S32 = Bounded.min @{Finite}
       max' : Tensor [] S32 = Bounded.max @{Finite}
   toLiteral min' === s32min
@@ -114,7 +114,7 @@ cast = property $ do
   let x : Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
-  lit <- forAll (literal shape ints)
+  lit <- forAll (literal shape int32s)
   let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
@@ -254,7 +254,7 @@ slice = fixedProperty $ do
   slice [(fromLiteral 4).size 1, at 1] x ===# fromLiteral [7]
   slice [(fromLiteral 4).size 1, at 2] x ===# fromLiteral [8]
 
-  let x : Array [60] Int = fromList [0..59]
+  let x : Array [60] Int32 = fromList [0..59]
       x = reshape {to=[2, 5, 3, 2]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
 
   let idx = fromLiteral {dtype=U64} 0
@@ -521,7 +521,7 @@ transpose = fixedProperty $ do
      [[ 3,  7, 11],
       [15, 19, 23]]]
 
-  let x : Array [120] Int = fromList [0..119]
+  let x : Array [120] Int32 = fromList [0..119]
       x : Tensor [2, 3, 4, 5] S32 = reshape $ fromLiteral {shape=[120]} (cast x)
   transpose [0, 1, 2, 3] x ===# x
   slice [all, at 1, at 0] (transpose [0, 2, 1, 3] x) ===# slice [all, at 0, at 1] x
@@ -536,7 +536,7 @@ mapResult = property $ do
   let x' = fromLiteral x
   map (1.0 /) x ==~ toLiteral (map (1.0 /) x')
 
-  x <- forAll (literal shape ints)
+  x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
   map (+ 1) x === toLiteral (map (+ 1) x')
 
@@ -551,8 +551,8 @@ map2Result : Property
 map2Result = fixedProperty $ do
   shape <- forAll shapes
 
-  let ints = literal shape ints
-  [x, y] <- forAll (np [ints, ints])
+  let int32s = literal shape int32s
+  [x, y] <- forAll (np [int32s, int32s])
   let x' = fromLiteral {dtype=S32} x
       y' = fromLiteral {dtype=S32} y
   [| x + y |] === toLiteral (map2 Tensor.(+) x' y')
@@ -604,7 +604,7 @@ sort = withTests 20 . property $ do
   dd <- forAll dims
   ddd <- forAll dims
 
-  x <- forAll (literal [S d] ints)
+  x <- forAll (literal [S d] int32s)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
@@ -612,7 +612,7 @@ sort = withTests 20 . property $ do
       tail = slice [1.to (S d)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  x <- forAll (literal [S d, S dd] ints)
+  x <- forAll (literal [S d, S dd] int32s)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
@@ -625,7 +625,7 @@ sort = withTests 20 . property $ do
       tail = slice [all, 1.to (S dd)] sorted
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  x <- forAll (literal [S d, S dd, S ddd] ints)
+  x <- forAll (literal [S d, S dd, S ddd] int32s)
   let x = fromLiteral {dtype=S32} x
 
   let sorted = sort (<) 0 x
@@ -725,12 +725,12 @@ namespace Matrix
 namespace S32
   export covering
   testElementwiseUnary :
-    (Int -> Int) ->
+    (Int32 -> Int32) ->
     (forall shape . Tensor shape S32 -> Tensor shape S32) ->
     Property
   testElementwiseUnary fInt fTensor = property $ do
     shape <- forAll shapes
-    x <- forAll (literal shape ints)
+    x <- forAll (literal shape int32s)
     let x' = fromLiteral x
     [| fInt x |] === toLiteral (fTensor x')
 
@@ -807,13 +807,13 @@ testElementwiseUnaryCases = [
 namespace S32
   export covering
   testElementwiseBinary :
-    (Int -> Int -> Int) ->
+    (Int32 -> Int32 -> Int32) ->
     (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) ->
     Property
   testElementwiseBinary fInt fTensor = property $ do
     shape <- forAll shapes
-    let ints = literal shape ints
-    [x, y] <- forAll (np [ints, ints])
+    let int32s = literal shape int32s
+    [x, y] <- forAll (np [int32s, int32s])
     let x' = fromLiteral {dtype=S32} x
         y' = fromLiteral {dtype=S32} y
     [| fInt x y |] === toLiteral (fTensor x' y')
@@ -928,7 +928,7 @@ neutralIsNeutralForSum = property $ do
   toLiteral right ==~ x
   toLiteral left ==~ x
 
-  x <- forAll (literal shape ints)
+  x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
       right = (<+>) @{Sum} x' (neutral @{Sum})
       left = (<+>) @{Sum} (neutral @{Sum}) x'
@@ -947,7 +947,7 @@ neutralIsNeutralForProd = property $ do
   toLiteral right ==~ x
   toLiteral left ==~ x
 
-  x <- forAll (literal shape ints)
+  x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
       right = (<+>) @{Prod} x' (neutral @{Prod})
       left = (<+>) @{Prod} (neutral @{Prod}) x'
@@ -1001,13 +1001,13 @@ neutralIsNeutralForMax = property $ do
 namespace S32
   export covering
   testElementwiseComparator :
-    (Int -> Int -> Bool) ->
+    (Int32 -> Int32 -> Bool) ->
     (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape PRED) ->
     Property
   testElementwiseComparator fInt fTensor = property $ do
     shape <- forAll shapes
-    let ints = literal shape ints
-    [x, y] <- forAll (np [ints, ints])
+    let int32s = literal shape int32s
+    [x, y] <- forAll (np [int32s, int32s])
     let x' = fromLiteral {dtype=S32} x
         y' = fromLiteral {dtype=S32} y
     [| fInt x y |] === toLiteral (fTensor x' y')
