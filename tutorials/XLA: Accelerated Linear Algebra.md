@@ -98,7 +98,7 @@ import System.FFI
 foo : Int -> Int
 ```
 add call `foo 2`, `foo (-1)` no problem. All's good, right? Not quite. Integers in C and Idris can have different allowed ranges. Say your C compiler has a maximum `int` of 32767, what happens if we call `foo 40000`? Well, it's undefined. We can work around this by wrapping our Idris function and using fixed width numeric types
-```
+```idris
 foo' : Int32 -> Int32
 foo' = cast . foo . cast
 ```
@@ -124,7 +124,7 @@ void set(double* arr, unsigned int idx, double value) {
 sizeof_double : Bits64
 
 %foreign "C:set,libarray"
-prim__set : Ptr Double -> Double -> Bits64 -> PrimIO ()
+prim__setElem : Ptr Double -> Double -> Bits64 -> PrimIO ()
 
 toClist : List Double -> IO (Ptr Double)
 toClist xs = do
@@ -133,7 +133,7 @@ toClist xs = do
   let clist = prim__castPtr clist
 
       setElem : Double -> Nat -> IO ()
-      setElem elem idx = primIO (prim__set clist elem (cast idx))
+      setElem elem idx = primIO (prim__setElem clist elem (cast idx))
 
   sequence_ (zipWith setElem xs [0..length xs])
   pure clist
