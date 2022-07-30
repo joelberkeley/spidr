@@ -78,16 +78,68 @@ This API is now pure C.
 
 ## Calling C from Idris
 
-Calling into C is, on the whole, relatively simple in Idris. [The docs](https://idris2.readthedocs.io/en/latest/ffi/index.html) cover everything you need to get going. That said, there are some difficulties one may encounter in more complex setups, for example:
+The basics of calling C from Idris are relatively trivial (see [the docs](https://idris2.readthedocs.io/en/latest/ffi/index.html)), but there are a number of things to watch out for when working with numeric values, memory management, side effects, and data structures.
 
-* One has to make sure to include IO where appropriate. C is typically written in an imperative style, while Idris is purely functional. Actions with side effects must be wrapped in IO. Indeed, it is always safe to wrap things in IO, but it can easily lead to subtle bugs if we omit it.
-* There are no functions in the Idris standard library for passing arrays to and from C. C arrays can be constructed by allocating the necessary memory using Idris' `malloc`, and iterating over the set of indices in the array, setting each value in the array with a C function such as
-  ```c
-  void set(double* arr, int idx, double value) {
-    arr[idx] = value;
-  }
-  ```
-  where here we're setting values in a list of `double`s. Similar functions can be used to get values from, and free arrays.
+### Primitive conversions
+
+I FEEL OUT OF MY DEPTH ON THIS SECTION. NEED HELP
+
+On the face of it, passing primitive types between Idris and C is easy. Say we want to call a C function
+```c
+int foo(int x);
+```
+we can write an Idris foreign function
+```idris
+%foreign "C:foo,libfoo"
+foo : Int -> Int
+```
+add call `foo 2`, `foo (-1)` no problem. All's good, right? Not quite. Integers in C and Idris can have different allowed ranges. Say your C compiler has a maximum `int` of 32767, what happens if we call `foo 40000`? Well, it's undefined. We can work around this by wrapping our Idris function and using fixed width numeric types
+```
+foo' : Int32 -> Int32
+foo' = cast . foo . cast
+```
+
+### Memory management
+
+### Side effects
+
+### Data structures
+
+Data structures in C are often represented as `struct`s or pointers. In Idris, you can pass both of these through FFI, and there are helper functions for getting and setting C `struct` members. However, data structures represented using pointers do not have the same level of support. For example, there are no functions for passing an Idris list to C. A C list is represented in Idris by a pointer to the first list element. To create this list, one must first allocate memory in C, then traverse the Idris list, setting the elements in the C list one by one:
+```c
+size_t sizeof_double () {
+  return size_t sizeof(double);
+}
+
+void set(double* arr, unsigned int idx, double value) {
+  arr[idx] = value;
+}
+```
+```idris
+%foreign "C:sizeof_double,libarray"
+sizeof_double : Int
+
+%foreign "C:set,libarray"
+prim__set : Ptr Double -> Double -> Bits64 -> PrimIO ()
+
+toClist : List Double -> IO (Ptr Double)
+toClist xs = do
+  clist <- malloc (cast (length xs) * sizeof_double)
+  sequence $ zipWith (primIO . prim__set clist) xs [0..length xs]
+```
+Of course, one also needs to free the `Ptr Double` at some point, either manually or via garbage collection. A similar approach can also be used to build an Idris list from a C list:
+```c
+void get(double* arr, unsigned int idx) {
+  return arr[idx]
+}
+```
+```idris
+%foreign "C:get,libarray"
+get : Ptr Double -> Bits64 -> Double
+
+fromClist : Nat -> Ptr Double -> List Double
+fromClist len ptr = map (get ptr . cast) [0..len]
+```
 
 ## A total API to foreign functions
 
