@@ -606,7 +606,7 @@ productZero = foldlMulAnyZero 1
 ||| `vmap diag x` is equivalent to `const [[0, 4, 8], [9, 13, 17]]`.
 |||
 ||| **Note:** This function is intended to work similar to Jax's `vmap`. However, the implementation
-|||   is currently a placeholder for the actual vectorization algorithm and so is not performant.
+|||   is currently a placeholder for the actual vectorization algorithm and is not performant.
 export
 vmap :
   Primitive dtype =>
