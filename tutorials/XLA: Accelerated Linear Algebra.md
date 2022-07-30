@@ -89,6 +89,10 @@ On the face of it, passing primitive types between Idris and C is easy. Say we w
 int foo(int x);
 ```
 we can write an Idris foreign function
+<!-- idris
+import Data.List
+import System.FFI
+-->
 ```idris
 %foreign "C:foo,libfoo"
 foo : Int -> Int
@@ -117,15 +121,22 @@ void set(double* arr, unsigned int idx, double value) {
 ```
 ```idris
 %foreign "C:sizeof_double,libarray"
-sizeof_double : Int
+sizeof_double : Bits64
 
 %foreign "C:set,libarray"
 prim__set : Ptr Double -> Double -> Bits64 -> PrimIO ()
 
 toClist : List Double -> IO (Ptr Double)
 toClist xs = do
-  clist <- malloc (cast (length xs) * sizeof_double)
-  sequence $ zipWith (primIO . prim__set clist) xs [0..length xs]
+  clist <- malloc (cast (length xs) * cast sizeof_double)
+
+  let clist = prim__castPtr clist
+
+      setElem : Double -> Nat -> IO ()
+      setElem elem idx = primIO (prim__set clist elem (cast idx))
+
+  sequence_ (zipWith setElem xs [0..length xs])
+  pure clist
 ```
 Of course, one also needs to free the `Ptr Double` at some point, either manually or via garbage collection. A similar approach can also be used to build an Idris list from a C list:
 ```c
