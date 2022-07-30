@@ -50,21 +50,22 @@ fromLiteralThenToLiteral = property $ do
 
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
-  let f64lim : Literal [] Double = 1.7976931348623157e308
+  let f64min : Literal [] Double = Scalar Bounded.min
+      f64max : Literal [] Double = Scalar Bounded.max
       min' : Tensor [] F64 = Bounded.min @{Finite}
       max' : Tensor [] F64 = Bounded.max @{Finite}
-  toLiteral min' === -f64lim
-  toLiteral max' === f64lim
-  toLiteral (fromLiteral (-f64lim) == min') === True
-  toLiteral (fromLiteral f64lim == max') === True
+  toLiteral min' === f64min
+  toLiteral max' === f64max
+  toLiteral (fromLiteral f64min == min') === True
+  toLiteral (fromLiteral f64max == max') === True
 
-  let s32min : Literal [] Int32 = -2147483648
-      s32max : Literal [] Int32 = 2147483647
+  let s32min : Literal [] Int32 = Scalar Bounded.min
+      s32max : Literal [] Int32 = Scalar Bounded.max
       min' : Tensor [] S32 = Bounded.min @{Finite}
       max' : Tensor [] S32 = Bounded.max @{Finite}
   toLiteral min' === s32min
   toLiteral max' === s32max
-  toLiteral (fromLiteral (-s32min) == min') === True
+  toLiteral (fromLiteral s32min == min') === True
   toLiteral (fromLiteral s32max == max') === True
 
   let u32min : Literal [] Nat = 0
