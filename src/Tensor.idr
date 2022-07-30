@@ -566,12 +566,12 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| A `Tensor` where every element has the specified value. For example,
 |||
 ||| ```idris
-||| fives : Tensor [2, 3] Int
+||| fives : Tensor [2, 3] S32
 ||| fives = fill 5
 ||| ```
 ||| is
 ||| ```idris
-||| fives : Tensor [2, 3] Int
+||| fives : Tensor [2, 3] S32
 ||| fives = fromLiteral [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
