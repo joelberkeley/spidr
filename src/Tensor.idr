@@ -20,8 +20,10 @@ module Tensor
 import Control.Monad.State
 import public Data.List
 import public Data.List.Elem
+import Data.List.Elem.Extra
 import Data.List.Quantifiers
 import Decidable.Equality
+import Syntax.PreorderReasoning
 
 import Data.Hashable
 
@@ -579,6 +581,109 @@ fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
 fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
+
+productZero : (xs : List Nat) -> Elem 0 xs => product xs = 0
+productZero = foldlMulAnyZero 1
+  where
+  foldlMulInitZero : (xs : List Nat) -> foldl (*) 0 xs = 0
+  foldlMulInitZero [] = Refl
+  foldlMulInitZero (_ :: tl) = rewrite foldlMulInitZero tl in Refl
+
+  foldlMulAnyZero : (x : Nat) -> (xs : List Nat) -> Elem 0 xs => foldl (*) x xs = 0
+  foldlMulAnyZero @{Here} x (0 :: tl) = rewrite multZeroRightZero x in foldlMulInitZero tl
+  foldlMulAnyZero @{There prf} x (hd :: tl) = foldlMulAnyZero (x * hd) tl
+
+||| Apply a function between `Tensor`s to the trailing dimensions of a `Tensor`. For example, for
+||| ```
+||| x : Tensor [2, 3, 3] S32
+||| x = const [[[ 0,  1,  2],
+|||             [ 3,  4,  5],
+|||             [ 6,  7,  8]],
+|||            [[ 9, 10, 11],
+|||             [12, 13, 14],
+|||             [15, 16, 17]]]
+||| ```
+||| `map diag x` is equivalent to `const [[0, 4, 8], [9, 13, 17]]`.
+|||
+||| **Note:** This function is intended to work similar to Jax's `vmap`. However, the implementation
+|||   is currently a placeholder for the actual vectorization algorithm and so is not performant.
+export
+vmap :
+  Primitive dtype =>
+  {to : _} ->
+  (Tensor from dtype -> Tensor to dtype) ->
+  Tensor (n :: from) dtype ->
+  Tensor (n :: to) dtype
+vmap f (MkTensor {shape=n :: from} expr) =
+  let fr = length from
+      tr = length to
+
+      (graph0, p0) = parameter 0 from "" {dtype}
+      MkTensor graphf _ = f (MkTensor graph0 p0)
+      mapGraph = Map graphf [graph]
+
+      (counterAccTupleGraph, counterAccTuple) =
+        parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (n :: to)] ""
+
+      condition = do lt !(getTupleElement !counterAccTuple 0) !(scalarU32 n)
+
+      body = do
+        counter <- getTupleElement !counterAccTuple 0
+
+        zeroesLikefrom <- traverse scalarU32 (List.replicate fr Z)
+        sliced <- dynamicSlice !xs (counter :: zeroesLikefrom) (1 :: from)
+        sliced <- reshape sliced (range (fr + 1)) from
+
+        let counterGraph = GetTupleElement counterAccTupleGraph 0
+            zeroesLikefromGraphs = List.replicate fr $ (FromLiteral {dtype=U32} [] (hash Z))
+            dynamicSlicedGraph =
+              DynamicSlice graph (counterGraph :: zeroesLikefromGraphs) (1 :: from)
+            slicedGraph = Reshape from dynamicSlicedGraph
+
+            MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
+
+        zeroesLiketo <- traverse scalarU32 (List.replicate tr Z)
+        fSliced <- reshape !fSliced (range tr) (1 :: to)
+        acc <- getTupleElement !counterAccTuple 1
+        acc <- dynamicUpdateSlice acc fSliced (counter :: zeroesLiketo)
+        counter' <- add counter !(scalarU32 1)
+        MkCachingBuilder builder _ <- get {m=Computation}
+        tuple builder [counter', acc]
+
+      init = do
+        startingCounter <- scalarU32 0
+        acc <- slice !xs (replicate (fr + 1) 0) (n :: replicate fr 1) (replicate (fr + 1) 1)
+        acc <- reshape acc (range (fr + 1)) [n]
+        acc <- broadcastInDim acc (n :: to) [0]
+        MkCachingBuilder builder _ <- get {m=Computation}
+        tuple builder [startingCounter, acc]
+
+   in case (decEq n 0, isElem 0 from) of
+        (Yes nIsZero, _) =>
+          let sizesEqual = Calc $
+                |~ product (n :: from)
+                ~~ 0 ... productZero @{rewrite nIsZero in Here} (n :: from)
+                ~~ product (n :: to) ... sym (productZero @{rewrite nIsZero in Here} (n :: to))
+            in reshape {sizesEqual} (MkTensor {shape=n :: from} graph xs)
+        (_, Yes zeroInFrom) =>
+          let sizesEqual = Calc $
+                |~ product (n :: from)
+                ~~ 0 ... productZero (n :: from)
+                ~~ product from ... sym (productZero @{zeroInFrom} from)
+              fRes = f (reshape {sizesEqual} $ MkTensor {shape=n :: from} graph xs)
+            in broadcast fRes
+        _ =>
+          MkTensor mapGraph $ cached mapGraph $ do
+            condition <- buildWithSubBuilder "condition" [] condition
+            body <- buildWithSubBuilder "body" [] body
+            getTupleElement !(while condition body !init) 1
+
+      where
+      scalarU32 : Nat -> Computation XlaOp
+      scalarU32 x = do
+        MkCachingBuilder builder _ <- get
+        literal <- write {dtype=U32} (Scalar x)
+        constantLiteral builder literal
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,

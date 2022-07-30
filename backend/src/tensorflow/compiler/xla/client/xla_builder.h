@@ -88,6 +88,10 @@ extern "C" {
         int slice_sizes_len
     );
 
+    XlaOp* DynamicUpdateSlice(
+        XlaOp& operand, XlaOp& update, XlaOp* start_indices, int start_indices_len
+    );
+
     XlaOp* ConcatInDim(XlaBuilder* builder, XlaOp* operands, int operands_len, int dimension);
     XlaOp* Select(XlaOp& pred, XlaOp& on_true, XlaOp& on_false);
     XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len);
@@ -173,4 +177,6 @@ extern "C" {
         XlaOp& false_operand,
         const XlaComputation& false_computation
     );
+
+    XlaOp* While(const XlaComputation& condition, const XlaComputation& body, XlaOp& init);
 }

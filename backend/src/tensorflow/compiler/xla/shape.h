@@ -16,5 +16,7 @@ limitations under the License.
 extern "C" {
     struct Shape;
 
+    int sizeof_Shape();
+    void set_array_Shape(Shape* arr, int idx, Shape* shape);
     void Shape_delete(Shape* s);
 }

@@ -20,5 +20,9 @@ import System.FFI
 import Compiler.Xla.Prim.Util
 
 export
+%foreign (libxla "MakeTupleShape")
+prim__mkTupleShape : GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "MakeShape")
 prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr

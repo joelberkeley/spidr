@@ -15,11 +15,15 @@ limitations under the License.
 --}
 module Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 
+import System.FFI
+
+import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.Util
 import Types
+import Util
 
 export
 mkShape : (HasIO io, Primitive dtype) => Types.Shape -> io Xla.Shape
@@ -27,5 +31,17 @@ mkShape shape = do
   let dtypeEnum = xlaIdentifier {dtype}
   MkIntArray shapeArrayPtr <- mkIntArray shape
   shapePtr <- primIO $ prim__mkShape dtypeEnum shapeArrayPtr (cast $ length shape)
+  shapePtr <- onCollectAny shapePtr Shape.delete
+  pure (MkShape shapePtr)
+
+export
+mkTupleShape : HasIO io => List Xla.Shape -> io Xla.Shape
+mkTupleShape shapes = do
+  shapeArray <- malloc (cast (length shapes) * sizeofShape)
+  traverse_ (\(idx, MkShape shape) => do
+      primIO $ prim__setArrayShape shapeArray (cast idx) shape
+    ) (enumerate shapes)
+  shapeArray <- onCollectAny shapeArray free
+  shapePtr <- primIO $ prim__mkTupleShape shapeArray (cast $ length shapes)
   shapePtr <- onCollectAny shapePtr Shape.delete
   pure (MkShape shapePtr)

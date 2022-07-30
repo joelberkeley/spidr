@@ -16,11 +16,16 @@ limitations under the License.
 module Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 
 import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Shape
+import Util
 
 namespace Xla
   public export
   data Shape : Type where
     MkShape : GCAnyPtr -> Shape
+
+  public export
+  data ShapeArray : Type where
+    MkShapeArray : GCAnyPtr -> ShapeArray
 
 export
 delete : AnyPtr -> IO ()

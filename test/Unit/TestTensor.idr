@@ -17,6 +17,7 @@ module Unit.TestTensor
 
 import Control.Monad.State
 import Data.List.Quantifiers
+import Data.List
 import Data.Nat
 import Data.Vect
 import System
@@ -529,6 +530,48 @@ transpose = fixedProperty $ do
   slice [at 2, at 4, at 0, at 1] (transpose [2, 3, 1, 0] x) ===# slice [at 1, at 0, at 2, at 4] x
 
 covering
+vmap : Property
+vmap = property $ do
+  n <- forAll dims
+
+  x <- forAll (literal [n] doubles)
+  let x' = fromLiteral x
+  map (1.0 /) x ==~ toLiteral (vmap (1.0 /) x')
+
+  x <- forAll (literal [n] ints)
+  let x' = fromLiteral {dtype=S32} x
+  map (+ 1) x === toLiteral (vmap (+ 1) x')
+
+  from <- forAll shapes
+  x <- forAll $ literal [n] (literal from doubles)
+  let y = map sum x
+      x' = fromLiteral (collapse x)
+      y' = vmap sumAll x'
+  y ==~ toLiteral y'
+
+  d <- forAll dims
+  ds <- forAll shapes
+  x <- forAll $ literal [n] (literal (d :: ds) doubles)
+  let y = collapse $ map (\z => concat z z) x
+      x' = fromLiteral {dtype=F64} (collapse x)
+      y' = vmap (\z => Tensor.concat 0 z z) x'
+  y ==~ toLiteral y'
+
+  where
+  collapse : Literal p (Literal q a) -> Literal (p ++ q) a
+  collapse (Scalar x) = x
+  collapse [] = []
+  collapse (x :: xs) = collapse x :: collapse xs
+
+  concat : Literal (m :: tl) a -> Literal (n :: tl) a -> Literal (m + n :: tl) a
+  concat [] y = y
+  concat (x :: xs) y = x :: concat xs y
+
+  sumAll : {shape : _} -> Tensor shape F64 -> Tensor [] F64
+  sumAll {shape=[]} x = x
+  sumAll {shape=d :: ds} x = sumAll (reduce @{Sum} 0 x)
+
+covering
 mapResult : Property
 mapResult = property $ do
   shape <- forAll shapes
@@ -541,8 +584,8 @@ mapResult = property $ do
   let x' = fromLiteral {dtype=S32} x
   map (+ 1) x === toLiteral (map (+ 1) x')
 
-mapNonTrivial : Property
-mapNonTrivial = fixedProperty $ do
+mapWithNonTrivialFunction : Property
+mapWithNonTrivialFunction = fixedProperty $ do
   map {a=S32} (\x => x + x) 1 ===# 2
   map {a=S32} (\_ => 2) 1 ===# 2
   map {a=S32} (map (+ 1)) 1 ===# 2
@@ -1334,9 +1377,9 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
-    , ("transpose", transpose)
+    , ("vmap", vmap)
+    , ("map with non-trivial function", mapWithNonTrivialFunction)
     , ("map", mapResult)
-    , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)

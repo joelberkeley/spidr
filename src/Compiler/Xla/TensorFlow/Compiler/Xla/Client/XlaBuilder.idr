@@ -155,6 +155,15 @@ dynamicSlice (MkXlaOp opPtr) startIndices sizeIndices = do
   pure (MkXlaOp opPtr)
 
 export
+dynamicUpdateSlice : HasIO io => XlaOp -> XlaOp -> List XlaOp -> io XlaOp
+dynamicUpdateSlice (MkXlaOp operand) (MkXlaOp update) startIndices = do
+  MkXlaOpArray startIndicesArrayPtr <- mkXlaOpArray startIndices
+  opPtr <- primIO $ prim__dynamicUpdateSlice
+    operand update startIndicesArrayPtr (cast $ length startIndices)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 concatInDim :
   HasIO io =>
   XlaBuilder ->
@@ -262,6 +271,10 @@ mul = binaryOp prim__mul
 export
 div : HasIO io => XlaOp -> XlaOp -> io XlaOp
 div = binaryOp prim__div
+
+export
+rem : HasIO io => XlaOp -> XlaOp -> io XlaOp
+rem = binaryOp prim__rem
 
 export
 max : HasIO io => XlaOp -> XlaOp -> io XlaOp
@@ -426,3 +439,10 @@ conditional
       falseComputation
     opPtr <- onCollectAny opPtr XlaOp.delete
     pure (MkXlaOp opPtr)
+
+export
+while : HasIO io => XlaComputation -> XlaComputation -> XlaOp -> io XlaOp
+while (MkXlaComputation condition) (MkXlaComputation body) (MkXlaOp init) = do
+  opPtr <- primIO $ prim__while condition body init
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)

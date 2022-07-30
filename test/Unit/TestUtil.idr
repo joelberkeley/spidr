@@ -92,6 +92,14 @@ namespace List
     deleteAtHeadAndLater _ _ _ [] = Refl
     deleteAtHeadAndLater _ _ _ (_ :: _) = Refl
 
+  export
+  scanrIsScanlReversed : Property
+  scanrIsScanlReversed = property $ do
+    q <- forAll ints
+    len <- forAll (nat $ linear (-20) 20)
+    xs <- forAll (vect len ints)
+    scanr (*) q xs === reverse (scanl (*) q (reverse xs))
+
 export
 group : Group
 group = MkGroup "Util" $ [
@@ -101,4 +109,5 @@ group = MkGroup "Util" $ [
     , ("List.enumerate", List.enumerate)
     , ("insertAt", insertAt)
     , ("deleteAt", deleteAt)
+    , ("scanr is scanl reversed", scanrIsScanlReversed)
   ]
