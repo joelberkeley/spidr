@@ -66,7 +66,7 @@ LiteralRW F64 Double where
   get = get
 
 export
-LiteralRW S32 Int where
+LiteralRW S32 Int32 where
   set = set
   get = get
 

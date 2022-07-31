@@ -39,3 +39,19 @@ public export 0
 Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
 Array [] dtype = dtype
 Array (d :: ds) dtype = Vect d (Array ds dtype)
+
+||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
+public export
+interface Bounded a where
+  min : a
+  max : a
+
+export
+Bounded Int32 where
+  min = -2147483648
+  max = 2147483647
+
+export
+Bounded Double where
+  min = -1.7976931348623157e308
+  max = 1.7976931348623157e308

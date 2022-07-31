@@ -82,13 +82,6 @@ export
 Show (Tensor shape dtype) where
   show (MkTensor expr) = toString expr
 
-namespace Bounded
-  ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
-  public export
-  interface Bounded a where
-    min : a
-    max : a
-
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
@@ -573,12 +566,12 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| A `Tensor` where every element has the specified value. For example,
 |||
 ||| ```idris
-||| fives : Tensor [2, 3] Int
+||| fives : Tensor [2, 3] S32
 ||| fives = fill 5
 ||| ```
 ||| is
 ||| ```idris
-||| fives : Tensor [2, 3] Int
+||| fives : Tensor [2, 3] S32
 ||| fives = fromLiteral [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export

@@ -39,8 +39,8 @@ data Literal : Shape -> Type -> Type where
   (::) : Literal ds a -> Literal (d :: ds) a -> Literal (S d :: ds) a
 
 export
-fromInteger : Integer -> Literal [] Int
-fromInteger = Scalar . cast {to=Int}
+fromInteger : Integer -> Literal [] Int32
+fromInteger = Scalar . cast {to=Int32}
 
 export
 fromDouble : Double -> Literal [] Double
