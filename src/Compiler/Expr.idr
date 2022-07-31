@@ -43,6 +43,7 @@ data Expr : Type where
   Reshape : Shape -> Shape -> Expr -> Expr
   Slice : List Nat -> List Nat -> List Nat -> Expr -> Expr
   DynamicSlice : List Expr -> List Nat -> Expr -> Expr
+  DynamicUpdateSlice : Expr -> List Expr -> Expr -> Expr
   Concat : Nat -> Expr -> Expr -> Expr
   Diag : Expr -> Expr
   Triangle : (lower : Bool) -> Expr -> Expr
@@ -94,6 +95,7 @@ data Expr : Type where
   Atanh : Expr -> Expr
   Select : Expr -> Expr -> Expr -> Expr
   Cond : Expr -> Fn 1 Expr -> Expr -> Fn 1 Expr -> Expr -> Expr
+  While : Fn 1 Expr -> Fn 1 Expr -> Expr -> Expr
   Dot : Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
   TriangularSolve : Expr -> Expr -> Bool -> Expr
@@ -120,6 +122,9 @@ Prelude.Eq Expr where
     (starts, stops, strides) == (starts', stops', strides') && x == x'
   (DynamicSlice starts sizes x) == (DynamicSlice starts' sizes' x') =
     (assert_total $ starts == starts') && sizes == sizes' && x == x'
+  (DynamicUpdateSlice update startIndices expr) ==
+    (DynamicUpdateSlice update' startIndices' expr') =
+      update == update' && (assert_total $ startIndices == startIndices') && expr == expr'
   (Concat axis x y) == (Concat axis' x' y') = axis == axis' && x == x' && y == y'
   (Diag x) == (Diag x') = x == x'
   (Triangle lower x) == (Triangle lower' x') = lower == lower' && x == x'
@@ -196,6 +201,9 @@ Prelude.Eq Expr where
       && pf == pf'
       && fFalse == fFalse'
       && false == false'
+  (While (MkFn [pc] condition) (MkFn [pb] body) init) ==
+    (While (MkFn [pc'] condition') (MkFn [pb'] body') init') =
+      pc == pc' && condition == condition' && pb == pb' && body == body' && init == init'
   (Dot x y) == (Dot x' y') = x == x' && y == y'
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve x y lower) == (TriangularSolve x' y' lower') =
@@ -232,6 +240,10 @@ Hashable Expr where
     let salt = salt `hashWithSalt` "DynamicSlice"
         salt = assert_total $ salt `hashWithSalt` starts
      in salt `hashWithSalt` sizes `hashWithSalt` x
+  hashWithSalt salt (DynamicUpdateSlice update startIndices expr) =
+    let salt = salt `hashWithSalt` "DynamicUpdateSlice" `hashWithSalt` update
+        salt = assert_total $ salt `hashWithSalt` startIndices
+     in salt `hashWithSalt` expr
   hashWithSalt salt (Concat axis x y) =
     salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
@@ -314,6 +326,13 @@ Hashable Expr where
     `hashWithSalt` pf
     `hashWithSalt` fFalse
     `hashWithSalt` false
+  hashWithSalt salt (While (MkFn [pc] condition) (MkFn [pb] body) init) = salt
+    `hashWithSalt` "While"
+    `hashWithSalt` pc
+    `hashWithSalt` condition
+    `hashWithSalt` pb
+    `hashWithSalt` body
+    `hashWithSalt` init
   hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` x `hashWithSalt` y
   hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
   hashWithSalt salt (TriangularSolve x y lower) =

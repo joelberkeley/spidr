@@ -538,7 +538,7 @@ vmap = property $ do
   let x' = fromLiteral x
   map (1.0 /) x ==~ toLiteral (vmap (1.0 /) x')
 
-  x <- forAll (literal [n] ints)
+  x <- forAll (literal [n] int32s)
   let x' = fromLiteral {dtype=S32} x
   map (+ 1) x === toLiteral (vmap (+ 1) x')
 
@@ -569,7 +569,7 @@ vmap = property $ do
 
   sumAll : {shape : _} -> Tensor shape F64 -> Tensor [] F64
   sumAll {shape=[]} x = x
-  sumAll {shape=d :: ds} x = sumAll (reduce @{Sum} 0 x)
+  sumAll {shape=d :: ds} x = sumAll (reduce @{Sum} [0] x)
 
 covering
 mapResult : Property

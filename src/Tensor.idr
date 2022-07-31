@@ -618,45 +618,30 @@ vmap f (MkTensor {shape=n :: from} expr) =
   let fr = length from
       tr = length to
 
-      (graph0, p0) = parameter 0 from "" {dtype}
-      MkTensor graphf _ = f (MkTensor graph0 p0)
-      mapGraph = Map graphf [graph]
+      counterAccTuple : Expr --Parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (n :: to)] ""
 
-      (counterAccTupleGraph, counterAccTuple) =
-        parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (n :: to)] ""
+      condition : Fn 1 Expr :=
+        MkFn [counterAccTuple] $ Lt (GetTupleElement 0 counterAccTuple) (scalarU32 n)
 
-      condition = do lt !(getTupleElement !counterAccTuple 0) !(scalarU32 n)
+      body = MkFn [counterAccTuple] $
+        let counter = GetTupleElement 0 counterAccTuple
+            zeroesLikefrom = List.replicate fr (scalarU32 0)
+            sliced = DynamicSlice (counter :: zeroesLikefrom) (1 :: from) expr
+            sliced = Reshape (range (fr + 1)) from sliced
+            MkTensor fSliced = f (MkTensor sliced)
+            zeroesLiketo = List.replicate tr (scalarU32 0)
+            fSliced = Reshape (range tr) (1 :: to) fSliced
+            acc = GetTupleElement 1 counterAccTuple
+            acc = DynamicUpdateSlice fSliced (counter :: zeroesLiketo) acc
+            counter = Add counter (scalarU32 1)
+         in Tuple [counter, acc]
 
-      body = do
-        counter <- getTupleElement !counterAccTuple 0
-
-        zeroesLikefrom <- traverse scalarU32 (List.replicate fr Z)
-        sliced <- dynamicSlice !xs (counter :: zeroesLikefrom) (1 :: from)
-        sliced <- reshape sliced (range (fr + 1)) from
-
-        let counterGraph = GetTupleElement counterAccTupleGraph 0
-            zeroesLikefromGraphs = List.replicate fr $ (FromLiteral {dtype=U32} [] (hash Z))
-            dynamicSlicedGraph =
-              DynamicSlice graph (counterGraph :: zeroesLikefromGraphs) (1 :: from)
-            slicedGraph = Reshape from dynamicSlicedGraph
-
-            MkTensor _ fSliced = f (MkTensor slicedGraph $ cached slicedGraph $ pure sliced)
-
-        zeroesLiketo <- traverse scalarU32 (List.replicate tr Z)
-        fSliced <- reshape !fSliced (range tr) (1 :: to)
-        acc <- getTupleElement !counterAccTuple 1
-        acc <- dynamicUpdateSlice acc fSliced (counter :: zeroesLiketo)
-        counter' <- add counter !(scalarU32 1)
-        MkCachingBuilder builder _ <- get {m=Computation}
-        tuple builder [counter', acc]
-
-      init = do
-        startingCounter <- scalarU32 0
-        acc <- slice !xs (replicate (fr + 1) 0) (n :: replicate fr 1) (replicate (fr + 1) 1)
-        acc <- reshape acc (range (fr + 1)) [n]
-        acc <- broadcastInDim acc (n :: to) [0]
-        MkCachingBuilder builder _ <- get {m=Computation}
-        tuple builder [startingCounter, acc]
+      init =
+        let startingCounter = scalarU32 0
+            acc = Slice (replicate (fr + 1) 0) (n :: replicate fr 1) (replicate (fr + 1) 1) expr
+            acc = Reshape (range (fr + 1)) [n] acc
+            acc = Broadcast {dtype} (n :: to) [0] acc
+         in Tuple [startingCounter, acc]
 
    in case (decEq n 0, isElem 0 from) of
         (Yes nIsZero, _) =>
@@ -664,26 +649,20 @@ vmap f (MkTensor {shape=n :: from} expr) =
                 |~ product (n :: from)
                 ~~ 0 ... productZero @{rewrite nIsZero in Here} (n :: from)
                 ~~ product (n :: to) ... sym (productZero @{rewrite nIsZero in Here} (n :: to))
-            in reshape {sizesEqual} (MkTensor {shape=n :: from} graph xs)
+           in reshape {sizesEqual} (MkTensor {shape=n :: from} expr)
         (_, Yes zeroInFrom) =>
           let sizesEqual = Calc $
                 |~ product (n :: from)
                 ~~ 0 ... productZero (n :: from)
                 ~~ product from ... sym (productZero @{zeroInFrom} from)
-              fRes = f (reshape {sizesEqual} $ MkTensor {shape=n :: from} graph xs)
-            in broadcast fRes
+              fRes = f (reshape {sizesEqual} $ MkTensor {shape=n :: from} expr)
+           in broadcast fRes
         _ =>
-          MkTensor mapGraph $ cached mapGraph $ do
-            condition <- buildWithSubBuilder "condition" [] condition
-            body <- buildWithSubBuilder "body" [] body
-            getTupleElement !(while condition body !init) 1
+          MkTensor $ GetTupleElement 1 $ While condition body init
 
       where
-      scalarU32 : Nat -> Computation XlaOp
-      scalarU32 x = do
-        MkCachingBuilder builder _ <- get
-        literal <- write {dtype=U32} (Scalar x)
-        constantLiteral builder literal
+      scalarU32 : Nat -> Expr
+      scalarU32 x = FromLiteral {dtype=U32} (Scalar x)
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,

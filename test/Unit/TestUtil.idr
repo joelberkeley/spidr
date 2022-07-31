@@ -95,9 +95,9 @@ namespace List
   export
   scanrIsScanlReversed : Property
   scanrIsScanlReversed = property $ do
-    q <- forAll ints
+    q <- forAll nats
     len <- forAll (nat $ linear (-20) 20)
-    xs <- forAll (vect len ints)
+    xs <- forAll (vect len nats)
     scanr (*) q xs === reverse (scanl (*) q (reverse xs))
 
 export

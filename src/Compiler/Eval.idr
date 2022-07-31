@@ -113,6 +113,8 @@ enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ l
 enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
 enqueue e@(DynamicSlice starts sizes expr) =
   cached e $ dynamicSlice !(enqueue expr) !(traverse enqueue starts) sizes
+enqueue e@(DynamicUpdateSlice update startIndices expr) =
+  cached e $ dynamicUpdateSlice !(enqueue expr) !(enqueue update) !(traverse enqueue startIndices)
 enqueue e@(Concat axis expr expr') = cached e $ do
   (builder, _) <- get
   concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)
@@ -181,11 +183,16 @@ enqueue e@(Tanh expr) = cached e $ tanh !(enqueue expr)
 enqueue e@(Asinh expr) = cached e $ asinh !(enqueue expr)
 enqueue e@(Acosh expr) = cached e $ acosh !(enqueue expr)
 enqueue e@(Atanh expr) = cached e $ atanh !(enqueue expr)
-enqueue e@(Select pred true false) = cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
+enqueue e@(Select pred true false) =
+  cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
 enqueue e@(Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = cached e $ do
   trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
   falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
   conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp
+enqueue e@(While (MkFn [pc] condition) (MkFn [pb] body) init) = cached e $ do
+  condition <- buildWithSubBuilder "condition" [enqueue pc] (enqueue condition)
+  body <- buildWithSubBuilder "body" [enqueue pb] (enqueue body)
+  while condition body !(enqueue init)
 enqueue e@(Dot l r) = cached e $ dot !(enqueue l) !(enqueue r)
 enqueue e@(Cholesky expr) = cached e $ cholesky !(enqueue expr) True
 enqueue e@(TriangularSolve a b lower) =
