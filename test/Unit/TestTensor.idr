@@ -567,6 +567,7 @@ vmap = property $ do
   concat [] y = y
   concat (x :: xs) y = x :: concat xs y
 
+  -- this is now representable using just `reduce`
   sumAll : {shape : _} -> Tensor shape F64 -> Tensor [] F64
   sumAll {shape=[]} x = x
   sumAll {shape=d :: ds} x = sumAll (reduce @{Sum} [0] x)

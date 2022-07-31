@@ -618,30 +618,29 @@ vmap f (MkTensor {shape=n :: from} expr) =
   let fr = length from
       tr = length to
 
-      counterAccTuple : Expr --Parameter 0 [MkShapeDtypePair U32 [], MkShapeDtypePair dtype (n :: to)] ""
+      counterAccTuple = Parameter 0 (TupleShape [Single U64 [], Single dtype (n :: to)]) ""
 
       condition : Fn 1 Expr :=
-        MkFn [counterAccTuple] $ Lt (GetTupleElement 0 counterAccTuple) (scalarU32 n)
+        MkFn [counterAccTuple] $ Lt (GetTupleElement 0 counterAccTuple) (scalarU64 n)
 
       body = MkFn [counterAccTuple] $
         let counter = GetTupleElement 0 counterAccTuple
-            zeroesLikefrom = List.replicate fr (scalarU32 0)
+            zeroesLikefrom = List.replicate fr (scalarU64 0)
             sliced = DynamicSlice (counter :: zeroesLikefrom) (1 :: from) expr
             sliced = Reshape (range (fr + 1)) from sliced
             MkTensor fSliced = f (MkTensor sliced)
-            zeroesLiketo = List.replicate tr (scalarU32 0)
+            zeroesLiketo = List.replicate tr (scalarU64 0)
             fSliced = Reshape (range tr) (1 :: to) fSliced
             acc = GetTupleElement 1 counterAccTuple
             acc = DynamicUpdateSlice fSliced (counter :: zeroesLiketo) acc
-            counter = Add counter (scalarU32 1)
+            counter = Add counter (scalarU64 1)
          in Tuple [counter, acc]
 
       init =
-        let startingCounter = scalarU32 0
-            acc = Slice (replicate (fr + 1) 0) (n :: replicate fr 1) (replicate (fr + 1) 1) expr
-            acc = Reshape (range (fr + 1)) [n] acc
-            acc = Broadcast {dtype} (n :: to) [0] acc
-         in Tuple [startingCounter, acc]
+        let acc = Slice (replicate (fr + 1) 0) (n :: replicate fr 1) (replicate (fr + 1) 1) expr
+            acc = Reshape (n :: replicate fr 1) (n :: replicate tr 1) acc
+            acc = Broadcast {dtype} (n :: replicate tr 1) (n :: to) acc
+         in Tuple [scalarU64 0, acc]
 
    in case (decEq n 0, isElem 0 from) of
         (Yes nIsZero, _) =>
@@ -661,8 +660,8 @@ vmap f (MkTensor {shape=n :: from} expr) =
           MkTensor $ GetTupleElement 1 $ While condition body init
 
       where
-      scalarU32 : Nat -> Expr
-      scalarU32 x = FromLiteral {dtype=U32} (Scalar x)
+      scalarU64 : Nat -> Expr
+      scalarU64 x = FromLiteral {dtype=U64} (Scalar x)
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -675,7 +674,7 @@ vmap f (MkTensor {shape=n :: from} expr) =
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} expr) =
-  let p0 = Parameter 0 [] "" {dtype=a}
+  let p0 = Parameter 0 (Single a []) ""
       MkTensor exprf = f (MkTensor p0)
    in MkTensor $ Map (MkFn [p0] exprf) [expr] (range $ length shape)
 
@@ -696,8 +695,8 @@ map2 :
   Tensor shape b ->
   Tensor shape c
 map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
-  let p0 = Parameter 0 [] "" {dtype=a}
-      p1 = Parameter 1 [] "" {dtype=b}
+  let p0 = Parameter 0 (Single a []) ""
+      p1 = Parameter 1 (Single b []) ""
       MkTensor exprf = f (MkTensor p0) (MkTensor p1)
    in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
 
@@ -720,8 +719,8 @@ reduce axes (MkTensor expr) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-      p0 := Parameter 0 [] "" {dtype}
-      p1 := Parameter 1 [] "" {dtype}
+      p0 := Parameter 0 (Single dtype []) ""
+      p1 := Parameter 1 (Single dtype []) ""
       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
       MkTensor neutral := neutral @{reducer}
    in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
@@ -744,8 +743,8 @@ sort :
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Tensor shape dtype
 sort comp dimension (MkTensor expr) =
-  let p0 = Parameter 0 [] "" {dtype}
-      p1 = Parameter 1 [] "" {dtype}
+  let p0 = Parameter 0 (Single dtype []) ""
+      p1 = Parameter 1 (Single dtype []) ""
       MkTensor exprComp = comp (MkTensor p0) (MkTensor p1)
    in MkTensor $ Sort (MkFn [p0, p1] exprComp) dimension False [expr]
 
@@ -926,8 +925,8 @@ cond :
   (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft ->
   Tensor shape dtype
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
-    let pt = Parameter 0 ts "" {dtype=tt}
-        pf = Parameter 0 fs "" {dtype=ft}
+    let pt = Parameter 0 (Single tt ts) ""
+        pf = Parameter 0 (Single ft fs) ""
         MkTensor exprTrue = onTrue (MkTensor pt)
         MkTensor exprFalse = onFalse (MkTensor pf)
      in MkTensor $ Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false

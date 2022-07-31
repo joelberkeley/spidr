@@ -89,15 +89,19 @@ buildWithSubBuilder computationName computationArguments computationResult = do
   build subBuilder root
 
 covering
+buildShape : TypedShape -> Computation Xla.Shape
+buildShape (Single dtype shape) = mkShape {dtype} shape
+buildShape (TupleShape shapesAndDtypes) = mkTupleShape !(traverse buildShape shapesAndDtypes)
+
+covering
 enqueue : Expr -> Computation XlaOp
 enqueue e@(FromLiteral {dtype} lit) = cached e $ do
   (builder, _) <- get
   literal <- write {dtype} lit 
   constantLiteral builder literal
-enqueue e@(Parameter {dtype} position shape name) = cached e $ do
+enqueue e@(Parameter position typedShape name) = cached e $ do
   (builder, _) <- get
-  xlaShape <- mkShape {dtype} shape
-  parameter builder position xlaShape name
+  parameter builder position !(buildShape typedShape) name
 enqueue e@(Tuple exprs) = cached e $ do
   (builder, _) <- get
   tuple builder !(traverse enqueue exprs)

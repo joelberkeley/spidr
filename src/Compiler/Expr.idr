@@ -28,13 +28,18 @@ import Util
 import Util.Hashable
 
 public export
+data TypedShape : Type where
+  Single : (0 dtype : Type) -> Primitive dtype => Types.Shape -> TypedShape
+  TupleShape : List TypedShape -> TypedShape
+
+public export
 data Fn : Nat -> Type -> Type where
   MkFn : {arity : _} -> Vect arity a -> a -> Fn arity a
 
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
-  Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
+  Parameter : Nat -> TypedShape -> String -> Expr
   Tuple : List Expr -> Expr
   GetTupleElement : Nat -> Expr -> Expr
   MinFiniteValue : Primitive dtype => Expr
@@ -102,13 +107,17 @@ data Expr : Type where
   UniformFloatingPoint : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
   NormalFloatingPoint : Expr -> Expr -> Shape -> Expr
 
+Prelude.Eq TypedShape where
+  (Single dtype ds) == (Single dtype' ds') = (typeString {dtype}, ds) == (typeString {dtype=dtype'}, ds')
+  (TupleShape shapes) == (TupleShape shapes') = all id (assert_total $ zipWith (==) shapes shapes')
+  _ == _ = False
+
 export
 Prelude.Eq Expr where
   (FromLiteral {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
     (typeString {dtype}, shape, hash lit) == (typeString {dtype=dtype'}, shape', hash lit')
-  (Parameter {dtype} position shape name) == (Parameter {dtype=dtype'} position' shape' name') =
-    (typeString {dtype}, position, shape, name) ==
-      (typeString {dtype=dtype'}, position', shape', name')
+  (Parameter position typedShape name) == (Parameter position' typedShape' name') =
+    (position, typedShape, name) == (position', typedShape', name')
   (Tuple xs) == (Tuple xs') = assert_total $ xs == xs'
   (GetTupleElement idx tuple) == (GetTupleElement idx' tuple') = idx == idx' && tuple == tuple'
   (MinFiniteValue {dtype}) == (MinFiniteValue {dtype=dtype'}) =
@@ -216,11 +225,16 @@ Prelude.Eq Expr where
   _ == _ = False
 
 export
+Hashable TypedShape where
+  hashWithSalt salt (Single dtype ds) = hashWithSalt salt (typeString {dtype}, ds)
+  hashWithSalt salt (TupleShape xs) = assert_total $ hashWithSalt salt xs
+
+export
 Hashable Expr where
   hashWithSalt salt (FromLiteral {shape} {dtype} lit) =
     salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, lit)
-  hashWithSalt salt (Parameter {dtype} position shape name) =
-    salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position, name)
+  hashWithSalt salt (Parameter position typedShape name) =
+    salt `hashWithSalt` ("Parameter", position, typedShape, name)
   hashWithSalt salt (Tuple xs) =
     let salt = salt `hashWithSalt` "Tuple"
      in assert_total $ hashWithSalt salt xs
