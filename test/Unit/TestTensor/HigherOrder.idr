@@ -25,49 +25,77 @@ import Utils.Comparison
 import Utils.Cases
 
 partial
-mapResult : Property
-mapResult = property $ do
-  shape <- forAll shapes
+vmap : Property
+vmap = fixedProperty $ do
+  let xs = tensor {dtype=S32} [[[0, 1], [2, 3]], [[4, 5], [6, 7]]]
+      x = tensor {dtype=S32} [[1, 0], [-1, 2]]
 
-  x <- forAll (literal shape doubles)
-  let x' = tensor {dtype = F64} x
-  map id x ==~ unsafeEval (do map pure !x')
-  map (1.0 /) x ==~ unsafeEval (do map (\x => 1.0 / pure x) !x')
+  -- unary
+  (do vmap diag !xs) ===# tensor [[0, 3], [4, 7]]
+  (do vmap (\_ => x) !xs) ===# tensor [[[1, 0], [-1, 2]], [[1, 0], [-1, 2]]]
+  (do vmap (\_ => diag !x) !xs) ===# tensor [[1, 2], [1, 2]]
+  (do vmap (\_ => do diag !x) !xs) ===# tensor [[1, 2], [1, 2]]
 
-  x <- forAll (literal shape int32s)
-  let x' = tensor {dtype=S32} x
-  map (+ 1) x === unsafeEval (do map (\x => pure x + 1) !x')
+  (do vmap (expand 0) !xs) ===# (do expand 1 !xs)
+  (do vmap (\_ => expand 0 !x) !xs) ===# tensor [[[[1, 0], [-1, 2]]], [[[1, 0], [-1, 2]]]]
 
-partial
-mapNonTrivial : Property
-mapNonTrivial = fixedProperty $ do
-  (do map {a=S32} (\x => pure x + pure x) !1) ===# 2
-  (do map {a=S32} (\_ => 2) !1) ===# 2
-  (do map {a=S32} (map (\x => pure x + 1)) !1) ===# 2
+  -- binary
+  (do vmap (\x => concat 0 x x) !xs) ===# (do concat 1 !xs !xs)
 
-partial
-map2Result : Property
-map2Result = fixedProperty $ do
-  shape <- forAll shapes
+  (do vmap (\x => concat 0 !(tensor [[8, 9]]) x) !xs) ===# tensor {dtype = S32} [
+    [[8, 9], [0, 1], [2, 3]],
+    [[8, 9], [4, 5], [6, 7]]
+  ]
+{-
+  (do vmap (\x => concat 0 x !(tensor [[8, 9]])) !xs) ===# tensor {dtype = S32} [
+    [[0, 1], [2, 3], [8, 9]],
+    [[4, 5], [6, 7], [8, 9]]
+  ]
+  (do vmap (\_ => concat 0 !(tensor [0]) !(tensor [1])) !xs) ===# tensor {dtype = S32} [[0, 1], [0, 1]]
 
-  let int32s = literal shape int32s
-  [x, y] <- forAll (np [int32s, int32s])
-  let x' = tensor {dtype=S32} x
-      y' = tensor {dtype=S32} y
-  [| x + y |] === unsafeEval (do map2 (\x, y => pure x + pure y) !x' !y')
+  (do vmap (\x => pure x + pure x) !xs) ===# xs + xs
+  (do vmap (\x => diag !(tensor [[1, -1], [2, -3]]) + diag x) !xs) ===# tensor [[1, 0], [5, 4]]
+  (do vmap (\x => vmap (\y => concat 0 !(expand 0 y) x) x) !xs) ===# tensor [
+    [[[0, 1], [0, 1], [2, 3]], [[2, 3], [0, 1], [2, 3]]],
+    [[[4, 5], [4, 5], [6, 7]], [[6, 7], [4, 5], [6, 7]]]
+  ]
+-}
 
-  shape <- forAll shapes
-  let doubles = literal shape doubles
-  [x, y] <- forAll (np [doubles, doubles])
-  let x' = tensor {dtype=F64} x
-      y' = tensor {dtype=F64} y
-  [| x + y |] ==~ unsafeEval (do map2 (\x, y => pure x + pure y) !x' !y')
 
-partial
-map2ResultWithReusedFnArgs : Property
-map2ResultWithReusedFnArgs = fixedProperty $ do
-  let x : Graph (Tensor [] S32) = 6
-  (do map2 (\x, y => pure x + pure x + pure y + pure y) !1 !2) ===# x
+
+{-
+      y = fromLiteral {dtype=S32} [[4, -2], [5, 1]]
+  vmap (\x => x - y) xs ===# fromLiteral [[[-4, 3], [-3, 2]], [[0, 7], [1, 2]]]
+  vmap (y -) xs ===# fromLiteral [[[4, -3], [3, -2]], [[0, -7], [-1, -2]]]
+  vmap (+ y) xs ===# fromLiteral [[[4, -1], [7, 4]], [[8, 3], [11, 4]]]
+  vmap (y +) xs ===# fromLiteral [[[4, -1], [7, 4]], [[8, 3], [11, 4]]]
+  vmap (const y) xs ===# broadcast y
+
+  vmap (\x => concat 0 y x) xs ===# fromLiteral [
+      [[4, -2], [5, 1], [0, 1], [2, 3]], [[4, -2], [5, 1], [4, 5], [6, 3]]
+    ]
+  vmap (\x => concat 1 x y) xs ===# fromLiteral [
+      [[0, 1, 4, -2], [2, 3, 5, 1]], [[4, 5, 4, -2], [6, 3, 5, 1]]
+    ]
+
+  vmap (\x => reduce @{Sum} [0] x) xs ===# fromLiteral [[2, 4], [10, 8]]
+
+  let preds = fromLiteral [True, False]
+  vmap (\x => cond x id 1 id 0) preds ===# fromLiteral [1, 0]
+  vmap (\x => cond (fromLiteral True) id x id (fill {shape=[2, 2]} 0)) xs ===# xs
+  vmap (\x => cond (fromLiteral True) (const x) (fill {shape=[]} {dtype=U32} 1) id (fill 0)) xs
+    ===# xs
+
+  -- [[2, 3], [0, 1]] + [[0, 3], [4, -2]]
+  -- [[6, 3], [4, 5]] + [[4, 3]], [4, -2]]
+  vmap (\x => reverse [0] x + concat 0 (expand 0 (diag x)) (slice [0.to 1] y)) xs ===#
+    fromLiteral [[[2, 6], [4, -1]], [[10, 6], [8, 3]]]
+
+  let a = fromLiteral [[[1.0, 0.0], [-3.0, 2.2]], [[-2.0, 0.0], [-2.5, 1.5]]]
+      x = fromLiteral [[1.1, -1.2], [2.0, 2.2]]
+      b = fromLiteral [[1.1, -5.94], [-4.0, -1.7]]
+  vmap (|\) a b ===# x
+-}
 
 partial
 reduce : Property
@@ -208,14 +236,11 @@ condResultWithReusedArgs = fixedProperty $ do
 export partial
 all : List (PropertyName, Property)
 all = [
-      ("map", mapResult)
-    , ("map with non-trivial function", mapNonTrivial)
-    , ("map2", map2Result)
-    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+      ("vmap", vmap){-
     , ("reduce", reduce)
     , ("sort", sort)
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
     , ("cond for trivial usage", condResultTrivialUsage)
-    , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("cond for re-used arguments", condResultWithReusedArgs)-}
   ]

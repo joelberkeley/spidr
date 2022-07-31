@@ -29,12 +29,12 @@ import Unit.TestUtil
 
 partial
 main : IO ()
-main = test [
+main = test [{-
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.TestUtil.group
-    , Unit.TestLiteral.group
-    , Unit.TestTensor.group
-    , Unit.TestDistribution.group
-    , Unit.Model.TestKernel.group
+    , Unit.TestLiteral.group-}
+     Unit.TestTensor.group
+    --, Unit.TestDistribution.group
+    --, Unit.Model.TestKernel.group
   ]

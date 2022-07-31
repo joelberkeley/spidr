@@ -447,7 +447,7 @@ trace = fixedProperty $ do
 
 export partial
 group : Group
-group = MkGroup "Tensor" $ [
+group = MkGroup "Tensor" $ Unit.TestTensor.HigherOrder.all {-[
       ("eval . tensor", tensorThenEval)
     , ("eval multiple tensors", evalTuple)
     , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
@@ -475,4 +475,4 @@ group = MkGroup "Tensor" $ [
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all
-  ])
+  ])-}
