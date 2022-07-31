@@ -130,10 +130,3 @@ namespace List
       go : Nat -> List Nat -> List a -> List a
       go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
       go _ _ xs = xs
-
-  ||| Like `foldr`, but returns a vector of all intermediate accumulated states. The first
-  ||| state appears last in the result, and the last state appears first.
-  public export
-  scanr : (elem -> res -> res) -> res -> Vect len elem -> Vect (S len) res
-  scanr _ q [] = [q]
-  scanr f q (x :: xs) = let qs'@(q' :: _) = scanr f q xs in f x q' :: qs'
