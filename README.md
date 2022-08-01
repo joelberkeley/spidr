@@ -12,7 +12,7 @@ spidr is a research project into engineering in the machine learning space, in w
 
   - **informative** with clear and extensive documentation
   - **practical** with lightweight and intuitive APIs
-  - **composable** via a purely functional API
+  - **composable** with purely functional APIs
   - **performant** by using [XLA](https://www.tensorflow.org/xla) for efficient graph compilation for the GPU, TPU and other hardware
   - **robust** by leveraging the dependent types and theorem proving offered by [Idris](https://github.com/idris-lang/Idris2)
 
