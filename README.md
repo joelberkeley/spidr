@@ -1,6 +1,6 @@
 # spidr
 
-A linear algebra and probabilistic modelling library supporting dependent types and hardware acceleration. spidr has two array types: `Tensor` is backed by XLA and uses dependent types to describe its shape; `Literal` is implemented in Idris and allows full use of dependent types.
+A linear algebra and probabilistic modelling library supporting dependent types and hardware acceleration. spidr has two array types: `Tensor` is backed by XLA and uses dependent types to describe its shape; `Literal` is pure Idris and allows full use of dependent types.
 
 **Note:** spidr is in early development. See [here](https://github.com/joelberkeley/spidr/labels/notable%20limitation) for a list of notable limitations.
 
