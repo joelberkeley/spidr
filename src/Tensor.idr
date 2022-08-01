@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `Tensor` object, an array of values of arbitrary type, along with a
-||| number of functions operating on numeric `Tensor`s.
+||| This module contains the `Tensor` object, an array of numbers or booleans, along with a
+||| number of functions operating on `Tensor`s.
 module Tensor
 
 import Control.Monad.State
