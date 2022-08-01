@@ -1,6 +1,6 @@
 # spidr
 
-Linear algebra and probabilistic modelling with dependent types and hardware acceleration.
+_Linear algebra and probabilistic modelling with dependent types and hardware acceleration._
 
 spidr is in early development. See [here](https://github.com/joelberkeley/spidr/labels/notable%20limitation) for a list of notable limitations.
 
