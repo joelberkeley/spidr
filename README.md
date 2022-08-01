@@ -12,15 +12,15 @@ Please use spidr responsibly. We ask that you ensure any benefits you gain from 
 
 ## Motivation
 
-With spidr, we explore what is possible when we bring some of the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning utilities, libraries and frameworks; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
+spidr is a research project into engineering in the machine learning space. In spidr, we bring some of the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning alogrithms; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
 
-  - **robust** by leveraging the dependent types and theorem proving offered by [Idris](https://github.com/idris-lang/Idris2)
-  - **performant** by using [XLA](https://www.tensorflow.org/xla) for efficient graph compilation for the GPU, TPU and other hardware
-  - **composable** via a purely functional API
-  - **practical** with lightweight and intuitive APIs
   - **informative** with clear and extensive documentation
+  - **practical** with lightweight and intuitive APIs
+  - **composable** via a purely functional API
+  - **performant** by using [XLA](https://www.tensorflow.org/xla) for efficient graph compilation for the GPU, TPU and other hardware
+  - **robust** by leveraging the dependent types and theorem proving offered by [Idris](https://github.com/idris-lang/Idris2)
 
-This is a tall order, so to keep the workload manageable we may omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation. This emphasis on design over completeness is spidr's distinctive feature.
+This is a tall order, so to keep the workload manageable we may omit conceptually similar algorithms where they don't contribute new insights in design or machine learning computation.
 
 ## Acknowledgements
 
