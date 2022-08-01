@@ -1,6 +1,6 @@
 # spidr
 
-Linear algebra and probabilistic modelling library dependent types and hardware acceleration.
+Linear algebra and probabilistic modelling with dependent types and hardware acceleration.
 
 ---
 
