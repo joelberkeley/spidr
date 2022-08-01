@@ -8,7 +8,7 @@ For installation, see [the instructions](INSTALL.md). We use [semantic versionin
 
 ## Motivation
 
-spidr is a research project into engineering in the machine learning space. In spidr, we bring some of the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning alogrithms; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
+spidr is a research project into engineering in the machine learning space. We bring some of the latest developments in programming language theory and hardware acceleration to probabilistic modelling. We hope to help developers find new ways to write and verify robust, performant and practical machine learning alogrithms; allow machine learning researchers to leverage software design to find new research avenues with tools that are easy to compose, modify and extend; and allow those new to machine learning to learn about common or useful algorithms. To these ends, we aim to make spidr
 
   - **informative** with clear and extensive documentation
   - **practical** with lightweight and intuitive APIs
