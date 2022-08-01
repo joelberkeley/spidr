@@ -4,9 +4,7 @@ A linear algebra and probabilistic modelling library supporting dependent types 
 
 **Note:** spidr is in early development. See [here](https://github.com/joelberkeley/spidr/labels/notable%20limitation) for a list of notable limitations.
 
-For installation, see [the instructions](INSTALL.md). We use [semantic versioning](https://semver.org/).
-
-See the source code for comprehensive API documentation (`src/` excluding `src/Compiler/`). spidr also has [tutorials](tutorials), which are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
+For installation, see [the instructions](INSTALL.md). We use [semantic versioning](https://semver.org/). See the source code for comprehensive API documentation (`src/` excluding `src/Compiler/`), and the [tutorials](tutorials) for extended discussions of spidr's architecture. These are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
 Please use spidr responsibly. We ask that you ensure any benefits you gain from this are used to help, not hurt.
 
