@@ -92,6 +92,29 @@ namespace List
     deleteAtHeadAndLater _ _ _ [] = Refl
     deleteAtHeadAndLater _ _ _ (_ :: _) = Refl
 
+  repeatedNotLT : Sorted LT [x, x] -> Void
+  repeatedNotLT SNil impossible
+  repeatedNotLT SOne impossible
+  repeatedNotLT (SCons _ ok _) = succNotLTEpred ok
+
+  repeatedLaterNotLT : Sorted LT [1, 2, 2] -> Void
+  repeatedLaterNotLT SNil impossible
+  repeatedLaterNotLT SOne impossible
+  repeatedLaterNotLT (SCons _ _ tail) = repeatedNotLT tail
+
+  increasingLT : (x : Nat) -> Sorted LT [x, S x, S (S x)]
+  increasingLT x = SCons x (reflexive {ty=Nat}) (SCons (S x) (reflexive {ty=Nat}) SOne)
+
+  succNotLT : (x : Nat) -> Not (LT (S x) x)
+  succNotLT 0 LTEZero impossible
+  succNotLT 0 (LTESucc _) impossible
+  succNotLT (S x) (LTESucc lte) = succNotLT x lte
+
+  decreasingNotLT : (x : Nat) -> Sorted LT [S x, x] -> Void
+  decreasingNotLT _ SNil impossible
+  decreasingNotLT _ SOne impossible
+  decreasingNotLT x (SCons (S x) ok _) = succNotLT x ok
+
 export
 group : Group
 group = MkGroup "Util" $ [

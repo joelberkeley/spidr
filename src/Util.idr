@@ -107,11 +107,14 @@ namespace List
   public export
   data Sorted : (a -> a -> Type) -> List a -> Type where
     ||| An empty list is sorted.
-    Nil : Sorted f []
+    SNil : Sorted f []
 
-    ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. all elements in the
-    ||| tail.
-    (::) : (x : a) -> Sorted f xs -> {auto 0 ok : All (f x) xs} -> Sorted f (x :: xs)
+    ||| Any single element is sorted.
+    SOne : Sorted f [x]
+
+    ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. the first element in
+    ||| the tail.
+    SCons : (y : a) -> f y x -> Sorted f (x :: xs) -> Sorted f (y :: x :: xs)
 
   namespace Many
     ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
