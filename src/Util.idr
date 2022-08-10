@@ -101,17 +101,19 @@ namespace List
     map f [] {allOk = []} = []
     map f (x :: xs) {allOk = ok :: _} = f {ok} x :: map f xs
 
-  ||| A `Sorted f (x :: xs)` proves that `(x :: xs)` is sorted such that `f x y` exists for all `y`
-  ||| in `xs`. For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing
-  ||| numerical order.
+  ||| A `Sorted f xs` proves that for all consecutive elements `x` and `y` in `xs`, `f x y` exists.
+  ||| For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing numerical
+  ||| order.
   public export
   data Sorted : (a -> a -> Type) -> List a -> Type where
     ||| An empty list is sorted.
-    Nil : Sorted f []
+    SNil : Sorted f []
 
-    ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. all elements in the
-    ||| tail.
-    (::) : (x : a) -> Sorted f xs -> {auto 0 ok : All (f x) xs} -> Sorted f (x :: xs)
+    ||| Any single element is sorted.
+    SOne : Sorted f [x]
+
+    ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. the head of the tail.
+    SCons : (y : a) -> f y x -> Sorted f (x :: xs) -> Sorted f (y :: x :: xs)
 
   namespace Many
     ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
