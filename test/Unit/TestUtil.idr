@@ -97,20 +97,32 @@ namespace List
   repeatedNotLT SOne impossible
   repeatedNotLT (SCons _ ok _) = succNotLTEpred ok
 
-  repeatedLaterNotLT : Sorted LT [x, S x, S x] -> Void
+  repeatedLaterNotLT : Sorted LT [x, y, y] -> Void
   repeatedLaterNotLT SNil impossible
   repeatedLaterNotLT SOne impossible
   repeatedLaterNotLT (SCons _ _ tail) = repeatedNotLT tail
 
+  ltNotReflexive : (x, y : Nat) -> LT x y -> LT y x -> Void
+  ltNotReflexive 0 0 LTEZero _ impossible
+  ltNotReflexive 0 0 (LTESucc _) _ impossible
+  ltNotReflexive 0 (S _) (LTESucc _) LTEZero impossible
+  ltNotReflexive 0 (S _) (LTESucc _) (LTESucc _) impossible
+  ltNotReflexive (S _) 0 LTEZero _ impossible
+  ltNotReflexive (S _) 0 (LTESucc _) _ impossible
+  ltNotReflexive (S x) (S y) (LTESucc xlty) (LTESucc yltx) = ltNotReflexive x y xlty yltx
+
+  repeatedDispersedNotLT : Sorted LT [y, x, y] -> Void
+  repeatedDispersedNotLT (SCons y yltx (SCons x xlty SOne)) = ltNotReflexive x y xlty yltx
+
   increasingLT : (x : Nat) -> Sorted LT [x, S x, S (S x)]
   increasingLT x = SCons x (reflexive {ty=Nat}) (SCons (S x) (reflexive {ty=Nat}) SOne)
 
-  succNotLT : (x : Nat) -> Not (LT (S x) x)
+  succNotLT : (x : Nat) -> LT (S x) x -> Void
   succNotLT 0 LTEZero impossible
   succNotLT 0 (LTESucc _) impossible
   succNotLT (S x) (LTESucc lte) = succNotLT x lte
 
-  decreasingNotLT : (x : Nat) -> Sorted LT [S x, x] -> Void
+  decreasingNotLT : (x : Nat) -> Sorted LT (S x :: x :: xs)  -> Void
   decreasingNotLT _ SNil impossible
   decreasingNotLT _ SOne impossible
   decreasingNotLT x (SCons (S x) ok _) = succNotLT x ok
