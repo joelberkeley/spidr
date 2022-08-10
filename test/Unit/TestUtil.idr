@@ -97,7 +97,7 @@ namespace List
   repeatedNotLT SOne impossible
   repeatedNotLT (SCons _ ok _) = succNotLTEpred ok
 
-  repeatedLaterNotLT : Sorted LT [1, 2, 2] -> Void
+  repeatedLaterNotLT : Sorted LT [x, S x, S x] -> Void
   repeatedLaterNotLT SNil impossible
   repeatedLaterNotLT SOne impossible
   repeatedLaterNotLT (SCons _ _ tail) = repeatedNotLT tail
