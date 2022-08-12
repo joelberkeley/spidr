@@ -1,6 +1,6 @@
 # spidr
 
-## Accelerated machine learning with dependent types
+_Accelerated machine learning with dependent types_
 
 spidr is in early development. Notably, automatic differentiation is not yet implemented. See [here](https://github.com/joelberkeley/spidr/labels/notable%20limitation) for further limitations.
 
