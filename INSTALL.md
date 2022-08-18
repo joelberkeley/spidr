@@ -4,9 +4,9 @@
 
 ## Install the Idris frontend
 
-1. Clone or download the spidr source code at tag v0.0.4 with, for example,
+1. Clone or download the spidr source code at tag v0.0.5 with, for example,
    ```bash
-   git clone --depth 1 --branch v0.0.4 https://github.com/joelberkeley/spidr.git
+   git clone --depth 1 --branch v0.0.5 https://github.com/joelberkeley/spidr.git
    ```
    See the git history for installing earlier versions.
 2. [Install Idris 2](https://github.com/idris-lang/Idris2/blob/main/INSTALL.md). We recommend using [Homebrew](https://brew.sh/) if you're unsure which option to use.
@@ -15,7 +15,7 @@
    ```bash
    idris2 --install spidr.ipkg
    ```
-5. When building your Idris code that depends on spidr, either include `-p spidr` on the command line, or list spidr as a dependency in your project's configuration. In both cases, you will need to include spidr's dependencies with `-p hashable` on the command line or add `hashable` to your project's .ipkg `depends`.
+5. When building Idris code that depends on spidr, you will need to include both `spidr` and its dependencies `hashable` and `contrib`. Either use the `-p` command line flag, or add these dependencies to your project's configuration e.g. your .ipkg `depends` field.
 
 ## Install the XLA backend
 
