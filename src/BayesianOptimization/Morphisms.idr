@@ -15,7 +15,7 @@ limitations under the License.
 --}
 module BayesianOptimization.Morphisms
 
-import public Data.Morphisms
+import public Control.Monad.Reader
 import Distribution
 import Tensor
 import Model
@@ -27,9 +27,4 @@ infix 9 >>>
 ||| handler functions for data and models.
 export
 (>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
-f >>> g = Mor (uncurry g . f)
-
-||| Extract the underlying function from a `Morphism`.
-export
-run : (i ~> o) -> i -> o
-run = applyMor
+f >>> g = MkReaderT (uncurry g . f)

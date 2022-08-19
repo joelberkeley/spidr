@@ -114,24 +114,24 @@ In this case, our acquisition function depends on the model (which in turn depen
 
 ## Modifying empirical values with `Functor`
 
-In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). We can however, wrap an `i -> o` in the `Morphism i o` type (also called `i ~> o` with a tilde) which does implement `Functor`. We can `map` an `Optimizer` over a `i ~> Acquisition`, as follows:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). There is a standard wrapper for such functions that does implement `Functor`, called `Reader`. A `Reader i o` produces `o` gives a fixed environment of type `i`. We can `map` an `Optimizer` over a `Reader i Acquisition`, as follows:
 
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model = squeeze . mean {event=[1]} . (marginalise model)
 
 newPoint' : Tensor [1, 2] F64
-newPoint' = let acquisition = map optimizer (Mor (modelMean @{Latent}))  -- `Mor` makes a `Morphism`
-             in run acquisition model  -- `run` turns a `Morphism` into a function
+newPoint' = let acquisition = map optimizer (MkReaderT (modelMean @{Latent}))
+             in runReader model acquisition
 ```
 
 ## Combining empirical values with `Applicative`
 
 Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Morphism` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Morphism` context. For example, we can apply the `a -> b` function in `f : i ~> (a -> b)` to the `a` value in `x : i ~> a` as `f <*> x` (which is an `i ~> b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates an `i ~> o` from an `o`.
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader i` context. For example, we can apply the `a -> b` function in `f : Reader i (a -> b)` to the `a` value in `x : Reader i a` as `f <*> x` (which is a `Reader i b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates a `Reader i o` from an `o`.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : i ~> Acquisition` and `oa : i ~> (Acquisition -> Acquisition)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader i Acquisition` and `oa : Reader i (Acquisition -> Acquisition)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -172,7 +172,7 @@ The final point is then gathered from `map optimizer (oa <*> fa)`, and this conc
 
 ## Separating representation from computation with `Empiric`
 
-The `Morphism i o`, or `i ~> o` type has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `i ~> o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `i ~> o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Consider for example `modelMean`. While that only uses the model directly, other acquisition functions can also depend directly on the data. Everything empirical depends on at least a model or some data, and in Bayesian optimization these two always appear together. In spidr, we choose to define an atomic empirical value as one that takes any subset of the data, and the corresponding model of that subset of data. We call this an `Empiric`. We can then compose each `Empiric` `emp` with functionality `f` to gather the data set and model from the `i` value. We provide the infix operator `>>>` for this, used as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `i ~> o` explicitly.
+The `Reader i o` type has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `Reader i o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `Reader i o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Consider for example `modelMean`. While that only uses the model directly, other acquisition functions can also depend directly on the data. Everything empirical depends on at least a model or some data, and in Bayesian optimization these two always appear together. In spidr, we choose to define an atomic empirical value as one that takes any subset of the data, and the corresponding model of that subset of data. We call this an `Empiric`. We can then compose each `Empiric` `emp` with functionality `f` to gather the data set and model from the `i` value. We provide the infix operator `>>>` for this, used as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `Reader i o` explicitly.
 
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data. Recall that we can represent this in any form we like, and we'll simply use a dedicated `Data` set and `ProbabilisticModel`:
 
@@ -223,7 +223,7 @@ observe point (dataset, model) = let newData = MkDataset point (objective point)
                                   in (dataset <+> newData, fit model lbfgs newData)
 ```
 
-We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `i ~> Tensor (n :: features) F64` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
+We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
