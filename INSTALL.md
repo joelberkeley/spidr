@@ -33,6 +33,12 @@ If you intend to run spidr on GPU, skip to the [GPU instructions][#gpu]
    ```
 8. Update linker caches
    ```
+   #################
+   ############
+   ##################
+   check this works on reboot. If not, find out if putting the shared libs in directories and adding to /etc/ld.so.conf.d/ helps
+   ############
+   ###########
    $ sudo ldconfig /usr/local/lib
    ```
 
