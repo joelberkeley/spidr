@@ -16,15 +16,12 @@ limitations under the License.
 module BayesianOptimization.Morphisms
 
 import public Control.Monad.Reader
-import Distribution
-import Tensor
-import Model
 
 infix 9 >>>
 
-||| Compose two functions that each use two values and wrap them in a morphism. This is a
+||| Compose two functions that each use two values and wrap them in a `Reader`. This is a
 ||| convenience function for contructing unary wrappers with `Empiric`s and the corresponding
 ||| handler functions for data and models.
 export
-(>>>) : (i -> (a, b)) -> (a -> b -> o) -> i ~> o
+(>>>) : (i -> (a, b)) -> (a -> b -> o) -> Reader i o
 f >>> g = MkReaderT (uncurry g . f)
