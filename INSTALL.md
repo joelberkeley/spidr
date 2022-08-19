@@ -23,15 +23,15 @@
 
 If you intend to run spidr on GPU, skip to the [GPU instructions][#gpu]
 
-6. Install XLA with
+6. Install XLA
    ```
    $ wget https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./xla_extension/lib/libxla_extension.so --strip-components=3
    ```
-7. Install the C interface to XLA with
+7. Install the C interface to XLA
    ```
    $ sudo wget https://github.com/joelberkeley/spidr/releases/download/v0.0.5/libc_xla_extension.so -P /usr/local/lib
    ```
-8. Update linker caches with
+8. Update linker caches
    ```
    $ sudo ldconfig /usr/local/lib
    ```
@@ -41,15 +41,15 @@ If you intend to run spidr on GPU, skip to the [GPU instructions][#gpu]
 If you do *not* intend to run spidr on GPU, skip this section.
 
 6. Install the NVIDIA prerequisites for running TensorFlow on GPU, as listed on the TensorFlow GPU [installation page](https://www.tensorflow.org/install/gpu). **There is no need to install TensorFlow itself**.
-7. Install XLA with
+7. Install XLA
    ```
    $ wget https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cuda111.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./xla_extension/lib/libxla_extension.so --strip-components=3
    ```
-8. Install the C interface to XLA with
+8. Install the C interface to XLA
    ```
    $ sudo wget https://github.com/joelberkeley/spidr/releases/download/v0.0.5/libc_xla_extension.so -P /usr/local/lib
    ```
-9. Update linker caches with
+9. Update linker caches
    ```
    $ sudo ldconfig /usr/local/lib
    ```
