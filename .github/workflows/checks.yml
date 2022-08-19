@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
-        bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
+        echo "" | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
 
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
@@ -40,7 +40,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
-        bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
+        echo "" | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
 
         # how to type check individual literal files with pack?
         res=0; for f in tutorials/*.md; do idris2 --check -p contrib -p hashable "$f" || res=$?; done; $(exit $res)
