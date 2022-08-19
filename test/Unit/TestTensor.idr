@@ -1282,7 +1282,7 @@ normal = withTests 20 . property $ do
 
       ksTest := iidKolmogorovSmirnov samples normalCdf
 
-  diff (toLiteral ksTest) (<) 0.017
+  diff (toLiteral ksTest) (<) 0.02
 
 covering
 normalSeedIsUpdated : Property
