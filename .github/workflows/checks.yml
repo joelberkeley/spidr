@@ -21,6 +21,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
+        apt update && apt upgrade
+        apt install chezscheme
         echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
 
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
@@ -40,6 +42,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
+        apt update && apt upgrade
+        apt install chezscheme
         echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
 
         # how to type check individual literal files with pack?
