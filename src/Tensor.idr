@@ -555,7 +555,7 @@ broadcast :
   Tensor from dtype ->
   Tensor to dtype
 broadcast xs with (xs)
-  _ | (MkTensor {shape=from} expr) = MkTensor $ Broadcast {dtype} from to expr
+  _ | (MkTensor {shape=_} expr) = MkTensor $ Broadcast {dtype} from to expr
 
 %hint
 export
@@ -938,7 +938,7 @@ namespace Scalarwise
   export
   (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
   l * r with (r)
-    _ | (MkTensor {shape=(d :: ds)} _) = (broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
+    _ | (MkTensor {shape=_ :: _} _) = (broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
 
 namespace Semigroup
   export
@@ -973,7 +973,7 @@ namespace Scalarwise
     Tensor [] dtype ->
     Tensor (d :: ds) dtype
   l / r with (l)
-    _ | (MkTensor {shape=(d :: ds)} _) = l / (broadcast {shapesOK=scalarToAnyOk (d :: ds)} r)
+    _ | (MkTensor {shape=_ :: _} _) = l / (broadcast {shapesOK=scalarToAnyOk (d :: ds)} r)
 
 ||| The element-wise reciprocal. For example, `recip (fromLiteral [-2, 0, 0.2])`
 ||| is `fromLiteral [-0.5, nan, 5]`.
@@ -1200,7 +1200,7 @@ namespace Vector
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
   a |\ b with (b)
-    _ | MkTensor {shape=[m]} _ = squeeze (a |\ (expand 1 b))
+    _ | MkTensor {shape=[_]} _ = squeeze (a |\ (expand 1 b))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1212,7 +1212,7 @@ namespace Vector
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
   a \| b with (b)
-    _ | MkTensor {shape=[m]} _ = squeeze (a \| (expand 1 b))
+    _ | MkTensor {shape=[_]} _ = squeeze (a \| (expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1223,7 +1223,7 @@ trace :
   Tensor [S n, S n] dtype ->
   Tensor [] dtype
 trace x with (x)
-  _ | MkTensor {shape=[S n, S n]} _ = reduce @{Sum} [0, 1] (x * identity)
+  _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] (x * identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
