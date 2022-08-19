@@ -45,5 +45,4 @@ jobs:
         sudo apt update && sudo apt upgrade
         sudo apt install chezscheme
         echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
-        ~/.pack/bin/idris2 --install spidr.ipkg
-        res=0; for f in tutorials/*.md; do ~/.pack/bin/idris2 --check -p spidr -p contrib -p hashable "$f" || res=$?; done; $(exit $res)
+        res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack typecheck "$f" || res=$?; done; $(exit $res)

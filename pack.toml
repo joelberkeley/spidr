@@ -2,8 +2,3 @@
 type = "local"
 path = ""
 ipkg = "spidr.ipkg"
-
-[custom.all.test]
-type = "local"
-path = ""
-ipkg = "test.ipkg"

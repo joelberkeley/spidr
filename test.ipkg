@@ -1,13 +1,6 @@
 package test
 
-depends =
-  contrib,
-  hashable,
-  elab-util,
-  hedgehog,
-  pretty-show,
-  sop,
-  spidr
+depends = spidr, hedgehog
 
 opts = "--total"
 sourcedir = "test"

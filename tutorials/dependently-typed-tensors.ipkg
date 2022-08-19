@@ -1,0 +1,7 @@
+package dependently-typed-tensors
+
+depends = spidr
+
+opts = "--total"
+
+main = DependentlyTypedTensors
