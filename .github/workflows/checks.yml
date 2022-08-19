@@ -46,5 +46,4 @@ jobs:
         sudo apt install chezscheme
         echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
 
-        # how to type check individual literal files with pack?
-        res=0; for f in tutorials/*.md; do idris2 --check -p contrib -p hashable "$f" || res=$?; done; $(exit $res)
+        res=0; for f in tutorials/*.md; do ~/.pack/bin/idris2 --check -p contrib -p hashable "$f" || res=$?; done; $(exit $res)
