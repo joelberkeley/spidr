@@ -17,7 +17,6 @@ module BayesianOptimization.Acquisition
 
 import Constants
 import public Data.Nat
-import Data.Vect
 import Distribution
 import Literal
 import Tensor
