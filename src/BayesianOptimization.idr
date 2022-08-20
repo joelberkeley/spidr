@@ -47,7 +47,7 @@ f >>> g = MkReaderT (Id . uncurry g . f)
 |||   updates the values (typically data and models).
 export
 loop :
-  (tactic : Reader i Tensor shape dtype) ->
+  (tactic : Reader i (Tensor shape dtype)) ->
   (observer : Tensor shape dtype -> i -> i) ->
   i ->
   Stream i
