@@ -38,8 +38,7 @@ ProbabilisticModel [S d] [1] Gaussian (LinearModel d) where
 -- we can fairly easily make this not fixed, no?
 expectedConstrainedImprovement : Property
 expectedConstrainedImprovement = fixedProperty $ do
-  let name = "expected constrained improvement is expected improvement for no constraint"
-      dataset = MkDataset (fromLiteral [[0.0]]) (fromLiteral [[0.0]])
+  let dataset = MkDataset (fromLiteral [[0.0]]) (fromLiteral [[0.0]])
       model = MkLinearModel (fromLiteral [0.0]) 1.0
       x = fromLiteral [[1.0]]
       eci = expectedConstrainedImprovement (-inf) dataset model
