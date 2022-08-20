@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module BayesianOptimization.Morphisms
 
+import Control.Monad.Identity
 import public Control.Monad.Reader
 
 infix 9 >>>
