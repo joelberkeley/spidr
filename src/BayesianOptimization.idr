@@ -24,7 +24,6 @@ import public Data.Stream
 import Tensor
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
-import public BayesianOptimization.Morphisms as BayesianOptimization
 
 import Control.Monad.Identity
 import public Control.Monad.Reader
