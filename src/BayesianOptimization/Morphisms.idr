@@ -24,4 +24,4 @@ infix 9 >>>
 ||| handler functions for data and models.
 export
 (>>>) : (i -> (a, b)) -> (a -> b -> o) -> Reader i o
-f >>> g = MkReaderT (MkIdentity . uncurry g . f)
+f >>> g = MkReaderT (Id . uncurry g . f)
