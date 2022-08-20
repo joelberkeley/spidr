@@ -51,4 +51,4 @@ loop :
   (observer : Tensor shape dtype -> i -> i) ->
   i ->
   Stream i
-loop tactic observer = iterate (\ii => observer (runReader tactic ii) ii)
+loop tactic observer = iterate (\ii => observer (runReader ii tactic) ii)
