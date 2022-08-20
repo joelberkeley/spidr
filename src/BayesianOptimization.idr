@@ -20,13 +20,12 @@ limitations under the License.
 ||| given set of points.
 module BayesianOptimization
 
-import public Data.Stream
-import Tensor
-
-import public BayesianOptimization.Acquisition as BayesianOptimization
-
 import Control.Monad.Identity
 import public Control.Monad.Reader
+import public Data.Stream
+
+import public BayesianOptimization.Acquisition as BayesianOptimization
+import Tensor
 
 infix 9 >>>
 
