@@ -115,7 +115,7 @@ expectedConstrainedImprovement limit (MkDataset {s} qp obs) model acq at =
       -- make a github issue to mask out infeasible query points before marginalising the model, so
       -- as not to marginalise the model at points we know we won't use
       mean = squeeze $ mean $ marginalise model qp
-      feasible_mean : Tensor [S s] F64 = select each_is_feasible mean (broadcast (-inf))
+      feasible_mean = select each_is_feasible mean (broadcast (-inf))
       eta = reduce [0] @{Min} feasible_mean
       any_is_feasible = reduce [0] @{Any} each_is_feasible
    in cond any_is_feasible (\at => expectedImprovement model eta at * acq at) at acq at
