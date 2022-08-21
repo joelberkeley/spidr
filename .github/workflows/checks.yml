@@ -40,7 +40,7 @@ jobs:
       run: |
         pack run test.ipkg
       env:
-        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$GITHUB_WORKSPACE/backend/bazel-bin
+        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
