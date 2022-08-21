@@ -110,7 +110,7 @@ export
 expectedConstrainedImprovement : (limit : Tensor [] F64) -> {features : _} ->
   Empiric features [1] {marginal=Gaussian} (Acquisition 1 features -> Acquisition 1 features)
 expectedConstrainedImprovement limit (MkDataset {s} qp obs) model acq at =
-  let each_is_feasible = vmap acq (expand 1 qp) >= broadcast limit
+  let each_is_feasible : Tensor _ _ = vmap acq (expand 1 qp) >= broadcast limit
       -- make a github issue to mask out infeasible query points before marginalising the model, so
       -- as not to marginalise the model at points we know we won't use
       mean = squeeze $ mean $ marginalise model qp
