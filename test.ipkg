@@ -3,7 +3,10 @@ package test
 depends =
   spidr,
   hashable,
+  contrib,
   hedgehog,
+  elab-util,
+  pretty-show,
   sop
 
 opts = "--total"
