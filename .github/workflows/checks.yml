@@ -22,13 +22,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
+        apt install wget
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
-        sudo apt install -y apt-transport-https curl gnupg
+        apt install -y apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-        sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-        sudo apt update && sudo apt install bazel
+        mv bazel.gpg /etc/apt/trusted.gpg.d/
+        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+        apt update && apt install bazel
 
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
@@ -40,7 +41,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
-        sudo apt update && sudo apt upgrade
-        sudo apt install chezscheme
+        apt update && apt upgrade
+        apt install chezscheme
         echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
         res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack typecheck "$f" || res=$?; done; $(exit $res)
