@@ -1,6 +1,10 @@
 package test
 
-depends = spidr, hedgehog
+depends =
+  spidr,
+  hashable
+  hedgehog,
+  sop
 
 opts = "--total"
 sourcedir = "test"
