@@ -19,8 +19,6 @@ jobs:
   test-unit:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
-    env:
-      PACK_DIR: /root/.pack
     steps:
     - uses: actions/checkout@v2
     - name: Install Bazel
@@ -37,7 +35,10 @@ jobs:
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
     - name: Run tests
       run: |
-        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin pack run test.ipkg
+        pack run test.ipkg
+      env:
+        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
+        PACK_DIR: /root/.pack
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
