@@ -24,6 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: |
+        apt update && apt upgrade -y
         apt install -y apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
         mv bazel.gpg /etc/apt/trusted.gpg.d/
