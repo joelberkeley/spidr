@@ -46,17 +46,19 @@ While we can trivially represent a number of new query points with a `Tensor`, w
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
 <!-- idris
-import Literal
-import Tensor
+import Control.Monad.Identity
+import Data.Stream
+
 import BayesianOptimization
 import Data
+import Distribution
+import Literal
 import Model
 import Model.GaussianProcess
 import Model.Kernel
 import Model.MeanFunction
-import Distribution
 import Optimize
-import Data.Stream
+import Tensor
 -->
 ```idris
 historicData : Dataset [2] [1]
@@ -121,7 +123,7 @@ modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model = squeeze . mean {event=[1]} . (marginalise model)
 
 newPoint' : Tensor [1, 2] F64
-newPoint' = let acquisition = map optimizer (MkReaderT (modelMean @{Latent}))
+newPoint' = let acquisition = map optimizer (MkReaderT (Id . modelMean @{Latent}))
              in runReader model acquisition
 ```
 
@@ -203,7 +205,7 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.
                  pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} 0.5
                  acquisition = map optimizer (eci <*> pof)
                  dataAndModel = Label (historicData, model) (failureData, failureModel)
-              in run acquisition dataAndModel
+              in runReader dataAndModel acquisition
 ```
 
 ## Iterative Bayesian optimization with infinite data types
