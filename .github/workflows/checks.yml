@@ -18,9 +18,9 @@ on:
 jobs:
   test-unit:
     runs-on: ubuntu-latest
+    container: ghcr.io/joelberkeley/pack
     steps:
     - uses: actions/checkout@v2
-    - container: ghcr.io/joelberkeley/pack
     - run: |
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
@@ -36,9 +36,9 @@ jobs:
         ~/.pack/bin/pack run test.ipkg
   tutorials:
     runs-on: ubuntu-latest
+    container: ghcr.io/joelberkeley/pack
     steps:
     - uses: actions/checkout@v2
-    - container: ghcr.io/joelberkeley/pack
     - run: |
         sudo apt update && sudo apt upgrade
         sudo apt install chezscheme
