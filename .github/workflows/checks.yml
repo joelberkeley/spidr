@@ -19,6 +19,8 @@ jobs:
   test-unit:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
+    env:
+      PACK_DIR: /root/.pack
     steps:
     - uses: actions/checkout@v2
     - run: |
@@ -38,9 +40,8 @@ jobs:
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
+    env:
+      PACK_DIR: /root/.pack
     steps:
     - uses: actions/checkout@v2
-    - run:
-        ls $HOME/.pack/user
-        # pack info
-        # res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
+    - run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
