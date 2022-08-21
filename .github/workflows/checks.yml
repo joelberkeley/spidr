@@ -40,4 +40,7 @@ jobs:
     container: ghcr.io/joelberkeley/pack
     steps:
     - uses: actions/checkout@v2
-    - run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
+    - run:
+        ls $HOME/.pack/user
+        pack info
+        # res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
