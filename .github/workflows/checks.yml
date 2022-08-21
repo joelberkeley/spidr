@@ -45,5 +45,5 @@ jobs:
       HOME: /root
     steps:
     - uses: actions/checkout@v2
-    - name: Typecheck tutorials
+    - name: Type-check tutorials
       run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
