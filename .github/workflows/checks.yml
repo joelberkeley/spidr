@@ -40,8 +40,4 @@ jobs:
     container: ghcr.io/joelberkeley/pack
     steps:
     - uses: actions/checkout@v2
-    - run: |
-        apt update && apt upgrade
-        apt install chezscheme
-        echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
-        res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack typecheck "$f" || res=$?; done; $(exit $res)
+    - run: res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack typecheck "$f" || res=$?; done; $(exit $res)
