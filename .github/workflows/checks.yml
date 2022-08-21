@@ -34,10 +34,10 @@ jobs:
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
 
-        ~/.pack/bin/pack run test.ipkg
+        pack run test.ipkg
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/joelberkeley/pack
     steps:
     - uses: actions/checkout@v2
-    - run: res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack typecheck "$f" || res=$?; done; $(exit $res)
+    - run: res=0; for f in tutorials/*.ipkg; do pack typecheck "$f" || res=$?; done; $(exit $res)
