@@ -46,4 +46,4 @@ jobs:
     container: ghcr.io/joelberkeley/pack
     steps:
     - uses: actions/checkout@v2
-    - run: pack query ""
+    - run: pack install hashable
