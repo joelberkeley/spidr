@@ -18,7 +18,7 @@ on:
 jobs:
   test-unit:
     runs-on: ubuntu-latest
-    container: ghcr.io/joelberkeley/pack
+    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v2
     - run: |
@@ -37,10 +37,7 @@ jobs:
         pack run test.ipkg
   tutorials:
     runs-on: ubuntu-latest
-    container: ghcr.io/joelberkeley/pack
+    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v2
-    - run:
-        ls $HOME/.pack/user
-        # pack info
-        # res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
+    - run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
