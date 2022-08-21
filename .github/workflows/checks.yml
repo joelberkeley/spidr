@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     env:
-      PACK_DIR: /root/.pack
+      HOME: /root
     steps:
     - uses: actions/checkout@v2
     - run: |
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     env:
-      PACK_DIR: /root/.pack
+      HOME: /root
     steps:
     - uses: actions/checkout@v2
     - run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
