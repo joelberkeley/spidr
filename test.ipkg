@@ -2,7 +2,7 @@ package test
 
 depends =
   spidr,
-  hashable
+  hashable,
   hedgehog,
   sop
 
