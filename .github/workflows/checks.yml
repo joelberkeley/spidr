@@ -41,3 +41,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: res=0; for f in tutorials/*.ipkg; do pack typecheck "$f" || res=$?; done; $(exit $res)
+  no-op:
+    runs-on: ubuntu-latest
+    container: ghcr.io/joelberkeley/pack
+    steps:
+    - uses: actions/checkout@v2
+    - run: echo "hi"
