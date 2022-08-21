@@ -36,10 +36,9 @@ jobs:
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
     - name: Run tests
       run: |
-        pack run test.ipkg
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin pack run test.ipkg
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
