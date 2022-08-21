@@ -20,11 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - container: ghcr.io/joelberkeley/pack
     - run: |
-        sudo apt update && sudo apt upgrade
-        sudo apt install chezscheme
-        echo | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
-
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
 
         sudo apt install -y apt-transport-https curl gnupg
@@ -41,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - container: ghcr.io/joelberkeley/pack
     - run: |
         sudo apt update && sudo apt upgrade
         sudo apt install chezscheme
