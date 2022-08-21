@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     env:
-      HOME: /root
+      PACK_DIR: /root/.pack
     steps:
     - uses: actions/checkout@v2
     - name: Install Bazel
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     env:
-      HOME: /root
+      PACK_DIR: /root/.pack
     steps:
     - uses: actions/checkout@v2
     - name: Type-check tutorials
