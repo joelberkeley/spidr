@@ -603,7 +603,7 @@ vmap :
   Tensor (n :: s0) t0 -> Tensor (n :: s1) t1
 
 namespace Binary
-  ||| `vmap` for mapping over binary functions.
+  ||| Vectorize a binary function.
   export
   vmap :
     (Primitive t0, Primitive t1) =>
@@ -611,7 +611,7 @@ namespace Binary
     Tensor (n :: s0) t0 -> Tensor (n :: s1) t1 -> Tensor (n :: s2) t2
 
 namespace Ternary
-  ||| `vmap` for mapping over ternary functions.
+  ||| Vectorize a ternary function.
   export
   vmap :
     (Primitive t0, Primitive t1, Primitive t2) =>
