@@ -593,9 +593,9 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 ||| ```
 ||| `vmap diag x` is equivalent to `const [[0, 4, 8], [9, 13, 17]]`.
 |||
-||| **Note:** The higher-arity equivalents `Binary.vmap` and `Ternary.vmap` behave more like Idris'
-|||   `zipWith` than `Functor`'s `map`. We use the name `vmap` as this function behaves similarly to
-|||   JAX's `vmap`, which users may be familiar with.
+||| **Note:** The higher-arity variants `Binary.vmap` and `Ternary.vmap` behave more like
+|||   `Zippable`'s `zipWith` than `Functor`'s `map`. We use the name `vmap` as this function behaves
+|||   similarly to JAX's `vmap`, which users may be familiar with.
 export
 vmap :
   Primitive t0 =>
