@@ -596,7 +596,7 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 ||| **Note:** The higher-arity equivalents `Binary.vmap` and `Ternary.vmap` behave more like Idris'
 |||   `zipWith` than `Functor`'s `map`. We use the name `vmap` as this function behaves similarly to
 |||   JAX's `vmap`, which users may be familiar with.
-export partial
+export
 vmap :
   Primitive t0 =>
   (Tensor s0 t0 -> Tensor s1 t1) ->
@@ -604,7 +604,7 @@ vmap :
 
 namespace Binary
   ||| `vmap` for mapping over binary functions.
-  export partial
+  export
   vmap :
     (Primitive t0, Primitive t1) =>
     (Tensor s0 t0 -> Tensor s1 t1 -> Tensor s2 t2) ->
@@ -612,7 +612,7 @@ namespace Binary
 
 namespace Ternary
   ||| `vmap` for mapping over ternary functions.
-  export partial
+  export
   vmap :
     (Primitive t0, Primitive t1, Primitive t2) =>
     (Tensor s0 t0 -> Tensor s1 t1 -> Tensor s2 t2 -> Tensor s3 t3) ->
