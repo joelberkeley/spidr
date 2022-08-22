@@ -584,12 +584,12 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 ||| For example, for
 ||| ```
 ||| x : Tensor [2, 3, 3] S32
-||| x = const [[[ 0,  1,  2],
-|||             [ 3,  4,  5],
-|||             [ 6,  7,  8]],
-|||            [[ 9, 10, 11],
-|||             [12, 13, 14],
-|||             [15, 16, 17]]]
+||| x = fromLiteral [[[ 0,  1,  2],
+|||                   [ 3,  4,  5],
+|||                   [ 6,  7,  8]],
+|||                  [[ 9, 10, 11],
+|||                   [12, 13, 14],
+|||                   [15, 16, 17]]]
 ||| ```
 ||| `vmap diag x` is `fromLiteral [[0, 4, 8], [9, 13, 17]]`.
 |||
