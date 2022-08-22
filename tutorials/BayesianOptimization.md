@@ -116,15 +116,16 @@ In this case, our acquisition function depends on the model (which in turn depen
 
 ## Modifying empirical values with `Functor`
 
-In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. Using spidr's names, we'd apply an `Optimizer` to an `i -> Acquisition`. We'd normally do this with `map`, a method on the `Functor` interface, but functions, including `i -> o`, don't implement `Functor` (indeed, in Idris, they can't). There is a standard wrapper for such functions that does implement `Functor`, called `Reader`. A `Reader i o` produces `o` gives a fixed environment of type `i`. We can `map` an `Optimizer` over a `Reader i Acquisition`, as follows:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `i -> Acquisition b f`. We want to be able to treat the data and model as an _environment_, and calculate and manipulate values in this environment. That's exactly what the `Reader i o` type in the Idris standard library, is for (indeed, a `Reader i o` is a thin wrapper round an `i -> o`). With `Reader`, we now want to apply the `Optimizer` to a `Reader i (Acquisition b f)`. There's a function for this already: `map : (a -> b) -> f a -> f b`, inherited from the `Functor` interface, applies a function `a -> b` to an `a` in some context. Here, the context is `Reader i`. Let's see this in action:
 
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model = squeeze . mean {event=[1]} . (marginalise model)
 
 newPoint' : Tensor [1, 2] F64
-newPoint' = let acquisition = map optimizer (MkReaderT (Id . modelMean @{Latent}))
-             in runReader model acquisition
+newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
+                point = map optimizer acquisition
+             in runReader model point
 ```
 
 ## Combining empirical values with `Applicative`
