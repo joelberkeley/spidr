@@ -16,17 +16,9 @@ limitations under the License.
 ||| This module contains common library types.
 module Types
 
-import public Data.Nat
 import public Data.Vect
 
-||| Describes the shape of a `Tensor`. For example, a `Tensor` of `Double`s with contents
-||| `[[0, 1, 2], [3, 4, 5]]` has two elements in its outer-most axis, and each of those elements
-||| has three `Double`s in it, so this has shape [2, 3]. A `Tensor` can have axes of zero length,
-||| though the shape cannot be unambiguously inferred by visualising it. For example, `[[], []]`
-||| can have shape [2, 0], [2, 0, 5] or etc. A scalar `Tensor` has shape `[]`.
-public export 0
-Shape : Type
-Shape = List Nat
+import Shape
 
 ||| An `Array shape dtype` is either:
 ||| 

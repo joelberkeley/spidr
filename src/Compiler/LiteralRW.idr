@@ -34,7 +34,7 @@ indexed = go shape []
   concat [] = []
   concat (Scalar x :: xs) = x :: concat xs
 
-  go : (shape : Types.Shape) -> List Nat -> Literal shape (List Nat)
+  go : (shape : Shape.Shape) -> List Nat -> Literal shape (List Nat)
   go [] idxs = Scalar idxs
   go (0 :: _) _ = []
   go (S d :: ds) idxs = concat $ map (\i => go ds (snoc idxs i)) (range (S d))

@@ -84,6 +84,11 @@ namespace List
     ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. the head of the tail.
     SCons : (y : a) -> f y x -> Sorted f (x :: xs) -> Sorted f (y :: x :: xs)
 
+  public export
+  data Each : (a -> a -> Type) -> List a -> List a -> Type where
+    Nil : Each f [] []
+    Cons : (x, y : a) -> Each f xs ys -> f x y -> Each f (x :: xs) (y :: ys)
+
   ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
   ||| is `[6, 8]`.
   |||
@@ -100,3 +105,9 @@ namespace List
     go : Nat -> List Nat -> List a -> List a
     go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
     go _ _ xs = xs
+
+namespace SnocList
+  public export
+  data Each : (a -> a -> Type) -> SnocList a -> SnocList a -> Type where
+    Nil : Each f Lin Lin
+    Cons : (x, y : a) -> Each f xs ys -> f x y -> Each f (xs :< x) (ys :< y)

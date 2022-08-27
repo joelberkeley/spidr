@@ -16,6 +16,7 @@ limitations under the License.
 module Unit.TestLiteral
 
 import Literal
+import Types
 
 import Utils.Comparison
 import Utils.Cases

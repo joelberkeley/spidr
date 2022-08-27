@@ -29,7 +29,8 @@ module Literal
 
 import Data.Hashable
 
-import public Types
+import public Shape
+import Types
 
 ||| A scalar or array of values.
 public export

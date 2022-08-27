@@ -30,6 +30,7 @@ import Compiler.Expr
 import Compiler.LiteralRW
 import Literal
 import public Primitive
+import public Shape
 import public Types
 import public Util
 
@@ -43,7 +44,7 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Expr -> Tensor shape dtype
+  MkTensor : {shape : _} -> Expr shape -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
@@ -103,7 +104,7 @@ reshape :
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
   Tensor to dtype
-reshape (MkTensor {shape} expr) = MkTensor $ Reshape shape to expr
+reshape (MkTensor expr) = MkTensor $ Reshape expr
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -116,7 +117,7 @@ expand :
   {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
   Tensor (insertAt axis 1 shape) dtype
-expand axis (MkTensor {shape} expr) = MkTensor $ Reshape shape (insertAt axis 1 shape) expr
+-- expand axis (MkTensor expr) = MkTensor $ Reshape expr
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -163,7 +164,7 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Tensor to dtype
-squeeze (MkTensor {shape} expr) = MkTensor $ Reshape shape to expr 
+-- squeeze (MkTensor expr) = MkTensor $ Reshape expr 
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -323,44 +324,44 @@ namespace MultiSlice
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
 slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
-slice at (MkTensor expr) =
-  let sliced = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) expr
-      sliced = DynamicSlice (mapd dynStart (const zero) at) (mapd size id at) sliced
-   in MkTensor $ Reshape (mapd size id at) (MultiSlice.slice at) sliced
+-- slice at (MkTensor expr) =
+--   let sliced = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) expr
+--       sliced = DynamicSlice (mapd dynStart (const zero) at) (mapd size id at) sliced
+--    in MkTensor $ Reshape sliced
 
-      where
-      mapd :
-        ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
-        (Nat -> a) ->
-        {shape : Shape} ->
-        MultiSlice shape ->
-        List a
-      mapd _ dflt {shape} [] = Prelude.map dflt shape
-      mapd f dflt (x :: xs) = f dflt x :: mapd f dflt xs
+--       where
+--       mapd :
+--         ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
+--         (Nat -> a) ->
+--         {shape : Shape} ->
+--         MultiSlice shape ->
+--         List a
+--       mapd _ dflt {shape} [] = Prelude.map dflt shape
+--       mapd f dflt (x :: xs) = f dflt x :: mapd f dflt xs
 
-      start : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      start _ (Slice from _) = from
-      start _ (Index idx) = idx
-      start f {d} _ = f d
+--       start : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+--       start _ (Slice from _) = from
+--       start _ (Index idx) = idx
+--       start f {d} _ = f d
 
-      stop : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      stop _ (Slice _ to) = to
-      stop _ (Index idx) = S idx
-      stop f {d} _ = f d
+--       stop : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+--       stop _ (Slice _ to) = to
+--       stop _ (Index idx) = S idx
+--       stop f {d} _ = f d
 
-      zero : Expr
-      zero = FromLiteral {shape=[]} {dtype=U64} 0
+--       zero : Expr []
+--       zero = FromLiteral {dtype=U64} 0
 
-      dynStart : (Nat -> Expr) -> {d : Nat} -> SliceOrIndex d -> Expr
-      dynStart _ (DynamicSlice (MkTensor from) _) = from
-      dynStart _ (DynamicIndex (MkTensor idx)) = idx
-      dynStart f {d} _ = f d
+--       dynStart : (Nat -> Expr) -> {d : Nat} -> SliceOrIndex d -> Expr
+--       dynStart _ (DynamicSlice (MkTensor from) _) = from
+--       dynStart _ (DynamicIndex (MkTensor idx)) = idx
+--       dynStart f {d} _ = f d
 
-      size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      size _ (Slice {size=size'} _ _) = size'
-      size _ (Index _) = 1
-      size _ (DynamicSlice _ size') = size'
-      size _ (DynamicIndex _) = 1
+--       size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+--       size _ (Slice {size=size'} _ _) = size'
+--       size _ (Index _) = 1
+--       size _ (DynamicSlice _ size') = size'
+--       size _ (DynamicIndex _) = 1
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
@@ -369,12 +370,13 @@ slice at (MkTensor expr) =
 export
 concat :
   Primitive dtype =>
-  (axis : Nat) ->
-  Tensor s dtype ->
-  Tensor s' dtype ->
-  {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
-  {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
-  Tensor (replaceAt axis (index axis s + index axis s') s) dtype
+  (axis' : Nat) ->
+  Tensor front' dtype ->
+  Tensor end' dtype ->
+  {auto 0 inBoundsf : InBounds axis' front'} ->
+  {auto 0 inBoundse : InBounds axis' end'} ->
+  {auto 0 shapesConcatenable : deleteAt axis' front' = deleteAt axis' end'} ->
+  Tensor (replaceAt axis' (index axis' front' + index axis' end') front') dtype
 concat axis (MkTensor expr) (MkTensor expr') = MkTensor $ Concat axis expr expr'
 
 ||| The diagonal of a matrix as a vector. For example, for
@@ -387,7 +389,7 @@ concat axis (MkTensor expr) (MkTensor expr') = MkTensor $ Concat axis expr expr'
 ||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
-diag (MkTensor expr) = MkTensor $ Diag expr
+diag (MkTensor expr) = MkTensor $ Diag {leading=[]} {n} expr
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -409,13 +411,14 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
-triangle tri (MkTensor expr) = MkTensor $ Triangle (case tri of Upper => False; Lower => True) expr 
+triangle tri (MkTensor expr) =
+  MkTensor $ Triangle (case tri of Upper => False; Lower => True) {leading=[]} {n} expr 
 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
-(MkTensor expr).T = MkTensor $ Transpose [1, 0] expr
+-- (MkTensor expr).T = MkTensor $ Transpose [1, 0] expr
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
@@ -469,7 +472,7 @@ transpose :
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
   Tensor (map (dflip List.index shape) ordering) dtype
-transpose ordering (MkTensor expr) = MkTensor $ Transpose ordering expr
+-- transpose ordering (MkTensor expr) = MkTensor $ Transpose ordering expr
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -484,55 +487,7 @@ transpose ordering (MkTensor expr) = MkTensor $ Transpose ordering expr
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Tensor [n, n] dtype
-identity = MkTensor $ Identity {dtype} n
-
-||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
-||| dimension of size `to`.
-public export
-data DimBroadcastable : (0 from : Nat) -> (0 to : Nat) -> Type where
-  ||| Proof that any dimension can be broadcast to itself. For example in shapes `[2, 3]` to
-  ||| `[2, 3]`.
-  Same : DimBroadcastable x x
-
-  ||| Proof that a dimension of length one can be broadcast to any size. For example in shapes
-  ||| `[2, 1]` to `[2, 3]`
-  Stack : DimBroadcastable 1 _
-
-  ||| Proof that any dimension can be broadcast to zero. For example in shapes `[2, 3]` to `[2, 0]`.
-  Zero : DimBroadcastable _ 0
-
-namespace Broadcastable
-  ||| A `Broadcastable from to` constitutes proof that the shape `from` can be broadcast to the
-  ||| shape `to`.
-  public export
-  data Broadcastable : (0 from : Shape) -> (0 to : Shape) -> Type where
-    ||| Proof that a shape can be broadcast to itself. For example:
-    |||
-    ||| [] to []
-    ||| [3, 4] to [3, 4]
-    |||
-    ||| Implementation note: we could have used `Broadcast [] []`, which would have resulted in more
-    ||| atomic constructors for `Broadcastable`, but the author guesses that this implementation helps
-    ||| the type checker avoid applications of `Match`.
-    Same : Broadcastable x x
-
-    ||| Proof that a dimension of size `f` can be broadcast to size `t` if these dimensions
-    ||| are `DimBroadcastable f t`. For example:
-    |||
-    ||| [2, 3] to [2, 3]
-    ||| [2, 1] to [2, 3]
-    ||| [2, 1] to [2, 0]
-    Match : forall from, to .
-            {auto 0 ranksEq : length from = length to} ->
-            {auto 0 dimBroadcastable : DimBroadcastable f t} ->
-            Broadcastable from to ->
-            Broadcastable (f :: from) (t :: to)
-
-    ||| Proof that broadcasting can add outer dimensions i.e. nesting. For example:
-    |||
-    ||| [3] to [1, 3]
-    ||| [3] to [5, 3]
-    Nest : Broadcastable f t -> Broadcastable f (_ :: t)
+identity = MkTensor $ Identity {n, dtype}
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
@@ -555,7 +510,7 @@ broadcast :
   Tensor from dtype ->
   Tensor to dtype
 broadcast xs with (xs)
-  _ | (MkTensor {shape=_} expr) = MkTensor $ Broadcast {dtype} from to expr
+  _ | (MkTensor {shape=from} expr) = MkTensor $ Broadcast {from, dtype} expr
 
 %hint
 export
@@ -580,6 +535,7 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
+{-
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
@@ -591,7 +547,7 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 export
 map : (Primitive a, Primitive b) => (Tensor [] a -> Tensor [] b) -> Tensor shape a -> Tensor shape b
 map f (MkTensor {shape} expr) =
-  let p0 = Parameter 0 [] "" {dtype=a}
+  let p0 = Parameter 0 {shape=[]} "" {dtype=a}
       MkTensor exprf = f (MkTensor p0)
    in MkTensor $ Map (MkFn [p0] exprf) [expr] (range $ length shape)
 
@@ -612,10 +568,11 @@ map2 :
   Tensor shape b ->
   Tensor shape c
 map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
-  let p0 = Parameter 0 [] "" {dtype=a}
-      p1 = Parameter 1 [] "" {dtype=b}
+  let p0 = Parameter 0 {shape=[]} "" {dtype=a}
+      p1 = Parameter 1 {shape=[]} "" {dtype=b}
       MkTensor exprf = f (MkTensor p0) (MkTensor p1)
    in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
+-}
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
@@ -636,11 +593,11 @@ reduce axes (MkTensor expr) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-      p0 := Parameter 0 [] "" {dtype}
-      p1 := Parameter 1 [] "" {dtype}
+      p0 := Parameter 0 {shape=[]} "" {dtype}
+      p1 := Parameter 1 {shape=[]} "" {dtype}
       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
       MkTensor neutral := neutral @{reducer}
-   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
+   in MkTensor $ Reduce (p0, p1, exprf) neutral axes expr
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -660,10 +617,10 @@ sort :
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Tensor shape dtype
 sort comp dimension (MkTensor expr) =
-  let p0 = Parameter 0 [] "" {dtype}
-      p1 = Parameter 1 [] "" {dtype}
+  let p0 = Parameter 0 {shape=[]} "" {dtype}
+      p1 = Parameter 1 {shape=[]} "" {dtype}
       MkTensor exprComp = comp (MkTensor p0) (MkTensor p1)
-   in MkTensor $ Sort (MkFn [p0, p1] exprComp) dimension False [expr]
+   in MkTensor $ Sort (p0, p1, exprComp) dimension False [expr]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -842,11 +799,11 @@ cond :
   (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft ->
   Tensor shape dtype
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
-    let pt = Parameter 0 ts "" {dtype=tt}
-        pf = Parameter 0 fs "" {dtype=ft}
+    let pt = Parameter 0 {shape=ts} "" {dtype=tt}
+        pf = Parameter 0 {shape=fs} "" {dtype=ft}
         MkTensor exprTrue = onTrue (MkTensor pt)
         MkTensor exprFalse = onFalse (MkTensor pf)
-     in MkTensor $ Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false
+     in MkTensor $ Cond pred (pt, exprTrue) true (pf, exprFalse) false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -1162,10 +1119,12 @@ namespace Monoid
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
-cholesky (MkTensor expr) = triangle Lower $ MkTensor $ Cholesky expr
+cholesky (MkTensor expr) = triangle Lower $ MkTensor $ Cholesky {leading=[]} {n} expr
 
 infix 9 |\, \|
 
+-- Matrix versions are just vmaps of the Vector versions. Shall we drop the matrix versions?
+-- xla::TriangularSolve asks for the matrix version, so might not be worth it
 namespace Matrix
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
   ||| `a` is given by the lower-triangular elements of the first argument. Values in the
@@ -1176,7 +1135,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True
+  (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve {leading=[]} {n=m} {k=n} a b True
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1187,7 +1146,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b False
+  (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve {leading=[]} {n=m} {k=n} a b False
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1234,6 +1193,7 @@ Rand = State (Tensor [1] U64)
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
+{-
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
 ||| between `bound` and `bound'`.
 |||
@@ -1299,3 +1259,4 @@ normal (MkTensor key) =
   ST $ \(MkTensor initialState) =>
     let valueState = NormalFloatingPoint key initialState shape
      in Id (MkTensor $ GetTupleElement 1 valueState, MkTensor $ GetTupleElement 0 valueState)
+-}

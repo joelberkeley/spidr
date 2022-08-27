@@ -19,10 +19,10 @@ import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.Util
-import Types
+import Shape
 
 export
-mkShape : (HasIO io, Primitive dtype) => Types.Shape -> io Xla.Shape
+mkShape : (HasIO io, Primitive dtype) => Shape.Shape -> io Xla.Shape
 mkShape shape = do
   let dtypeEnum = xlaIdentifier {dtype}
   MkIntArray shapeArrayPtr <- mkIntArray shape

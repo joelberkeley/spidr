@@ -20,7 +20,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.Util
-import Types
+import Shape
 
 namespace Xla
   public export
@@ -32,7 +32,7 @@ delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
 export
-allocLiteral : HasIO io => Primitive dtype => Types.Shape -> io Literal
+allocLiteral : HasIO io => Primitive dtype => Shape.Shape -> io Literal
 allocLiteral shape = do
   MkShape shapePtr <- mkShape {dtype} shape
   litPtr <- primIO $ prim__allocLiteral shapePtr
