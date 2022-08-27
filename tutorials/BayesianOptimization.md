@@ -130,11 +130,17 @@ newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
 
 ## Combining empirical values with `Applicative`
 
-Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
+EDITED THIS SECTION BUT STOPPED HALF WAY THROUGH
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader i` context. For example, we can apply the `a -> b` function in `f : Reader i (a -> b)` to the `a` value in `x : Reader i a` as `f <*> x` (which is a `Reader i b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates a `Reader i o` from an `o`.
+We'll now explore optimization with failure regions as an example of combining two empirical values, and see how the `Applicative` interface can help implement this. Sometimes certain regions of the search space aren't valid for some reason: when calibrating a machine, certain settings might cause dangerous oscillations; or when finding an optimal medical drug, certain molecules might cause adverse side effects. We call these _failure regions_ and in Bayesian optimization we want to find the optimal values outside of these regions. There are a number of ways of defining acquisition functions which account for failure regions. We'll look at two of these.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader i Acquisition` and `oa : Reader i (Acquisition -> Acquisition)`. We can visualise this:
+For our first example, consider a failure acquisition function whose value decreases in failure regions. We'll combine this with the kind of acquisition function that we'd use if there was no failure region, such as the model mean in the last section. The complete acquisition function can simply multiply the output of these two acquisition functions together. Our two component acquisition functions will appear as `Reader i (Acquisition batch feat)`, and we want to combine these into another value of the same type. To do this, let's take a step back and see how we'd combine two `Acquisition batch feat`.
+
+We'll want to modify a measure `objAcq` of how optimal each point is likely to be (based on the objective value data), with a measure `failAcq` of how likely the point is to lie within a failure region (based on the failure region data). `objAcq` and `failAcq` are empirical values.
+
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to combine `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader i` context. For example, we can apply the `a -> b` function in `f : Reader i (a -> b)` to the `a` value in `x : Reader i a` as `f <*> x` (which is a `Reader i b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates a `Reader i o` from an `o`.
+
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `failAcq : Reader i (Acquisition batch feat)` and `objAcq : Reader i (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -171,7 +177,7 @@ There are a number of ways to implement the solution, but we'll choose a relativ
     +--------------+
 </pre>
 
-The final point is then gathered from `map optimizer (oa <*> fa)`, and this concludes our discussion of the core design. Next, we'll implement this in full, and introduce some convenience syntax on the way.
+The final point is then gathered from `map optimizer (objAcq <*> failAcq)`, and this concludes our discussion of the core design. Next, we'll implement this in full, and introduce some convenience syntax on the way.
 
 ## Separating representation from computation with `Empiric`
 
