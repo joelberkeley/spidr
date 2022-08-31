@@ -20,11 +20,21 @@ limitations under the License.
 ||| given set of points.
 module BayesianOptimization
 
+import Control.Monad.Identity
+import public Control.Monad.Reader
 import public Data.Stream
-import Tensor
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
-import public BayesianOptimization.Morphisms as BayesianOptimization
+import Tensor
+
+infix 9 >>>
+
+||| Compose two functions that each use two values and wrap them in a `Reader`. This is a
+||| convenience function for contructing unary wrappers with `Empiric`s and the corresponding
+||| handler functions for data and models.
+export
+(>>>) : (i -> (a, b)) -> (a -> b -> o) -> Reader i o
+f >>> g = MkReaderT (Id . uncurry g . f)
 
 ||| A Bayesian optimization loop as a (potentially infinite) stream of values. The values are
 ||| typically the observed data, and the models of that data. The loop iteratively finds new points
@@ -37,8 +47,8 @@ import public BayesianOptimization.Morphisms as BayesianOptimization
 |||   updates the values (typically data and models).
 export
 loop :
-  (tactic : i ~> Tensor shape dtype) ->
+  (tactic : Reader i (Tensor shape dtype)) ->
   (observer : Tensor shape dtype -> i -> i) ->
   i ->
   Stream i
-loop tactic observer = iterate (\ii => observer (run tactic ii) ii)
+loop tactic observer = iterate (\ii => observer (runReader ii tactic) ii)
