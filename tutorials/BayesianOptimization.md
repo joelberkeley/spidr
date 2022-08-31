@@ -134,7 +134,7 @@ Let's now explore the problem of optimization with failure regions. We'll want t
 
 Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader i` context. For example, we can apply the `a -> b` function in `f : Reader i (a -> b)` to the `a` value in `x : Reader i a` as `f <*> x` (which is a `Reader i b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates a `Reader i o` from an `o`.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader i Acquisition batch feat` and `oa : Reader i (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader i (Acquisition batch feat)` and `oa : Reader i (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
