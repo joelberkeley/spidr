@@ -37,8 +37,7 @@ jobs:
         wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
     - name: Run tests
-      run: |
-        pack run test.ipkg
+      run: pack run test.ipkg
       env:
         LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
   tutorials:
