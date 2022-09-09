@@ -13,16 +13,17 @@
 # limitations under the License.
 on: release
 
+env:
+  PACK_DIR: /root/.pack
+
 jobs:
   docs:
     runs-on: ubuntu-latest
+    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        idris2 --mkdoc spidr.ipkg
+        pack --with-docs install spidr
         mv build/docs .
     - run: |
         git add .
