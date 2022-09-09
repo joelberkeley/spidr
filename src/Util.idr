@@ -63,37 +63,6 @@ namespace List
   enumerate : List a -> List (Nat, a)
   enumerate xs = toList (enumerate (fromList xs))
 
-  ||| Insert a value in a list. For example, `insertAt 1 [6, 7, 8] 9` is `[6, 9, 7, 8]`, and
-  ||| `insertAt 3 [6, 7, 8] 9` is `[6, 7, 8, 9]`.
-  |||
-  ||| @idx The index of the value in the resulting list.
-  ||| @xs The list to insert the value into.
-  ||| @x The value to insert.
-  public export
-  insertAt : (idx : Nat) -> (x : a) -> (xs : List a) -> {auto 0 prf : idx `LTE` length xs} -> List a
-  insertAt Z x xs = x :: xs
-  insertAt {prf=LTESucc _} (S n) x (y :: ys) = y :: (insertAt n x ys)
-
-  ||| Replace an element in a list. For example, `replaceAt 2 6 [1, 2, 3, 4]` is `[1, 2, 6, 4]`.
-  |||
-  ||| @idx The index of the value to replace.
-  ||| @x The value to insert.
-  ||| @xs The list in which to replace an element.
-  public export
-  replaceAt : (idx : Nat) -> a -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
-  replaceAt Z y (_ :: xs) {prf=InFirst} = y :: xs
-  replaceAt (S k) y (x :: xs) {prf=InLater _} = x :: replaceAt k y xs
-
-  ||| Delete a value from a list at the specified index. For example, `deleteAt 1 [3, 4, 5]` is
-  ||| `[3, 5]`.
-  |||
-  ||| @idx The index of the value to delete.
-  ||| @xs The list to delete the value from.
-  public export
-  deleteAt : (idx : Nat) -> (xs : List a) -> {auto 0 prf : InBounds idx xs} -> List a
-  deleteAt {prf=InFirst} Z (_ :: xs) = xs
-  deleteAt {prf=InLater _} (S k) (x :: xs) = x :: deleteAt k xs
-
   namespace All
     ||| Map a constrained function over a list given a list of constraints.
     public export
@@ -115,20 +84,19 @@ namespace List
     ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. the head of the tail.
     SCons : (y : a) -> f y x -> Sorted f (x :: xs) -> Sorted f (y :: x :: xs)
 
-  namespace Many
-    ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
-    ||| is `[6, 8]`.
-    |||
-    ||| @idxs The indices of the values to delete.
-    ||| @xs The list to delete values from.
-    public export
-    deleteAt :
-      (idxs : List Nat) ->
-      (xs : List a) ->
-      {auto 0 unique : Sorted LT idxs} ->
-      {auto 0 inBounds : All (flip InBounds xs) idxs} ->
-      List a
-    deleteAt idxs xs = go 0 idxs xs where
-      go : Nat -> List Nat -> List a -> List a
-      go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
-      go _ _ xs = xs
+  ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
+  ||| is `[6, 8]`.
+  |||
+  ||| @idxs The indices of the values to delete.
+  ||| @xs The list to delete values from.
+  public export
+  deleteAt :
+    (idxs : List Nat) ->
+    (xs : List a) ->
+    {auto 0 unique : Sorted LT idxs} ->
+    {auto 0 inBounds : All (flip InBounds xs) idxs} ->
+    List a
+  deleteAt idxs xs = go 0 idxs xs where
+    go : Nat -> List Nat -> List a -> List a
+    go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
+    go _ _ xs = xs
