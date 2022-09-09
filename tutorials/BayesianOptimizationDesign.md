@@ -242,3 +242,7 @@ firstFive = take 5 iterations
 ```
 
 or use more complex stopping conditions as mentioned earlier. Unfortunately, we can't give an example of this because spidr lacks the functionality to define conditionals based on `Tensor` data.
+
+<!-- idris
+main : IO ()
+-->

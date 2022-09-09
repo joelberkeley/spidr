@@ -1,0 +1,4 @@
+[custom.all.spidr]
+type = "local"
+path = ""
+ipkg = "spidr.ipkg"

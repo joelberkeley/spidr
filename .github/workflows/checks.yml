@@ -15,39 +15,35 @@ on:
   pull_request:
     branches: master
 
+env:
+  PACK_DIR: /root/.pack
+
 jobs:
   test-unit:
     runs-on: ubuntu-latest
+    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-
-        sudo apt install -y apt-transport-https curl gnupg
+    - name: Install Bazel
+      run: |
+        apt update && apt upgrade -y && apt install -y apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-        sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-        sudo apt update && sudo apt install bazel
-
+        mv bazel.gpg /etc/apt/trusted.gpg.d/
+        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+        apt update && apt install -y bazel
+    - name: Install XLA
+      run: |
+        apt install -y wget
+        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
-
-        ./install_deps.sh
-        idris2 --install spidr.ipkg
-        ./test/install_deps.sh
-        idris2 --install test.ipkg
-        ./build/exec/test
+    - name: Run tests
+      run: pack run test.ipkg
+      env:
+        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
   tutorials:
     runs-on: ubuntu-latest
+    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        ./install_deps.sh
-        idris2 --install spidr.ipkg
-        res=0; for f in tutorials/*.md; do idris2 --check -p contrib -p hashable "$f" || res=$?; done; $(exit $res)
+    - name: Type-check tutorials
+      run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
