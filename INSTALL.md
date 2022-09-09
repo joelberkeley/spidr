@@ -23,7 +23,7 @@ If you intend to run spidr on GPU, skip to the [GPU instructions](#gpu)
    ```
 4. Install the C interface to XLA
    ```bash
-   wget https://github.com/joelberkeley/spidr/releases/download/v0.0.5/c_xla_extension-x86_64-linux-cpu.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./c_xla_extension/lib/libc_xla_extension.so
+   wget https://github.com/joelberkeley/spidr/releases/download/v0.0.5/c_xla_extension-x86_64-linux-cpu.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./c_xla_extension/libc_xla_extension.so
    ```
    ```bash
    sudo bash -c 'echo "/usr/local/lib/c_xla_extension/lib" >> /etc/ld.so.conf.d/c_xla_extension.conf' && sudo ldconfig
@@ -43,7 +43,7 @@ If you do *not* intend to run spidr on GPU, skip this section.
    ```
 5. Install the C interface to XLA
    ```bash
-   wget https://github.com/joelberkeley/spidr/releases/download/v0.0.5/c_xla_extension-x86_64-linux-cuda111.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./c_xla_extension/lib/libc_xla_extension.so
+   wget https://github.com/joelberkeley/spidr/releases/download/v0.0.5/c_xla_extension-x86_64-linux-cuda111.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./c_xla_extension/libc_xla_extension.so
    ```
    ```bash
    sudo bash -c 'echo "/usr/local/lib/c_xla_extension/lib" >> /etc/ld.so.conf.d/c_xla_extension.conf' && sudo ldconfig
