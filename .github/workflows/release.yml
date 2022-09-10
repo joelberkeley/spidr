@@ -26,6 +26,7 @@ jobs:
         pack --with-docs install spidr
         mv build/docs .
     - run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         git add .
         git config user.email "none"
         git config user.name "none"
