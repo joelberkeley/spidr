@@ -510,7 +510,7 @@ broadcast :
   Tensor from dtype ->
   Tensor to dtype
 broadcast xs with (xs)
-  _ | (MkTensor {shape=from} expr) = MkTensor $ Broadcast {from, dtype} expr
+  _ | (MkTensor {shape=f} expr) = MkTensor $ Broadcast {from=f, dtype} expr
 
 %hint
 export
