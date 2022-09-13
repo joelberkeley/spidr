@@ -1075,6 +1075,16 @@ namespace Scalarwise
     MkTensor {shape = _ :: _} _ _ <- l
     l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} !r
 
+||| Natural division. Not defined for tensors containing zeroes.
+export partial
+div : Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> Ref (Tensor shape U64)
+div = binaryRef Div
+
+||| Natural remainder. Not defined for tensors containing zeroes.
+export partial
+rem : Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> Ref (Tensor shape U64)
+rem = binaryRef Rem
+
 ||| The element-wise reciprocal. For example, `recip !(tensor [-2, 0, 0.2])`
 ||| is `tensor [-0.5, nan, 5]`.
 export

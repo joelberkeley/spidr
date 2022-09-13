@@ -132,6 +132,7 @@ enqueue _       (BinaryElementwise f x y) = toXla f !(lookup x) !(lookup y)
     Sub => sub
     Mul => mul
     Div => div
+    Rem => rem
     Pow => pow
     Lt  => lt
     Gt  => gt
