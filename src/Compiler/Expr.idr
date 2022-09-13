@@ -94,6 +94,8 @@ data Expr : Type where
   Asinh : Expr -> Expr
   Acosh : Expr -> Expr
   Atanh : Expr -> Expr
+  Argmin : Primitive out => Nat -> Expr -> Expr
+  Argmax : Primitive out => Nat -> Expr -> Expr
   Select : Expr -> Expr -> Expr -> Expr
   Cond : Expr -> Fn 1 Expr -> Expr -> Fn 1 Expr -> Expr -> Expr
   Dot : Expr -> Expr -> Expr
@@ -192,6 +194,10 @@ Prelude.Eq Expr where
   (Asinh expr) == (Asinh expr') = expr == expr'
   (Acosh expr) == (Acosh expr') = expr == expr'
   (Atanh expr) == (Atanh expr') = expr == expr'
+  (Argmin {out} axis expr) == (Argmin {out=out'} axis' expr') =
+    (typeString {dtype=out}, axis) == (typeString {dtype=out'}, axis) && expr == expr'
+  (Argmax {out} axis expr) == (Argmax {out=out'} axis' expr') =
+    (typeString {dtype=out}, axis) == (typeString {dtype=out'}, axis) && expr == expr'
   (Select pred f t) == (Select pred' f' t') = pred == pred' && f == f' && t == t'
   (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) ==
     (Cond pred' (MkFn [pt'] fTrue') true' (MkFn [pf'] fFalse') false') =
@@ -313,6 +319,10 @@ Hashable Expr where
   hashWithSalt salt (Asinh expr) = salt `hashWithSalt` "Asinh" `hashWithSalt` expr
   hashWithSalt salt (Acosh expr) = salt `hashWithSalt` "Acosh" `hashWithSalt` expr
   hashWithSalt salt (Atanh expr) = salt `hashWithSalt` "Atanh" `hashWithSalt` expr
+  hashWithSalt salt (Argmin {out} axis expr) =
+    salt `hashWithSalt` ("Argmin", typeString {dtype=out}, axis) `hashWithSalt` expr
+  hashWithSalt salt (Argmax {out} axis expr) =
+    salt `hashWithSalt` ("Argmax", typeString {dtype=out}, axis) `hashWithSalt` expr
   hashWithSalt salt (Select pred f t) =
     salt `hashWithSalt` "Select" `hashWithSalt` pred `hashWithSalt` f `hashWithSalt` t
   hashWithSalt salt (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) = salt

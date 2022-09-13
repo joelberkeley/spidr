@@ -12,6 +12,7 @@ modules =
   Compiler.Expr,
   Compiler.LiteralRW,
 
+  Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Constants,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Math,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Matrix,
