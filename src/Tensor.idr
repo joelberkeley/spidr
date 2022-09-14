@@ -82,6 +82,12 @@ export
 Show (Tensor shape dtype) where
   show (MkTensor expr) = toString expr
 
+||| Bounds for numeric tensors. Will be infinite for floating point types.
+export
+[NonFinite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
+  min = MkTensor $ MinValue {dtype}
+  max = MkTensor $ MaxValue {dtype}
+
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where

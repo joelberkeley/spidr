@@ -20,8 +20,16 @@ import System.FFI
 import Compiler.Xla.Prim.Util
 
 export
+%foreign (libxla "MinValue")
+prim__minValue : GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "MinFiniteValue")
 prim__minFiniteValue : GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
+%foreign (libxla "MaxValue")
+prim__maxValue : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 %foreign (libxla "MaxFiniteValue")

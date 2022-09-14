@@ -17,16 +17,30 @@ limitations under the License.
 
 #include "../xla_builder.h"
 
+XlaOp* constantOp(
+    std::function<xla::XlaOp(xla::XlaBuilder*, xla::PrimitiveType)> op,
+    XlaBuilder* builder,
+    int type
+) {
+    auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+    xla::XlaOp res = op(builder_, (xla::PrimitiveType) type);
+    return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+}
+
 extern "C" {
+    XlaOp* MinValue(XlaBuilder* builder, int type) {
+        return constantOp(xla::MinValue, builder, type);
+    }
+
     XlaOp* MinFiniteValue(XlaBuilder* builder, int type) {
-        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
-        xla::XlaOp res = xla::MinFiniteValue(builder_, (xla::PrimitiveType) type);
-        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+        return constantOp(xla::MinFiniteValue, builder, type);
+    }
+
+    XlaOp* MaxValue(XlaBuilder* builder, int type) {
+        return constantOp(xla::MaxValue, builder, type);
     }
 
     XlaOp* MaxFiniteValue(XlaBuilder* builder, int type) {
-        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
-        xla::XlaOp res = xla::MaxFiniteValue(builder_, (xla::PrimitiveType) type);
-        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+        return constantOp(xla::MaxFiniteValue, builder, type);
     }
 }

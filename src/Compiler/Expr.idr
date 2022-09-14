@@ -37,6 +37,8 @@ data Expr : Type where
   Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
   Tuple : List Expr -> Expr
   GetTupleElement : Nat -> Expr -> Expr
+  MinValue : Primitive dtype => Expr
+  MaxValue : Primitive dtype => Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
   ConvertElementType : Primitive dtype => Expr -> Expr
@@ -109,6 +111,10 @@ Prelude.Eq Expr where
       (typeString {dtype=dtype'}, position', shape', name')
   (Tuple xs) == (Tuple xs') = assert_total $ xs == xs'
   (GetTupleElement idx tuple) == (GetTupleElement idx' tuple') = idx == idx' && tuple == tuple'
+  (MinValue {dtype}) == (MinValue {dtype=dtype'}) =
+    typeString {dtype} == typeString {dtype=dtype'}
+  (MaxValue {dtype}) == (MaxValue {dtype=dtype'}) =
+    typeString {dtype} == typeString {dtype=dtype'}
   (MinFiniteValue {dtype}) == (MinFiniteValue {dtype=dtype'}) =
     typeString {dtype} == typeString {dtype=dtype'}
   (MaxFiniteValue {dtype}) == (MaxFiniteValue {dtype=dtype'}) =
@@ -218,6 +224,10 @@ Hashable Expr where
      in assert_total $ hashWithSalt salt xs
   hashWithSalt salt (GetTupleElement idx tuple) =
     salt `hashWithSalt` ("GetTupleElement", idx) `hashWithSalt` tuple
+  hashWithSalt salt (MinValue {dtype}) =
+    salt `hashWithSalt` ("MinValue", typeString {dtype})
+  hashWithSalt salt (MaxValue {dtype}) =
+    salt `hashWithSalt` ("MaxValue", typeString {dtype})
   hashWithSalt salt (MinFiniteValue {dtype}) =
     salt `hashWithSalt` ("MinFiniteValue", typeString {dtype})
   hashWithSalt salt (MaxFiniteValue {dtype}) =

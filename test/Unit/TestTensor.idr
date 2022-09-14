@@ -86,6 +86,28 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
   toLiteral (fromLiteral u64min == min') === True
   toLiteral (fromLiteral u64max == max') === True
 
+boundedNonFinite : Property
+boundedNonFinite = fixedProperty $ do
+  let min' : Tensor [] S32 = Types.min @{NonFinite}
+      max' : Tensor [] S32 = Types.max @{NonFinite}
+  min' ===# Types.min @{Finite}
+  max' ===# Types.max @{Finite}
+
+  let min' : Tensor [] U32 = Types.min @{NonFinite}
+      max' : Tensor [] U32 = Types.max @{NonFinite}
+  min' ===# Types.min @{Finite}
+  max' ===# Types.max @{Finite}
+
+  let min' : Tensor [] U64 = Types.min @{NonFinite}
+      max' : Tensor [] U64 = Types.max @{NonFinite}
+  min' ===# Types.min @{Finite}
+  max' ===# Types.max @{Finite}
+
+  Types.min @{NonFinite} ===# fromLiteral (-inf)
+  Types.max @{NonFinite} ===# fromLiteral inf
+  toLiteral {dtype=F64} (Types.min @{NonFinite}) === -inf
+  toLiteral {dtype=F64} (Types.max @{NonFinite}) === inf
+
 show : Property
 show = fixedProperty $ do
   let x : Tensor [] S32 = 1
@@ -1320,6 +1342,7 @@ group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
+    , ("bounded non-finite", boundedNonFinite)
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
