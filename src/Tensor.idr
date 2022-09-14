@@ -668,34 +668,26 @@ sort comp dimension (MkTensor expr) =
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
 ||| x : Tensor [2, 3] S32
-||| x = fromLiteral [
-|||   [-2, -1,  0],
-|||   [ 1,  2,  3]
-||| ]
+||| x = fromLiteral [[-2, -1,  0],
+|||                  [ 1,  2,  3]]
 ||| ```
 ||| `reverse [0] x` is
 ||| ```
 ||| x : Tensor [2, 3] S32
-||| x = fromLiteral [
-|||   [ 1,  2,  3]
-|||   [-2, -1,  0],
-||| ]
+||| x = fromLiteral [[ 1,  2,  3],
+|||                  [-2, -1,  0]]
 ||| ```
 ||| `reverse [1] x` is
 ||| ```
 ||| x : Tensor [2, 3] S32
-||| x = fromLiteral [
-|||   [ 0, -1, -2],
-|||   [ 3,  2,  1]
-||| ]
+||| x = fromLiteral [[ 0, -1, -2],
+|||                  [ 3,  2,  1]]
 ||| ```
 ||| and `reverse [0, 1] x` is
 ||| ```
 ||| x : Tensor [2, 3] S32
-||| x = fromLiteral [
-|||   [ 3,  2,  1]
-|||   [ 0, -1, -2],
-||| ]
+||| x = fromLiteral [[ 3,  2,  1],
+|||                  [ 0, -1, -2]]
 ||| ```
 |||
 ||| **Note:** This function requires `axes` is ordered simply so that elements are unique.
