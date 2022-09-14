@@ -102,6 +102,12 @@ enqueue e@(Tuple exprs) = cached e $ do
   (builder, _) <- get
   tuple builder !(traverse enqueue exprs)
 enqueue e@(GetTupleElement idx expr) = cached e $ getTupleElement !(enqueue expr) idx
+enqueue e@(MinValue {dtype}) = cached e $ do
+  (builder, _) <- get
+  minValue {dtype} builder
+enqueue e@(MaxValue {dtype}) = cached e $ do
+  (builder, _) <- get
+  maxValue {dtype} builder
 enqueue e@(MinFiniteValue {dtype}) = cached e $ do
   (builder, _) <- get
   minFiniteValue {dtype} builder

@@ -16,6 +16,8 @@ limitations under the License.
 #include "../xla_builder.h"
 
 extern "C" {
+    XlaOp* MinValue(XlaBuilder* builder, int type);
     XlaOp* MinFiniteValue(XlaBuilder* builder, int type);
+    XlaOp* MaxValue(XlaBuilder* builder, int type);
     XlaOp* MaxFiniteValue(XlaBuilder* builder, int type);
 }

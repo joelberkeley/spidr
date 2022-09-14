@@ -20,9 +20,23 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 
 export
+minValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp
+minValue (MkXlaBuilder builder) = do
+  opPtr <- primIO $ prim__minValue builder (xlaIdentifier {dtype})
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 minFiniteValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp
 minFiniteValue (MkXlaBuilder builder) = do
   opPtr <- primIO $ prim__minFiniteValue builder (xlaIdentifier {dtype})
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
+maxValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp
+maxValue (MkXlaBuilder builder) = do
+  opPtr <- primIO $ prim__maxValue builder (xlaIdentifier {dtype})
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
