@@ -649,7 +649,7 @@ reduce axes (MkTensor expr) =
 ||| **Note:** Sorting is not stable, meaning elements that compare equal according the ordering may
 ||| be sorted in a different order to the order they appear in the input.
 |||
-||| For example, for `x = fromLiteral [1, 3, 4, 2]`, `sort (<) 0 x` is
+||| For example, for `x = fromLiteral [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 x` is
 ||| `fromLiteral [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 x` is `fromLiteral [[1, 4, 6], [2, 3, 5]]`.
 export
 sort :
