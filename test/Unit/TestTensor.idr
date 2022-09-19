@@ -893,7 +893,7 @@ testElementwiseBinaryCases = [
   min' x y = if x == x && y == y then min x y else nan
 
   max' : Double -> Double -> Double
-  min' x y = if x == x && y == y then max x y else nan
+  max' x y = if x == x && y == y then max x y else nan
 
   and : Bool -> Bool -> Bool
   and x y = x && y
