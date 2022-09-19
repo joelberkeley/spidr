@@ -1196,6 +1196,7 @@ uniform = withTests 20 . property $ do
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
+      bound' = select (bound' == bound) (bound' + fill 1.0e-9) bound'
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
@@ -1205,7 +1206,7 @@ uniform = withTests 20 . property $ do
 
       ksTest := iidKolmogorovSmirnov samples uniformCdf
 
-  diff (toLiteral ksTest) (<) 0.01
+  diff (toLiteral ksTest) (<) 0.015
 
 covering
 uniformForNonFiniteBounds : Property
