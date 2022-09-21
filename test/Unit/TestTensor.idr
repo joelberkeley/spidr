@@ -48,10 +48,14 @@ fromLiteralThenToLiteral = property $ do
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
+[Finite] Bounded (Literal [] Double) where
+  min = Scalar (min @{Finite})
+  max = Scalar (max @{Finite})
+
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
-  let f64min : Literal [] Double = Scalar min
-      f64max : Literal [] Double = Scalar max
+  let f64min : Literal [] Double = min @{Finite}
+      f64max : Literal [] Double = max @{Finite}
       min' : Tensor [] F64 = Types.min @{Finite}
       max' : Tensor [] F64 = Types.max @{Finite}
   toLiteral min' === f64min
@@ -1228,12 +1232,12 @@ uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [-1.0, 0.0, 1.0]
+  let bound = fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key bound bound)
 
-  samples ===# fromLiteral [-1.0, 0.0, 1.0]
+  samples ===# bound
 
 covering
 uniformSeedIsUpdated : Property
