@@ -25,6 +25,7 @@ import Data.Hashable
 
 import Compiler.Expr
 import Compiler.LiteralRW
+import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
@@ -187,7 +188,10 @@ enqueue e@(Tanh expr) = cached e $ tanh !(enqueue expr)
 enqueue e@(Asinh expr) = cached e $ asinh !(enqueue expr)
 enqueue e@(Acosh expr) = cached e $ acosh !(enqueue expr)
 enqueue e@(Atanh expr) = cached e $ atanh !(enqueue expr)
-enqueue e@(Select pred true false) = cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
+enqueue e@(Argmin {out} axis expr) = cached e $ argMin {outputType=out} !(enqueue expr) axis
+enqueue e@(Argmax {out} axis expr) = cached e $ argMax {outputType=out} !(enqueue expr) axis
+enqueue e@(Select pred true false) =
+  cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
 enqueue e@(Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = cached e $ do
   trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
   falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)

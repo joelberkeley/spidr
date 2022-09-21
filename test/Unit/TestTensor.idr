@@ -1011,6 +1011,22 @@ neutralIsNeutralForMax = property $ do
   toLiteral right ==~ x
   toLiteral left ==~ x
 
+covering
+argmin : Property
+argmin = property $ do
+  d <- forAll dims
+  xs <- forAll (literal [S d] doubles)
+  let xs = fromLiteral xs
+  slice [at (argmin xs)] xs ===# reduce [0] @{Min} xs
+
+covering
+argmax : Property
+argmax = property $ do
+  d <- forAll dims
+  xs <- forAll (literal [S d] doubles)
+  let xs = fromLiteral xs
+  slice [at (argmax xs)] xs ===# reduce [0] @{Max} xs
+
 namespace S32
   export covering
   testElementwiseComparator :
@@ -1369,6 +1385,8 @@ group = MkGroup "Tensor" $ [
     , ("Scalarwise.(/)", scalarDivision)
     , ("Sum", neutralIsNeutralForSum)
     , ("Prod", neutralIsNeutralForProd)
+    , ("argmin", argmin)
+    , ("argmax", argmax)
     , ("Min", neutralIsNeutralForMin)
     , ("Max", neutralIsNeutralForMax)
     , ("Any", neutralIsNeutralForAny)

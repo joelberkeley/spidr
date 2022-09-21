@@ -84,13 +84,13 @@ Show (Tensor shape dtype) where
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
-[NonFinite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
+[NonFinite] Primitive.Ord dtype => Bounded (Tensor [] dtype) where
   min = MkTensor $ MinValue {dtype}
   max = MkTensor $ MaxValue {dtype}
 
 ||| Finite bounds for numeric tensors.
 export
-[Finite] Primitive.Num dtype => Bounded (Tensor [] dtype) where
+[Finite] Primitive.Ord dtype => Bounded (Tensor [] dtype) where
   min = MkTensor $ MinFiniteValue {dtype}
   max = MkTensor $ MaxFiniteValue {dtype}
 
@@ -1149,6 +1149,36 @@ namespace Monoid
         Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
+
+highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Tensor [S n] dtype
+highlightNan minimize x with (x)
+  _ | (MkTensor {shape = _} _) =
+    cond (reduce @{All} [0] (x == x)) id x extremizeNan x
+
+    where
+    extremizeNan : Tensor [S n] dtype -> Tensor [S n] dtype
+    extremizeNan x =
+      let min' = broadcast (Types.min @{NonFinite})
+          max' = broadcast (Types.max @{NonFinite})
+       in select (if minimize then x == x else x /= x) max' min'
+
+||| The first index of the minimum value in a vector. For example,
+||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 2`. If the vector contains NaN values,
+||| `argmin` returns the index of the first NaN.
+export
+argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tensor [] U64
+argmin x =
+  let MkTensor expr = highlightNan True x
+   in MkTensor $ Argmin {out=U64} 0 expr
+
+||| The first index of the maximum value in a vector. For example,
+||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 1`. If the vector contains NaN values,
+||| `argmin` returns the index of the first NaN.
+export
+argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tensor [] U64
+argmax x =
+  let MkTensor expr = highlightNan False x
+   in MkTensor $ Argmax {out=U64} 0 expr
 
 ---------------------------- other ----------------------------------
 
