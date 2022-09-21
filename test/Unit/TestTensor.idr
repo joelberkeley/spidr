@@ -48,10 +48,14 @@ fromLiteralThenToLiteral = property $ do
   x <- forAll (literal shape bool)
   x === toLiteral (fromLiteral {dtype=PRED} x)
 
+[Finite] Bounded (Literal [] Double) where
+  min = Scalar (min @{Finite})
+  max = Scalar (max @{Finite})
+
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
-  let f64min : Literal [] Double = Scalar min
-      f64max : Literal [] Double = Scalar max
+  let f64min : Literal [] Double = min @{Finite}
+      f64max : Literal [] Double = max @{Finite}
       min' : Tensor [] F64 = Types.min @{Finite}
       max' : Tensor [] F64 = Types.max @{Finite}
   toLiteral min' === f64min
@@ -882,38 +886,24 @@ testElementwiseBinaryCases = [
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
     ("min S32", S32.testElementwiseBinary min min),
     ("max S32", S32.testElementwiseBinary max max),
+    ("min F64", F64.testElementwiseBinary min' min),
+    ("max F64", F64.testElementwiseBinary max' max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
 
   where
+  min' : Double -> Double -> Double
+  min' x y = if x == x && y == y then min x y else nan
+
+  max' : Double -> Double -> Double
+  max' x y = if x == x && y == y then max x y else nan
+
   and : Bool -> Bool -> Bool
   and x y = x && y
 
   or : Bool -> Bool -> Bool
   or x y = x || y
-
-covering
-minF64 : Property
-minF64 = property $ do
-  shape <- forAll shapes
-  -- XLA has a bug for nan values
-  let doubles = literal shape doublesWithoutNan
-  [x, y] <- forAll (np [doubles, doubles])
-  let x' = fromLiteral {dtype=F64} x
-      y' = fromLiteral {dtype=F64} y
-  [| min x y |] ==~ toLiteral (min x' y')
-
-covering
-maxF64 : Property
-maxF64 = property $ do
-  shape <- forAll shapes
-  -- XLA has a bug for nan values
-  let doubles = literal shape doublesWithoutNan
-  [x, y] <- forAll (np [doubles, doubles])
-  let x' = fromLiteral {dtype=F64} x
-      y' = fromLiteral {dtype=F64} y
-  [| max x y |] ==~ toLiteral (max x' y')
 
 covering
 scalarMultiplication : Property
@@ -1210,6 +1200,7 @@ uniform = withTests 20 . property $ do
 
   let bound = fromLiteral bound
       bound' = fromLiteral bound'
+      bound' = select (bound' == bound) (bound' + fill 1.0e-9) bound'
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
@@ -1219,7 +1210,7 @@ uniform = withTests 20 . property $ do
 
       ksTest := iidKolmogorovSmirnov samples uniformCdf
 
-  diff (toLiteral ksTest) (<) 0.01
+  diff (toLiteral ksTest) (<) 0.015
 
 covering
 uniformForNonFiniteBounds : Property
@@ -1241,12 +1232,12 @@ uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [-1.0, 0.0, 1.0]
+  let bound = fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
       key = fromLiteral key
       seed = fromLiteral seed
       samples = evalState seed (uniform key bound bound)
 
-  samples ===# fromLiteral [-1.0, 0.0, 1.0]
+  samples ===# bound
 
 covering
 uniformSeedIsUpdated : Property
@@ -1378,8 +1369,6 @@ group = MkGroup "Tensor" $ [
     , ("Scalarwise.(/)", scalarDivision)
     , ("Sum", neutralIsNeutralForSum)
     , ("Prod", neutralIsNeutralForProd)
-    , ("min F64", minF64)
-    , ("max F64", maxF64)
     , ("Min", neutralIsNeutralForMin)
     , ("Max", neutralIsNeutralForMax)
     , ("Any", neutralIsNeutralForAny)

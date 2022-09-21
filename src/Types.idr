@@ -52,6 +52,6 @@ Bounded Int32 where
   max = 2147483647
 
 export
-Bounded Double where
+[Finite] Bounded Double where
   min = -1.7976931348623157e308
   max = 1.7976931348623157e308

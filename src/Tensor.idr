@@ -1108,13 +1108,12 @@ sqrt (MkTensor expr) = MkTensor $ Sqrt expr
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
-|||
-||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-min (MkTensor exprl) (MkTensor exprr) = MkTensor $ Min exprl exprr
+min l r with (l, r)
+  _ | (MkTensor exprl, MkTensor exprr) =
+    select (l == l) (select (r == r) (MkTensor $ Min exprl exprr) r) l
 
-||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 namespace Semigroup
   export
   [Min] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
@@ -1131,13 +1130,12 @@ namespace Monoid
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-1, 0, 3]`.
-|||
-||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-max (MkTensor exprl) (MkTensor exprr) = MkTensor $ Max exprl exprr
+max l r with (l, r)
+  _ | (MkTensor exprl, MkTensor exprr) =
+    select (l == l) (select (r == r) (MkTensor $ Max exprl exprr) r) l
 
-||| **Note:** There is a known issue where sometimes the wrong value is chosen if one value is NaN.
 namespace Semigroup
   export
   [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
