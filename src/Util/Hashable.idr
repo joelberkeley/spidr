@@ -25,10 +25,6 @@ Hashable Double where
   hashWithSalt s x = s `combine` hash (show x)
 
 export
-(Hashable a, Hashable b) => Hashable (a, b) where
-    hashWithSalt s (a, b) = s `hashWithSalt` a `hashWithSalt` b
-
-export
 (Hashable a, Hashable b) => Hashable (Either a b) where
   hashWithSalt salt (Left l) = salt `hashWithSalt` 0 `hashWithSalt` l
   hashWithSalt salt (Right r) = salt `hashWithSalt` 1 `hashWithSalt` r
