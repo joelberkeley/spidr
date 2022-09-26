@@ -9,19 +9,17 @@ You may obtain a copy of the License at
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either refess or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
 module Compiler.Eval
 
-import Control.Monad.State
+import Control.Monad.Reader
 import Data.List
 import Data.List.Elem
 import Data.SortedMap
 import Decidable.Equality
-
-import Data.Hashable
 
 import Compiler.Expr
 import Compiler.LiteralRW
@@ -47,189 +45,177 @@ import Literal
 import Primitive
 import Types
 import Util
-import Util.Hashable
 
 %hide Util.List.All.map
 
-Cache : Type
-Cache = SortedMap Bits64 (List (Expr, XlaOp))
+addParam : XlaBuilder -> Nat -> FullShape -> IO XlaOp
+addParam builder position (MkFullShape shape {dtype}) = do
+  xlaShape <- mkShape shape {dtype}
+  parameter builder position xlaShape ""
 
-Computation : Type -> Type
-Computation = StateT (XlaBuilder, Cache) IO
-
-cached : Expr -> Computation XlaOp -> Computation XlaOp
-cached graph xs = let graphHash = hash graph in do
-  (_, cache) <- get
-  case lookup graphHash cache of
-    Just candidates => case find (\(graph', _) => graph' == graph) candidates of
-      Just (_, op) => pure op
-      Nothing => runOp xs graphHash graph candidates
-    Nothing => runOp xs graphHash graph []
-
-  where
-  runOp : Computation XlaOp -> Bits64 -> Expr -> List (Expr, XlaOp) -> Computation XlaOp
-  runOp xs key graph graphOps = do
-    op <- xs
-    (builder, cache) <- get
-    put (builder, insert key ((graph, op) :: graphOps) cache)
-    pure op
-
-build : HasIO io => String -> Computation XlaOp -> io XlaComputation
-build computationName x = do
-  builder <- mkXlaBuilder computationName
-  (_, root) <- liftIO $ runStateT (builder, empty) x
-  build builder root
-
-buildWithSubBuilder :
-  String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
-buildWithSubBuilder computationName computationArguments computationResult = do
-  (builder, _) <- get
-  subBuilder <- createSubBuilder builder computationName
-  (_, cache) <- liftIO $ execStateT (subBuilder, empty) (sequence_ computationArguments)
-  (_, root) <- liftIO $ runStateT (subBuilder, cache) computationResult
-  build subBuilder root
-
-covering
-enqueue : Expr -> Computation XlaOp
-enqueue e@(FromLiteral {dtype} lit) = cached e $ do
-  (builder, _) <- get
-  literal <- write {dtype} lit 
+enqueue : XlaBuilder -> Vect n XlaOp -> Expr n -> IO XlaOp
+enqueue builder _ (FromLiteral {dtype} lit) = do
+  literal <- write {dtype} lit
   constantLiteral builder literal
-enqueue e@(Parameter {dtype} position shape name) = cached e $ do
-  (builder, _) <- get
-  xlaShape <- mkShape {dtype} shape
-  parameter builder position xlaShape name
-enqueue e@(Tuple exprs) = cached e $ do
-  (builder, _) <- get
-  tuple builder !(traverse enqueue exprs)
-enqueue e@(GetTupleElement idx expr) = cached e $ getTupleElement !(enqueue expr) idx
-enqueue e@(MinValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  minValue {dtype} builder
-enqueue e@(MaxValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  maxValue {dtype} builder
-enqueue e@(MinFiniteValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  minFiniteValue {dtype} builder
-enqueue e@(MaxFiniteValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  maxFiniteValue {dtype} builder
-enqueue e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(enqueue expr)
-enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ length from) to
-enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
-enqueue e@(DynamicSlice starts sizes expr) =
-  cached e $ dynamicSlice !(enqueue expr) !(traverse enqueue starts) sizes
-enqueue e@(Concat axis expr expr') = cached e $ do
-  (builder, _) <- get
-  concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)
-enqueue e@(Diag expr) = cached e $ getMatrixDiagonal !(enqueue expr)
-enqueue e@(Triangle tri expr) = cached e $ triangle !(enqueue expr) tri
-enqueue e@(Transpose ordering expr) = cached e $ transpose !(enqueue expr) ordering
-enqueue e@(Identity {dtype} n) = cached e $ let n = cast n in do
-  (builder, _) <- get
-  identityMatrix {dtype} builder n n
-enqueue e@(Broadcast {dtype} from to expr) = cached e $
+enqueue builder _ (Parameter spec position) = addParam builder position spec
+enqueue builder ops (Tuple refs) = tuple builder (map (flip index ops) refs)
+enqueue builder ops (GetTupleElement idx ref) = getTupleElement (index ref ops) idx
+enqueue builder _ (MinValue {dtype}) = minValue {dtype} builder
+enqueue builder _ (MaxValue {dtype}) = maxValue {dtype} builder
+enqueue builder _ (MinFiniteValue {dtype}) = minFiniteValue {dtype} builder
+enqueue builder _ (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} builder
+enqueue builder ops (ConvertElementType ref) = convertElementType {dtype=F64} (index ref ops)
+enqueue builder ops (Reshape from to ref) = reshape (index ref ops) (range $ length from) to
+enqueue builder ops (Slice starts stops strides ref) = slice (index ref ops) starts stops strides 
+enqueue builder ops (DynamicSlice starts sizes ref) =
+  dynamicSlice (index ref ops) (map (flip index ops) starts) sizes
+enqueue builder ops (Concat axis ref ref') = concatInDim builder [(index ref ops), (index ref' ops)] (cast axis)
+enqueue builder ops (Diag ref) = getMatrixDiagonal (index ref ops)
+enqueue builder ops (Triangle tri ref) = triangle (index ref ops) tri
+enqueue builder ops (Transpose ordering ref) = transpose (index ref ops) ordering
+enqueue builder ops (Identity {dtype} n) = let n = cast n in identityMatrix {dtype} builder n n
+enqueue builder ops (Broadcast {dtype} from to ref) =
   if elem 0 to && from /= to
   then do
-    (builder, _) <- get
     literal <- allocLiteral {dtype} to
     constantLiteral builder literal
   else
     let broadcastDims = map (+ length to `minus` length from) $ range $ length from
-     in broadcastInDim !(enqueue expr) to broadcastDims
-enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
-  computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
-  (builder, _) <- get
-  map builder !(traverse enqueue $ toList exprs) computation dims 
-enqueue e@(Reduce (MkFn [p0, p1] exprf) neutral axes expr) = cached e $ do
-  computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
-  reduce !(enqueue expr) !(enqueue neutral) computation axes
-enqueue e@(Sort (MkFn [p0, p1] exprComp) axis isStable exprs) = cached e $ do
-  comparator <- buildWithSubBuilder "comparator" [(enqueue p0), (enqueue p1)] (enqueue exprComp)
-  sort !(traverse enqueue exprs) comparator axis isStable 
-enqueue e@(Reverse axes expr) = cached e $ rev !(enqueue expr) axes
-enqueue e@(Eq l r) = cached e $ eq !(enqueue l) !(enqueue r)
-enqueue e@(Ne l r) = cached e $ ne !(enqueue l) !(enqueue r)
-enqueue e@(Add l r) = cached e $ add !(enqueue l) !(enqueue r)
-enqueue e@(Sub l r) = cached e $ sub !(enqueue l) !(enqueue r)
-enqueue e@(Mul l r) = cached e $ mul !(enqueue l) !(enqueue r)
-enqueue e@(Div l r) = cached e $ div !(enqueue l) !(enqueue r)
-enqueue e@(Pow l r) = cached e $ pow !(enqueue l) !(enqueue r)
-enqueue e@(Lt l r) = cached e $ lt !(enqueue l) !(enqueue r)
-enqueue e@(Gt l r) = cached e $ gt !(enqueue l) !(enqueue r)
-enqueue e@(Le l r) = cached e $ le !(enqueue l) !(enqueue r)
-enqueue e@(Ge l r) = cached e $ ge !(enqueue l) !(enqueue r)
-enqueue e@(And l r) = cached e $ and !(enqueue l) !(enqueue r)
-enqueue e@(Or l r) = cached e $ or !(enqueue l) !(enqueue r)
-enqueue e@(Min l r) = cached e $ min !(enqueue l) !(enqueue r)
-enqueue e@(Max l r) = cached e $ max !(enqueue l) !(enqueue r)
-enqueue e@(Not expr) = cached e $ not !(enqueue expr)
-enqueue e@(Neg expr) = cached e $ neg !(enqueue expr)
-enqueue e@(Reciprocal expr) = cached e $ reciprocal !(enqueue expr)
-enqueue e@(Abs expr) = cached e $ abs !(enqueue expr)
-enqueue e@(Ceil expr) = cached e $ ceil !(enqueue expr)
-enqueue e@(Floor expr) = cached e $ floor !(enqueue expr)
-enqueue e@(Exp expr) = cached e $ exp !(enqueue expr)
-enqueue e@(Log expr) = cached e $ log !(enqueue expr)
-enqueue e@(Logistic expr) = cached e $ logistic !(enqueue expr)
-enqueue e@(Erf expr) = cached e $ erf !(enqueue expr)
-enqueue e@(Square expr) = cached e $ square !(enqueue expr)
-enqueue e@(Sqrt expr) = cached e $ sqrt !(enqueue expr)
-enqueue e@(Sin expr) = cached e $ sin !(enqueue expr)
-enqueue e@(Cos expr) = cached e $ cos !(enqueue expr)
-enqueue e@(Tan expr) = cached e $ tan !(enqueue expr)
-enqueue e@(Asin expr) = cached e $ asin !(enqueue expr)
-enqueue e@(Acos expr) = cached e $ acos !(enqueue expr)
-enqueue e@(Atan expr) = cached e $ atan !(enqueue expr)
-enqueue e@(Sinh expr) = cached e $ sinh !(enqueue expr)
-enqueue e@(Cosh expr) = cached e $ cosh !(enqueue expr)
-enqueue e@(Tanh expr) = cached e $ tanh !(enqueue expr)
-enqueue e@(Asinh expr) = cached e $ asinh !(enqueue expr)
-enqueue e@(Acosh expr) = cached e $ acosh !(enqueue expr)
-enqueue e@(Atanh expr) = cached e $ atanh !(enqueue expr)
-enqueue e@(Argmin {out} axis expr) = cached e $ argMin {outputType=out} !(enqueue expr) axis
-enqueue e@(Argmax {out} axis expr) = cached e $ argMax {outputType=out} !(enqueue expr) axis
-enqueue e@(Select pred true false) =
-  cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
-enqueue e@(Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = cached e $ do
-  trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
-  falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
-  conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp
-enqueue e@(Dot l r) = cached e $ dot !(enqueue l) !(enqueue r)
-enqueue e@(Cholesky expr) = cached e $ cholesky !(enqueue expr) True
-enqueue e@(TriangularSolve a b lower) =
-  cached e $ triangularSolve !(enqueue a) !(enqueue b) True lower False NoTranspose
-enqueue e@(UniformFloatingPoint key initialState minval maxval shape) = cached e $ do
+     in broadcastInDim (index ref ops) to broadcastDims
+-- enqueue builder ops (Map (MkFn {arity} refParams reff) refs dims) = do
+--   computation <- buildWithSubBuilder "computation" (map enqueue $ toList refParams) (enqueue reff)
+--   map builder !(traverse enqueue $ toList refs) computation dims
+enqueue builder ops (Reduce (MkFn [p0, p1] reff) neutral axes ref) = do
+  subBuilder <- createSubBuilder builder "computation"
+  p0 <- addParam builder 0 p0
+  p1 <- addParam builder 1 p1
+  root <- enqueue subBuilder (p0 :: p1 :: ops) reff
+  computation <- build subBuilder root
+  reduce (index ref ops) (index neutral ops) computation axes
+enqueue builder ops (Sort (MkFn [p0, p1] reff) axis isStable refs) = do
+  subBuilder <- createSubBuilder builder "computation"
+  p0 <- addParam builder 0 p0
+  p1 <- addParam builder 1 p1
+  root <- enqueue subBuilder (p0 :: p1 :: ops) reff
+  computation <- build subBuilder root
+  sort (map (flip index ops) refs) computation axis isStable
+enqueue builder ops (Reverse axes ref) = rev (index ref ops) axes
+enqueue builder ops (Eq l r) = eq (index l ops) (index r ops)
+enqueue builder ops (Ne l r) = ne (index l ops) (index r ops)
+enqueue builder ops (Add l r) = add (index l ops) (index r ops)
+enqueue builder ops (Sub l r) = sub (index l ops) (index r ops)
+enqueue builder ops (Mul l r) = mul (index l ops) (index r ops)
+enqueue builder ops (Div l r) = div (index l ops) (index r ops)
+enqueue builder ops (Pow l r) = pow (index l ops) (index r ops)
+enqueue builder ops (Lt l r) = lt (index l ops) (index r ops)
+enqueue builder ops (Gt l r) = gt (index l ops) (index r ops)
+enqueue builder ops (Le l r) = le (index l ops) (index r ops)
+enqueue builder ops (Ge l r) = ge (index l ops) (index r ops)
+enqueue builder ops (And l r) = and (index l ops) (index r ops)
+enqueue builder ops (Or l r) = or (index l ops) (index r ops)
+enqueue builder ops (Min l r) = min (index l ops) (index r ops)
+enqueue builder ops (Max l r) = max (index l ops) (index r ops)
+enqueue builder ops (Not ref) = not (index ref ops)
+enqueue builder ops (Neg ref) = neg (index ref ops)
+enqueue builder ops (Reciprocal ref) = reciprocal (index ref ops)
+enqueue builder ops (Abs ref) = abs (index ref ops)
+enqueue builder ops (Ceil ref) = ceil (index ref ops)
+enqueue builder ops (Floor ref) = floor (index ref ops)
+enqueue builder ops (Exp ref) = exp (index ref ops)
+enqueue builder ops (Log ref) = log (index ref ops)
+enqueue builder ops (Logistic ref) = logistic (index ref ops)
+enqueue builder ops (Erf ref) = erf (index ref ops)
+enqueue builder ops (Square ref) = square (index ref ops)
+enqueue builder ops (Sqrt ref) = sqrt (index ref ops)
+enqueue builder ops (Sin ref) = sin (index ref ops)
+enqueue builder ops (Cos ref) = cos (index ref ops)
+enqueue builder ops (Tan ref) = tan (index ref ops)
+enqueue builder ops (Asin ref) = asin (index ref ops)
+enqueue builder ops (Acos ref) = acos (index ref ops)
+enqueue builder ops (Atan ref) = atan (index ref ops)
+enqueue builder ops (Sinh ref) = sinh (index ref ops)
+enqueue builder ops (Cosh ref) = cosh (index ref ops)
+enqueue builder ops (Tanh ref) = tanh (index ref ops)
+enqueue builder ops (Asinh ref) = asinh (index ref ops)
+enqueue builder ops (Acosh ref) = acosh (index ref ops)
+enqueue builder ops (Atanh ref) = atanh (index ref ops)
+enqueue builder ops (Argmin {out} axis ref) = argMin {outputType=out} (index ref ops) axis
+enqueue builder ops (Argmax {out} axis ref) = argMax {outputType=out} (index ref ops) axis
+enqueue builder ops (Select pred true false) =
+  select (index pred ops) (index true ops) (index false ops)
+enqueue builder ops (Cond pred (MkFn [pTrue] refTrue) true (MkFn [pFalse] refFalse) false) = do
+  subBuilderTrue <- createSubBuilder builder "truthy computation"
+  pTrue <- addParam builder 0 pTrue
+  rootTrue <- enqueue subBuilderTrue (pTrue :: ops) refTrue
+  computationTrue <- build subBuilderTrue rootTrue
+
+  subBuilderFalse <- createSubBuilder builder "falsy computation"
+  pFalse <- addParam builder 0 pFalse
+  rootFalse <- enqueue subBuilderFalse (pFalse :: ops) refFalse
+  computationFalse <- build subBuilderFalse rootFalse
+
+  conditional (index pred ops) (index true ops) computationTrue (index false ops) computationFalse
+enqueue builder ops (Dot l r) = dot (index l ops) (index r ops)
+enqueue builder ops (Cholesky ref) = cholesky (index ref ops) True
+enqueue builder ops (TriangularSolve a b lower) =
+  triangularSolve (index a ops) (index b ops) True lower False NoTranspose
+enqueue builder ops (UniformFloatingPoint key initialState minval maxval shape) = do
   rngOutput <- uniformFloatingPointDistribution
-    !(enqueue key)
-    !(enqueue initialState)
+    (index key ops)
+    (index initialState ops)
     ThreeFry
-    !(enqueue minval)
-    !(enqueue maxval)
+    (index minval ops)
+    (index maxval ops)
     !(mkShape {dtype=F64} shape)
-  (builder, _) <- get
   tuple builder [value rngOutput, state rngOutput]
-enqueue e@(NormalFloatingPoint key initialState shape) = cached e $ do
+enqueue builder ops (NormalFloatingPoint key initialState shape) = do
   rngOutput <- normalFloatingPointDistribution
-    !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
-  (builder, _) <- get
+    (index key ops) (index initialState ops) ThreeFry !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
 
-export
-toString : Expr -> String
-toString expr = unsafePerformIO $ do
-  builder <- mkXlaBuilder "toString"
-  let comp = assert_total (enqueue expr)
-  ((builder, _), xlaOp) <- runStateT (builder, empty) comp
-  pure $ opToString builder xlaOp
+-- I think we should be able to erase n
+eval : {n : _} -> XlaBuilder -> Terms 0 n -> IO (Vect n XlaOp)
+eval builder terms = impl terms [] where
+  impl : {rem : _} -> Terms done (done + rem) -> Vect done XlaOp -> IO (Vect (done + rem) XlaOp)
+  impl {rem = 0} _ ops = rewrite plusZeroRightNeutral done in pure (reverse ops)
+  impl {rem = S rem} (t :: ts) ops = do
+    op <- enqueue builder ops t
+    let 0 prf = plusSuccRightSucc done rem
+    ops <- impl {rem} (rewrite prf in ts) (snoc ops op)
+    pure (rewrite sym prf in ops)
+
+-- impl [[3], [4, 5], Concat 0 1] []
+--   t = [3]
+--   ts = [[4, 5], Concat 0 1]
+--   ops = []
+--   op = enqueue [] [3] = ConstantLiteral [3]
+--   return impl [[4, 5], Concat 0 1] [ConstantLiteral [3]]
+--     t = [4, 5]
+--     ts = [Concat 0 1]
+--     ops = [ConstantLiteral [3]]
+--     op = enqueue [ConstantLiteral [3]] [4, 5] = ConstantLiteral [4, 5]
+--     return impl [Concat 0 1] [ConstantLiteral [3], ConstantLiteral [4, 5]]
+--       t = Concat 0 1
+--       ts = []
+--       ops = [ConstantLiteral [3], ConstantLiteral [4, 5]]
+--       op = enqueue [ConstantLiteral [3], ConstantLiteral [4, 5]] (Concat 0 1) = ConcatInDim [3] [4, 5]
+--       return impl [] [ConstantLiteral [3], ConstantLiteral [4, 5], ConcatInDim [3] [4, 5]]
 
 export
-run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a
-run expr = unsafePerformIO $ do
+toString : {n : _} -> Terms 0 (S n) -> String
+toString terms = unsafePerformIO $ do
+  builder <- mkXlaBuilder "toString"
+  (op :: _) <- eval builder terms
+  pure $ opToString builder op
+
+export
+run : PrimitiveRW dtype a => {n : _} -> Terms 0 (S n) -> {shape : _} -> Literal shape a
+run terms = unsafePerformIO $ do
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" (assert_total $ enqueue expr)
+  builder <- mkXlaBuilder ""
+  (root :: _) <- eval builder terms
+  computation <- build builder root
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)

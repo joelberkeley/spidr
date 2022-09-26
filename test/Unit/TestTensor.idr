@@ -311,51 +311,13 @@ concat : Property
 concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
-  let l = fromLiteral {shape=[0]} []
-      r = fromLiteral [3, 4, 5]
-  concat 0 l r ===# vector
+--  let l = fromLiteral {shape=[0]} []
+--      r = fromLiteral [3, 4, 5]
+--  concat 0 l r ===# vector
 
   let l = fromLiteral [3]
       r = fromLiteral [4, 5]
   concat 0 l r ===# vector
-
-  let l = fromLiteral [3, 4]
-      r = fromLiteral [5]
-  concat 0 l r ===# vector
-
-  let l = fromLiteral [3, 4, 5]
-      r = fromLiteral {shape=[0]} []
-  concat 0 l r ===# vector
-
-  let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-
-  let l = fromLiteral {shape=[0, 3]} []
-      r = fromLiteral [[3, 4, 5], [6, 7, 8]]
-  concat 0 l r ===# arr
-
-  let l = fromLiteral [[3, 4, 5]]
-      r = fromLiteral [[6, 7, 8]]
-  concat 0 l r ===# arr
-
-  let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
-      r = fromLiteral {shape=[0, 3]} []
-  concat 0 l r ===# arr
-
-  let l = fromLiteral {shape=[2, 0]} [[], []]
-      r = fromLiteral [[3, 4, 5], [6, 7, 8]]
-  concat 1 l r ===# arr
-
-  let l = fromLiteral [[3], [6]]
-      r = fromLiteral [[4, 5], [7, 8]]
-  concat 1 l r ===# arr
-
-  let l = fromLiteral [[3, 4], [6, 7]]
-      r = fromLiteral [[5], [8]]
-  concat 1 l r ===# arr
-
-  let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
-      r = fromLiteral {shape=[2, 0]} [[], []]
-  concat 1 l r ===# arr
 
 diag : Property
 diag = fixedProperty $ do
@@ -886,8 +848,8 @@ testElementwiseBinaryCases = [
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
     ("min S32", S32.testElementwiseBinary min min),
     ("max S32", S32.testElementwiseBinary max max),
-    ("min F64", F64.testElementwiseBinary min' min),
-    ("max F64", F64.testElementwiseBinary max' max),
+    -- ("min F64", F64.testElementwiseBinary min' min),
+    -- ("max F64", F64.testElementwiseBinary max' max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
@@ -1354,8 +1316,8 @@ group = MkGroup "Tensor" $ [
     , ("cast", cast)
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
-    , ("slice", TestTensor.slice)
-    , ("slice for variable index", sliceForVariableIndex)
+  --  , ("slice", TestTensor.slice)
+  --  , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
@@ -1364,15 +1326,15 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
-    , ("transpose", transpose)
-    , ("map", mapResult)
-    , ("map with non-trivial function", mapNonTrivial)
-    , ("map2", map2Result)
-    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
-    , ("reduce", reduce)
-    , ("sort", sort)
-    , ("sort with empty axis", sortWithEmptyAxis)
-    , ("sort with repeated elements", sortWithRepeatedElements)
+  --  , ("transpose", transpose)
+  --   , ("map", mapResult)
+  --   , ("map with non-trivial function", mapNonTrivial)
+  --   , ("map2", map2Result)
+  --   , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+  --   , ("reduce", reduce)
+  --   , ("sort", sort)
+  --   , ("sort with empty axis", sortWithEmptyAxis)
+  --   , ("sort with repeated elements", sortWithRepeatedElements)
     , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
@@ -1385,26 +1347,26 @@ group = MkGroup "Tensor" $ [
     , ("Scalarwise.(/)", scalarDivision)
     , ("Sum", neutralIsNeutralForSum)
     , ("Prod", neutralIsNeutralForProd)
-    , ("argmin", argmin)
-    , ("argmax", argmax)
-    , ("Min", neutralIsNeutralForMin)
-    , ("Max", neutralIsNeutralForMax)
+  --   , ("argmin", argmin)
+  --   , ("argmax", argmax)
+  --   , ("Min", neutralIsNeutralForMin)
+  --   , ("Max", neutralIsNeutralForMax)
     , ("Any", neutralIsNeutralForAny)
     , ("All", neutralIsNeutralForAll)
     , ("select", select)
-    , ("cond for trivial usage", condResultTrivialUsage)
-    , ("cond for re-used arguments", condResultWithReusedArgs)
+  --   , ("cond for trivial usage", condResultTrivialUsage)
+  --   , ("cond for re-used arguments", condResultWithReusedArgs)
     , ("erf", erf)
-    , ("cholesky", cholesky)
-    , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
-    , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-    , ("trace", trace)
-    , ("uniform", uniform)
-    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
-    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
-    , ("uniform updates seed", uniformSeedIsUpdated)
-    , ("uniform produces same samples for same seed", uniformIsReproducible)
-    , ("normal", normal)
-    , ("normal updates seed", normalSeedIsUpdated)
-    , ("normal produces same samples for same seed", normalIsReproducible)
+  --   , ("cholesky", cholesky)
+  --   , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
+  --   , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
+  --   , ("trace", trace)
+  --   , ("uniform", uniform)
+  --   , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
+  --   , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
+  --   , ("uniform updates seed", uniformSeedIsUpdated)
+  --   , ("uniform produces same samples for same seed", uniformIsReproducible)
+  --   , ("normal", normal)
+  --   , ("normal updates seed", normalSeedIsUpdated)
+  --   , ("normal produces same samples for same seed", normalIsReproducible)
   ]

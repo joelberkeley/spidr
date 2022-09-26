@@ -16,102 +16,124 @@ limitations under the License.
 module Compiler.Expr
 
 import Decidable.Equality
-import Data.Hashable
+import Syntax.PreorderReasoning
 
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 
+import Data.Fin
 import Literal
 import Primitive
 import Types
 import Util
-import Util.Hashable
+
+public export
+data FullShape : Type where
+  MkFullShape : Shape -> Primitive dtype => FullShape
+
+export
+Prelude.Eq FullShape where
+  (MkFullShape shape {dtype}) == (MkFullShape shape' {dtype=dtype'}) =
+    (shape, typeString {dtype}) == (shape', typeString {dtype=dtype'})
 
 public export
 data Fn : Nat -> Type -> Type where
-  MkFn : {arity : _} -> Vect arity a -> a -> Fn arity a
+  MkFn : {arity : _} -> Vect arity FullShape -> a -> Fn arity a
 
 public export
-data Expr : Type where
-  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
-  Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
-  Tuple : List Expr -> Expr
-  GetTupleElement : Nat -> Expr -> Expr
-  MinValue : Primitive dtype => Expr
-  MaxValue : Primitive dtype => Expr
-  MinFiniteValue : Primitive dtype => Expr
-  MaxFiniteValue : Primitive dtype => Expr
-  ConvertElementType : Primitive dtype => Expr -> Expr
-  Reshape : Shape -> Shape -> Expr -> Expr
-  Slice : List Nat -> List Nat -> List Nat -> Expr -> Expr
-  DynamicSlice : List Expr -> List Nat -> Expr -> Expr
-  Concat : Nat -> Expr -> Expr -> Expr
-  Diag : Expr -> Expr
-  Triangle : (lower : Bool) -> Expr -> Expr
-  Transpose : List Nat -> Expr -> Expr
-  Identity : Primitive dtype => Nat -> Expr
-  Broadcast : Primitive dtype => Shape -> Shape -> Expr -> Expr
-  Map : Fn n Expr -> Vect n Expr -> Shape -> Expr
-  Reduce : Fn 2 Expr -> Expr -> List Nat -> Expr -> Expr
-  Sort : Fn 2 Expr -> Nat -> Bool -> List Expr -> Expr
-  Reverse : List Nat -> Expr -> Expr
-  Eq : Expr -> Expr -> Expr
-  Ne : Expr -> Expr -> Expr
-  Add : Expr -> Expr -> Expr
-  Sub : Expr -> Expr -> Expr
-  Mul : Expr -> Expr -> Expr
-  Div : Expr -> Expr -> Expr
-  Pow : Expr -> Expr -> Expr
-  Lt : Expr -> Expr -> Expr
-  Gt : Expr -> Expr -> Expr
-  Le : Expr -> Expr -> Expr
-  Ge : Expr -> Expr -> Expr
-  And : Expr -> Expr -> Expr
-  Or : Expr -> Expr -> Expr
-  Min : Expr -> Expr -> Expr
-  Max : Expr -> Expr -> Expr
-  Not : Expr -> Expr
-  Neg : Expr -> Expr
-  Reciprocal : Expr -> Expr
-  Abs : Expr -> Expr
-  Ceil : Expr -> Expr
-  Floor : Expr -> Expr
-  Log : Expr -> Expr
-  Exp : Expr -> Expr
-  Logistic : Expr -> Expr
-  Erf : Expr -> Expr
-  Square : Expr -> Expr
-  Sqrt : Expr -> Expr
-  Sin : Expr -> Expr
-  Cos : Expr -> Expr
-  Tan : Expr -> Expr
-  Asin : Expr -> Expr
-  Acos : Expr -> Expr
-  Atan : Expr -> Expr
-  Sinh : Expr -> Expr
-  Cosh : Expr -> Expr
-  Tanh : Expr -> Expr
-  Asinh : Expr -> Expr
-  Acosh : Expr -> Expr
-  Atanh : Expr -> Expr
-  Argmin : Primitive out => Nat -> Expr -> Expr
-  Argmax : Primitive out => Nat -> Expr -> Expr
-  Select : Expr -> Expr -> Expr -> Expr
-  Cond : Expr -> Fn 1 Expr -> Expr -> Fn 1 Expr -> Expr -> Expr
-  Dot : Expr -> Expr -> Expr
-  Cholesky : Expr -> Expr
-  TriangularSolve : Expr -> Expr -> Bool -> Expr
-  UniformFloatingPoint : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
-  NormalFloatingPoint : Expr -> Expr -> Shape -> Expr
+data Expr : Nat -> Type where
+  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr n
+  Parameter : FullShape -> Nat -> Expr n
+  Tuple : List (Fin n) -> Expr n
+  GetTupleElement : Nat -> Fin n -> Expr n
+  MinValue : Primitive dtype => Expr n
+  MaxValue : Primitive dtype => Expr n
+  MinFiniteValue : Primitive dtype => Expr n
+  MaxFiniteValue : Primitive dtype => Expr n
+  ConvertElementType : Primitive dtype => Fin n -> Expr n
+  Reshape : Shape -> Shape -> Fin n -> Expr n
+  Slice : List Nat -> List Nat -> List Nat -> Fin n -> Expr n
+  DynamicSlice : List (Fin n) -> List Nat -> Fin n -> Expr n
+  Concat : Nat -> Fin n -> Fin n -> Expr n
+  Diag : Fin n -> Expr n
+  Triangle : (lower : Bool) -> Fin n -> Expr n
+  Transpose : List Nat -> Fin n -> Expr n
+  Identity : Primitive dtype => Nat -> Expr n
+  Broadcast : Primitive dtype => Shape -> Shape -> Fin n -> Expr n
+  -- Map : Fn a (Expr n) -> Vect a (Fin n) -> Shape -> Expr n
+  Reduce : Fn 2 (Expr (S (S n))) -> Fin n -> List Nat -> Fin n -> Expr n
+  Sort : Fn 2 (Expr (S (S n))) -> Nat -> Bool -> List (Fin n) -> Expr n
+  Reverse : List Nat -> Fin n -> Expr n
+  Eq : Fin n -> Fin n -> Expr n
+  Ne : Fin n -> Fin n -> Expr n
+  Add : Fin n -> Fin n -> Expr n
+  Sub : Fin n -> Fin n -> Expr n
+  Mul : Fin n -> Fin n -> Expr n
+  Div : Fin n -> Fin n -> Expr n
+  Pow : Fin n -> Fin n -> Expr n
+  Lt : Fin n -> Fin n -> Expr n
+  Gt : Fin n -> Fin n -> Expr n
+  Le : Fin n -> Fin n -> Expr n
+  Ge : Fin n -> Fin n -> Expr n
+  And : Fin n -> Fin n -> Expr n
+  Or : Fin n -> Fin n -> Expr n
+  Min : Fin n -> Fin n -> Expr n
+  Max : Fin n -> Fin n -> Expr n
+  Not : Fin n -> Expr n
+  Neg : Fin n -> Expr n
+  Reciprocal : Fin n -> Expr n
+  Abs : Fin n -> Expr n
+  Ceil : Fin n -> Expr n
+  Floor : Fin n -> Expr n
+  Log : Fin n -> Expr n
+  Exp : Fin n -> Expr n
+  Logistic : Fin n -> Expr n
+  Erf : Fin n -> Expr n
+  Square : Fin n -> Expr n
+  Sqrt : Fin n -> Expr n
+  Sin : Fin n -> Expr n
+  Cos : Fin n -> Expr n
+  Tan : Fin n -> Expr n
+  Asin : Fin n -> Expr n
+  Acos : Fin n -> Expr n
+  Atan : Fin n -> Expr n
+  Sinh : Fin n -> Expr n
+  Cosh : Fin n -> Expr n
+  Tanh : Fin n -> Expr n
+  Asinh : Fin n -> Expr n
+  Acosh : Fin n -> Expr n
+  Atanh : Fin n -> Expr n
+  Argmin : Primitive out => Nat -> Fin n -> Expr n
+  Argmax : Primitive out => Nat -> Fin n -> Expr n
+  Select : Fin n -> Fin n -> Fin n -> Expr n
+  Cond : Fin n -> Fn 1 (Expr (S n)) -> Fin n -> Fn 1 (Expr (S n)) -> Fin n -> Expr n
+  Dot : Fin n -> Fin n -> Expr n
+  Cholesky : Fin n -> Expr n
+  TriangularSolve : Fin n -> Fin n -> Bool -> Expr n
+  UniformFloatingPoint : Fin n -> Fin n -> Fin n -> Fin n -> Shape -> Expr n
+  NormalFloatingPoint : Fin n -> Fin n -> Shape -> Expr n
 
 export
-Prelude.Eq Expr where
-  (FromLiteral {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
-    (typeString {dtype}, shape, hash lit) == (typeString {dtype=dtype'}, shape', hash lit')
-  (Parameter {dtype} position shape name) == (Parameter {dtype=dtype'} position' shape' name') =
-    (typeString {dtype}, position, shape, name) ==
-      (typeString {dtype=dtype'}, position', shape', name')
-  (Tuple xs) == (Tuple xs') = assert_total $ xs == xs'
+Show (Expr n) where
+  show (FromLiteral {shape} _) = "FromLiteral \{show shape}"
+  show (Concat _ x y) = "Concat \{show x} \{show y}"
+  show _ = "Other"
+
+export
+Prelude.Eq (Expr n) where
+  (FromLiteral {ty} {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
+    case decEq shape shape' of
+      Yes eq =>
+        (xlaIdentifier {dtype} == xlaIdentifier {dtype=dtype'})
+        --
+        --
+        -- INVALID BELIEVE ME
+        --
+        --
+        && lit == believe_me lit'
+      No _ => False
+  (Parameter spec pos) == (Parameter spec' pos') = (spec, pos) == (spec', pos')
+  (Tuple xs) == (Tuple xs') = xs == xs'
   (GetTupleElement idx tuple) == (GetTupleElement idx' tuple') = idx == idx' && tuple == tuple'
   (MinValue {dtype}) == (MinValue {dtype=dtype'}) =
     typeString {dtype} == typeString {dtype=dtype'}
@@ -127,7 +149,7 @@ Prelude.Eq Expr where
   (Slice starts stops strides x) == (Slice starts' stops' strides' x') =
     (starts, stops, strides) == (starts', stops', strides') && x == x'
   (DynamicSlice starts sizes x) == (DynamicSlice starts' sizes' x') =
-    (assert_total $ starts == starts') && sizes == sizes' && x == x'
+    starts == starts' && sizes == sizes' && x == x'
   (Concat axis x y) == (Concat axis' x' y') = axis == axis' && x == x' && y == y'
   (Diag x) == (Diag x') = x == x'
   (Triangle lower x) == (Triangle lower' x') = lower == lower' && x == x'
@@ -135,14 +157,14 @@ Prelude.Eq Expr where
   (Identity {dtype} n) == (Identity {dtype=dtype'} n') =
     (typeString {dtype}, n) == (typeString {dtype=dtype'}, n')
   (Broadcast from to x) == (Broadcast from' to' x') = (from, to) == (from', to') && x == x'
-  (Map {n} (MkFn params f) xs dims) == (Map {n=n'} (MkFn params' f') xs' dims') =
-    case decEq n n' of
-      Yes eq =>
-        (assert_total $ params == rewrite eq in params')
-        && f == f'
-        && (assert_total $ xs == rewrite eq in xs')
-        && dims == dims'
-      No _ => False
+  -- (Map {a} (MkFn params f) xs dims) == (Map {a=a'} (MkFn params' f') xs' dims') =
+  --   case decEq a a' of
+  --     Yes eq =>
+  --       params == (rewrite eq in params')
+  --       && f == f'
+  --       && xs == (rewrite eq in xs')
+  --       && dims == dims'
+  --     No _ => False
   (Reduce (MkFn [p0, p1] monoid) neutral axes x) ==
     (Reduce (MkFn [p0', p1'] monoid') neutral' axes' x') =
       p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axes == axes' && x == x'
@@ -153,7 +175,7 @@ Prelude.Eq Expr where
       && comparator == comparator'
       && dimension == dimension'
       && isStable == isStable'
-      && (assert_total $ operands == operands')
+      && operands == operands'
   (Reverse axes expr) == (Reverse axes' expr') = axes == axes' && expr == expr'
   (Eq l r) == (Eq l' r') = l == l' && r == r'
   (Ne l r) == (Ne l' r') = l == l' && r == r'
@@ -219,134 +241,175 @@ Prelude.Eq Expr where
       key == key' && initialState == initialState'
   _ == _ = False
 
+public export
+data Terms : Nat -> Nat -> Type where
+  Nil : Terms n n
+  (::) : Expr lower -> Terms (S lower) upper -> Terms lower upper
+
 export
-Hashable Expr where
-  hashWithSalt salt (FromLiteral {shape} {dtype} lit) =
-    salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, lit)
-  hashWithSalt salt (Parameter {dtype} position shape name) =
-    salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position, name)
-  hashWithSalt salt (Tuple xs) =
-    let salt = salt `hashWithSalt` "Tuple"
-     in assert_total $ hashWithSalt salt xs
-  hashWithSalt salt (GetTupleElement idx tuple) =
-    salt `hashWithSalt` ("GetTupleElement", idx) `hashWithSalt` tuple
-  hashWithSalt salt (MinValue {dtype}) =
-    salt `hashWithSalt` ("MinValue", typeString {dtype})
-  hashWithSalt salt (MaxValue {dtype}) =
-    salt `hashWithSalt` ("MaxValue", typeString {dtype})
-  hashWithSalt salt (MinFiniteValue {dtype}) =
-    salt `hashWithSalt` ("MinFiniteValue", typeString {dtype})
-  hashWithSalt salt (MaxFiniteValue {dtype}) =
-    salt `hashWithSalt` ("MaxFiniteValue", typeString {dtype})
-  hashWithSalt salt (ConvertElementType {dtype} operand) =
-    salt `hashWithSalt` ("ConvertElementType", typeString {dtype}) `hashWithSalt` operand
-  hashWithSalt salt (Reshape from to x) =
-    salt `hashWithSalt` ("Reshape", from, to) `hashWithSalt` x
-  hashWithSalt salt (Slice starts stops strides x) =
-    salt `hashWithSalt` ("Slice", starts, stops, strides) `hashWithSalt` x
-  hashWithSalt salt (DynamicSlice starts sizes x) =
-    let salt = salt `hashWithSalt` "DynamicSlice"
-        salt = assert_total $ salt `hashWithSalt` starts
-     in salt `hashWithSalt` sizes `hashWithSalt` x
-  hashWithSalt salt (Concat axis x y) =
-    salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
-  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` ("Triangle", lower) `hashWithSalt` x
-  hashWithSalt salt (Transpose ordering x) =
-      salt `hashWithSalt` ("Transpose", ordering) `hashWithSalt` x
-  hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
-  hashWithSalt salt (Broadcast from to x) =
-    salt `hashWithSalt` ("Broadcast", from, to) `hashWithSalt` x
-  hashWithSalt salt (Map (MkFn params f) xs dims) =
-    let salt = salt `hashWithSalt` "Map"
-        salt = assert_total $ salt `hashWithSalt` params
-        salt = salt `hashWithSalt` f
-        salt = assert_total $ salt `hashWithSalt` xs
-     in salt `hashWithSalt` dims
-  hashWithSalt salt (Reduce (MkFn [p0, p1] monoid) neutral axes x) = salt
-    `hashWithSalt` "Reduce"
-    `hashWithSalt` p0
-    `hashWithSalt` p1
-    `hashWithSalt` monoid
-    `hashWithSalt` neutral 
-    `hashWithSalt` axes
-    `hashWithSalt` x
-  hashWithSalt salt (Sort (MkFn [p0, p1] comparator) dimension isStable operands) =
-    let salt = salt
-          `hashWithSalt` "Sort"
-          `hashWithSalt` p0
-          `hashWithSalt` p1
-          `hashWithSalt` (dimension, isStable)
-     in assert_total $ salt `hashWithSalt` operands
-  hashWithSalt salt (Reverse axes operand) =
-    salt `hashWithSalt` ("Reverse", axes) `hashWithSalt` operand
-  hashWithSalt salt (Eq l r) = salt `hashWithSalt` "Eq" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Ne l r) = salt `hashWithSalt` "Ne" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Add l r) = salt `hashWithSalt` "Add" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Sub l r) = salt `hashWithSalt` "Sub" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Mul l r) = salt `hashWithSalt` "Mul" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Div l r) = salt `hashWithSalt` "Div" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Pow l r) = salt `hashWithSalt` "Pow" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Lt l r) = salt `hashWithSalt` "Lt" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Gt l r) = salt `hashWithSalt` "Gt" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Le l r) = salt `hashWithSalt` "Le" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Ge l r) = salt `hashWithSalt` "Ge" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (And l r) = salt `hashWithSalt` "And" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Or l r) = salt `hashWithSalt` "Or" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Min l r) = salt `hashWithSalt` "Min" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Max l r) = salt `hashWithSalt` "Max" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Not expr) = salt `hashWithSalt` "Not" `hashWithSalt` expr
-  hashWithSalt salt (Neg expr) = salt `hashWithSalt` "Neg" `hashWithSalt` expr
-  hashWithSalt salt (Reciprocal expr) = salt `hashWithSalt` "Reciprocal" `hashWithSalt` expr
-  hashWithSalt salt (Abs expr) = salt `hashWithSalt` "Abs" `hashWithSalt` expr
-  hashWithSalt salt (Ceil expr) = salt `hashWithSalt` "Ceil" `hashWithSalt` expr
-  hashWithSalt salt (Floor expr) = salt `hashWithSalt` "Floor" `hashWithSalt` expr
-  hashWithSalt salt (Log expr) = salt `hashWithSalt` "Log" `hashWithSalt` expr
-  hashWithSalt salt (Exp expr) = salt `hashWithSalt` "Exp" `hashWithSalt` expr
-  hashWithSalt salt (Logistic expr) = salt `hashWithSalt` "Logistic" `hashWithSalt` expr
-  hashWithSalt salt (Erf expr) = salt `hashWithSalt` "Erf" `hashWithSalt` expr
-  hashWithSalt salt (Square expr) = salt `hashWithSalt` "Square" `hashWithSalt` expr
-  hashWithSalt salt (Sqrt expr) = salt `hashWithSalt` "Sqrt" `hashWithSalt` expr
-  hashWithSalt salt (Sin expr) = salt `hashWithSalt` "Sin" `hashWithSalt` expr
-  hashWithSalt salt (Cos expr) = salt `hashWithSalt` "Cos" `hashWithSalt` expr
-  hashWithSalt salt (Tan expr) = salt `hashWithSalt` "Tan" `hashWithSalt` expr
-  hashWithSalt salt (Asin expr) = salt `hashWithSalt` "Asin" `hashWithSalt` expr
-  hashWithSalt salt (Acos expr) = salt `hashWithSalt` "Acos" `hashWithSalt` expr
-  hashWithSalt salt (Atan expr) = salt `hashWithSalt` "Atan" `hashWithSalt` expr
-  hashWithSalt salt (Sinh expr) = salt `hashWithSalt` "Sinh" `hashWithSalt` expr
-  hashWithSalt salt (Cosh expr) = salt `hashWithSalt` "Cosh" `hashWithSalt` expr
-  hashWithSalt salt (Tanh expr) = salt `hashWithSalt` "Tanh" `hashWithSalt` expr
-  hashWithSalt salt (Asinh expr) = salt `hashWithSalt` "Asinh" `hashWithSalt` expr
-  hashWithSalt salt (Acosh expr) = salt `hashWithSalt` "Acosh" `hashWithSalt` expr
-  hashWithSalt salt (Atanh expr) = salt `hashWithSalt` "Atanh" `hashWithSalt` expr
-  hashWithSalt salt (Argmin {out} axis expr) =
-    salt `hashWithSalt` ("Argmin", typeString {dtype=out}, axis) `hashWithSalt` expr
-  hashWithSalt salt (Argmax {out} axis expr) =
-    salt `hashWithSalt` ("Argmax", typeString {dtype=out}, axis) `hashWithSalt` expr
-  hashWithSalt salt (Select pred f t) =
-    salt `hashWithSalt` "Select" `hashWithSalt` pred `hashWithSalt` f `hashWithSalt` t
-  hashWithSalt salt (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) = salt
-    `hashWithSalt` "Cond"
-    `hashWithSalt` pred
-    `hashWithSalt` pt
-    `hashWithSalt` fTrue
-    `hashWithSalt` true
-    `hashWithSalt` pf
-    `hashWithSalt` fFalse
-    `hashWithSalt` false
-  hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
-  hashWithSalt salt (TriangularSolve x y lower) =
-    salt `hashWithSalt` "TriangularSolve" `hashWithSalt` x `hashWithSalt` y `hashWithSalt` lower
-  hashWithSalt salt (UniformFloatingPoint key initialState minval maxval shape) = salt
-      `hashWithSalt` "UniformFloatingPoint"
-      `hashWithSalt` key
-      `hashWithSalt` initialState
-      `hashWithSalt` minval
-      `hashWithSalt` maxval
-      `hashWithSalt` shape
-  hashWithSalt salt (NormalFloatingPoint key initialState shape) = salt
-      `hashWithSalt` "NormalFloatingPoint"
-      `hashWithSalt` key
-      `hashWithSalt` initialState
-      `hashWithSalt` shape
+Show (Terms m n) where
+  show Nil = "Nil"
+  show (x :: xs) = "\{show x} :: \{show xs}"
+
+export
+index : (i : Fin upper) -> Terms 0 upper -> Expr (finToNat i)
+index i xs = impl 0 i xs where
+  impl : (lower : Nat) -> (i : Fin rem) -> Terms lower (lower + rem) -> Expr (lower + finToNat i)
+  impl 0 FZ (x :: _) = x 
+  impl 0 (FS i) (_ :: xs) = impl 1 i xs
+  impl (S lower) FZ (x :: _) = rewrite plusZeroRightNeutral lower in x 
+  impl (S lower) (FS {k} i) (_ :: xs) =
+    rewrite sym $ plusSuccRightSucc lower (finToNat i) in
+            impl (S (S lower)) i (rewrite plusSuccRightSucc lower k in xs)
+
+export
+snoc : Expr n -> Terms 0 n -> Terms 0 (S n)
+snoc x xs = impl x xs where
+  impl : Expr hi -> Terms lo hi -> Terms lo (S hi)
+  impl x [] = [x] 
+  impl x (y :: ys) = y :: impl x ys
+
+reindex : (n : Nat) -> Terms lo hi -> Terms (lo + n) (hi + n)
+reindex n [] = []
+reindex n (x :: xs) = rewrite plusCommutative lo n in impl x :: rewrite sym $ plusCommutative lo n in reindex n xs where
+  impl : Expr m -> Expr (n + m)
+  impl (FromLiteral {dtype} x) = FromLiteral {dtype} x
+  impl (Parameter spec k) = Parameter spec k
+  impl (Tuple ys) = Tuple [shift n y | y <- ys]
+  impl (GetTupleElement k x) = GetTupleElement k (shift n x) 
+  impl (MinValue {dtype}) = MinValue {dtype} 
+  impl (MaxValue {dtype}) = MaxValue {dtype}
+  impl (MinFiniteValue {dtype}) = MinFiniteValue {dtype}
+  impl (MaxFiniteValue {dtype}) = MaxFiniteValue {dtype}
+  impl (ConvertElementType {dtype} x) = ConvertElementType {dtype} (shift n x)
+  impl (Reshape ks js x) = Reshape ks js (shift n x)
+  impl (Slice ks js is x) = Slice ks js is (shift n x)
+  impl (DynamicSlice ys ks x) = DynamicSlice [shift n y | y <- ys] ks (shift n x)
+  impl (Concat k x y) = Concat k (shift n x) (shift n y)
+  impl (Diag x) = Diag (shift n x)
+  impl (Triangle lower x) = Triangle lower (shift n x)
+  impl (Transpose ks x) = Transpose ks (shift n x)
+  impl (Identity {dtype} k) = Identity {dtype} k
+  impl (Broadcast {dtype} ks js x) = Broadcast {dtype} ks js (shift n x)
+  impl (Reduce x y ks z) = ?reduce
+  impl (Sort x k y ys) = ?sort
+  impl (Reverse ks x) = Reverse ks (shift n x)
+  impl (Eq x y) = Eq (shift n x) (shift n y)
+  impl (Ne x y) = Ne (shift n x) (shift n y)
+  impl (Add x y) = Add (shift n x) (shift n y)
+  impl (Sub x y) = Sub (shift n x) (shift n y)
+  impl (Mul x y) = Mul (shift n x) (shift n y)
+  impl (Div x y) = Div (shift n x) (shift n y)
+  impl (Pow x y) = Pow (shift n x) (shift n y)
+  impl (Lt x y) = Lt (shift n x) (shift n y)
+  impl (Gt x y) = Gt (shift n x) (shift n y)
+  impl (Le x y) = Le (shift n x) (shift n y)
+  impl (Ge x y) = Ge (shift n x) (shift n y)
+  impl (And x y) = And (shift n x) (shift n y)
+  impl (Or x y) = Or (shift n x) (shift n y)
+  impl (Min x y) = Min (shift n x) (shift n y)
+  impl (Max x y) = Max (shift n x) (shift n y)
+  impl (Not x) = Not (shift n x)
+  impl (Neg x) = Neg (shift n x)
+  impl (Reciprocal x) = Reciprocal (shift n x)
+  impl (Abs x) = Abs (shift n x)
+  impl (Ceil x) = Ceil (shift n x)
+  impl (Floor x) = Floor (shift n x)
+  impl (Log x) = Log (shift n x)
+  impl (Exp x) = Exp (shift n x)
+  impl (Logistic x) = Logistic (shift n x)
+  impl (Erf x) = Erf (shift n x)
+  impl (Square x) = Square (shift n x)
+  impl (Sqrt x) = Sqrt (shift n x)
+  impl (Sin x) = Sin (shift n x)
+  impl (Cos x) = Cos (shift n x)
+  impl (Tan x) = Tan (shift n x)
+  impl (Asin x) = Asin (shift n x)
+  impl (Acos x) = Acos (shift n x)
+  impl (Atan x) = Atan (shift n x)
+  impl (Sinh x) = Sinh (shift n x)
+  impl (Cosh x) = Cosh (shift n x)
+  impl (Tanh x) = Tanh (shift n x)
+  impl (Asinh x) = Asinh (shift n x)
+  impl (Acosh x) = Acosh (shift n x)
+  impl (Atanh x) = Atanh (shift n x)
+  impl (Argmin {out} k x) = Argmin {out} k (shift n x)
+  impl (Argmax {out} k x) = Argmax {out} k (shift n x)
+  impl (Select x y z) = Select (shift n x) (shift n y) (shift n z)
+  impl (Cond x y z w v) = ?cond
+  impl (Dot x y) = Dot (shift n x) (shift n y)
+  impl (Cholesky x) = Cholesky (shift n x)
+  impl (TriangularSolve x y z) = TriangularSolve (shift n x) (shift n y) z
+  impl (UniformFloatingPoint x y z w ks) =
+    UniformFloatingPoint (shift n x) (shift n y) (shift n z) (shift n w) ks
+  impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (shift n x) (shift n y) ks
+
+plusCommutativeLeftParen : (a, b, c : Nat) -> (a + b) + c = (a + c) + b
+plusCommutativeLeftParen a b c =
+  rewrite sym $ plusAssociative a b c in
+    rewrite plusCommutative b c in
+      rewrite sym $ plusAssociative a c b
+        in Refl
+
+succNested : (a, b, c : Nat) -> S ((a + b) + c) = (a + S b) + c
+succNested a b c =
+  rewrite plusCommutative (a + b) c in
+    rewrite plusSuccRightSucc c (a + b) in
+      rewrite plusSuccRightSucc a b in
+        rewrite plusCommutative c (a + S b) in
+          Refl
+
+||| Merge the two lists of terms. The resulting terms start with all terms in the LHS, as they appear in the LHS, then
+||| continue with all terms in the RHS, starting at the first term in the RHS that conflicts with the LHS, and
+||| continuing until the end of the RHS. Terms x and y conflict if x == y does not hold. For example, in pseudo-syntax:
+|||
+||| Equal lists
+||| merge [a, b, c] [a, b, c] is [a, b, c]
+|||
+||| One list is a sublist of the other
+||| merge [a, b, c] [a, b] is [a, b, c]
+||| merge [a, b] [a, b, c] is [a, b, c]
+|||
+||| There is a conflict
+||| merge [a, b, c, d] [a, b, e] is [a, b, c, d, e]
+||| merge [a, b, c] [a, b, d, e] is [a, b, c, d, e]
+|||
+||| The number returned in the dependent pair is how many terms from the RHS have been rebased onto the end of the LHS.
+export
+merge : {n, m : _} -> Terms 0 n -> Terms 0 m -> ((s ** (Terms 0 (n + s), LTE m (n + s))), Maybe (Fin (S n)))
+merge xs ys = impl xs ys where
+
+  extend : Terms lo p -> Terms p hi -> Terms lo hi
+  extend xs [] = xs
+  extend [] ys = ys
+  extend (x :: xs) ys = x :: extend xs ys
+
+  prf : (a, b, c : Nat) -> LTE (a + b) (a + c + b)
+  prf a b c = rewrite Calc $
+    |~ (a + c + b)
+    ~~ (a + (c + b)) ... sym (plusAssociative a c b)
+    ~~ (a + (b + c)) ... cong (a +) (plusCommutative c b)
+    ~~ ((a + b) + c) ... plusAssociative a b c
+    in lteAddRight (a + b)
+
+  -- `s` is NOT how much we've shifted some of the ys, but how much longer the output is than the xs.
+  -- If, for example, ys is longer than xs and contains all the terms in xs, s will be the difference in the
+  -- lengths of ys and xs, but no Exprs have been shifted.
+  impl : {lo, nx, ny : Nat} -> Terms lo (lo + nx) -> Terms lo (lo + ny) -> ((s ** (Terms lo (lo + nx + s), LTE (lo + ny) (lo + nx + s))), Maybe (Fin (S (lo + nx))))
+  impl {ny = 0} xs _ =
+    let lte = rewrite plusZeroRightNeutral lo in rewrite plusZeroRightNeutral (lo + nx) in lteAddRight lo
+        terms = rewrite plusZeroRightNeutral (lo + nx) in xs
+        conflict = Nothing
+     in ((0 ** (terms, lte)), conflict)
+  impl {nx = 0} _ ys = ((ny ** (rewrite plusZeroRightNeutral lo in ys, rewrite plusZeroRightNeutral lo in reflexive)), Nothing)
+  impl {nx = S nx} {ny = S ny} (x :: xs) (y :: ys) =
+    if x == y
+    then let ys : Terms (S lo) (lo + S ny) = ys
+             ((s ** (terms, lte)), conflict) =
+               impl {lo = S lo} {nx, ny} (rewrite plusSuccRightSucc lo nx in xs) (rewrite plusSuccRightSucc lo ny in ys)
+             lte = rewrite sym $ succNested lo nx s in rewrite sym $ plusSuccRightSucc lo ny in lte
+          in ((s ** (rewrite sym $ succNested lo nx s in x :: terms, lte)), rewrite sym $ plusSuccRightSucc lo nx in conflict)
+    else let ys = reindex (S nx) (y :: ys)
+             terms : Terms lo (lo + S nx + S ny) = rewrite sym $ plusCommutativeLeftParen lo (S ny) (S nx) in extend (x :: xs) ys
+             conflict = rewrite sym $ plusSuccRightSucc lo nx in rewrite plusCommutative lo nx in weakenN lo $ last {n = S nx}
+          in ((S ny ** (terms, prf lo (S ny) (S nx))), Just conflict)

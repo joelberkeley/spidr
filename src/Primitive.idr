@@ -21,11 +21,8 @@ limitations under the License.
 ||| For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
 module Primitive
 
-import Data.Hashable
-
 import Compiler.LiteralRW
 import public Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import public Util.Hashable
 
 %hide Prelude.Num
 %hide Prelude.Neg
@@ -64,19 +61,18 @@ export Integral S64 where
 export Fractional F32 where
 export Fractional F64 where
 
-%hide Prelude.Eq
 %hide Prelude.Ord
 
-export interface Primitive dtype => Eq dtype where
-export interface Eq dtype => Ord dtype where
+export interface Primitive dtype => Primitive.Eq dtype where
+export interface Primitive.Eq dtype => Ord dtype where
 
-export Eq PRED where
-export Eq U32 where
-export Eq U64 where
-export Eq S32 where
-export Eq S64 where
-export Eq F32 where
-export Eq F64 where
+export Primitive.Eq PRED where
+export Primitive.Eq U32 where
+export Primitive.Eq U64 where
+export Primitive.Eq S32 where
+export Primitive.Eq S64 where
+export Primitive.Eq F32 where
+export Primitive.Eq F64 where
 
 export Ord U32 where
 export Ord U64 where
@@ -88,7 +84,7 @@ export Ord F64 where
 ||| A `PrimitiveRW dtype idr` means that values of type `idr` can be used to construct backend
 ||| data with data type `dtype`.
 export
-interface Hashable idr => LiteralRW dtype idr => PrimitiveRW dtype idr | dtype where
+interface LiteralRW dtype idr => Prelude.Eq idr => PrimitiveRW dtype idr | dtype where
 
 export PrimitiveRW PRED Bool where
 export PrimitiveRW S32 Int32 where
