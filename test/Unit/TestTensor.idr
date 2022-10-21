@@ -886,8 +886,8 @@ testElementwiseBinaryCases = [
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
     ("min S32", S32.testElementwiseBinary min min),
     ("max S32", S32.testElementwiseBinary max max),
-    -- ("min F64", F64.testElementwiseBinary min' min),
-    -- ("max F64", F64.testElementwiseBinary max' max),
+    ("min F64", F64.testElementwiseBinary min' min),
+    ("max F64", F64.testElementwiseBinary max' max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
