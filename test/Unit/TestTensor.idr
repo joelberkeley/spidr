@@ -311,13 +311,51 @@ concat : Property
 concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
---  let l = fromLiteral {shape=[0]} []
---      r = fromLiteral [3, 4, 5]
---  concat 0 l r ===# vector
+  let l = fromLiteral {shape=[0]} []
+      r = fromLiteral [3, 4, 5]
+  concat 0 l r ===# vector
 
   let l = fromLiteral [3]
       r = fromLiteral [4, 5]
   concat 0 l r ===# vector
+
+  let l = fromLiteral [3, 4]
+      r = fromLiteral [5]
+  concat 0 l r ===# vector
+
+  let l = fromLiteral [3, 4, 5]
+      r = fromLiteral {shape=[0]} []
+  concat 0 l r ===# vector
+
+  let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+
+  let l = fromLiteral {shape=[0, 3]} []
+      r = fromLiteral [[3, 4, 5], [6, 7, 8]]
+  concat 0 l r ===# arr
+
+  let l = fromLiteral [[3, 4, 5]]
+      r = fromLiteral [[6, 7, 8]]
+  concat 0 l r ===# arr
+
+  let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
+      r = fromLiteral {shape=[0, 3]} []
+  concat 0 l r ===# arr
+
+  let l = fromLiteral {shape=[2, 0]} [[], []]
+      r = fromLiteral [[3, 4, 5], [6, 7, 8]]
+  concat 1 l r ===# arr
+
+  let l = fromLiteral [[3], [6]]
+      r = fromLiteral [[4, 5], [7, 8]]
+  concat 1 l r ===# arr
+
+  let l = fromLiteral [[3, 4], [6, 7]]
+      r = fromLiteral [[5], [8]]
+  concat 1 l r ===# arr
+
+  let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
+      r = fromLiteral {shape=[2, 0]} [[], []]
+  concat 1 l r ===# arr
 
 diag : Property
 diag = fixedProperty $ do
