@@ -211,6 +211,7 @@ toString terms = unsafePerformIO $ do
 export
 run : PrimitiveRW dtype a => {n : _} -> Terms 0 (S n) -> {shape : _} -> Literal shape a
 run terms = unsafePerformIO $ do
+  printLn terms
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   builder <- mkXlaBuilder ""

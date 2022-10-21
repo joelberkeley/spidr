@@ -817,21 +817,17 @@ select :
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
   Tensor shape dtype
-select (MkTensor {n = nPred} refPred termsPred) (MkTensor {n = nTrue} refTrue termsTrue) (MkTensor refFalse termsFalse) =
+select (MkTensor {n} refPred termsPred) (MkTensor refTrue termsTrue) (MkTensor refFalse termsFalse) =
   let ((s ** (termsPredTrue, lte)), conflict) = merge termsPred termsTrue
-      refPred : Fin (S nPred + s) = weakenN s refPred
-      refTrue : Fin (S nPred + s) = case conflict of
-        Nothing => weakenLTE refTrue lte
-        Just idx => if refTrue < idx then weakenLTE refTrue lte else refTrue + (nPred `minus` )
+      refPred : Fin (S n + s) = weakenN s refPred
+      refTrue : Fin (S n + s) = if conflict then last else weakenLTE refTrue lte
       ((s' ** (terms, lte)), conflict) = merge termsPredTrue termsFalse
-      refPred : Fin (S nPred + s + s') = weakenN s' refPred
-      refTrue : Fin (S nPred + s + s') = weakenN s' refTrue
-      refFalse : Fin (S nPred + s + s') = case conflict of
-        Nothing => weakenLTE refFalse lte
-        Just idx => ?j'
+      refPred : Fin (S n + s + s') = weakenN s' refPred
+      refTrue : Fin (S n + s + s') = weakenN s' refTrue
+      refFalse : Fin (S n + s + s') = if conflict then last else weakenLTE refFalse lte
    in MkTensor last $ Select refPred refTrue refFalse `snoc` terms
 
-||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
+||| Use a scalar predicate to choose which of two functions to evaluate. If the predicate is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
 ||| corresponding specified argument. The result of the evaluated function is returned. For example,
 ||| for

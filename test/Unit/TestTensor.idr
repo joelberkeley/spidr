@@ -875,7 +875,8 @@ namespace PRED
 
 covering
 testElementwiseBinaryCases : List (PropertyName, Property)
-testElementwiseBinaryCases = [
+testElementwiseBinaryCases = [("min S32", S32.testElementwiseBinary min min)]
+{-
     ("(+) F64", F64.testElementwiseBinary (+) (+)),
     ("(+) S32", S32.testElementwiseBinary (+) (+)),
     ("(-) F64", F64.testElementwiseBinary (-) (-)),
@@ -884,13 +885,14 @@ testElementwiseBinaryCases = [
     ("(*) S32", S32.testElementwiseBinary (*) (*)),
     ("(/)", F64.testElementwiseBinary (/) (/)),
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
-    ("min S32", S32.testElementwiseBinary min min),
+    ("min S32", S32.testElementwiseBinary min min)
     ("max S32", S32.testElementwiseBinary max max),
     ("min F64", F64.testElementwiseBinary min' min),
     ("max F64", F64.testElementwiseBinary max' max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
+-}
 
   where
   min' : Double -> Double -> Double
@@ -1347,6 +1349,7 @@ normalIsReproducible = withTests 20 . property $ do
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
+{-
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
@@ -1376,25 +1379,27 @@ group = MkGroup "Tensor" $ [
     , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
+    -}
   ]
-  ++ testElementwiseComparatorCases
-  ++ testElementwiseUnaryCases
+  -- ++ testElementwiseComparatorCases
+  -- ++ testElementwiseUnaryCases
   ++ testElementwiseBinaryCases
   ++ [
-      ("Scalarwise.(*)", scalarMultiplication)
-    , ("Scalarwise.(/)", scalarDivision)
-    , ("Sum", neutralIsNeutralForSum)
-    , ("Prod", neutralIsNeutralForProd)
+
+  --    ("Scalarwise.(*)", scalarMultiplication)
+  --  , ("Scalarwise.(/)", scalarDivision)
+  --  , ("Sum", neutralIsNeutralForSum)
+  --  , ("Prod", neutralIsNeutralForProd)
   --   , ("argmin", argmin)
   --   , ("argmax", argmax)
   --   , ("Min", neutralIsNeutralForMin)
   --   , ("Max", neutralIsNeutralForMax)
-    , ("Any", neutralIsNeutralForAny)
-    , ("All", neutralIsNeutralForAll)
-    , ("select", select)
+  --  , ("Any", neutralIsNeutralForAny)
+  --  , ("All", neutralIsNeutralForAll)
+    ("select", select)
   --   , ("cond for trivial usage", condResultTrivialUsage)
   --   , ("cond for re-used arguments", condResultWithReusedArgs)
-    , ("erf", erf)
+  --  , ("erf", erf)
   --   , ("cholesky", cholesky)
   --   , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
   --   , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)

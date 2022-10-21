@@ -117,7 +117,10 @@ export
 Show (Expr n) where
   show (FromLiteral {shape} _) = "FromLiteral \{show shape}"
   show (Concat _ x y) = "Concat \{show x} \{show y}"
-  show _ = "Other"
+  show (Min x y) = "Min \{show x} \{show y}"
+  show (Select p t f) = "Select \{show p} \{show t} \{show f}"
+  show (Eq x y) = "Eq \{show x} \{show y}"
+  show _ = "other"
 
 export
 Prelude.Eq (Expr n) where
@@ -269,80 +272,83 @@ snoc x xs = impl x xs where
   impl x [] = [x] 
   impl x (y :: ys) = y :: impl x ys
 
-reindex : (n : Nat) -> Terms lo hi -> Terms (lo + n) (hi + n)
-reindex n [] = []
-reindex n (x :: xs) = rewrite plusCommutative lo n in impl x :: rewrite sym $ plusCommutative lo n in reindex n xs where
-  impl : Expr m -> Expr (n + m)
+shift' : (n : Nat) -> Nat -> Fin m -> Fin (n + m)
+shift' n bound x = if cast x > bound then shift n x else rewrite sym $ plusCommutative m n in weakenN n x
+
+reindex : (n : Nat) -> Nat -> Terms lo hi -> Terms (lo + n) (hi + n)
+reindex n bound [] = []
+reindex n bound (x :: xs) = rewrite plusCommutative lo n in impl x :: rewrite sym $ plusCommutative lo n in reindex n bound xs where
+  impl : Expr p -> Expr (n + p)
   impl (FromLiteral {dtype} x) = FromLiteral {dtype} x
   impl (Parameter spec k) = Parameter spec k
-  impl (Tuple ys) = Tuple [shift n y | y <- ys]
-  impl (GetTupleElement k x) = GetTupleElement k (shift n x) 
+  impl (Tuple ys) = Tuple [shift' n bound y | y <- ys]
+  impl (GetTupleElement k x) = GetTupleElement k (shift' n bound x)
   impl (MinValue {dtype}) = MinValue {dtype} 
   impl (MaxValue {dtype}) = MaxValue {dtype}
   impl (MinFiniteValue {dtype}) = MinFiniteValue {dtype}
   impl (MaxFiniteValue {dtype}) = MaxFiniteValue {dtype}
-  impl (ConvertElementType {dtype} x) = ConvertElementType {dtype} (shift n x)
-  impl (Reshape ks js x) = Reshape ks js (shift n x)
-  impl (Slice ks js is x) = Slice ks js is (shift n x)
-  impl (DynamicSlice ys ks x) = DynamicSlice [shift n y | y <- ys] ks (shift n x)
-  impl (Concat k x y) = Concat k (shift n x) (shift n y)
-  impl (Diag x) = Diag (shift n x)
-  impl (Triangle lower x) = Triangle lower (shift n x)
-  impl (Transpose ks x) = Transpose ks (shift n x)
+  impl (ConvertElementType {dtype} x) = ConvertElementType {dtype} (shift' n bound x)
+  impl (Reshape ks js x) = Reshape ks js (shift' n bound x)
+  impl (Slice ks js is x) = Slice ks js is (shift' n bound x)
+  impl (DynamicSlice ys ks x) = DynamicSlice [shift' n bound y | y <- ys] ks (shift' n bound x)
+  impl (Concat k x y) = Concat k (shift' n bound x) (shift' n bound y)
+  impl (Diag x) = Diag (shift' n bound x)
+  impl (Triangle lower x) = Triangle lower (shift' n bound x)
+  impl (Transpose ks x) = Transpose ks (shift' n bound x)
   impl (Identity {dtype} k) = Identity {dtype} k
-  impl (Broadcast {dtype} ks js x) = Broadcast {dtype} ks js (shift n x)
+  impl (Broadcast {dtype} ks js x) = Broadcast {dtype} ks js (shift' n bound x)
   impl (Reduce x y ks z) = ?reduce
   impl (Sort x k y ys) = ?sort
-  impl (Reverse ks x) = Reverse ks (shift n x)
-  impl (Eq x y) = Eq (shift n x) (shift n y)
-  impl (Ne x y) = Ne (shift n x) (shift n y)
-  impl (Add x y) = Add (shift n x) (shift n y)
-  impl (Sub x y) = Sub (shift n x) (shift n y)
-  impl (Mul x y) = Mul (shift n x) (shift n y)
-  impl (Div x y) = Div (shift n x) (shift n y)
-  impl (Pow x y) = Pow (shift n x) (shift n y)
-  impl (Lt x y) = Lt (shift n x) (shift n y)
-  impl (Gt x y) = Gt (shift n x) (shift n y)
-  impl (Le x y) = Le (shift n x) (shift n y)
-  impl (Ge x y) = Ge (shift n x) (shift n y)
-  impl (And x y) = And (shift n x) (shift n y)
-  impl (Or x y) = Or (shift n x) (shift n y)
-  impl (Min x y) = Min (shift n x) (shift n y)
-  impl (Max x y) = Max (shift n x) (shift n y)
-  impl (Not x) = Not (shift n x)
-  impl (Neg x) = Neg (shift n x)
-  impl (Reciprocal x) = Reciprocal (shift n x)
-  impl (Abs x) = Abs (shift n x)
-  impl (Ceil x) = Ceil (shift n x)
-  impl (Floor x) = Floor (shift n x)
-  impl (Log x) = Log (shift n x)
-  impl (Exp x) = Exp (shift n x)
-  impl (Logistic x) = Logistic (shift n x)
-  impl (Erf x) = Erf (shift n x)
-  impl (Square x) = Square (shift n x)
-  impl (Sqrt x) = Sqrt (shift n x)
-  impl (Sin x) = Sin (shift n x)
-  impl (Cos x) = Cos (shift n x)
-  impl (Tan x) = Tan (shift n x)
-  impl (Asin x) = Asin (shift n x)
-  impl (Acos x) = Acos (shift n x)
-  impl (Atan x) = Atan (shift n x)
-  impl (Sinh x) = Sinh (shift n x)
-  impl (Cosh x) = Cosh (shift n x)
-  impl (Tanh x) = Tanh (shift n x)
-  impl (Asinh x) = Asinh (shift n x)
-  impl (Acosh x) = Acosh (shift n x)
-  impl (Atanh x) = Atanh (shift n x)
-  impl (Argmin {out} k x) = Argmin {out} k (shift n x)
-  impl (Argmax {out} k x) = Argmax {out} k (shift n x)
-  impl (Select x y z) = Select (shift n x) (shift n y) (shift n z)
+  impl (Reverse ks x) = Reverse ks (shift' n bound x)
+  impl (Eq x y) = Eq (shift' n bound x) (shift' n bound y)
+  impl (Ne x y) = Ne (shift' n bound x) (shift' n bound y)
+  impl (Add x y) = Add (shift' n bound x) (shift' n bound y)
+  impl (Sub x y) = Sub (shift' n bound x) (shift' n bound y)
+  impl (Mul x y) = Mul (shift' n bound x) (shift' n bound y)
+  impl (Div x y) = Div (shift' n bound x) (shift' n bound y)
+  impl (Pow x y) = Pow (shift' n bound x) (shift' n bound y)
+  impl (Lt x y) = Lt (shift' n bound x) (shift' n bound y)
+  impl (Gt x y) = Gt (shift' n bound x) (shift' n bound y)
+  impl (Le x y) = Le (shift' n bound x) (shift' n bound y)
+  impl (Ge x y) = Ge (shift' n bound x) (shift' n bound y)
+  impl (And x y) = And (shift' n bound x) (shift' n bound y)
+  impl (Or x y) = Or (shift' n bound x) (shift' n bound y)
+  impl (Min x y) = Min (shift' n bound x) (shift' n bound y)
+  impl (Max x y) = Max (shift' n bound x) (shift' n bound y)
+  impl (Not x) = Not (shift' n bound x)
+  impl (Neg x) = Neg (shift' n bound x)
+  impl (Reciprocal x) = Reciprocal (shift' n bound x)
+  impl (Abs x) = Abs (shift' n bound x)
+  impl (Ceil x) = Ceil (shift' n bound x)
+  impl (Floor x) = Floor (shift' n bound x)
+  impl (Log x) = Log (shift' n bound x)
+  impl (Exp x) = Exp (shift' n bound x)
+  impl (Logistic x) = Logistic (shift' n bound x)
+  impl (Erf x) = Erf (shift' n bound x)
+  impl (Square x) = Square (shift' n bound x)
+  impl (Sqrt x) = Sqrt (shift' n bound x)
+  impl (Sin x) = Sin (shift' n bound x)
+  impl (Cos x) = Cos (shift' n bound x)
+  impl (Tan x) = Tan (shift' n bound x)
+  impl (Asin x) = Asin (shift' n bound x)
+  impl (Acos x) = Acos (shift' n bound x)
+  impl (Atan x) = Atan (shift' n bound x)
+  impl (Sinh x) = Sinh (shift' n bound x)
+  impl (Cosh x) = Cosh (shift' n bound x)
+  impl (Tanh x) = Tanh (shift' n bound x)
+  impl (Asinh x) = Asinh (shift' n bound x)
+  impl (Acosh x) = Acosh (shift' n bound x)
+  impl (Atanh x) = Atanh (shift' n bound x)
+  impl (Argmin {out} k x) = Argmin {out} k (shift' n bound x)
+  impl (Argmax {out} k x) = Argmax {out} k (shift' n bound x)
+  impl (Select x y z) = Select (shift' n bound x) (shift' n bound y) (shift' n bound z)
   impl (Cond x y z w v) = ?cond
-  impl (Dot x y) = Dot (shift n x) (shift n y)
-  impl (Cholesky x) = Cholesky (shift n x)
-  impl (TriangularSolve x y z) = TriangularSolve (shift n x) (shift n y) z
+  impl (Dot x y) = Dot (shift' n bound x) (shift' n bound y)
+  impl (Cholesky x) = Cholesky (shift' n bound x)
+  impl (TriangularSolve x y z) = TriangularSolve (shift' n bound x) (shift' n bound y) z
   impl (UniformFloatingPoint x y z w ks) =
-    UniformFloatingPoint (shift n x) (shift n y) (shift n z) (shift n w) ks
-  impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (shift n x) (shift n y) ks
+    UniformFloatingPoint (shift' n bound x) (shift' n bound y) (shift' n bound z) (shift' n bound w) ks
+  impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (shift' n bound x) (shift' n bound y) ks
 
 plusCommutativeLeftParen : (a, b, c : Nat) -> (a + b) + c = (a + c) + b
 plusCommutativeLeftParen a b c =
@@ -358,6 +364,14 @@ succNested a b c =
       rewrite plusSuccRightSucc a b in
         rewrite plusCommutative c (a + S b) in
           Refl
+
+ltePlusMiddle : (a, b, c : Nat) -> LTE (a + b) (a + c + b)
+ltePlusMiddle a b c = rewrite Calc $
+  |~ (a + c + b)
+  ~~ (a + (c + b)) ... sym (plusAssociative a c b)
+  ~~ (a + (b + c)) ... cong (a +) (plusCommutative c b)
+  ~~ ((a + b) + c) ... plusAssociative a b c
+  in lteAddRight (a + b)
 
 ||| Merge the two lists of terms. The resulting terms start with all terms in the LHS, as they appear in the LHS, then
 ||| continue with all terms in the RHS, starting at the first term in the RHS that conflicts with the LHS, and
@@ -376,7 +390,7 @@ succNested a b c =
 |||
 ||| The number returned in the dependent pair is how many terms from the RHS have been rebased onto the end of the LHS.
 export
-merge : {n, m : _} -> Terms 0 n -> Terms 0 m -> ((s ** (Terms 0 (n + s), LTE m (n + s))), Maybe (Fin (S n)))
+merge : {n, m : _} -> Terms 0 n -> Terms 0 m -> ((s ** (Terms 0 (n + s), LTE m (n + s))), Bool)
 merge xs ys = impl xs ys where
 
   extend : Terms lo p -> Terms p hi -> Terms lo hi
@@ -384,32 +398,22 @@ merge xs ys = impl xs ys where
   extend [] ys = ys
   extend (x :: xs) ys = x :: extend xs ys
 
-  prf : (a, b, c : Nat) -> LTE (a + b) (a + c + b)
-  prf a b c = rewrite Calc $
-    |~ (a + c + b)
-    ~~ (a + (c + b)) ... sym (plusAssociative a c b)
-    ~~ (a + (b + c)) ... cong (a +) (plusCommutative c b)
-    ~~ ((a + b) + c) ... plusAssociative a b c
-    in lteAddRight (a + b)
-
   -- `s` is NOT how much we've shifted some of the ys, but how much longer the output is than the xs.
   -- If, for example, ys is longer than xs and contains all the terms in xs, s will be the difference in the
   -- lengths of ys and xs, but no Exprs have been shifted.
-  impl : {lo, nx, ny : Nat} -> Terms lo (lo + nx) -> Terms lo (lo + ny) -> ((s ** (Terms lo (lo + nx + s), LTE (lo + ny) (lo + nx + s))), Maybe (Fin (S (lo + nx))))
+  impl : {lo, nx, ny : Nat} -> Terms lo (lo + nx) -> Terms lo (lo + ny) -> ((s ** (Terms lo (lo + nx + s), LTE (lo + ny) (lo + nx + s))), Bool)
   impl {ny = 0} xs _ =
     let lte = rewrite plusZeroRightNeutral lo in rewrite plusZeroRightNeutral (lo + nx) in lteAddRight lo
         terms = rewrite plusZeroRightNeutral (lo + nx) in xs
-        conflict = Nothing
-     in ((0 ** (terms, lte)), conflict)
-  impl {nx = 0} _ ys = ((ny ** (rewrite plusZeroRightNeutral lo in ys, rewrite plusZeroRightNeutral lo in reflexive)), Nothing)
+     in ((0 ** (terms, lte)), False)
+  impl {nx = 0} _ ys = ((ny ** (rewrite plusZeroRightNeutral lo in ys, rewrite plusZeroRightNeutral lo in reflexive)), False)
   impl {nx = S nx} {ny = S ny} (x :: xs) (y :: ys) =
     if x == y
     then let ys : Terms (S lo) (lo + S ny) = ys
              ((s ** (terms, lte)), conflict) =
                impl {lo = S lo} {nx, ny} (rewrite plusSuccRightSucc lo nx in xs) (rewrite plusSuccRightSucc lo ny in ys)
              lte = rewrite sym $ succNested lo nx s in rewrite sym $ plusSuccRightSucc lo ny in lte
-          in ((s ** (rewrite sym $ succNested lo nx s in x :: terms, lte)), rewrite sym $ plusSuccRightSucc lo nx in conflict)
-    else let ys = reindex (S nx) (y :: ys)
+          in ((s ** (rewrite sym $ succNested lo nx s in x :: terms, lte)), conflict)
+    else let ys = reindex (S nx) lo (y :: ys)  -- do we always reindex? what if an index points to a value that's not conflicted?
              terms : Terms lo (lo + S nx + S ny) = rewrite sym $ plusCommutativeLeftParen lo (S ny) (S nx) in extend (x :: xs) ys
-             conflict = rewrite sym $ plusSuccRightSucc lo nx in rewrite plusCommutative lo nx in weakenN lo $ last {n = S nx}
-          in ((S ny ** (terms, prf lo (S ny) (S nx))), Just conflict)
+          in ((S ny ** (terms, ltePlusMiddle lo (S ny) (S nx))), True)
