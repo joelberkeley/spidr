@@ -21,7 +21,7 @@ import Data.List.Elem
 import Data.SortedMap
 import Decidable.Equality
 
-import Compiler.Expr
+import Compiler.Graph
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
@@ -53,7 +53,7 @@ addParam builder position (MkFullShape shape {dtype}) = do
   xlaShape <- mkShape shape {dtype}
   parameter builder position xlaShape ""
 
-enqueue : XlaBuilder -> Vect n XlaOp -> Expr n -> IO XlaOp
+enqueue : XlaBuilder -> Vect n XlaOp -> Node n -> IO XlaOp
 enqueue builder _ (FromLiteral {dtype} lit) = do
   literal <- write {dtype} lit
   constantLiteral builder literal
@@ -174,9 +174,9 @@ enqueue builder ops (NormalFloatingPoint key initialState shape) = do
   tuple builder [value rngOutput, state rngOutput]
 
 -- I think we should be able to erase n
-eval : {n : _} -> XlaBuilder -> Terms 0 n -> IO (Vect n XlaOp)
+eval : {n : _} -> XlaBuilder -> Graph 0 n -> IO (Vect n XlaOp)
 eval builder terms = impl terms [] where
-  impl : {rem : _} -> Terms done (done + rem) -> Vect done XlaOp -> IO (Vect (done + rem) XlaOp)
+  impl : {rem : _} -> Graph done (done + rem) -> Vect done XlaOp -> IO (Vect (done + rem) XlaOp)
   impl {rem = 0} _ ops = rewrite plusZeroRightNeutral done in pure (reverse ops)
   impl {rem = S rem} (t :: ts) ops = do
     op <- enqueue builder ops t
@@ -202,16 +202,15 @@ eval builder terms = impl terms [] where
 --       return impl [] [ConstantLiteral [3], ConstantLiteral [4, 5], ConcatInDim [3] [4, 5]]
 
 export
-toString : {n : _} -> Terms 0 (S n) -> String
+toString : {n : _} -> Graph 0 (S n) -> String
 toString terms = unsafePerformIO $ do
   builder <- mkXlaBuilder "toString"
   (op :: _) <- eval builder terms
   pure $ opToString builder op
 
 export
-run : PrimitiveRW dtype a => {n : _} -> Terms 0 (S n) -> {shape : _} -> Literal shape a
+run : PrimitiveRW dtype a => {n : _} -> Graph 0 (S n) -> {shape : _} -> Literal shape a
 run terms = unsafePerformIO $ do
-  -- printLn terms
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   builder <- mkXlaBuilder ""

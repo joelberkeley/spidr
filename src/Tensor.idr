@@ -24,7 +24,7 @@ import Data.List.Quantifiers
 import Decidable.Equality
 
 import Compiler.Eval
-import Compiler.Expr
+import Compiler.Graph
 import Compiler.LiteralRW
 import Literal
 import public Primitive
@@ -41,7 +41,7 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> {n : _} -> (ref : Fin (S n)) -> Terms 0 (S n) -> Tensor shape dtype
+  MkTensor : {shape : _} -> {n : _} -> (ref : Fin (S n)) -> Graph 0 (S n) -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
@@ -354,10 +354,10 @@ slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tens
 --       stop _ (Index idx) = S idx
 --       stop f {d} _ = f d
 
---       zero : Expr
+--       zero : Node
 --       zero = FromLiteral {shape=[]} {dtype=U64} 0
 
---       dynStart : (Nat -> Expr) -> {d : Nat} -> SliceOrIndex d -> Expr
+--       dynStart : (Nat -> Node) -> {d : Nat} -> SliceOrIndex d -> Node
 --       dynStart _ (DynamicSlice (MkTensor from) _) = from
 --       dynStart _ (DynamicIndex (MkTensor idx)) = idx
 --       dynStart f {d} _ = f d
@@ -713,7 +713,7 @@ reverse axes (MkTensor ref terms) = MkTensor last $ Reverse axes ref `snoc` term
 
 ----------------------------- numeric operations ----------------------------
 
-binaryEW : ({m : _} -> Fin m -> Fin m -> Expr m) -> Tensor s d -> Tensor s d' -> Tensor s d''
+binaryEW : ({m : _} -> Fin m -> Fin m -> Node m) -> Tensor s d -> Tensor s d' -> Tensor s d''
 binaryEW f (MkTensor ref terms) (MkTensor ref' terms') =
   let (_ ** (fi, fi', terms)) = merge terms terms'
    in MkTensor last (f (fi ref) (fi' ref') `snoc` terms)
@@ -926,7 +926,7 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
-unary : ({m : _} -> Fin m -> Expr m) -> Tensor s d -> Tensor s d'
+unary : ({m : _} -> Fin m -> Node m) -> Tensor s d -> Tensor s d'
 unary f (MkTensor ref terms) = MkTensor last $ f ref `snoc` terms
 
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.

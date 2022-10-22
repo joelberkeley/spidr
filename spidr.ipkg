@@ -9,7 +9,7 @@ modules =
   BayesianOptimization.Acquisition,
 
   Compiler.Eval,
-  Compiler.Expr,
+  Compiler.Graph,
   Compiler.LiteralRW,
 
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic,
