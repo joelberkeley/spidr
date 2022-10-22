@@ -114,15 +114,6 @@ data Expr : Nat -> Type where
   NormalFloatingPoint : Fin n -> Fin n -> Shape -> Expr n
 
 export
-Show (Expr n) where
-  show (FromLiteral {shape} _) = "FromLiteral \{show shape}"
-  show (Concat _ x y) = "Concat \{show x} \{show y}"
-  show (Min x y) = "Min \{show x} \{show y}"
-  show (Select p t f) = "Select \{show p} \{show t} \{show f}"
-  show (Eq x y) = "Eq \{show x} \{show y}"
-  show _ = "other"
-
-export
 Prelude.Eq (Expr n) where
   (FromLiteral {ty} {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
     case decEq shape shape' of
@@ -250,11 +241,6 @@ data Terms : Nat -> Nat -> Type where
   (::) : Expr lower -> Terms (S lower) upper -> Terms lower upper
 
 export
-Show (Terms m n) where
-  show Nil = "Nil"
-  show (x :: xs) = "\{show x} :: \{show xs}"
-
-export
 index : (i : Fin upper) -> Terms 0 upper -> Expr (finToNat i)
 index i xs = impl 0 i xs where
   impl : (lower : Nat) -> (i : Fin rem) -> Terms lower (lower + rem) -> Expr (lower + finToNat i)
@@ -273,7 +259,7 @@ snoc x xs = impl x xs where
   impl x (y :: ys) = y :: impl x ys
 
 shift' : (n : Nat) -> Nat -> Fin m -> Fin (n + m)
-shift' n bound x = if cast x > bound then shift n x else rewrite sym $ plusCommutative m n in weakenN n x
+shift' n bound x = if cast x >= bound then shift n x else rewrite sym $ plusCommutative m n in weakenN n x
 
 reindex : (n : Nat) -> Nat -> Terms lo hi -> Terms (lo + n) (hi + n)
 reindex n bound [] = []
@@ -373,6 +359,41 @@ ltePlusMiddle a b c = rewrite Calc $
   ~~ ((a + b) + c) ... plusAssociative a b c
   in lteAddRight (a + b)
 
+mergeHelper : {n, m : _} -> Terms 0 n -> Terms 0 m -> ((s ** (Terms 0 (n + s), LTE m (n + s))), Maybe (Fin m))
+mergeHelper xs ys = impl xs ys where
+
+  extend : Terms lo p -> Terms p hi -> Terms lo hi
+  extend xs [] = xs
+  extend [] ys = ys
+  extend (x :: xs) ys = x :: extend xs ys
+
+  impl :
+    {lo, nx, ny : Nat} ->
+    Terms lo (lo + nx) ->
+    Terms lo (lo + ny) ->
+    ((s ** (Terms lo (lo + nx + s), LTE (lo + ny) (lo + nx + s))), Maybe (Fin (lo + ny)))
+  impl {ny = 0} xs _ =
+    let lte = rewrite plusZeroRightNeutral lo in rewrite plusZeroRightNeutral (lo + nx) in lteAddRight lo
+        terms = rewrite plusZeroRightNeutral (lo + nx) in xs
+     in ((0 ** (terms, lte)), Nothing)
+  impl {nx = 0} _ ys =
+    ((ny ** (rewrite plusZeroRightNeutral lo in ys, rewrite plusZeroRightNeutral lo in reflexive)), Nothing)
+  impl {nx = S nx} {ny = S ny} (x :: xs) (y :: ys) =
+    if x == y
+    then let ys : Terms (S lo) (lo + S ny) = ys
+             ((s' ** (terms, lte)), conflict) =
+               impl {lo = S lo} {nx, ny} (rewrite plusSuccRightSucc lo nx in xs) (rewrite plusSuccRightSucc lo ny in ys)
+             lte = rewrite sym $ succNested lo nx s' in rewrite sym $ plusSuccRightSucc lo ny in lte
+          in ((s' ** (rewrite sym $ succNested lo nx s' in x :: terms, lte)), rewrite sym $ plusSuccRightSucc lo ny in conflict)
+    else let ys = reindex (S nx) lo (y :: ys)  -- do we always reindex? what if an index points to a value that's not conflicted?
+             terms : Terms lo (lo + S nx + S ny) = rewrite sym $ plusCommutativeLeftParen lo (S ny) (S nx) in extend (x :: xs) ys
+          in ((S ny ** (terms, ltePlusMiddle lo (S ny) (S nx))), Just (rewrite sym $ plusSuccRightSucc lo ny in weakenN ny $ last {n = lo}))
+
+||| Shift a `Fin p` by adding q and subtracting p.
+shiftLTE : {p, q : _} -> Fin p -> LTE p q -> Fin q
+shiftLTE FZ (LTESucc _) = last 
+shiftLTE (FS x) (LTESucc lte) = FS (shiftLTE x lte)
+
 ||| Merge the two lists of terms. The resulting terms start with all terms in the LHS, as they appear in the LHS, then
 ||| continue with all terms in the RHS, starting at the first term in the RHS that conflicts with the LHS, and
 ||| continuing until the end of the RHS. Terms x and y conflict if x == y does not hold. For example, in pseudo-syntax:
@@ -389,31 +410,27 @@ ltePlusMiddle a b c = rewrite Calc $
 ||| merge [a, b, c] [a, b, d, e] is [a, b, c, d, e]
 |||
 ||| The number returned in the dependent pair is how many terms from the RHS have been rebased onto the end of the LHS.
+|||
+||| In addition to the full set of terms, `merge` returns two functions that can be used to update indices into the
+||| original lists of terms into indices into the merged terms. The `Expr` at a specific index in one of the original
+||| list of terms is the same `Expr` at the converted index in the merged terms, but only up to the resulting tree of
+||| terms, since when we move terms in the list, we must also update indices contained within those terms to preserve
+||| the structure of the graph.
 export
-merge : {n, m : _} -> Terms 0 n -> Terms 0 m -> ((s ** (Terms 0 (n + s), LTE m (n + s))), Bool)
-merge xs ys = impl xs ys where
+merge : {n, m : _} -> Terms 0 n -> Terms 0 m -> (s ** (Fin n -> Fin s, Fin m -> Fin s, Terms 0 s))
+merge xs ys =
+  let ((s' ** (terms, lte)), conflict) = mergeHelper xs ys
 
-  extend : Terms lo p -> Terms p hi -> Terms lo hi
-  extend xs [] = xs
-  extend [] ys = ys
-  extend (x :: xs) ys = x :: extend xs ys
+      fn : Fin n -> Fin (n + s')
+      fn = weakenN s'
 
-  -- `s` is NOT how much we've shifted some of the ys, but how much longer the output is than the xs.
-  -- If, for example, ys is longer than xs and contains all the terms in xs, s will be the difference in the
-  -- lengths of ys and xs, but no Exprs have been shifted.
-  impl : {lo, nx, ny : Nat} -> Terms lo (lo + nx) -> Terms lo (lo + ny) -> ((s ** (Terms lo (lo + nx + s), LTE (lo + ny) (lo + nx + s))), Bool)
-  impl {ny = 0} xs _ =
-    let lte = rewrite plusZeroRightNeutral lo in rewrite plusZeroRightNeutral (lo + nx) in lteAddRight lo
-        terms = rewrite plusZeroRightNeutral (lo + nx) in xs
-     in ((0 ** (terms, lte)), False)
-  impl {nx = 0} _ ys = ((ny ** (rewrite plusZeroRightNeutral lo in ys, rewrite plusZeroRightNeutral lo in reflexive)), False)
-  impl {nx = S nx} {ny = S ny} (x :: xs) (y :: ys) =
-    if x == y
-    then let ys : Terms (S lo) (lo + S ny) = ys
-             ((s ** (terms, lte)), conflict) =
-               impl {lo = S lo} {nx, ny} (rewrite plusSuccRightSucc lo nx in xs) (rewrite plusSuccRightSucc lo ny in ys)
-             lte = rewrite sym $ succNested lo nx s in rewrite sym $ plusSuccRightSucc lo ny in lte
-          in ((s ** (rewrite sym $ succNested lo nx s in x :: terms, lte)), conflict)
-    else let ys = reindex (S nx) lo (y :: ys)  -- do we always reindex? what if an index points to a value that's not conflicted?
-             terms : Terms lo (lo + S nx + S ny) = rewrite sym $ plusCommutativeLeftParen lo (S ny) (S nx) in extend (x :: xs) ys
-          in ((S ny ** (terms, ltePlusMiddle lo (S ny) (S nx))), True)
+      fm : Fin m -> Fin (n + s')
+      fm x = case conflict of
+        Nothing => weakenLTE x lte
+        Just idx => if x < idx then weakenLTE x lte else shiftLTE x lte
+
+   in ((n + s') ** (fn, fm, terms))
+
+-- [a, b, r]
+-- [a, b, c, d, e]
+-- [a, b, r, c, d, e]

@@ -875,8 +875,7 @@ namespace PRED
 
 covering
 testElementwiseBinaryCases : List (PropertyName, Property)
-testElementwiseBinaryCases = [("min S32", S32.testElementwiseBinary min min)]
-{-
+testElementwiseBinaryCases = [
     ("(+) F64", F64.testElementwiseBinary (+) (+)),
     ("(+) S32", S32.testElementwiseBinary (+) (+)),
     ("(-) F64", F64.testElementwiseBinary (-) (-)),
@@ -885,14 +884,13 @@ testElementwiseBinaryCases = [("min S32", S32.testElementwiseBinary min min)]
     ("(*) S32", S32.testElementwiseBinary (*) (*)),
     ("(/)", F64.testElementwiseBinary (/) (/)),
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
-    ("min S32", S32.testElementwiseBinary min min)
+    ("min S32", S32.testElementwiseBinary min min),
     ("max S32", S32.testElementwiseBinary max max),
     ("min F64", F64.testElementwiseBinary min' min),
     ("max F64", F64.testElementwiseBinary max' max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
--}
 
   where
   min' : Double -> Double -> Double
@@ -1349,7 +1347,6 @@ normalIsReproducible = withTests 20 . property $ do
 export covering
 group : Group
 group = MkGroup "Tensor" $ [
-{-
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
@@ -1368,48 +1365,52 @@ group = MkGroup "Tensor" $ [
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
   --  , ("transpose", transpose)
-  --   , ("map", mapResult)
-  --   , ("map with non-trivial function", mapNonTrivial)
-  --   , ("map2", map2Result)
-  --   , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
-  --   , ("reduce", reduce)
-  --   , ("sort", sort)
-  --   , ("sort with empty axis", sortWithEmptyAxis)
-  --   , ("sort with repeated elements", sortWithRepeatedElements)
+    {-
+    , ("map", mapResult)
+    , ("map with non-trivial function", mapNonTrivial)
+    , ("map2", map2Result)
+    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+    , ("reduce", reduce)
+    , ("sort", sort)
+    , ("sort with empty axis", sortWithEmptyAxis)
+    , ("sort with repeated elements", sortWithRepeatedElements)
+    -}
     , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
-    -}
   ]
-  -- ++ testElementwiseComparatorCases
-  -- ++ testElementwiseUnaryCases
+  ++ testElementwiseComparatorCases
+  ++ testElementwiseUnaryCases
   ++ testElementwiseBinaryCases
   ++ [
-
-  --    ("Scalarwise.(*)", scalarMultiplication)
-  --  , ("Scalarwise.(/)", scalarDivision)
-  --  , ("Sum", neutralIsNeutralForSum)
-  --  , ("Prod", neutralIsNeutralForProd)
-  --   , ("argmin", argmin)
-  --   , ("argmax", argmax)
-  --   , ("Min", neutralIsNeutralForMin)
-  --   , ("Max", neutralIsNeutralForMax)
-  --  , ("Any", neutralIsNeutralForAny)
-  --  , ("All", neutralIsNeutralForAll)
-    ("select", select)
-  --   , ("cond for trivial usage", condResultTrivialUsage)
-  --   , ("cond for re-used arguments", condResultWithReusedArgs)
-  --  , ("erf", erf)
-  --   , ("cholesky", cholesky)
-  --   , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
-  --   , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-  --   , ("trace", trace)
-  --   , ("uniform", uniform)
-  --   , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
-  --   , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
-  --   , ("uniform updates seed", uniformSeedIsUpdated)
-  --   , ("uniform produces same samples for same seed", uniformIsReproducible)
-  --   , ("normal", normal)
-  --   , ("normal updates seed", normalSeedIsUpdated)
-  --   , ("normal produces same samples for same seed", normalIsReproducible)
+      ("Scalarwise.(*)", scalarMultiplication)
+    , ("Scalarwise.(/)", scalarDivision)
+    , ("Sum", neutralIsNeutralForSum)
+    , ("Prod", neutralIsNeutralForProd)
+    -- these use cond
+  --  , ("argmin", argmin)
+  --  , ("argmax", argmax)
+    , ("Min", neutralIsNeutralForMin)
+    , ("Max", neutralIsNeutralForMax)
+    , ("Any", neutralIsNeutralForAny)
+    , ("All", neutralIsNeutralForAll)
+    , ("select", select)
+  --  , ("cond for trivial usage", condResultTrivialUsage)
+  --  , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("erf", erf)
+    , ("cholesky", cholesky)
+    , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
+    , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
+    -- uses reduce
+  --  , ("trace", trace)
+    {-
+    , ("uniform", uniform)
+    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
+    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
+    , ("uniform updates seed", uniformSeedIsUpdated)
+    , ("uniform produces same samples for same seed", uniformIsReproducible)
+    , ("normal", normal)
+    , ("normal updates seed", normalSeedIsUpdated)
+    , ("normal produces same samples for same seed", normalIsReproducible)
+    -}
   ]

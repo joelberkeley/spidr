@@ -382,8 +382,8 @@ concat :
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
   Tensor (replaceAt axis (index axis s + index axis s') s) dtype
 concat axis (MkTensor ref terms) (MkTensor {n=n'} ref' terms') =
-  let (s ** (terms, lte)) = fst $ merge terms terms'
-   in MkTensor last (Concat axis (weakenN s ref) last `snoc` terms)
+  let (_ ** (fi, fi', terms)) = merge terms terms'
+   in MkTensor last (Concat axis (fi ref) (fi' ref') `snoc` terms)
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -714,9 +714,9 @@ reverse axes (MkTensor ref terms) = MkTensor last $ Reverse axes ref `snoc` term
 ----------------------------- numeric operations ----------------------------
 
 binaryEW : ({m : _} -> Fin m -> Fin m -> Expr m) -> Tensor s d -> Tensor s d' -> Tensor s d''
-binaryEW f (MkTensor refl termsl) (MkTensor _ termsr) =
-  let (s ** (terms, lte)) = fst $ merge termsl termsr
-   in MkTensor last (f (weakenN s refl) last `snoc` terms)
+binaryEW f (MkTensor ref terms) (MkTensor ref' terms') =
+  let (_ ** (fi, fi', terms)) = merge terms terms'
+   in MkTensor last (f (fi ref) (fi' ref') `snoc` terms)
 
 ||| `fromLiteral [True, False]`.
 export
@@ -817,15 +817,10 @@ select :
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
   Tensor shape dtype
-select (MkTensor {n} refPred termsPred) (MkTensor refTrue termsTrue) (MkTensor refFalse termsFalse) =
-  let ((s ** (termsPredTrue, lte)), conflict) = merge termsPred termsTrue
-      refPred : Fin (S n + s) = weakenN s refPred
-      refTrue : Fin (S n + s) = if conflict then last else weakenLTE refTrue lte
-      ((s' ** (terms, lte)), conflict) = merge termsPredTrue termsFalse
-      refPred : Fin (S n + s + s') = weakenN s' refPred
-      refTrue : Fin (S n + s + s') = weakenN s' refTrue
-      refFalse : Fin (S n + s + s') = if conflict then last else weakenLTE refFalse lte
-   in MkTensor last $ Select refPred refTrue refFalse `snoc` terms
+select (MkTensor refPred termsPred) (MkTensor refTrue termsTrue) (MkTensor refFalse termsFalse) =
+  let (_ ** (fi, fi', terms)) = merge termsPred termsTrue
+      (_ ** (fi'', fi''', terms)) = merge terms termsFalse
+   in MkTensor last $ Select (fi'' (fi refPred)) (fi'' (fi' refTrue)) (fi''' refFalse) `snoc` terms
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicate is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -873,9 +868,9 @@ namespace Vector
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
-  (MkTensor ref terms) @@ (MkTensor _ terms') =
-    let (s ** (terms, lte)) = fst $ merge terms terms'
-     in MkTensor last (Dot (weakenN s ref) last `snoc` terms)
+  (MkTensor ref terms) @@ (MkTensor ref' terms') =
+    let (_ ** (fi, fi', terms)) = merge terms terms'
+     in MkTensor last (Dot (fi ref) (fi' ref') `snoc` terms)
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
@@ -907,9 +902,9 @@ namespace Matrix
     Tensor (S m :: tl) dtype ->
     {auto 0 vectorTail : length tl `LTE` 1} ->
     Tensor (n :: tl) dtype
-  (MkTensor ref terms) @@ (MkTensor _ terms') =
-    let (s ** (terms, lte)) = fst $ merge terms terms'
-     in MkTensor last (Dot (weakenN s ref) last `snoc` terms)
+  (MkTensor ref terms) @@ (MkTensor ref' terms') =
+    let (_ ** (fi, fi', terms)) = merge terms terms'
+     in MkTensor last (Dot (fi ref) (fi' ref') `snoc` terms)
 
 ||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
 ||| `fromLiteral [4, 6]`.
@@ -1207,7 +1202,7 @@ argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tensor [] U64
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
--- cholesky (MkTensor expr) = triangle Lower $ MkTensor $ Cholesky expr
+cholesky (MkTensor ref terms) = triangle Lower $ MkTensor last $ Cholesky ref `snoc` terms
 
 infix 9 |\, \|
 
@@ -1221,7 +1216,9 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  -- (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True
+  (MkTensor ref terms) |\ (MkTensor ref' terms') =
+    let (_ ** (fi, fi', terms)) = merge terms terms'
+     in MkTensor last (TriangularSolve (fi ref) (fi' ref') True `snoc` terms)
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1232,7 +1229,9 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  -- (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b False
+  (MkTensor ref terms) \| (MkTensor ref' terms') =
+    let (_ ** (fi, fi', terms)) = merge terms terms'
+     in MkTensor last (TriangularSolve (fi ref) (fi' ref') False `snoc` terms)
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1244,8 +1243,8 @@ namespace Vector
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
-  -- a |\ b with (b)
-  --   _ | MkTensor {shape=[_]} _ = squeeze (a |\ (expand 1 b))
+  a |\ b with (b)
+    _ | MkTensor {shape=[_]} _ _ = squeeze (a |\ (expand 1 b))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1256,8 +1255,8 @@ namespace Vector
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
-  -- a \| b with (b)
-  --   _ | MkTensor {shape=[_]} _ = squeeze (a \| (expand 1 b))
+  a \| b with (b)
+    _ | MkTensor {shape=[_]} _ _ = squeeze (a \| (expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1268,7 +1267,7 @@ trace :
   Tensor [S n, S n] dtype ->
   Tensor [] dtype
 -- trace x with (x)
---   _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] (x * identity)
+--   _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] (x * identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.

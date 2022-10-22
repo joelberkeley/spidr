@@ -21,6 +21,7 @@ import Hedgehog
 import TestUtils
 import Utils.TestComparison
 
+import Unit.Compiler.TestExpr
 import Unit.Model.TestKernel
 import Unit.Util.TestHashable
 import Unit.TestDistribution
@@ -33,10 +34,10 @@ main : IO ()
 main = test [
     --   Utils.TestComparison.group
     -- , TestUtils.group
-    -- , Unit.Util.TestHashable.group
     -- , Unit.TestUtil.group
     -- , Unit.TestLiteral.group
-    Unit.TestTensor.group
+      Unit.Compiler.TestExpr.group
+    , Unit.TestTensor.group
     -- , Unit.TestDistribution.group
     -- , Unit.Model.TestKernel.group
   ]
