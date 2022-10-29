@@ -37,84 +37,102 @@ Prelude.Eq FullShape where
     (shape, typeString {dtype}) == (shape', typeString {dtype=dtype'})
 
 public export
-data Fn : Nat -> Type -> Type where
-  MkFn : {arity : _} -> Vect arity FullShape -> a -> Fn arity a
+record Graph
 
 public export
-data Node : Nat -> Type where
-  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Node n
-  Parameter : FullShape -> Nat -> Node n
-  Tuple : List (Fin n) -> Node n
-  GetTupleElement : Nat -> Fin n -> Node n
-  MinValue : Primitive dtype => Node n
-  MaxValue : Primitive dtype => Node n
-  MinFiniteValue : Primitive dtype => Node n
-  MaxFiniteValue : Primitive dtype => Node n
-  ConvertElementType : Primitive dtype => Fin n -> Node n
-  Reshape : Shape -> Shape -> Fin n -> Node n
-  Slice : List Nat -> List Nat -> List Nat -> Fin n -> Node n
-  DynamicSlice : List (Fin n) -> List Nat -> Fin n -> Node n
-  Concat : Nat -> Fin n -> Fin n -> Node n
-  Diag : Fin n -> Node n
-  Triangle : (lower : Bool) -> Fin n -> Node n
-  Transpose : List Nat -> Fin n -> Node n
-  Identity : Primitive dtype => Nat -> Node n
-  Broadcast : Primitive dtype => Shape -> Shape -> Fin n -> Node n
-  -- Map : Fn a (Node n) -> Vect a (Fin n) -> Shape -> Node n
-  Reduce : Fn 2 (Node (S (S n))) -> Fin n -> List Nat -> Fin n -> Node n
-  Sort : Fn 2 (Node (S (S n))) -> Nat -> Bool -> List (Fin n) -> Node n
-  Reverse : List Nat -> Fin n -> Node n
-  Eq : Fin n -> Fin n -> Node n
-  Ne : Fin n -> Fin n -> Node n
-  Add : Fin n -> Fin n -> Node n
-  Sub : Fin n -> Fin n -> Node n
-  Mul : Fin n -> Fin n -> Node n
-  Div : Fin n -> Fin n -> Node n
-  Pow : Fin n -> Fin n -> Node n
-  Lt : Fin n -> Fin n -> Node n
-  Gt : Fin n -> Fin n -> Node n
-  Le : Fin n -> Fin n -> Node n
-  Ge : Fin n -> Fin n -> Node n
-  And : Fin n -> Fin n -> Node n
-  Or : Fin n -> Fin n -> Node n
-  Min : Fin n -> Fin n -> Node n
-  Max : Fin n -> Fin n -> Node n
-  Not : Fin n -> Node n
-  Neg : Fin n -> Node n
-  Reciprocal : Fin n -> Node n
-  Abs : Fin n -> Node n
-  Ceil : Fin n -> Node n
-  Floor : Fin n -> Node n
-  Log : Fin n -> Node n
-  Exp : Fin n -> Node n
-  Logistic : Fin n -> Node n
-  Erf : Fin n -> Node n
-  Square : Fin n -> Node n
-  Sqrt : Fin n -> Node n
-  Sin : Fin n -> Node n
-  Cos : Fin n -> Node n
-  Tan : Fin n -> Node n
-  Asin : Fin n -> Node n
-  Acos : Fin n -> Node n
-  Atan : Fin n -> Node n
-  Sinh : Fin n -> Node n
-  Cosh : Fin n -> Node n
-  Tanh : Fin n -> Node n
-  Asinh : Fin n -> Node n
-  Acosh : Fin n -> Node n
-  Atanh : Fin n -> Node n
-  Argmin : Primitive out => Nat -> Fin n -> Node n
-  Argmax : Primitive out => Nat -> Fin n -> Node n
-  Select : Fin n -> Fin n -> Fin n -> Node n
-  Cond : Fin n -> Fn 1 (Node (S n)) -> Fin n -> Fn 1 (Node (S n)) -> Fin n -> Node n
-  Dot : Fin n -> Fin n -> Node n
-  Cholesky : Fin n -> Node n
-  TriangularSolve : Fin n -> Fin n -> Bool -> Node n
-  UniformFloatingPoint : Fin n -> Fin n -> Fin n -> Fin n -> Shape -> Node n
-  NormalFloatingPoint : Fin n -> Fin n -> Shape -> Node n
+data Ref = P Nat Nat | N Nat Nat
+
+Prelude.Eq Ref where
+  (P s i) == (P s' i') = (s, i) == (s', i')
+  (N s i) == (N s' i') = (s, i) == (s', i')
+  _ == _ = False
+
+-- hacky for reindex
+(+) : Ref -> Nat -> Ref
+(+) (P s p) k = P s (p + k)
+(+) (N s i) k = N s (i + k)
+
+public export
+data Node : Type where
+  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Node
+  Tuple : List Ref -> Node
+  GetTupleElement : Nat -> Ref -> Node
+  MinValue : Primitive dtype => Node
+  MaxValue : Primitive dtype => Node
+  MinFiniteValue : Primitive dtype => Node
+  MaxFiniteValue : Primitive dtype => Node
+  ConvertElementType : Primitive dtype => Ref -> Node
+  Reshape : Shape -> Shape -> Ref -> Node
+  Slice : List Nat -> List Nat -> List Nat -> Ref -> Node
+  DynamicSlice : List Ref -> List Nat -> Ref -> Node
+  Concat : Nat -> Ref -> Ref -> Node
+  Diag : Ref -> Node
+  Triangle : (lower : Bool) -> Ref -> Node
+  Transpose : List Nat -> Ref -> Node
+  Identity : Primitive dtype => Nat -> Node
+  Broadcast : Primitive dtype => Shape -> Shape -> Ref -> Node
+  -- Map : Graph -> List Ref -> Shape -> Node
+  Reduce : Graph -> Ref -> List Nat -> Ref -> Node
+  Sort : Graph -> Nat -> Bool -> List Ref -> Node
+  Reverse : List Nat -> Ref -> Node
+  Eq : Ref -> Ref -> Node
+  Ne : Ref -> Ref -> Node
+  Add : Ref -> Ref -> Node
+  Sub : Ref -> Ref -> Node
+  Mul : Ref -> Ref -> Node
+  Div : Ref -> Ref -> Node
+  Pow : Ref -> Ref -> Node
+  Lt : Ref -> Ref -> Node
+  Gt : Ref -> Ref -> Node
+  Le : Ref -> Ref -> Node
+  Ge : Ref -> Ref -> Node
+  And : Ref -> Ref -> Node
+  Or : Ref -> Ref -> Node
+  Min : Ref -> Ref -> Node
+  Max : Ref -> Ref -> Node
+  Not : Ref -> Node
+  Neg : Ref -> Node
+  Reciprocal : Ref -> Node
+  Abs : Ref -> Node
+  Ceil : Ref -> Node
+  Floor : Ref -> Node
+  Log : Ref -> Node
+  Exp : Ref -> Node
+  Logistic : Ref -> Node
+  Erf : Ref -> Node
+  Square : Ref -> Node
+  Sqrt : Ref -> Node
+  Sin : Ref -> Node
+  Cos : Ref -> Node
+  Tan : Ref -> Node
+  Asin : Ref -> Node
+  Acos : Ref -> Node
+  Atan : Ref -> Node
+  Sinh : Ref -> Node
+  Cosh : Ref -> Node
+  Tanh : Ref -> Node
+  Asinh : Ref -> Node
+  Acosh : Ref -> Node
+  Atanh : Ref -> Node
+  Argmin : Primitive out => Nat -> Ref -> Node
+  Argmax : Primitive out => Nat -> Ref -> Node
+  Select : Ref -> Ref -> Ref -> Node
+  Cond : Ref -> Graph -> Ref -> Graph -> Ref -> Node
+  Dot : Ref -> Ref -> Node
+  Cholesky : Ref -> Node
+  TriangularSolve : Ref -> Ref -> Bool -> Node
+  UniformFloatingPoint : Ref -> Ref -> Ref -> Ref -> Shape -> Node
+  NormalFloatingPoint : Ref -> Ref -> Shape -> Node
+
+public export
+record Graph where
+  constructor MkGraph
+--  parents : List Graph
+  params : List FullShape
+  nodes : List Node
 
 export
-Prelude.Eq (Node n) where
+Prelude.Eq Node where
   (FromLiteral {ty} {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
     case decEq shape shape' of
       Yes eq =>
@@ -126,7 +144,6 @@ Prelude.Eq (Node n) where
         --
         && lit == believe_me lit'
       No _ => False
-  (Parameter spec pos) == (Parameter spec' pos') = (spec, pos) == (spec', pos')
   (Tuple xs) == (Tuple xs') = xs == xs'
   (GetTupleElement idx tuple) == (GetTupleElement idx' tuple') = idx == idx' && tuple == tuple'
   (MinValue {dtype}) == (MinValue {dtype=dtype'}) =
@@ -159,17 +176,9 @@ Prelude.Eq (Node n) where
   --       && xs == (rewrite eq in xs')
   --       && dims == dims'
   --     No _ => False
-  (Reduce (MkFn [p0, p1] monoid) neutral axes x) ==
-    (Reduce (MkFn [p0', p1'] monoid') neutral' axes' x') =
-      p0 == p0' && p1 == p1' && monoid == monoid' && neutral == neutral' && axes == axes' && x == x'
-  (Sort (MkFn [p0, p1] comparator) dimension isStable operands) ==
-    (Sort (MkFn [p0', p1'] comparator') dimension' isStable' operands') =
-      p0 == p0'
-      && p1 == p1'
-      && comparator == comparator'
-      && dimension == dimension'
-      && isStable == isStable'
-      && operands == operands'
+  (Reduce (MkGraph _ _) neutral axes x) == (Reduce (MkGraph _ _) neutral' axes' x') = ?reduce_eq
+  (Sort (MkGraph _ _) dimension isStable operands) ==
+    (Sort (MkGraph _ _) dimension' isStable' operands') = ?sort_eq
   (Reverse axes expr) == (Reverse axes' expr') = axes == axes' && expr == expr'
   (Eq l r) == (Eq l' r') = l == l' && r == r'
   (Ne l r) == (Ne l' r') = l == l' && r == r'
@@ -215,15 +224,8 @@ Prelude.Eq (Node n) where
   (Argmax {out} axis expr) == (Argmax {out=out'} axis' expr') =
     (typeString {dtype=out}, axis) == (typeString {dtype=out'}, axis) && expr == expr'
   (Select pred f t) == (Select pred' f' t') = pred == pred' && f == f' && t == t'
-  (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) ==
-    (Cond pred' (MkFn [pt'] fTrue') true' (MkFn [pf'] fFalse') false') =
-      pred == pred'
-      && pt == pt'
-      && fTrue == fTrue'
-      && true == true'
-      && pf == pf'
-      && fFalse == fFalse'
-      && false == false'
+  (Cond pred (MkGraph _ _) true (MkGraph _ _) false) ==
+    (Cond pred' (MkGraph _ _) true' (MkGraph _ _) false') = ?cond_eq
   (Dot x y) == (Dot x' y') = x == x' && y == y'
   (Cholesky x) == (Cholesky x') = x == x'
   (TriangularSolve x y lower) == (TriangularSolve x' y' lower') =
@@ -235,202 +237,90 @@ Prelude.Eq (Node n) where
       key == key' && initialState == initialState'
   _ == _ = False
 
-||| A graph as a topologically-sorted adjacency list. A `Graph lo hi` has up a maximum of `hi` nodes, with all but `lo`
-||| filled.
 public export
-data Graph : Nat -> Nat -> Type where
-  Nil : Graph n n
-  (::) : Node lower -> Graph (S lower) upper -> Graph lower upper
+data CompilerError =
+  IndexError String
 
-||| The node at the specified index.
 export
-index : (i : Fin upper) -> Graph 0 upper -> Node (finToNat i)
-index i xs = impl 0 i xs where
-  impl : (lower : Nat) -> (i : Fin rem) -> Graph lower (lower + rem) -> Node (lower + finToNat i)
-  impl 0 FZ (x :: _) = x 
-  impl 0 (FS i) (_ :: xs) = impl 1 i xs
-  impl (S lower) FZ (x :: _) = rewrite plusZeroRightNeutral lower in x 
-  impl (S lower) (FS {k} i) (_ :: xs) =
-    rewrite sym $ plusSuccRightSucc lower (finToNat i) in
-            impl (S (S lower)) i (rewrite plusSuccRightSucc lower k in xs)
+index : Nat -> List a -> Either CompilerError a
+index k [] = Left (IndexError "Cannot index into empty list with index \{show k}")
+index 0 (x :: _) = Right x
+index (S k) (_ :: xs) = index k xs
 
-||| Append a new node to the graph, at the end of the adjacency list.
-export
-snoc : Node n -> Graph 0 n -> Graph 0 (S n)
-snoc x xs = impl x xs where
-  impl : Node hi -> Graph lo hi -> Graph lo (S hi)
-  impl x [] = [x] 
-  impl x (y :: ys) = y :: impl x ys
-
-reindex : (n : Nat) -> Nat -> Graph lo hi -> Graph (lo + n) (hi + n)
-reindex n bound [] = []
-reindex n bound (x :: xs) =
-  rewrite plusCommutative lo n in impl x :: rewrite sym $ plusCommutative lo n in reindex n bound xs
+reindex : Nat -> List Node -> List Node
+reindex n = map impl
 
   where
 
-  shift' : Fin m -> Fin (n + m)
-  shift' x = if cast x >= bound then shift n x else rewrite sym $ plusCommutative m n in weakenN n x
-
-  impl : Node p -> Node (n + p)
+  impl : Node -> Node
   impl (FromLiteral {dtype} x) = FromLiteral {dtype} x
-  impl (Parameter spec k) = Parameter spec k
-  impl (Tuple ys) = Tuple [shift' y | y <- ys]
-  impl (GetTupleElement k x) = GetTupleElement k (shift' x)
+  impl (Tuple ys) = Tuple [y + n | y <- ys]
+  impl (GetTupleElement k x) = GetTupleElement k (x + n)
   impl (MinValue {dtype}) = MinValue {dtype} 
   impl (MaxValue {dtype}) = MaxValue {dtype}
   impl (MinFiniteValue {dtype}) = MinFiniteValue {dtype}
   impl (MaxFiniteValue {dtype}) = MaxFiniteValue {dtype}
-  impl (ConvertElementType {dtype} x) = ConvertElementType {dtype} (shift' x)
-  impl (Reshape ks js x) = Reshape ks js (shift' x)
-  impl (Slice ks js is x) = Slice ks js is (shift' x)
-  impl (DynamicSlice ys ks x) = DynamicSlice [shift' y | y <- ys] ks (shift' x)
-  impl (Concat k x y) = Concat k (shift' x) (shift' y)
-  impl (Diag x) = Diag (shift' x)
-  impl (Triangle lower x) = Triangle lower (shift' x)
-  impl (Transpose ks x) = Transpose ks (shift' x)
+  impl (ConvertElementType {dtype} x) = ConvertElementType {dtype} (x + n)
+  impl (Reshape ks js x) = Reshape ks js (x + n)
+  impl (Slice ks js is x) = Slice ks js is (x + n)
+  impl (DynamicSlice ys ks x) = DynamicSlice [y + n | y <- ys] ks (x + n)
+  impl (Concat k x y) = Concat k (x + n) (y + n)
+  impl (Diag x) = Diag (x + n)
+  impl (Triangle lower x) = Triangle lower (x + n)
+  impl (Transpose ks x) = Transpose ks (x + n)
   impl (Identity {dtype} k) = Identity {dtype} k
-  impl (Broadcast {dtype} ks js x) = Broadcast {dtype} ks js (shift' x)
+  impl (Broadcast {dtype} ks js x) = Broadcast {dtype} ks js (x + n)
   impl (Reduce x y ks z) = ?reduce
   impl (Sort x k y ys) = ?sort
-  impl (Reverse ks x) = Reverse ks (shift' x)
-  impl (Eq x y) = Eq (shift' x) (shift' y)
-  impl (Ne x y) = Ne (shift' x) (shift' y)
-  impl (Add x y) = Add (shift' x) (shift' y)
-  impl (Sub x y) = Sub (shift' x) (shift' y)
-  impl (Mul x y) = Mul (shift' x) (shift' y)
-  impl (Div x y) = Div (shift' x) (shift' y)
-  impl (Pow x y) = Pow (shift' x) (shift' y)
-  impl (Lt x y) = Lt (shift' x) (shift' y)
-  impl (Gt x y) = Gt (shift' x) (shift' y)
-  impl (Le x y) = Le (shift' x) (shift' y)
-  impl (Ge x y) = Ge (shift' x) (shift' y)
-  impl (And x y) = And (shift' x) (shift' y)
-  impl (Or x y) = Or (shift' x) (shift' y)
-  impl (Min x y) = Min (shift' x) (shift' y)
-  impl (Max x y) = Max (shift' x) (shift' y)
-  impl (Not x) = Not (shift' x)
-  impl (Neg x) = Neg (shift' x)
-  impl (Reciprocal x) = Reciprocal (shift' x)
-  impl (Abs x) = Abs (shift' x)
-  impl (Ceil x) = Ceil (shift' x)
-  impl (Floor x) = Floor (shift' x)
-  impl (Log x) = Log (shift' x)
-  impl (Exp x) = Exp (shift' x)
-  impl (Logistic x) = Logistic (shift' x)
-  impl (Erf x) = Erf (shift' x)
-  impl (Square x) = Square (shift' x)
-  impl (Sqrt x) = Sqrt (shift' x)
-  impl (Sin x) = Sin (shift' x)
-  impl (Cos x) = Cos (shift' x)
-  impl (Tan x) = Tan (shift' x)
-  impl (Asin x) = Asin (shift' x)
-  impl (Acos x) = Acos (shift' x)
-  impl (Atan x) = Atan (shift' x)
-  impl (Sinh x) = Sinh (shift' x)
-  impl (Cosh x) = Cosh (shift' x)
-  impl (Tanh x) = Tanh (shift' x)
-  impl (Asinh x) = Asinh (shift' x)
-  impl (Acosh x) = Acosh (shift' x)
-  impl (Atanh x) = Atanh (shift' x)
-  impl (Argmin {out} k x) = Argmin {out} k (shift' x)
-  impl (Argmax {out} k x) = Argmax {out} k (shift' x)
-  impl (Select x y z) = Select (shift' x) (shift' y) (shift' z)
+  impl (Reverse ks x) = Reverse ks (x + n)
+  impl (Eq x y) = Eq (x + n) (y + n)
+  impl (Ne x y) = Ne (x + n) (y + n)
+  impl (Add x y) = Add (x + n) (y + n)
+  impl (Sub x y) = Sub (x + n) (y + n)
+  impl (Mul x y) = Mul (x + n) (y + n)
+  impl (Div x y) = Div (x + n) (y + n)
+  impl (Pow x y) = Pow (x + n) (y + n)
+  impl (Lt x y) = Lt (x + n) (y + n)
+  impl (Gt x y) = Gt (x + n) (y + n)
+  impl (Le x y) = Le (x + n) (y + n)
+  impl (Ge x y) = Ge (x + n) (y + n)
+  impl (And x y) = And (x + n) (y + n)
+  impl (Or x y) = Or (x + n) (y + n)
+  impl (Min x y) = Min (x + n) (y + n)
+  impl (Max x y) = Max (x + n) (y + n)
+  impl (Not x) = Not (x + n)
+  impl (Neg x) = Neg (x + n)
+  impl (Reciprocal x) = Reciprocal (x + n)
+  impl (Abs x) = Abs (x + n)
+  impl (Ceil x) = Ceil (x + n)
+  impl (Floor x) = Floor (x + n)
+  impl (Log x) = Log (x + n)
+  impl (Exp x) = Exp (x + n)
+  impl (Logistic x) = Logistic (x + n)
+  impl (Erf x) = Erf (x + n)
+  impl (Square x) = Square (x + n)
+  impl (Sqrt x) = Sqrt (x + n)
+  impl (Sin x) = Sin (x + n)
+  impl (Cos x) = Cos (x + n)
+  impl (Tan x) = Tan (x + n)
+  impl (Asin x) = Asin (x + n)
+  impl (Acos x) = Acos (x + n)
+  impl (Atan x) = Atan (x + n)
+  impl (Sinh x) = Sinh (x + n)
+  impl (Cosh x) = Cosh (x + n)
+  impl (Tanh x) = Tanh (x + n)
+  impl (Asinh x) = Asinh (x + n)
+  impl (Acosh x) = Acosh (x + n)
+  impl (Atanh x) = Atanh (x + n)
+  impl (Argmin {out} k x) = Argmin {out} k (x + n)
+  impl (Argmax {out} k x) = Argmax {out} k (x + n)
+  impl (Select x y z) = Select (x + n) (y + n) (z + n)
   impl (Cond x y z w v) = ?cond
-  impl (Dot x y) = Dot (shift' x) (shift' y)
-  impl (Cholesky x) = Cholesky (shift' x)
-  impl (TriangularSolve x y z) = TriangularSolve (shift' x) (shift' y) z
-  impl (UniformFloatingPoint x y z w ks) =
-    UniformFloatingPoint (shift' x) (shift' y) (shift' z) (shift' w) ks
-  impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (shift' x) (shift' y) ks
+  impl (Dot x y) = Dot (x + n) (y + n)
+  impl (Cholesky x) = Cholesky (x + n)
+  impl (TriangularSolve x y z) = TriangularSolve (x + n) (y + n) z
+  impl (UniformFloatingPoint x y z w ks) = UniformFloatingPoint (x + n) (y + n) (z + n) (w + n) ks
+  impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (x + n) (y + n) ks
 
-plusCommutativeLeftParen : (a, b, c : Nat) -> (a + b) + c = (a + c) + b
-plusCommutativeLeftParen a b c =
-  rewrite sym $ plusAssociative a b c in
-    rewrite plusCommutative b c in
-      rewrite sym $ plusAssociative a c b
-        in Refl
-
-succNested : (a, b, c : Nat) -> S ((a + b) + c) = (a + S b) + c
-succNested a b c =
-  rewrite plusCommutative (a + b) c in
-    rewrite plusSuccRightSucc c (a + b) in
-      rewrite plusSuccRightSucc a b in
-        rewrite plusCommutative c (a + S b) in
-          Refl
-
-ltePlusMiddle : (a, b, c : Nat) -> LTE (a + b) (a + c + b)
-ltePlusMiddle a b c = rewrite Calc $
-  |~ (a + c + b)
-  ~~ (a + (c + b)) ... sym (plusAssociative a c b)
-  ~~ (a + (b + c)) ... cong (a +) (plusCommutative c b)
-  ~~ ((a + b) + c) ... plusAssociative a b c
-  in lteAddRight (a + b)
-
-mergeHelper : {n, m : _} -> Graph 0 n -> Graph 0 m -> ((s ** (Graph 0 (n + s), LTE m (n + s))), Maybe (Fin m))
-mergeHelper xs ys = impl xs ys where
-
-  extend : Graph lo p -> Graph p hi -> Graph lo hi
-  extend xs [] = xs
-  extend [] ys = ys
-  extend (x :: xs) ys = x :: extend xs ys
-
-  impl :
-    {lo, nx, ny : Nat} ->
-    Graph lo (lo + nx) ->
-    Graph lo (lo + ny) ->
-    ((s ** (Graph lo (lo + nx + s), LTE (lo + ny) (lo + nx + s))), Maybe (Fin (lo + ny)))
-  impl {ny = 0} xs _ =
-    let lte = rewrite plusZeroRightNeutral lo in rewrite plusZeroRightNeutral (lo + nx) in lteAddRight lo
-        terms = rewrite plusZeroRightNeutral (lo + nx) in xs
-     in ((0 ** (terms, lte)), Nothing)
-  impl {nx = 0} _ ys =
-    ((ny ** (rewrite plusZeroRightNeutral lo in ys, rewrite plusZeroRightNeutral lo in reflexive)), Nothing)
-  impl {nx = S nx} {ny = S ny} (x :: xs) (y :: ys) =
-    if x == y
-    then let ys : Graph (S lo) (lo + S ny) = ys
-             ((s' ** (terms, lte)), conflict) =
-               impl {lo = S lo} {nx, ny} (rewrite plusSuccRightSucc lo nx in xs) (rewrite plusSuccRightSucc lo ny in ys)
-             lte = rewrite sym $ succNested lo nx s' in rewrite sym $ plusSuccRightSucc lo ny in lte
-          in ((s' ** (rewrite sym $ succNested lo nx s' in x :: terms, lte)), rewrite sym $ plusSuccRightSucc lo ny in conflict)
-    else let ys = reindex (S nx) lo (y :: ys)  -- do we always reindex? what if an index points to a value that's not conflicted?
-             terms : Graph lo (lo + S nx + S ny) = rewrite sym $ plusCommutativeLeftParen lo (S ny) (S nx) in extend (x :: xs) ys
-          in ((S ny ** (terms, ltePlusMiddle lo (S ny) (S nx))), Just (rewrite sym $ plusSuccRightSucc lo ny in weakenN ny $ last {n = lo}))
-
-||| Shift a `Fin p` by adding q and subtracting p.
-shiftLTE : {p, q : _} -> Fin p -> LTE p q -> Fin q
-shiftLTE FZ (LTESucc _) = last 
-shiftLTE (FS x) (LTESucc lte) = FS (shiftLTE x lte)
-
-||| Merge two topologically sorted graphs into one topologically sorted graph. The input graphs can share nodes. The
-||| resulting graph starts with all nodes in the LHS, as they appear in the LHS. It then contains any nodes in the RHS
-||| not in the LHS. If the input graphs diverge at some node (where two nodes `x`, `y` do not satisfy `x` == `y`), then
-||| all nodes from that node forward are appended after the nodes of the LHS. For example, in pseudo-syntax:
-|||
-||| If the input graphs are the same
-||| merge [a, b, c] [a, b, c] produces [a, b, c]
-|||
-||| If one input graph is a subset of the other
-||| merge [a, b, c] [a, b] produces [a, b, c]
-||| merge [a, b] [a, b, c] produces [a, b, c]
-|||
-||| If the two graphs diverge
-||| merge [a, b, c, d] [a, b, e] produces [a, b, c, d, e]
-||| merge [a, b, c] [a, b, d, e] produces [a, b, c, d, e]
-|||
-||| `merge` also returns functions to update indices into the first two graphs so that they are valid in the resulting
-||| graph.
-export
-merge : {n, m : _} -> Graph 0 n -> Graph 0 m -> (s ** (Fin n -> Fin s, Fin m -> Fin s, Graph 0 s))
-merge xs ys =
-  let ((s' ** (terms, lte)), conflict) = mergeHelper xs ys
-
-      fn : Fin n -> Fin (n + s')
-      fn = weakenN s'
-
-      fm : Fin m -> Fin (n + s')
-      fm x = case conflict of
-        Nothing => weakenLTE x lte
-        Just idx => if x < idx then weakenLTE x lte else shiftLTE x lte
-
-   in ((n + s') ** (fn, fm, terms))
+merge : List Node -> List Node -> (Nat -> Nat, List Node)
+merge xs ys = ((+ length ys), xs ++ ys)

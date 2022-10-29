@@ -22,7 +22,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
 import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 
 export
-getOrCreateLocalClient : Platform -> IO LocalClient
+getOrCreateLocalClient : HasIO io => Platform -> io LocalClient
 getOrCreateLocalClient (MkPlatform platform) = do
   client <- primIO $ prim__getOrCreateLocalClient platform prim__getNullAnyPtr 0
   pure (MkLocalClient client)

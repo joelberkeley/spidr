@@ -17,6 +17,7 @@ limitations under the License.
 ||| number of functions operating on `Tensor`s.
 module Tensor
 
+import Control.Monad.Error.Either
 import Control.Monad.State
 import public Data.List
 import public Data.List.Elem
@@ -41,12 +42,13 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> {n : _} -> (ref : Fin (S n)) -> Graph 0 (S n) -> Tensor shape dtype
+  -- should this be List Node, Graph or sth else?
+  MkTensor : {shape : _} -> Ref -> Graph -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
 fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor shape dtype
-fromLiteral lit = MkTensor 0 [FromLiteral {dtype} {shape} lit]
+fromLiteral lit = MkTensor (N 0 0) (MkGraph [] [FromLiteral {dtype} {shape} lit])
 
 namespace F64
   export
@@ -70,32 +72,36 @@ namespace S32
 |||   the future.
 ||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
-export
+export partial
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
-toLiteral (MkTensor _ terms) = run {dtype} terms
+toLiteral (MkTensor _ graph) =
+  case unsafePerformIO $ runEitherT $ run {dtype} graph of
+       Right lit => lit
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
-export
+export partial
 Show (Tensor shape dtype) where
-  show (MkTensor _ terms) = toString terms
+  show (MkTensor _ graph) =
+    case unsafePerformIO $ runEitherT $ toString graph of
+         Right str => str
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
 [NonFinite] Primitive.Ord dtype => Bounded (Tensor [] dtype) where
-  min = MkTensor 0 [MinValue {dtype}]
-  max = MkTensor 0 [MaxValue {dtype}]
+  min = MkTensor (N 0 0) (MkGraph [] [MinValue {dtype}])
+  max = MkTensor (N 0 0) (MkGraph [] [MaxValue {dtype}])
 
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Ord dtype => Bounded (Tensor [] dtype) where
-  min = MkTensor 0 [MinFiniteValue {dtype}]
-  max = MkTensor 0 [MaxFiniteValue {dtype}]
+  min = MkTensor (N 0 0) (MkGraph [] [MinFiniteValue {dtype}])
+  max = MkTensor (N 0 0) (MkGraph [] [MaxFiniteValue {dtype}])
 
 export
 Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
-  cast (MkTensor ref terms) =
-    MkTensor last (ConvertElementType {dtype=F64} ref `snoc` terms)
+  cast (MkTensor n graph) =
+    MkTensor (S n) (MkGraph graph.params (ConvertElementType {dtype=F64} n :: graph.nodes))
 
 ----------------------------- structural operations ----------------------------
 
