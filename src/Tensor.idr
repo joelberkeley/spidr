@@ -17,6 +17,7 @@ limitations under the License.
 ||| number of functions operating on `Tensor`s.
 module Tensor
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import Control.Monad.State
 import public Data.List
@@ -43,12 +44,12 @@ import public Util
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   -- should this be List Node, Graph or sth else?
-  MkTensor : {shape : _} -> Ref -> Graph -> Tensor shape dtype
+  MkTensor : {shape : _} -> Nat -> Graph -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
 fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor shape dtype
-fromLiteral lit = MkTensor (N 0 0) (MkGraph [] [FromLiteral {dtype} {shape} lit])
+fromLiteral lit = MkTensor 0 (MkGraph [] [FromLiteral {dtype} {shape} lit])
 
 namespace F64
   export
@@ -72,11 +73,12 @@ namespace S32
 |||   the future.
 ||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
-export partial
+export
 toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
-toLiteral (MkTensor _ graph) =
+toLiteral (MkTensor _ graph) = assert_total $ -- make partial
   case unsafePerformIO $ runEitherT $ run {dtype} graph of
        Right lit => lit
+       Left err => idris_crash (show err)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
@@ -89,19 +91,20 @@ Show (Tensor shape dtype) where
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
 [NonFinite] Primitive.Ord dtype => Bounded (Tensor [] dtype) where
-  min = MkTensor (N 0 0) (MkGraph [] [MinValue {dtype}])
-  max = MkTensor (N 0 0) (MkGraph [] [MaxValue {dtype}])
+  min = MkTensor 0 (MkGraph [] [MinValue {dtype}])
+  max = MkTensor 0 (MkGraph [] [MaxValue {dtype}])
 
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Ord dtype => Bounded (Tensor [] dtype) where
-  min = MkTensor (N 0 0) (MkGraph [] [MinFiniteValue {dtype}])
-  max = MkTensor (N 0 0) (MkGraph [] [MaxFiniteValue {dtype}])
+  min = MkTensor 0 (MkGraph [] [MinFiniteValue {dtype}])
+  max = MkTensor 0 (MkGraph [] [MaxFiniteValue {dtype}])
 
 export
 Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
-  cast (MkTensor n graph) =
-    MkTensor (S n) (MkGraph graph.params (ConvertElementType {dtype=F64} n :: graph.nodes))
+  cast (MkTensor scope graph) =
+    let nodes = ConvertElementType {dtype=F64} (N scope (length graph.nodes)) :: graph.nodes
+     in MkTensor scope (MkGraph graph.params nodes)
 
 ----------------------------- structural operations ----------------------------
 
@@ -114,7 +117,9 @@ reshape :
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
   Tensor to dtype
-reshape (MkTensor {shape} ref terms) = MkTensor (FS ref) (Reshape shape to ref `snoc` terms)
+reshape (MkTensor {shape} scope graph) =
+  let nodes = Reshape shape to (N scope (length graph.nodes)) :: graph.nodes
+   in MkTensor scope (MkGraph graph.params nodes)
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -127,8 +132,9 @@ expand :
   {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
   Tensor (insertAt axis 1 shape) dtype
-expand axis (MkTensor {shape} ref terms) =
-  MkTensor (FS ref) (Reshape shape (insertAt axis 1 shape) ref `snoc` terms)
+expand axis (MkTensor {shape} scope graph) =
+  let nodes = Reshape shape (insertAt axis 1 shape) (N scope (length graph.nodes)) :: graph.nodes
+   in MkTensor scope (MkGraph graph.params nodes)
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -175,7 +181,9 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Tensor to dtype
-squeeze (MkTensor {shape} ref terms) = MkTensor (FS ref) (Reshape shape to ref `snoc` terms)
+squeeze (MkTensor {shape} scope graph) =
+  let nodes = Reshape shape to (N scope (length graph.nodes)) :: graph.nodes
+   in MkTensor scope (MkGraph graph.params nodes)
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -387,9 +395,21 @@ concat :
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
   Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor ref terms) (MkTensor {n=n'} ref' terms') =
-  let (_ ** (fi, fi', terms)) = merge terms terms'
-   in MkTensor last (Concat axis (fi ref) (fi' ref') `snoc` terms)
+concat axis (MkTensor scope graph) (MkTensor scope' graph') =
+  case compare scope scope' of
+       LT =>
+         let node = Concat axis (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
+             graph'' = MkGraph graph'.params (node :: graph'.nodes)
+          in MkTensor scope' graph''
+       GT =>
+         let node = Concat axis (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
+             graph'' = MkGraph graph.params (node :: graph.nodes)
+          in MkTensor scope graph''
+       EQ => case graph.params == graph'.params of
+                  False => assert_total $ idris_crash ""  -- use Either and handle error in `run`?
+                  True => let node = Concat axis (N scope (traceVal $ pred $ length graph.nodes)) (N scope (traceVal $ pred $ length graph.nodes + length graph'.nodes))
+                              graph'' = MkGraph graph.params (snoc (graph.nodes ++ graph'.nodes) node)
+                           in MkTensor scope graph''
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -401,7 +421,7 @@ concat axis (MkTensor ref terms) (MkTensor {n=n'} ref' terms') =
 ||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
-diag (MkTensor ref terms) = MkTensor last $ Diag ref `snoc` terms
+--diag (MkTensor ref terms) = MkTensor last $ Diag ref `snoc` terms
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -423,14 +443,14 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
-triangle tri (MkTensor ref terms) =
-  MkTensor last $ Triangle (case tri of Upper => False; Lower => True) ref `snoc` terms
+--triangle tri (MkTensor ref terms) =
+--  MkTensor last $ Triangle (case tri of Upper => False; Lower => True) ref `snoc` terms
 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
-(MkTensor ref terms).T = MkTensor last $ Transpose [1, 0] ref `snoc` terms
+--(MkTensor ref terms).T = MkTensor last $ Transpose [1, 0] ref `snoc` terms
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
@@ -484,7 +504,7 @@ transpose :
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
   Tensor (map (dflip List.index shape) ordering) dtype
-transpose ordering (MkTensor ref terms) = MkTensor last $ Transpose ordering ref `snoc` terms
+--transpose ordering (MkTensor ref terms) = MkTensor last $ Transpose ordering ref `snoc` terms
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -499,7 +519,7 @@ transpose ordering (MkTensor ref terms) = MkTensor last $ Transpose ordering ref
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Tensor [n, n] dtype
-identity = MkTensor 0 [Identity {dtype} n]
+--identity = MkTensor 0 [Identity {dtype} n]
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -569,8 +589,8 @@ broadcast :
   {auto shapesOK : Broadcastable from to} ->
   Tensor from dtype ->
   Tensor to dtype
-broadcast xs with (xs)
-   _ | (MkTensor {shape=_} ref terms) = MkTensor last $ Broadcast {dtype} from to ref `snoc` terms
+--broadcast xs with (xs)
+--   _ | (MkTensor {shape=_} ref terms) = MkTensor last $ Broadcast {dtype} from to ref `snoc` terms
 
 %hint
 export
@@ -715,14 +735,14 @@ reverse :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Tensor shape dtype
-reverse axes (MkTensor ref terms) = MkTensor last $ Reverse axes ref `snoc` terms
+--reverse axes (MkTensor ref terms) = MkTensor last $ Reverse axes ref `snoc` terms
 
 ----------------------------- numeric operations ----------------------------
 
-binaryEW : ({m : _} -> Fin m -> Fin m -> Node m) -> Tensor s d -> Tensor s d' -> Tensor s d''
-binaryEW f (MkTensor ref terms) (MkTensor ref' terms') =
-  let (_ ** (fi, fi', terms)) = merge terms terms'
-   in MkTensor last (f (fi ref) (fi' ref') `snoc` terms)
+binaryEW : (Ref -> Ref -> Node) -> Tensor s d -> Tensor s d' -> Tensor s d''
+--binaryEW f (MkTensor ref terms) (MkTensor ref' terms') =
+--  let (_ ** (fi, fi', terms)) = merge terms terms'
+--   in MkTensor last (f (fi ref) (fi' ref') `snoc` terms)
 
 ||| `fromLiteral [True, False]`.
 export
@@ -797,7 +817,7 @@ namespace Monoid
 ||| `fromLiteral [False, True]`.
 export
 not : Tensor shape PRED -> Tensor shape PRED
-not (MkTensor ref terms) = MkTensor last $ Not ref `snoc` terms
+--not (MkTensor ref terms) = MkTensor last $ Not ref `snoc` terms
 
 ||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
 ||| predicates, the output will use the corresponding element from `onTrue` if the element is
@@ -823,10 +843,10 @@ select :
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
   Tensor shape dtype
-select (MkTensor refPred termsPred) (MkTensor refTrue termsTrue) (MkTensor refFalse termsFalse) =
-  let (_ ** (fi, fi', terms)) = merge termsPred termsTrue
-      (_ ** (fi'', fi''', terms)) = merge terms termsFalse
-   in MkTensor last $ Select (fi'' (fi refPred)) (fi'' (fi' refTrue)) (fi''' refFalse) `snoc` terms
+--select (MkTensor refPred termsPred) (MkTensor refTrue termsTrue) (MkTensor refFalse termsFalse) =
+--  let (_ ** (fi, fi', terms)) = merge termsPred termsTrue
+--      (_ ** (fi'', fi''', terms)) = merge terms termsFalse
+--   in MkTensor last $ Select (fi'' (fi refPred)) (fi'' (fi' refTrue)) (fi''' refFalse) `snoc` terms
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicate is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -874,9 +894,9 @@ namespace Vector
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
-  (MkTensor ref terms) @@ (MkTensor ref' terms') =
-    let (_ ** (fi, fi', terms)) = merge terms terms'
-     in MkTensor last (Dot (fi ref) (fi' ref') `snoc` terms)
+--  (MkTensor ref terms) @@ (MkTensor ref' terms') =
+--    let (_ ** (fi, fi', terms)) = merge terms terms'
+--     in MkTensor last (Dot (fi ref) (fi' ref') `snoc` terms)
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
@@ -908,9 +928,9 @@ namespace Matrix
     Tensor (S m :: tl) dtype ->
     {auto 0 vectorTail : length tl `LTE` 1} ->
     Tensor (n :: tl) dtype
-  (MkTensor ref terms) @@ (MkTensor ref' terms') =
-    let (_ ** (fi, fi', terms)) = merge terms terms'
-     in MkTensor last (Dot (fi ref) (fi' ref') `snoc` terms)
+--  (MkTensor ref terms) @@ (MkTensor ref' terms') =
+--    let (_ ** (fi, fi', terms)) = merge terms terms'
+--     in MkTensor last (Dot (fi ref) (fi' ref') `snoc` terms)
 
 ||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
 ||| `fromLiteral [4, 6]`.
@@ -932,8 +952,8 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
-unary : ({m : _} -> Fin m -> Node m) -> Tensor s d -> Tensor s d'
-unary f (MkTensor ref terms) = MkTensor last $ f ref `snoc` terms
+unary : (Ref -> Node) -> Tensor s d -> Tensor s d'
+--unary f (MkTensor ref terms) = MkTensor last $ f ref `snoc` terms
 
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
@@ -1208,7 +1228,7 @@ argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tensor [] U64
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
-cholesky (MkTensor ref terms) = triangle Lower $ MkTensor last $ Cholesky ref `snoc` terms
+--cholesky (MkTensor ref terms) = triangle Lower $ MkTensor last $ Cholesky ref `snoc` terms
 
 infix 9 |\, \|
 
@@ -1222,9 +1242,9 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor ref terms) |\ (MkTensor ref' terms') =
-    let (_ ** (fi, fi', terms)) = merge terms terms'
-     in MkTensor last (TriangularSolve (fi ref) (fi' ref') True `snoc` terms)
+--  (MkTensor ref terms) |\ (MkTensor ref' terms') =
+--    let (_ ** (fi, fi', terms)) = merge terms terms'
+--     in MkTensor last (TriangularSolve (fi ref) (fi' ref') True `snoc` terms)
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1235,9 +1255,9 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor ref terms) \| (MkTensor ref' terms') =
-    let (_ ** (fi, fi', terms)) = merge terms terms'
-     in MkTensor last (TriangularSolve (fi ref) (fi' ref') False `snoc` terms)
+--  (MkTensor ref terms) \| (MkTensor ref' terms') =
+--    let (_ ** (fi, fi', terms)) = merge terms terms'
+--     in MkTensor last (TriangularSolve (fi ref) (fi' ref') False `snoc` terms)
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.

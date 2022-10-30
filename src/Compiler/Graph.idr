@@ -42,6 +42,11 @@ record Graph
 public export
 data Ref = P Nat Nat | N Nat Nat
 
+export
+Show Ref where
+  show (P k j) = "P \{show k} \{show j}" 
+  show (N k j) = "N \{show k} \{show j}"
+
 Prelude.Eq Ref where
   (P s i) == (P s' i') = (s, i) == (s', i')
   (N s i) == (N s' i') = (s, i) == (s', i')
@@ -240,6 +245,10 @@ Prelude.Eq Node where
 public export
 data CompilerError =
   IndexError String
+
+export
+Show CompilerError where
+  show (IndexError msg) = "IndexError \{msg}"
 
 export
 index : Nat -> List a -> Either CompilerError a

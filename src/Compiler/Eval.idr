@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Compiler.Eval
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import Control.Monad.Reader
 import Data.List
@@ -53,30 +54,43 @@ public export 0
 Compiled : Type -> Type
 Compiled a = EitherT CompilerError IO a
 
-addParams : XlaBuilder -> List FullShape -> Compiled (List XlaOp)
-addParams builder xs = traverse (uncurry addParam) (enumerate xs) where
-  addParam : Nat -> FullShape -> Compiled XlaOp
-  addParam position (MkFullShape shape {dtype}) = do
-  xlaShape <- mkShape shape {dtype}
-  parameter builder position xlaShape ""
-
 record CompiledOps where
   constructor MkXlaGraph
   params : List XlaOp
   nodes : List XlaOp
 
+Show CompiledOps where
+  show (MkXlaGraph params nodes) = "MkXlaGraph \{show $ length params} \{show $ length nodes}"
+
 enqueue : XlaBuilder -> List CompiledOps -> Node -> Compiled XlaOp
 
 eval : XlaBuilder -> Graph -> List CompiledOps -> Compiled (List XlaOp)
-eval builder (MkGraph params nodes) parents = go !(addParams builder params) nodes [] 
+eval builder (MkGraph params nodes) parents = foldl compileNode (pure []) nodes
 
   where
- 
-  go : List XlaOp -> List Node -> List XlaOp -> Compiled (List XlaOp)
-  go params [] ops = pure ops
-  go params (node :: nodes) ops = do
-    op <- enqueue builder (MkXlaGraph params ops :: parents) node
-    go params nodes (op :: ops) 
+
+  compiledParams : Compiled (List XlaOp)
+  compiledParams = traverse (uncurry addParam) (enumerate params) where
+    addParam : Nat -> FullShape -> Compiled XlaOp
+    addParam position (MkFullShape shape {dtype}) = do
+      xlaShape <- mkShape shape {dtype}
+      parameter builder position xlaShape ""
+
+  compileNode : Compiled (List XlaOp) -> Node -> Compiled (List XlaOp)
+  compileNode ops node = assert_total $ do
+    ops <- ops
+    op <- enqueue builder (snoc parents (MkXlaGraph !compiledParams ops)) node
+    pure (snoc ops op)
+--    pure (op :: ops)
+
+{-
+  go : List Node -> List XlaOp -> Compiled (List XlaOp)
+  go [] ops = pure ops
+  go (node :: nodes) ops = do
+    ops <- go nodes ops
+    op <- enqueue builder (MkXlaGraph !compiledParams ops :: parents) node
+    pure (snoc ops op)
+    -}
 
 index : Ref -> List CompiledOps -> Compiled XlaOp
 index (P scope pos) ops =
@@ -85,7 +99,7 @@ index (P scope pos) ops =
        Right ops => case index pos ops.params of
                          Left err => throwE err
                          Right op => pure op
-index (N scope pos) ops = 
+index (N scope pos) ops =
   case index scope ops of
        Left err => throwE err
        Right ops => case index pos ops.nodes of
@@ -120,7 +134,7 @@ enqueue builder ops (Reshape from to ref) = reshape !(index ref ops) (range $ le
 enqueue builder ops (Slice starts stops strides ref) = slice !(index ref ops) starts stops strides
 enqueue builder ops (DynamicSlice starts sizes ref) =
   dynamicSlice !(index ref ops) !(traverse (flip index ops) starts) sizes
-enqueue builder ops (Concat axis ref ref') = concatInDim builder [!(index ref ops), !(index ref' ops)] (cast axis)
+enqueue builder ops (Concat axis ref ref') = concatInDim builder [!(index (traceVal ref) $ traceVal ops), !(index (traceVal ref') ops)] (cast axis)
 enqueue builder ops (Diag ref) = getMatrixDiagonal !(index ref ops)
 enqueue builder ops (Triangle tri ref) = triangle !(index ref ops) tri
 enqueue builder ops (Transpose ordering ref) = transpose !(index ref ops) ordering
@@ -252,11 +266,11 @@ enqueue builder ops (NormalFloatingPoint key initialState shape) = do
 
 export
 toString : Graph -> Compiled String
-toString terms = do
+toString graph = do
   builder <- mkXlaBuilder "toString"
-  ops <- eval builder terms []
+  ops <- eval builder graph []
   case ops of
-    [] => throwE ?noops
+    [] => throwE ?noops_toString
     (op :: _) => pure $ opToString builder op
 
 export
@@ -267,7 +281,7 @@ run graph = do
   builder <- mkXlaBuilder ""
   ops <- eval builder graph []
   case ops of
-       [] => throwE ?run_err
+       [] => throwE ?noops_run
        (root :: _) => do
          computation <- build builder root
          client <- getOrCreateLocalClient platform

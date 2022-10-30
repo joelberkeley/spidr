@@ -1348,15 +1348,18 @@ export covering
 group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
+      {-
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
-  --  , ("slice", TestTensor.slice)
-  --  , ("slice for variable index", sliceForVariableIndex)
+    , ("slice", TestTensor.slice)
+    , ("slice for variable index", sliceForVariableIndex)
+  -}
     , ("concat", concat)
+    {-
     , ("diag", diag)
     , ("triangle", triangle)
     , ("identity", identity)
@@ -1364,8 +1367,7 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
-  --  , ("transpose", transpose)
-    {-
+    , ("transpose", transpose)
     , ("map", mapResult)
     , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
@@ -1374,7 +1376,6 @@ group = MkGroup "Tensor" $ [
     , ("sort", sort)
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
-    -}
     , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
@@ -1388,22 +1389,21 @@ group = MkGroup "Tensor" $ [
     , ("Sum", neutralIsNeutralForSum)
     , ("Prod", neutralIsNeutralForProd)
     -- these use cond
-  --  , ("argmin", argmin)
-  --  , ("argmax", argmax)
+    , ("argmin", argmin)
+    , ("argmax", argmax)
     , ("Min", neutralIsNeutralForMin)
     , ("Max", neutralIsNeutralForMax)
     , ("Any", neutralIsNeutralForAny)
     , ("All", neutralIsNeutralForAll)
     , ("select", select)
-  --  , ("cond for trivial usage", condResultTrivialUsage)
-  --  , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("cond for trivial usage", condResultTrivialUsage)
+    , ("cond for re-used arguments", condResultWithReusedArgs)
     , ("erf", erf)
     , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     -- uses reduce
-  --  , ("trace", trace)
-    {-
+    , ("trace", trace)
     , ("uniform", uniform)
     , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
     , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
