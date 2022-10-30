@@ -59,13 +59,13 @@ record CompiledOps where
   params : List XlaOp
   nodes : List XlaOp
 
-Show CompiledOps where
-  show (MkXlaGraph params nodes) = "MkXlaGraph \{show $ length params} \{show $ length nodes}"
+--Show CompiledOps where
+--  show (MkXlaGraph params nodes) = "MkXlaGraph \{show $ length params} \{show $ length nodes}"
 
 enqueue : XlaBuilder -> List CompiledOps -> Node -> Compiled XlaOp
 
 eval : XlaBuilder -> Graph -> List CompiledOps -> Compiled (List XlaOp)
-eval builder (MkGraph params nodes) parents = foldl compileNode (pure []) nodes
+eval builder (MkGraph params nodes) parents = reverse <$> foldl compileNode (pure []) nodes
 
   where
 
@@ -81,16 +81,6 @@ eval builder (MkGraph params nodes) parents = foldl compileNode (pure []) nodes
     ops <- ops
     op <- enqueue builder (snoc parents (MkXlaGraph !compiledParams ops)) node
     pure (snoc ops op)
---    pure (op :: ops)
-
-{-
-  go : List Node -> List XlaOp -> Compiled (List XlaOp)
-  go [] ops = pure ops
-  go (node :: nodes) ops = do
-    ops <- go nodes ops
-    op <- enqueue builder (MkXlaGraph !compiledParams ops :: parents) node
-    pure (snoc ops op)
-    -}
 
 index : Ref -> List CompiledOps -> Compiled XlaOp
 index (P scope pos) ops =
@@ -105,20 +95,6 @@ index (N scope pos) ops =
        Right ops => case index pos ops.nodes of
                          Left err => throwE err
                          Right op => pure op
-{-
-index (P 0 pos) (MkXlaGraph _ params _) =
-  case index pos params of
-       Left err => throwE err
-       Right op => pure op
-index (P (S k) pos) (MkXlaGraph [] _ _) = throwE ?index_param_no_parents 
-index (P (S k) pos) (MkXlaGraph (p :: _) _ _) = index (P k pos) p
-index (N 0 i) (MkXlaGraph _ _ nodes) =
-  case index i nodes of
-       Left err => throwE err
-       Right op => pure op
-index (N (S k) i) (MkXlaGraph [] _ _) = throwE ?index_node_no_parents
-index (N (S k) i) (MkXlaGraph (p :: _) _ _) = index (N k i) p
--}
 
 enqueue builder _ (FromLiteral {dtype} lit) = do
   literal <- write {dtype} lit
@@ -134,7 +110,7 @@ enqueue builder ops (Reshape from to ref) = reshape !(index ref ops) (range $ le
 enqueue builder ops (Slice starts stops strides ref) = slice !(index ref ops) starts stops strides
 enqueue builder ops (DynamicSlice starts sizes ref) =
   dynamicSlice !(index ref ops) !(traverse (flip index ops) starts) sizes
-enqueue builder ops (Concat axis ref ref') = concatInDim builder [!(index (traceVal ref) $ traceVal ops), !(index (traceVal ref') ops)] (cast axis)
+enqueue builder ops (Concat axis ref ref') = concatInDim builder [!(index ref ops), !(index ref' ops)] (cast axis)
 enqueue builder ops (Diag ref) = getMatrixDiagonal !(index ref ops)
 enqueue builder ops (Triangle tri ref) = triangle !(index ref ops) tri
 enqueue builder ops (Transpose ordering ref) = transpose !(index ref ops) ordering
@@ -239,30 +215,6 @@ enqueue builder ops (NormalFloatingPoint key initialState shape) = do
   rngOutput <- normalFloatingPointDistribution
     !(index key ops) !(index initialState ops) ThreeFry !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
-
--- impl nodes [] where
---  impl : List Node -> List XlaOp -> Compiled (List XlaOp)
---  impl _ ops = pure ops
---  impl (node :: nodes) ops = do
---    op <- enqueue builder ops node
---    impl nodes (op :: ops)
-
--- impl [[3], [4, 5], Concat 0 1] []
---   t = [3]
---   ts = [[4, 5], Concat 0 1]
---   ops = []
---   op = enqueue [] [3] = ConstantLiteral [3]
---   return impl [[4, 5], Concat 0 1] [ConstantLiteral [3]]
---     t = [4, 5]
---     ts = [Concat 0 1]
---     ops = [ConstantLiteral [3]]
---     op = enqueue [ConstantLiteral [3]] [4, 5] = ConstantLiteral [4, 5]
---     return impl [Concat 0 1] [ConstantLiteral [3], ConstantLiteral [4, 5]]
---       t = Concat 0 1
---       ts = []
---       ops = [ConstantLiteral [3], ConstantLiteral [4, 5]]
---       op = enqueue [ConstantLiteral [3], ConstantLiteral [4, 5]] (Concat 0 1) = ConcatInDim [3] [4, 5]
---       return impl [] [ConstantLiteral [3], ConstantLiteral [4, 5], ConcatInDim [3] [4, 5]]
 
 export
 toString : Graph -> Compiled String

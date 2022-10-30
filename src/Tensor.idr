@@ -108,6 +108,11 @@ Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
 
 ----------------------------- structural operations ----------------------------
 
+unary : {shape' : _} -> (Shape -> Ref -> Node) -> Tensor shape d -> Tensor shape' d'
+unary f (MkTensor {shape} scope graph) =
+  let nodes = snoc graph.nodes (f shape (N scope (length graph.nodes)))
+   in MkTensor scope (MkGraph graph.params nodes)
+
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
 ||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
 export
@@ -117,9 +122,7 @@ reshape :
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
   Tensor to dtype
-reshape (MkTensor {shape} scope graph) =
-  let nodes = Reshape shape to (N scope (length graph.nodes)) :: graph.nodes
-   in MkTensor scope (MkGraph graph.params nodes)
+reshape = unary (flip Reshape to)
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -181,9 +184,7 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Tensor to dtype
-squeeze (MkTensor {shape} scope graph) =
-  let nodes = Reshape shape to (N scope (length graph.nodes)) :: graph.nodes
-   in MkTensor scope (MkGraph graph.params nodes)
+squeeze = unary (flip Reshape to)
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -382,6 +383,26 @@ slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tens
 --       size _ (DynamicSlice _ size') = size'
 --       size _ (DynamicIndex _) = 1
 
+binary :
+  {shape'' : _} ->
+  (Shape -> Shape -> Ref -> Ref -> Node) ->
+  Tensor shape d -> Tensor shape' d' -> Tensor shape'' d''
+binary f (MkTensor {shape} scope graph) (MkTensor {shape = shape'} scope' graph') =
+  case compare scope scope' of
+       LT =>
+         let node = f shape shape' (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
+             graph'' = MkGraph graph'.params (node :: graph'.nodes)
+          in MkTensor scope' graph''
+       GT =>
+         let node = f shape shape' (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
+             graph'' = MkGraph graph.params (node :: graph.nodes)
+          in MkTensor scope graph''
+       EQ => case graph.params == graph'.params of
+                  False => assert_total $ idris_crash ""  -- use Either and handle error in `run`?
+                  True => let node = f shape shape' (N scope (pred $ length graph.nodes)) (N scope (pred $ length graph.nodes + length graph'.nodes))
+                              graph'' = MkGraph graph.params (snoc (graph.nodes ++ graph'.nodes) node)
+                           in MkTensor scope graph''
+
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
 ||| `concat 1 (fromLiteral [[3], [6]]) fromLiteral ([[4, 5], [7, 8]])` are both
@@ -395,21 +416,8 @@ concat :
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
   Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor scope graph) (MkTensor scope' graph') =
-  case compare scope scope' of
-       LT =>
-         let node = Concat axis (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
-             graph'' = MkGraph graph'.params (node :: graph'.nodes)
-          in MkTensor scope' graph''
-       GT =>
-         let node = Concat axis (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
-             graph'' = MkGraph graph.params (node :: graph.nodes)
-          in MkTensor scope graph''
-       EQ => case graph.params == graph'.params of
-                  False => assert_total $ idris_crash ""  -- use Either and handle error in `run`?
-                  True => let node = Concat axis (N scope (traceVal $ pred $ length graph.nodes)) (N scope (traceVal $ pred $ length graph.nodes + length graph'.nodes))
-                              graph'' = MkGraph graph.params (snoc (graph.nodes ++ graph'.nodes) node)
-                           in MkTensor scope graph''
+concat axis x y with (x, y)
+  _ | (MkTensor {shape} _ _, MkTensor {shape = shape'} _ _) = binary (\_, _ => Concat axis) x y
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -421,7 +429,8 @@ concat axis (MkTensor scope graph) (MkTensor scope' graph') =
 ||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
---diag (MkTensor ref terms) = MkTensor last $ Diag ref `snoc` terms
+diag x with (x)
+  _ | (MkTensor {shape = [_, _]} _ _) = unary (const Diag) x
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -443,14 +452,16 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
---triangle tri (MkTensor ref terms) =
---  MkTensor last $ Triangle (case tri of Upper => False; Lower => True) ref `snoc` terms
+triangle tri x with (x)
+  _ | (MkTensor {shape = [_, _]} _ _) =
+    unary (const $ Triangle (case tri of Upper => False; Lower => True)) x
 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
---(MkTensor ref terms).T = MkTensor last $ Transpose [1, 0] ref `snoc` terms
+(.T) x with (x)
+  _ | (MkTensor {shape = [_, _]} _ _) = unary (const $ Transpose [1, 0]) x
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
@@ -504,7 +515,9 @@ transpose :
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
   Tensor (map (dflip List.index shape) ordering) dtype
---transpose ordering (MkTensor ref terms) = MkTensor last $ Transpose ordering ref `snoc` terms
+transpose ordering (MkTensor {shape} scope graph) =
+  let nodes = snoc graph.nodes (Transpose ordering (N scope (length graph.nodes)))
+   in MkTensor scope (MkGraph graph.params nodes)
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -952,13 +965,15 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
-unary : (Ref -> Node) -> Tensor s d -> Tensor s d'
---unary f (MkTensor ref terms) = MkTensor last $ f ref `snoc` terms
+unaryEW : (Ref -> Node) -> Tensor s d -> Tensor s d'
+unaryEW f (MkTensor {shape} scope graph) =
+  let nodes = snoc graph.nodes (f (N scope (length graph.nodes)))
+   in MkTensor scope (MkGraph graph.params nodes)
 
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate = unary Neg
+negate = unaryEW Neg
 
 ||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
 ||| `fromLiteral [-1, 2]`.
@@ -1021,7 +1036,7 @@ namespace Scalarwise
 ||| is `fromLiteral [-0.5, nan, 5]`.
 export
 recip : Tensor shape F64 -> Tensor shape F64
-recip = unary Reciprocal
+recip = unaryEW Reciprocal
 
 infixr 9 ^
 
@@ -1040,115 +1055,115 @@ export
 ||| `fromLiteral [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-abs = unary Abs
+abs = unaryEW Abs
 
 ||| The element-wise natural exponential. For example, `exp (fromLiteral [-1, 0, 2])` is
 ||| `fromLiteral [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Tensor shape F64
-exp = unary Exp
+exp = unaryEW Exp
 
 ||| The element-wise floor function. For example,
 ||| `floor (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Tensor shape F64
-floor = unary Floor
+floor = unaryEW Floor
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Tensor shape F64
-ceil = unary Ceil
+ceil = unaryEW Ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log (fromLiteral [1 / euler, 1, euler * euler])` is `fromLiteral [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Tensor shape F64
-log = unary Log
+log = unaryEW Log
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp (-x)`.
 export
 logistic : Tensor shape F64 -> Tensor shape F64
-logistic = unary Logistic
+logistic = unaryEW Logistic
 
 ||| The element-wise sine.
 export
 sin : Tensor shape F64 -> Tensor shape F64
-sin = unary Sin
+sin = unaryEW Sin
 
 ||| The element-wise cosine.
 export
 cos : Tensor shape F64 -> Tensor shape F64
-cos = unary Cos
+cos = unaryEW Cos
 
 ||| The element-wise tangent.
 export
 tan : Tensor shape F64 -> Tensor shape F64
-tan = unary Tan
+tan = unaryEW Tan
 
 ||| The element-wise inverse sine.
 export
 asin : Tensor shape F64 -> Tensor shape F64
-asin = unary Asin
+asin = unaryEW Asin
 
 ||| The element-wise inverse cosine.
 export
 acos : Tensor shape F64 -> Tensor shape F64
-acos = unary Acos
+acos = unaryEW Acos
 
 ||| The element-wise inverse tangent.
 export
 atan : Tensor shape F64 -> Tensor shape F64
-atan = unary Atan
+atan = unaryEW Atan
 
 ||| The element-wise hyperbolic sine.
 export
 sinh : Tensor shape F64 -> Tensor shape F64
-sinh = unary Sinh
+sinh = unaryEW Sinh
 
 ||| The element-wise hyperbolic cosine.
 export
 cosh : Tensor shape F64 -> Tensor shape F64
-cosh = unary Cosh
+cosh = unaryEW Cosh
 
 ||| The element-wise hyperbolic tangent.
 export
 tanh : Tensor shape F64 -> Tensor shape F64
-tanh = unary Tanh
+tanh = unaryEW Tanh
 
 ||| The element-wise inverse hyperbolic sine.
 export
 asinh : Tensor shape F64 -> Tensor shape F64
-asinh = unary Asinh
+asinh = unaryEW Asinh
 
 ||| The element-wise inverse hyperbolic cosine.
 export
 acosh : Tensor shape F64 -> Tensor shape F64
-acosh = unary Acosh
+acosh = unaryEW Acosh
 
 ||| The element-wise inverse hyperbolic tangent.
 export
 atanh : Tensor shape F64 -> Tensor shape F64
-atanh = unary Atanh
+atanh = unaryEW Atanh
 
 ||| An approximation to the element-wise error function.
 export
 erf : Tensor shape F64 -> Tensor shape F64
-erf = unary Erf
+erf = unaryEW Erf
 
 ||| The element-wise square. For example, `square (fromLiteral [-2, 0, 3])`
 ||| is `fromLiteral [4, 0, 9]`.
 export
 square : Tensor shape F64 -> Tensor shape F64
-square = unary Square
+square = unaryEW Square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Tensor shape F64
-sqrt = unary Sqrt
+sqrt = unaryEW Sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.

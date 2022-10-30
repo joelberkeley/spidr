@@ -330,6 +330,3 @@ reindex n = map impl
   impl (TriangularSolve x y z) = TriangularSolve (x + n) (y + n) z
   impl (UniformFloatingPoint x y z w ks) = UniformFloatingPoint (x + n) (y + n) (z + n) (w + n) ks
   impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (x + n) (y + n) ks
-
-merge : List Node -> List Node -> (Nat -> Nat, List Node)
-merge xs ys = ((+ length ys), xs ++ ys)

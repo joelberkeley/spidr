@@ -1379,11 +1379,13 @@ group = MkGroup "Tensor" $ [
     , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
+    -}
   ]
-  ++ testElementwiseComparatorCases
+--  ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
-  ++ testElementwiseBinaryCases
+--  ++ testElementwiseBinaryCases
   ++ [
+    {-
       ("Scalarwise.(*)", scalarMultiplication)
     , ("Scalarwise.(/)", scalarDivision)
     , ("Sum", neutralIsNeutralForSum)
