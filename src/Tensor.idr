@@ -532,7 +532,7 @@ transpose ordering (MkTensor {shape} scope graph) =
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Tensor [n, n] dtype
---identity = MkTensor 0 [Identity {dtype} n]
+identity = MkTensor 0 (MkGraph [] [Identity {dtype} n])
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -602,8 +602,7 @@ broadcast :
   {auto shapesOK : Broadcastable from to} ->
   Tensor from dtype ->
   Tensor to dtype
---broadcast xs with (xs)
---   _ | (MkTensor {shape=_} ref terms) = MkTensor last $ Broadcast {dtype} from to ref `snoc` terms
+broadcast = unary (flip (Broadcast {dtype}) to)
 
 %hint
 export
