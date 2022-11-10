@@ -110,7 +110,7 @@ Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
 
 unary : {shape' : _} -> (Shape -> Ref -> Node) -> Tensor shape d -> Tensor shape' d'
 unary f (MkTensor {shape} scope graph) =
-  let nodes = snoc graph.nodes (f shape (N scope (length graph.nodes)))
+  let nodes = snoc graph.nodes (f shape (N scope (pred $ length graph.nodes)))
    in MkTensor scope (MkGraph graph.params nodes)
 
 ||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
@@ -390,12 +390,13 @@ binary :
 binary f (MkTensor {shape} scope graph) (MkTensor {shape = shape'} scope' graph') =
   case compare scope scope' of
        LT =>
+         -- make sure to test these branches
          let node = f shape shape' (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
-             graph'' = MkGraph graph'.params (node :: graph'.nodes)
+             graph'' = MkGraph graph'.params (snoc graph'.nodes node)
           in MkTensor scope' graph''
        GT =>
          let node = f shape shape' (N scope (length graph.nodes)) (N scope' (length graph'.nodes))
-             graph'' = MkGraph graph.params (node :: graph.nodes)
+             graph'' = MkGraph graph.params (snoc graph.nodes node)
           in MkTensor scope graph''
        EQ => case graph.params == graph'.params of
                   False => assert_total $ idris_crash ""  -- use Either and handle error in `run`?
@@ -679,15 +680,34 @@ reduce :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Tensor (deleteAt axes shape) dtype
--- reduce axes (MkTensor expr) =
---   let semigroup : Monoid a -> Semigroup a
---       semigroup _ = %search
+reduce axes (MkTensor scope graph) =
+  let semigroup : Monoid a -> Semigroup a
+      semigroup _ = %search
 
---       p0 := Parameter 0 [] "" {dtype}
---       p1 := Parameter 1 [] "" {dtype}
---       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
---       MkTensor neutral := neutral @{reducer}
---    in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
+      MkTensor neutralScope neutralGraph := neutral @{reducer}
+
+   in case compare scope neutralScope of
+           LT =>
+             let param = MkTensor (S neutralScope) $ MkGraph [MkFullShape {dtype} [], MkFullShape {dtype} []] []
+                 -- semigroup resulting function scope can be even higher than (S neutralScope) if it uses other parameters? Does that matter?
+                 MkTensor _ fGraph = (<+>) @{semigroup reducer} param param
+                 node = Reduce fGraph (N neutralScope (pred $ length neutralGraph.nodes)) axes (N scope (pred $ length graph.nodes))
+                 graph' = MkGraph neutralGraph.params (snoc neutralGraph.nodes node)
+              in MkTensor neutralScope graph'
+           GT =>
+             let param = MkTensor (S scope) $ MkGraph [MkFullShape {dtype} [], MkFullShape {dtype} []] []
+                 MkTensor _ fGraph = (<+>) @{semigroup reducer} param param
+                 node = Reduce fGraph (N neutralScope (pred $ length neutralGraph.nodes)) axes (N scope (pred $ length graph.nodes))
+                 graph' = MkGraph graph.params (snoc graph.nodes node)
+              in MkTensor scope graph'
+           EQ => case graph.params == neutralGraph.params of
+                      False => assert_total $ idris_crash ""
+                      True =>
+                        let param = MkTensor (S scope) $ MkGraph [MkFullShape {dtype} [], MkFullShape {dtype} []] []
+                            MkTensor _ fGraph = (<+>) @{semigroup reducer} param param
+                            node = Reduce fGraph (N scope (pred $ length neutralGraph.nodes)) axes (N scope (pred $ length neutralGraph.nodes + length graph.nodes))
+                            graph' = MkGraph graph.params (snoc (neutralGraph.nodes ++ graph.nodes) node)
+                         in MkTensor scope graph'
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -751,52 +771,51 @@ reverse :
 
 ----------------------------- numeric operations ----------------------------
 
-binaryEW : (Ref -> Ref -> Node) -> Tensor s d -> Tensor s d' -> Tensor s d''
---binaryEW f (MkTensor ref terms) (MkTensor ref' terms') =
---  let (_ ** (fi, fi', terms)) = merge terms terms'
---   in MkTensor last (f (fi ref) (fi' ref') `snoc` terms)
+binaryElementwise : (Ref -> Ref -> Node) -> Tensor s d -> Tensor s d' -> Tensor s d''
+binaryElementwise f x y with (x, y)
+  _ | (MkTensor {shape} _ _, _) = binary (\_, _ => f) x y
 
 ||| `fromLiteral [True, False]`.
 export
 (==) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(==) = binaryEW Eq
+(==) = binaryElementwise Eq
 
 ||| Element-wise inequality. For example, `fromLiteral [1, 2] /= fromLiteral [1, 3]` is
 ||| `fromLiteral [False, True]`.
 export
 (/=) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(/=) = binaryEW Ne
+(/=) = binaryElementwise Ne
 
 ||| Element-wise less than. For example, `fromLiteral [1, 2, 3] < fromLiteral [2, 2, 2]` is
 ||| `fromLiteral [True, False, False]`.
 export
 (<) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<) = binaryEW Lt
+(<) = binaryElementwise Lt
 
 ||| Element-wise greater than. For example, `fromLiteral [1, 2, 3] > fromLiteral [2, 2, 2]` is
 ||| `fromLiteral [False, False, True]`.
 export
 (>) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>) = binaryEW Gt
+(>) = binaryElementwise Gt
 
 ||| Element-wise less than or equal. For example, `fromLiteral [1, 2, 3] <= fromLiteral [2, 2, 2]`
 ||| is `fromLiteral [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(<=) = binaryEW Le
+(<=) = binaryElementwise Le
 
 ||| Element-wise greater than or equal. For example,
 ||| `fromLiteral [1, 2, 3] >= fromLiteral [2, 2, 2]` is `fromLiteral [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
-(>=) = binaryEW Ge
+(>=) = binaryElementwise Ge
 
 ||| Element-wise boolean and. For example,
 ||| `fromLiteral [True, True, False, False] && fromLiteral [True, False, True, False]` is
 ||| `fromLiteral [True, False, False, False]`.
 export
 (&&) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(&&) = binaryEW And
+(&&) = binaryElementwise And
 
 namespace Semigroup
   export
@@ -813,7 +832,7 @@ namespace Monoid
 ||| `fromLiteral [True, True, True, False]`.
 export
 (||) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
-(||) = binaryEW Or
+(||) = binaryElementwise Or
 
 namespace Semigroup
   export
@@ -948,7 +967,7 @@ namespace Matrix
 ||| `fromLiteral [4, 6]`.
 export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(+) = binaryEW Add
+(+) = binaryElementwise Add
 
 namespace Semigroup
   export
@@ -964,27 +983,27 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
-unaryEW : (Ref -> Node) -> Tensor s d -> Tensor s d'
-unaryEW f (MkTensor {shape} scope graph) =
+unaryElementwise : (Ref -> Node) -> Tensor s d -> Tensor s d'
+unaryElementwise f (MkTensor {shape} scope graph) =
   let nodes = snoc graph.nodes (f (N scope (length graph.nodes)))
    in MkTensor scope (MkGraph graph.params nodes)
 
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
-negate = unaryEW Neg
+negate = unaryElementwise Neg
 
 ||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
 ||| `fromLiteral [-1, 2]`.
 export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(-) = binaryEW Sub
+(-) = binaryElementwise Sub
 
 ||| Element-wise multiplication. For example, `fromLiteral [2, 3] * fromLiteral [4, 5]` is
 ||| `fromLiteral [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(*) = binaryEW Mul
+(*) = binaryElementwise Mul
 
 namespace Scalarwise
   ||| Multiplication by a scalar. For example, `fromLiteral 2 * fromLiteral [3, 5]` is
@@ -1015,7 +1034,7 @@ namespace Monoid
 ||| `fromLiteral [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-(/) = binaryEW Div
+(/) = binaryElementwise Div
 
 namespace Scalarwise
   ||| Floating point division by a scalar. For example, `fromLiteral [3.4, -5.6] / fromLiteral 2` is
@@ -1035,7 +1054,7 @@ namespace Scalarwise
 ||| is `fromLiteral [-0.5, nan, 5]`.
 export
 recip : Tensor shape F64 -> Tensor shape F64
-recip = unaryEW Reciprocal
+recip = unaryElementwise Reciprocal
 
 infixr 9 ^
 
@@ -1048,127 +1067,127 @@ infixr 9 ^
 ||| Note: The first root is used.
 export
 (^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
-(^) = binaryEW Pow
+(^) = binaryElementwise Pow
 
 ||| Element-wise absolute value. For example, `abs (fromLiteral [-2, 3])` is
 ||| `fromLiteral [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
-abs = unaryEW Abs
+abs = unaryElementwise Abs
 
 ||| The element-wise natural exponential. For example, `exp (fromLiteral [-1, 0, 2])` is
 ||| `fromLiteral [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Tensor shape F64
-exp = unaryEW Exp
+exp = unaryElementwise Exp
 
 ||| The element-wise floor function. For example,
 ||| `floor (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Tensor shape F64
-floor = unaryEW Floor
+floor = unaryElementwise Floor
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil (fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `fromLiteral [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Tensor shape F64
-ceil = unaryEW Ceil
+ceil = unaryElementwise Ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log (fromLiteral [1 / euler, 1, euler * euler])` is `fromLiteral [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Tensor shape F64
-log = unaryEW Log
+log = unaryElementwise Log
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp (-x)`.
 export
 logistic : Tensor shape F64 -> Tensor shape F64
-logistic = unaryEW Logistic
+logistic = unaryElementwise Logistic
 
 ||| The element-wise sine.
 export
 sin : Tensor shape F64 -> Tensor shape F64
-sin = unaryEW Sin
+sin = unaryElementwise Sin
 
 ||| The element-wise cosine.
 export
 cos : Tensor shape F64 -> Tensor shape F64
-cos = unaryEW Cos
+cos = unaryElementwise Cos
 
 ||| The element-wise tangent.
 export
 tan : Tensor shape F64 -> Tensor shape F64
-tan = unaryEW Tan
+tan = unaryElementwise Tan
 
 ||| The element-wise inverse sine.
 export
 asin : Tensor shape F64 -> Tensor shape F64
-asin = unaryEW Asin
+asin = unaryElementwise Asin
 
 ||| The element-wise inverse cosine.
 export
 acos : Tensor shape F64 -> Tensor shape F64
-acos = unaryEW Acos
+acos = unaryElementwise Acos
 
 ||| The element-wise inverse tangent.
 export
 atan : Tensor shape F64 -> Tensor shape F64
-atan = unaryEW Atan
+atan = unaryElementwise Atan
 
 ||| The element-wise hyperbolic sine.
 export
 sinh : Tensor shape F64 -> Tensor shape F64
-sinh = unaryEW Sinh
+sinh = unaryElementwise Sinh
 
 ||| The element-wise hyperbolic cosine.
 export
 cosh : Tensor shape F64 -> Tensor shape F64
-cosh = unaryEW Cosh
+cosh = unaryElementwise Cosh
 
 ||| The element-wise hyperbolic tangent.
 export
 tanh : Tensor shape F64 -> Tensor shape F64
-tanh = unaryEW Tanh
+tanh = unaryElementwise Tanh
 
 ||| The element-wise inverse hyperbolic sine.
 export
 asinh : Tensor shape F64 -> Tensor shape F64
-asinh = unaryEW Asinh
+asinh = unaryElementwise Asinh
 
 ||| The element-wise inverse hyperbolic cosine.
 export
 acosh : Tensor shape F64 -> Tensor shape F64
-acosh = unaryEW Acosh
+acosh = unaryElementwise Acosh
 
 ||| The element-wise inverse hyperbolic tangent.
 export
 atanh : Tensor shape F64 -> Tensor shape F64
-atanh = unaryEW Atanh
+atanh = unaryElementwise Atanh
 
 ||| An approximation to the element-wise error function.
 export
 erf : Tensor shape F64 -> Tensor shape F64
-erf = unaryEW Erf
+erf = unaryElementwise Erf
 
 ||| The element-wise square. For example, `square (fromLiteral [-2, 0, 3])`
 ||| is `fromLiteral [4, 0, 9]`.
 export
 square : Tensor shape F64 -> Tensor shape F64
-square = unaryEW Square
+square = unaryElementwise Square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Tensor shape F64
-sqrt = unaryEW Sqrt
+sqrt = unaryElementwise Sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-min l r = select (l == l) (select (r == r) (binaryEW Min l r) r) l
+min l r = select (l == l) (select (r == r) (binaryElementwise Min l r) r) l
 
 namespace Semigroup
   export
@@ -1188,7 +1207,7 @@ namespace Monoid
 ||| `max (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-1, 0, 3]`.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-max l r = select (l == l) (select (r == r) (binaryEW Max l r) r) l
+max l r = select (l == l) (select (r == r) (binaryElementwise Max l r) r) l
 
 namespace Semigroup
   export

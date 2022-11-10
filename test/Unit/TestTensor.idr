@@ -599,7 +599,7 @@ reduce : Property
 reduce = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
   reduce @{Sum} [1] x ===# fromLiteral [6, -6]
-
+{-
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-2, -3, -4]]
   reduce @{Sum} [0, 1] x ===# fromLiteral (-3)
 
@@ -620,6 +620,7 @@ reduce = fixedProperty $ do
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
   reduce @{All} [1] x ===# fromLiteral [False, False]
+  -}
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
@@ -884,10 +885,10 @@ testElementwiseBinaryCases = [
     ("(*) S32", S32.testElementwiseBinary (*) (*)),
     ("(/)", F64.testElementwiseBinary (/) (/)),
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
-    ("min S32", S32.testElementwiseBinary min min),
-    ("max S32", S32.testElementwiseBinary max max),
-    ("min F64", F64.testElementwiseBinary min' min),
-    ("max F64", F64.testElementwiseBinary max' max),
+--    ("min S32", S32.testElementwiseBinary min min),
+--    ("max S32", S32.testElementwiseBinary max max),
+--    ("min F64", F64.testElementwiseBinary min' min),
+--    ("max F64", F64.testElementwiseBinary max' max),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
@@ -1357,14 +1358,14 @@ group = MkGroup "Tensor" $ [
     , ("MultiSlice.slice", MultiSlice.slice)
     , ("slice", TestTensor.slice)
     , ("slice for variable index", sliceForVariableIndex)
-  -}
     , ("concat", concat)
-    {-
     , ("diag", diag)
     , ("triangle", triangle)
     , ("identity", identity)
     , ("expand", expand)
+    -}
     , ("broadcast", broadcast)
+    {-
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
     , ("transpose", transpose)
@@ -1372,7 +1373,9 @@ group = MkGroup "Tensor" $ [
     , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+    -}
     , ("reduce", reduce)
+    {-
     , ("sort", sort)
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
@@ -1382,8 +1385,8 @@ group = MkGroup "Tensor" $ [
     -}
   ]
 --  ++ testElementwiseComparatorCases
-  ++ testElementwiseUnaryCases
---  ++ testElementwiseBinaryCases
+--  ++ testElementwiseUnaryCases
+  ++ testElementwiseBinaryCases
   ++ [
     {-
       ("Scalarwise.(*)", scalarMultiplication)

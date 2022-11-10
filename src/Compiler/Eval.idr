@@ -59,8 +59,8 @@ record CompiledOps where
   params : List XlaOp
   nodes : List XlaOp
 
---Show CompiledOps where
---  show (MkXlaGraph params nodes) = "MkXlaGraph \{show $ length params} \{show $ length nodes}"
+Show CompiledOps where
+  show (MkXlaGraph params nodes) = "MkXlaGraph \{show $ length params} \{show $ length nodes}"
 
 enqueue : XlaBuilder -> List CompiledOps -> Node -> Compiled XlaOp
 
@@ -99,6 +99,7 @@ index (N scope pos) ops =
 enqueue builder _ (FromLiteral {dtype} lit) = do
   literal <- write {dtype} lit
   constantLiteral builder literal
+enqueue _ ops (Arg scope position) = index (P scope position) ops
 enqueue builder ops (Tuple refs) = tuple builder !(traverse (flip index ops) refs)
 enqueue builder ops (GetTupleElement idx ref) = getTupleElement !(index ref ops) idx
 enqueue builder _ (MinValue {dtype}) = minValue {dtype} builder
@@ -133,7 +134,7 @@ enqueue builder ops (Reduce semigroup neutral axes ref) = do
        [] => throwE ?reduce_err
        (root :: _) => do
          computation <- build subBuilder root
-         reduce !(index ref ops) !(index neutral ops) computation axes
+         reduce !(index (traceVal ref) (traceVal ops)) !(index (traceVal neutral) (traceVal ops)) computation axes
 enqueue builder ops (Sort comparator axis isStable refs) = do
   subBuilder <- createSubBuilder builder "computation"
   comparatorOps <- eval subBuilder comparator ops 
@@ -145,7 +146,7 @@ enqueue builder ops (Sort comparator axis isStable refs) = do
 enqueue builder ops (Reverse axes ref) = rev !(index ref ops) axes
 enqueue builder ops (Eq l r) = eq !(index l ops) !(index r ops)
 enqueue builder ops (Ne l r) = ne !(index l ops) !(index r ops)
-enqueue builder ops (Add l r) = add !(index l ops) !(index r ops)
+enqueue builder ops (Add l r) = add !(index (traceVal l) (traceVal ops)) !(index (traceVal r) (traceVal ops))
 enqueue builder ops (Sub l r) = sub !(index l ops) !(index r ops)
 enqueue builder ops (Mul l r) = mul !(index l ops) !(index r ops)
 enqueue builder ops (Div l r) = div !(index l ops) !(index r ops)

@@ -60,6 +60,7 @@ Prelude.Eq Ref where
 public export
 data Node : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Node
+  Arg : Nat -> Nat -> Node
   Tuple : List Ref -> Node
   GetTupleElement : Nat -> Ref -> Node
   MinValue : Primitive dtype => Node
@@ -149,6 +150,7 @@ Prelude.Eq Node where
         --
         && lit == believe_me lit'
       No _ => False
+  (Arg scope position) == (Arg scope' position') = (scope, position) == (scope', position')
   (Tuple xs) == (Tuple xs') = xs == xs'
   (GetTupleElement idx tuple) == (GetTupleElement idx' tuple') = idx == idx' && tuple == tuple'
   (MinValue {dtype}) == (MinValue {dtype=dtype'}) =
@@ -256,77 +258,3 @@ index k [] = Left (IndexError "Cannot index into empty list with index \{show k}
 index 0 (x :: _) = Right x
 index (S k) (_ :: xs) = index k xs
 
-reindex : Nat -> List Node -> List Node
-reindex n = map impl
-
-  where
-
-  impl : Node -> Node
-  impl (FromLiteral {dtype} x) = FromLiteral {dtype} x
-  impl (Tuple ys) = Tuple [y + n | y <- ys]
-  impl (GetTupleElement k x) = GetTupleElement k (x + n)
-  impl (MinValue {dtype}) = MinValue {dtype} 
-  impl (MaxValue {dtype}) = MaxValue {dtype}
-  impl (MinFiniteValue {dtype}) = MinFiniteValue {dtype}
-  impl (MaxFiniteValue {dtype}) = MaxFiniteValue {dtype}
-  impl (ConvertElementType {dtype} x) = ConvertElementType {dtype} (x + n)
-  impl (Reshape ks js x) = Reshape ks js (x + n)
-  impl (Slice ks js is x) = Slice ks js is (x + n)
-  impl (DynamicSlice ys ks x) = DynamicSlice [y + n | y <- ys] ks (x + n)
-  impl (Concat k x y) = Concat k (x + n) (y + n)
-  impl (Diag x) = Diag (x + n)
-  impl (Triangle lower x) = Triangle lower (x + n)
-  impl (Transpose ks x) = Transpose ks (x + n)
-  impl (Identity {dtype} k) = Identity {dtype} k
-  impl (Broadcast {dtype} ks js x) = Broadcast {dtype} ks js (x + n)
-  impl (Reduce x y ks z) = ?reduce
-  impl (Sort x k y ys) = ?sort
-  impl (Reverse ks x) = Reverse ks (x + n)
-  impl (Eq x y) = Eq (x + n) (y + n)
-  impl (Ne x y) = Ne (x + n) (y + n)
-  impl (Add x y) = Add (x + n) (y + n)
-  impl (Sub x y) = Sub (x + n) (y + n)
-  impl (Mul x y) = Mul (x + n) (y + n)
-  impl (Div x y) = Div (x + n) (y + n)
-  impl (Pow x y) = Pow (x + n) (y + n)
-  impl (Lt x y) = Lt (x + n) (y + n)
-  impl (Gt x y) = Gt (x + n) (y + n)
-  impl (Le x y) = Le (x + n) (y + n)
-  impl (Ge x y) = Ge (x + n) (y + n)
-  impl (And x y) = And (x + n) (y + n)
-  impl (Or x y) = Or (x + n) (y + n)
-  impl (Min x y) = Min (x + n) (y + n)
-  impl (Max x y) = Max (x + n) (y + n)
-  impl (Not x) = Not (x + n)
-  impl (Neg x) = Neg (x + n)
-  impl (Reciprocal x) = Reciprocal (x + n)
-  impl (Abs x) = Abs (x + n)
-  impl (Ceil x) = Ceil (x + n)
-  impl (Floor x) = Floor (x + n)
-  impl (Log x) = Log (x + n)
-  impl (Exp x) = Exp (x + n)
-  impl (Logistic x) = Logistic (x + n)
-  impl (Erf x) = Erf (x + n)
-  impl (Square x) = Square (x + n)
-  impl (Sqrt x) = Sqrt (x + n)
-  impl (Sin x) = Sin (x + n)
-  impl (Cos x) = Cos (x + n)
-  impl (Tan x) = Tan (x + n)
-  impl (Asin x) = Asin (x + n)
-  impl (Acos x) = Acos (x + n)
-  impl (Atan x) = Atan (x + n)
-  impl (Sinh x) = Sinh (x + n)
-  impl (Cosh x) = Cosh (x + n)
-  impl (Tanh x) = Tanh (x + n)
-  impl (Asinh x) = Asinh (x + n)
-  impl (Acosh x) = Acosh (x + n)
-  impl (Atanh x) = Atanh (x + n)
-  impl (Argmin {out} k x) = Argmin {out} k (x + n)
-  impl (Argmax {out} k x) = Argmax {out} k (x + n)
-  impl (Select x y z) = Select (x + n) (y + n) (z + n)
-  impl (Cond x y z w v) = ?cond
-  impl (Dot x y) = Dot (x + n) (y + n)
-  impl (Cholesky x) = Cholesky (x + n)
-  impl (TriangularSolve x y z) = TriangularSolve (x + n) (y + n) z
-  impl (UniformFloatingPoint x y z w ks) = UniformFloatingPoint (x + n) (y + n) (z + n) (w + n) ks
-  impl (NormalFloatingPoint x y ks) = NormalFloatingPoint (x + n) (y + n) ks
