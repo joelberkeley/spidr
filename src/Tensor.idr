@@ -668,7 +668,7 @@ notReduceable (Preserve (Reduce (Reduce x))) impossible
 export
 reduce :
   (reducer : Monoid (Tensor [] dtype)) =>
-  {to : _} ->
+  {to : _} ->  -- can we erase to?
   Primitive dtype =>
   (axes : List Nat) ->
   {auto 0 ok : Reduceable from axes to} ->
