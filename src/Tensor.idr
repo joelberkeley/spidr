@@ -682,7 +682,7 @@ reduce axes (MkTensor expr) =
       p1 := Parameter 1 [] "" {dtype}
       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
       MkTensor neutral := neutral @{reducer}
-   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral (toList axes) expr
+   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
