@@ -83,20 +83,3 @@ namespace List
 
     ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. the head of the tail.
     SCons : (y : a) -> f y x -> Sorted f (x :: xs) -> Sorted f (y :: x :: xs)
-
-  ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
-  ||| is `[6, 8]`.
-  |||
-  ||| @idxs The indices of the values to delete.
-  ||| @xs The list to delete values from.
-  public export
-  deleteAt :
-    (idxs : List Nat) ->
-    (xs : List a) ->
-    {auto 0 unique : Sorted LT idxs} ->
-    {auto 0 inBounds : All (flip InBounds xs) idxs} ->
-    List a
-  deleteAt idxs xs = go 0 idxs xs where
-    go : Nat -> List Nat -> List a -> List a
-    go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
-    go _ _ xs = xs

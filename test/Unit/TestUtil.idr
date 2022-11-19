@@ -50,23 +50,6 @@ namespace List
     List.enumerate [5] === [(0, 5)]
     List.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
-  deleteAtForNoIndices : (xs : List a) -> deleteAt [] xs = xs
-  deleteAtForNoIndices [] = Refl
-  deleteAtForNoIndices (_ :: _) = Refl
-
-  deleteAtHead : (x : a) -> (xs : List a) -> deleteAt [0] (x :: xs) = xs
-  deleteAtHead _ [] = Refl
-  deleteAtHead _ (_ :: _) = Refl
-
-  deleteAtLater : (x, y : a) -> (xs : List a) -> deleteAt [1] (x :: y :: xs) = (x :: xs)
-  deleteAtLater _ _ [] = Refl
-  deleteAtLater _ _ (_ :: _) = Refl
-
-  deleteAtHeadAndLater :
-    (x, y, z : a) -> (xs : List a) -> deleteAt [0, 2] (x :: y :: z :: xs) = (y :: xs)
-  deleteAtHeadAndLater _ _ _ [] = Refl
-  deleteAtHeadAndLater _ _ _ (_ :: _) = Refl
-
   repeatedNotLT : Sorted LT [x, x] -> Void
   repeatedNotLT SNil impossible
   repeatedNotLT SOne impossible
