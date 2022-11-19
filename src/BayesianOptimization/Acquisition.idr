@@ -72,7 +72,7 @@ expectedImprovement model best at =
 export
 expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
 expectedImprovementByModel (MkDataset queryPoints _) model at =
-  let best = squeeze $ reduce @{Min} [0] $ mean {event=[1]} $ marginalise model queryPoints
+  let best = squeeze {from=[1]} $ reduce @{Min} [0] $ mean {event=[1]} $ marginalise model queryPoints
    in expectedImprovement model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a

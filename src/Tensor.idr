@@ -623,6 +623,42 @@ map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
       MkTensor exprf = f (MkTensor p0) (MkTensor p1)
    in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
 
+||| A `Reduceable from axes to` proves that a tensor of shape `from` can be reduced along the
+||| specified `axes` to produce a tensor of shape `to`.
+public export
+data Reduceable : (from : Shape) -> {default 0 axis : Nat} -> (axes : List Nat) -> (to : Shape) -> Type where
+  ||| ???
+  Empty : Reduceable [] {axis} [] []
+
+  ||| Preserve an axis as is.
+  Preserve : Reduceable from {axis = S n} axes to -> Reduceable (f :: from) {axis = n} axes (f :: to)
+
+  ||| Reduce an axis.
+  Reduce : Reduceable from {axis = S n} axes to -> Reduceable (f :: from) {axis = n} (n :: axes) to
+
+reduceable : List (from ** axes ** to ** Reduceable from axes to)
+reduceable = [
+      ([] ** [] ** [] ** Empty)
+    , ([3] ** [] ** [3] ** Preserve Empty)
+    , ([3] ** [0] ** [] ** Reduce Empty)
+    , ([3, 4, 5] ** [] ** [3, 4, 5] ** Preserve (Preserve (Preserve Empty)))
+    , ([3, 4, 5] ** [0] ** [4, 5] ** Reduce (Preserve (Preserve Empty)))
+    , ([3, 4, 5] ** [1] ** [3, 5] ** Preserve (Reduce (Preserve Empty)))
+    , ([3, 4, 5] ** [2] ** [3, 4] ** Preserve (Preserve (Reduce Empty)))
+    , ([3, 4, 5] ** [0, 1] ** [5] ** Reduce (Reduce (Preserve Empty)))
+    , ([3, 4, 5] ** [0, 2] ** [4] ** Reduce (Preserve (Reduce Empty)))
+    , ([3, 4, 5] ** [1, 2] ** [3] ** Preserve (Reduce (Reduce Empty)))
+    , ([3, 4, 5] ** [0, 1, 2] ** [] ** Reduce (Reduce (Reduce Empty)))
+  ]
+
+notReduceable : Not $ Reduceable [3, 4, 5] [1] [3, 4, 5]
+notReduceable (Preserve (Preserve (Preserve Empty))) impossible
+notReduceable (Preserve (Preserve (Preserve (Preserve x)))) impossible
+notReduceable (Preserve (Preserve (Preserve (Reduce x)))) impossible
+notReduceable (Preserve (Reduce Empty)) impossible
+notReduceable (Preserve (Reduce (Preserve x))) impossible
+notReduceable (Preserve (Reduce (Reduce x))) impossible
+
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
 ||| `fromLiteral [3, 5, 7]` and `reduce @{Sum} 1 x` to `fromLiteral [3, 12]`.
@@ -632,12 +668,12 @@ map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
 export
 reduce :
   (reducer : Monoid (Tensor [] dtype)) =>
+  {to : _} ->
   Primitive dtype =>
   (axes : List Nat) ->
-  {auto 0 axesUnique : Sorted LT axes} ->
-  {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
-  Tensor shape dtype ->
-  Tensor (deleteAt axes shape) dtype
+  {auto 0 ok : Reduceable from axes to} ->
+  Tensor from dtype ->
+  Tensor to dtype
 reduce axes (MkTensor expr) =
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
@@ -646,7 +682,7 @@ reduce axes (MkTensor expr) =
       p1 := Parameter 1 [] "" {dtype}
       MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
       MkTensor neutral := neutral @{reducer}
-   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
+   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral (toList axes) expr
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
