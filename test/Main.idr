@@ -21,6 +21,7 @@ import Hedgehog
 import TestUtils
 import Utils.TestComparison
 
+import Unit.BayesianOptimization.TestAcquisition
 import Unit.Model.TestKernel
 import Unit.Util.TestHashable
 import Unit.TestDistribution
@@ -39,4 +40,5 @@ main = test [
     , Unit.TestTensor.group
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group
+    , Unit.BayesianOptimization.TestAcquisition.group
   ]

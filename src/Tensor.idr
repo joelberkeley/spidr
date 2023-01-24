@@ -586,6 +586,44 @@ fill = broadcast {shapesOK=scalarToAnyOk shape} . fromLiteral . Scalar
 
 ----------------------------- generic operations ----------------------------
 
+||| Vectorizing map. Applies a function between `Tensor`s to the trailing dimensions of a `Tensor`.
+||| For example, for
+||| ```
+||| x : Tensor [2, 3, 3] S32
+||| x = fromLiteral [[[ 0,  1,  2],
+|||                   [ 3,  4,  5],
+|||                   [ 6,  7,  8]],
+|||                  [[ 9, 10, 11],
+|||                   [12, 13, 14],
+|||                   [15, 16, 17]]]
+||| ```
+||| `vmap diag x` is `fromLiteral [[0, 4, 8], [9, 13, 17]]`.
+|||
+||| **Note:** The higher-arity variants `Binary.vmap` and `Ternary.vmap` behave more like
+|||   `Zippable`'s `zipWith` than `Functor`'s `map`. We use the name `vmap` as this function behaves
+|||   similarly to JAX's `vmap`, which users may be familiar with.
+export
+vmap :
+  Primitive t0 =>
+  (Tensor s0 t0 -> Tensor s1 t1) ->
+  Tensor (n :: s0) t0 -> Tensor (n :: s1) t1
+
+namespace Binary
+  ||| Vectorize a binary function.
+  export
+  vmap :
+    (Primitive t0, Primitive t1) =>
+    (Tensor s0 t0 -> Tensor s1 t1 -> Tensor s2 t2) ->
+    Tensor (n :: s0) t0 -> Tensor (n :: s1) t1 -> Tensor (n :: s2) t2
+
+namespace Ternary
+  ||| Vectorize a ternary function.
+  export
+  vmap :
+    (Primitive t0, Primitive t1, Primitive t2) =>
+    (Tensor s0 t0 -> Tensor s1 t1 -> Tensor s2 t2 -> Tensor s3 t3) ->
+    Tensor (n :: s0) t0 -> Tensor (n :: s1) t1 -> Tensor (n :: s2) t2 -> Tensor (n :: s3) t3
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
