@@ -16,11 +16,9 @@ limitations under the License.
 module Compiler.Expr
 
 import Decidable.Equality
-import Data.Hashable
 
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-
 import Literal
 import Primitive
 import Types
@@ -35,74 +33,74 @@ public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
   Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
-  Tuple : List Expr -> Expr
-  GetTupleElement : Nat -> Expr -> Expr
+  Tuple : List Nat -> Expr
+  GetTupleElement : Nat -> Nat -> Expr
   MinValue : Primitive dtype => Expr
   MaxValue : Primitive dtype => Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
-  ConvertElementType : Primitive dtype => Expr -> Expr
-  Reshape : Shape -> Shape -> Expr -> Expr
-  Slice : List Nat -> List Nat -> List Nat -> Expr -> Expr
-  DynamicSlice : List Expr -> List Nat -> Expr -> Expr
-  Concat : Nat -> Expr -> Expr -> Expr
-  Diag : Expr -> Expr
-  Triangle : (lower : Bool) -> Expr -> Expr
-  Transpose : List Nat -> Expr -> Expr
+  ConvertElementType : Primitive dtype => Nat -> Expr
+  Reshape : Shape -> Shape -> Nat -> Expr
+  Slice : List Nat -> List Nat -> List Nat -> Nat -> Expr
+  DynamicSlice : List Nat -> List Nat -> Nat -> Expr
+  Concat : Nat -> Nat -> Nat -> Expr
+  Diag : Nat -> Expr
+  Triangle : (lower : Bool) -> Nat -> Expr
+  Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
-  Broadcast : Primitive dtype => Shape -> Shape -> Expr -> Expr
-  Map : Fn n Expr -> Vect n Expr -> Shape -> Expr
-  Reduce : Fn 2 Expr -> Expr -> List Nat -> Expr -> Expr
-  Sort : Fn 2 Expr -> Nat -> Bool -> List Expr -> Expr
-  Reverse : List Nat -> Expr -> Expr
-  Eq : Expr -> Expr -> Expr
-  Ne : Expr -> Expr -> Expr
-  Add : Expr -> Expr -> Expr
-  Sub : Expr -> Expr -> Expr
-  Mul : Expr -> Expr -> Expr
-  Div : Expr -> Expr -> Expr
-  Pow : Expr -> Expr -> Expr
-  Lt : Expr -> Expr -> Expr
-  Gt : Expr -> Expr -> Expr
-  Le : Expr -> Expr -> Expr
-  Ge : Expr -> Expr -> Expr
-  And : Expr -> Expr -> Expr
-  Or : Expr -> Expr -> Expr
-  Min : Expr -> Expr -> Expr
-  Max : Expr -> Expr -> Expr
-  Not : Expr -> Expr
-  Neg : Expr -> Expr
-  Reciprocal : Expr -> Expr
-  Abs : Expr -> Expr
-  Ceil : Expr -> Expr
-  Floor : Expr -> Expr
-  Log : Expr -> Expr
-  Exp : Expr -> Expr
-  Logistic : Expr -> Expr
-  Erf : Expr -> Expr
-  Square : Expr -> Expr
-  Sqrt : Expr -> Expr
-  Sin : Expr -> Expr
-  Cos : Expr -> Expr
-  Tan : Expr -> Expr
-  Asin : Expr -> Expr
-  Acos : Expr -> Expr
-  Atan : Expr -> Expr
-  Sinh : Expr -> Expr
-  Cosh : Expr -> Expr
-  Tanh : Expr -> Expr
-  Asinh : Expr -> Expr
-  Acosh : Expr -> Expr
-  Atanh : Expr -> Expr
-  Argmin : Primitive out => Nat -> Expr -> Expr
-  Argmax : Primitive out => Nat -> Expr -> Expr
-  Select : Expr -> Expr -> Expr -> Expr
-  Cond : Expr -> Fn 1 Expr -> Expr -> Fn 1 Expr -> Expr -> Expr
-  Dot : Expr -> Expr -> Expr
-  Cholesky : Expr -> Expr
-  TriangularSolve : Expr -> Expr -> Bool -> Expr
-  UniformFloatingPoint : Expr -> Expr -> Expr -> Expr -> Shape -> Expr
-  NormalFloatingPoint : Expr -> Expr -> Shape -> Expr
+  Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
+  Map : Fn n Nat -> Vect n Nat -> Shape -> Expr
+  Reduce : Fn 2 Nat -> Nat -> List Nat -> Nat -> Expr
+  Sort : Fn 2 Nat -> Nat -> Bool -> List Nat -> Expr
+  Reverse : List Nat -> Nat -> Expr
+  Eq : Nat -> Nat -> Expr
+  Ne : Nat -> Nat -> Expr
+  Add : Nat -> Nat -> Expr
+  Sub : Nat -> Nat -> Expr
+  Mul : Nat -> Nat -> Expr
+  Div : Nat -> Nat -> Expr
+  Pow : Nat -> Nat -> Expr
+  Lt : Nat -> Nat -> Expr
+  Gt : Nat -> Nat -> Expr
+  Le : Nat -> Nat -> Expr
+  Ge : Nat -> Nat -> Expr
+  And : Nat -> Nat -> Expr
+  Or : Nat -> Nat -> Expr
+  Min : Nat -> Nat -> Expr
+  Max : Nat -> Nat -> Expr
+  Not : Nat -> Expr
+  Neg : Nat -> Expr
+  Reciprocal : Nat -> Expr
+  Abs : Nat -> Expr
+  Ceil : Nat -> Expr
+  Floor : Nat -> Expr
+  Log : Nat -> Expr
+  Exp : Nat -> Expr
+  Logistic : Nat -> Expr
+  Erf : Nat -> Expr
+  Square : Nat -> Expr
+  Sqrt : Nat -> Expr
+  Sin : Nat -> Expr
+  Cos : Nat -> Expr
+  Tan : Nat -> Expr
+  Asin : Nat -> Expr
+  Acos : Nat -> Expr
+  Atan : Nat -> Expr
+  Sinh : Nat -> Expr
+  Cosh : Nat -> Expr
+  Tanh : Nat -> Expr
+  Asinh : Nat -> Expr
+  Acosh : Nat -> Expr
+  Atanh : Nat -> Expr
+  Argmin : Primitive out => Nat -> Nat -> Expr
+  Argmax : Primitive out => Nat -> Nat -> Expr
+  Select : Nat -> Nat -> Nat -> Expr
+  Cond : Nat -> Fn 1 Nat -> Nat -> Fn 1 Nat -> Nat -> Expr
+  Dot : Nat -> Nat -> Expr
+  Cholesky : Nat -> Expr
+  TriangularSolve : Nat -> Nat -> Bool -> Expr
+  UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
+  NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
 
 export
 Prelude.Eq Expr where
@@ -218,135 +216,3 @@ Prelude.Eq Expr where
   (NormalFloatingPoint key initialState shape) == (NormalFloatingPoint key' initialState' shape') =
       key == key' && initialState == initialState'
   _ == _ = False
-
-export
-Hashable Expr where
-  hashWithSalt salt (FromLiteral {shape} {dtype} lit) =
-    salt `hashWithSalt` ("FromLiteral", typeString {dtype}, shape, lit)
-  hashWithSalt salt (Parameter {dtype} position shape name) =
-    salt `hashWithSalt` ("Parameter", typeString {dtype}, shape, position, name)
-  hashWithSalt salt (Tuple xs) =
-    let salt = salt `hashWithSalt` "Tuple"
-     in assert_total $ hashWithSalt salt xs
-  hashWithSalt salt (GetTupleElement idx tuple) =
-    salt `hashWithSalt` ("GetTupleElement", idx) `hashWithSalt` tuple
-  hashWithSalt salt (MinValue {dtype}) =
-    salt `hashWithSalt` ("MinValue", typeString {dtype})
-  hashWithSalt salt (MaxValue {dtype}) =
-    salt `hashWithSalt` ("MaxValue", typeString {dtype})
-  hashWithSalt salt (MinFiniteValue {dtype}) =
-    salt `hashWithSalt` ("MinFiniteValue", typeString {dtype})
-  hashWithSalt salt (MaxFiniteValue {dtype}) =
-    salt `hashWithSalt` ("MaxFiniteValue", typeString {dtype})
-  hashWithSalt salt (ConvertElementType {dtype} operand) =
-    salt `hashWithSalt` ("ConvertElementType", typeString {dtype}) `hashWithSalt` operand
-  hashWithSalt salt (Reshape from to x) =
-    salt `hashWithSalt` ("Reshape", from, to) `hashWithSalt` x
-  hashWithSalt salt (Slice starts stops strides x) =
-    salt `hashWithSalt` ("Slice", starts, stops, strides) `hashWithSalt` x
-  hashWithSalt salt (DynamicSlice starts sizes x) =
-    let salt = salt `hashWithSalt` "DynamicSlice"
-        salt = assert_total $ salt `hashWithSalt` starts
-     in salt `hashWithSalt` sizes `hashWithSalt` x
-  hashWithSalt salt (Concat axis x y) =
-    salt `hashWithSalt` ("Concat", axis) `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (Diag x) = salt `hashWithSalt` "Diag" `hashWithSalt` x
-  hashWithSalt salt (Triangle lower x) = salt `hashWithSalt` ("Triangle", lower) `hashWithSalt` x
-  hashWithSalt salt (Transpose ordering x) =
-      salt `hashWithSalt` ("Transpose", ordering) `hashWithSalt` x
-  hashWithSalt salt (Identity {dtype} n) = salt `hashWithSalt` ("Identity", typeString {dtype}, n)
-  hashWithSalt salt (Broadcast from to x) =
-    salt `hashWithSalt` ("Broadcast", from, to) `hashWithSalt` x
-  hashWithSalt salt (Map (MkFn params f) xs dims) =
-    let salt = salt `hashWithSalt` "Map"
-        salt = assert_total $ salt `hashWithSalt` params
-        salt = salt `hashWithSalt` f
-        salt = assert_total $ salt `hashWithSalt` xs
-     in salt `hashWithSalt` dims
-  hashWithSalt salt (Reduce (MkFn [p0, p1] monoid) neutral axes x) = salt
-    `hashWithSalt` "Reduce"
-    `hashWithSalt` p0
-    `hashWithSalt` p1
-    `hashWithSalt` monoid
-    `hashWithSalt` neutral 
-    `hashWithSalt` axes
-    `hashWithSalt` x
-  hashWithSalt salt (Sort (MkFn [p0, p1] comparator) dimension isStable operands) =
-    let salt = salt
-          `hashWithSalt` "Sort"
-          `hashWithSalt` p0
-          `hashWithSalt` p1
-          `hashWithSalt` (dimension, isStable)
-     in assert_total $ salt `hashWithSalt` operands
-  hashWithSalt salt (Reverse axes operand) =
-    salt `hashWithSalt` ("Reverse", axes) `hashWithSalt` operand
-  hashWithSalt salt (Eq l r) = salt `hashWithSalt` "Eq" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Ne l r) = salt `hashWithSalt` "Ne" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Add l r) = salt `hashWithSalt` "Add" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Sub l r) = salt `hashWithSalt` "Sub" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Mul l r) = salt `hashWithSalt` "Mul" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Div l r) = salt `hashWithSalt` "Div" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Pow l r) = salt `hashWithSalt` "Pow" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Lt l r) = salt `hashWithSalt` "Lt" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Gt l r) = salt `hashWithSalt` "Gt" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Le l r) = salt `hashWithSalt` "Le" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Ge l r) = salt `hashWithSalt` "Ge" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (And l r) = salt `hashWithSalt` "And" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Or l r) = salt `hashWithSalt` "Or" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Min l r) = salt `hashWithSalt` "Min" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Max l r) = salt `hashWithSalt` "Max" `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt salt (Not expr) = salt `hashWithSalt` "Not" `hashWithSalt` expr
-  hashWithSalt salt (Neg expr) = salt `hashWithSalt` "Neg" `hashWithSalt` expr
-  hashWithSalt salt (Reciprocal expr) = salt `hashWithSalt` "Reciprocal" `hashWithSalt` expr
-  hashWithSalt salt (Abs expr) = salt `hashWithSalt` "Abs" `hashWithSalt` expr
-  hashWithSalt salt (Ceil expr) = salt `hashWithSalt` "Ceil" `hashWithSalt` expr
-  hashWithSalt salt (Floor expr) = salt `hashWithSalt` "Floor" `hashWithSalt` expr
-  hashWithSalt salt (Log expr) = salt `hashWithSalt` "Log" `hashWithSalt` expr
-  hashWithSalt salt (Exp expr) = salt `hashWithSalt` "Exp" `hashWithSalt` expr
-  hashWithSalt salt (Logistic expr) = salt `hashWithSalt` "Logistic" `hashWithSalt` expr
-  hashWithSalt salt (Erf expr) = salt `hashWithSalt` "Erf" `hashWithSalt` expr
-  hashWithSalt salt (Square expr) = salt `hashWithSalt` "Square" `hashWithSalt` expr
-  hashWithSalt salt (Sqrt expr) = salt `hashWithSalt` "Sqrt" `hashWithSalt` expr
-  hashWithSalt salt (Sin expr) = salt `hashWithSalt` "Sin" `hashWithSalt` expr
-  hashWithSalt salt (Cos expr) = salt `hashWithSalt` "Cos" `hashWithSalt` expr
-  hashWithSalt salt (Tan expr) = salt `hashWithSalt` "Tan" `hashWithSalt` expr
-  hashWithSalt salt (Asin expr) = salt `hashWithSalt` "Asin" `hashWithSalt` expr
-  hashWithSalt salt (Acos expr) = salt `hashWithSalt` "Acos" `hashWithSalt` expr
-  hashWithSalt salt (Atan expr) = salt `hashWithSalt` "Atan" `hashWithSalt` expr
-  hashWithSalt salt (Sinh expr) = salt `hashWithSalt` "Sinh" `hashWithSalt` expr
-  hashWithSalt salt (Cosh expr) = salt `hashWithSalt` "Cosh" `hashWithSalt` expr
-  hashWithSalt salt (Tanh expr) = salt `hashWithSalt` "Tanh" `hashWithSalt` expr
-  hashWithSalt salt (Asinh expr) = salt `hashWithSalt` "Asinh" `hashWithSalt` expr
-  hashWithSalt salt (Acosh expr) = salt `hashWithSalt` "Acosh" `hashWithSalt` expr
-  hashWithSalt salt (Atanh expr) = salt `hashWithSalt` "Atanh" `hashWithSalt` expr
-  hashWithSalt salt (Argmin {out} axis expr) =
-    salt `hashWithSalt` ("Argmin", typeString {dtype=out}, axis) `hashWithSalt` expr
-  hashWithSalt salt (Argmax {out} axis expr) =
-    salt `hashWithSalt` ("Argmax", typeString {dtype=out}, axis) `hashWithSalt` expr
-  hashWithSalt salt (Select pred f t) =
-    salt `hashWithSalt` "Select" `hashWithSalt` pred `hashWithSalt` f `hashWithSalt` t
-  hashWithSalt salt (Cond pred (MkFn [pt] fTrue) true (MkFn [pf] fFalse) false) = salt
-    `hashWithSalt` "Cond"
-    `hashWithSalt` pred
-    `hashWithSalt` pt
-    `hashWithSalt` fTrue
-    `hashWithSalt` true
-    `hashWithSalt` pf
-    `hashWithSalt` fFalse
-    `hashWithSalt` false
-  hashWithSalt salt (Dot x y) = salt `hashWithSalt` "Dot" `hashWithSalt` x `hashWithSalt` y
-  hashWithSalt salt (Cholesky x) = salt `hashWithSalt` "Cholesky" `hashWithSalt` x
-  hashWithSalt salt (TriangularSolve x y lower) =
-    salt `hashWithSalt` "TriangularSolve" `hashWithSalt` x `hashWithSalt` y `hashWithSalt` lower
-  hashWithSalt salt (UniformFloatingPoint key initialState minval maxval shape) = salt
-      `hashWithSalt` "UniformFloatingPoint"
-      `hashWithSalt` key
-      `hashWithSalt` initialState
-      `hashWithSalt` minval
-      `hashWithSalt` maxval
-      `hashWithSalt` shape
-  hashWithSalt salt (NormalFloatingPoint key initialState shape) = salt
-      `hashWithSalt` "NormalFloatingPoint"
-      `hashWithSalt` key
-      `hashWithSalt` initialState
-      `hashWithSalt` shape

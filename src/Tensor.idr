@@ -35,6 +35,12 @@ import public Util
 
 ----------------------------- core definitions ----------------------------
 
+public export
+Shared : Type -> Type
+Shared = State Nat
+
+fresh : Shared Nat
+
 ||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
 ||| though the runtime representation will likely contain more than its value, and will depend on
 ||| the specific backend.
@@ -43,7 +49,7 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Expr -> Tensor shape dtype
+  MkTensor : {shape : _} -> {n : _} -> Vect n Expr -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
