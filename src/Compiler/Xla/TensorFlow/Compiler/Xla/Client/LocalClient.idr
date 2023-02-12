@@ -24,7 +24,7 @@ data LocalClient : Type where
   MkLocalClient : AnyPtr -> LocalClient
 
 export
-executeAndTransfer : LocalClient -> XlaComputation -> IO Literal
+executeAndTransfer : HasIO io => LocalClient -> XlaComputation -> io Literal
 executeAndTransfer (MkLocalClient client) (MkXlaComputation computation) = do
   literal <- primIO $ prim__executeAndTransfer client computation prim__getNullAnyPtr 0
   literal <- onCollectAny literal Literal.delete

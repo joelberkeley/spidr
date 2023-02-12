@@ -25,9 +25,44 @@ import Types
 import Util
 import Util.Hashable
 
+data ShapeAndType : Type where
+  MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
+
+data Expr : Type where
+
 public export
-data Fn : Nat -> Type -> Type where
-  MkFn : {arity : _} -> Vect arity a -> a -> Fn arity a
+data Fn : Nat -> Type where
+  MkFn : {arity : _} -> Vect arity ShapeAndType -> Expr -> Fn arity
+
+public export
+data BinaryOp = Eq | Ne | Add | Sub | Mul | Div | Pow | Lt | Gt | Le | Ge | And | Or | Min | Max
+
+public export
+data UnaryOp =
+    Not
+  | Neg
+  | Reciprocal
+  | Ceil
+  | Floor
+  | Abs
+  | Log
+  | Exp
+  | Logistic
+  | Erf
+  | Square
+  | Sqrt
+  | Sin
+  | Cos
+  | Tan
+  | Asin
+  | Acos
+  | Atan
+  | Sinh
+  | Cosh
+  | Tanh
+  | Asinh
+  | Acosh
+  | Atanh
 
 public export
 data Expr : Type where
@@ -49,59 +84,23 @@ data Expr : Type where
   Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
-  Map : Fn n Nat -> Vect n Nat -> Shape -> Expr
-  Reduce : Fn 2 Nat -> Nat -> List Nat -> Nat -> Expr
-  Sort : Fn 2 Nat -> Nat -> Bool -> List Nat -> Expr
+  Map : Fn n -> Vect n Nat -> Shape -> Expr
+  Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
+  Sort : Fn 2 -> Nat -> Bool -> List Nat -> Expr
   Reverse : List Nat -> Nat -> Expr
-  Eq : Nat -> Nat -> Expr
-  Ne : Nat -> Nat -> Expr
-  Add : Nat -> Nat -> Expr
-  Sub : Nat -> Nat -> Expr
-  Mul : Nat -> Nat -> Expr
-  Div : Nat -> Nat -> Expr
-  Pow : Nat -> Nat -> Expr
-  Lt : Nat -> Nat -> Expr
-  Gt : Nat -> Nat -> Expr
-  Le : Nat -> Nat -> Expr
-  Ge : Nat -> Nat -> Expr
-  And : Nat -> Nat -> Expr
-  Or : Nat -> Nat -> Expr
-  Min : Nat -> Nat -> Expr
-  Max : Nat -> Nat -> Expr
-  Not : Nat -> Expr
-  Neg : Nat -> Expr
-  Reciprocal : Nat -> Expr
-  Abs : Nat -> Expr
-  Ceil : Nat -> Expr
-  Floor : Nat -> Expr
-  Log : Nat -> Expr
-  Exp : Nat -> Expr
-  Logistic : Nat -> Expr
-  Erf : Nat -> Expr
-  Square : Nat -> Expr
-  Sqrt : Nat -> Expr
-  Sin : Nat -> Expr
-  Cos : Nat -> Expr
-  Tan : Nat -> Expr
-  Asin : Nat -> Expr
-  Acos : Nat -> Expr
-  Atan : Nat -> Expr
-  Sinh : Nat -> Expr
-  Cosh : Nat -> Expr
-  Tanh : Nat -> Expr
-  Asinh : Nat -> Expr
-  Acosh : Nat -> Expr
-  Atanh : Nat -> Expr
+  BinaryElementwise : BinaryOp -> Nat -> Nat -> Expr
+  UnaryElementwise : UnaryOp -> Nat -> Expr
   Argmin : Primitive out => Nat -> Nat -> Expr
   Argmax : Primitive out => Nat -> Nat -> Expr
   Select : Nat -> Nat -> Nat -> Expr
-  Cond : Nat -> Fn 1 Nat -> Nat -> Fn 1 Nat -> Nat -> Expr
+  Cond : Nat -> Fn 1 -> Nat -> Fn 1 -> Nat -> Expr
   Dot : Nat -> Nat -> Expr
   Cholesky : Nat -> Expr
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
 
+{-
 export
 Prelude.Eq Expr where
   (FromLiteral {dtype} lit {shape}) == (FromLiteral {dtype=dtype'} lit' {shape=shape'}) =
@@ -216,3 +215,4 @@ Prelude.Eq Expr where
   (NormalFloatingPoint key initialState shape) == (NormalFloatingPoint key' initialState' shape') =
       key == key' && initialState == initialState'
   _ == _ = False
+-}

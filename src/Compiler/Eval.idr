@@ -20,7 +20,7 @@ import Control.Monad.Maybe
 import Control.Monad.State
 import Data.List
 import Data.List.Elem
-import Data.SortedMap
+import public Data.SortedMap
 import Decidable.Equality
 
 import Compiler.Expr
@@ -54,161 +54,146 @@ import Util.Hashable
 data Err = IndexErr String
 
 Computation : Type -> Type
-Computation = StateT (XlaBuilder, List XlaOp) IO
+Computation = StateT (XlaBuilder, SortedMap Nat XlaOp) (EitherT Err IO)
 
-build : HasIO io => String -> Computation XlaOp -> io XlaComputation
+build : String -> Computation XlaOp -> EitherT Err IO XlaComputation
 build computationName x = do
   builder <- mkXlaBuilder computationName
-  (_, root) <- liftIO $ runStateT (builder, []) x
-  build builder root
+  root <- evalStateT (builder, empty) x
+  XlaBuilder.build builder root
 
 buildWithSubBuilder :
-  String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
-buildWithSubBuilder computationName computationArguments computationResult = do
-  (builder, _) <- get
+  XlaBuilder ->
+  String ->
+  List (Computation XlaOp) ->
+  Computation XlaOp ->
+  EitherT Err IO XlaComputation
+buildWithSubBuilder builder computationName computationArguments computationResult = do
   subBuilder <- createSubBuilder builder computationName
-  (_, cache) <- liftIO $ execStateT (subBuilder, empty) (sequence_ computationArguments)
-  (_, root) <- liftIO $ runStateT (subBuilder, cache) computationResult
-  build subBuilder root
+  (_, cache) <- liftIO $ execStateT (subBuilder, empty) (pure $ sequence_ computationArguments)
+  root <- evalStateT (subBuilder, cache) computationResult
+  XlaBuilder.build subBuilder root
 
-index : Nat -> List a -> Either Err a
+lookup : Nat -> SortedMap Nat a -> Computation a
+lookup n xs =
+  case lookup n xs of
+       Nothing =>
+         lift $ left (IndexErr "Tried to look up value at index \{show n} but none was found.")
+       Just x => pure x
 
 covering
-enqueue : List XlaOp -> Expr -> Either Err (Computation XlaOp)
-enqueue _ (FromLiteral {dtype} lit) = pure $ do
-  (builder, _) <- get
-  literal <- write {dtype} lit 
+enqueue : XlaBuilder -> SortedMap Nat XlaOp -> Expr -> Computation XlaOp
+enqueue builder _ (FromLiteral {dtype} lit) = do
+  literal <- write {dtype} lit
   constantLiteral builder literal
-enqueue _ (Parameter {dtype} position shape name) = pure $ do
-  (builder, _) <- get
+enqueue builder _ (Parameter {dtype} position shape name) = do
   xlaShape <- mkShape {dtype} shape
   parameter builder position xlaShape name
-enqueue ops (Tuple xs) = do
-  tupleOps <- traverse (flip index ops) xs
-  pure $ do
-    (builder, _) <- get
-    tuple builder tupleOps
-enqueue ops (GetTupleElement idx x) = do
-  op <- index x ops
-  pure $ do getTupleElement op idx
-enqueue _ (MinValue {dtype}) = pure $ do
-  (builder, _) <- get
-  minValue {dtype} builder
-enqueue _ (MaxValue {dtype}) = pure $ do
-  (builder, _) <- get
-  maxValue {dtype} builder
-enqueue _ (MinFiniteValue {dtype}) = pure $ do
-  (builder, _) <- get
-  minFiniteValue {dtype} builder
-enqueue _ (MaxFiniteValue {dtype}) = pure $ do
-  (builder, _) <- get
-  maxFiniteValue {dtype} builder
+enqueue builder ops (Tuple xs) = do
+  tupleOps <- traverse (flip lookup ops) xs
+  tuple builder tupleOps
+enqueue builder ops (GetTupleElement idx x) = getTupleElement !(lookup x ops) idx
+enqueue builder _ (MinValue {dtype}) = minValue {dtype} builder
+enqueue builder _ (MaxValue {dtype}) = maxValue {dtype} builder
+enqueue builder _ (MinFiniteValue {dtype}) = minFiniteValue {dtype} builder
+enqueue builder _ (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} builder
 -- todo test dtypes here, is this a bug?
-enqueue ops (ConvertElementType x) = do
-  op <- index x ops
-  pure $ do convertElementType {dtype = F64} op
-enqueue ops (Reshape from to x) = do
-  op <- index x ops
-  pure $ reshape op (range $ length from) to
-enqueue ops (Slice starts stops strides x) = do
-  op <- index x ops
-  pure $ slice op starts stops strides
-enqueue ops (DynamicSlice starts sizes x) = do
-  starts <- traverse (flip index ops) starts
-  op <- index x ops
-  pure $ dynamicSlice op starts sizes
-enqueue ops (Concat axis x x') = do
-  op <- index x ops
-  op' <- index x' ops
-  pure $ do
-    (builder, _) <- get
-    concatInDim builder [op, op'] (cast axis)
-enqueue ops (Diag x) = do
-  op <- index x ops
-  pure $ getMatrixDiagonal op
-enqueue ops (Triangle tri x) = do
-  op <- index x ops
-  pure $ triangle op tri
-enqueue ops (Transpose ordering x) = do
-  op <- index x ops
-  pure $ transpose op ordering
-enqueue _ (Identity {dtype} n) = let n = cast n in Right $ do
-  (builder, _) <- get
-  identityMatrix {dtype} builder n n
-enqueue ops (Broadcast {dtype} from to x) =
+enqueue _ ops (ConvertElementType x) = convertElementType {dtype = F64} !(lookup x ops)
+enqueue _ ops (Reshape from to x) = reshape !(lookup x ops) (range $ length from) to
+enqueue _ ops (Slice starts stops strides x) = slice !(lookup x ops) starts stops strides
+enqueue _ ops (DynamicSlice starts sizes x) =
+  dynamicSlice !(lookup x ops) !(traverse (flip lookup ops) starts) sizes
+enqueue builder ops (Concat axis x y) = do
+  concatInDim builder [!(lookup x ops), !(lookup y ops)] (cast axis)
+enqueue _ ops (Diag x) = getMatrixDiagonal !(lookup x ops)
+enqueue _ ops (Triangle tri x) = triangle !(lookup x ops) tri
+enqueue _ ops (Transpose ordering x) = transpose !(lookup x ops) ordering
+enqueue builder _ (Identity {dtype} n) = let n = cast n in identityMatrix {dtype} builder n n
+enqueue builder ops (Broadcast {dtype} from to x) =
   if elem 0 to && from /= to
-  then Right $ do
-    (builder, _) <- get
+  then do
     literal <- allocLiteral {dtype} to
     constantLiteral builder literal
   else
    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
-    in do
-       op <- index x ops
-       pure $ broadcastInDim op to broadcastDims
-enqueue ops (Map (MkFn {arity} exprParams exprf) exprs dims) = do
+    in broadcastInDim !(lookup x ops) to broadcastDims
+enqueue builder ops (Map (MkFn {arity} shapesAndTypes result) xs dims) = ?map -- do
+  {-
   computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
   (builder, _) <- get
   map builder !(traverse enqueue $ toList exprs) computation dims 
-enqueue ops (Reduce (MkFn [p0, p1] exprf) neutral axes expr) = do
+  -}
+enqueue builder ops (Reduce (MkFn [p0, p1] exprf) neutral axes expr) = ?reduce -- do
+  {-
   computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
   reduce !(enqueue expr) !(enqueue neutral) computation axes
-enqueue ops (Sort (MkFn [p0, p1] exprComp) axis isStable exprs) = do
+  -}
+enqueue builder ops (Sort (MkFn [p0, p1] exprComp) axis isStable exprs) = ?sort -- do
+  {-
   comparator <- buildWithSubBuilder "comparator" [(enqueue p0), (enqueue p1)] (enqueue exprComp)
   sort !(traverse enqueue exprs) comparator axis isStable 
-enqueue ops (Reverse axes expr) = rev !(enqueue expr) axes
-enqueue ops (Eq l r) = eq !(enqueue l) !(enqueue r)
-enqueue ops (Ne l r) = ne !(enqueue l) !(enqueue r)
-enqueue ops (Add l r) = add !(enqueue l) !(enqueue r)
-enqueue ops (Sub l r) = sub !(enqueue l) !(enqueue r)
-enqueue ops (Mul l r) = mul !(enqueue l) !(enqueue r)
-enqueue ops (Div l r) = div !(enqueue l) !(enqueue r)
-enqueue ops (Pow l r) = pow !(enqueue l) !(enqueue r)
-enqueue ops (Lt l r) = lt !(enqueue l) !(enqueue r)
-enqueue ops (Gt l r) = gt !(enqueue l) !(enqueue r)
-enqueue ops (Le l r) = le !(enqueue l) !(enqueue r)
-enqueue ops (Ge l r) = ge !(enqueue l) !(enqueue r)
-enqueue ops (And l r) = and !(enqueue l) !(enqueue r)
-enqueue ops (Or l r) = or !(enqueue l) !(enqueue r)
-enqueue ops (Min l r) = min !(enqueue l) !(enqueue r)
-enqueue ops (Max l r) = max !(enqueue l) !(enqueue r)
-enqueue ops (Not expr) = not !(enqueue expr)
-enqueue ops (Neg expr) = neg !(enqueue expr)
-enqueue ops (Reciprocal expr) = reciprocal !(enqueue expr)
-enqueue ops (Abs expr) = abs !(enqueue expr)
-enqueue ops (Ceil expr) = ceil !(enqueue expr)
-enqueue ops (Floor expr) = floor !(enqueue expr)
-enqueue ops (Exp expr) = exp !(enqueue expr)
-enqueue ops (Log expr) = log !(enqueue expr)
-enqueue ops (Logistic expr) = logistic !(enqueue expr)
-enqueue ops (Erf expr) = erf !(enqueue expr)
-enqueue ops (Square expr) = square !(enqueue expr)
-enqueue ops (Sqrt expr) = sqrt !(enqueue expr)
-enqueue ops (Sin expr) = sin !(enqueue expr)
-enqueue ops (Cos expr) = cos !(enqueue expr)
-enqueue ops (Tan expr) = tan !(enqueue expr)
-enqueue ops (Asin expr) = asin !(enqueue expr)
-enqueue ops (Acos expr) = acos !(enqueue expr)
-enqueue ops (Atan expr) = atan !(enqueue expr)
-enqueue ops (Sinh expr) = sinh !(enqueue expr)
-enqueue ops (Cosh expr) = cosh !(enqueue expr)
-enqueue ops (Tanh expr) = tanh !(enqueue expr)
-enqueue ops (Asinh expr) = asinh !(enqueue expr)
-enqueue ops (Acosh expr) = acosh !(enqueue expr)
-enqueue ops (Atanh expr) = atanh !(enqueue expr)
-enqueue ops (Argmin {out} axis expr) = argMin {outputType=out} !(enqueue expr) axis
-enqueue ops (Argmax {out} axis expr) = argMax {outputType=out} !(enqueue expr) axis
-enqueue ops (Select pred true false) =
-  select !(enqueue pred) !(enqueue true) !(enqueue false)
-enqueue ops (Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = do
+  -}
+enqueue _ ops (Reverse axes x) = rev !(lookup x ops) axes
+enqueue _ ops (BinaryElementwise f x y) = toXla f !(lookup x ops) !(lookup y ops)
+  where
+  toXla : BinaryOp -> HasIO io => XlaOp -> XlaOp -> io XlaOp
+  toXla Eq = eq
+  toXla Ne = ne
+  toXla Add = add
+  toXla Sub = sub
+  toXla Mul = mul
+  toXla Div = div
+  toXla Pow = pow
+  toXla Lt = lt
+  toXla Gt = gt
+  toXla Le = le
+  toXla Ge = ge
+  toXla And = and
+  toXla Or = or
+  toXla Min = min
+  toXla Max = max
+enqueue _ ops (UnaryElementwise f x) = toXla f !(lookup x ops)
+  where
+  toXla : UnaryOp -> HasIO io => XlaOp -> io XlaOp
+  toXla Not = not
+  toXla Neg = neg
+  toXla Reciprocal = reciprocal
+  toXla Ceil = ceil
+  toXla Floor = floor
+  toXla Log = log
+  toXla Exp = exp
+  toXla Logistic = logistic
+  toXla Erf = erf
+  toXla Square = square
+  toXla Sqrt = sqrt
+  toXla Sin = sin
+  toXla Cos = cos
+  toXla Tan = tan
+  toXla Asin = asin
+  toXla Acos = acos
+  toXla Atan = atan
+  toXla Sinh = sinh
+  toXla Cosh = cosh
+  toXla Tanh = tanh
+  toXla Asinh = asinh
+  toXla Acosh = acosh
+  toXla Atanh = atanh
+enqueue _ ops (Argmin {out} axis x) = argMin {outputType=out} !(lookup x ops) axis
+enqueue _ ops (Argmax {out} axis x) = argMax {outputType=out} !(lookup x ops) axis
+enqueue _ ops (Select pred true false) =
+  select !(lookup pred ops) !(lookup true ops) !(lookup false ops)
+enqueue builder ops (Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = ?cond -- do
+{-
   trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
   falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
   conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp
-enqueue ops (Dot l r) = dot !(enqueue l) !(enqueue r)
-enqueue ops (Cholesky expr) = cholesky !(enqueue expr) True
-enqueue ops (TriangularSolve a b lower) =
-  triangularSolve !(enqueue a) !(enqueue b) True lower False NoTranspose
-enqueue ops (UniformFloatingPoint key initialState minval maxval shape) = do
+-}
+enqueue _ ops (Dot l r) = dot !(lookup l ops) !(lookup r ops)
+enqueue _ ops (Cholesky x) = cholesky !(lookup x ops) True
+enqueue _ ops (TriangularSolve a b lower) =
+  triangularSolve !(lookup a ops) !(lookup b ops) True lower False NoTranspose
+enqueue builder ops (UniformFloatingPoint key initialState minval maxval shape) = ?ufp -- do
+  {-
   rngOutput <- uniformFloatingPointDistribution
     !(enqueue key)
     !(enqueue initialState)
@@ -218,26 +203,45 @@ enqueue ops (UniformFloatingPoint key initialState minval maxval shape) = do
     !(mkShape {dtype=F64} shape)
   (builder, _) <- get
   tuple builder [value rngOutput, state rngOutput]
-enqueue ops (NormalFloatingPoint key initialState shape) = do
+1  -}
+enqueue builder ops (NormalFloatingPoint key initialState shape) = ?nfp -- do
+  {-
   rngOutput <- normalFloatingPointDistribution
     !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
   (builder, _) <- get
   tuple builder [value rngOutput, state rngOutput]
+  -}
+
+interpret : Nat -> SortedMap Nat Expr -> Computation XlaOp
+interpret root xs = do
+  traverse_ processExpr (toList xs)
+  (_, ops) <- get
+  lookup root ops
+
+  where
+  processExpr : (Nat, Expr) -> Computation ()
+  processExpr (n, expr) = do
+    (builder, ops) <- get
+    op <- enqueue builder ops expr
+    put (builder, insert n op ops)
 
 export
 toString : Expr -> String
-toString expr = unsafePerformIO $ do
+toString expr = ?toString' -- unsafePerformIO $ do
+  {-
   builder <- mkXlaBuilder "toString"
-  let comp = assert_total (enqueue expr)
+  let comp = enqueue expr
   ((builder, _), xlaOp) <- runStateT (builder, empty) comp
   pure $ opToString builder xlaOp
+  -}
 
 export
-run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a
-run expr = unsafePerformIO $ do
+run : PrimitiveRW dtype a => (rootIndex : Nat) -> SortedMap Nat Expr -> {shape : _} -> EitherT Err IO (Literal shape a)
+run rootIndex exprs = do
+  computation <- build "" (interpret rootIndex exprs)
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" (assert_total $ enqueue expr)
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)
+

@@ -20,14 +20,14 @@ import Compiler.Xla.TensorFlow.Core.Platform.Status
 import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 
 export
-validateGPUMachineManager : IO Status
+validateGPUMachineManager : HasIO io => io Status
 validateGPUMachineManager = do
   status <- primIO prim__validateGPUMachineManager
   status <- onCollectAny status Status.delete
   pure (MkStatus status)
 
 export
-gpuMachineManager : IO Platform
+gpuMachineManager : HasIO io => io Platform
 gpuMachineManager = do
   platform <- primIO prim__gpuMachineManager
   pure (MkPlatform platform)

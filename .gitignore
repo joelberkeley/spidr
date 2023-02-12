@@ -5,3 +5,5 @@ out/
 backend/xla_extension
 
 .vscode
+.fleet
+.idea

@@ -37,8 +37,8 @@ interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) whe
 
 ||| The variance of a single random variable.
 export
-variance : {event : _} -> Distribution dist => dist event 1 -> Tensor (1 :: event) F64
-variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
+variance : {event : _} -> Distribution dist => dist event 1 -> Shared $ Tensor (1 :: event) F64
+variance dist = squeeze {from=(1 :: 1 :: event)} $ !(cov dist)
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
@@ -52,11 +52,11 @@ interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| The probability density function of the distribution at the specified point.
-      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tensor [] F64
+      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Shared $ Tensor [] F64
 
       ||| The cumulative distribution function of the distribution at the specified point (that is,
       ||| the probability the random variable takes a value less than or equal to the given point).
-      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tensor [] F64
+      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Shared $ Tensor [] F64
 
 ||| A joint Gaussian distribution.
 |||
@@ -78,14 +78,14 @@ Distribution Gaussian where
 ||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
-  pdf (MkGaussian {d} mean cov) x =
-    let cholCov = cholesky (squeeze {to=[S d, S d]} cov)
-        tri = cholCov |\ squeeze (x - mean)
-        exponent = - tri @@ tri / 2.0
-        covSqrtDet = reduce @{Prod} [0] (diag cholCov)
-        denominator = ((2.0 * pi) ^ fromDouble (cast (S d) / 2)) * covSqrtDet
-     in exp exponent / denominator
+  pdf (MkGaussian {d} mean cov) x = do
+    cholCov <- cholesky !(squeeze {to=[S d, S d]} cov)
+    tri <- cholCov |\ !(squeeze !(x - mean))
+    exponent <- - !(tri @@ tri) / 2.0
+    covSqrtDet <- reduce @{Prod} [0] !(diag cholCov)
+    denominator <- !(fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
+    !(exp exponent) / !denominator
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
   cdf (MkGaussian {d=0} mean cov) x =
-    (1.0 + erf (squeeze (x - mean) / (sqrt (squeeze cov * 2.0)))) / 2.0
+    !(1.0 + erf !(squeeze !(x - mean) / !(sqrt !(!(squeeze cov) * 2.0)))) / 2.0

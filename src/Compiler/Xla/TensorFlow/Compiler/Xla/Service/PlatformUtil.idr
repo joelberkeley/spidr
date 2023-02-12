@@ -19,7 +19,7 @@ import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Service.PlatformUtil
 import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 
 export
-getPlatform : String -> IO Platform
+getPlatform : HasIO io => String -> io Platform
 getPlatform platformName = do
   platform <- primIO $ prim__getPlatform platformName
   pure (MkPlatform platform)
