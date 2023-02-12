@@ -47,7 +47,6 @@ import Literal
 import Primitive
 import Types
 import Util
-import Util.Hashable
 
 %hide Util.List.All.map
 
@@ -160,6 +159,7 @@ enqueue _ ops (UnaryElementwise f x) = toXla f !(lookup x ops)
   toXla Reciprocal = reciprocal
   toXla Ceil = ceil
   toXla Floor = floor
+  toXla Abs = abs
   toXla Log = log
   toXla Exp = exp
   toXla Logistic = logistic

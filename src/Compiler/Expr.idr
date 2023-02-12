@@ -23,7 +23,6 @@ import Literal
 import Primitive
 import Types
 import Util
-import Util.Hashable
 
 data ShapeAndType : Type where
   MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType

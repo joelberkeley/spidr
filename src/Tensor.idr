@@ -24,8 +24,6 @@ import public Data.List.Elem
 import Data.List.Quantifiers
 import Decidable.Equality
 
-import Data.Hashable
-
 import Compiler.Eval
 import Compiler.Expr
 import Compiler.LiteralRW

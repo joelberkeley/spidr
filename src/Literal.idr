@@ -27,8 +27,6 @@ limitations under the License.
 |||   makes it particularly useful for testing operations on `Tensor`s.
 module Literal
 
-import Data.Hashable
-
 import public Types
 
 ||| A scalar or array of values.
@@ -75,11 +73,11 @@ export
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
-    (S d :: ds) => pure x :: (the (Literal (d :: ds) _) $ pure x)
+    (S d :: ds) => assert_total $ pure x :: pure x
 
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
-  (f :: fs) <*> (x :: xs) = (f <*> x) :: (fs <*> xs)
+  (f :: fs) <*> (x :: xs) = assert_total $ (f <*> x) :: (fs <*> xs)
 
 applicativeIdentity : (xs : Literal shape a) -> pure Prelude.id <*> xs = xs
 applicativeIdentity (Scalar _) = Refl
