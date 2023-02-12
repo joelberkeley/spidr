@@ -738,31 +738,31 @@ sortWithRepeatedElements = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[1, 4, 4], [3, 2, 5]]
   sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
   sort (<) 1 x ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
-
+  -}
 partial
 reverse : Property
 reverse = fixedProperty $ do
   let x = fromLiteral {shape=[0]} {dtype=S32} []
-  reverse [0] x ===# x
+  (do reverse [0] !x) ===# x
 
   let x = fromLiteral {shape=[0, 3]} {dtype=S32} []
-  reverse [0] x ===# x
-  reverse [1] x ===# x
-  reverse [0, 1] x ===# x
+  (do reverse [0] !x) ===# x
+  (do reverse [1] !x) ===# x
+  (do reverse [0, 1] !x) ===# x
 
   let x = fromLiteral {dtype=S32} [-2, 0, 1]
-  reverse [0] x ===# fromLiteral [1, 0, -2]
+  (do reverse [0] !x) ===# fromLiteral [1, 0, -2]
 
   let x = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
-  reverse [0] x ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
-  reverse [1] x ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
-  reverse [0, 1] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  (do reverse [0] !x) ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
+  (do reverse [1] !x) ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
+  (do reverse [0, 1] !x) ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
 
   let x = fromLiteral {dtype=S32} [
     [[[ 0,  1], [ 2,  3]], [[ 4,  5], [ 6,  7]], [[ 8,  9], [10, 11]]],
     [[[12, 13], [14, 15]], [[16, 17], [18, 19]], [[20, 21], [22, 23]]]
   ]
-  reverse [0, 3] x ===# fromLiteral [
+  (do reverse [0, 3] !x) ===# fromLiteral [
     [[[13, 12], [15, 14]], [[17, 16], [19, 18]], [[21, 20], [23, 22]]],
     [[[ 1,  0], [ 3,  2]], [[ 5,  4], [ 7,  6]], [[ 9,  8], [11, 10]]]
   ]
@@ -773,7 +773,7 @@ namespace Vector
   (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [-2, 0, 1]
         r = fromLiteral {dtype=S32} [3, 1, 2]
-    l @@ r ===# -4
+    (do !l @@ !r) ===# -4
 
 namespace Matrix
   export partial
@@ -781,12 +781,12 @@ namespace Matrix
   (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [3, 3, -1]
-    l @@ r ===# fromLiteral [-7, 8]
+    (do !l @@ !r) ===# fromLiteral [-7, 8]
 
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = fromLiteral {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
-    l @@ r ===# fromLiteral [[ -7,  -2], [  8, -11]]
-    -}
+    (do !l @@ !r) ===# fromLiteral [[ -7,  -2], [  8, -11]]
+
 namespace S32
   export partial
   testElementwiseUnary :
@@ -1119,21 +1119,21 @@ testElementwiseComparatorCases = [
     ("(>=) F64", F64.testElementwiseComparator (>=) (>=)),
     ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
   ]
-{-
+
 partial
 select : Property
 select = fixedProperty $ do
   let onTrue = fromLiteral {dtype=S32} 1
       onFalse = fromLiteral 0
-  select (fromLiteral True) onTrue onFalse ===# onTrue
-  select (fromLiteral False) onTrue onFalse ===# onFalse
+  (do select !(fromLiteral True) !onTrue !onFalse) ===# onTrue
+  (do select !(fromLiteral False) !onTrue !onFalse) ===# onFalse
 
   let pred = fromLiteral [[False, True, True], [True, False, False]]
       onTrue = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
       onFalse = fromLiteral [[6, 7, 8], [9, 10, 11]]
       expected = fromLiteral [[6, 1, 2], [3, 10, 11]]
-  select pred onTrue onFalse ===# expected
-
+  (do select !pred !onTrue !onFalse) ===# expected
+{-
 partial
 condResultTrivialUsage : Property
 condResultTrivialUsage = fixedProperty $ do
@@ -1158,20 +1158,20 @@ condResultWithReusedArgs = fixedProperty $ do
       y = fromLiteral {dtype=S32} 3
   cond (fromLiteral True) (\z => z + z) x (\z => z * z) y ===# 2
   cond (fromLiteral False) (\z => z + z) x (\z => z * z) y ===# 9
-
+  -}
 partial
 erf : Property
 erf = fixedProperty $ do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
-  erf x ===# expected
+  (do erf !x) ===# expected
 
 partial
 cholesky : Property
 cholesky = fixedProperty $ do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
       expected = fromLiteral [[nan, 0], [nan, nan]]
-  cholesky x ===# expected
+  (do cholesky !x) ===# expected
 
   -- example generated with tensorflow
   let x = fromLiteral [
@@ -1184,7 +1184,7 @@ cholesky = fixedProperty $ do
               [0.47207308, 1.5615932 , 0.0       ],
               [0.9182292 , 0.6230785 , 1.2312902 ]
             ]
-  cholesky x ===# expected
+  (do cholesky !x) ===# expected
 
 partial
 triangularSolveResultAndInverse : Property
@@ -1199,23 +1199,23 @@ triangularSolveResultAndInverse = fixedProperty $ do
               [0.9210588 , 0.00647926],
               [0.7890165 , 0.77121615]
             ]
-      actual = a |\ b
+      actual = (do !a |\ !b)
       expected = fromLiteral [
                     [ 0.52820396,  0.43452972],
                     [ 0.79913783, -0.10254406],
                     [ 1.8257918 ,  2.7147462 ]
                   ]
   actual ===# expected
-  a @@ actual ===# b
+  (do !a @@ !actual) ===# b
 
-  let actual = a.T \| b
+  let actual = (do !((!a).T) \| !b)
       expected = fromLiteral [
                     [-2.3692384 , -2.135952  ],
                     [ 0.31686386, -0.594465  ],
                     [ 4.0527363 ,  3.9613056 ]
                   ]
   actual ===# expected
-  a.T @@ actual ===# b
+  (do !((!a).T) @@ !actual) ===# b
 
 partial
 triangularSolveIgnoresOppositeElems : Property
@@ -1223,17 +1223,17 @@ triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = fromLiteral [[1.0, 2.0], [3.0, 4.0]]
       aLower = fromLiteral [[1.0, 0.0], [3.0, 4.0]]
       b = fromLiteral [5.0, 6.0]
-  a |\ b ===# aLower |\ b
+  (do !a |\ !b) ===# (do !aLower |\ !b)
 
   let aUpper = fromLiteral [[1.0, 2.0], [0.0, 4.0]]
-  a \| b ===# aUpper \| b
+  (do !a \| !b) ===# (do !aUpper \| !b)
 
 partial
 trace : Property
 trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
-  trace x ===# 3
-
+  (do trace !x) ===# 3
+{-
 range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 
@@ -1404,7 +1404,7 @@ group = MkGroup "Tensor" $ [
 --    , ("MultiSlice.slice", MultiSlice.slice)
 --    , ("slice", TestTensor.slice)
 --    , ("slice for variable index", sliceForVariableIndex)
---    , ("concat", concat)
+    , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
     , ("identity", identity)
@@ -1412,7 +1412,7 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
---    , ("transpose", transpose)
+--    , ("transpose", transpose)  -- test uses slice
 --    , ("map", mapResult)
 --    , ("map with non-trivial function", mapNonTrivial)
 --    , ("map2", map2Result)
@@ -1421,9 +1421,9 @@ group = MkGroup "Tensor" $ [
 --    , ("sort", sort)
 --    , ("sort with empty axis", sortWithEmptyAxis)
 --    , ("sort with repeated elements", sortWithRepeatedElements)
---    , ("reverse", reverse)
---    , ("Vector.(@@)", Vector.(@@))
---    , ("Matrix.(@@)", Matrix.(@@))
+    , ("reverse", reverse)
+    , ("Vector.(@@)", Vector.(@@))
+    , ("Matrix.(@@)", Matrix.(@@))
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
@@ -1439,14 +1439,14 @@ group = MkGroup "Tensor" $ [
 --    , ("Max", neutralIsNeutralForMax)
 --    , ("Any", neutralIsNeutralForAny)
 --    , ("All", neutralIsNeutralForAll)
---    , ("select", select)
+    , ("select", select)
 --    , ("cond for trivial usage", condResultTrivialUsage)
 --    , ("cond for re-used arguments", condResultWithReusedArgs)
---    , ("erf", erf)
---    , ("cholesky", cholesky)
---    , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
---    , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
---    , ("trace", trace)
+    , ("erf", erf)
+    , ("cholesky", cholesky)
+    , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
+    , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
+--    , ("trace", trace)  -- requires reduce
 --    , ("uniform", uniform)
 --    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
 --    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
