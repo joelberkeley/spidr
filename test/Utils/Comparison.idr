@@ -53,27 +53,27 @@ export covering
 infix 1 ===#
 
 namespace PRED
-  export
-  (===#) : Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
+  export partial
+  (===#) : Monad m => {shape : _} -> Shared (Tensor shape PRED) -> Shared (Tensor shape PRED) -> TestT m ()
   x ===# y = (toLiteral x) === (toLiteral y)
 
 namespace S32
-  export
-  (===#) : Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+  export partial
+  (===#) : Monad m => {shape : _} -> Shared (Tensor shape S32) -> Shared (Tensor shape S32) -> TestT m ()
   x ===# y = (toLiteral x) === (toLiteral y)
 
 namespace U32
-  export
-  (===#) : Monad m => {shape : _} -> Tensor shape U32 -> Tensor shape U32 -> TestT m ()
+  export partial
+  (===#) : Monad m => {shape : _} -> Shared (Tensor shape U32) -> Shared (Tensor shape U32) -> TestT m ()
   x ===# y = (toLiteral x) === (toLiteral y)
 
 namespace U64
-  export
-  (===#) : Monad m => {shape : _} -> Tensor shape U64 -> Tensor shape U64 -> TestT m ()
+  export partial
+  (===#) : Monad m => {shape : _} -> Shared (Tensor shape U64) -> Shared (Tensor shape U64) -> TestT m ()
   x ===# y = (toLiteral x) === (toLiteral y)
 
 namespace F64
-  export
+  export partial
   (===#) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
-           Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+           Shared (Tensor shape F64) -> Shared (Tensor shape F64) -> TestT m ()
   x ===# y = (==~) {tol} (toLiteral x) (toLiteral y)

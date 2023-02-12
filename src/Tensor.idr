@@ -84,16 +84,16 @@ namespace S32
 ||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
 |||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
-toLiteral : PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
-toLiteral (MkTensor n {shape} nodes) =
+toLiteral : PrimitiveRW dtype ty => Shared (Tensor shape dtype) -> Literal shape ty
+toLiteral x = let MkTensor n nodes = evalState 0 x in
   case unsafePerformIO $ runEitherT $ run {dtype} n nodes of
        Right lit => lit
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
 export
-Show (Tensor shape dtype) where
-  show (MkTensor n nodes) = ?show' -- toString expr
+Show (Shared $ Tensor shape dtype) where
+  show = ?show'
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -357,7 +357,7 @@ namespace MultiSlice
 |||
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
-slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Tensor (slice at) dtype
+slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Shared $ Tensor (slice at) dtype
 {-
 slice at (MkTensor expr) =
   let sliced = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) expr
