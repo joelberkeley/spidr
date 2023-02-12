@@ -38,7 +38,7 @@ interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) whe
 ||| The variance of a single random variable.
 export
 variance : {event : _} -> Distribution dist => dist event 1 -> Shared $ Tensor (1 :: event) F64
-variance dist = squeeze {from=(1 :: 1 :: event)} $ !(cov dist)
+variance dist = squeeze {from=(1 :: 1 :: event)} $ cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
@@ -81,11 +81,11 @@ ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
     cholCov <- cholesky !(squeeze {to=[S d, S d]} cov)
     tri <- cholCov |\ !(squeeze !(x - mean))
-    exponent <- - !(tri @@ tri) / 2.0
-    covSqrtDet <- reduce @{Prod} [0] !(diag cholCov)
+    exponent <- - !(!(tri @@ tri) / !2.0)
+    covSqrtDet <- reduce @{?prod} [0] !(diag cholCov)
     denominator <- !(fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
-    !(exp exponent) / !denominator
+    !(exp exponent) / denominator
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
   cdf (MkGaussian {d=0} mean cov) x =
-    !(1.0 + erf !(squeeze !(x - mean) / !(sqrt !(!(squeeze cov) * 2.0)))) / 2.0
+    !(!1.0 + !(erf !(!(squeeze !(x - mean)) / !(sqrt !(!(squeeze cov) * !2.0))))) / !2.0

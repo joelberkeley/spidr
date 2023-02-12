@@ -18,7 +18,7 @@ limitations under the License.
 module Tensor
 
 import Control.Monad.Error.Either
-import Control.Monad.State
+import public Control.Monad.State
 import public Data.List
 import public Data.List.Elem
 import Data.List.Quantifiers
@@ -909,8 +909,8 @@ cond :
   (Primitive tt, Primitive ft, Primitive dtype) =>
   {shape, ts, fs : _} ->
   Tensor [] PRED ->
-  (onTrue : Tensor ts tt -> Tensor shape dtype) -> Tensor ts tt ->
-  (onFalse : Tensor fs ft -> Tensor shape dtype) -> Tensor fs ft ->
+  (onTrue : Tensor ts tt -> Shared $ Tensor shape dtype) -> Tensor ts tt ->
+  (onFalse : Tensor fs ft -> Shared $ Tensor shape dtype) -> Tensor fs ft ->
   Shared $ Tensor shape dtype
 {-
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
@@ -1123,84 +1123,87 @@ sin = unary Sin
 
 ||| The element-wise cosine.
 export
-cos : Tensor shape F64 -> Tensor shape F64
-cos (MkTensor expr) = MkTensor $ Cos expr
+cos : Tensor shape F64 -> Shared $ Tensor shape F64
+cos = unary Cos
 
 ||| The element-wise tangent.
 export
-tan : Tensor shape F64 -> Tensor shape F64
-tan (MkTensor expr) = MkTensor $ Tan expr
+tan : Tensor shape F64 -> Shared $ Tensor shape F64
+tan = unary Tan
 
 ||| The element-wise inverse sine.
 export
-asin : Tensor shape F64 -> Tensor shape F64
-asin (MkTensor expr) = MkTensor $ Asin expr
+asin : Tensor shape F64 -> Shared $ Tensor shape F64
+asin = unary Asin
 
 ||| The element-wise inverse cosine.
 export
-acos : Tensor shape F64 -> Tensor shape F64
-acos (MkTensor expr) = MkTensor $ Acos expr
+acos : Tensor shape F64 -> Shared $ Tensor shape F64
+acos = unary Acos
 
 ||| The element-wise inverse tangent.
 export
-atan : Tensor shape F64 -> Tensor shape F64
-atan (MkTensor expr) = MkTensor $ Atan expr
+atan : Tensor shape F64 -> Shared $ Tensor shape F64
+atan = unary Atan
 
 ||| The element-wise hyperbolic sine.
 export
-sinh : Tensor shape F64 -> Tensor shape F64
-sinh (MkTensor expr) = MkTensor $ Sinh expr
+sinh : Tensor shape F64 -> Shared $ Tensor shape F64
+sinh = unary Sinh
 
 ||| The element-wise hyperbolic cosine.
 export
-cosh : Tensor shape F64 -> Tensor shape F64
-cosh (MkTensor expr) = MkTensor $ Cosh expr
+cosh : Tensor shape F64 -> Shared $ Tensor shape F64
+cosh = unary Cosh
 
 ||| The element-wise hyperbolic tangent.
 export
-tanh : Tensor shape F64 -> Tensor shape F64
-tanh (MkTensor expr) = MkTensor $ Tanh expr
+tanh : Tensor shape F64 -> Shared $ Tensor shape F64
+tanh = unary Tanh
 
 ||| The element-wise inverse hyperbolic sine.
 export
-asinh : Tensor shape F64 -> Tensor shape F64
-asinh (MkTensor expr) = MkTensor $ Asinh expr
+asinh : Tensor shape F64 -> Shared $ Tensor shape F64
+asinh = unary Asinh
 
 ||| The element-wise inverse hyperbolic cosine.
 export
-acosh : Tensor shape F64 -> Tensor shape F64
-acosh (MkTensor expr) = MkTensor $ Acosh expr
+acosh : Tensor shape F64 -> Shared $ Tensor shape F64
+acosh = unary Acosh
 
 ||| The element-wise inverse hyperbolic tangent.
 export
-atanh : Tensor shape F64 -> Tensor shape F64
-atanh (MkTensor expr) = MkTensor $ Atanh expr
+atanh : Tensor shape F64 -> Shared $ Tensor shape F64
+atanh = unary Atanh
 
 ||| An approximation to the element-wise error function.
 export
-erf : Tensor shape F64 -> Tensor shape F64
-erf (MkTensor expr) = MkTensor $ Erf expr
+erf : Tensor shape F64 -> Shared $ Tensor shape F64
+erf = unary Erf
 
 ||| The element-wise square. For example, `square (fromLiteral [-2, 0, 3])`
 ||| is `fromLiteral [4, 0, 9]`.
 export
-square : Tensor shape F64 -> Tensor shape F64
-square (MkTensor expr) = MkTensor $ Square expr
+square : Tensor shape F64 -> Shared $ Tensor shape F64
+square = unary Square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
 export
-sqrt : Tensor shape F64 -> Tensor shape F64
-sqrt (MkTensor expr) = MkTensor $ Sqrt expr
+sqrt : Tensor shape F64 -> Shared $ Tensor shape F64
+sqrt = unary Sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
 export
-min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Shared $ Tensor shape dtype
 min l r with (l, r)
-  _ | (MkTensor exprl, MkTensor exprr) =
-    select (l == l) (select (r == r) (MkTensor $ Min exprl exprr) r) l
+  _ | (MkTensor i nodes, MkTensor j nodes') = do
+    k <- fresh
+    let op = MkTensor k $ (insert k (BinaryElementwise Min i j) (mergeLeft nodes nodes'))
+    select !(l == l) !(select !(r == r) op r) l
 
+{-
 namespace Semigroup
   export
   [Min] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
@@ -1214,15 +1217,19 @@ namespace Monoid
         Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Min where
       neutral = fill (1.0 / 0.0)
+      -}
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-1, 0, 3]`.
 export
-max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Shared $ Tensor shape dtype
 max l r with (l, r)
-  _ | (MkTensor exprl, MkTensor exprr) =
-    select (l == l) (select (r == r) (MkTensor $ Max exprl exprr) r) l
+  _ | (MkTensor i nodes, MkTensor j nodes') = do
+    k <- fresh
+    let op = MkTensor k $ (insert k (BinaryElementwise Max i j) (mergeLeft nodes nodes'))
+    select !(l == l) !(select !(r == r) op r) l
 
+{-
 namespace Semigroup
   export
   [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
@@ -1236,36 +1243,43 @@ namespace Monoid
         Primitive.Ord dtype => 
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
+      -}
 
-highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Tensor [S n] dtype
+{-
+highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Shared $ Tensor [S n] dtype
 highlightNan minimize x with (x)
-  _ | (MkTensor {shape = _} _) =
-    cond (reduce @{All} [0] (x == x)) id x extremizeNan x
+  _ | (MkTensor {shape = _} _ _) =
+    cond !(reduce @{All} [0] !(x == x)) id x extremizeNan x
 
     where
-    extremizeNan : Tensor [S n] dtype -> Tensor [S n] dtype
+    extremizeNan : Tensor [S n] dtype -> Shared $ Tensor [S n] dtype
     extremizeNan x =
-      let min' = broadcast (Types.min @{NonFinite})
-          max' = broadcast (Types.max @{NonFinite})
-       in select (if minimize then x == x else x /= x) max' min'
+      let min' = broadcast !(Types.min @{NonFinite})
+          max' = broadcast !(Types.max @{NonFinite})
+       in select !(if minimize then x == x else x /= x) !max' !min'
+       -}
 
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
-argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tensor [] U64
+argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Shared $ Tensor [] U64
+{-
 argmin x =
   let MkTensor expr = highlightNan True x
    in MkTensor $ Argmin {out=U64} 0 expr
+   -}
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 1`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
-argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tensor [] U64
+argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Shared $ Tensor [] U64
+{-
 argmax x =
   let MkTensor expr = highlightNan False x
    in MkTensor $ Argmax {out=U64} 0 expr
+-}
 
 ---------------------------- other ----------------------------------
 
@@ -1274,8 +1288,10 @@ argmax x =
 ||| positive semi-definite. The remaining matrix components - those not in the lower triangle or
 ||| diagonal - will always be zero.
 export
-cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
-cholesky (MkTensor expr) = triangle Lower $ MkTensor $ Cholesky expr
+cholesky : Tensor [S n, S n] F64 -> Shared $ Tensor [S n, S n] F64
+cholesky (MkTensor i nodes) = do
+  j <- fresh
+  triangle Lower $ MkTensor j (insert j (Cholesky i) nodes)
 
 infix 9 |\, \|
 
@@ -1288,8 +1304,10 @@ namespace Matrix
   ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True
+  (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Shared $ Tensor [m, n] F64
+  (MkTensor i nodes) |\ (MkTensor j nodes') = do
+    k <- fresh
+    pure $ MkTensor k (insert k (TriangularSolve i j True) (mergeLeft nodes nodes'))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1299,8 +1317,10 @@ namespace Matrix
   ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
-  (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
-  (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b False
+  (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Shared $ Tensor [m, n] F64
+  (MkTensor i nodes) \| (MkTensor j nodes') = do
+    k <- fresh
+    pure $ MkTensor k (insert k (TriangularSolve i j False) (mergeLeft nodes nodes'))
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1311,9 +1331,9 @@ namespace Vector
   ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (|\) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
+  (|\) : Tensor [m, m] F64 -> Tensor [m] F64 -> Shared $ Tensor [m] F64
   a |\ b with (b)
-    _ | MkTensor {shape=[_]} _ = squeeze (a |\ (expand 1 b))
+    _ | MkTensor {shape=[_]} _ _ = squeeze !(a |\ !(expand 1 b))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1323,9 +1343,9 @@ namespace Vector
   ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
-  (\|) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
+  (\|) : Tensor [m, m] F64 -> Tensor [m] F64 -> Shared $ Tensor [m] F64
   a \| b with (b)
-    _ | MkTensor {shape=[_]} _ = squeeze (a \| (expand 1 b))
+    _ | MkTensor {shape=[_]} _ _ = squeeze !(a \| !(expand 1 b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1334,19 +1354,22 @@ trace :
   (Primitive.Num dtype, Prelude.Num a) =>
   PrimitiveRW dtype a =>
   Tensor [S n, S n] dtype ->
-  Tensor [] dtype
+  Shared $ Tensor [] dtype
+  {-
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] (x * identity)
+  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(x * !identity)
+  -}
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
 public export
 Rand : Type -> Type
-Rand = State (Tensor [1] U64)
+Rand = StateT (Tensor [1] U64) Shared
 
-inf : Tensor [] F64
+inf : Shared $ Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
+{-
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
 ||| between `bound` and `bound'`.
 |||
@@ -1412,3 +1435,4 @@ normal (MkTensor key) =
   ST $ \(MkTensor initialState) =>
     let valueState = NormalFloatingPoint key initialState shape
      in Id (MkTensor $ GetTupleElement 1 valueState, MkTensor $ GetTupleElement 0 valueState)
+     -}
