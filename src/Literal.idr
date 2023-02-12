@@ -75,7 +75,11 @@ export
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
-    (S d :: ds) => pure x :: (the (Literal (d :: ds) _) $ pure x)
+    (S d :: ds) => impl (S d) ds
+      where
+      impl : (d : Nat) -> (ds : Shape) -> Literal (d :: ds) a
+      impl 0 ds = []
+      impl (S d) ds = pure x :: impl d ds
 
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
