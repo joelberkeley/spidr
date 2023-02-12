@@ -3,8 +3,3 @@ type = "local"
 path = ""
 ipkg = "spidr.ipkg"
 
-[custom.all.hashable]
-type   = "github"
-commit = "latest:main"
-url    = "https://github.com/Z-snails/Idris2-hashable"
-ipkg   = "hashable.ipkg"
