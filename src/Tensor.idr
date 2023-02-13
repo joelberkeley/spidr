@@ -117,11 +117,14 @@ export
     n <- fresh
     pure $ MkTensor n (singleton n $ MaxFiniteValue {dtype})
 
-{-
+
+||| Cast the element type. For example, `castDtype (fromLiteral {dtype=S32} [1, -2])` is
+||| `fromLiteral {dtype=F64} [1.0, -2.0]`.
 export
-Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
-  cast (MkTensor {n} nodes) = MkTensor (ConvertElementType {dtype=F64} n :: nodes)
-  -}
+castDtype : Primitive.Integral a => Tensor shape a -> Shared $ Tensor shape F64
+castDtype (MkTensor i nodes) = do
+  j <- fresh
+  pure $ MkTensor j (insert j (ConvertElementType {dtype=F64} i) nodes)
 
 ----------------------------- structural operations ----------------------------
 

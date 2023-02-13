@@ -133,22 +133,20 @@ show = fixedProperty $ do
 
 partial
 cast : Property
-{-
 cast = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=U32} lit)
+  let x : Shared $ Tensor shape F64 = (do castDtype !(fromLiteral {dtype=U32} lit))
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape nats)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
+  let x : Shared $ Tensor shape F64 = (do castDtype !(fromLiteral {dtype=U64} lit))
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape int32s)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
+  let x : Shared $ Tensor shape F64 = (do castDtype !(fromLiteral {dtype=S32} lit))
   x ===# fromLiteral (map (cast {to=Double}) lit)
-  -}
 
 partial
 reshape : Property
@@ -1399,7 +1397,7 @@ group = MkGroup "Tensor" $ [
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("show", show)
---    , ("cast", cast)
+    , ("cast", cast)
     , ("reshape", reshape)
 --    , ("MultiSlice.slice", MultiSlice.slice)
 --    , ("slice", TestTensor.slice)
