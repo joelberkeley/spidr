@@ -91,9 +91,11 @@ toLiteral x = let MkTensor n nodes = evalState 0 x in
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
-export
+export partial
 Show (Shared $ Tensor shape dtype) where
-  show = ?show'
+  show x = let MkTensor n nodes = evalState 0 x in
+               case unsafePerformIO $ runEitherT $ toString n nodes of
+                    Right str => str
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export

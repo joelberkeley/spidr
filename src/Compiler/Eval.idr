@@ -226,17 +226,14 @@ interpret root xs = do
     put (builder, insert n op ops)
 
 export
-toString : Expr -> String
-toString expr = ?toString' -- unsafePerformIO $ do
-  {-
+toString : Nat -> SortedMap Nat Expr -> EitherT Err IO String
+toString rootIndex exprs = do
   builder <- mkXlaBuilder "toString"
-  let comp = enqueue expr
-  ((builder, _), xlaOp) <- runStateT (builder, empty) comp
+  xlaOp <- evalStateT (builder, empty) (interpret rootIndex exprs)
   pure $ opToString builder xlaOp
-  -}
 
 export
-run : PrimitiveRW dtype a => (rootIndex : Nat) -> SortedMap Nat Expr -> {shape : _} -> EitherT Err IO (Literal shape a)
+run : PrimitiveRW dtype a => Nat -> SortedMap Nat Expr -> {shape : _} -> EitherT Err IO (Literal shape a)
 run rootIndex exprs = do
   computation <- build "" (interpret rootIndex exprs)
   gpuStatus <- validateGPUMachineManager

@@ -1398,7 +1398,7 @@ group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
---    , ("show", show)
+    , ("show", show)
 --    , ("cast", cast)
     , ("reshape", reshape)
 --    , ("MultiSlice.slice", MultiSlice.slice)
