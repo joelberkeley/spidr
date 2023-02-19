@@ -88,7 +88,7 @@ toLiteral : PrimitiveRW dtype ty => Shared (Tensor shape dtype) -> Literal shape
 toLiteral x = let MkTensor n nodes = evalState 0 x in
   case unsafePerformIO $ runEitherT $ run {dtype} n nodes of
        Right lit => lit
-       Left (IndexErr str) => idris_crash str
+       Left err => idris_crash (show err)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
