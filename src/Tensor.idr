@@ -682,6 +682,14 @@ map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
    in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
    -}
 
+export
+interface SemigroupM (f : Type -> Type) (a : Type) where
+  (<+>) : a -> a -> f a
+
+export
+interface SemigroupM f a => MonoidM f a where
+  neutral : f a
+
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
 ||| `fromLiteral [3, 5, 7]` and `reduce @{Sum} 1 x` to `fromLiteral [3, 12]`.
@@ -690,24 +698,24 @@ map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
 ||| @axis The axis along which to reduce elements.
 export
 reduce :
-  (reducer : Monoid (Tensor [] dtype)) =>
+  (reducer : MonoidM Shared (Tensor [] dtype)) =>
   Primitive dtype =>
   (axes : List Nat) ->
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Shared $ Tensor (deleteAt axes shape) dtype
-{-
-reduce axes (MkTensor expr) =
-  let semigroup : Monoid a -> Semigroup a
+reduce axes (MkTensor i xEnv) = do
+  l0 <- fresh
+  l1 <- fresh
+  let semigroup : MonoidM f a -> SemigroupM f a
       semigroup _ = %search
 
-      p0 := Parameter 0 [] "" {dtype}
-      p1 := Parameter 1 [] "" {dtype}
-      MkTensor exprf := (<+>) @{semigroup reducer} (MkTensor p0) (MkTensor p1)
-      MkTensor neutral := neutral @{reducer}
-   in MkTensor $ Reduce (MkFn [p0, p1] exprf) neutral axes expr
-   -}
+  MkTensor m subEnv <- (<+>) @{semigroup reducer} (MkTensor l0 (singleton l0 (Arg l0))) (MkTensor l1 (singleton l1 (Arg l1)))
+  MkTensor n neutralEnv <- neutral @{reducer}
+  j <- fresh
+  let expr = Reduce (MkFn [(l0, MkShapeAndType [] dtype), (l1, MkShapeAndType [] dtype)] m subEnv) n axes i
+  pure $ MkTensor j (insert j expr $ mergeLeft xEnv neutralEnv) 
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -853,17 +861,15 @@ export
 (&&) : Tensor shape PRED -> Tensor shape PRED -> Shared $ Tensor shape PRED
 (&&) = binary And
 
--- we can have a tensor equivalent to semigroup so that `reduce` works, but we probably shouldn't call it
--- a semigroup unless we find it is one
-namespace Semigroup
+namespace SemigroupM
   export
-  [All] Semigroup (Tensor shape PRED) where
-    (<+>) = ?allSemigroup -- (&&)
+  [All] SemigroupM Shared (Tensor shape PRED) where
+    (<+>) = (&&)
 
-namespace Monoid
+namespace MonoidM
   export
-  [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
-    neutral = ?allMonoid -- fill True
+  [All] {shape : _} -> MonoidM Shared (Tensor shape PRED) using SemigroupM.All where
+    neutral = fill True
 
 ||| Element-wise boolean or. For example,
 ||| `fromLiteral [True, True, False, False] || fromLiteral [True, False, True, False]` is
@@ -872,15 +878,15 @@ export
 (||) : Tensor shape PRED -> Tensor shape PRED -> Shared $ Tensor shape PRED
 (||) = binary Or
 
-namespace Semigroup
+namespace SemigroupM
   export
-  [Any] Semigroup (Tensor shape PRED) where
-    (<+>) = ?anySemigroup -- (||)
+  [Any] SemigroupM Shared (Tensor shape PRED) where
+    (<+>) = (||)
 
-namespace Monoid
+namespace MonoidM
   export
-  [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
-    neutral = ?anyMonoid -- fill False
+  [Any] {shape : _} -> MonoidM Shared (Tensor shape PRED) using SemigroupM.Any where
+    neutral = fill False
 
 unary : UnaryOp -> Tensor s a -> Shared $ Tensor s a'
 unary op (MkTensor i nodes) = do
@@ -1013,21 +1019,19 @@ export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Shared $ Tensor shape dtype
 (+) = binary Add
 
-{-
-namespace Semigroup
+namespace SemigroupM
   export
-  [Sum] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
+  [Sum] Primitive.Num dtype => SemigroupM Shared (Tensor shape dtype) where
     (<+>) = (+)
 
-namespace Monoid
+namespace MonoidM
   export
   [Sum] {shape : _} ->
         Prelude.Num a =>
         PrimitiveRW dtype a =>
         Primitive.Num dtype =>
-    Monoid (Tensor shape dtype) using Semigroup.Sum where
+    MonoidM Shared (Tensor shape dtype) using SemigroupM.Sum where
       neutral = fill 0
-      -}
 
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
@@ -1060,22 +1064,20 @@ namespace Scalarwise
   l * r with (r)
     _ | (MkTensor {shape=_ :: _} _ _) = !(broadcast {shapesOK=scalarToAnyOk (d :: ds)} l) * r
 
-{-
-namespace Semigroup
+namespace SemigroupM
   export
-  [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
+  [Prod] Primitive.Num dtype => SemigroupM Shared (Tensor shape dtype) where
     (<+>) = (*)
 
-namespace Monoid
+namespace MonoidM
   export
   [Prod]
       {shape : _} ->
       Prelude.Num a =>
       PrimitiveRW dtype a =>
       Primitive.Num dtype =>
-    Monoid (Tensor shape dtype) using Semigroup.Prod where
+    MonoidM Shared (Tensor shape dtype) using SemigroupM.Prod where
       neutral = fill 1
-      -}
 
 ||| Element-wise floating point division. For example, `fromLiteral [2, 3] / fromLiteral [4, 5]` is
 ||| `fromLiteral [0.5, 0.6]`.
@@ -1240,21 +1242,19 @@ min l r with (l, r)
     let op = MkTensor k $ (insert k (BinaryElementwise Min i j) (mergeLeft nodes nodes'))
     select !(l == l) !(select !(r == r) op r) l
 
-{-
-namespace Semigroup
+namespace SemigroupM
   export
-  [Min] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
+  [Min] Primitive.Ord dtype => SemigroupM Shared (Tensor shape dtype) where
     (<+>) = min
 
-namespace Monoid
+namespace MonoidM
   export
   [Min] {shape : _} ->
         PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Tensor shape dtype) using Semigroup.Min where
+    MonoidM Shared (Tensor shape dtype) using SemigroupM.Min where
       neutral = fill (1.0 / 0.0)
-      -}
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max (fromLiteral [-3, -1, 3]) (fromLiteral [-1, 0, 1])` is `fromLiteral [-1, 0, 3]`.
@@ -1266,10 +1266,9 @@ max l r with (l, r)
     let op = MkTensor k $ (insert k (BinaryElementwise Max i j) (mergeLeft nodes nodes'))
     select !(l == l) !(select !(r == r) op r) l
 
-{-
-namespace Semigroup
+namespace SemigroupM
   export
-  [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
+  [Max] Primitive.Ord dtype => SemigroupM Shared (Tensor shape dtype) where
     (<+>) = max
 
 namespace Monoid
@@ -1278,9 +1277,8 @@ namespace Monoid
         PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Tensor shape dtype) using Semigroup.Max where
+    MonoidM Shared (Tensor shape dtype) using SemigroupM.Max where
       neutral = fill (- 1.0 / 0.0)
-      -}
 
 {-
 highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Shared $ Tensor [S n] dtype

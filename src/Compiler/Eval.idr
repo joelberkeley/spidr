@@ -56,47 +56,12 @@ data Err = IndexErr String
 Computation : Type -> Type
 Computation = StateT (SortedMap Nat XlaOp) (EitherT Err IO)
 
-{-
-build : String -> Computation XlaOp -> EitherT Err IO XlaComputation
-build computationName x = do
-  builder <- mkXlaBuilder computationName
-  root <- evalStateT empty x
-  XlaBuilder.build builder root
-  -}
-
 lookup : Nat -> SortedMap Nat a -> Computation a
 lookup n xs =
   case lookup n xs of
        Nothing =>
          lift $ left (IndexErr "Tried to look up value at index \{show n} but none was found.")
        Just x => pure x
-{-
-buildWithSubBuilder :
-  XlaBuilder ->
-  SortedMap Nat XlaOp ->
-  String ->
-  List ShapeAndType ->
-  Nat -> 
-  EitherT Err IO XlaComputation
-buildWithSubBuilder builder ops computationName computationArguments computationResult = do
-  putStrLn "buildWithSubBuilder"
-  subBuilder <- createSubBuilder builder computationName
-  putStrLn "... cache parameters"
-  (_, ops) <- execStateT (subBuilder, ops) $
-    traverse (uncurry $ cacheParameter "") (enumerate computationArguments)
-  putStrLn "... what's happening in this line?"
-  root <- evalStateT (subBuilder, ops) (lookup computationResult ops)  -- why would computationResult be in ops here?
-  XlaBuilder.build subBuilder root
-
-  where
-
-  cacheParameter : String -> Nat -> ShapeAndType -> Computation () 
-  cacheParameter name position (MkShapeAndType idx shape dtype) = do
-    (builder, ops) <- get
-    xlaShape <- mkShape {dtype} shape
-    param <- XlaBuilder.parameter builder position xlaShape name 
-    put (builder, insert idx param ops)
-    -}
 
 parameter : XlaBuilder -> Nat -> ShapeAndType -> String -> Computation XlaOp
 parameter builder position (MkShapeAndType shape dtype) name = do
@@ -145,24 +110,17 @@ enqueue builder ops (Map (MkFn {arity} shapesAndTypes result) xs dims) = do
   (builder, _) <- get
   map builder !(traverse enqueue $ toList exprs) computation dims 
   -}
-{-
-enqueue builder ops (Reduce (MkFn [p0, p1] exprf) neutral axes expr) = ?reduce -- do
-  computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
-  reduce !(enqueue expr) !(enqueue neutral) computation axes
-  -}
+enqueue builder (Reduce (MkFn [(i0, p0), (i1, p1)] j env) neutral axes x) = do
+  subBuilder <- createSubBuilder builder "computation"
+  put $ insert i0 !(parameter subBuilder 0 p0 "") !get
+  put $ insert i1 !(parameter subBuilder 1 p1 "") !get
+  root <- assert_total $ interpret subBuilder j env
+  computation <- XlaBuilder.build subBuilder root
+  reduce !(lookup x !get) !(lookup neutral !get) computation axes
 enqueue builder (Sort (MkFn [(i0, p0), (i1, p1)] j env) axis isStable xs) = do
-  -- create subBuilder
   subBuilder <- createSubBuilder builder "comparator"
-
-  -- add parameters to subBuilder
-  p0 <- parameter subBuilder 0 p0 ""
-  p1 <- parameter subBuilder 1 p1 ""
-  -- add parameters to XLA Env
-  -- note that if we uniquely number all ops we can stick them all in a single cache, we don't need to think
-  -- about scopes, because we will have already used the right XlaBuilder when creating the op
-  put $ insert i0 p0 !get
-  put $ insert i1 p1 !get
-  ops <- get
+  put $ insert i0 !(parameter subBuilder 0 p0 "") !get
+  put $ insert i1 !(parameter subBuilder 1 p1 "") !get
   root <- assert_total $ interpret subBuilder j env
   comparator <- XlaBuilder.build subBuilder root
   sort !(traverse (flip lookup !get) xs) comparator axis isStable 
@@ -247,14 +205,12 @@ enqueue builder (NormalFloatingPoint key initialState shape) = ?nfp -- do
   -}
 
 interpret builder root env = do
-  traverse_ processExpr (toList env)
+  traverse_ interpretExpr (toList env)
   lookup root !get 
 
   where
-  processExpr : (Nat, Expr) -> Computation ()
-  processExpr (n, expr) = do
-    op <- enqueue builder expr
-    put (insert n op !get)
+  interpretExpr : (Nat, Expr) -> Computation ()
+  interpretExpr (n, expr) = put (insert n !(enqueue builder expr) !get)
 
 export
 toString : Nat -> Env -> EitherT Err IO String

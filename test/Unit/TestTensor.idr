@@ -626,34 +626,33 @@ partial
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
   map2 (\x, y => x + x + y + y) 1 2 ===# 6
-
+  -}
 partial
 reduce : Property
 reduce = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-  reduce @{Sum} [1] x ===# fromLiteral [6, -6]
+  (do reduce @{Sum} [1] !x) ===# fromLiteral [6, -6]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-2, -3, -4]]
-  reduce @{Sum} [0, 1] x ===# fromLiteral (-3)
+  (do reduce @{Sum} [0, 1] !x) ===# fromLiteral (-3)
 
   let x = fromLiteral {dtype=S32} [[[1], [2], [3]], [[-2], [-3], [-4]]]
-  reduce @{Sum} [0, 1] x ===# fromLiteral [-3]
+  (do reduce @{Sum} [0, 1] !x) ===# fromLiteral [-3]
 
   let x = fromLiteral {dtype=S32} [[[1, 2, 3]], [[-2, -3, -4]]]
-  reduce @{Sum} [0, 2] x ===# fromLiteral [-3]
+  (do reduce @{Sum} [0, 2] !x) ===# fromLiteral [-3]
 
   let x = fromLiteral {dtype=S32} [[[1, 2, 3], [-2, -3, -4]]]
-  reduce @{Sum} [1, 2] x ===# fromLiteral [-3]
+  (do reduce @{Sum} [1, 2] !x) ===# fromLiteral [-3]
 
   let x = fromLiteral {dtype=S32} [[[1, 2, 3], [4, 5, 6]], [[-2, -3, -4], [-6, -7, -8]]]
-  reduce @{Sum} [0, 2] x ===# fromLiteral [-3, -6]
+  (do reduce @{Sum} [0, 2] !x) ===# fromLiteral [-3, -6]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-  reduce @{Sum} [0] x ===# fromLiteral [0, 0, 0]
+  (do reduce @{Sum} [0] !x) ===# fromLiteral [0, 0, 0]
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
-  reduce @{All} [1] x ===# fromLiteral [False, False]
--}
+  (do reduce @{All} [1] !x) ===# fromLiteral [False, False]
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
@@ -965,7 +964,7 @@ scalarDivision = property $ do
       let lit' = fromLiteral {dtype=F64} lit
           scalar' = fromLiteral {dtype=F64} (Scalar scalar)
       map (/ scalar) lit ==~ toLiteral (do !lit' / !scalar')
-{-
+
 partial
 neutralIsNeutralForSum : Property
 neutralIsNeutralForSum = property $ do
@@ -973,15 +972,15 @@ neutralIsNeutralForSum = property $ do
 
   x <- forAll (literal shape doubles)
   let x' = fromLiteral {dtype=F64} x
-      right = (<+>) @{Sum} x' (neutral @{Sum})
-      left = (<+>) @{Sum} (neutral @{Sum}) x'
+      right = (do (<+>) @{Sum} !x' !(neutral @{Sum}))
+      left = (do (<+>) @{Sum} !(neutral @{Sum}) !x')
   toLiteral right ==~ x
   toLiteral left ==~ x
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
-      right = (<+>) @{Sum} x' (neutral @{Sum})
-      left = (<+>) @{Sum} (neutral @{Sum}) x'
+      right = (do (<+>) @{Sum} !x' !(neutral @{Sum}))
+      left = (do (<+>) @{Sum} !(neutral @{Sum}) !x')
   toLiteral right === x
   toLiteral left === x
 
@@ -992,15 +991,15 @@ neutralIsNeutralForProd = property $ do
 
   x <- forAll (literal shape doubles)
   let x' = fromLiteral {dtype=F64} x
-      right = (<+>) @{Prod} x' (neutral @{Prod})
-      left = (<+>) @{Prod} (neutral @{Prod}) x'
+      right = (do (<+>) @{Prod} !x' !(neutral @{Prod}))
+      left = (do (<+>) @{Prod} !(neutral @{Prod}) !x')
   toLiteral right ==~ x
   toLiteral left ==~ x
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
-      right = (<+>) @{Prod} x' (neutral @{Prod})
-      left = (<+>) @{Prod} (neutral @{Prod}) x'
+      right = (do (<+>) @{Prod} !x' !(neutral @{Prod}))
+      left = (do (<+>) @{Prod} !(neutral @{Prod}) !x')
   toLiteral right === x
   toLiteral left === x
 
@@ -1010,8 +1009,8 @@ neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
-      right = (<+>) @{Any} x' (neutral @{Any})
-      left = (<+>) @{Any} (neutral @{Any}) x'
+      right = (do (<+>) @{Any} !x' !(neutral @{MonoidM.Any}))
+      left = (do (<+>) @{Any} !(neutral @{MonoidM.Any}) !x')
   toLiteral right === x
   toLiteral left === x
 
@@ -1021,8 +1020,8 @@ neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
-      right = (<+>) @{All} x' (neutral @{All})
-      left = (<+>) @{All} (neutral @{All}) x'
+      right = (do (<+>) @{All} !x' !(neutral @{MonoidM.All}))
+      left = (do (<+>) @{All} !(neutral @{MonoidM.All}) !x')
   toLiteral right === x
   toLiteral left === x
 
@@ -1032,8 +1031,8 @@ neutralIsNeutralForMin = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
-      right = (<+>) @{Min} x' (neutral @{Min})
-      left = (<+>) @{Min} (neutral @{Min}) x'
+      right = (do (<+>) @{Min} !x' !(neutral @{Min}))
+      left = (do (<+>) @{Min} !(neutral @{Min}) !x')
   toLiteral right ==~ x
   toLiteral left ==~ x
 
@@ -1043,11 +1042,11 @@ neutralIsNeutralForMax = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
   let x' = fromLiteral {dtype=F64} x
-      right = (<+>) @{Max} x' (neutral @{Max})
-      left = (<+>) @{Max} (neutral @{Max}) x'
+      right = (do (<+>) @{Max} !x' !(neutral @{Max}))
+      left = (do (<+>) @{Max} !(neutral @{Max}) !x')
   toLiteral right ==~ x
   toLiteral left ==~ x
-
+{-
 partial
 argmin : Property
 argmin = property $ do
@@ -1416,7 +1415,7 @@ group = MkGroup "Tensor" $ [
 --    , ("map with non-trivial function", mapNonTrivial)
 --    , ("map2", map2Result)
 --    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
---    , ("reduce", reduce)
+    , ("reduce", reduce)
 --    , ("sort", sort) -- test uses slice
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
@@ -1431,14 +1430,14 @@ group = MkGroup "Tensor" $ [
   ++ [
       ("Scalarwise.(*)", scalarMultiplication)
     , ("Scalarwise.(/)", scalarDivision)
---    , ("Sum", neutralIsNeutralForSum)
---    , ("Prod", neutralIsNeutralForProd)
+    , ("Sum", neutralIsNeutralForSum)
+    , ("Prod", neutralIsNeutralForProd)
 --    , ("argmin", argmin)
 --    , ("argmax", argmax)
---    , ("Min", neutralIsNeutralForMin)
---    , ("Max", neutralIsNeutralForMax)
---    , ("Any", neutralIsNeutralForAny)
---    , ("All", neutralIsNeutralForAll)
+    , ("Min", neutralIsNeutralForMin)
+    , ("Max", neutralIsNeutralForMax)
+    , ("Any", neutralIsNeutralForAny)
+    , ("All", neutralIsNeutralForAll)
     , ("select", select)
 --    , ("cond for trivial usage", condResultTrivialUsage)
 --    , ("cond for re-used arguments", condResultWithReusedArgs)
