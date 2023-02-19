@@ -955,14 +955,16 @@ cond :
   (onTrue : Tensor ts tt -> Shared $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Shared $ Tensor shape dtype) -> Tensor fs ft ->
   Shared $ Tensor shape dtype
-{-
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
-    let pt = Parameter 0 ts "" {dtype=tt}
-        pf = Parameter 0 fs "" {dtype=ft}
-        MkTensor exprTrue = onTrue (MkTensor pt)
-        MkTensor exprFalse = onFalse (MkTensor pf)
-     in MkTensor $ Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false
-     -}
+cond (MkTensor pred envPred) onTrue (MkTensor true envTrue) onFalse (MkTensor false envFalse) = do
+  kTrue <- fresh
+  kFalse <- fresh
+  MkTensor lTrue subEnvTrue <- onTrue (MkTensor kTrue (singleton kTrue (Arg kTrue)))
+  MkTensor lFalse subEnvFalse <- onFalse (MkTensor kFalse (singleton kFalse (Arg kFalse)))
+  let fTrue = MkFn [(kTrue, MkShapeAndType ts tt)] lTrue subEnvTrue
+  let fFalse = MkFn [(kFalse, MkShapeAndType fs ft)] lFalse subEnvFalse
+  m <- fresh
+  let expr = Cond pred fTrue true fFalse false
+  pure $ MkTensor m (insert m expr (mergeLeft (mergeLeft envPred envTrue) envFalse))
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@

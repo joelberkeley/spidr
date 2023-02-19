@@ -1131,32 +1131,32 @@ select = fixedProperty $ do
       onFalse = fromLiteral [[6, 7, 8], [9, 10, 11]]
       expected = fromLiteral [[6, 1, 2], [3, 10, 11]]
   (do select !pred !onTrue !onFalse) ===# expected
-{-
+
 partial
 condResultTrivialUsage : Property
 condResultTrivialUsage = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 0
-  cond (fromLiteral True) (+ 1) x (\x => x - 1) x ===# 1
+  (do cond !(fromLiteral True) (+ !1) !x (\x => x - !1) !x) ===# 1
 
   let x = fromLiteral {dtype=S32} 0
-  cond (fromLiteral False) (+ 1) x (\x => x - 1) x ===# -1
+  (do cond !(fromLiteral False) (+ !1) !x (\x => x - !1) !x) ===# -1
 
   let x = fromLiteral {dtype=S32} [2, 3]
       y = fromLiteral [[6, 7], [8, 9]]
-  cond (fromLiteral True) (fromLiteral 5 *) x diag y ===# fromLiteral [10, 15]
+  (do cond !(fromLiteral True) (!(fromLiteral 5) *) !x diag !y) ===# fromLiteral [10, 15]
 
   let x = fromLiteral {dtype=S32} [2, 3]
       y = fromLiteral [[6, 7], [8, 9]]
-  cond (fromLiteral False) (fromLiteral 5 *) x diag y ===# fromLiteral [6, 9]
+  (do cond !(fromLiteral False) (!(fromLiteral 5) *) !x diag !y) ===# fromLiteral [6, 9]
 
 partial
 condResultWithReusedArgs : Property
 condResultWithReusedArgs = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 1
       y = fromLiteral {dtype=S32} 3
-  cond (fromLiteral True) (\z => z + z) x (\z => z * z) y ===# 2
-  cond (fromLiteral False) (\z => z + z) x (\z => z * z) y ===# 9
-  -}
+  (do cond !(fromLiteral True) (\z => z + z) !x (\z => z * z) !y) ===# 2
+  (do cond !(fromLiteral False) (\z => z + z) !x (\z => z * z) !y) ===# 9
+
 partial
 erf : Property
 erf = fixedProperty $ do
@@ -1438,8 +1438,8 @@ group = MkGroup "Tensor" $ [
     , ("Any", neutralIsNeutralForAny)
     , ("All", neutralIsNeutralForAll)
     , ("select", select)
---    , ("cond for trivial usage", condResultTrivialUsage)
---    , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("cond for trivial usage", condResultTrivialUsage)
+    , ("cond for re-used arguments", condResultWithReusedArgs)
     , ("erf", erf)
     , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)

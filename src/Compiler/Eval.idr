@@ -70,6 +70,13 @@ parameter builder position (MkShapeAndType shape dtype) name = do
 
 interpret : XlaBuilder -> Nat -> Env -> Computation XlaOp
 
+buildSub : XlaBuilder -> String -> Fn arity -> Computation XlaComputation
+buildSub builder name (MkFn params i env) = do
+  subBuilder <- createSubBuilder builder name
+  traverse_ (\(pos, (i, p)) => do put $ insert i !(parameter subBuilder pos p "") !get) (enumerate params)
+  root <- assert_total $ interpret subBuilder i env
+  XlaBuilder.build subBuilder root
+
 covering
 enqueue : XlaBuilder -> Expr -> Computation XlaOp
 enqueue builder (FromLiteral {dtype} lit) = do
@@ -104,25 +111,14 @@ enqueue builder (Broadcast {dtype} from to x) =
   else
    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
     in broadcastInDim !(lookup x !get) to broadcastDims
-enqueue builder (Map (MkFn {arity} shapesAndTypes j env) xs dims) = do
-  subBuilder <- createSubBuilder builder "computation"
-  traverse_ (\(pos, (i, p)) => do put $ insert i !(parameter subBuilder pos p "") !get) (enumerate shapesAndTypes)
-  root <- assert_total $ interpret subBuilder j env
-  computation <- XlaBuilder.build subBuilder root
+enqueue builder (Map f xs dims) = do
+  computation <- buildSub builder "computation" f
   map builder (toList !(traverse (flip lookup !get) xs)) computation dims
-enqueue builder (Reduce (MkFn [(i0, p0), (i1, p1)] j env) neutral axes x) = do
-  subBuilder <- createSubBuilder builder "computation"
-  put $ insert i0 !(parameter subBuilder 0 p0 "") !get
-  put $ insert i1 !(parameter subBuilder 1 p1 "") !get
-  root <- assert_total $ interpret subBuilder j env
-  computation <- XlaBuilder.build subBuilder root
+enqueue builder (Reduce f neutral axes x) = do
+  computation <- buildSub builder "computation" f
   reduce !(lookup x !get) !(lookup neutral !get) computation axes
-enqueue builder (Sort (MkFn [(i0, p0), (i1, p1)] j env) axis isStable xs) = do
-  subBuilder <- createSubBuilder builder "comparator"
-  put $ insert i0 !(parameter subBuilder 0 p0 "") !get
-  put $ insert i1 !(parameter subBuilder 1 p1 "") !get
-  root <- assert_total $ interpret subBuilder j env
-  comparator <- XlaBuilder.build subBuilder root
+enqueue builder (Sort f axis isStable xs) = do
+  comparator <- buildSub builder "comparator" f
   sort !(traverse (flip lookup !get) xs) comparator axis isStable 
 enqueue _ (Reverse axes x) = rev !(lookup x !get) axes
 enqueue _ (BinaryElementwise f x y) = toXla f !(lookup x !get) !(lookup y !get)
@@ -174,12 +170,10 @@ enqueue _ (Argmin {out} axis x) = argMin {outputType=out} !(lookup x !get) axis
 enqueue _ (Argmax {out} axis x) = argMax {outputType=out} !(lookup x !get) axis
 enqueue _ (Select pred true false) =
   select !(lookup pred !get) !(lookup true !get) !(lookup false !get)
-{-
-enqueue builder ops (Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = ?cond -- do
-  trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
-  falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
-  conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp
--}
+enqueue builder (Cond pred fTrue true fFalse false) = do
+  trueComp <- buildSub builder "truthy computation" fTrue
+  falseComp <- buildSub builder "falsy computation" fFalse
+  conditional !(lookup pred !get) !(lookup true !get) trueComp !(lookup false !get) falseComp
 enqueue _ (Dot l r) = dot !(lookup l !get) !(lookup r !get)
 enqueue _ (Cholesky x) = cholesky !(lookup x !get) True
 enqueue _ (TriangularSolve a b lower) =
