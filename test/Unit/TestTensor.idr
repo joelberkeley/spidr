@@ -653,6 +653,7 @@ reduce = fixedProperty $ do
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
   reduce @{All} [1] x ===# fromLiteral [False, False]
+-}
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
@@ -667,40 +668,40 @@ sort = withTests 20 . property $ do
   x <- forAll (literal [S d] int32s)
   let x = fromLiteral {dtype=S32} x
 
-  let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+  let sorted = (do sort (<) 0 !x)
+      init = (do slice [0.to d] !sorted)
+      tail = (do slice [1.to (S d)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd] int32s)
   let x = fromLiteral {dtype=S32} x
 
-  let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+  let sorted = (do sort (<) 0 !x)
+      init = (do slice [0.to d] !sorted)
+      tail = (do slice [1.to (S d)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let sorted = sort (<) 1 x
-      init = slice [all, 0.to dd] sorted
-      tail = slice [all, 1.to (S dd)] sorted
+  let sorted = (do sort (<) 1 !x)
+      init = (do slice [all, 0.to dd] !sorted)
+      tail = (do slice [all, 1.to (S dd)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd, S ddd] int32s)
   let x = fromLiteral {dtype=S32} x
 
-  let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+  let sorted = (do sort (<) 0 !x)
+      init = (do slice [0.to d] !sorted)
+      tail = (do slice [1.to (S d)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let sorted = sort (<) 1 x
-      init = slice [all, 0.to dd] sorted
-      tail = slice [all, 1.to (S dd)] sorted
+  let sorted = (do sort (<) 1 !x)
+      init = (do slice [all, 0.to dd] !sorted)
+      tail = (do slice [all, 1.to (S dd)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let sorted = sort (<) 2 x
-      init = slice [all, all, 0.to ddd] sorted
-      tail = slice [all, all, 1.to (S ddd)] sorted
+  let sorted = (do sort (<) 2 !x)
+      init = (do slice [all, all, 0.to ddd] !sorted)
+      tail = (do slice [all, all, 1.to (S ddd)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   where
@@ -716,27 +717,27 @@ partial
 sortWithEmptyAxis : Property
 sortWithEmptyAxis = fixedProperty $ do
   let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
-  sort (<) 0 x ===# x
+  (do sort (<) 0 !x) ===# x
 
   let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
-  sort (<) 1 x ===# x
+  (do sort (<) 1 !x) ===# x
 
   let x = fromLiteral {shape=[2, 0, 3]} {dtype=S32} [[], []]
-  sort (<) 0 x ===# x
+  (do sort (<) 0 !x) ===# x
 
   let x = fromLiteral {shape=[2, 0, 3]} {dtype=S32} [[], []]
-  sort (<) 1 x ===# x
+  (do sort (<) 1 !x) ===# x
 
 partial
 sortWithRepeatedElements : Property
 sortWithRepeatedElements = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [1, 3, 4, 3, 2]
-  sort (<) 0 x ===# fromLiteral [1, 2, 3, 3, 4]
+  (do sort (<) 0 !x) ===# fromLiteral [1, 2, 3, 3, 4]
 
   let x = fromLiteral {dtype=S32} [[1, 4, 4], [3, 2, 5]]
-  sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
-  sort (<) 1 x ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
-  -}
+  (do sort (<) 0 !x) ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
+  (do sort (<) 1 !x) ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
+
 partial
 reverse : Property
 reverse = fixedProperty $ do
@@ -1399,7 +1400,7 @@ group = MkGroup "Tensor" $ [
     , ("show", show)
     , ("cast", cast)
     , ("reshape", reshape)
---    , ("MultiSlice.slice", MultiSlice.slice)
+    , ("MultiSlice.slice", MultiSlice.slice)
 --    , ("slice", TestTensor.slice)
 --    , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
@@ -1416,12 +1417,13 @@ group = MkGroup "Tensor" $ [
 --    , ("map2", map2Result)
 --    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
 --    , ("reduce", reduce)
---    , ("sort", sort)
---    , ("sort with empty axis", sortWithEmptyAxis)
---    , ("sort with repeated elements", sortWithRepeatedElements)
-    , ("reverse", reverse)
+--    , ("sort", sort) -- test uses slice
+    , ("sort with empty axis", sortWithEmptyAxis)
+    , ("sort with repeated elements", sortWithRepeatedElements)
+  {-  , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
+    -}
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases

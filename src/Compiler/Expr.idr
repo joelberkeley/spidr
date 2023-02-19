@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Compiler.Expr
 
+import Data.SortedMap
 import Decidable.Equality
 
 import Compiler.LiteralRW
@@ -24,14 +25,19 @@ import Primitive
 import Types
 import Util
 
+public export
 data ShapeAndType : Type where
   MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
 
 data Expr : Type where
 
+public export 0
+Env : Type
+Env = SortedMap Nat Expr
+
 public export
 data Fn : Nat -> Type where
-  MkFn : {arity : _} -> Vect arity ShapeAndType -> Expr -> Fn arity
+  MkFn : {arity : _} -> Vect arity (Nat, ShapeAndType) -> Nat -> Env -> Fn arity
 
 public export
 data BinaryOp = Eq | Ne | Add | Sub | Mul | Div | Pow | Lt | Gt | Le | Ge | And | Or | Min | Max
@@ -66,7 +72,7 @@ data UnaryOp =
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
-  Parameter : Primitive dtype => Nat -> Shape -> String -> Expr
+  Arg : Nat -> Expr
   Tuple : List Nat -> Expr
   GetTupleElement : Nat -> Nat -> Expr
   MinValue : Primitive dtype => Expr
@@ -83,8 +89,8 @@ data Expr : Type where
   Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
-  Map : Fn n -> Vect n Nat -> Shape -> Expr
-  Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
+--  Map : Fn n -> Vect n Nat -> Shape -> Expr
+--  Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
   Sort : Fn 2 -> Nat -> Bool -> List Nat -> Expr
   Reverse : List Nat -> Nat -> Expr
   BinaryElementwise : BinaryOp -> Nat -> Nat -> Expr
@@ -92,12 +98,20 @@ data Expr : Type where
   Argmin : Primitive out => Nat -> Nat -> Expr
   Argmax : Primitive out => Nat -> Nat -> Expr
   Select : Nat -> Nat -> Nat -> Expr
-  Cond : Nat -> Fn 1 -> Nat -> Fn 1 -> Nat -> Expr
+--  Cond : Nat -> Fn 1 -> Nat -> Fn 1 -> Nat -> Expr
   Dot : Nat -> Nat -> Expr
   Cholesky : Nat -> Expr
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+
+export
+Show Expr where
+  show (FromLiteral _) = "FromLiteral _"
+  show (Arg i) = "Arg \{show i}"
+  show (BinaryElementwise Lt i j) = "BinaryElementwise LT \{show i} \{show j}"
+  show (Sort f dim _ xs) = "Sort f \{show dim} \{show xs}"
+  show _ = "other Expr"
 
 {-
 export

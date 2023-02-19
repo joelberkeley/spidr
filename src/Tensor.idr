@@ -88,6 +88,7 @@ toLiteral : PrimitiveRW dtype ty => Shared (Tensor shape dtype) -> Literal shape
 toLiteral x = let MkTensor n nodes = evalState 0 x in
   case unsafePerformIO $ runEitherT $ run {dtype} n nodes of
        Right lit => lit
+       Left (IndexErr str) => idris_crash str
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
@@ -720,18 +721,49 @@ reduce axes (MkTensor expr) =
 export
 sort :
   Primitive dtype =>
-  (Tensor [] dtype -> Tensor [] dtype -> Tensor [] PRED) ->
+  (Tensor [] dtype -> Tensor [] dtype -> Shared $ Tensor [] PRED) ->
   (dimension : Nat) ->
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Shared $ Tensor shape dtype
+sort comp dimension (MkTensor i env) = do
+  k0 <- fresh
+  k1 <- fresh
+  MkTensor l subEnv <- comp (MkTensor k0 (singleton k0 (Arg k0))) (MkTensor k1 (singleton k1 (Arg k1)))
+  j <- fresh
+  let expr = Sort (MkFn [(k0, MkShapeAndType [] dtype), (k1, MkShapeAndType [] dtype)] l subEnv) dimension False [i] 
+  pure $ MkTensor j (insert j expr env)
+
 {-
-sort comp dimension (MkTensor expr) =
-  let p0 = Parameter 0 [] "" {dtype}
-      p1 = Parameter 1 [] "" {dtype}
-      MkTensor exprComp = comp (MkTensor p0) (MkTensor p1)
-   in MkTensor $ Sort (MkFn [p0, p1] exprComp) dimension False [expr]
-   -}
+sort (<) 0 [3, 4]
+
+as exprs
+
+SortedMap(
+  0 : FromLiteral [3, 4]
+  4 : Sort (MkFn [MkShapeAndType 1 [] S32, MkShapeAndType 2 [] S32] f) 0 False [0]
+    where
+    f = SortedMap(
+          1 : Arg 1
+          2 : Arg 2
+          3 : BinaryElementwise LT 1 2
+        )
+)
+
+as xlaops, given
+
+builder
+subBuilder
+
+SortedMap(
+  0 : FromLiteral(builder, [3, 4])
+  1 : Parameter(subBuilder, 0, [], S32)
+  2 : Parameter(subBuilder, 1, [], S32)
+  3 : Lt(1->, 2->)
+  4 : Sort(build(subBuilder, 3->), 0 False 0->)
+)
+
+-}
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
