@@ -52,7 +52,7 @@ fresh = do
 ||| @dtype The element type.
 export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Nat -> SortedMap Nat Expr -> Tensor shape dtype
+  MkTensor : {shape : _} -> Nat -> Env -> Tensor shape dtype
 
 ||| Construct a `Tensor` from `Literal` data.
 export
