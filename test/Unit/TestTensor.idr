@@ -583,7 +583,6 @@ transpose = fixedProperty $ do
   (do slice [all, at 1, at 0] !(transpose [0, 2, 1, 3] !x)) ===# (do slice [all, at 0, at 1] !x)
   (do slice [at 2, at 4, at 0, at 1] !(transpose [2, 3, 1, 0] !x)) ===# (do slice [at 1, at 0, at 2, at 4] !x)
 
-{-
 partial
 mapResult : Property
 mapResult = property $ do
@@ -591,18 +590,18 @@ mapResult = property $ do
 
   x <- forAll (literal shape doubles)
   let x' = fromLiteral x
-  map (1.0 /) x ==~ toLiteral (map (1.0 /) x')
+  map (1.0 /) x ==~ toLiteral (do map (!1.0 /) !x')
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
-  map (+ 1) x === toLiteral (map (+ 1) x')
+  map (+ 1) x === toLiteral (do map (+ !1) !x')
 
 partial
 mapNonTrivial : Property
 mapNonTrivial = fixedProperty $ do
-  map {a=S32} (\x => x + x) 1 ===# 2
-  map {a=S32} (\_ => 2) 1 ===# 2
-  map {a=S32} (map (+ 1)) 1 ===# 2
+  (do map {a=S32} (\x => x + x) !1) ===# 2
+  (do map {a=S32} (\_ => 2) !1) ===# 2
+  (do map {a=S32} (map (+ !1)) !1) ===# 2
 
 partial
 map2Result : Property
@@ -613,20 +612,21 @@ map2Result = fixedProperty $ do
   [x, y] <- forAll (np [int32s, int32s])
   let x' = fromLiteral {dtype=S32} x
       y' = fromLiteral {dtype=S32} y
-  [| x + y |] === toLiteral (map2 Tensor.(+) x' y')
+  [| x + y |] === toLiteral (do map2 Tensor.(+) !x' !y')
 
   shape <- forAll shapes
   let doubles = literal shape doubles
   [x, y] <- forAll (np [doubles, doubles])
   let x' = fromLiteral {dtype=F64} x
       y' = fromLiteral {dtype=F64} y
-  [| x + y |] ==~ toLiteral (map2 Tensor.(+) x' y')
+  [| x + y |] ==~ toLiteral (do map2 Tensor.(+) !x' !y')
 
 partial
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
-  map2 (\x, y => x + x + y + y) 1 2 ===# 6
-  -}
+  let x : Shared (Tensor [] S32) = 6
+  (do map2 (\x, y => !(!(x + x) + y) + y) !1 !2) ===# x 
+
 partial
 reduce : Property
 reduce = fixedProperty $ do
@@ -1046,14 +1046,14 @@ neutralIsNeutralForMax = property $ do
       left = (do (<+>) @{Max} !(neutral @{Max}) !x')
   toLiteral right ==~ x
   toLiteral left ==~ x
-{-
+
 partial
 argmin : Property
 argmin = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = fromLiteral xs
-  slice [at (argmin xs)] xs ===# reduce [0] @{Min} xs
+  (do slice [at !(argmin !xs)] !xs) ===# (do reduce [0] @{Min} !xs)
 
 partial
 argmax : Property
@@ -1061,8 +1061,8 @@ argmax = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = fromLiteral xs
-  slice [at (argmax xs)] xs ===# reduce [0] @{Max} xs
-  -}
+  (do slice [at !(argmax !xs)] !xs) ===# (do reduce [0] @{Max} !xs)
+
 namespace S32
   export partial
   testElementwiseComparator :
@@ -1410,19 +1410,18 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
---    , ("transpose", transpose)  -- test uses slice
---    , ("map", mapResult)
---    , ("map with non-trivial function", mapNonTrivial)
---    , ("map2", map2Result)
---    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+--    , ("transpose", transpose) -- test uses slice
+    , ("map", mapResult)
+    , ("map with non-trivial function", mapNonTrivial)
+    , ("map2", map2Result)
+    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)
 --    , ("sort", sort) -- test uses slice
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
-  {-  , ("reverse", reverse)
+    , ("reverse", reverse)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
-    -}
   ]
   ++ testElementwiseComparatorCases
   ++ testElementwiseUnaryCases
@@ -1432,8 +1431,8 @@ group = MkGroup "Tensor" $ [
     , ("Scalarwise.(/)", scalarDivision)
     , ("Sum", neutralIsNeutralForSum)
     , ("Prod", neutralIsNeutralForProd)
---    , ("argmin", argmin)
---    , ("argmax", argmax)
+--    , ("argmin", argmin) -- test uses slice
+--    , ("argmax", argmax) -- test uses slice
     , ("Min", neutralIsNeutralForMin)
     , ("Max", neutralIsNeutralForMax)
     , ("Any", neutralIsNeutralForAny)
@@ -1445,7 +1444,7 @@ group = MkGroup "Tensor" $ [
     , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
---    , ("trace", trace)  -- requires reduce
+    , ("trace", trace)
 --    , ("uniform", uniform)
 --    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
 --    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)

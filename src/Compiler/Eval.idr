@@ -104,12 +104,12 @@ enqueue builder (Broadcast {dtype} from to x) =
   else
    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
     in broadcastInDim !(lookup x !get) to broadcastDims
-{-
-enqueue builder ops (Map (MkFn {arity} shapesAndTypes result) xs dims) = do
-  computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
-  (builder, _) <- get
-  map builder !(traverse enqueue $ toList exprs) computation dims 
-  -}
+enqueue builder (Map (MkFn {arity} shapesAndTypes j env) xs dims) = do
+  subBuilder <- createSubBuilder builder "computation"
+  traverse_ (\(pos, (i, p)) => do put $ insert i !(parameter subBuilder pos p "") !get) (enumerate shapesAndTypes)
+  root <- assert_total $ interpret subBuilder j env
+  computation <- XlaBuilder.build subBuilder root
+  map builder (toList !(traverse (flip lookup !get) xs)) computation dims
 enqueue builder (Reduce (MkFn [(i0, p0), (i1, p1)] j env) neutral axes x) = do
   subBuilder <- createSubBuilder builder "computation"
   put $ insert i0 !(parameter subBuilder 0 p0 "") !get

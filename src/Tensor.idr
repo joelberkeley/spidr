@@ -648,15 +648,15 @@ fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(fromLiteral (Scalar xs))
 export
 map :
   (Primitive a, Primitive b) =>
-  (Tensor [] a -> Tensor [] b) ->
+  (Tensor [] a -> Shared $ Tensor [] b) ->
   Tensor shape a ->
   Shared $ Tensor shape b
-{-
-map f (MkTensor {shape} expr) =
-  let p0 = Parameter 0 [] "" {dtype=a}
-      MkTensor exprf = f (MkTensor p0)
-   in MkTensor $ Map (MkFn [p0] exprf) [expr] (range $ length shape)
-   -}
+map f (MkTensor {shape} i env) = do
+  k <- fresh
+  MkTensor l subEnv <- f (MkTensor k (singleton k (Arg k)))
+  j <- fresh
+  let expr = Map (MkFn [(k, MkShapeAndType [] a)] l subEnv) [i] (range $ length shape)
+  pure $ MkTensor j (insert j expr env)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -670,17 +670,17 @@ map f (MkTensor {shape} expr) =
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -> Tensor [] b -> Tensor [] c) ->
+  (Tensor [] a -> Tensor [] b -> Shared $ Tensor [] c) ->
   Tensor shape a ->
   Tensor shape b ->
   Shared $ Tensor shape c
-{-
-map2 f (MkTensor {shape} expr0) (MkTensor expr1) =
-  let p0 = Parameter 0 [] "" {dtype=a}
-      p1 = Parameter 1 [] "" {dtype=b}
-      MkTensor exprf = f (MkTensor p0) (MkTensor p1)
-   in MkTensor $ Map (MkFn [p0, p1] exprf) [expr0, expr1] (range $ length shape)
-   -}
+map2 f (MkTensor {shape} i env) (MkTensor j env') = do
+  l0 <- fresh
+  l1 <- fresh
+  MkTensor m subEnv <- f (MkTensor l0 (singleton l0 (Arg l0))) (MkTensor l1 (singleton l1 (Arg l1)))
+  k <- fresh
+  let expr = Map (MkFn [(l0, MkShapeAndType [] a), (l1, MkShapeAndType [] b)] m subEnv) [i, j] (range $ length shape)
+  pure $ MkTensor k (insert k expr (mergeLeft env env'))
 
 export
 interface SemigroupM (f : Type -> Type) (a : Type) where
@@ -1280,41 +1280,37 @@ namespace Monoid
     MonoidM Shared (Tensor shape dtype) using SemigroupM.Max where
       neutral = fill (- 1.0 / 0.0)
 
-{-
 highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Shared $ Tensor [S n] dtype
 highlightNan minimize x with (x)
   _ | (MkTensor {shape = _} _ _) =
-    cond !(reduce @{All} [0] !(x == x)) id x extremizeNan x
+    cond !(reduce @{All} [0] !(x == x)) pure x extremizeNan x
 
     where
     extremizeNan : Tensor [S n] dtype -> Shared $ Tensor [S n] dtype
-    extremizeNan x =
-      let min' = broadcast !(Types.min @{NonFinite})
-          max' = broadcast !(Types.max @{NonFinite})
-       in select !(if minimize then x == x else x /= x) !max' !min'
-       -}
+    extremizeNan x = do
+      min' <- broadcast !(Types.min @{NonFinite})
+      max' <- broadcast !(Types.max @{NonFinite})
+      select !(if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Shared $ Tensor [] U64
-{-
-argmin x =
-  let MkTensor expr = highlightNan True x
-   in MkTensor $ Argmin {out=U64} 0 expr
-   -}
+argmin x = do
+  MkTensor i env <- highlightNan True x
+  j <- fresh
+  pure $ MkTensor j (insert j (Argmin {out=U64} 0 i) env)
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 1`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Shared $ Tensor [] U64
-{-
-argmax x =
-  let MkTensor expr = highlightNan False x
-   in MkTensor $ Argmax {out=U64} 0 expr
--}
+argmax x = do
+  MkTensor i env <- highlightNan False x
+  j <- fresh
+  pure $ MkTensor j (insert j (Argmax {out=U64} 0 i) env)
 
 ---------------------------- other ----------------------------------
 
@@ -1390,10 +1386,8 @@ trace :
   PrimitiveRW dtype a =>
   Tensor [S n, S n] dtype ->
   Shared $ Tensor [] dtype
-  {-
 trace x with (x)
   _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(x * !identity)
-  -}
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
