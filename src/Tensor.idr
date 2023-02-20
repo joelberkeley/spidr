@@ -54,12 +54,16 @@ export
 data Tensor : (0 shape : Shape) -> (0 dtype : Type) -> Type where
   MkTensor : {shape : _} -> Nat -> Env -> Tensor shape dtype
 
+-- use an operator then we'll have e.g. `env ++ Diag i` as the RHS
+end : Env -> Expr -> {shape : _} -> Shared $ Tensor shape dtype
+end env expr = do
+  i <- fresh
+  pure $ MkTensor i (insert i expr env)
+
 ||| Construct a `Tensor` from `Literal` data.
 export
 fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Shared $ Tensor shape dtype
-fromLiteral lit = do
-  n <- fresh
-  pure $ MkTensor n (singleton n $ FromLiteral {dtype} {shape} lit)
+fromLiteral lit = empty `end` FromLiteral {dtype} {shape} lit
 
 namespace F64
   export
@@ -101,31 +105,21 @@ Show (Shared $ Tensor shape dtype) where
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
 [NonFinite] Primitive.Ord dtype => Bounded (Shared $ Tensor [] dtype) where
-  min = do
-    n <- fresh
-    pure $ MkTensor n (singleton n $ MinValue {dtype})
-  max = do
-    n <- fresh
-    pure $ MkTensor n (singleton n $ MaxValue {dtype})
+  min = empty `end` MinValue {dtype}
+  max = empty `end` MaxValue {dtype}
 
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Ord dtype => Bounded (Shared $ Tensor [] dtype) where
-  min = do
-    n <- fresh
-    pure $ MkTensor n (singleton n $ MinFiniteValue {dtype})
-  max = do
-    n <- fresh
-    pure $ MkTensor n (singleton n $ MaxFiniteValue {dtype})
+  min = empty `end` MinFiniteValue {dtype}
+  max = empty `end` MaxFiniteValue {dtype}
 
 
 ||| Cast the element type. For example, `castDtype (fromLiteral {dtype=S32} [1, -2])` is
 ||| `fromLiteral {dtype=F64} [1.0, -2.0]`.
 export
 castDtype : Primitive.Integral a => Tensor shape a -> Shared $ Tensor shape F64
-castDtype (MkTensor i nodes) = do
-  j <- fresh
-  pure $ MkTensor j (insert j (ConvertElementType {dtype=F64} i) nodes)
+castDtype (MkTensor i env) = env `end` ConvertElementType {dtype=F64} i
 
 ----------------------------- structural operations ----------------------------
 
@@ -138,9 +132,7 @@ reshape :
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
   Shared $ Tensor to dtype
-reshape (MkTensor {shape} n nodes) = do
-  m <- fresh
-  pure $ MkTensor m (insert m (Reshape shape to n) nodes)
+reshape (MkTensor {shape} i env) = env `end` Reshape shape to i
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -153,9 +145,7 @@ expand :
   {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
   Shared $ Tensor (insertAt axis 1 shape) dtype
-expand axis (MkTensor {shape} n nodes) = do
-  m <- fresh
-  pure $ MkTensor m (insert m (Reshape shape (insertAt axis 1 shape) n) nodes)
+expand axis (MkTensor {shape} i env) = env `end` Reshape shape (insertAt axis 1 shape) i
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -202,9 +192,7 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Shared $ Tensor to dtype
-squeeze (MkTensor {shape} n nodes) = do
-  m <- fresh
-  pure $ MkTensor m (insert m (Reshape shape to n) nodes)
+squeeze (MkTensor {shape} i env) = env `end` Reshape shape to i
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -418,9 +406,7 @@ concat :
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
   Shared $ Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor n nodes) (MkTensor n' nodes') = do
-  m <- fresh
-  pure $ MkTensor m (insert m (Concat axis n n') $ mergeLeft nodes nodes')
+concat axis (MkTensor i env) (MkTensor i' env') = mergeLeft env env' `end` Concat axis i i'
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -432,9 +418,7 @@ concat axis (MkTensor n nodes) (MkTensor n' nodes') = do
 ||| `diag x` is `fromLiteral [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Shared $ Tensor [n] dtype
-diag (MkTensor n nodes) = do
-  m <- fresh
-  pure $ MkTensor m (insert m (Diag n) nodes)
+diag (MkTensor i env) = env `end` Diag i
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -456,17 +440,13 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Shared $ Tensor [n, n] dtype
-triangle tri (MkTensor n nodes) = do
-  m <- fresh
-  pure $ MkTensor m (insert m (Triangle (case tri of Upper => False; Lower => True) n) nodes) 
+triangle tri (MkTensor i env) = env `end` Triangle (case tri of Upper => False; Lower => True) i
 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
 (.T) : Tensor [m, n] dtype -> Shared $ Tensor [n, m] dtype
-(MkTensor i nodes).T = do
-  j <- fresh
-  pure $ MkTensor j (insert j (Transpose [1, 0] i) nodes)
+(MkTensor i env).T = env `end` Transpose [1, 0] i
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
@@ -520,9 +500,7 @@ transpose :
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
   Shared $ Tensor (map (dflip List.index shape) ordering) dtype
-transpose ordering (MkTensor i nodes) = do
-  j <- fresh
-  pure $ MkTensor j (insert j (Transpose ordering i) nodes)
+transpose ordering (MkTensor i env) = env `end` Transpose ordering i
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -537,9 +515,7 @@ transpose ordering (MkTensor i nodes) = do
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Shared $ Tensor [n, n] dtype
-identity = do
-  i <- fresh
-  pure $ MkTensor i (singleton i (Identity {dtype} n))
+identity = empty `end` Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -610,9 +586,7 @@ broadcast :
   Tensor from dtype ->
   Shared $ Tensor to dtype
 broadcast xs with (xs)
-  _ | (MkTensor {shape=_} i nodes) = do
-    j <- fresh
-    pure $ MkTensor j (insert j (Broadcast {dtype} from to i) nodes)
+  _ | (MkTensor {shape=_} i env) = env `end` Broadcast {dtype} from to i
 
 %hint
 export
@@ -637,6 +611,11 @@ fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(fromLiteral (Scalar xs))
 
 ----------------------------- generic operations ----------------------------
 
+arg : Primitive dtype => {shape : _} -> Shared (Tensor shape dtype, Nat, ShapeAndType)
+arg = do
+  i <- fresh
+  pure (MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
@@ -652,11 +631,9 @@ map :
   Tensor shape a ->
   Shared $ Tensor shape b
 map f (MkTensor {shape} i env) = do
-  k <- fresh
-  MkTensor l subEnv <- f (MkTensor k (singleton k (Arg k)))
-  j <- fresh
-  let expr = Map (MkFn [(k, MkShapeAndType [] a)] l subEnv) [i] (range $ length shape)
-  pure $ MkTensor j (insert j expr env)
+  (arg, param) <- arg
+  MkTensor l subEnv <- f arg
+  env `end` Map (MkFn [param] l subEnv) [i] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -674,13 +651,11 @@ map2 :
   Tensor shape a ->
   Tensor shape b ->
   Shared $ Tensor shape c
-map2 f (MkTensor {shape} i env) (MkTensor j env') = do
-  l0 <- fresh
-  l1 <- fresh
-  MkTensor m subEnv <- f (MkTensor l0 (singleton l0 (Arg l0))) (MkTensor l1 (singleton l1 (Arg l1)))
-  k <- fresh
-  let expr = Map (MkFn [(l0, MkShapeAndType [] a), (l1, MkShapeAndType [] b)] m subEnv) [i, j] (range $ length shape)
-  pure $ MkTensor k (insert k expr (mergeLeft env env'))
+map2 f (MkTensor {shape} i env) (MkTensor i' env') = do
+  (a0, p0) <- arg
+  (a1, p1) <- arg
+  MkTensor j subEnv <- f a0 a1
+  mergeLeft env env' `end` Map (MkFn [p0, p1] j subEnv) [i, i'] (range $ length shape)
 
 export
 interface SemigroupM (f : Type -> Type) (a : Type) where
@@ -706,16 +681,14 @@ reduce :
   Tensor shape dtype ->
   Shared $ Tensor (deleteAt axes shape) dtype
 reduce axes (MkTensor i xEnv) = do
-  l0 <- fresh
-  l1 <- fresh
+  (a0, p0) <- arg
+  (a1, p1) <- arg
   let semigroup : MonoidM f a -> SemigroupM f a
       semigroup _ = %search
 
-  MkTensor m subEnv <- (<+>) @{semigroup reducer} (MkTensor l0 (singleton l0 (Arg l0))) (MkTensor l1 (singleton l1 (Arg l1)))
-  MkTensor n neutralEnv <- neutral @{reducer}
-  j <- fresh
-  let expr = Reduce (MkFn [(l0, MkShapeAndType [] dtype), (l1, MkShapeAndType [] dtype)] m subEnv) n axes i
-  pure $ MkTensor j (insert j expr $ mergeLeft xEnv neutralEnv) 
+  MkTensor j subEnv <- (<+>) @{semigroup reducer} a0 a1
+  MkTensor k neutralEnv <- neutral @{reducer}
+  mergeLeft xEnv neutralEnv `end` Reduce (MkFn [p0, p1] j subEnv) k axes i
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -735,12 +708,10 @@ sort :
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Shared $ Tensor shape dtype
 sort comp dimension (MkTensor i env) = do
-  k0 <- fresh
-  k1 <- fresh
-  MkTensor l subEnv <- comp (MkTensor k0 (singleton k0 (Arg k0))) (MkTensor k1 (singleton k1 (Arg k1)))
-  j <- fresh
-  let expr = Sort (MkFn [(k0, MkShapeAndType [] dtype), (k1, MkShapeAndType [] dtype)] l subEnv) dimension False [i] 
-  pure $ MkTensor j (insert j expr env)
+  (a0, p0) <- arg
+  (a1, p1) <- arg
+  MkTensor j subEnv <- comp a0 a1
+  env `end` Sort (MkFn [p0, p1] j subEnv) dimension False [i]
 
 {-
 sort (<) 0 [3, 4]
@@ -808,16 +779,12 @@ reverse :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Shared $ Tensor shape dtype
-reverse axes (MkTensor i nodes) = do
-  j <- fresh
-  pure $ MkTensor j (insert j (Reverse axes i) nodes)
+reverse axes (MkTensor i env) = env `end` Reverse axes i
 
 ----------------------------- numeric operations ----------------------------
 
 binary : BinaryOp -> Tensor s a -> Tensor s a' -> Shared $ Tensor s a''
-binary op (MkTensor i nodes) (MkTensor j nodes') = do
-  k <- fresh
-  pure $ MkTensor k (insert k (BinaryElementwise op i j) $ mergeLeft nodes nodes')
+binary op (MkTensor i env) (MkTensor i' env') = mergeLeft env env' `end` BinaryElementwise op i i'
 
 ||| `fromLiteral [True, False]`.
 export
@@ -889,9 +856,7 @@ namespace MonoidM
     neutral = fill False
 
 unary : UnaryOp -> Tensor s a -> Shared $ Tensor s a'
-unary op (MkTensor i nodes) = do
-  j <- fresh
-  pure $ MkTensor j (insert j (UnaryElementwise op i) nodes)
+unary op (MkTensor i env) = env `end` UnaryElementwise op i
 
 ||| Element-wise boolean negation. For example, `not (fromLiteral [True, False])` is
 ||| `fromLiteral [False, True]`.
@@ -923,9 +888,8 @@ select :
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
   Shared $ Tensor shape dtype
-select (MkTensor i pred) (MkTensor j true) (MkTensor k false) = do
-  l <- fresh
-  pure $ MkTensor l (insert l (Select i j k) $ mergeLeft (mergeLeft pred true) false)
+select (MkTensor p pred) (MkTensor t true) (MkTensor f false) =
+  mergeLeft (mergeLeft pred true) false `end` Select p t f
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -956,15 +920,12 @@ cond :
   (onFalse : Tensor fs ft -> Shared $ Tensor shape dtype) -> Tensor fs ft ->
   Shared $ Tensor shape dtype
 cond (MkTensor pred envPred) onTrue (MkTensor true envTrue) onFalse (MkTensor false envFalse) = do
-  kTrue <- fresh
-  kFalse <- fresh
-  MkTensor lTrue subEnvTrue <- onTrue (MkTensor kTrue (singleton kTrue (Arg kTrue)))
-  MkTensor lFalse subEnvFalse <- onFalse (MkTensor kFalse (singleton kFalse (Arg kFalse)))
-  let fTrue = MkFn [(kTrue, MkShapeAndType ts tt)] lTrue subEnvTrue
-  let fFalse = MkFn [(kFalse, MkShapeAndType fs ft)] lFalse subEnvFalse
-  m <- fresh
-  let expr = Cond pred fTrue true fFalse false
-  pure $ MkTensor m (insert m expr (mergeLeft (mergeLeft envPred envTrue) envFalse))
+  (aTrue, pTrue) <- arg
+  (aFalse, pFalse) <- arg
+  MkTensor lTrue subEnvTrue <- onTrue aTrue
+  MkTensor lFalse subEnvFalse <- onFalse aFalse
+  let env = mergeLeft (mergeLeft envPred envTrue) envFalse
+  env `end` Cond pred (MkFn [pTrue] lTrue subEnvTrue) true (MkFn [pFalse] lFalse subEnvFalse) false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -977,9 +938,7 @@ namespace Vector
   ||| **WARNING** Not well tested
   export
   (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Shared $ Tensor [] dtype
-  (MkTensor i x) @@ (MkTensor j y) = do
-    k <- fresh
-    pure $ MkTensor k (insert k (Dot i j) (mergeLeft x y))
+  (MkTensor i env) @@ (MkTensor i' env') = mergeLeft env env' `end` Dot i i'
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
@@ -1011,9 +970,7 @@ namespace Matrix
     Tensor (S m :: tl) dtype ->
     {auto 0 vectorTail : length tl `LTE` 1} ->
     Shared $ Tensor (n :: tl) dtype
-  (MkTensor i x) @@ (MkTensor j y) = do
-    k <- fresh
-    pure $ MkTensor k (insert k (Dot i j) (mergeLeft x y))
+  (MkTensor i env) @@ (MkTensor i' env') = mergeLeft env env' `end` Dot i i'
 
 ||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
 ||| `fromLiteral [4, 6]`.
@@ -1239,9 +1196,8 @@ sqrt = unary Sqrt
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Shared $ Tensor shape dtype
 min l r with (l, r)
-  _ | (MkTensor i nodes, MkTensor j nodes') = do
-    k <- fresh
-    let op = MkTensor k $ (insert k (BinaryElementwise Min i j) (mergeLeft nodes nodes'))
+  _ | (MkTensor i env, MkTensor i' env') = do
+    op <- mergeLeft env env' `end` BinaryElementwise Min i i'
     select !(l == l) !(select !(r == r) op r) l
 
 namespace SemigroupM
@@ -1263,9 +1219,8 @@ namespace MonoidM
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Shared $ Tensor shape dtype
 max l r with (l, r)
-  _ | (MkTensor i nodes, MkTensor j nodes') = do
-    k <- fresh
-    let op = MkTensor k $ (insert k (BinaryElementwise Max i j) (mergeLeft nodes nodes'))
+  _ | (MkTensor i env, MkTensor i' env') = do
+    op <- mergeLeft env env `end` BinaryElementwise Max i i'
     select !(l == l) !(select !(r == r) op r) l
 
 namespace SemigroupM
@@ -1301,8 +1256,7 @@ export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Shared $ Tensor [] U64
 argmin x = do
   MkTensor i env <- highlightNan True x
-  j <- fresh
-  pure $ MkTensor j (insert j (Argmin {out=U64} 0 i) env)
+  env `end` Argmin {out=U64} 0 i
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmin (fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 1`. If the vector contains NaN values,
@@ -1311,8 +1265,7 @@ export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Shared $ Tensor [] U64
 argmax x = do
   MkTensor i env <- highlightNan False x
-  j <- fresh
-  pure $ MkTensor j (insert j (Argmax {out=U64} 0 i) env)
+  env `end` Argmax {out=U64} 0 i
 
 ---------------------------- other ----------------------------------
 
@@ -1322,9 +1275,7 @@ argmax x = do
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Shared $ Tensor [S n, S n] F64
-cholesky (MkTensor i nodes) = do
-  j <- fresh
-  triangle Lower $ MkTensor j (insert j (Cholesky i) nodes)
+cholesky (MkTensor i env) = triangle Lower !(env `end` Cholesky i)
 
 infix 9 |\, \|
 
@@ -1338,9 +1289,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
   (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Shared $ Tensor [m, n] F64
-  (MkTensor i nodes) |\ (MkTensor j nodes') = do
-    k <- fresh
-    pure $ MkTensor k (insert k (TriangularSolve i j True) (mergeLeft nodes nodes'))
+  (MkTensor i env) |\ (MkTensor i' env') = mergeLeft env env' `end` TriangularSolve i i' True
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1351,9 +1300,7 @@ namespace Matrix
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
   (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Shared $ Tensor [m, n] F64
-  (MkTensor i nodes) \| (MkTensor j nodes') = do
-    k <- fresh
-    pure $ MkTensor k (insert k (TriangularSolve i j False) (mergeLeft nodes nodes'))
+  (MkTensor i env) \| (MkTensor i' env') = mergeLeft env env' `end` TriangularSolve i i' False
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
