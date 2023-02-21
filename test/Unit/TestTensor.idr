@@ -1231,7 +1231,7 @@ trace : Property
 trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
   (do trace !x) ===# 3
-{-
+
 range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 
@@ -1240,16 +1240,16 @@ product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
-iidKolmogorovSmirnov samples cdf =
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Shared $ Tensor shape F64) -> Shared $ Tensor [] F64
+iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
 
-      indices : Tensor [n] F64 := cast (fromLiteral {dtype=U64} (range n))
-      sampleSize : Tensor [] F64 := cast (fromLiteral {dtype=U64} (Scalar n))
-      samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
-      deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
-   in reduce @{Max} [0] (abs deviationFromCDF)
+  indices <- the (Shared $ Tensor [n] F64) $ castDtype !(fromLiteral {dtype=U64} (range n))
+  sampleSize <- the (Shared $ Tensor [] F64) $ castDtype !(fromLiteral {dtype=U64} (Scalar n))
+  samplesFlat <- reshape {sizesEqual=sym (product1 n)} {to=[n]} !(cdf samples)
+  deviationFromCDF <- the (Shared $ Tensor [n] F64) $ !(indices / sampleSize) - !(sort (<) 0 samplesFlat)
+  reduce @{Max} [0] !(abs deviationFromCDF)
 
 partial
 uniform : Property
@@ -1259,17 +1259,18 @@ uniform = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral bound
-      bound' = fromLiteral bound'
-      bound' = select (bound' == bound) (bound' + fill 1.0e-9) bound'
-      key = fromLiteral key
-      seed = fromLiteral seed
-      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
+  let ksTest = do
+    bound <- fromLiteral bound
+    bound' <- fromLiteral bound'
+    bound' <- select !(bound' == bound) !(bound' + !(fill 1.0e-9)) bound'
+    key <- fromLiteral key
+    seed <- fromLiteral seed
+    samples <- evalStateT seed !(uniform key !(broadcast bound) !(broadcast bound'))
 
-      uniformCdf : Tensor [2000, 5] F64 -> Tensor [2000, 5] F64
-      uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
+    let uniformCdf : Tensor [2000, 5] F64 -> Shared $ Tensor [2000, 5] F64
+        uniformCdf x = Tensor.(/) !(x - !(broadcast bound)) !(broadcast !(bound' - bound))
 
-      ksTest := iidKolmogorovSmirnov samples uniformCdf
+    iidKolmogorovSmirnov samples uniformCdf
 
   diff (toLiteral ksTest) (<) 0.015
 
@@ -1279,24 +1280,26 @@ uniformForNonFiniteBounds = property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
-      bound' = fromLiteral [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
-      key = fromLiteral key
-      seed = fromLiteral seed
-      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
+  let samples = do
+    bound <- fromLiteral [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
+    bound' <- fromLiteral [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
+    key <- fromLiteral key
+    seed <- fromLiteral seed
+    evalStateT seed !(uniform key !(broadcast bound) !(broadcast bound'))
 
   samples ===# fromLiteral [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
-
+{-
 partial
 uniformForFiniteEqualBounds : Property
 uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
-      key = fromLiteral key
-      seed = fromLiteral seed
-      samples = evalState seed (uniform key bound bound)
+  let samples = do
+    bound <- fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
+    key <- fromLiteral key
+    seed <- fromLiteral seed
+    samples <- evalState seed (uniform key bound bound)
 
   samples ===# bound
 
@@ -1445,8 +1448,8 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
---    , ("uniform", uniform)
---    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
+    , ("uniform", uniform)
+    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
 --    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
 --    , ("uniform updates seed", uniformSeedIsUpdated)
 --    , ("uniform produces same samples for same seed", uniformIsReproducible)

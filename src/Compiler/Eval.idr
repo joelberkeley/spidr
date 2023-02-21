@@ -181,25 +181,19 @@ enqueue _       (Dot l r) = dot !(lookup l) !(lookup r)
 enqueue _       (Cholesky x) = cholesky !(lookup x) True
 enqueue _       (TriangularSolve a b lower) =
   triangularSolve !(lookup a) !(lookup b) True lower False NoTranspose
-enqueue builder (UniformFloatingPoint key initialState minval maxval shape) = ?ufp -- do
-  {-
+enqueue builder (UniformFloatingPoint key initialState minval maxval shape) = do
   rngOutput <- uniformFloatingPointDistribution
-    !(enqueue key)
-    !(enqueue initialState)
+    !(lookup key)
+    !(lookup initialState)
     ThreeFry
-    !(enqueue minval)
-    !(enqueue maxval)
+    !(lookup minval)
+    !(lookup maxval)
     !(mkShape {dtype=F64} shape)
-  (builder, _) <- get
   tuple builder [value rngOutput, state rngOutput]
-  -}
-enqueue builder (NormalFloatingPoint key initialState shape) = ?nfp -- do
-  {-
+enqueue builder (NormalFloatingPoint key initialState shape) = do
   rngOutput <- normalFloatingPointDistribution
-    !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
-  (builder, _) <- get
+    !(lookup key) !(lookup initialState) ThreeFry !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
-  -}
 
 interpret builder root env = do
   traverse_ interpretExpr (toList env)

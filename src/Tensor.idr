@@ -1347,7 +1347,6 @@ Rand = StateT (Tensor [1] U64) Shared
 inf : Shared $ Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
-{-
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
 ||| between `bound` and `bound'`.
 |||
@@ -1360,11 +1359,11 @@ inf = fromDouble (1.0 / 0.0)
 |||
 ||| Example usage, multiplying two uniform samples
 ||| ```
-||| x : Tensor [3] F64
-||| x = let key = fromLiteral 2
-|||         rng = uniform key (fill 0.0) (fill 1.0)
-|||         initialState = fromLiteral [0]
-|||      in evalState initialState [| rng * rng |]
+||| x : Shared $ Tensor [3] F64
+||| x = do key <- fromLiteral (Scalar 2)
+|||        rng <- uniform key !(fill 0.0) !(fill 1.0)
+|||        initialState <- fromLiteral [Scalar 0]
+|||        evalStateT initialState (do lift $ !rng * !rng)
 ||| ```
 |||
 ||| @key Determines the stream of generated samples.
@@ -1375,22 +1374,31 @@ uniform :
   {shape : _} ->
   (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
-  Rand (Tensor shape F64)
-uniform (MkTensor key) bound bound' =
-  let minval@(MkTensor minvalExpr) = min bound bound'
-      maxval@(MkTensor maxvalExpr) = max bound bound'
-   in ST $ \(MkTensor initialState) =>
-      let valueState = UniformFloatingPoint key initialState minvalExpr maxvalExpr shape
-          value = MkTensor $ GetTupleElement 0 valueState
-          -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
-          -- samples between -inf and 0 should be at -inf, but XLA produces nan
-          -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
-          inf = broadcast inf
-          value = select (minval == - inf && maxval == fill 0) (- inf) value
-          value = select (minval == inf && maxval == inf) inf value
-          value = select (minval == - inf && maxval == - inf) (- inf) value
-       in Id (MkTensor $ GetTupleElement 1 valueState, value)
+  Shared $ Rand (Tensor shape F64)
+uniform (MkTensor iKey envKey) bound bound' = do
+  minval@(MkTensor iMinval envMinval) <- min bound bound'
+  maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
+  inf <- broadcast !inf
+  let env = mergeLeft (mergeLeft envKey envMinval) envMaxval
+  pure $ ST $ \(MkTensor iState envState) => do
+    i <- fresh
+    j <- fresh
+    k <- fresh
+    let env = mergeLeft envState env
+        env = insert i (UniformFloatingPoint iKey iState iMinval iMaxval shape) env
+        env = insert j (GetTupleElement 0 i) env
+        value = MkTensor j env
+        env = insert k (GetTupleElement 1 i) env
+    -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
+    -- samples between -inf and 0 should be at -inf, but XLA produces nan
+    -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
+    negInf <- - inf
+    value <- select !(!(minval == negInf) && !(maxval == !(fill 0))) !(- inf) value
+    value <- select !(!(minval == inf) && !(maxval == inf)) inf value
+    value <- select !(!(minval == negInf) && !(maxval == negInf)) !(- inf) value
+    pure $ (MkTensor k env, value)
 
+{-
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
 |||
