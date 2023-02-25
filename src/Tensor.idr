@@ -380,6 +380,12 @@ slice at (MkTensor i env) = do
       stop _ (Index idx) = S idx
       stop f {d} _ = f d
 
+      size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
+      size _ (Slice {size=size'} _ _) = size'
+      size _ (Index _) = 1
+      size _ (DynamicSlice _ size') = size'
+      size _ (DynamicIndex _) = 1
+
       zero : Expr
       zero = FromLiteral {shape=[]} {dtype=U64} 0
 
@@ -390,20 +396,17 @@ slice at (MkTensor i env) = do
         f 0 (idxs, env) = pure (idxs, env)
         f (S k) (idxs, env) = do
           i <- fresh
-          f k (snoc idxs i, insert i zero env)
-      dynStarts idxs env (DynamicSlice (MkTensor i env') _ :: xs) =
-        dynStarts (snoc idxs i) (mergeLeft env env') xs
-      dynStarts idxs env (DynamicIndex (MkTensor i env') :: xs) =
-        dynStarts (snoc idxs i) (mergeLeft env env') xs
+          f k (i :: idxs, insert i zero env)
+      dynStarts idxs env (DynamicSlice (MkTensor i env') _ :: ds) = do
+        (idxs, env) <- dynStarts idxs env ds
+        pure (i :: idxs, mergeLeft env env')
+      dynStarts idxs env (DynamicIndex (MkTensor i env') :: ds) = do
+        (idxs, env) <- dynStarts idxs env ds
+        pure (i :: idxs, mergeLeft env env')
       dynStarts idxs env (_ :: ds) = do
+        (idxs, env) <- dynStarts idxs env ds
         i <- fresh
-        dynStarts (snoc idxs i) (insert i zero env) ds
-
-      size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      size _ (Slice {size=size'} _ _) = size'
-      size _ (Index _) = 1
-      size _ (DynamicSlice _ size') = size'
-      size _ (DynamicIndex _) = 1
+        pure (i :: idxs, insert i zero env)
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
