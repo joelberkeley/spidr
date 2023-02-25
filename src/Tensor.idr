@@ -1398,7 +1398,6 @@ uniform (MkTensor iKey envKey) bound bound' = do
     value <- select !(!(minval == negInf) && !(maxval == negInf)) !(- inf) value
     pure $ (MkTensor k env, value)
 
-{-
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
 |||
@@ -1417,8 +1416,9 @@ uniform (MkTensor iKey envKey) bound bound' = do
 ||| @key Determines the stream of generated samples.
 export
 normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
-normal (MkTensor key) =
-  ST $ \(MkTensor initialState) =>
-    let valueState = NormalFloatingPoint key initialState shape
-     in Id (MkTensor $ GetTupleElement 1 valueState, MkTensor $ GetTupleElement 0 valueState)
-     -}
+normal (MkTensor iKey envKey) =
+  ST $ \(MkTensor iState envState) => do
+    i <- fresh
+    let env = insert i (NormalFloatingPoint iKey iState shape) $ mergeLeft envKey envState
+    [| (,) (env `end` GetTupleElement 1 i) (env `end` GetTupleElement 0 i) |]
+

@@ -1342,25 +1342,26 @@ uniformIsReproducible = withTests 20 . property $ do
       sample' = evalState seed rng
 
   sample ===# sample'
-
+  -}
 partial
 normal : Property
 normal = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let key = fromLiteral key
-      seed = fromLiteral seed
+  let ksTest = do
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      samples : Tensor [100, 100] F64 = evalState seed (normal key)
+        samples <- the (Shared $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
 
-      normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
-      normalCdf x = (fill 1.0 + erf (x / sqrt (fill 2.0))) / fill 2.0
+        let normalCdf : {shape : _} -> Tensor shape F64 -> Shared $ Tensor shape F64
+            normalCdf x = do !(!(fill 1.0) + !(erf !(x / !(sqrt !(fill 2.0))))) / !(fill 2.0)
 
-      ksTest := iidKolmogorovSmirnov samples normalCdf
+        iidKolmogorovSmirnov samples normalCdf
 
   diff (toLiteral ksTest) (<) 0.02
-
+{-
 partial
 normalSeedIsUpdated : Property
 normalSeedIsUpdated = withTests 20 . property $ do
@@ -1453,7 +1454,7 @@ group = MkGroup "Tensor" $ [
 --    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
 --    , ("uniform updates seed", uniformSeedIsUpdated)
 --    , ("uniform produces same samples for same seed", uniformIsReproducible)
---    , ("normal", normal)
+    , ("normal", normal)
 --    , ("normal updates seed", normalSeedIsUpdated)
 --    , ("normal produces same samples for same seed", normalIsReproducible)
   ]
