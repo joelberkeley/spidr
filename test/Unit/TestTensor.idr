@@ -194,12 +194,22 @@ namespace MultiSlice
     slice {shape=[3, 4]} [at 1, at 2] === Prelude.Nil
 
 partial
-slice : Property
-slice = fixedProperty $ do
+sliceStaticIndex : Property
+sliceStaticIndex = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
   (do slice [at 0] !x) ===# fromLiteral 3
   (do slice [at 1] !x) ===# fromLiteral 4
   (do slice [at 2] !x) ===# fromLiteral 5
+
+  let idx : Nat
+      idx = 2
+
+  (do slice [at idx] !x) ===# fromLiteral 5
+
+partial
+sliceStaticSlice : Property
+sliceStaticSlice = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [3, 4, 5]
   (do slice [0.to 0] !x) ===# fromLiteral []
   (do slice [0.to 1] !x) ===# fromLiteral [3]
   (do slice [0.to 2] !x) ===# fromLiteral [3, 4]
@@ -209,35 +219,10 @@ slice = fixedProperty $ do
   (do slice [1.to 3] !x) ===# fromLiteral [4, 5]
   (do slice [2.to 2] !x) ===# fromLiteral []
   (do slice [2.to 3] !x) ===# fromLiteral [5]
-{-
-  (do slice [at (!(fromLiteral 0))] !x) ===# fromLiteral 3
-  (do slice [at (!(fromLiteral 1))] !x) ===# fromLiteral 4
-  (do slice [at (!(fromLiteral 2))] !x) ===# fromLiteral 5
-  (do slice [at (!(fromLiteral 3))] !x) ===# fromLiteral 5
-  (do slice [at (!(fromLiteral 5))] !x) ===# fromLiteral 5
-  (do slice [(!(fromLiteral 0)).size 0] !x) ===# fromLiteral []
-  (do slice [(!(fromLiteral 0)).size 1] !x) ===# fromLiteral [3]
-  (do slice [(!(fromLiteral 0)).size 2] !x) ===# fromLiteral [3, 4]
-  (do slice [(!(fromLiteral 0)).size 3] !x) ===# fromLiteral [3, 4, 5]
-  (do slice [(!(fromLiteral 1)).size 0] !x) ===# fromLiteral []
-  (do slice [(!(fromLiteral 1)).size 1] !x) ===# fromLiteral [4]
-  (do slice [(!(fromLiteral 1)).size 2] !x) ===# fromLiteral [4, 5]
-  (do slice [(!(fromLiteral 1)).size 3] !x) ===# fromLiteral [3, 4, 5]
-  (do slice [(!(fromLiteral 2)).size 0] !x) ===# fromLiteral []
-  (do slice [(!(fromLiteral 2)).size 1] !x) ===# fromLiteral [5]
-  (do slice [(!(fromLiteral 3)).size 0] !x) ===# fromLiteral []
-  (do slice [(!(fromLiteral 3)).size 1] !x) ===# fromLiteral [5]
-  (do slice [(!(fromLiteral 3)).size 3] !x) ===# fromLiteral [3, 4, 5]
-  (do slice [(!(fromLiteral 5)).size 0] !x) ===# fromLiteral []
-  (do slice [(!(fromLiteral 5)).size 1] !x) ===# fromLiteral [5]
-  (do slice [(!(fromLiteral 5)).size 3] !x) ===# fromLiteral [3, 4, 5]
-      -}
 
-  let idx : Nat
-      idx = 2
-
-  (do slice [at idx] !x) ===# fromLiteral 5
-
+partial
+sliceStaticMixed : Property
+sliceStaticMixed = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [0.to 1] !x) ===# fromLiteral [[3, 4, 5]]
   (do slice [1.to 1] !x) ===# fromLiteral []
@@ -253,53 +238,86 @@ slice = fixedProperty $ do
   (do slice [1.to 2, at 0] !x) ===# fromLiteral [6]
   (do slice [1.to 2, at 1] !x) ===# fromLiteral [7]
   (do slice [1.to 2, at 2] !x) ===# fromLiteral [8]
-{-
-  (do idx <- fromLiteral 0
-      slice [idx.size 1] !x) ===# fromLiteral [[3, 4, 5]]
-  (do idx <- fromLiteral 1
-      slice [idx.size 0] !x) ===# fromLiteral []
-  (do idx <- fromLiteral 2
-      slice [idx.size 0] !x) ===# fromLiteral []
-  (do idx <- fromLiteral 2
-      slice [idx.size 1] !x) ===# fromLiteral [[6, 7, 8]]
-  (do idx <- fromLiteral 4
-      slice [idx.size 0] !x) ===# fromLiteral []
-  (do idx <- fromLiteral 4
-      slice [idx.size 1] !x) ===# fromLiteral [[6, 7, 8]]
-  (do idx <- fromLiteral 2
-      slice [all, idx.size 0] !x) ===# fromLiteral [[], []]
-  (do idx <- fromLiteral 1
-      slice [all, idx.size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
-  (do idx <- fromLiteral 3
-      slice [all, idx.size 0] !x) ===# fromLiteral [[], []]
-  (do idx <- fromLiteral 3
-      slice [all, idx.size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
-  (do idx <- fromLiteral 5
-      slice [all, idx.size 0] !x) ===# fromLiteral [[], []]
-  (do idx <- fromLiteral 5
-      slice [all, idx.size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
-  (do idx <- fromLiteral 2
-      slice [at 0, idx.size 0] !x) ===# fromLiteral []
-  (do slice [at 0, (!(fromLiteral 1)).size 2] !x) ===# fromLiteral [4, 5]
-  (do slice [at 1, (!(fromLiteral 2)).size 0] !x) ===# fromLiteral []
-  (do slice [at 1, (!(fromLiteral 1)).size 2] !x) ===# fromLiteral [7, 8]
-  (do slice [at 1, (!(fromLiteral 3)).size 0] !x) ===# fromLiteral []
-  (do slice [at 1, (!(fromLiteral 3)).size 2] !x) ===# fromLiteral [7, 8]
-  (do slice [at 1, (!(fromLiteral 5)).size 0] !x) ===# fromLiteral []
-  (do slice [at 1, (!(fromLiteral 5)).size 2] !x) ===# fromLiteral [7, 8]
-  (do slice [(!(fromLiteral 0)).size 1, at 0] !x) ===# fromLiteral [3]
-  (do slice [(!(fromLiteral 0)).size 1, at 1] !x) ===# fromLiteral [4]
-  (do slice [(!(fromLiteral 0)).size 1, at 2] !x) ===# fromLiteral [5]
-  (do slice [(!(fromLiteral 1)).size 1, at 0] !x) ===# fromLiteral [6]
-  (do slice [(!(fromLiteral 1)).size 1, at 1] !x) ===# fromLiteral [7]
-  (do slice [(!(fromLiteral 1)).size 1, at 2] !x) ===# fromLiteral [8]
-  (do slice [(!(fromLiteral 2)).size 1, at 0] !x) ===# fromLiteral [6]
-  (do slice [(!(fromLiteral 2)).size 1, at 1] !x) ===# fromLiteral [7]
-  (do slice [(!(fromLiteral 2)).size 1, at 2] !x) ===# fromLiteral [8]
-  (do slice [(!(fromLiteral 4)).size 1, at 0] !x) ===# fromLiteral [6]
-  (do slice [(!(fromLiteral 4)).size 1, at 1] !x) ===# fromLiteral [7]
-  (do slice [(!(fromLiteral 4)).size 1, at 2] !x) ===# fromLiteral [8]
-      -}
+
+-- idris is having a hard time inferring types
+u64 : Nat -> Shared $ Tensor [] U64
+u64 = fromLiteral . Scalar
+
+partial
+sliceDynamicIndex : Property
+sliceDynamicIndex = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [3, 4, 5]
+  (do slice [at (!(u64 0))] !x) ===# fromLiteral 3
+  (do slice [at (!(u64 1))] !x) ===# fromLiteral 4
+  (do slice [at (!(u64 2))] !x) ===# fromLiteral 5
+  (do slice [at (!(u64 3))] !x) ===# fromLiteral 5
+  (do slice [at (!(u64 5))] !x) ===# fromLiteral 5
+
+  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  (do slice [at (!(u64 0))] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [at (!(u64 1))] !x) ===# fromLiteral [6, 7, 8]
+  (do slice [at (!(u64 2))] !x) ===# fromLiteral [6, 7, 8]
+  (do slice [at (!(u64 4))] !x) ===# fromLiteral [6, 7, 8]
+
+partial
+sliceDynamicSlice : Property
+sliceDynamicSlice = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [3, 4, 5]
+  (do slice [(!(u64 0)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 0)).size 1] !x) ===# fromLiteral [3]
+  (do slice [(!(u64 0)).size 2] !x) ===# fromLiteral [3, 4]
+  (do slice [(!(u64 0)).size 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [(!(u64 1)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 1)).size 1] !x) ===# fromLiteral [4]
+  (do slice [(!(u64 1)).size 2] !x) ===# fromLiteral [4, 5]
+  (do slice [(!(u64 1)).size 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [(!(u64 2)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 2)).size 1] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 3)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 3)).size 1] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 3)).size 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [(!(u64 5)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 5)).size 1] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 5)).size 3] !x) ===# fromLiteral [3, 4, 5]
+
+  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  (do slice [(!(u64 0)).size 1] !x) ===# fromLiteral [[3, 4, 5]]
+  (do slice [(!(u64 1)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 2)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 2)).size 1] !x) ===# fromLiteral [[6, 7, 8]]
+  (do slice [(!(u64 4)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 4)).size 1] !x) ===# fromLiteral [[6, 7, 8]]
+
+partial
+sliceMixed : Property
+sliceMixed = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  (do slice [all, (!(u64  2)).size 0] !x) ===# fromLiteral [[], []]
+  (do slice [all, (!(u64  1)).size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [all, (!(u64  3)).size 0] !x) ===# fromLiteral [[], []]
+  (do slice [all, (!(u64  3)).size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [all, (!(u64  5)).size 0] !x) ===# fromLiteral [[], []]
+  (do slice [all, (!(u64  5)).size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [at 0, (!(u64  2)).size 0] !x) ===# fromLiteral []
+  (do slice [at 0, (!(u64  1)).size 2] !x) ===# fromLiteral [4, 5]
+  (do slice [at 1, (!(u64  2)).size 0] !x) ===# fromLiteral []
+  (do slice [at 1, (!(u64  1)).size 2] !x) ===# fromLiteral [7, 8]
+  (do slice [at 1, (!(u64  3)).size 0] !x) ===# fromLiteral []
+  (do slice [at 1, (!(u64  3)).size 2] !x) ===# fromLiteral [7, 8]
+  (do slice [at 1, (!(u64  5)).size 0] !x) ===# fromLiteral []
+  (do slice [at 1, (!(u64  5)).size 2] !x) ===# fromLiteral [7, 8]
+  (do slice [(!(u64 0)).size 1, at 0] !x) ===# fromLiteral [3]
+  (do slice [(!(u64 0)).size 1, at 1] !x) ===# fromLiteral [4]
+  (do slice [(!(u64 0)).size 1, at 2] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 1)).size 1, at 0] !x) ===# fromLiteral [6]
+  (do slice [(!(u64 1)).size 1, at 1] !x) ===# fromLiteral [7]
+  (do slice [(!(u64 1)).size 1, at 2] !x) ===# fromLiteral [8]
+  (do slice [(!(u64 2)).size 1, at 0] !x) ===# fromLiteral [6]
+  (do slice [(!(u64 2)).size 1, at 1] !x) ===# fromLiteral [7]
+  (do slice [(!(u64 2)).size 1, at 2] !x) ===# fromLiteral [8]
+  (do slice [(!(u64 4)).size 1, at 0] !x) ===# fromLiteral [6]
+  (do slice [(!(u64 4)).size 1, at 1] !x) ===# fromLiteral [7]
+  (do slice [(!(u64 4)).size 1, at 2] !x) ===# fromLiteral [8]
 
   let x : Array [60] Int32 = fromList [0..59]
       x = (do reshape {to=[2, 5, 3, 2]} !(fromLiteral {shape=[60]} {dtype=S32} $ cast x))
@@ -1404,8 +1422,13 @@ group = MkGroup "Tensor" $ [
     , ("cast", cast)
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
---    , ("slice", TestTensor.slice)
---    , ("slice for variable index", sliceForVariableIndex)
+    , ("slice for static index", sliceStaticIndex)
+    , ("slice for static slice", sliceStaticSlice)
+    , ("slice for dynamic index", sliceDynamicIndex)
+    , ("slice for dynamic slice", sliceDynamicSlice)
+    , ("slice for static index and slice", sliceStaticMixed)
+    , ("slice for mixed static and dynamic index and slice", sliceMixed)
+    , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
     , ("diag", diag)
     , ("triangle", triangle)
@@ -1414,13 +1437,13 @@ group = MkGroup "Tensor" $ [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
---    , ("transpose", transpose) -- test uses slice
+    , ("transpose", transpose)
     , ("map", mapResult)
     , ("map with non-trivial function", mapNonTrivial)
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)
---    , ("sort", sort) -- test uses slice
+    , ("sort", sort)
     , ("sort with empty axis", sortWithEmptyAxis)
     , ("sort with repeated elements", sortWithRepeatedElements)
     , ("reverse", reverse)
@@ -1435,8 +1458,8 @@ group = MkGroup "Tensor" $ [
     , ("Scalarwise.(/)", scalarDivision)
     , ("Sum", neutralIsNeutralForSum)
     , ("Prod", neutralIsNeutralForProd)
---    , ("argmin", argmin) -- test uses slice
---    , ("argmax", argmax) -- test uses slice
+    , ("argmin", argmin)
+    , ("argmax", argmax)
     , ("Min", neutralIsNeutralForMin)
     , ("Max", neutralIsNeutralForMax)
     , ("Any", neutralIsNeutralForAny)

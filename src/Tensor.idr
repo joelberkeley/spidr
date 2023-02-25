@@ -352,11 +352,13 @@ namespace MultiSlice
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
 slice : Primitive dtype => (at : MultiSlice shape) -> Tensor shape dtype -> Shared $ Tensor (slice at) dtype
-{-
-slice at (MkTensor expr) =
-  let sliced = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) expr
-      sliced = DynamicSlice (mapd dynStart (const zero) at) (mapd size id at) sliced
-   in MkTensor $ Reshape (mapd size id at) (MultiSlice.slice at) sliced
+slice at (MkTensor i env) = do
+  j <- fresh
+  let env = insert j (Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) i) env
+  (dynStartsIdxs, env) <- dynStarts [] env at
+  k <- fresh
+  let env = insert k (DynamicSlice dynStartsIdxs (mapd size id at) j) env
+  env `end` Reshape (mapd size id at) (MultiSlice.slice at) k
 
       where
       mapd :
@@ -381,17 +383,27 @@ slice at (MkTensor expr) =
       zero : Expr
       zero = FromLiteral {shape=[]} {dtype=U64} 0
 
-      dynStart : (Nat -> Expr) -> {d : Nat} -> SliceOrIndex d -> Expr
-      dynStart _ (DynamicSlice (MkTensor from) _) = from
-      dynStart _ (DynamicIndex (MkTensor idx)) = idx
-      dynStart f {d} _ = f d
+      dynStarts : List Nat -> Env -> {shape : _} -> MultiSlice shape -> Shared (List Nat, Env)
+      dynStarts idxs env {shape} [] = f (length shape) (idxs, env)
+        where
+        f : Nat -> (List Nat, Env) -> Shared (List Nat, Env)
+        f 0 (idxs, env) = pure (idxs, env)
+        f (S k) (idxs, env) = do
+          i <- fresh
+          f k (snoc idxs i, insert i zero env)
+      dynStarts idxs env (DynamicSlice (MkTensor i env') _ :: xs) =
+        dynStarts (snoc idxs i) (mergeLeft env env') xs
+      dynStarts idxs env (DynamicIndex (MkTensor i env') :: xs) =
+        dynStarts (snoc idxs i) (mergeLeft env env') xs
+      dynStarts idxs env (_ :: ds) = do
+        i <- fresh
+        dynStarts (snoc idxs i) (insert i zero env) ds
 
       size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
       size _ (Slice {size=size'} _ _) = size'
       size _ (Index _) = 1
       size _ (DynamicSlice _ size') = size'
       size _ (DynamicIndex _) = 1
-      -}
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (fromLiteral [[1, 2], [3, 4]]) (fromLiteral [[5, 6]])` and
@@ -1202,7 +1214,7 @@ min l r with (l, r)
 
 namespace SemigroupM
   export
-  [Min] Primitive.Ord dtype => SemigroupM Shared (Tensor shape dtype) where
+  [Min] {shape : _} -> Primitive.Ord dtype => SemigroupM Shared (Tensor shape dtype) where
     (<+>) = min
 
 namespace MonoidM
