@@ -34,6 +34,7 @@ import public Util
 
 ----------------------------- core definitions ----------------------------
 
+-- rename. A Shared X is *not* shared, it's the other way round
 public export
 Shared : Type -> Type
 Shared = State Nat
@@ -121,10 +122,10 @@ export
 ||| Cast the element type. For example, `castDtype (fromLiteral {dtype=S32} [1, -2])` is
 ||| `fromLiteral {dtype=F64} [1.0, -2.0]`.
 export
-castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
-castDtype x = do
-  MkTensor i env <- x
-  env `end` ConvertElementType {dtype=F64} i
+Primitive.Integral a => Cast (Tensor shape a) (Tensor shape F64) where
+  cast x = do
+    MkTensor i env <- x
+    env `end` ConvertElementType {dtype=F64} i
 
 ----------------------------- structural operations ----------------------------
 
@@ -216,8 +217,8 @@ data SliceOrIndex : Nat -> Type where
     {auto 0 inDim : LTE to d} ->
     SliceOrIndex d
   Index : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
-  DynamicSlice : RawTensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
-  DynamicIndex : RawTensor [] U64 -> SliceOrIndex d
+  DynamicSlice : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
+  DynamicIndex : Tensor [] U64 -> SliceOrIndex d
 
 ||| Index at `idx`. See `slice` for details.
 public export
@@ -227,7 +228,7 @@ at = Index
 namespace Dynamic
   ||| Index at the specified index. See `slice` for details.
   public export
-  at : RawTensor [] U64 -> SliceOrIndex d
+  at : Tensor [] U64 -> SliceOrIndex d
   at = DynamicIndex
 
 ||| Slice from `from` (inclusive) to `to` (exclusive). See `slice` for details.
@@ -242,7 +243,7 @@ public export
 
 ||| Slice `size` elements starting at the specified scalar `U64` index. See `slice` for details.
 public export
-(.size) : RawTensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
+(.size) : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
 (.size) = DynamicSlice
 
 ||| Slice across all indices along an axis. See `slice` for details.
@@ -414,10 +415,12 @@ slice at x = do
         f (S k) (idxs, env) = do
           i <- fresh
           f k (i :: idxs, insert i zero env)
-      dynStarts idxs env (DynamicSlice (MkTensor i env') _ :: ds) = do
+      dynStarts idxs env (DynamicSlice start' _ :: ds) = do
+        MkTensor i env' <- start'
         (idxs, env) <- dynStarts idxs env ds
         pure (i :: idxs, mergeLeft env env')
-      dynStarts idxs env (DynamicIndex (MkTensor i env') :: ds) = do
+      dynStarts idxs env (DynamicIndex idx :: ds) = do
+        MkTensor i env' <- idx
         (idxs, env) <- dynStarts idxs env ds
         pure (i :: idxs, mergeLeft env env')
       dynStarts idxs env (_ :: ds) = do
@@ -1297,9 +1300,12 @@ max : Primitive.Ord dtype =>
       Tensor shape dtype ->
       Tensor shape dtype
 max x x' = do
-  MkTensor i env <- x
-  MkTensor i' env' <- x'
-  let op = mergeLeft env env `end` BinaryElementwise Max i i'
+  (MkTensor {shape = _} i env) <- x
+  let x = MkTensor i env
+  x'@(MkTensor i' env') <- x'
+  let op = mergeLeft env env' `end` BinaryElementwise Max i i'
+      x = pure x
+      x' = pure x'
   select (x == x) (select (x' == x') op x') x
 
 namespace Semigroup
@@ -1433,6 +1439,7 @@ trace x = do
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
+-- can we change this so seed and state are `Tensor` not `RawTensor`?
 Rand = StateT (RawTensor [1] U64) Shared
 
 inf : Tensor [] F64
@@ -1474,20 +1481,17 @@ uniform key bound bound' = do
   let env = mergeLeft (mergeLeft envKey envMinval) envMaxval
   pure $ ST $ \(MkTensor iState envState) => do
     i <- fresh
-    j <- fresh
-    k <- fresh
     let env = mergeLeft envState env
         env = insert i (UniformFloatingPoint iKey iState iMinval iMaxval shape) env
-        env = insert j (GetTupleElement 0 i) env
-        value = pure $ MkTensor j env
-        env = insert k (GetTupleElement 1 i) env
-    -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
-    -- samples between -inf and 0 should be at -inf, but XLA produces nan
-    -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
+        state = env `end` GetTupleElement 1 i
+        value = env `end` GetTupleElement 0 i
+        -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
+        -- samples between -inf and 0 should be at -inf, but XLA produces nan
+        -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
         value = select ((pure minval == - inf) && (pure maxval == fill 0)) (- inf) value
         value = select ((pure minval == inf) && (pure maxval == inf)) inf value
-    value <- select ((pure minval == - inf) && (pure maxval == - inf)) (- inf) value
-    pure (MkTensor k env, value)
+        value = select ((pure minval == - inf) && (pure maxval == - inf)) (- inf) value
+    pure (!state, !value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1512,4 +1516,6 @@ normal key = do
   ST $ \(MkTensor iState envState) => do
     i <- fresh
     let env = insert i (NormalFloatingPoint iKey iState shape) $ mergeLeft envKey envState
-    pure (!(env `end` GetTupleElement 1 i), !(env `end` GetTupleElement 0 i))
+    state <- env `end` GetTupleElement 1 i
+    value <- env `end` GetTupleElement 0 i
+    pure (state, value)

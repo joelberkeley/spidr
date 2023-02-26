@@ -8,7 +8,6 @@ depends =
   pretty-show,
   sop
 
-opts = "--total"
 sourcedir = "test"
 
 executable = test
