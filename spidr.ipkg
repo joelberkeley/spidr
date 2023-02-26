@@ -49,6 +49,7 @@ modules =
   Literal,
 
   Model,
+--  Model.GaussianProcess,
   Model.Kernel,
   Model.MeanFunction,
 
