@@ -5,8 +5,8 @@ depends = contrib
 opts = "--total"
 sourcedir = "src"
 modules =
---  BayesianOptimization,
---  BayesianOptimization.Acquisition,
+  BayesianOptimization,
+  BayesianOptimization.Acquisition,
 
   Compiler.Eval,
   Compiler.Expr,
@@ -52,7 +52,7 @@ modules =
   Literal,
 
   Model,
---  Model.GaussianProcess,
+  Model.GaussianProcess,
   Model.Kernel,
   Model.MeanFunction,
 

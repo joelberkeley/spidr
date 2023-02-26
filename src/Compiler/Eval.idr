@@ -221,4 +221,3 @@ run root env = do
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)
-

@@ -58,22 +58,22 @@ expectedImprovement :
   (model : m) ->
   (best : Tensor [] F64) ->
   Acquisition 1 features
-expectedImprovement model best at =
-  let marginal = marginalise model at
-      best' = broadcast {to=[_, 1]} best
-      pdf = pdf marginal best'
-      cdf = cdf marginal best'
+expectedImprovement model best at = do
+  marginal <- marginalise model at
+  best' <- broadcast {to=[_, 1]} best
+  let pdf = pdf marginal $ pure best'
+      cdf = cdf marginal $ pure best'
       mean = squeeze (mean {event=[1]} {dim=1} marginal)
       variance = squeeze (variance {event=[1]} marginal)
-   in (best - mean) * cdf + variance * pdf
+  (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
 expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-expectedImprovementByModel (MkDataset queryPoints _) model at =
-  let best = squeeze $ reduce @{Min} [0] $ mean {event=[1]} $ marginalise model queryPoints
-   in expectedImprovement model best at
+expectedImprovementByModel (MkDataset queryPoints _) model at = do
+  let best = squeeze $ reduce @{Min} [0] $ mean {event=[1]} !(marginalise model queryPoints)
+  expectedImprovement model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
@@ -82,7 +82,7 @@ probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] d =>
   Empiric features [1] {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit _ model at = cdf (marginalise model at) $ broadcast {to=[_, 1]} limit
+probabilityOfFeasibility limit _ model at = cdf !(marginalise model at) $ broadcast {to=[_, 1]} limit
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -93,9 +93,9 @@ negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
   Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-negativeLowerConfidenceBound beta _ model at =
-  let marginal = marginalise model at
-   in squeeze $ mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
+negativeLowerConfidenceBound beta _ model at = do
+  marginal <- marginalise model at
+  squeeze $ mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
