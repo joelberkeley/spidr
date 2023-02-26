@@ -1306,10 +1306,10 @@ uniformSeedIsUpdated = withTests 20 . property $ do
         samples <- Tensor.concat 0 (expand 0 (pure sample)) (expand 0 (pure sample'))
         pure (seeds, samples)
 
-      [seed, seed', seed''] = toLiteral {ty = Nat} $ do
+      [seed, seed', seed''] = toLiteral $ do
         (seeds, _) <- everything
         pure seeds
-      [sample, sample'] = toLiteral {ty = Double} $ do
+      [sample, sample'] = toLiteral $ do
         (_, samples) <- everything
         pure samples
 
@@ -1364,18 +1364,18 @@ normalSeedIsUpdated = withTests 20 . property $ do
 
   let key = fromLiteral key
       rng = normal key {shape=[10]}
-      everything : Shared (RawTensor _ _, RawTensor _ _) = do
+      everything = do
         seed <- fromLiteral seed
         (seed', sample) <- runStateT seed rng
         (seed'', sample') <- runStateT seed' rng
         seeds <- concat 0 (pure seed) (concat 0 (pure seed') (pure seed''))
         samples <- concat 0 (expand 0 (pure sample)) (expand 0 (pure sample'))
-        pure {f = Shared} (seeds, samples)
+        pure (seeds, samples)
 
-      [seed, seed', seed''] = toLiteral {dtype = U64} {ty = Nat} $ do
+      [seed, seed', seed''] = toLiteral $ do
         (seeds, _) <- everything
         pure seeds
-      [sample, sample'] = toLiteral {dtype = F64} {ty = Double} $ do
+      [sample, sample'] = toLiteral $ do
         (_, samples) <- everything
         pure samples
 
