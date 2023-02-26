@@ -62,10 +62,10 @@ logMarginalLikelihood :
   Tensor [] F64 ->
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
   Tensor [] F64
-logMarginalLikelihood (MkGP _ kernel) noise (x, y) =
-  let l = cholesky (kernel x x + noise * identity)
-      alpha = l.T \| (l |\ y)
-   in - y @@ alpha / 2.0 - trace (log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
+logMarginalLikelihood (MkGP _ kernel) noise (x, y) = do
+  l <- cholesky (kernel x x + noise * identity)
+  let alpha = l.T \| (l |\ y)
+  - y @@ alpha / 2.0 - trace (log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following

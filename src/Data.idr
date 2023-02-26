@@ -33,6 +33,6 @@ data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
 
 ||| Concatenate two datasets along their leading axis.
 export
-SemigroupM Shared (Dataset features targets) where
-  (MkDataset {s=s} x y) <+> (MkDataset {s=s'} x' y') = do
-    pure $ MkDataset {s=s + S s'} !(concat 0 x x') !(concat 0 y y')
+Semigroup (Dataset features targets) where
+  (MkDataset {s=s} x y) <+> (MkDataset {s=s'} x' y') =
+    MkDataset {s=s + S s'} (concat 0 x x') (concat 0 y y')
