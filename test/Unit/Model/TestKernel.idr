@@ -22,7 +22,7 @@ import Model.Kernel
 import Utils.Comparison
 import Utils.Cases
 
-covering
+partial
 rbfMatchesTFP : Property
 rbfMatchesTFP = fixedProperty $ do
   let lengthScale = fromLiteral 0.4
@@ -39,9 +39,9 @@ rbfMatchesTFP = fixedProperty $ do
           [8.83826492e-04, 4.57833372e-01, 4.57833372e-01],
           [1.52299879e-08, 2.18749152e-03, 6.06530669e-01]
         ]
-  rbf lengthScale x x' ===# expected
+  (do rbf !lengthScale !x !x') ===# expected
 
-export covering
+export partial
 group : Group
 group = MkGroup "Kernel" $ [
     ("rbf matches tfp", rbfMatchesTFP)

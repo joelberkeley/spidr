@@ -22,13 +22,14 @@ import Distribution
 import Utils.Comparison
 import Utils.Cases
 
-covering
+partial
 gaussianUnivariatePDF : Property
 gaussianUnivariatePDF = property $ do
   let doubles = literal [] doubles
   [mean, cov, x] <- forAll (np [doubles, doubles, doubles])
-  let gaussian = MkGaussian (fromLiteral [[mean]]) (fromLiteral [[[cov]]])
-      actual = pdf gaussian (fromLiteral [[x]])
+  let actual = do
+        let gaussian = MkGaussian !(fromLiteral [[mean]]) !(fromLiteral [[[cov]]])
+        pdf gaussian !(fromLiteral [[x]])
       expected = fromLiteral [| univariate x mean cov |]
   actual ===# expected
 
@@ -36,23 +37,25 @@ gaussianUnivariatePDF = property $ do
     univariate : Double -> Double -> Double -> Double
     univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
 
+partial
 gaussianMultivariatePDF : Property
 gaussianMultivariatePDF = fixedProperty $ do
   let mean = fromLiteral [[-0.2], [0.3]]
       cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
       x = fromLiteral [[1.1], [-0.5]]
-  pdf (MkGaussian mean cov) x ===# 0.016427375
+  (do pdf ![| MkGaussian mean cov |] !x) ===# 0.016427375
 
+partial
 gaussianCDF : Property
 gaussianCDF = fixedProperty $ do
-  let gaussian = MkGaussian (fromLiteral [[0.5]]) (fromLiteral [[[1.44]]])
+  let gaussian = do pure $ MkGaussian !(fromLiteral [[0.5]]) !(fromLiteral [[[1.44]]])
 
-  cdf gaussian (fromLiteral [[-1.5]]) ===# 0.04779036
-  cdf gaussian (fromLiteral [[-0.5]]) ===# 0.20232838
-  cdf gaussian (fromLiteral [[0.5]]) ===# 0.5
-  cdf gaussian (fromLiteral [[1.5]]) ===# 0.7976716
+  (do cdf !gaussian !(fromLiteral [[-1.5]])) ===# 0.04779036
+  (do cdf !gaussian !(fromLiteral [[-0.5]])) ===# 0.20232838
+  (do cdf !gaussian !(fromLiteral [[0.5]])) ===# 0.5
+  (do cdf !gaussian !(fromLiteral [[1.5]])) ===# 0.7976716
 
-export covering
+export partial
 group : Group
 group = MkGroup "Distribution" $ [
       ("Gaussian univariate pdf", gaussianUnivariatePDF)

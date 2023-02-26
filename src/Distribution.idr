@@ -82,7 +82,7 @@ ClosedFormDistribution [1] Gaussian where
     cholCov <- cholesky !(squeeze {to=[S d, S d]} cov)
     tri <- cholCov |\ !(squeeze !(x - mean))
     exponent <- - !(!(tri @@ tri) / !2.0)
-    covSqrtDet <- reduce @{?prod} [0] !(diag cholCov)
+    covSqrtDet <- reduce @{Prod} [0] !(diag cholCov)
     denominator <- !(fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
     !(exp exponent) / denominator
 

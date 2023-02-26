@@ -2,7 +2,6 @@ package test
 
 depends =
   spidr,
-  hashable,
   contrib,
   hedgehog,
   elab-util,
@@ -16,8 +15,8 @@ executable = test
 main = Main
 
 modules =
---  Unit.Model.TestKernel,
---  Unit.TestDistribution,
+  Unit.Model.TestKernel,
+  Unit.TestDistribution,
   Unit.TestLiteral,
   Unit.TestTensor,
   Unit.TestUtil,

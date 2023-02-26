@@ -49,6 +49,8 @@ modules =
   Literal,
 
   Model,
+  Model.Kernel,
+  Model.MeanFunction,
 
   Optimize,
   Primitive,
