@@ -672,11 +672,11 @@ map2 f (MkTensor {shape} i env) (MkTensor i' env') = do
   MkTensor j subEnv <- f a0 a1
   mergeLeft env env' `end` Map (MkFn [p0, p1] j subEnv) [i, i'] (range $ length shape)
 
-export
+public export
 interface SemigroupM (f : Type -> Type) (a : Type) where
   (<+>) : a -> a -> f a
 
-export
+public export
 interface SemigroupM f a => MonoidM f a where
   neutral : f a
 
