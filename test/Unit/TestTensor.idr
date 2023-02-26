@@ -1369,7 +1369,7 @@ normalSeedIsUpdated = withTests 20 . property $ do
         (seed', sample) <- runStateT seed rng
         (seed'', sample') <- runStateT seed' rng
         seeds <- concat 0 (pure seed) (concat 0 (pure seed') (pure seed''))
-        samples <- concat 0 (expand 0 (pure sample)) (expand 0 (pure sample'))
+        samples <- Tensor.concat 0 (expand 0 (pure sample)) (expand 0 (pure sample'))
         pure (seeds, samples)
 
       [seed, seed', seed''] = toLiteral $ do
