@@ -69,7 +69,7 @@ and model that data
 
 ```idris
 model : ConjugateGPRegression [2]
-model = let mkGP = \len => MkGP zero (matern52 1.0 $ squeeze len)
+model = let mkGP = \len => pure $ MkGP zero (matern52 1.0 $ squeeze len)
             model = MkConjugateGPR mkGP (fromLiteral [0.5]) 0.2
          in fit model lbfgs historicData
 ```
@@ -82,7 +82,7 @@ optimizer = let gs = gridSearch (fromLiteral [100, 100]) (fromLiteral [0.0, 0.0]
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Tensor [1, 2] F64
-newPoint = optimizer $ squeeze . mean {event=[1]} . (marginalise @{Latent} model)
+newPoint = optimizer $ \x => squeeze $ mean {event=[1]} !(marginalise @{Latent} model x)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -120,7 +120,7 @@ In the above example, we constructed the acquisition function from our model, th
 
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
-modelMean model = squeeze . mean {event=[1]} . (marginalise model)
+modelMean model x = squeeze $ mean {event=[1]} !(marginalise model x)
 
 newPoint' : Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
@@ -184,7 +184,7 @@ failureData : Dataset [2] [1]
 failureData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]) (fromLiteral [[0], [0], [0], [1]])
 
 failureModel : ConjugateGPRegression [2]
-failureModel = let mkGP = \len => MkGP zero (rbf $ squeeze len)
+failureModel = let mkGP = \len => pure $ MkGP zero (rbf $ squeeze len)
                    model = MkConjugateGPR mkGP (fromLiteral [0.2]) 0.1
                 in fit model lbfgs failureData
 ```
