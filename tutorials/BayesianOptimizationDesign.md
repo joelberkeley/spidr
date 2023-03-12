@@ -77,11 +77,11 @@ model = let mkGP = \len => pure $ MkGP zero (matern52 1.0 $ squeeze len)
 then optimize over the marginal mean
 
 ```idris
-optimizer : Optimizer $ Tensor [1, 2] F64
+optimizer : Optimizer $ Ref $ Tensor [1, 2] F64
 optimizer = let gs = gridSearch (fromLiteral [100, 100]) (fromLiteral [0.0, 0.0]) (fromLiteral [1.0, 1.0])
              in \f => broadcast . gs $ f . broadcast
 
-newPoint : Tensor [1, 2] F64
+newPoint : Ref $ Tensor [1, 2] F64
 newPoint = optimizer $ \x => squeeze $ mean {event=[1]} !(marginalise @{Latent} model x)
 ```
 
@@ -122,7 +122,7 @@ In the above example, we constructed the acquisition function from our model, th
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model x = squeeze $ mean {event=[1]} !(marginalise model x)
 
-newPoint' : Tensor [1, 2] F64
+newPoint' : Ref $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
                 point = map optimizer acquisition
              in runReader model point
@@ -201,7 +201,7 @@ record Labelled o f where
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to extract the respective data and model. Putting it all together, here's our empirical point:
 
 ```idris
-newPoint'' : Tensor [1, 2] F64
+newPoint'' : Ref $ Tensor [1, 2] F64
 newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.5
                  pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} 0.5
                  acquisition = map optimizer (eci <*> pof)
@@ -214,7 +214,7 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.
 Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 
 ```idris
-objective : Tensor [n, 2] F64 -> Tensor [n, 1] F64
+objective : Ref (Tensor [n, 2] F64) -> Ref (Tensor [n, 1] F64)
 ```
 
 at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
