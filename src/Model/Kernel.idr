@@ -28,16 +28,16 @@ public export 0
 Kernel : (0 features : Shape) -> Type
 Kernel features =
   {sk, sk' : _} ->
-  Tensor (sk :: features) F64 ->
-  Tensor (sk' :: features) F64 ->
-  Tensor [sk, sk'] F64
+  Ref (Tensor (sk :: features) F64) ->
+  Ref (Tensor (sk' :: features) F64) ->
+  Ref (Tensor [sk, sk'] F64)
 
 scaledL2Norm :
-  Tensor [] F64 ->
+  Ref (Tensor [] F64) ->
   {d, n, n' : _} ->
-  Tensor [n, S d] F64 ->
-  Tensor [n', S d] F64 ->
-  Tensor [n, n'] F64
+  Ref (Tensor [n, S d] F64) ->
+  Ref (Tensor [n', S d] F64) ->
+  Ref (Tensor [n, n'] F64)
 scaledL2Norm len x x' =
   let xs = broadcast {to=[n, n', S d]} $ expand 1 x
    in reduce @{Sum} [2] ((xs - broadcast (expand 0 x')) / len) ^ fill 2.0
@@ -55,7 +55,7 @@ scaledL2Norm len x x' =
 |||
 ||| @lengthScale The length scale `l`.
 export
-rbf : (lengthScale : Tensor [] F64) -> {d : _} -> Kernel [S d]
+rbf : (lengthScale : Ref $ Tensor [] F64) -> {d : _} -> Kernel [S d]
 rbf lengthScale x x' = exp (- scaledL2Norm lengthScale x x' / 2.0)
 
 ||| The Matern kernel for parameter 5/2. This is a stationary kernel with form
@@ -71,7 +71,7 @@ rbf lengthScale x x' = exp (- scaledL2Norm lengthScale x x' / 2.0)
 ||| @length_scale The length scale `l`.
 export
 matern52 :
-  (amplitude : Tensor [] F64) -> (length_scale : Tensor [] F64) -> {d : _} -> Kernel [S d]
+  (amplitude : Ref $ Tensor [] F64) -> (length_scale : Ref $ Tensor [] F64) -> {d : _} -> Kernel [S d]
 matern52 amp len x x' = do
   d2 <- 5.0 * scaledL2Norm len x x'
   d <- pure d2 ^ fill 0.5

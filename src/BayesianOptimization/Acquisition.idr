@@ -45,7 +45,7 @@ Empiric features targets out =
 ||| @features The shape of the feature domain.
 public export 0
 Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
-Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tensor [] F64
+Acquisition batchSize features = Ref (Tensor (batchSize :: features) F64) -> Ref (Tensor [] F64)
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -56,7 +56,7 @@ export
 expectedImprovement :
   ProbabilisticModel features [1] Gaussian m =>
   (model : m) ->
-  (best : Tensor [] F64) ->
+  (best : Ref $ Tensor [] F64) ->
   Acquisition 1 features
 expectedImprovement model best at = do
   marginal <- marginalise model at
@@ -79,7 +79,7 @@ expectedImprovementByModel (MkDataset queryPoints _) model at = do
 ||| value less than the specified `limit`.
 export
 probabilityOfFeasibility :
-  (limit : Tensor [] F64) ->
+  (limit : Ref $ Tensor [] F64) ->
   ClosedFormDistribution [1] d =>
   Empiric features [1] {marginal=d} $ Acquisition 1 features
 probabilityOfFeasibility limit _ model at = cdf !(marginalise model at) $ broadcast {to=[_, 1]} limit
@@ -105,5 +105,5 @@ negativeLowerConfidenceBound beta _ model at = do
 ||| **NOTE** This function is not yet implemented.
 export
 expectedConstrainedImprovement :
-  (limit : Tensor [] F64) ->
+  (limit : Ref $ Tensor [] F64) ->
   Empiric features [1] {marginal=Gaussian} $ (Acquisition 1 features -> Acquisition 1 features)
