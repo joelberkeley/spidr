@@ -220,8 +220,8 @@ objective : Ref (Tensor [n, 2] F64) -> Ref (Tensor [n, 1] F64)
 at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
 
 ```idris
-observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
-                            -> (Dataset [2] [1], ConjugateGPRegression [2])
+observe : Ref (Tensor [1, 2] F64) -> (Dataset [2] [1], ConjugateGPRegression [2])
+                                  -> (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let newData = MkDataset point (objective point)
                                   in (dataset <+> newData, fit model lbfgs newData)
 ```
