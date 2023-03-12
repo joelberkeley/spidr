@@ -63,7 +63,7 @@ end env expr = do
 
 ||| Construct a `Tensor` from `Literal` data.
 export
-fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor shape dtype
+fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Ref $ Tensor shape dtype
 fromLiteral lit = empty `end` FromLiteral {dtype} {shape} lit
 
 namespace F64
