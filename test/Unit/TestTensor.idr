@@ -57,8 +57,8 @@ canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
       f64max : Literal [] Double = max @{Finite}
-      min' : Tensor [] F64 = Types.min @{Finite}
-      max' : Tensor [] F64 = Types.max @{Finite}
+      min' : Ref $ Tensor [] F64 = Types.min @{Finite}
+      max' : Ref $ Tensor [] F64 = Types.max @{Finite}
   toLiteral min' === f64min
   toLiteral max' === f64max
   toLiteral (fromLiteral f64min == min') === True
@@ -66,8 +66,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let s32min : Literal [] Int32 = Scalar min
       s32max : Literal [] Int32 = Scalar max
-      min' : Tensor [] S32 = Types.min @{Finite}
-      max' : Tensor [] S32 = Types.max @{Finite}
+      min' : Ref $ Tensor [] S32 = Types.min @{Finite}
+      max' : Ref $ Tensor [] S32 = Types.max @{Finite}
   toLiteral min' === s32min
   toLiteral max' === s32max
   toLiteral (fromLiteral s32min == min') === True
@@ -75,8 +75,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u32min : Literal [] Nat = 0
       u32max : Literal [] Nat = 4294967295
-      min' : Tensor [] U32 = Types.min @{Finite}
-      max' : Tensor [] U32 = Types.max @{Finite}
+      min' : Ref $ Tensor [] U32 = Types.min @{Finite}
+      max' : Ref $ Tensor [] U32 = Types.max @{Finite}
   toLiteral min' === u32min
   toLiteral max' === u32max
   toLiteral (fromLiteral u32min == min') === True
@@ -84,8 +84,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u64min : Literal [] Nat = 0
       u64max : Literal [] Nat = 18446744073709551615
-      min' : Tensor [] U64 = Types.min @{Finite}
-      max' : Tensor [] U64 = Types.max @{Finite}
+      min' : Ref $ Tensor [] U64 = Types.min @{Finite}
+      max' : Ref $ Tensor [] U64 = Types.max @{Finite}
   toLiteral min' === u64min
   toLiteral max' === u64max
   toLiteral (fromLiteral u64min == min') === True
@@ -94,18 +94,18 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 partial
 boundedNonFinite : Property
 boundedNonFinite = fixedProperty $ do
-  let min' : Tensor [] S32 = Types.min @{NonFinite}
-      max' : Tensor [] S32 = Types.max @{NonFinite}
+  let min' : Ref $ Tensor [] S32 = Types.min @{NonFinite}
+      max' : Ref $ Tensor [] S32 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
-  let min' : Tensor [] U32 = Types.min @{NonFinite}
-      max' : Tensor [] U32 = Types.max @{NonFinite}
+  let min' : Ref $ Tensor [] U32 = Types.min @{NonFinite}
+      max' : Ref $ Tensor [] U32 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
-  let min' : Tensor [] U64 = Types.min @{NonFinite}
-      max' : Tensor [] U64 = Types.max @{NonFinite}
+  let min' : Ref $ Tensor [] U64 = Types.min @{NonFinite}
+      max' : Ref $ Tensor [] U64 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
@@ -117,10 +117,10 @@ boundedNonFinite = fixedProperty $ do
 partial
 show : Property
 show = fixedProperty $ do
-  let x : Tensor [] S32 = 1
+  let x : Ref $ Tensor [] S32 = 1
   show x === "constant, shape=[], metadata={:0}"
 
-  let x : Tensor [] S32 = 1 + 2
+  let x : Ref $ Tensor [] S32 = 1 + 2
   show x ===
     """
     add, shape=[], metadata={:0}
@@ -137,15 +137,15 @@ cast = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=U32} lit)
+  let x : Ref $ Tensor shape F64 = cast (fromLiteral {dtype=U32} lit)
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape nats)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
+  let x : Ref $ Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape int32s)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
+  let x : Ref $ Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
 partial
@@ -563,7 +563,7 @@ transpose = fixedProperty $ do
       [15, 19, 23]]]
 
   let x : Array [120] Int32 = fromList [0..119]
-      x : Tensor [2, 3, 4, 5] S32 = reshape $ fromLiteral {shape=[120]} (cast x)
+      x : Ref $ Tensor [2, 3, 4, 5] S32 = reshape $ fromLiteral {shape=[120]} (cast x)
   transpose [0, 1, 2, 3] x ===# x
   slice [all, at 1, at 0] (transpose [0, 2, 1, 3] x) ===# slice [all, at 0, at 1] x
   slice [at 2, at 4, at 0, at 1] (transpose [2, 3, 1, 0] x) ===# slice [at 1, at 0, at 2, at 4] x
@@ -773,7 +773,7 @@ namespace S32
   export partial
   testElementwiseUnary :
     (Int32 -> Int32) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32) ->
+    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32)) ->
     Property
   testElementwiseUnary fInt fTensor = property $ do
     shape <- forAll shapes
@@ -785,7 +785,7 @@ namespace F64
   export partial
   testElementwiseUnary :
     (Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64) ->
+    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64)) ->
     Property
   testElementwiseUnary fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -797,7 +797,7 @@ namespace PRED
   export partial
   testElementwiseUnary :
     (Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseUnary fBool fTensor = property $ do
     shape <- forAll shapes
@@ -855,7 +855,7 @@ namespace S32
   export partial
   testElementwiseBinary :
     (Int32 -> Int32 -> Int32) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) ->
+    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> Ref (Tensor shape S32)) ->
     Property
   testElementwiseBinary fInt fTensor = property $ do
     shape <- forAll shapes
@@ -869,7 +869,7 @@ namespace F64
   export partial
   testElementwiseBinary :
     (Double -> Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) ->
+    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape F64)) ->
     Property
   testElementwiseBinary fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -883,7 +883,7 @@ namespace PRED
   export partial
   testElementwiseBinary :
     (Bool -> Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseBinary fBool fTensor = property $ do
     shape <- forAll shapes
@@ -1051,7 +1051,7 @@ namespace S32
   export partial
   testElementwiseComparator :
     (Int32 -> Int32 -> Bool) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseComparator fInt fTensor = property $ do
     shape <- forAll shapes
@@ -1065,7 +1065,7 @@ namespace F64
   export partial
   testElementwiseComparator :
     (Double -> Double -> Bool) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseComparator fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -1079,7 +1079,7 @@ namespace PRED
   export partial
   testElementwiseComparator :
     (Bool -> Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseComparator = testElementwiseBinary
 
@@ -1223,16 +1223,18 @@ product1 : (x : Nat) -> product (the (List Nat) [x]) = x
 product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
-iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
+iidKolmogorovSmirnov : {shape : _} ->
+                       Ref (Tensor shape F64) ->
+                       (Ref (Tensor shape F64) -> Ref (Tensor shape F64)) ->
+                       Ref (Tensor [] F64)
 iidKolmogorovSmirnov samples cdf =
   let n : Nat
       n = product shape
 
-      indices : Tensor [n] F64 := cast (fromLiteral {dtype=U64} (range n))
-      sampleSize : Tensor [] F64 := cast (fromLiteral {dtype=U64} (Scalar n))
+      indices : Ref $ Tensor [n] F64 := cast (fromLiteral {dtype=U64} (range n))
+      sampleSize : Ref $ Tensor [] F64 := cast (fromLiteral {dtype=U64} (Scalar n))
       samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
-      deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
+      deviationFromCDF : Ref $ Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
    in reduce @{Max} [0] (abs deviationFromCDF)
 
 partial
@@ -1251,7 +1253,7 @@ uniform = withTests 20 . property $ do
         rng <- uniform key (broadcast bound) (broadcast bound')
         let samples = evalStateT !(fromLiteral seed) rng
 
-            uniformCdf : Tensor [2000, 5] F64 -> Tensor [2000, 5] F64
+            uniformCdf : Ref (Tensor [2000, 5] F64) -> Ref (Tensor [2000, 5] F64)
             uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
 
         iidKolmogorovSmirnov samples uniformCdf
@@ -1347,9 +1349,9 @@ normal = withTests 20 . property $ do
   let key = fromLiteral key
       seed = fromLiteral seed
 
-      samples : Tensor [100, 100] F64 = do evalStateT !seed (normal key)
+      samples : Ref (Tensor [100, 100] F64) = do evalStateT !seed (normal key)
 
-      normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
+      normalCdf : {shape : _} -> Ref (Tensor shape F64) -> Ref (Tensor shape F64)
       normalCdf x = (fill 1.0 + erf (x / sqrt (fill 2.0))) / fill 2.0
 
       ksTest := iidKolmogorovSmirnov samples normalCdf
