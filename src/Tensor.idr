@@ -658,7 +658,7 @@ fill xs = broadcast {shapesOK=scalarToAnyOk shape} (fromLiteral (Scalar xs))
 
 ----------------------------- generic operations ----------------------------
 
-arg : Primitive dtype => {shape : _} -> Ref (Tensor shape dtype, Nat, ShapeAndType)
+arg : Primitive dtype => {shape : _} -> Ref (Ref $ Tensor shape dtype, Nat, ShapeAndType)
 arg = do
   i <- new
   pure (pure $ MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
