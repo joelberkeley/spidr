@@ -715,7 +715,7 @@ map2 f x x' = do
 ||| @axis The axis along which to reduce elements.
 export
 reduce :
-  (reducer : Monoid (Tensor [] dtype)) =>
+  (reducer : Monoid (Ref $ Tensor [] dtype)) =>
   Primitive dtype =>
   (axes : List Nat) ->
   {auto 0 axesUnique : Sorted LT axes} ->
@@ -829,7 +829,7 @@ reverse axes x = do
 
 ----------------------------- numeric operations ----------------------------
 
-binary : BinaryOp -> Tensor s a -> Ref (Tensor s a') -> Ref (Tensor s a'')
+binary : BinaryOp -> Ref (Tensor s a) -> Ref (Tensor s a') -> Ref (Tensor s a'')
 binary op x x' = do
   MkTensor i env <- x
   MkTensor i' env' <- x'
