@@ -112,7 +112,7 @@ export
 fit : ConjugateGPRegression features
   -> (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
-  -> ConjugateGPRegression features
+  -> Ref $ ConjugateGPRegression features
 fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) = do
   let objective : Tensor [S p] F64 -> Ref $ Tensor [] F64
       objective params = do
