@@ -57,9 +57,9 @@ export
   max = 1.7976931348623157e308
 
 public export
-interface SemigroupT (f : Type -> Type) (a : Type) where
+interface SemigroupT (0 f : Type -> Type) (0 a : Type) where
   (<+>) : a -> a -> f a
 
 public export
-interface SemigroupT f a => Monoid f a where
+interface SemigroupT f a => MonoidT f a where
   neutral : f a

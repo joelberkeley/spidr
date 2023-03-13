@@ -646,10 +646,10 @@ fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(fromLiteral (Scalar xs))
 
 ----------------------------- generic operations ----------------------------
 
-arg : Primitive dtype => {shape : _} -> Ref (Ref $ Tensor shape dtype, Nat, ShapeAndType)
+arg : Primitive dtype => {shape : _} -> Ref (Tensor shape dtype, Nat, ShapeAndType)
 arg = do
   i <- new
-  pure (pure $ MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
+  pure (MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -806,9 +806,7 @@ reverse :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Ref $ Tensor shape dtype
-reverse axes x = do
-  MkTensor i env <- x
-  env `end` Reverse axes i
+reverse axes $ MkTensor i env = env `end` Reverse axes i
 
 ----------------------------- numeric operations ----------------------------
 
@@ -1088,7 +1086,7 @@ namespace Scalarwise
         Ref (Tensor (d :: ds) dtype)
   l * r = do
     MkTensor {shape=_ :: _} _ _ <- r
-    broadcast {shapesOK=scalarToAnyOk (d :: ds)} l * r
+    broadcast {shapesOK=scalarToAnyOk (d :: ds)} !l * r
 
 namespace SemigroupT
   export
@@ -1125,7 +1123,7 @@ namespace Scalarwise
         Ref (Tensor (d :: ds) dtype)
   l / r = do
     MkTensor {shape = _ :: _} _ _ <- l
-    l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} r
+    l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} !r
 
 ||| The element-wise reciprocal. For example, `recip (fromLiteral [-2, 0, 0.2])`
 ||| is `fromLiteral [-0.5, nan, 5]`.
@@ -1269,7 +1267,7 @@ min (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
       op = mergeLeft env env' `end` BinaryElementwise Min i i'
       x = pure x
       x' = pure x'
-  select (x == x) (select (x' == x') op x') x
+  select !(pure x == pure x) !(select !(pure x' == pure x') op x') x
 
 namespace SemigroupT
   export
@@ -1292,9 +1290,7 @@ max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ T
 max (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
   let x = MkTensor i env
       op = mergeLeft env env' `end` BinaryElementwise Max i i'
-      x = pure x
-      x' = pure x'
-  select (x == x) (select (x' == x') op x') x
+  select !(pure x == pure x) !(select !(pure x' == pure x') op x') x
 
 namespace SemigroupT
   export
@@ -1318,8 +1314,8 @@ highlightNan minimize x with (x)
 
     extremizeNan : {n : _} -> Tensor [S n] dtype -> Ref $ Tensor [S n] dtype
     extremizeNan x =
-      let min' = broadcast (Types.min @{NonFinite})
-          max' = broadcast (Types.max @{NonFinite})
+      let min' = broadcast !(Types.min @{NonFinite})
+          max' = broadcast !(Types.max @{NonFinite})
        in select (if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
@@ -1392,8 +1388,8 @@ namespace Vector
   export
   (|\) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a |\ b = do
-    MkTensor {shape=[_]} _ _ <- b
-    squeeze (a |\ expand 1 b)
+    MkTensor {shape=[_]} i env <- b
+    squeeze !(a |\ expand 1 (MkTensor i env))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1405,8 +1401,8 @@ namespace Vector
   export
   (\|) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a \| b = do
-    MkTensor {shape=[_]} _ _ <- b
-    squeeze (a \| expand 1 b)
+    MkTensor {shape=[_]} i env <- b
+    squeeze !(a \| expand 1 (MkTensor i env))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1416,7 +1412,7 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         Tensor [S n, S n] dtype ->
         Ref (Tensor [] dtype)
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] (x * identity)
+  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(x * identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
