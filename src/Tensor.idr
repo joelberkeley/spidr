@@ -1316,7 +1316,7 @@ highlightNan minimize x with (x)
     extremizeNan x = do
       min' <- broadcast !(Types.min @{NonFinite})
       max' <- broadcast !(Types.max @{NonFinite})
-      let x = pure x
+      let x : Ref _ = pure x
       select !(if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
