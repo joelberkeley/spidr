@@ -1452,7 +1452,7 @@ inf = fromDouble (1.0 / 0.0)
 export
 uniform :
   {shape : _} ->
-  (key : Tensor [] U64 ->
+  (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
   Ref $ Rand $ Tensor shape F64
 uniform (MkTensor iKey envKey) bound bound' = do
