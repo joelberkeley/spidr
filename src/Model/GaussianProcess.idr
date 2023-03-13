@@ -115,7 +115,7 @@ fit : ConjugateGPRegression features
 fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) = do
   let objective : Tensor [S p] F64 -> Ref $ Tensor [] F64
       objective params = do
-        let priorParams = slice [1.to (S p)] params
+        priorParams <- slice [1.to (S p)] params
         logMarginalLikelihood !(mkPrior priorParams) !(slice [at 0] params) (x, !(squeeze y))
 
   params <- optimizer !(concat 0 !(expand 0 noise) gpParams) objective
