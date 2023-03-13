@@ -46,15 +46,14 @@ posterior :
   Ref $ GaussianProcess features
 posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) = do
   l <- cholesky !(priorKernel xTrain xTrain + pure noise * identity)
-  let l = pure l
-      alpha = l.T \| (l |\ pure yTrain)
+  let alpha = l.T \| (pure l |\ pure yTrain)
 
       posteriorMeanf : MeanFunction features
       posteriorMeanf x = priorMeanf x + (priorKernel x xTrain) @@ alpha
 
       posteriorKernel : Kernel features
       posteriorKernel x x' =
-        priorKernel x x' - (l |\ priorKernel xTrain x).T @@ (l |\ priorKernel xTrain x')
+        priorKernel x x' - (pure l |\ priorKernel xTrain x).T @@ (pure l |\ priorKernel xTrain x')
 
   pure $ MkGP posteriorMeanf posteriorKernel
 
@@ -65,7 +64,7 @@ logMarginalLikelihood :
   Ref $ Tensor [] F64
 logMarginalLikelihood (MkGP _ kernel) noise (x, y) = do
   l <- cholesky !(kernel x x + pure noise * identity)
-  let alpha = (pure l).T \| (pure l |\ pure y)
+  let alpha = l.T \| (pure l |\ pure y)
   - pure y @@ alpha / 2.0 - trace !(log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
