@@ -110,7 +110,7 @@ export
 ||| Fit the Gaussian process and noise to the specified data.
 export
 fit : ConjugateGPRegression features
-  -> (forall n . Tensor [n] F64 -> Optimizer $ Ref $ Tensor [n] F64)
+  -> (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
   -> ConjugateGPRegression features
 fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) = do
