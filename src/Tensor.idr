@@ -1308,7 +1308,8 @@ namespace Monoid
 
 highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Ref $ Tensor [S n] dtype
 highlightNan minimize x with (x)
-  _ | (MkTensor {shape = _} _ _) = cond !(reduce @{All} [0] =<< x == x) pure x extremizeNan x
+  _ | (MkTensor {shape = _} _ _) =
+    cond !(reduce @{All} [0] !(pure x == pure x)) pure x extremizeNan x
 
     where
 
