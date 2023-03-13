@@ -63,8 +63,8 @@ expectedImprovement model best at = do
   best' <- broadcast {to=[_, 1]} best
   let pdf = pdf marginal best'
       cdf = cdf marginal best'
-      mean = squeeze (mean {event=[1]} {dim=1} marginal)
-      variance = squeeze (variance {event=[1]} marginal)
+      mean = squeeze !(mean {event=[1]} {dim=1} marginal)
+      variance = squeeze !(variance {event=[1]} marginal)
   (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
@@ -83,7 +83,7 @@ probabilityOfFeasibility :
   ClosedFormDistribution [1] d =>
   Empiric features [1] {marginal=d} $ Acquisition 1 features
 probabilityOfFeasibility limit _ model at =
-  cdf !(marginalise model at) =<< broadcast {to=[_, 1]} limit
+  cdf !(marginalise model at) !(broadcast {to=[_, 1]} limit)
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
