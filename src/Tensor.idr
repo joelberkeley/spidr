@@ -1316,6 +1316,7 @@ highlightNan minimize x with (x)
     extremizeNan x = do
       min' <- broadcast !(Types.min @{NonFinite})
       max' <- broadcast !(Types.max @{NonFinite})
+      let x = pure x
       select !(if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
@@ -1388,8 +1389,8 @@ namespace Vector
   export
   (|\) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a |\ b = do
-    MkTensor {shape=shape@[_]} i env <- b
-    squeeze !(a |\ expand 1 (MkTensor {shape} i env))
+    MkTensor {shape=[_]} _ _ <- b
+    squeeze !(a |\ expand 1 !b)
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1401,8 +1402,8 @@ namespace Vector
   export
   (\|) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a \| b = do
-    MkTensor {shape=shape@[_]} i env <- b
-    squeeze !(a \| expand 1 (MkTensor {shape} i env))
+    MkTensor {shape=[_]} _ _ <- b
+    squeeze !(a \| expand 1 !b)
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1412,7 +1413,7 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         Tensor [S n, S n] dtype ->
         Ref (Tensor [] dtype)
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(Prelude.pure x * identity)
+  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
