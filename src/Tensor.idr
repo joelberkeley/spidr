@@ -54,7 +54,7 @@ import public Util
 ----------------------------- core definitions ----------------------------
 
 ||| A `Ref a` provides a counter which allows you to label each `a`.
-public export
+public export 0
 Ref : Type -> Type
 Ref = State Nat
 
