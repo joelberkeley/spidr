@@ -686,7 +686,7 @@ map2 :
   Tensor shape a ->
   Tensor shape b ->
   Ref $ Tensor shape c
-map2 f (MkTensor {shape = _} i env) (MkTensor i' env' <- x') = do
+map2 f (MkTensor {shape = _} i env) (MkTensor i' env') = do
   (a0, p0) <- arg
   (a1, p1) <- arg
   MkTensor j subEnv <- f a0 a1
