@@ -1453,8 +1453,8 @@ export
 uniform :
   {shape : _} ->
   (key : Tensor [] U64 ->
-  (bound, bound' : Tensor shape F64 ->
-  Ref $ Rand (Tensor shape F64)
+  (bound, bound' : Tensor shape F64) ->
+  Ref $ Rand $ Tensor shape F64
 uniform (MkTensor iKey envKey) bound bound' = do
   minval@(MkTensor iMinval envMinval) <- min bound bound'
   maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
@@ -1491,7 +1491,7 @@ uniform (MkTensor iKey envKey) bound bound' = do
 |||
 ||| @key Determines the stream of generated samples.
 export
-normal : {shape : _} -> (key : Tensor [] U64) -> Rand (Tensor shape F64)
+normal : {shape : _} -> (key : Tensor [] U64) -> Rand $ Tensor shape F64
 normal $ MkTensor iKey envKey =
   ST $ \(MkTensor iState envState) => do
     i <- new
