@@ -77,7 +77,7 @@ export
 
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
-  (f :: fs) <*> (x :: xs) = assert_total $ (f <*> x) :: (fs <*> xs)
+  (f :: fs) <*> (x :: xs) = (f <*> x) :: (fs <*> xs)
 
 applicativeIdentity : (xs : Literal shape a) -> pure Prelude.id <*> xs = xs
 applicativeIdentity (Scalar _) = Refl
