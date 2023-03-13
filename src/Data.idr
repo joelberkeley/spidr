@@ -34,5 +34,5 @@ data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
 ||| Concatenate two datasets along their leading axis.
 export
 concat : Dataset features targets -> Dataset features targets -> Ref $ Dataset features targets
-concat (MkDataset {s=s} x y) (MkDataset {s=s'} x' y') =
+concat (MkDataset {s=s} x y) (MkDataset {s=s'} x' y') = do
   MkDataset {s=s + S s'} !(concat 0 x x') !(concat 0 y y')
