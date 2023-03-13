@@ -115,7 +115,7 @@ export
   min = empty `end` MinFiniteValue {dtype}
   max = empty `end` MaxFiniteValue {dtype}
 
-||| Cast the element type. For example, `castDtype (fromLiteral {dtype=S32} [1, -2])` is
+||| Cast the element type. For example, `cast (fromLiteral {dtype=S32} [1, -2])` is
 ||| `fromLiteral {dtype=F64} [1.0, -2.0]`.
 export
 Primitive.Integral a => Cast (Ref $ Tensor shape a) (Ref $ Tensor shape F64) where
@@ -178,17 +178,17 @@ namespace Squeezable
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
 |||
 ||| ```idris
-||| x : Tensor [2, 1, 3, 1] S32
+||| x : Ref $ Tensor [2, 1, 3, 1] S32
 ||| x = fromLiteral [[[[4], [5], [6]]], [[[7], [8], [9]]]]
 |||
-||| y : Tensor [2, 1, 3] S32
+||| y : Ref $ Tensor [2, 1, 3] S32
 ||| y = squeeze x
 ||| ```
 |||
 ||| is
 |||
 ||| ```idris
-||| y : Tensor [2, 1, 3] S32
+||| y : Ref $ Tensor [2, 1, 3] S32
 ||| y = fromLiteral [[[4, 5, 6]], [[7, 8, 9]]]
 ||| ```
 export
@@ -272,7 +272,7 @@ namespace MultiSlice
 |||
 ||| Static indices are `Nat`s. For example, for
 ||| ```
-||| x : Tensor [5, 6] S32
+||| x : Ref $ Tensor [5, 6] S32
 ||| x = fromLiteral [
 |||       [ 0,  1,  2,  3,  4,  5],
 |||       [ 6,  7,  8,  9, 10, 11],
@@ -283,12 +283,12 @@ namespace MultiSlice
 ||| ```
 ||| we can index as `slice [at 1] x` to get
 ||| ```
-||| x : Tensor [6] S32
+||| x : Ref $ Tensor [6] S32
 ||| x = fromLiteral [6, 7, 8, 9, 10, 11]
 ||| ```
 ||| or we can slice as `slice [2.to 4] x` to get
 ||| ```
-||| x : Tensor [2, 6] S32
+||| x : Ref $ Tensor [2, 6] S32
 ||| x = fromLiteral [
 |||       [12, 13, 14, 15, 16, 17],
 |||       [18, 19, 20, 21, 22, 23]
@@ -303,18 +303,18 @@ namespace MultiSlice
 ||| `U64` index `i` in `slice [at i] x`, `i` is clamped to be a valid index into that dimension.
 ||| For example, for `i = fromLiteral 1`, `slice [at i] x` is
 ||| ```
-||| x : Tensor [6] S32
+||| x : Ref $ Tensor [6] S32
 ||| x = fromLiteral [6, 7, 8, 9, 10, 11]
 ||| ```
 ||| as in the static case. However, for `i = fromLiteral 10`, `slice [at i] x` returns the last row
 ||| ```
-||| x : Tensor [6] S32
+||| x : Ref $ Tensor [6] S32
 ||| x = fromLiteral [24, 25, 26, 27, 28, 29]
 ||| ```
 ||| We can also slice by specifying a scalar `U64` start index, and a static size, as
 ||| `slice [i.size 2] x` with `i = fromLiteral 2` to get
 ||| ```
-||| x : Tensor [2, 6] S32
+||| x : Ref $ Tensor [2, 6] S32
 ||| x = fromLiteral [
 |||       [12, 13, 14, 15, 16, 17],
 |||       [18, 19, 20, 21, 22, 23]
@@ -323,7 +323,7 @@ namespace MultiSlice
 ||| For a given slice `size`, the dynamic start index is clamped such that we always get `size`
 ||| elements along that axis. For example, `slice [i.size 2] x` with `i = fromLiteral 4` is
 ||| ```
-||| x : Tensor [2, 6] S32
+||| x : Ref $ Tensor [2, 6] S32
 ||| x = fromLiteral [
 |||       [18, 19, 20, 21, 22, 23],
 |||       [24, 25, 26, 27, 28, 29]
@@ -337,12 +337,12 @@ namespace MultiSlice
 ||| across axes, we can mix these four arbitrarily. For example, with `slice [2.to 4, at 1] x` to
 ||| get
 ||| ```
-||| x : Tensor [2] S32
+||| x : Ref $ Tensor [2] S32
 ||| x = fromLiteral [13, 19]
 ||| ```
 ||| or with `i = fromLiteral 2` in `slice [at 1, i.size 2] x` to get
 ||| ```
-||| x : Tensor [2] S32
+||| x : Ref $ Tensor [2] S32
 ||| x = fromLiteral [7, 8]
 ||| ```
 |||
@@ -351,7 +351,7 @@ namespace MultiSlice
 ||| later axes and retain all indices in a leading axis, we can use the convenience function `all`,
 ||| as `slice [all, at 3] x` to get
 ||| ```
-||| x : Tensor [5] S32
+||| x : Ref $ Tensor [5] S32
 ||| x = fromLiteral [[3], [9], [15], [21], [27]]
 ||| ```
 ||| This is exactly the same as the more manual `slice [0.to 5, at 3] x` and
@@ -444,7 +444,7 @@ concat axis x x' = do
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
-||| x : Tensor [3, 3] S32
+||| x : Ref $ Tensor [3, 3] S32
 ||| x = fromLiteral [[0, 1, 2],
 |||                  [3, 4, 5],
 |||                  [6, 7, 8]]
@@ -462,14 +462,14 @@ data Triangle = Upper | Lower
 
 ||| Get the upper- or lower-triangular component of a matrix. For example, for
 ||| ```
-||| x : Tensor [3, 3] S32
+||| x : Ref $ Tensor [3, 3] S32
 ||| x = fromLiteral [[1, 2, 3],
 |||                  [4, 5, 6],
 |||                  [7, 8, 9]]
 ||| ```
 ||| `triangle Lower x` is
 ||| ```
-||| x : Tensor [3, 3] S32
+||| x : Ref $ Tensor [3, 3] S32
 ||| x = fromLiteral [[1, 0, 0],
 |||                  [4, 5, 0],
 |||                  [7, 8, 9]]
@@ -496,7 +496,7 @@ x.T = do
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
 ||| corresponds to the `index i ordering`'th axis in the input tensor. For example, for
 ||| ```
-||| x : Tensor [2, 3, 4] S32
+||| x : Ref $ Tensor [2, 3, 4] S32
 ||| x = fromLiteral [[[ 0,  1,  2,  3],
 |||                   [ 4,  5,  6,  7],
 |||                   [ 8,  9, 10, 11]],
@@ -506,7 +506,7 @@ x.T = do
 ||| ```
 ||| `transpose [0, 2, 1]` is
 ||| ```
-||| x : Tensor [2, 4, 3] S32
+||| x : Ref $ Tensor [2, 4, 3] S32
 ||| x = fromLiteral [[[ 0,  4,  8],
 |||                   [ 1,  5,  9],
 |||                   [ 2,  6, 10],
@@ -518,7 +518,7 @@ x.T = do
 ||| ```
 ||| `transpose [2, 0, 1]` is
 ||| ```
-||| x : Tensor [4, 2, 3] S32
+||| x : Ref $ Tensor [4, 2, 3] S32
 ||| x = fromLiteral [[[ 0,  4,  8],
 |||                   [12, 16, 20]],
 |||                  [[ 1,  5,  9],
@@ -550,12 +550,12 @@ transpose ordering x = do
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
-||| x : Tensor [2, 2] S32
+||| x : Ref $ Tensor [2, 2] S32
 ||| x = identity
 ||| ```
 ||| is
 ||| ```
-||| x : Tensor [2, 2] S32
+||| x : Ref $ Tensor [2, 2] S32
 ||| x = [[1, 0],
 |||      [0, 1]]
 ||| ```
@@ -614,14 +614,14 @@ namespace Broadcastable
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
 ||| ```idris
-||| x : Tensor [2, 3] S32
+||| x : Ref $ Tensor [2, 3] S32
 ||| x = broadcast (fromLiteral [4, 5, 6])
 ||| ```
 |||
 ||| is
 |||
 ||| ```idris
-||| x : Tensor [2, 3] S32
+||| x : Ref $ Tensor [2, 3] S32
 ||| x = fromLiteral [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
@@ -644,12 +644,12 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| A `Tensor` where every element has the specified value. For example,
 |||
 ||| ```idris
-||| fives : Tensor [2, 3] S32
+||| fives : Ref $ Tensor [2, 3] S32
 ||| fives = fill 5
 ||| ```
 ||| is
 ||| ```idris
-||| fives : Tensor [2, 3] S32
+||| fives : Ref $ Tensor [2, 3] S32
 ||| fives = fromLiteral [[5, 5, 5], [5, 5, 5]]
 ||| ```
 export
@@ -666,7 +666,7 @@ arg = do
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| recip : Tensor [] F64 -> Tensor [] F64
+||| recip : Ref (Tensor [] F64) -> Ref (Tensor [] F64)
 ||| recip = (1.0 /)
 ||| ```
 ||| can be lifted to an element-wise reciprocal function as `map recip (fromLiteral [-2, 0.4])`,
@@ -686,7 +686,7 @@ map f x = do
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
+||| addRecip : Ref (Tensor [] F64) -> Ref (Tensor [] F64) -> Ref (Tensor [] F64)
 ||| addRecip x y = x + 1.0 / y
 ||| ```
 ||| can be lifted to an element-wise function as
@@ -790,25 +790,25 @@ SortedMap(
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
-||| x : Tensor [2, 3] S32
+||| x : Ref $ Tensor [2, 3] S32
 ||| x = fromLiteral [[-2, -1,  0],
 |||                  [ 1,  2,  3]]
 ||| ```
 ||| `reverse [0] x` is
 ||| ```
-||| x : Tensor [2, 3] S32
+||| x : Ref $ Tensor [2, 3] S32
 ||| x = fromLiteral [[ 1,  2,  3],
 |||                  [-2, -1,  0]]
 ||| ```
 ||| `reverse [1] x` is
 ||| ```
-||| x : Tensor [2, 3] S32
+||| x : Ref $ Tensor [2, 3] S32
 ||| x = fromLiteral [[ 0, -1, -2],
 |||                  [ 3,  2,  1]]
 ||| ```
 ||| and `reverse [0, 1] x` is
 ||| ```
-||| x : Tensor [2, 3] S32
+||| x : Ref $ Tensor [2, 3] S32
 ||| x = fromLiteral [[ 3,  2,  1],
 |||                  [ 0, -1, -2]]
 ||| ```
@@ -939,13 +939,13 @@ not = unary Not
 ||| predicates, the output will use the corresponding element from `onTrue` if the element is
 ||| truthy, else the element from `onFalse`. For example, for
 ||| ```
-||| preds : Tensor [3] PRED
+||| preds : Ref $ Tensor [3] PRED
 ||| preds = fromLiteral [False, True, False]
 |||
-||| onTrue : Tensor [3] S32
+||| onTrue : Ref $ Tensor [3] S32
 ||| onTrue = fromLiteral [1, 2, 3]
 |||
-||| onFalse : Tensor [3] S32
+||| onFalse : Ref $ Tensor [3] S32
 ||| onFalse = fromLiteral [4, 5, 6]
 ||| ```
 ||| `select preds onTrue onFalse` is `fromLiteral [4, 2, 6]`.
@@ -970,10 +970,10 @@ select pred true false = do
 ||| corresponding specified argument. The result of the evaluated function is returned. For example,
 ||| for
 ||| ```
-||| x : Tensor [2] S32
+||| x : Ref $ Tensor [2] S32
 ||| x = fromLiteral [2, -1]
 |||
-||| y : Tensor [2, 2] S32
+||| y : Ref $ Tensor [2, 2] S32
 ||| y = fromLiteral [[5, 6],
 |||                  [7, 8]]
 ||| ```
@@ -1026,20 +1026,20 @@ namespace Matrix
   ||| and the first axis of the last. For example:
   |||
   ||| ```idris
-  ||| x : Tensor [2, 3] S32
+  ||| x : Ref $ Tensor [2, 3] S32
   ||| x = fromLiteral [[-1, -2, -3], [0, 1, 2]]
   |||
-  ||| y : Tensor [3, 1] S32
+  ||| y : Ref $ Tensor [3, 1] S32
   ||| y = fromLiteral [[4, 0, 5]]
   |||
-  ||| z : Tensor [2, 1] S32
+  ||| z : Ref $ Tensor [2, 1] S32
   ||| z = x @@ y
   ||| ```
   |||
   ||| is
   |||
   ||| ```idris
-  ||| z : Tensor [2, 1] S32
+  ||| z : Ref $ Tensor [2, 1] S32
   ||| z = fromLiteral [-19, 10]
   ||| ```
   |||
@@ -1480,7 +1480,7 @@ inf = fromDouble (1.0 / 0.0)
 |||
 ||| Example usage, multiplying two uniform samples
 ||| ```
-||| x : Tensor [3] F64
+||| x : Ref $ Tensor [3] F64
 ||| x = do key <- fromLiteral (Scalar 2)
 |||        rng <- uniform key !(fill 0.0) !(fill 1.0)
 |||        initialState <- fromLiteral [Scalar 0]
@@ -1524,7 +1524,7 @@ uniform key bound bound' = do
 |||
 ||| Example usage, multiplying two normal samples
 ||| ```
-||| x : Tensor [3] F64
+||| x : Ref $ Tensor [3] F64
 ||| x = let key = fromLiteral 2
 |||         rng = normal key
 |||         initialState = fromLiteral [0]

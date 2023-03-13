@@ -41,7 +41,7 @@ We can represent choosing candidate optima visually:
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Ref $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
 
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
@@ -226,7 +226,7 @@ observe point (dataset, model) = let newData = MkDataset point (objective point)
                                   in (dataset <+> newData, fit model lbfgs newData)
 ```
 
-We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
+We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Ref $ Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
 iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
