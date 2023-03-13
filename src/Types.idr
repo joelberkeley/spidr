@@ -55,3 +55,11 @@ export
 [Finite] Bounded Double where
   min = -1.7976931348623157e308
   max = 1.7976931348623157e308
+
+public export
+interface SemigroupT (f : Type -> Type) (a : Type) where
+  (<+>) : a -> a -> f a
+
+public export
+interface SemigroupT f a => Monoid f a where
+  neutral : f a
