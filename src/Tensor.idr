@@ -14,7 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module contains the `Tensor` object, an array of numbers or booleans, along with a
-||| number of functions operating on `Tensor`s.
+||| number of functions operating on `Tensor`s. `Tensor` operations in spidr typically operate on
+||| `Ref (Tensor shape dtype)`s. `Ref` allows us to keep track of tensors that have already been
+||| calculated, so we can avoid duplicate calculations. For example, in
+||| ```
+||| x : Ref $ Tensor [3] F64
+||| x = let y = fromLiteral [1, 2, 3]
+|||         z = y + y
+|||      in z * z
+||| ```
+||| `z` will be calculated twice, and `y` allocated four times (unless the underlying compiler
+||| chooses to optimize that out). We can reuse tensors with `do` notation. The above example can be
+||| re-written
+||| ```
+||| x : Ref $ Tensor [3] F64
+||| x = do y <- fromLiteral [1, 2, 3]
+|||        z <- (pure y) + (pure y)
+|||     in (pure z) * (pure z)
+||| ```
+||| in which `y` and `z` will only be calculated once. If you don't need to reuse a tensor, it's
+||| much terser to simply use `let ... in` over `do`.
 module Tensor
 
 import Control.Monad.Error.Either
@@ -45,9 +64,7 @@ new = do
   put (S n)
   pure n
 
-||| A `Tensor` is a symbolic value, which may refer to either to a scalar value or array of values,
-||| though the runtime representation will likely contain more than its value, and will depend on
-||| the specific backend.
+||| A symbolic scalar or array.
 |||
 ||| @shape The `Tensor` shape.
 ||| @dtype The element type.
