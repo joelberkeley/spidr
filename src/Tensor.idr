@@ -1054,7 +1054,9 @@ namespace Monoid
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Ref (Tensor shape dtype) -> Ref (Tensor shape dtype)
-negate = unary Neg
+negate x = do
+  MkTensor i env <- x
+  env `end` UnaryElementwise Neg i
 
 ||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
 ||| `fromLiteral [-1, 2]`.
@@ -1412,7 +1414,7 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         Tensor [S n, S n] dtype ->
         Ref (Tensor [] dtype)
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(x * identity)
+  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(pure x * identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
@@ -1454,7 +1456,7 @@ uniform :
 uniform (MkTensor iKey envKey) bound bound' = do
   minval@(MkTensor iMinval envMinval) <- min bound bound'
   maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
-  let inf = broadcast inf
+  let inf = broadcast !inf
   let env = mergeLeft (mergeLeft envKey envMinval) envMaxval
   pure $ ST $ \(MkTensor iState envState) => do
     i <- new
