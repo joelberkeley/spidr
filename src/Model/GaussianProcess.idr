@@ -97,14 +97,15 @@ export
 [Latent] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise (MkConjugateGPR mkGP gpParams _) x = do
     MkGP meanf kernel <- mkGP gpParams
-    pure $ MkGaussian (expand 1 =<< meanf x) (expand 2 =<< kernel x x)
+    pure $ MkGaussian !(expand 1 =<< meanf x) !(expand 2 =<< kernel x x)
 
 ||| A probabilistic model from feature values to a distribution over observed target values.
 export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise gpr@(MkConjugateGPR _ _ noise) x = do
     MkGaussian latentMean latentCov <- marginalise @{Latent} gpr x
-    pure $ MkGaussian latentMean (latentCov + broadcast =<< expand 2 =<< noise * identity {n = S n})
+    let cov = pure latentCov + broadcast =<< expand 2 =<< pure noise * identity {n = S n}
+    pure $ MkGaussian latentMean cov
 
 ||| Fit the Gaussian process and noise to the specified data.
 export
