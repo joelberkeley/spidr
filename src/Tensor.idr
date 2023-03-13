@@ -710,10 +710,10 @@ reduce :
 reduce axes $ MkTensor i xEnv = do
   (a0, p0) <- arg
   (a1, p1) <- arg
-  let semigroupT : Monoid a -> Semigroup Ref a
+  let semigroupT : Monoid a -> Semigroup a
       semigroupT _ = %search
 
-  MkTensor j subEnv <- (<+>) @{semigroupT reducer} a0 a1
+  MkTensor j subEnv <- (<+>) @{semigroupT reducer} (pure a0) (pure a1(
   MkTensor k neutralEnv <- neutral @{reducer}
   mergeLeft xEnv neutralEnv `end` Reduce (MkFn [p0, p1] j subEnv) k axes i
 
