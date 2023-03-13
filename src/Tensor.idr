@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `Tensor` object, an array of numbers or booleans, along with a
+||| This module contains the `Tensor`, an array of numbers or booleans, along with a
 ||| number of functions operating on `Tensor`s. `Tensor` operations in spidr typically operate on
 ||| `Ref (Tensor shape dtype)`s. `Ref` allows us to keep track of tensors that have already been
 ||| calculated, so we can avoid duplicate calculations. For example, in
@@ -72,7 +72,6 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : {shape : _} -> Nat -> Env -> Tensor shape dtype
 
--- use an operator then we'll have e.g. `env ++ Diag i` as the RHS
 end : Env -> Expr -> {shape : _} -> Ref (Tensor shape dtype)
 end env expr = do
   i <- new
