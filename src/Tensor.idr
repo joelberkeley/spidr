@@ -700,7 +700,7 @@ map2 f (MkTensor {shape = _} i env) (MkTensor i' env') = do
 ||| @axis The axis along which to reduce elements.
 export
 reduce :
-  (reducer : Monoid (Tensor [] dtype)) =>
+  (reducer : Monoid (Ref $ Tensor [] dtype)) =>
   Primitive dtype =>
   (axes : List Nat) ->
   {auto 0 axesUnique : Sorted LT axes} ->
@@ -878,12 +878,12 @@ export
 
 namespace Semigroup
   export
-  [All] Semigroup (Tensor shape PRED) where
+  [All] Semigroup (Ref $ Tensor shape PRED) where
     (<+>) = (&&)
 
 namespace Monoid
   export
-  [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
+  [All] {shape : _} -> Monoid (Ref $ Tensor shape PRED) using Tensor.Semigroup.All where
     neutral = fill True
 
 ||| Element-wise boolean or. For example,
@@ -897,12 +897,12 @@ export
 
 namespace Semigroup
   export
-  [Any] Semigroup (Tensor shape PRED) where
+  [Any] Semigroup (Ref $ Tensor shape PRED) where
     (<+>) = (||)
 
 namespace Monoid
   export
-  [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
+  [Any] {shape : _} -> Monoid (Ref $ Tensor shape PRED) using Tensor.Semigroup.Any where
     neutral = fill False
 
 unary : UnaryOp -> Tensor s a -> Ref $ Tensor s a'
@@ -1039,7 +1039,7 @@ export
 
 namespace Semigroup
   export
-  [Sum] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
+  [Sum] Primitive.Num dtype => Semigroup (Ref $ Tensor shape dtype) where
     x <+> x' = x + x'
 
 namespace Monoid
@@ -1048,7 +1048,7 @@ namespace Monoid
         Prelude.Num a =>
         PrimitiveRW dtype a =>
         Primitive.Num dtype =>
-    Monoid (Tensor shape dtype) using Semigroup.Sum where
+    Monoid (Ref $ Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
 ||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
@@ -1090,7 +1090,7 @@ namespace Scalarwise
 
 namespace Semigroup
   export
-  [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
+  [Prod] Primitive.Num dtype => Semigroup (Ref $ Tensor shape dtype) where
     (<+>) = (*)
 
 namespace Monoid
@@ -1099,7 +1099,7 @@ namespace Monoid
          Prelude.Num a =>
          PrimitiveRW dtype a =>
          Primitive.Num dtype =>
-    Monoid (Tensor shape dtype) using Semigroup.Prod where
+    Monoid (Ref $ Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
 ||| Element-wise floating point division. For example, `fromLiteral [2, 3] / fromLiteral [4, 5]` is
@@ -1271,7 +1271,7 @@ min (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
 
 namespace Semigroup
   export
-  [Min] {shape : _} -> Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
+  [Min] {shape : _} -> Primitive.Ord dtype => Semigroup (Ref $ Tensor shape dtype) where
     (<+>) = min
 
 namespace Monoid
@@ -1280,7 +1280,7 @@ namespace Monoid
         PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Tensor shape dtype) using Semigroup.Min where
+    Monoid (Ref $ Tensor shape dtype) using Semigroup.Min where
       neutral = fill (1.0 / 0.0)
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
@@ -1294,7 +1294,7 @@ max (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
 
 namespace Semigroup
   export
-  [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
+  [Max] Primitive.Ord dtype => Semigroup (Ref $ Tensor shape dtype) where
     x <+> x' = max x x'
 
 namespace Monoid
@@ -1303,7 +1303,7 @@ namespace Monoid
         PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Tensor shape dtype) using Semigroup.Max where
+    Monoid (Ref $ Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
 
 highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Ref $ Tensor [S n] dtype
