@@ -104,7 +104,7 @@ export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise gpr@(MkConjugateGPR _ _ noise) x = do
     MkGaussian latentMean latentCov <- marginalise @{Latent} gpr x
-    cov <- pure latentCov + broadcast =<< expand 2 =<< pure noise * identity {n = S n}
+    cov <- pure latentCov + broadcast !(expand 2 !(pure noise * identity {n = S n}))
     pure $ MkGaussian latentMean cov
 
 ||| Fit the Gaussian process and noise to the specified data.
@@ -124,7 +124,7 @@ fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) = do
   let mkPosterior : Tensor [p] F64 -> Ref $ GaussianProcess features
       mkPosterior params' = posterior !(mkPrior params') !(squeeze noise) (x, !(squeeze y))
 
-  pure $ MkConjugateGPR mkPosterior (slice [1.to (S p)] params) (slice [at 0] params)
+  pure $ MkConjugateGPR mkPosterior !(slice [1.to (S p)] params) !(slice [at 0] params)
 
     where
     %hint
