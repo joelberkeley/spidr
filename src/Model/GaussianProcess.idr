@@ -104,7 +104,7 @@ export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise gpr@(MkConjugateGPR _ _ noise) x = do
     MkGaussian latentMean latentCov <- marginalise @{Latent} gpr x
-    let cov = pure latentCov + broadcast =<< expand 2 =<< pure noise * identity {n = S n}
+    cov <- pure latentCov + broadcast =<< expand 2 =<< pure noise * identity {n = S n}
     pure $ MkGaussian latentMean cov
 
 ||| Fit the Gaussian process and noise to the specified data.
