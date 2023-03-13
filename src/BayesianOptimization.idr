@@ -47,8 +47,8 @@ f >>> g = MkReaderT (Id . uncurry g . f)
 |||   updates the values (typically data and models).
 export
 loop :
-  (tactic : Reader i (Ref $ Tensor shape dtype)) ->
-  (observer : Ref (Tensor shape dtype) -> i -> i) ->
+  (tactic : Reader i $ Tensor shape dtype) ->
+  (observer : Tensor shape dtype -> i -> i) ->
   i ->
   Stream i
 loop tactic observer = iterate (\ii => observer (runReader ii tactic) ii)

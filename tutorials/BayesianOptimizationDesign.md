@@ -61,28 +61,28 @@ import Optimize
 import Tensor
 -->
 ```idris
-historicData : Dataset [2] [1]
-historicData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]) (fromLiteral [[1.2], [-0.5], [0.7]])
+historicData : Ref $ Dataset [2] [1]
+historicData = MkDataset !(fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]) !(fromLiteral [[1.2], [-0.5], [0.7]])
 ```
 
 and model that data
 
 ```idris
-model : ConjugateGPRegression [2]
-model = let mkGP = \len => pure $ MkGP zero (matern52 1.0 $ squeeze len)
-            model = MkConjugateGPR mkGP (fromLiteral [0.5]) 0.2
+model : Ref $ ConjugateGPRegression [2]
+model = let mkGP = \len => pure $ MkGP zero !(matern52 1.0 =<< squeeze len)
+            model = MkConjugateGPR mkGP !(fromLiteral [0.5]) 0.2
          in fit model lbfgs historicData
 ```
 
 then optimize over the marginal mean
 
 ```idris
-optimizer : Optimizer $ Ref $ Tensor [1, 2] F64
-optimizer = let gs = gridSearch (fromLiteral [100, 100]) (fromLiteral [0.0, 0.0]) (fromLiteral [1.0, 1.0])
+optimizer : Ref $ Optimizer $ Ref $ Tensor [1, 2] F64
+optimizer = let gs = gridSearch !(fromLiteral [100, 100]) !(fromLiteral [0.0, 0.0]) !(fromLiteral [1.0, 1.0])
              in \f => broadcast . gs $ f . broadcast
 
 newPoint : Ref $ Tensor [1, 2] F64
-newPoint = optimizer $ \x => squeeze $ mean {event=[1]} !(marginalise @{Latent} model x)
+newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} model x)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -120,12 +120,12 @@ In the above example, we constructed the acquisition function from our model, th
 
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
-modelMean model x = squeeze $ mean {event=[1]} !(marginalise model x)
+modelMean model x = squeeze =<< mean {event=[1]} !(marginalise model x)
 
 newPoint' : Ref $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
                 point = map optimizer acquisition
-             in runReader model point
+             in runReader model !point
 ```
 
 ## Combining empirical values with `Applicative`
@@ -214,16 +214,16 @@ newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.
 Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 
 ```idris
-objective : Ref (Tensor [n, 2] F64) -> Ref (Tensor [n, 1] F64)
+objective : Tensor [n, 2] F64 -> Ref $ Tensor [n, 1] F64
 ```
 
 at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
 
 ```idris
-observe : Ref (Tensor [1, 2] F64) -> (Dataset [2] [1], ConjugateGPRegression [2])
-                                  -> (Dataset [2] [1], ConjugateGPRegression [2])
+observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
+                            -> Ref (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let newData = MkDataset point (objective point)
-                                  in (dataset <+> newData, fit model lbfgs newData)
+                                  in (!(dataset <+> newData), !(fit model lbfgs newData))
 ```
 
 We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Ref $ Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.

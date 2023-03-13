@@ -27,12 +27,12 @@ public export
 data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
   MkDataset :
     {s : _} ->
-    Ref (Tensor (S s :: features) F64) ->
-    Ref (Tensor (S s :: targets) F64) ->
+    Tensor (S s :: features) F64 ->
+    Tensor (S s :: targets) F64 ->
     Dataset features targets
 
 ||| Concatenate two datasets along their leading axis.
 export
-Semigroup (Dataset features targets) where
+SemigroupT Ref (Dataset features targets) where
   (MkDataset {s=s} x y) <+> (MkDataset {s=s'} x' y') =
-    MkDataset {s=s + S s'} (concat 0 x x') (concat 0 y y')
+    MkDataset {s=s + S s'} !(concat 0 x x') !(concat 0 y y')

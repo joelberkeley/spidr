@@ -52,11 +52,11 @@ interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| The probability density function of the distribution at the specified point.
-      pdf : dist event (S d) -> Ref (Tensor (S d :: event) F64) -> Ref (Tensor [] F64)
+      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Ref $ Tensor [] F64
 
       ||| The cumulative distribution function of the distribution at the specified point (that is,
       ||| the probability the random variable takes a value less than or equal to the given point).
-      cdf : dist event (S d) -> Ref (Tensor (S d :: event) F64) -> Ref (Tensor [] F64)
+      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Ref $ Tensor [] F64
 
 ||| A joint Gaussian distribution.
 |||
@@ -66,8 +66,8 @@ public export
 data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
-  MkGaussian : {d : Nat} -> (mean : Ref $ Tensor (S d :: event) F64) ->
-               (cov : Ref $ Tensor (S d :: S d :: event) F64) ->
+  MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) F64) ->
+               (cov : Tensor (S d :: S d :: event) F64) ->
                Gaussian event (S d)
 
 export
@@ -79,13 +79,13 @@ Distribution Gaussian where
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
-    cholCov <- cholesky $ squeeze {to=[S d, S d]} cov
-    tri <- pure cholCov |\ squeeze (x - mean)
+    cholCov <- cholesky =<< squeeze {to=[S d, S d]} cov
+    tri <- pure cholCov |\ squeeze !(x - mean)
     let exponent = - pure tri @@ pure tri / 2.0
-        covSqrtDet = reduce @{Prod} [0] (diag $ pure cholCov)
+        covSqrtDet = reduce @{Prod} [0] !(diag cholCov)
         denominator = (fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
-    (exp exponent) / denominator
+    (exp !exponent) / denominator
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
   cdf (MkGaussian {d=0} mean cov) x =
-    (1.0 + erf (squeeze (x - mean) / (sqrt (squeeze cov * 2.0)))) / 2.0
+    (1.0 + erf !(squeeze !(x - mean) / (sqrt !(squeeze cov * 2.0)))) / 2.0

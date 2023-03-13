@@ -40,10 +40,10 @@ Optimizer a = (a -> m $ Ref $ Tensor [] F64) -> m a
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
 export
-gridSearch : (density : Ref $ Tensor [d] U32) ->
-             (lower : Ref $ Tensor [d] F64) ->
-             (upper : Ref $ Tensor [d] F64) ->
-             Optimizer (Ref $ Tensor [d] F64)
+gridSearch : (density : Tensor [d] U32) ->
+             (lower : Tensor [d] F64) ->
+             (upper : Tensor [d] F64) ->
+             Optimizer $ Ref $ Tensor [d] F64
 
 ||| The limited-memory BFGS (L-BFGS) optimization tactic, see
 |||
@@ -58,4 +58,4 @@ gridSearch : (density : Ref $ Tensor [d] U32) ->
 |||
 ||| @initialPoints The points from which to start optimization.
 export
-lbfgs : (initialPoints : Ref $ Tensor [n] F64) -> Optimizer (Ref $ Tensor [n] F64)
+lbfgs : (initialPoints : Tensor [n] F64) -> Optimizer $ Ref $ Tensor [n] F64
