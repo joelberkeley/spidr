@@ -80,7 +80,7 @@ export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
     cholCov <- cholesky =<< squeeze {to=[S d, S d]} cov
-    tri <- pure cholCov |\ squeeze !(pure x - mean)
+    tri <- pure cholCov |\ squeeze !(pure x - pure mean)
     let exponent = - pure tri @@ pure tri / 2.0
         covSqrtDet = reduce @{Prod} [0] !(diag cholCov)
         denominator = (fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
@@ -88,4 +88,4 @@ ClosedFormDistribution [1] Gaussian where
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariate_cdf
   cdf (MkGaussian {d=0} mean cov) x =
-    (1.0 + erf !(squeeze !(pure x - mean) / (sqrt !(squeeze cov * 2.0)))) / 2.0
+    (1.0 + erf !(squeeze !(pure x - pure mean) / (sqrt !(squeeze cov * 2.0)))) / 2.0
