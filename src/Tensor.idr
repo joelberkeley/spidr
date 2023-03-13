@@ -208,7 +208,7 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Ref $ Tensor to dtype
-squeeze x $ MkTensor {shape} i env = env `end` Reshape shape to i
+squeeze $ MkTensor {shape} i env = env `end` Reshape shape to i
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -1267,14 +1267,12 @@ min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ T
 min (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
   let x = MkTensor i env
       op = mergeLeft env env' `end` BinaryElementwise Min i i'
-      x = pure x
-      x' = pure x'
-  select !(pure x == pure x) !(select !(pure x' == pure x') op x') x
+  select !(pure x == pure x) !(select !(pure x' == pure x') !op x') x
 
 namespace Semigroup
   export
   [Min] {shape : _} -> Primitive.Ord dtype => Semigroup (Ref $ Tensor shape dtype) where
-    (<+>) = min
+    x <+> x' = min !x !x'
 
 namespace Monoid
   export
@@ -1292,12 +1290,12 @@ max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ T
 max (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
   let x = MkTensor i env
       op = mergeLeft env env' `end` BinaryElementwise Max i i'
-  select !(pure x == pure x) !(select !(pure x' == pure x') op x') x
+  select !(pure x == pure x) !(select !(pure x' == pure x') !op x') x
 
 namespace Semigroup
   export
   [Max] Primitive.Ord dtype => Semigroup (Ref $ Tensor shape dtype) where
-    x <+> x' = max x x'
+    x <+> x' = max !x !x'
 
 namespace Monoid
   export
@@ -1346,7 +1344,7 @@ argmax x = do
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Ref $ Tensor [S n, S n] F64
-cholesky $ MkTensor i env = triangle Lower (env `end` Cholesky i)
+cholesky $ MkTensor i env = triangle Lower !(env `end` Cholesky i)
 
 infix 9 |\, \|
 
@@ -1390,8 +1388,8 @@ namespace Vector
   export
   (|\) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a |\ b = do
-    MkTensor {shape=[_]} i env <- b
-    squeeze !(a |\ expand 1 (MkTensor i env))
+    MkTensor {shape=[m]} i env <- b
+    squeeze !(a |\ expand 1 (MkTensor {shape=[m]} i env))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1403,8 +1401,8 @@ namespace Vector
   export
   (\|) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a \| b = do
-    MkTensor {shape=[_]} i env <- b
-    squeeze !(a \| expand 1 (MkTensor i env))
+    MkTensor {shape=[m]} i env <- b
+    squeeze !(a \| expand 1 (MkTensor {shape=[m]} i env))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (fromLiteral [[-1, 5], [1, 4]])` is `3`.
@@ -1467,9 +1465,9 @@ uniform (MkTensor iKey envKey) bound bound' = do
         -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
         -- samples between -inf and 0 should be at -inf, but XLA produces nan
         -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
-        value = select ((pure minval == - inf) && (pure maxval == fill 0)) (- inf) value
-        value = select ((pure minval == inf) && (pure maxval == inf)) inf value
-        value = select ((pure minval == - inf) && (pure maxval == - inf)) (- inf) value
+        value = select !((pure minval == - inf) && (pure maxval == fill 0)) !(- inf) !value
+        value = select !((pure minval == inf) && (pure maxval == inf)) !inf !value
+        value = select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) !value
     pure (!state, !value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
