@@ -45,7 +45,7 @@ posterior :
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
   Ref $ GaussianProcess features
 posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) = do
-  l <- cholesky !(priorKernel xTrain xTrain + noise * identity)
+  l <- cholesky !(priorKernel xTrain xTrain + pure noise * identity)
   let l = pure l
       alpha = l.T \| (l |\ pure yTrain)
 
@@ -64,9 +64,9 @@ logMarginalLikelihood :
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
   Ref $ Tensor [] F64
 logMarginalLikelihood (MkGP _ kernel) noise (x, y) = do
-  l <- cholesky !(kernel x x + noise * identity)
-  let alpha = (pure l).T \| (pure l |\ y)
-  - y @@ alpha / 2.0 - trace !(log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
+  l <- cholesky !(kernel x x + pure noise * identity)
+  let alpha = (pure l).T \| (pure l |\ pure y)
+  - pure y @@ alpha / 2.0 - trace !(log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following
@@ -118,7 +118,7 @@ fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) = do
         let priorParams = slice [1.to (S p)] params
         logMarginalLikelihood !(mkPrior priorParams) !(slice [at 0] params) (x, !(squeeze y))
 
-  params <- optimizer !(concat 0 !(expand 0 noise) !gpParams) objective
+  params <- optimizer !(concat 0 !(expand 0 noise) gpParams) objective
 
   let mkPosterior : Tensor [p] F64 -> Ref $ GaussianProcess features
       mkPosterior params' = posterior !(mkPrior params') !(squeeze noise) (x, !(squeeze y))
