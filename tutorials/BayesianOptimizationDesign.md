@@ -77,9 +77,10 @@ model = let mkGP = \len => pure $ MkGP zero !(matern52 1.0 =<< squeeze len)
 then optimize over the marginal mean
 
 ```idris
-optimizer : Ref $ Optimizer $ Ref $ Tensor [1, 2] F64
-optimizer = let gs = gridSearch !(fromLiteral [100, 100]) !(fromLiteral [0.0, 0.0]) !(fromLiteral [1.0, 1.0])
-             in \f => broadcast . gs $ f . broadcast
+optimizer : Optimizer $ Tensor [1, 2] F64
+optimizer f x =
+  let gs = gridSearch !(fromLiteral [100, 100]) !(fromLiteral [0.0, 0.0]) !(fromLiteral [1.0, 1.0])
+   in broadcast =<< (gs f =<< broadcast x)
 
 newPoint : Ref $ Tensor [1, 2] F64
 newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} model x)
