@@ -65,15 +65,15 @@ expectedImprovement model best at = do
       cdf = cdf marginal best'
       mean = squeeze !(mean {event=[1]} {dim=1} marginal)
       variance = squeeze !(variance {event=[1]} marginal)
-  (best - mean) * cdf + variance * pdf
+  (pure best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
 expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-expectedImprovementByModel (MkDataset queryPoints _) model at =
-  let best = squeeze =<< reduce @{Min} [0] =<< mean {event=[1]} !(marginalise model queryPoints)
-   in expectedImprovement model best at
+expectedImprovementByModel (MkDataset queryPoints _) model at = do
+  best <- squeeze =<< reduce @{Min} [0] !(mean {event=[1]} !(marginalise model queryPoints))
+  expectedImprovement model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.

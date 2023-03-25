@@ -39,7 +39,7 @@ rbfMatchesTFP = fixedProperty $ do
           [8.83826492e-04, 4.57833372e-01, 4.57833372e-01],
           [1.52299879e-08, 2.18749152e-03, 6.06530669e-01]
         ]
-  rbf lengthScale x x' ===# expected
+  (do rbf !lengthScale !x !x') ===# expected
 
 export partial
 group : Group

@@ -481,8 +481,10 @@ triangle tri $ MkTensor i env = env `end` Triangle (case tri of Upper => False; 
 ||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
 ||| `fromLiteral [[1, 3], [2, 4]]`.
 export
-(.T) : Tensor [m, n] dtype -> Ref $ Tensor [n, m] dtype
-(MkTensor i env).T = env `end` Transpose [1, 0] i
+(.T) : Ref (Tensor [m, n] dtype) -> Ref (Tensor [n, m] dtype)
+x.T = do
+  MkTensor i env <- x
+  env `end` Transpose [1, 0] i
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
 ||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
