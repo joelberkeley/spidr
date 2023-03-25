@@ -731,7 +731,7 @@ reduce axes $ MkTensor i xEnv = do
 export
 sort :
   Primitive dtype =>
-  (Tensor [] dtype -> Tensor [] dtype -> Ref $ Tensor [] PRED) ->
+  (Ref (Tensor [] dtype) -> Ref (Tensor [] dtype) -> Ref (Tensor [] PRED)) ->
   (dimension : Nat) ->
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
@@ -739,7 +739,7 @@ sort :
 sort comp dimension $ MkTensor i env = do
   (a0, p0) <- arg
   (a1, p1) <- arg
-  MkTensor j subEnv <- comp a0 a1
+  MkTensor j subEnv <- comp (pure a0) (pure a1)
   env `end` Sort (MkFn [p0, p1] j subEnv) dimension False [i]
 
 {-

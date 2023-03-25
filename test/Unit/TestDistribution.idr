@@ -30,7 +30,7 @@ gaussianUnivariatePDF = property $ do
   let gaussian = do pure $ MkGaussian !(fromLiteral [[mean]]) !(fromLiteral [[[cov]]])
       actual = do pdf !gaussian !(fromLiteral [[x]])
       expected = fromLiteral [| univariate x mean cov |]
-  actual ===# the (Ref $ Tensor _ F64) expected
+  actual ===# expected
 
     where
     univariate : Double -> Double -> Double -> Double
@@ -47,7 +47,7 @@ gaussianMultivariatePDF = fixedProperty $ do
 partial
 gaussianCDF : Property
 gaussianCDF = fixedProperty $ do
-  let gaussian = do pure $ MkGaussian !(fromLiteral [[0.5]]) !(fromLiteral [[[1.44]]])
+  let gaussian = (do pure $ MkGaussian !(fromLiteral [[0.5]]) !(fromLiteral [[[1.44]]]))
 
   (do cdf !gaussian !(fromLiteral [[-1.5]])) ===# 0.04779036
   (do cdf !gaussian !(fromLiteral [[-0.5]])) ===# 0.20232838
