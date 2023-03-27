@@ -36,6 +36,16 @@ export
 (>>>) : (i -> (a, b)) -> (a -> b -> o) -> Reader i o
 f >>> g = MkReaderT (Id . uncurry g . f)
 
+||| A `Stream`-like collection where each successive element is wrapped in an additional `Ref`.
+public export
+data RefStream : Type -> Type where
+  (::) : a -> Inf (Ref (RefStream a)) -> RefStream a
+
+public export
+take : (n : Nat) -> RefStream a -> Ref $ Vect n a
+take Z _ = pure Nil
+take (S k) (x :: xs) = pure (x :: !(take k !xs))
+
 ||| A Bayesian optimization loop as a (potentially infinite) stream of values. The values are
 ||| typically the observed data, and the models of that data. The loop iteratively finds new points
 ||| with the specified `tactic` then updates the values with these new points (assuming some
@@ -45,10 +55,12 @@ f >>> g = MkReaderT (Id . uncurry g . f)
 |||   function, for example. Note this is a `Morphism`, not a function.
 ||| @observer A function which evaluates the optimization objective at the recommended points, then
 |||   updates the values (typically data and models).
-export
+export covering
 loop :
-  (tactic : Reader i $ Tensor shape dtype) ->
-  (observer : Tensor shape dtype -> i -> i) ->
-  i ->
-  Stream i
-loop tactic observer = iterate (\ii => observer (runReader ii tactic) ii)
+  (tactic : Reader env $ Ref $ Tensor shape dtype) ->
+  (observer : Tensor shape dtype -> env -> Ref env) ->
+  env ->
+  Ref $ RefStream env
+loop tactic observer env = do
+  env' <- observer !(runReader env tactic) env
+  pure (env' :: loop tactic observer env')

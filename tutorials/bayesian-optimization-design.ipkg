@@ -2,6 +2,6 @@ package bayesian-optimization-design
 
 main = BayesianOptimizationDesign
 
-depends = spidr, hashable
+depends = spidr
 
 opts = "--total"

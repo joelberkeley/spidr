@@ -62,16 +62,18 @@ import Tensor
 -->
 ```idris
 historicData : Ref $ Dataset [2] [1]
-historicData = MkDataset !(fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]) !(fromLiteral [[1.2], [-0.5], [0.7]])
+historicData = let features = fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]
+                   targets = fromLiteral [[1.2], [-0.5], [0.7]]
+                in [| MkDataset features targets |]
 ```
 
 and model that data
 
 ```idris
 model : Ref $ ConjugateGPRegression [2]
-model = let mkGP = \len => pure $ MkGP zero !(matern52 1.0 =<< squeeze len)
-            model = MkConjugateGPR mkGP !(fromLiteral [0.5]) 0.2
-         in fit model lbfgs historicData
+model = let mkGP = \len => pure $ MkGP zero (matern52 !1.0 !(squeeze len))
+            model = MkConjugateGPR mkGP !(fromLiteral [0.5]) !0.2
+         in fit model lbfgs !historicData
 ```
 
 then optimize over the marginal mean
@@ -83,7 +85,7 @@ optimizer f x =
    in broadcast =<< (gs f =<< broadcast x)
 
 newPoint : Ref $ Tensor [1, 2] F64
-newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} model x)
+newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} !model x)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -126,7 +128,7 @@ modelMean model x = squeeze =<< mean {event=[1]} !(marginalise model x)
 newPoint' : Ref $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
                 point = map optimizer acquisition
-             in runReader model !point
+             in runReader !model point
 ```
 
 ## Combining empirical values with `Applicative`
@@ -181,13 +183,15 @@ The `Reader i o` type has proven flexible in allowing us to construct an acquisi
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data. Recall that we can represent this in any form we like, and we'll simply use a dedicated `Data` set and `ProbabilisticModel`:
 
 ```idris
-failureData : Dataset [2] [1]
-failureData = MkDataset (fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]) (fromLiteral [[0], [0], [0], [1]])
+failureData : Ref $ Dataset [2] [1]
+failureData = let features = fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]
+                  targets = fromLiteral [[0.0], [0.0], [0.0], [1.0]]
+               in [| MkDataset features targets |]
 
-failureModel : ConjugateGPRegression [2]
-failureModel = let mkGP = \len => pure $ MkGP zero (rbf $ squeeze len)
-                   model = MkConjugateGPR mkGP (fromLiteral [0.2]) 0.1
-                in fit model lbfgs failureData
+failureModel : Ref $ ConjugateGPRegression [2]
+failureModel = let mkGP = \len => pure $ MkGP zero (rbf !(squeeze len))
+                   model = MkConjugateGPR mkGP !(fromLiteral [0.2]) !0.1
+                in fit model lbfgs !failureData
 ```
 
 and we'll gather all the data and models in a `record`:
@@ -203,8 +207,8 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Ref $ Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} 0.5
-                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} 0.5
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} !0.5
+                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} !0.5
                  acquisition = map optimizer (eci <*> pof)
                  dataAndModel = Label (historicData, model) (failureData, failureModel)
               in runReader dataAndModel acquisition
@@ -223,14 +227,14 @@ at these points. We can then update our historical data and models with these ne
 ```idris
 observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
                             -> Ref (Dataset [2] [1], ConjugateGPRegression [2])
-observe point (dataset, model) = let newData = MkDataset point (objective point)
+observe point (dataset, model) = let newData = MkDataset point !(objective point)
                                   in (!(concat dataset newData), !(fit model lbfgs newData))
 ```
 
 We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Ref $ Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
-iterations : Stream (Dataset [2] [1], ConjugateGPRegression [2])
+iterations : Ref $ RefStream (Dataset [2] [1], ConjugateGPRegression [2])
 iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{Latent}
               in loop tactic observe (historicData, model)
 ```
@@ -238,7 +242,7 @@ iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{La
 We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
 
 ```idris
-firstFive : Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])
+firstFive : Ref $ Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])
 firstFive = take 5 iterations
 ```
 
