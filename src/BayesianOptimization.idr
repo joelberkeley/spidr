@@ -20,21 +20,12 @@ limitations under the License.
 ||| given set of points.
 module BayesianOptimization
 
-import Control.Monad.Identity
-import public Control.Monad.Reader
-import public Data.Stream
+import Control.Monad.Reader
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
+import Data
+import Model
 import Tensor
-
-infix 9 >>>
-
-||| Compose two functions that each use two values and wrap them in a `Reader`. This is a
-||| convenience function for contructing unary wrappers with `Empiric`s and the corresponding
-||| handler functions for data and models.
-export
-(>>>) : (i -> (a, b)) -> (a -> b -> o) -> Reader i o
-f >>> g = MkReaderT (Id . uncurry g . f)
 
 ||| A `Stream`-like collection where each successive element is wrapped in an additional `Ref`.
 public export
@@ -47,21 +38,27 @@ take : (n : Nat) -> RefStream a -> Ref $ Vect n a
 take Z _ = pure Nil
 take (S k) (x :: xs) = pure (x :: !(take k !xs))
 
-||| A Bayesian optimization loop as a (potentially infinite) stream of values. The values are
-||| typically the observed data, and the models of that data. The loop iteratively finds new points
-||| with the specified `tactic` then updates the values with these new points (assuming some
-||| implicit objective function).
-|||
-||| @tactic The tactic which which to recommend new points. This could be optimizing an acquisition
-|||   function, for example. Note this is a `Morphism`, not a function.
-||| @observer A function which evaluates the optimization objective at the recommended points, then
-|||   updates the values (typically data and models).
+||| Create an infinite stream of values from a generator function and a starting value.
 export covering
-loop :
-  (tactic : Reader env $ Ref $ Tensor shape dtype) ->
-  (observer : Tensor shape dtype -> env -> Ref env) ->
-  env ->
-  Ref $ RefStream env
-loop tactic observer env = do
-  env' <- observer !(runReader env tactic) env
-  pure (env' :: loop tactic observer env')
+iterate : (a -> Ref a) -> a -> Ref $ RefStream a
+iterate f x = do
+  x' <- f x
+  pure (x' :: iterate f x')
+
+||| Construct a single simple Bayesian optimization step.
+|||
+||| @objective The objective function to optimize.
+||| @train Used to train the model on new data.
+||| @tactic The tactic, such as an optimized acquisition function, to find a new point from the
+|||   data and model
+export
+step : (objective : forall n . Tensor (n :: features) F64 -> Ref $ Tensor (n :: targets) F64) ->
+       (probabilisticModel : ProbabilisticModel features targets marginal model) =>
+       (train : Dataset features targets -> model -> Ref $ model) ->
+       (tactic : Reader (DataModel {probabilisticModel} model) (Ref $ Tensor (1 :: features) F64)) ->
+       DataModel {probabilisticModel} model ->
+       Ref $ DataModel {probabilisticModel} model
+step objective train tactic env = do
+  newPoint <- runReader env tactic
+  dataset <- concat env.dataset $ MkDataset newPoint !(objective newPoint)
+  pure (MkDataModel !(train dataset env.model) dataset)
