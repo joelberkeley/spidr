@@ -80,9 +80,9 @@ then optimize over the marginal mean
 
 ```idris
 optimizer : Optimizer $ Tensor [1, 2] F64
-optimizer f x =
-  let gs = gridSearch !(fromLiteral [100, 100]) !(fromLiteral [0.0, 0.0]) !(fromLiteral [1.0, 1.0])
-   in broadcast =<< (gs f =<< broadcast x)
+optimizer f =
+  let gs = gridSearch !(fromLiteral {a = Nat} [100, 100]) !(fromLiteral [0.0, 0.0]) !(fromLiteral [1.0, 1.0])
+   in broadcast !(gs $ \x => do f !(broadcast x))
 
 newPoint : Ref $ Tensor [1, 2] F64
 newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} !model x)
@@ -207,11 +207,13 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Ref $ Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} !0.5
-                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} !0.5
-                 acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (historicData, model) (failureData, failureModel)
-              in runReader dataAndModel acquisition
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} (the (Tensor [] F64) !0.5)
+                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} (the (Tensor [] F64) !0.5)
+                 acquisition = do
+                   f <- eci <*> pof
+                   lift $ optimizer f
+                 dataAndModel = Label (!historicData, !model) (!failureData, !failureModel)
+              in runReaderT dataAndModel acquisition
 ```
 
 ## Iterative Bayesian optimization with infinite data types
@@ -228,22 +230,26 @@ at these points. We can then update our historical data and models with these ne
 observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
                             -> Ref (Dataset [2] [1], ConjugateGPRegression [2])
 observe point (dataset, model) = let newData = MkDataset point !(objective point)
-                                  in (!(concat dataset newData), !(fit model lbfgs newData))
+                                  in pure (!(concat dataset newData), !(fit model lbfgs newData))
 ```
 
 We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Ref $ Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
 
 ```idris
+covering
 iterations : Ref $ RefStream (Dataset [2] [1], ConjugateGPRegression [2])
-iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{Latent}
-              in loop tactic observe (historicData, model)
+iterations = let tactic : ReaderT _ Ref (Tensor _ _) = do
+                   acquisition <- id >>> expectedImprovementByModel @{Latent}
+                   lift $ optimizer acquisition
+              in loop tactic observe (!historicData, !model)
 ```
 
 We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
 
 ```idris
+covering
 firstFive : Ref $ Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])
-firstFive = take 5 iterations
+firstFive = take 5 !iterations
 ```
 
 or use more complex stopping conditions as mentioned earlier. Unfortunately, we can't give an example of this because spidr lacks the functionality to define conditionals based on `Tensor` data.

@@ -35,7 +35,7 @@ Empiric features targets out =
   ProbabilisticModel features targets marginal model =>
   Dataset features targets ->
   model ->
-  out
+  Ref out
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
@@ -71,9 +71,9 @@ expectedImprovement model best at = do
 ||| the observation value at each point.
 export
 expectedImprovementByModel : Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-expectedImprovementByModel (MkDataset queryPoints _) model at = do
+expectedImprovementByModel (MkDataset queryPoints _) model = do
   best <- squeeze =<< reduce @{Min} [0] !(mean {event=[1]} !(marginalise model queryPoints))
-  expectedImprovement model best at
+  pure (expectedImprovement model best)
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
@@ -82,7 +82,7 @@ probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] d =>
   Empiric features [1] {marginal=d} $ Acquisition 1 features
-probabilityOfFeasibility limit _ model at =
+probabilityOfFeasibility limit _ model = pure $ \at =>
   cdf !(marginalise model at) !(broadcast {to=[_, 1]} limit)
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
@@ -94,7 +94,7 @@ negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
   Empiric features [1] {marginal=Gaussian} $ Acquisition 1 features
-negativeLowerConfidenceBound beta _ model at = do
+negativeLowerConfidenceBound beta _ model = pure $ \at => do
   marginal <- marginalise model at
   squeeze =<< mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
 
