@@ -1259,7 +1259,7 @@ range n = cast (Vect.range n)
 
 product1 : (x : Nat) -> product (the (List Nat) [x]) = x
 product1 x = rewrite plusZeroRightNeutral x in Refl
-{-
+
 partial
 iidKolmogorovSmirnov :
   {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
@@ -1267,8 +1267,8 @@ iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
 
-  indices <- the (Ref $ Tensor [n] F64) $ castDtype !(fromLiteral {dtype=U64} (range n))
-  sampleSize <- the (Ref $ Tensor [] F64) $ castDtype !(fromLiteral {dtype=U64} (Scalar n))
+  let indices : Ref $ Tensor [n] F64 = castDtype !(fromLiteral {dtype=U64} (range n))
+      sampleSize : Ref $ Tensor [] F64 = castDtype !(fromLiteral {dtype=U64} (Scalar n))
   samplesFlat <- reshape {sizesEqual=sym (product1 n)} {to=[n]} !(cdf samples)
   deviationFromCDF <- the (Ref $ Tensor [n] F64) $ indices / sampleSize - sort (<) 0 samplesFlat
   reduce @{Max} [0] !(abs deviationFromCDF)
@@ -1282,15 +1282,15 @@ uniform = withTests 20 . property $ do
   seed <- forAll (literal [1] nats)
 
   let ksTest = do
-    bound <- fromLiteral bound
-    bound' <- fromLiteral bound'
-    bound' <- select !(bound' == bound) !(bound' + fill 1.0e-9) bound'
+    let bound = fromLiteral bound
+        bound' = fromLiteral bound'
+        bound' = select !(bound' == bound) !(bound' + fill 1.0e-9) !bound'
     key <- fromLiteral key
     seed <- fromLiteral seed
-    samples <- evalStateT seed !(uniform key !(broadcast bound) !(broadcast bound'))
+    samples <- evalStateT seed !(uniform key !(broadcast !bound) !(broadcast !bound'))
 
     let uniformCdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
-        uniformCdf x = Tensor.(/) !(x - broadcast bound) !(broadcast !(bound' - bound))
+        uniformCdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
 
     iidKolmogorovSmirnov samples uniformCdf
 
@@ -1317,11 +1317,8 @@ uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let samples = do
-    bound <- fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
-    key <- fromLiteral key
-    seed <- fromLiteral seed
-    samples <- evalState seed (uniform key bound bound)
+  let bound = fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
+      samples = do evalStateT !(fromLiteral seed) !(uniform !(fromLiteral key) !bound !bound)
 
   samples ===# bound
 
@@ -1333,18 +1330,25 @@ uniformSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral bound
-      bound' = fromLiteral bound'
-      key = fromLiteral key
-      seed = fromLiteral seed
+  let everything = do
+        bound <- fromLiteral bound
+        bound' <- fromLiteral bound'
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      rng = uniform key {shape=[10]} (broadcast bound) (broadcast bound')
-      (seed', sample) = runState seed rng
-      (seed'', sample') = runState seed' rng
+        rng <- uniform key {shape=[10]} !(broadcast bound) !(broadcast bound')
+        (seed', sample) <- runStateT seed rng
+        (seed'', sample') <- runStateT seed' rng
+        seeds <- concat 0 !(concat 0 seed seed') seed''
+        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
+        pure (seeds, samples)
 
-  diff (toLiteral seed') (/=) (toLiteral seed)
-  diff (toLiteral seed'') (/=) (toLiteral seed')
-  diff (toLiteral sample') (/=) (toLiteral sample)
+      [seed, seed', seed''] = toLiteral (do (seeds, _) <- everything; pure seeds)
+      [sample, sample'] = toLiteral (do (_, samples) <- everything; pure samples)
+
+  diff seed' (/=) seed
+  diff seed'' (/=) seed'
+  diff sample' (/=) sample
 
 partial
 uniformIsReproducible : Property
@@ -1354,16 +1358,18 @@ uniformIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral bound
-      bound' = fromLiteral bound'
-      key = fromLiteral key
-      seed = fromLiteral seed
+  let [sample, sample'] = toLiteral $ do
+        bound <- fromLiteral bound
+        bound' <- fromLiteral bound'
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      rng = uniform {shape=[10]} key (broadcast bound) (broadcast bound')
-      sample = evalState seed rng
-      sample' = evalState seed rng
+        rng <- uniform {shape=[10]} key !(broadcast bound) !(broadcast bound')
+        sample <- evalStateT seed rng
+        sample' <- evalStateT seed rng
+        concat 0 !(expand 0 sample) !(expand 0 sample')
 
-  sample ===# sample'
+  sample ==~ sample'
 
 partial
 normal : Property
@@ -1378,7 +1384,7 @@ normal = withTests 20 . property $ do
         samples <- the (Ref $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
 
         let normalCdf : {shape : _} -> Tensor shape F64 -> Ref $ Tensor shape F64
-            normalCdf x = do (fill 1.0 + erf !(x / (sqrt !(fill 2.0)))) / fill 2.0
+            normalCdf x = do (fill 1.0 + erf !(pure x / (sqrt !(fill 2.0)))) / fill 2.0
 
         iidKolmogorovSmirnov samples normalCdf
 
@@ -1390,15 +1396,22 @@ normalSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let key = fromLiteral key
-      seed = fromLiteral seed
-      rng = normal key {shape=[10]}
-      (seed', sample) = runState seed rng
-      (seed'', sample') = runState seed' rng
+  let everything = do
+        key <- fromLiteral key
+        seed <- fromLiteral seed
+        let rng = normal key {shape=[10]}
+        (seed', sample) <- runStateT seed rng
+        (seed'', sample') <- runStateT seed' rng
+        seeds <- concat 0 !(concat 0 seed seed') seed''
+        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
+        pure (seeds, samples)
 
-  diff (toLiteral seed') (/=) (toLiteral seed)
-  diff (toLiteral seed'') (/=) (toLiteral seed')
-  diff (toLiteral sample') (/=) (toLiteral sample)
+      [seed, seed', seed''] = toLiteral (do (seeds, _) <- everything; pure seeds)
+      [sample, sample'] = toLiteral (do (_, samples) <- everything; pure samples)
+
+  diff seed' (/=) seed
+  diff seed'' (/=) seed'
+  diff sample' (/=) sample
 
 partial
 normalIsReproducible : Property
@@ -1406,15 +1419,16 @@ normalIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let key = fromLiteral key
-      seed = fromLiteral seed
+  let [sample, sample'] = toLiteral $ do
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      rng = normal {shape=[10]} key
-      sample = evalState seed rng
-      sample' = evalState seed rng
+        let rng = normal {shape=[10]} key
+        sample <- evalStateT seed rng
+        sample' <- evalStateT seed rng
+        concat 0 !(expand 0 sample) !(expand 0 sample')
 
-  sample ===# sample'
--}
+  sample ==~ sample'
 
 export partial
 group : Group
@@ -1476,12 +1490,12 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
---    , ("uniform", uniform)
---    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
---    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
---    , ("uniform updates seed", uniformSeedIsUpdated)
---    , ("uniform produces same samples for same seed", uniformIsReproducible)
---    , ("normal", normal)
---    , ("normal updates seed", normalSeedIsUpdated)
---    , ("normal produces same samples for same seed", normalIsReproducible)
+    , ("uniform", uniform)
+    , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
+    , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
+    , ("uniform updates seed", uniformSeedIsUpdated)
+    , ("uniform produces same samples for same seed", uniformIsReproducible)
+    , ("normal", normal)
+    , ("normal updates seed", normalSeedIsUpdated)
+    , ("normal produces same samples for same seed", normalIsReproducible)
   ]
