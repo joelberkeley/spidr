@@ -73,7 +73,7 @@ export
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
-    (S d :: ds) => assert_total $ pure x :: pure x
+    (S d :: ds) => pure x :: assert_total (pure x)
 
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
