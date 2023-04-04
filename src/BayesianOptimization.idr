@@ -41,6 +41,7 @@ public export
 data RefStream : Type -> Type where
   (::) : a -> Inf (Ref (RefStream a)) -> RefStream a
 
+||| Take `n` values from a `RefStream`, sequencing the `Ref` effects.
 public export
 take : (n : Nat) -> RefStream a -> Ref $ Vect n a
 take Z _ = pure Nil

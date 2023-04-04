@@ -21,7 +21,7 @@ import Tensor
 ||| An `Optimizer` finds the value, in a `Tensor`-valued feature space, which (approximately)
 ||| optimizes a scalar-valued function over that space.
 |||
-||| @domain The type of the domain over which to find the optimizer.
+||| @domain The type of the domain over which to find the optimal value.
 public export 0
 Optimizer : (0 domain : Type) -> Type
 Optimizer a = (a -> Ref $ Tensor [] F64) -> Ref a
