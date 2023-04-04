@@ -33,8 +33,8 @@ infix 9 >>>
 ||| convenience function for contructing unary wrappers with `Empiric`s and the corresponding
 ||| handler functions for data and models.
 export
-(>>>) : (i -> (a, b)) -> (a -> b -> Ref o) -> ReaderT i Ref o
-f >>> g = MkReaderT (uncurry g . f)
+(>>>) : (i -> (a, b)) -> (a -> b -> o) -> Reader i o
+f >>> g = MkReaderT (Id . uncurry g . f)
 
 ||| A `Stream`-like collection where each successive element is wrapped in an additional `Ref`.
 public export
@@ -58,10 +58,10 @@ take (S k) (x :: xs) = pure (x :: !(take k !xs))
 |||   updates the values (typically data and models).
 export covering
 loop :
-  (tactic : ReaderT env Ref $ Tensor shape dtype) ->
+  (tactic : Reader env $ Ref $ Tensor shape dtype) ->
   (observer : Tensor shape dtype -> env -> Ref env) ->
   env ->
   Ref $ RefStream env
 loop tactic observer env = do
-  env' <- observer !(runReaderT env tactic) env
+  env' <- observer !(runReader env tactic) env
   pure (env' :: loop tactic observer env')

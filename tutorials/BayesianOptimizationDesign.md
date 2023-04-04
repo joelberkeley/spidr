@@ -207,13 +207,11 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Ref $ Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} (the (Tensor [] F64) !0.5)
-                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} (the (Tensor [] F64) !0.5)
-                 acquisition = do
-                   f <- eci <*> pof
-                   lift $ optimizer f
+newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} !0.5
+                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} !0.5
+                 acquisition = map optimizer $ eci <*> pof
                  dataAndModel = Label (!historicData, !model) (!failureData, !failureModel)
-              in runReaderT dataAndModel acquisition
+              in runReader dataAndModel acquisition
 ```
 
 ## Iterative Bayesian optimization with infinite data types
@@ -238,9 +236,7 @@ We can repeat the above process indefinitely, and spidr provides a function `loo
 ```idris
 covering
 iterations : Ref $ RefStream (Dataset [2] [1], ConjugateGPRegression [2])
-iterations = let tactic : ReaderT _ Ref (Tensor _ _) = do
-                   acquisition <- id >>> expectedImprovementByModel @{Latent}
-                   lift $ optimizer acquisition
+iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{Latent}
               in loop tactic observe (!historicData, !model)
 ```
 
