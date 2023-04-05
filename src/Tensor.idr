@@ -17,6 +17,9 @@ limitations under the License.
 ||| number of functions operating on `Tensor`s. spidr tracks tensor shape and data type in the
 ||| types, so you can be sure that if your tensor code compiles, the shapes and types are
 ||| consistent.
+|||
+||| spidr achieves efficient reuse of tensor computations with `Ref`. See the tutorial
+||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Ref`.
 module Tensor
 
 import Control.Monad.Error.Either
