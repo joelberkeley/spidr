@@ -62,15 +62,15 @@ whoops = max !x !y
 ```
 `expensive` is calculated twice. Instead, you could pass the reused part as a function argument
 ```idris
-x : Tensor [] F64 -> Ref $ Tensor [] F64
-x e = abs e
+xf : Tensor [] F64 -> Ref $ Tensor [] F64
+xf e = abs e
 
-y : Tensor [] F64 -> Ref $ Tensor [] F64
-y e = square e
+yf : Tensor [] F64 -> Ref $ Tensor [] F64
+yf e = square e
 
-ok : Tensor [] F64 -> Ref $ Tensor [] F64
-ok e = max !(x e) !(y e)
+okf : Tensor [] F64 -> Ref $ Tensor [] F64
+okf e = max !(xf e) !(yf e)
 
 res : Ref $ Tensor [] F64
-res = ok !expensive
+res = okf !expensive
 ```
