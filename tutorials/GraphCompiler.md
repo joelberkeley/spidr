@@ -17,7 +17,7 @@ limitations under the License.
 
 _Note: We're not compiler experts, so this tutorial is more about the structure of spidr than a guide to compiler design in general._
 
-## Efficient reuse of tensors
+## Efficient reuse of tensors, and working with `Ref`
 
 spidr explicitly caches tensors so they can be efficiently be reused. Our understanding is that the technique we have used to achieve this is called observable sharing. In this section we'll discuss what our implementation means for spidr's tensor API.
 
