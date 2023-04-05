@@ -17,29 +17,6 @@ limitations under the License.
 ||| number of functions operating on `Tensor`s. spidr tracks tensor shape and data type in the
 ||| types, so you can be sure that if your tensor code compiles, the shapes and types are
 ||| consistent.
-|||
-||| spidr explicitly caches tensors so they can be efficiently be reused. This unfortunately leads
-||| to extra boilerplate, but ensures that the computation you write will be the computation sent
-||| to the graph compiler. Cacheing is achieved with `Ref`, and most tensor operations take a
-||| number of `Tensor shape dtype`s and produce a `Ref (Tensor shape dtype)`. The exception is
-||| infix operators, which accept `Ref (Tensor shape dtype)`s, to simplify algebraic expressions.
-|||
-||| Care is needed when reusing `Ref a` values, including in infix operations. For example, in
-||| ```
-||| x : Ref $ Tensor [3] F64
-||| x = let y = fromLiteral [1, 2, 3]
-|||         z = y + y
-|||      in z * z
-||| ```
-||| `z` will be calculated twice, and `y` allocated four times (unless the graph compiler
-||| chooses to optimize that out). Instead, we can reuse `z` and `y` with
-||| ```
-||| x : Ref $ Tensor [3] F64
-||| x = do y <- fromLiteral [1, 2, 3]
-|||        z <- (pure y) + (pure y)
-|||        (pure z) * (pure z)
-||| ```
-||| Here, `y` and `z` will only be calculated once.
 module Tensor
 
 import Control.Monad.Error.Either
