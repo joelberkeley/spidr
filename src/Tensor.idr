@@ -1365,8 +1365,8 @@ namespace Vector
   export
   (|\) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a |\ b = do
-    MkTensor {shape=[_]} _ _ <- b
-    squeeze !(a |\ expand 1 !b)
+    MkTensor {shape=[_]} i env <- b
+    squeeze !(a |\ expand 1 (MkTensor {shape = [m]} i env))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1378,8 +1378,8 @@ namespace Vector
   export
   (\|) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
   a \| b = do
-    MkTensor {shape=[_]} _ _ <- b
-    squeeze !(a \| expand 1 !b)
+    MkTensor {shape=[_]} i env <- b
+    squeeze !(a \| expand 1 (MkTensor {shape = [m]} i env))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace !(fromLiteral [[-1, 5], [1, 4]])` is `3`.
