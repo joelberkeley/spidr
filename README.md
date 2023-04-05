@@ -4,7 +4,7 @@ _Accelerated machine learning with dependent types_
 
 spidr is in early development. The core linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
 
-To install, see [the instructions](INSTALL.md). We use [semantic versioning](https://semver.org/). See the source code for API documentation (`src/` excluding `src/Compiler/`), and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
+To install, see [the instructions](INSTALL.md). We use [semantic versioning](https://semver.org/). See the online [API reference](https://joelberkeley.github.io/spidr/), and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
 ### Motivation
 
@@ -20,11 +20,11 @@ import Literal
 import Tensor
 -->
 ```idris
-x : Tensor [3] S32
+x : Ref $ Tensor [3] S32
 x = fromLiteral [1, 2, 3]
 
-y : Tensor [3] S32
-y = x + x
+y : Ref $ Tensor [3] S32
+y = x + fromLiteral [0, 1, 2]
 ```
 but this won't
 ```idris
@@ -34,7 +34,7 @@ failing "elaboration"
 ```
 because you can't add a vector of length two to a vector of length three. Shape manipulation extends beyond comparing literal dimension sizes to arbitrary symbolic manipulation
 ```idris
-append : Tensor [m, p] F64 -> Tensor [n, p] F64 -> Tensor [m + n, p] F64
+append : Tensor [m, p] F64 -> Tensor [n, p] F64 -> Ref $ Tensor [m + n, p] F64
 append x y = concat 0 x y
 ```
 As a bonus, spidr programs are reproducible. Any one graph will always produce the same result when run on the same hardware.
