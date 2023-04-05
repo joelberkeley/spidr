@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module contains the `Tensor`, an array of numbers or booleans, along with a
-||| number of functions operating on `Tensor`s. spidr tracks tensor shape and data type in the types,
-||| so you can be sure that if your tensor code compiles, the shapes and types are correct.
+||| number of functions operating on `Tensor`s. spidr tracks tensor shape and data type in the
+||| types, so you can be sure that if your tensor code compiles, the shapes and types are
+||| consistent.
 |||
-||| spidr explicitly caches tensors, so they can be efficiently be reused. This unfortunately leads to
-||| some amount of boilerplate, but ensures that the computation you write will be the computation
-||| sent to the graph compiler. Cacheing is achieved with `Ref`, and most tensor operations take
-||| a number of `Tensor shape dtype`s and produce a `Ref (Tensor shape dtype)`. The exception is infix
-||| operators, which accept `Ref (Tensor shape dtype)` to simplify algebraic expressions. This does
-||| mean care is needed when reusing tensors in infix operations. For example, in
+||| spidr explicitly caches tensors so they can be efficiently be reused. This unfortunately leads
+||| to extra boilerplate, but ensures that the computation you write will be the computation sent
+||| to the graph compiler. Cacheing is achieved with `Ref`, and most tensor operations take a
+||| number of `Tensor shape dtype`s and produce a `Ref (Tensor shape dtype)`. The exception is
+||| infix operators, which accept `Ref (Tensor shape dtype)`s, to simplify algebraic expressions.
+||| This does mean extra care is needed when reusing tensors in infix operations. For example, in
 ||| ```
 ||| x : Ref $ Tensor [3] F64
 ||| x = let y = fromLiteral [1, 2, 3]
@@ -30,16 +31,14 @@ limitations under the License.
 |||      in z * z
 ||| ```
 ||| `z` will be calculated twice, and `y` allocated four times (unless the graph compiler
-||| chooses to optimize that out). We reuse tensors with `do` notation. The above example can be
-||| re-written
+||| chooses to optimize that out). Instead, we can reuse `z` and `y` with
 ||| ```
 ||| x : Ref $ Tensor [3] F64
 ||| x = do y <- fromLiteral [1, 2, 3]
 |||        z <- (pure y) + (pure y)
-|||     in (pure z) * (pure z)
+|||        (pure z) * (pure z)
 ||| ```
-||| in which `y` and `z` will only be calculated once. If you don't need to reuse a tensor, it's
-||| much terser to simply use `let ... in` over `do`.
+||| Here, `y` and `z` will only be calculated once.
 module Tensor
 
 import Control.Monad.Error.Either
@@ -59,6 +58,14 @@ import public Util
 
 ----------------------------- core definitions ----------------------------
 
+||| A symbolic scalar or array.
+|||
+||| @shape The `Tensor` shape.
+||| @dtype The element type.
+export
+data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
+  MkTensor : {shape : _} -> Nat -> Env -> Tensor shape dtype
+
 ||| A `Ref a` is essentially a counter we use to generate a unique _reference_ for each `a`.
 public export 0
 Ref : Type -> Type
@@ -69,14 +76,6 @@ new = do
   n <- get
   put (S n)
   pure n
-
-||| A symbolic scalar or array.
-|||
-||| @shape The `Tensor` shape.
-||| @dtype The element type.
-export
-data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Nat -> Env -> Tensor shape dtype
 
 end : Env -> Expr -> {shape : _} -> Ref $ Tensor shape dtype
 end env expr = do
