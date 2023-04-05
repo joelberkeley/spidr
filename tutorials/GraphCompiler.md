@@ -27,7 +27,7 @@ import Literal
 import Tensor
 -->
 ```idris
-f : Tensor shape dtype -> Tensor shape dtype -> Ref $ Tensor shape dtype
+f : Tensor shape F64 -> Tensor shape F64 -> Ref $ Tensor shape F64
 f x y = (abs x + pure y) * pure x
 ```
 In this example, `pure` produces a `Ref a` from an `a`, as does `abs` (the elementwise absolute value function). Addition `(+)` and multiplication `(*)` produce _and accept_ `Ref` so there is no need to wrap the output of `abs x + pure y` in `pure` before passing it to `(*)`. A rule of thumb is that you only need `pure` if both of these are true
@@ -74,3 +74,4 @@ okf e = max !(xf e) !(yf e)
 res : Ref $ Tensor [] F64
 res = okf !expensive
 ```
+Note this works because we're passing the `Tensor [] F64`. It wouldn't reuse the tensor if we passed a `Ref (Tensor [] F64)`.
