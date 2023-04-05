@@ -41,7 +41,7 @@ As a bonus, spidr programs are reproducible. Any one graph will always produce t
 
 #### Optimized compilation for hardware accelerators
 
-spidr benefits from much of what XLA has to offer, namely the performance benefits of optimizations such as fusion, and execution on various hardware accelerators. spidr programs currently run on CPU and GPU, and may run on more exotic machine learning accelerators in the future.
+spidr benefits from much of what XLA has to offer, namely the performance benefits of optimizations such as fusion, and execution on various hardware accelerators. spidr programs currently run on CPU and GPU.
 
 #### Graph generation
 
