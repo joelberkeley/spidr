@@ -23,7 +23,8 @@ limitations under the License.
 ||| to the graph compiler. Cacheing is achieved with `Ref`, and most tensor operations take a
 ||| number of `Tensor shape dtype`s and produce a `Ref (Tensor shape dtype)`. The exception is
 ||| infix operators, which accept `Ref (Tensor shape dtype)`s, to simplify algebraic expressions.
-||| This does mean extra care is needed when reusing tensors in infix operations. For example, in
+|||
+||| Care is needed when reusing `Ref a` values, including in infix operations. For example, in
 ||| ```
 ||| x : Ref $ Tensor [3] F64
 ||| x = let y = fromLiteral [1, 2, 3]
