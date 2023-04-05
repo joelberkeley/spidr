@@ -1,5 +1,5 @@
 <!--
-Copyright 2022 Joel Berkeley
+Copyright 2023 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 -->
 # The graph compiler
 
-_Note: We're not compiler experts, so this tutorial is more about the structure of spidr than a guide to compiler design in general._
+_Note: We're not compiler experts, so this tutorial is more about spidr itself than a guide to compiler design._
 
 ## Efficient reuse of tensors, and working with `Ref`
 
