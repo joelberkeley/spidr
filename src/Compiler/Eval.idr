@@ -94,7 +94,6 @@ enqueue builder (MinValue {dtype}) = minValue {dtype} builder
 enqueue builder (MaxValue {dtype}) = maxValue {dtype} builder
 enqueue builder (MinFiniteValue {dtype}) = minFiniteValue {dtype} builder
 enqueue builder (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} builder
--- todo test dtypes here, is this a bug?
 enqueue _       (ConvertElementType x) = convertElementType {dtype = F64} !(lookup x)
 enqueue _       (Reshape from to x) = reshape !(lookup x) (range $ length from) to
 enqueue _       (Slice starts stops strides x) = slice !(lookup x) starts stops strides
