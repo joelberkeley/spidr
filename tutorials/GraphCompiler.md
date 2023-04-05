@@ -74,4 +74,4 @@ okf e = max !(xf e) !(yf e)
 res : Ref $ Tensor [] F64
 res = okf !expensive
 ```
-Note this works because we're passing the `Tensor [] F64`. It wouldn't reuse the tensor if we passed a `Ref (Tensor [] F64)`.
+Note we must pass the `Tensor [] F64`, rather than a `Ref (Tensor [] F64)`, if the tensor is to be reused.
