@@ -8,7 +8,7 @@ To install, see [the instructions](INSTALL.md). We use [semantic versioning](htt
 
 ### Motivation
 
-We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Since we are more interested in high-level concepts than re-implementing low-level linear algebra, we opted to build on existing compiler and hardware accelerator technologies. We chose [XLA](https://github.com/openxla/xla) as our first backend.
+We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Since we are more interested in high-level concepts than re-implementing low-level linear algebra, we opted to build on existing compiler and hardware accelerator technologies, and chose [XLA](https://github.com/openxla/xla) as our first backend.
 
 ### What can spidr do?
 
