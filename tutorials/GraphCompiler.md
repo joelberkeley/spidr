@@ -34,14 +34,14 @@ In this example, `pure` produces a `Ref a` from an `a`, as does `abs` (the eleme
 * you're passing a value to an infix operator
 * the value is either a function argument or is on the left hand side of `x <- expression` Secondly, care is needed when reusing expressions to make sure you're not recomputation sections of the graph. For example, in
 ```idris
-whoops : Ref $ Tensor [3] F64
+whoops : Ref $ Tensor [3] S32
 whoops = let y = fromLiteral [1, 2, 3]
              z = y + y
           in z * z
 ```
 `z` will be calculated twice, and `y` allocated four times (unless the graph compiler chooses to optimize that out). Instead, we can reuse `z` and `y` with
 ```idris
-ok : Ref $ Tensor [3] F64
+ok : Ref $ Tensor [3] S32
 ok = do y <- fromLiteral [1, 2, 3]
         z <- (pure y) + (pure y)
         (pure z) * (pure z)
@@ -49,7 +49,7 @@ ok = do y <- fromLiteral [1, 2, 3]
 Here, `y` and `z` will only be calculated once. This can happen more subtley when reusing values from another scope. For example, in
 ```idris
 expensive : Ref $ Tensor [] F64
-expensive = reduce @{Sum} 0 !(fill {shape = [100000]} 1.0)
+expensive = reduce @{Sum} [0] !(fill {shape = [100000]} 1.0)
 
 x : Ref $ Tensor [] F64
 x = abs !expensive
@@ -57,8 +57,8 @@ x = abs !expensive
 y : Ref $ Tensor [] F64
 y = square !expensive
 
-whoops : Ref $ Tensor [] F64
-whoops = max !x !y
+whoops' : Ref $ Tensor [] F64
+whoops' = max !x !y
 ```
 `expensive` is calculated twice. Instead, you could pass the reused part as a function argument
 ```idris
