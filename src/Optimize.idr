@@ -21,15 +21,10 @@ import Tensor
 ||| An `Optimizer` finds the value, in a `Tensor`-valued feature space, which (approximately)
 ||| optimizes a scalar-valued function over that space.
 |||
-||| If the function is not well-defined at points in the feature space, and this is expressed by
-||| wrapping function values in some context, this extra context can be captured in the value `m`.
-||| For example, a function `a -> Maybe (Tensor [] Double)`, can be optimized by an
-||| `Optimizer {m=Maybe} a`.
-|||
-||| @domain The type of the domain over which to find the optimizer.
+||| @domain The type of the domain over which to find the optimal value.
 public export 0
-Optimizer : {default id 0 m : Type -> Type} -> (0 domain : Type) -> Type
-Optimizer a = (a -> m $ Tensor [] F64) -> m a
+Optimizer : (0 domain : Type) -> Type
+Optimizer a = (a -> Ref $ Tensor [] F64) -> Ref a
 
 ||| Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search
 ||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
@@ -43,7 +38,7 @@ export
 gridSearch : (density : Tensor [d] U32) ->
              (lower : Tensor [d] F64) ->
              (upper : Tensor [d] F64) ->
-             Optimizer (Tensor [d] F64)
+             Optimizer $ Tensor [d] F64
 
 ||| The limited-memory BFGS (L-BFGS) optimization tactic, see
 |||
@@ -58,4 +53,4 @@ gridSearch : (density : Tensor [d] U32) ->
 |||
 ||| @initialPoints The points from which to start optimization.
 export
-lbfgs : (initialPoints : Tensor [n] F64) -> Optimizer (Tensor [n] F64)
+lbfgs : (initialPoints : Tensor [n] F64) -> Optimizer $ Tensor [n] F64

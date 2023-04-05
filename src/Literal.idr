@@ -27,8 +27,6 @@ limitations under the License.
 |||   makes it particularly useful for testing operations on `Tensor`s.
 module Literal
 
-import Data.Hashable
-
 import public Types
 
 ||| A scalar or array of values.
@@ -75,7 +73,7 @@ export
   pure x = case shape of
     [] => Scalar x
     (0 :: _) => []
-    (S d :: ds) => pure x :: (the (Literal (d :: ds) _) $ pure x)
+    (S d :: ds) => pure x :: assert_total (pure x)
 
   (Scalar f) <*> (Scalar x) = Scalar (f x)
   [] <*> [] = []
@@ -203,14 +201,3 @@ export
   cast [] = []
   cast (x :: y) = cast @{toArray} x :: cast @{toArray} y
 
-hashWithSaltLiteral : Hashable a => Bits64 -> Literal shape a -> Bits64
-hashWithSaltLiteral salt (Scalar x) = hashWithSalt salt x
-hashWithSaltLiteral salt [] = hashWithSalt salt (the Bits64 0)
-hashWithSaltLiteral salt (x :: xs) = (salt
-    `hashWithSalt` the Bits64 1
-    `hashWithSaltLiteral` x
-  ) `hashWithSaltLiteral` xs
-
-export
-Hashable a => Hashable (Literal shape a) where
-  hashWithSalt = hashWithSaltLiteral

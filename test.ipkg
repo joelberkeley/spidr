@@ -2,14 +2,12 @@ package test
 
 depends =
   spidr,
-  hashable,
   contrib,
   hedgehog,
   elab-util,
   pretty-show,
   sop
 
-opts = "--total"
 sourcedir = "test"
 
 executable = test
@@ -17,7 +15,6 @@ main = Main
 
 modules =
   Unit.Model.TestKernel,
-  Unit.Util.TestHashable,
   Unit.TestDistribution,
   Unit.TestLiteral,
   Unit.TestTensor,

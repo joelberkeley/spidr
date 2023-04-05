@@ -1,7 +1,7 @@
 package spidr
 version = 0.0.6
 
-depends = contrib, hashable
+depends = contrib
 opts = "--total"
 sourcedir = "src"
 modules =
@@ -60,9 +60,7 @@ modules =
   Primitive,
   Tensor,
   Types,
-
-  Util,
-  Util.Hashable
+  Util
 
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."
 readme = "README.md"

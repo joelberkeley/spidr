@@ -15,13 +15,13 @@ limitations under the License.
 --}
 module Compiler.Eval
 
+import Control.Monad.Error.Either
+import Control.Monad.Maybe
 import Control.Monad.State
 import Data.List
 import Data.List.Elem
-import Data.SortedMap
+import public Data.SortedMap
 import Decidable.Equality
-
-import Data.Hashable
 
 import Compiler.Expr
 import Compiler.LiteralRW
@@ -47,189 +47,176 @@ import Literal
 import Primitive
 import Types
 import Util
-import Util.Hashable
 
 %hide Util.List.All.map
 
-Cache : Type
-Cache = SortedMap Bits64 (List (Expr, XlaOp))
+export
+data Err = IndexErr String
+
+export
+Show Err where
+  show (IndexErr msg) = "IndexErr: \{msg}"
 
 Computation : Type -> Type
-Computation = StateT (XlaBuilder, Cache) IO
+Computation = StateT (SortedMap Nat XlaOp) (EitherT Err IO)
 
-cached : Expr -> Computation XlaOp -> Computation XlaOp
-cached graph xs = let graphHash = hash graph in do
-  (_, cache) <- get
-  case lookup graphHash cache of
-    Just candidates => case find (\(graph', _) => graph' == graph) candidates of
-      Just (_, op) => pure op
-      Nothing => runOp xs graphHash graph candidates
-    Nothing => runOp xs graphHash graph []
+lookup : Nat -> Computation XlaOp
+lookup n = do
+  case lookup n !get of
+       Nothing =>
+         lift $ left (IndexErr "Tried to look up value at index \{show n} but none was found.")
+       Just op => pure op
 
-  where
-  runOp : Computation XlaOp -> Bits64 -> Expr -> List (Expr, XlaOp) -> Computation XlaOp
-  runOp xs key graph graphOps = do
-    op <- xs
-    (builder, cache) <- get
-    put (builder, insert key ((graph, op) :: graphOps) cache)
-    pure op
+interpret : XlaBuilder -> Nat -> Env -> Computation XlaOp
 
-build : HasIO io => String -> Computation XlaOp -> io XlaComputation
-build computationName x = do
-  builder <- mkXlaBuilder computationName
-  (_, root) <- liftIO $ runStateT (builder, empty) x
-  build builder root
-
-buildWithSubBuilder :
-  String -> List (Computation XlaOp) -> Computation XlaOp -> Computation XlaComputation
-buildWithSubBuilder computationName computationArguments computationResult = do
-  (builder, _) <- get
-  subBuilder <- createSubBuilder builder computationName
-  (_, cache) <- liftIO $ execStateT (subBuilder, empty) (sequence_ computationArguments)
-  (_, root) <- liftIO $ runStateT (subBuilder, cache) computationResult
+buildSub : XlaBuilder -> String -> Fn arity -> Computation XlaComputation
+buildSub builder name (MkFn params i env) = do
+  subBuilder <- createSubBuilder builder name
+  traverse_ (interpretParameter subBuilder) (enumerate params)
+  root <- assert_total $ interpret subBuilder i env
   build subBuilder root
 
+  where
+
+  interpretParameter : XlaBuilder -> (Nat, Nat, ShapeAndType) -> Computation ()
+  interpretParameter builder (position, i, MkShapeAndType shape dtype) = do
+    xlaShape <- mkShape {dtype} shape
+    param <- parameter builder position xlaShape name
+    put $ insert i param !get
+
 covering
-enqueue : Expr -> Computation XlaOp
-enqueue e@(FromLiteral {dtype} lit) = cached e $ do
-  (builder, _) <- get
-  literal <- write {dtype} lit 
-  constantLiteral builder literal
-enqueue e@(Parameter {dtype} position shape name) = cached e $ do
-  (builder, _) <- get
-  xlaShape <- mkShape {dtype} shape
-  parameter builder position xlaShape name
-enqueue e@(Tuple exprs) = cached e $ do
-  (builder, _) <- get
-  tuple builder !(traverse enqueue exprs)
-enqueue e@(GetTupleElement idx expr) = cached e $ getTupleElement !(enqueue expr) idx
-enqueue e@(MinValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  minValue {dtype} builder
-enqueue e@(MaxValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  maxValue {dtype} builder
-enqueue e@(MinFiniteValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  minFiniteValue {dtype} builder
-enqueue e@(MaxFiniteValue {dtype}) = cached e $ do
-  (builder, _) <- get
-  maxFiniteValue {dtype} builder
-enqueue e@(ConvertElementType expr) = cached e $ convertElementType {dtype=F64} !(enqueue expr)
-enqueue e@(Reshape from to expr) = cached e $ reshape !(enqueue expr) (range $ length from) to
-enqueue e@(Slice starts stops strides expr) = cached e $ slice !(enqueue expr) starts stops strides 
-enqueue e@(DynamicSlice starts sizes expr) =
-  cached e $ dynamicSlice !(enqueue expr) !(traverse enqueue starts) sizes
-enqueue e@(Concat axis expr expr') = cached e $ do
-  (builder, _) <- get
-  concatInDim builder [!(enqueue expr), !(enqueue expr')] (cast axis)
-enqueue e@(Diag expr) = cached e $ getMatrixDiagonal !(enqueue expr)
-enqueue e@(Triangle tri expr) = cached e $ triangle !(enqueue expr) tri
-enqueue e@(Transpose ordering expr) = cached e $ transpose !(enqueue expr) ordering
-enqueue e@(Identity {dtype} n) = cached e $ let n = cast n in do
-  (builder, _) <- get
-  identityMatrix {dtype} builder n n
-enqueue e@(Broadcast {dtype} from to expr) = cached e $
+enqueue : XlaBuilder -> Expr -> Computation XlaOp
+enqueue builder (FromLiteral {dtype} lit) = constantLiteral builder !(write {dtype} lit)
+enqueue _       (Arg x) = lookup x
+enqueue builder (Tuple xs) = tuple builder !(traverse lookup xs)
+enqueue builder (GetTupleElement idx x) = getTupleElement !(lookup x) idx
+enqueue builder (MinValue {dtype}) = minValue {dtype} builder
+enqueue builder (MaxValue {dtype}) = maxValue {dtype} builder
+enqueue builder (MinFiniteValue {dtype}) = minFiniteValue {dtype} builder
+enqueue builder (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} builder
+enqueue _       (ConvertElementType x) = convertElementType {dtype = F64} !(lookup x)
+enqueue _       (Reshape from to x) = reshape !(lookup x) (range $ length from) to
+enqueue _       (Slice starts stops strides x) = slice !(lookup x) starts stops strides
+enqueue _       (DynamicSlice starts sizes x) =
+  dynamicSlice !(lookup x) !(traverse lookup starts) sizes
+enqueue builder (Concat axis x y) = concatInDim builder [!(lookup x), !(lookup y)] (cast axis)
+enqueue _       (Diag x) = getMatrixDiagonal !(lookup x)
+enqueue _       (Triangle tri x) = triangle !(lookup x) tri
+enqueue _       (Transpose ordering x) = transpose !(lookup x) ordering
+enqueue builder (Identity {dtype} n) = let n = cast n in identityMatrix {dtype} builder n n
+enqueue builder (Broadcast {dtype} from to x) =
   if elem 0 to && from /= to
   then do
-    (builder, _) <- get
     literal <- allocLiteral {dtype} to
     constantLiteral builder literal
   else
-    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
-     in broadcastInDim !(enqueue expr) to broadcastDims
-enqueue e@(Map (MkFn {arity} exprParams exprf) exprs dims) = cached e $ do
-  computation <- buildWithSubBuilder "computation" (map enqueue $ toList exprParams) (enqueue exprf)
-  (builder, _) <- get
-  map builder !(traverse enqueue $ toList exprs) computation dims 
-enqueue e@(Reduce (MkFn [p0, p1] exprf) neutral axes expr) = cached e $ do
-  computation <- buildWithSubBuilder "computation" [(enqueue p0), (enqueue p1)] (enqueue exprf) 
-  reduce !(enqueue expr) !(enqueue neutral) computation axes
-enqueue e@(Sort (MkFn [p0, p1] exprComp) axis isStable exprs) = cached e $ do
-  comparator <- buildWithSubBuilder "comparator" [(enqueue p0), (enqueue p1)] (enqueue exprComp)
-  sort !(traverse enqueue exprs) comparator axis isStable 
-enqueue e@(Reverse axes expr) = cached e $ rev !(enqueue expr) axes
-enqueue e@(Eq l r) = cached e $ eq !(enqueue l) !(enqueue r)
-enqueue e@(Ne l r) = cached e $ ne !(enqueue l) !(enqueue r)
-enqueue e@(Add l r) = cached e $ add !(enqueue l) !(enqueue r)
-enqueue e@(Sub l r) = cached e $ sub !(enqueue l) !(enqueue r)
-enqueue e@(Mul l r) = cached e $ mul !(enqueue l) !(enqueue r)
-enqueue e@(Div l r) = cached e $ div !(enqueue l) !(enqueue r)
-enqueue e@(Pow l r) = cached e $ pow !(enqueue l) !(enqueue r)
-enqueue e@(Lt l r) = cached e $ lt !(enqueue l) !(enqueue r)
-enqueue e@(Gt l r) = cached e $ gt !(enqueue l) !(enqueue r)
-enqueue e@(Le l r) = cached e $ le !(enqueue l) !(enqueue r)
-enqueue e@(Ge l r) = cached e $ ge !(enqueue l) !(enqueue r)
-enqueue e@(And l r) = cached e $ and !(enqueue l) !(enqueue r)
-enqueue e@(Or l r) = cached e $ or !(enqueue l) !(enqueue r)
-enqueue e@(Min l r) = cached e $ min !(enqueue l) !(enqueue r)
-enqueue e@(Max l r) = cached e $ max !(enqueue l) !(enqueue r)
-enqueue e@(Not expr) = cached e $ not !(enqueue expr)
-enqueue e@(Neg expr) = cached e $ neg !(enqueue expr)
-enqueue e@(Reciprocal expr) = cached e $ reciprocal !(enqueue expr)
-enqueue e@(Abs expr) = cached e $ abs !(enqueue expr)
-enqueue e@(Ceil expr) = cached e $ ceil !(enqueue expr)
-enqueue e@(Floor expr) = cached e $ floor !(enqueue expr)
-enqueue e@(Exp expr) = cached e $ exp !(enqueue expr)
-enqueue e@(Log expr) = cached e $ log !(enqueue expr)
-enqueue e@(Logistic expr) = cached e $ logistic !(enqueue expr)
-enqueue e@(Erf expr) = cached e $ erf !(enqueue expr)
-enqueue e@(Square expr) = cached e $ square !(enqueue expr)
-enqueue e@(Sqrt expr) = cached e $ sqrt !(enqueue expr)
-enqueue e@(Sin expr) = cached e $ sin !(enqueue expr)
-enqueue e@(Cos expr) = cached e $ cos !(enqueue expr)
-enqueue e@(Tan expr) = cached e $ tan !(enqueue expr)
-enqueue e@(Asin expr) = cached e $ asin !(enqueue expr)
-enqueue e@(Acos expr) = cached e $ acos !(enqueue expr)
-enqueue e@(Atan expr) = cached e $ atan !(enqueue expr)
-enqueue e@(Sinh expr) = cached e $ sinh !(enqueue expr)
-enqueue e@(Cosh expr) = cached e $ cosh !(enqueue expr)
-enqueue e@(Tanh expr) = cached e $ tanh !(enqueue expr)
-enqueue e@(Asinh expr) = cached e $ asinh !(enqueue expr)
-enqueue e@(Acosh expr) = cached e $ acosh !(enqueue expr)
-enqueue e@(Atanh expr) = cached e $ atanh !(enqueue expr)
-enqueue e@(Argmin {out} axis expr) = cached e $ argMin {outputType=out} !(enqueue expr) axis
-enqueue e@(Argmax {out} axis expr) = cached e $ argMax {outputType=out} !(enqueue expr) axis
-enqueue e@(Select pred true false) =
-  cached e $ select !(enqueue pred) !(enqueue true) !(enqueue false)
-enqueue e@(Cond pred (MkFn [pt] exprTrue) true (MkFn [pf] exprFalse) false) = cached e $ do
-  trueComp <- buildWithSubBuilder "truthy computation" [enqueue pt] (enqueue exprTrue)
-  falseComp <- buildWithSubBuilder "falsy computation" [enqueue pf] (enqueue exprFalse)
-  conditional !(enqueue pred) !(enqueue true) trueComp !(enqueue false) falseComp
-enqueue e@(Dot l r) = cached e $ dot !(enqueue l) !(enqueue r)
-enqueue e@(Cholesky expr) = cached e $ cholesky !(enqueue expr) True
-enqueue e@(TriangularSolve a b lower) =
-  cached e $ triangularSolve !(enqueue a) !(enqueue b) True lower False NoTranspose
-enqueue e@(UniformFloatingPoint key initialState minval maxval shape) = cached e $ do
+   let broadcastDims = map (+ length to `minus` length from) $ range $ length from
+    in broadcastInDim !(lookup x) to broadcastDims
+enqueue builder (Map f xs dims) = do
+  computation <- buildSub builder "computation" f
+  map builder (toList !(traverse lookup xs)) computation dims
+enqueue builder (Reduce f neutral axes x) = do
+  computation <- buildSub builder "computation" f
+  reduce !(lookup x) !(lookup neutral) computation axes
+enqueue builder (Sort f axis isStable xs) = do
+  comparator <- buildSub builder "comparator" f
+  sort !(traverse lookup xs) comparator axis isStable 
+enqueue _       (Reverse axes x) = rev !(lookup x) axes
+enqueue _       (BinaryElementwise f x y) = toXla f !(lookup x) !(lookup y)
+  where
+  toXla : BinaryOp -> HasIO io => XlaOp -> XlaOp -> io XlaOp
+  toXla = \case
+    Eq  => eq
+    Ne  => ne
+    Add => add
+    Sub => sub
+    Mul => mul
+    Div => div
+    Pow => pow
+    Lt  => lt
+    Gt  => gt
+    Le  => le
+    Ge  => ge
+    And => and
+    Or  => or
+    Min => min
+    Max => max
+enqueue _       (UnaryElementwise f x) = toXla f !(lookup x)
+  where
+  toXla : UnaryOp -> HasIO io => XlaOp -> io XlaOp
+  toXla = \case
+    Not        => not
+    Neg        => neg
+    Reciprocal => reciprocal
+    Ceil       => ceil
+    Floor      => floor
+    Abs        => abs
+    Log        => log
+    Exp        => exp
+    Logistic   => logistic
+    Erf        => erf
+    Square     => square
+    Sqrt       => sqrt
+    Sin        => sin
+    Cos        => cos
+    Tan        => tan
+    Asin       => asin
+    Acos       => acos
+    Atan       => atan
+    Sinh       => sinh
+    Cosh       => cosh
+    Tanh       => tanh
+    Asinh      => asinh
+    Acosh      => acosh
+    Atanh      => atanh
+enqueue _       (Argmin {out} axis x) = argMin {outputType=out} !(lookup x) axis
+enqueue _       (Argmax {out} axis x) = argMax {outputType=out} !(lookup x) axis
+enqueue _       (Select pred true false) = select !(lookup pred) !(lookup true) !(lookup false)
+enqueue builder (Cond pred fTrue true fFalse false) = do
+  trueComp <- buildSub builder "truthy computation" fTrue
+  falseComp <- buildSub builder "falsy computation" fFalse
+  conditional !(lookup pred) !(lookup true) trueComp !(lookup false) falseComp
+enqueue _       (Dot l r) = dot !(lookup l) !(lookup r)
+enqueue _       (Cholesky x) = cholesky !(lookup x) True
+enqueue _       (TriangularSolve a b lower) =
+  triangularSolve !(lookup a) !(lookup b) True lower False NoTranspose
+enqueue builder (UniformFloatingPoint key initialState minval maxval shape) = do
   rngOutput <- uniformFloatingPointDistribution
-    !(enqueue key)
-    !(enqueue initialState)
+    !(lookup key)
+    !(lookup initialState)
     ThreeFry
-    !(enqueue minval)
-    !(enqueue maxval)
+    !(lookup minval)
+    !(lookup maxval)
     !(mkShape {dtype=F64} shape)
-  (builder, _) <- get
   tuple builder [value rngOutput, state rngOutput]
-enqueue e@(NormalFloatingPoint key initialState shape) = cached e $ do
+enqueue builder (NormalFloatingPoint key initialState shape) = do
   rngOutput <- normalFloatingPointDistribution
-    !(enqueue key) !(enqueue initialState) ThreeFry !(mkShape {dtype=F64} shape)
-  (builder, _) <- get
+    !(lookup key) !(lookup initialState) ThreeFry !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
 
+interpret builder root env = do
+  traverse_ interpretExpr (toList env)
+  lookup root
+
+  where
+  interpretExpr : (Nat, Expr) -> Computation ()
+  interpretExpr (n, expr) = put (insert n !(enqueue builder expr) !get)
+
 export
-toString : Expr -> String
-toString expr = unsafePerformIO $ do
+toString : Nat -> Env -> EitherT Err IO String
+toString root env = do
   builder <- mkXlaBuilder "toString"
-  let comp = assert_total (enqueue expr)
-  ((builder, _), xlaOp) <- runStateT (builder, empty) comp
+  xlaOp <- evalStateT empty (interpret builder root env)
   pure $ opToString builder xlaOp
 
 export
-run : PrimitiveRW dtype a => Expr -> {shape : _} -> Literal shape a
-run expr = unsafePerformIO $ do
+run : PrimitiveRW dtype a => Nat -> Env -> {shape : _} -> EitherT Err IO (Literal shape a)
+run root env = do
+  builder <- mkXlaBuilder "root" 
+  root <- evalStateT empty (interpret builder root env)
+  computation <- XlaBuilder.build builder root
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  computation <- build "" (assert_total $ enqueue expr)
   client <- getOrCreateLocalClient platform
   lit <- executeAndTransfer client computation
   pure (read {dtype} lit)

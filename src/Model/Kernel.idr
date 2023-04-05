@@ -30,16 +30,17 @@ Kernel features =
   {sk, sk' : _} ->
   Tensor (sk :: features) F64 ->
   Tensor (sk' :: features) F64 ->
-  Tensor [sk, sk'] F64
+  Ref $ Tensor [sk, sk'] F64
 
 scaledL2Norm :
   Tensor [] F64 ->
   {d, n, n' : _} ->
   Tensor [n, S d] F64 ->
   Tensor [n', S d] F64 ->
-  Tensor [n, n'] F64
-scaledL2Norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
-                           in reduce @{Sum} [2] $ ((xs - broadcast (expand 0 x')) / len) ^ fill 2.0
+  Ref $ Tensor [n, n'] F64
+scaledL2Norm len x x' =
+  let xs = broadcast {to=[n, n', S d]} =<< expand 1 x
+   in reduce @{Sum} [2] =<< ((xs - broadcast !(expand 0 x')) / pure len) ^ fill 2.0
 
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
 |||
@@ -55,7 +56,7 @@ scaledL2Norm len x x' = let xs = broadcast {to=[n, n', S d]} $ expand 1 x
 ||| @lengthScale The length scale `l`.
 export
 rbf : (lengthScale : Tensor [] F64) -> {d : _} -> Kernel [S d]
-rbf lengthScale x x' = exp (- scaledL2Norm lengthScale x x' / 2.0)
+rbf lengthScale x x' = exp !(- scaledL2Norm lengthScale x x' / 2.0)
 
 ||| The Matern kernel for parameter 5/2. This is a stationary kernel with form
 |||
@@ -71,6 +72,7 @@ rbf lengthScale x x' = exp (- scaledL2Norm lengthScale x x' / 2.0)
 export
 matern52 :
   (amplitude : Tensor [] F64) -> (length_scale : Tensor [] F64) -> {d : _} -> Kernel [S d]
-matern52 amp len x x' = let d2 = 5.0 * scaledL2Norm len x x'
-                            d = d2 ^ fill 0.5
-                         in (amp ^ 2.0) * (d2 / 3.0 + d + fill 1.0) * exp (- d)
+matern52 amp len x x' = do
+  d2 <- 5.0 * scaledL2Norm len x x'
+  d <- pure d2 ^ fill 0.5
+  (pure amp ^ 2.0) * (pure d2 / 3.0 + pure d + fill 1.0) * exp !(- pure d)

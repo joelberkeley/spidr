@@ -28,7 +28,7 @@ import Utils
 import Utils.Comparison
 import Utils.Cases
 
-covering
+partial
 fromLiteralThenToLiteral : Property
 fromLiteralThenToLiteral = property $ do
   shape <- forAll shapes
@@ -52,12 +52,13 @@ fromLiteralThenToLiteral = property $ do
   min = Scalar (min @{Finite})
   max = Scalar (max @{Finite})
 
+partial
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
       f64max : Literal [] Double = max @{Finite}
-      min' : Tensor [] F64 = Types.min @{Finite}
-      max' : Tensor [] F64 = Types.max @{Finite}
+      min' : Ref $ Tensor [] F64 = Types.min @{Finite}
+      max' : Ref $ Tensor [] F64 = Types.max @{Finite}
   toLiteral min' === f64min
   toLiteral max' === f64max
   toLiteral (fromLiteral f64min == min') === True
@@ -65,8 +66,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let s32min : Literal [] Int32 = Scalar min
       s32max : Literal [] Int32 = Scalar max
-      min' : Tensor [] S32 = Types.min @{Finite}
-      max' : Tensor [] S32 = Types.max @{Finite}
+      min' : Ref $ Tensor [] S32 = Types.min @{Finite}
+      max' : Ref $ Tensor [] S32 = Types.max @{Finite}
   toLiteral min' === s32min
   toLiteral max' === s32max
   toLiteral (fromLiteral s32min == min') === True
@@ -74,8 +75,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u32min : Literal [] Nat = 0
       u32max : Literal [] Nat = 4294967295
-      min' : Tensor [] U32 = Types.min @{Finite}
-      max' : Tensor [] U32 = Types.max @{Finite}
+      min' : Ref $ Tensor [] U32 = Types.min @{Finite}
+      max' : Ref $ Tensor [] U32 = Types.max @{Finite}
   toLiteral min' === u32min
   toLiteral max' === u32max
   toLiteral (fromLiteral u32min == min') === True
@@ -83,27 +84,28 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u64min : Literal [] Nat = 0
       u64max : Literal [] Nat = 18446744073709551615
-      min' : Tensor [] U64 = Types.min @{Finite}
-      max' : Tensor [] U64 = Types.max @{Finite}
+      min' : Ref $ Tensor [] U64 = Types.min @{Finite}
+      max' : Ref $ Tensor [] U64 = Types.max @{Finite}
   toLiteral min' === u64min
   toLiteral max' === u64max
   toLiteral (fromLiteral u64min == min') === True
   toLiteral (fromLiteral u64max == max') === True
 
+partial
 boundedNonFinite : Property
 boundedNonFinite = fixedProperty $ do
-  let min' : Tensor [] S32 = Types.min @{NonFinite}
-      max' : Tensor [] S32 = Types.max @{NonFinite}
+  let min' : Ref $ Tensor [] S32 = Types.min @{NonFinite}
+      max' : Ref $ Tensor [] S32 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
-  let min' : Tensor [] U32 = Types.min @{NonFinite}
-      max' : Tensor [] U32 = Types.max @{NonFinite}
+  let min' : Ref $ Tensor [] U32 = Types.min @{NonFinite}
+      max' : Ref $ Tensor [] U32 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
-  let min' : Tensor [] U64 = Types.min @{NonFinite}
-      max' : Tensor [] U64 = Types.max @{NonFinite}
+  let min' : Ref $ Tensor [] U64 = Types.min @{NonFinite}
+      max' : Ref $ Tensor [] U64 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
@@ -112,12 +114,13 @@ boundedNonFinite = fixedProperty $ do
   toLiteral {dtype=F64} (Types.min @{NonFinite}) === -inf
   toLiteral {dtype=F64} (Types.max @{NonFinite}) === inf
 
+partial
 show : Property
 show = fixedProperty $ do
-  let x : Tensor [] S32 = 1
+  let x : Ref $ Tensor [] S32 = 1
   show x === "constant, shape=[], metadata={:0}"
 
-  let x : Tensor [] S32 = 1 + 2
+  let x : Ref $ Tensor [] S32 = 1 + 2
   show x ===
     """
     add, shape=[], metadata={:0}
@@ -128,40 +131,41 @@ show = fixedProperty $ do
   let x = fromLiteral {dtype=F64} [1.3, 2.0, -0.4]
   show x === "constant, shape=[3], metadata={:0}"
 
-covering
+partial
 cast : Property
 cast = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=U32} lit)
+  let x : Ref $ Tensor shape F64 = (do castDtype !(fromLiteral {dtype=U32} lit))
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape nats)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=U64} lit)
+  let x : Ref $ Tensor shape F64 = (do castDtype !(fromLiteral {dtype=U64} lit))
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape int32s)
-  let x : Tensor shape F64 = cast (fromLiteral {dtype=S32} lit)
+  let x : Ref $ Tensor shape F64 = (do castDtype !(fromLiteral {dtype=S32} lit))
   x ===# fromLiteral (map (cast {to=Double}) lit)
 
+partial
 reshape : Property
 reshape = fixedProperty $ do
-  reshape 3 ===# fromLiteral {dtype=S32} [3]
+  (do reshape !3) ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [3, 4, 5]
       flipped = fromLiteral [[3], [4], [5]]
-  reshape x ===# flipped
+  (do reshape !x) ===# flipped
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
       flipped = fromLiteral [[3, 4], [5, 6], [7, 8]]
-  reshape x ===# flipped
+  (do reshape !x) ===# flipped
 
   let withExtraDim = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-  reshape x ===# withExtraDim
+  (do reshape !x) ===# withExtraDim
 
   let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
-  reshape x ===# flattened
+  (do reshape !x) ===# flattened
 
 namespace MultiSlice
   indexFirstDim :
@@ -189,117 +193,151 @@ namespace MultiSlice
     slice {shape=[3, 4]} [0.to 2, at 2] === [2]
     slice {shape=[3, 4]} [at 1, at 2] === Prelude.Nil
 
-slice : Property
-slice = fixedProperty $ do
+partial
+sliceStaticIndex : Property
+sliceStaticIndex = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [3, 4, 5]
-  slice [at 0] x ===# fromLiteral 3
-  slice [at 1] x ===# fromLiteral 4
-  slice [at 2] x ===# fromLiteral 5
-  slice [0.to 0] x ===# fromLiteral []
-  slice [0.to 1] x ===# fromLiteral [3]
-  slice [0.to 2] x ===# fromLiteral [3, 4]
-  slice [0.to 3] x ===# fromLiteral [3, 4, 5]
-  slice [1.to 1] x ===# fromLiteral []
-  slice [1.to 2] x ===# fromLiteral [4]
-  slice [1.to 3] x ===# fromLiteral [4, 5]
-  slice [2.to 2] x ===# fromLiteral []
-  slice [2.to 3] x ===# fromLiteral [5]
-
-  slice [at (fromLiteral 0)] x ===# fromLiteral 3
-  slice [at (fromLiteral 1)] x ===# fromLiteral 4
-  slice [at (fromLiteral 2)] x ===# fromLiteral 5
-  slice [at (fromLiteral 3)] x ===# fromLiteral 5
-  slice [at (fromLiteral 5)] x ===# fromLiteral 5
-  slice [(fromLiteral 0).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 0).size 1] x ===# fromLiteral [3]
-  slice [(fromLiteral 0).size 2] x ===# fromLiteral [3, 4]
-  slice [(fromLiteral 0).size 3] x ===# fromLiteral [3, 4, 5]
-  slice [(fromLiteral 1).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 1).size 1] x ===# fromLiteral [4]
-  slice [(fromLiteral 1).size 2] x ===# fromLiteral [4, 5]
-  slice [(fromLiteral 1).size 3] x ===# fromLiteral [3, 4, 5]
-  slice [(fromLiteral 2).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 2).size 1] x ===# fromLiteral [5]
-  slice [(fromLiteral 3).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 3).size 1] x ===# fromLiteral [5]
-  slice [(fromLiteral 3).size 3] x ===# fromLiteral [3, 4, 5]
-  slice [(fromLiteral 5).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 5).size 1] x ===# fromLiteral [5]
-  slice [(fromLiteral 5).size 3] x ===# fromLiteral [3, 4, 5]
+  (do slice [at 0] !x) ===# fromLiteral 3
+  (do slice [at 1] !x) ===# fromLiteral 4
+  (do slice [at 2] !x) ===# fromLiteral 5
 
   let idx : Nat
       idx = 2
 
-  slice [at idx] x ===# fromLiteral 5
+  (do slice [at idx] !x) ===# fromLiteral 5
+
+partial
+sliceStaticSlice : Property
+sliceStaticSlice = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [3, 4, 5]
+  (do slice [0.to 0] !x) ===# fromLiteral []
+  (do slice [0.to 1] !x) ===# fromLiteral [3]
+  (do slice [0.to 2] !x) ===# fromLiteral [3, 4]
+  (do slice [0.to 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [1.to 1] !x) ===# fromLiteral []
+  (do slice [1.to 2] !x) ===# fromLiteral [4]
+  (do slice [1.to 3] !x) ===# fromLiteral [4, 5]
+  (do slice [2.to 2] !x) ===# fromLiteral []
+  (do slice [2.to 3] !x) ===# fromLiteral [5]
+
+partial
+sliceStaticMixed : Property
+sliceStaticMixed = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  (do slice [0.to 1] !x) ===# fromLiteral [[3, 4, 5]]
+  (do slice [1.to 1] !x) ===# fromLiteral []
+  (do slice [all, 2.to 2] !x) ===# fromLiteral [[], []]
+  (do slice [all, 1.to 3] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [at 0, 2.to 2] !x) ===# fromLiteral []
+  (do slice [at 0, 1.to 3] !x) ===# fromLiteral [4, 5]
+  (do slice [at 1, 2.to 2] !x) ===# fromLiteral []
+  (do slice [at 1, 1.to 3] !x) ===# fromLiteral [7, 8]
+  (do slice [0.to 1, at 0] !x) ===# fromLiteral [3]
+  (do slice [0.to 1, at 1] !x) ===# fromLiteral [4]
+  (do slice [0.to 1, at 2] !x) ===# fromLiteral [5]
+  (do slice [1.to 2, at 0] !x) ===# fromLiteral [6]
+  (do slice [1.to 2, at 1] !x) ===# fromLiteral [7]
+  (do slice [1.to 2, at 2] !x) ===# fromLiteral [8]
+
+-- idris is having a hard time inferring types
+u64 : Nat -> Ref $ Tensor [] U64
+u64 = fromLiteral . Scalar
+
+partial
+sliceDynamicIndex : Property
+sliceDynamicIndex = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [3, 4, 5]
+  (do slice [at (!(u64 0))] !x) ===# fromLiteral 3
+  (do slice [at (!(u64 1))] !x) ===# fromLiteral 4
+  (do slice [at (!(u64 2))] !x) ===# fromLiteral 5
+  (do slice [at (!(u64 3))] !x) ===# fromLiteral 5
+  (do slice [at (!(u64 5))] !x) ===# fromLiteral 5
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  slice [0.to 1] x ===# fromLiteral [[3, 4, 5]]
-  slice [1.to 1] x ===# fromLiteral []
-  slice [all, 2.to 2] x ===# fromLiteral [[], []]
-  slice [all, 1.to 3] x ===# fromLiteral [[4, 5], [7, 8]]
-  slice [at 0, 2.to 2] x ===# fromLiteral []
-  slice [at 0, 1.to 3] x ===# fromLiteral [4, 5]
-  slice [at 1, 2.to 2] x ===# fromLiteral []
-  slice [at 1, 1.to 3] x ===# fromLiteral [7, 8]
-  slice [0.to 1, at 0] x ===# fromLiteral [3]
-  slice [0.to 1, at 1] x ===# fromLiteral [4]
-  slice [0.to 1, at 2] x ===# fromLiteral [5]
-  slice [1.to 2, at 0] x ===# fromLiteral [6]
-  slice [1.to 2, at 1] x ===# fromLiteral [7]
-  slice [1.to 2, at 2] x ===# fromLiteral [8]
+  (do slice [at (!(u64 0))] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [at (!(u64 1))] !x) ===# fromLiteral [6, 7, 8]
+  (do slice [at (!(u64 2))] !x) ===# fromLiteral [6, 7, 8]
+  (do slice [at (!(u64 4))] !x) ===# fromLiteral [6, 7, 8]
 
-  slice [(fromLiteral 0).size 1] x ===# fromLiteral [[3, 4, 5]]
-  slice [(fromLiteral 1).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 2).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 2).size 1] x ===# fromLiteral [[6, 7, 8]]
-  slice [(fromLiteral 4).size 0] x ===# fromLiteral []
-  slice [(fromLiteral 4).size 1] x ===# fromLiteral [[6, 7, 8]]
-  slice [all, (fromLiteral 2).size 0] x ===# fromLiteral [[], []]
-  slice [all, (fromLiteral 1).size 2] x ===# fromLiteral [[4, 5], [7, 8]]
-  slice [all, (fromLiteral 3).size 0] x ===# fromLiteral [[], []]
-  slice [all, (fromLiteral 3).size 2] x ===# fromLiteral [[4, 5], [7, 8]]
-  slice [all, (fromLiteral 5).size 0] x ===# fromLiteral [[], []]
-  slice [all, (fromLiteral 5).size 2] x ===# fromLiteral [[4, 5], [7, 8]]
-  slice [at 0, (fromLiteral 2).size 0] x ===# fromLiteral []
-  slice [at 0, (fromLiteral 1).size 2] x ===# fromLiteral [4, 5]
-  slice [at 1, (fromLiteral 2).size 0] x ===# fromLiteral []
-  slice [at 1, (fromLiteral 1).size 2] x ===# fromLiteral [7, 8]
-  slice [at 1, (fromLiteral 3).size 0] x ===# fromLiteral []
-  slice [at 1, (fromLiteral 3).size 2] x ===# fromLiteral [7, 8]
-  slice [at 1, (fromLiteral 5).size 0] x ===# fromLiteral []
-  slice [at 1, (fromLiteral 5).size 2] x ===# fromLiteral [7, 8]
-  slice [(fromLiteral 0).size 1, at 0] x ===# fromLiteral [3]
-  slice [(fromLiteral 0).size 1, at 1] x ===# fromLiteral [4]
-  slice [(fromLiteral 0).size 1, at 2] x ===# fromLiteral [5]
-  slice [(fromLiteral 1).size 1, at 0] x ===# fromLiteral [6]
-  slice [(fromLiteral 1).size 1, at 1] x ===# fromLiteral [7]
-  slice [(fromLiteral 1).size 1, at 2] x ===# fromLiteral [8]
-  slice [(fromLiteral 2).size 1, at 0] x ===# fromLiteral [6]
-  slice [(fromLiteral 2).size 1, at 1] x ===# fromLiteral [7]
-  slice [(fromLiteral 2).size 1, at 2] x ===# fromLiteral [8]
-  slice [(fromLiteral 4).size 1, at 0] x ===# fromLiteral [6]
-  slice [(fromLiteral 4).size 1, at 1] x ===# fromLiteral [7]
-  slice [(fromLiteral 4).size 1, at 2] x ===# fromLiteral [8]
+partial
+sliceDynamicSlice : Property
+sliceDynamicSlice = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [3, 4, 5]
+  (do slice [(!(u64 0)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 0)).size 1] !x) ===# fromLiteral [3]
+  (do slice [(!(u64 0)).size 2] !x) ===# fromLiteral [3, 4]
+  (do slice [(!(u64 0)).size 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [(!(u64 1)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 1)).size 1] !x) ===# fromLiteral [4]
+  (do slice [(!(u64 1)).size 2] !x) ===# fromLiteral [4, 5]
+  (do slice [(!(u64 1)).size 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [(!(u64 2)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 2)).size 1] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 3)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 3)).size 1] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 3)).size 3] !x) ===# fromLiteral [3, 4, 5]
+  (do slice [(!(u64 5)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 5)).size 1] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 5)).size 3] !x) ===# fromLiteral [3, 4, 5]
+
+  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  (do slice [(!(u64 0)).size 1] !x) ===# fromLiteral [[3, 4, 5]]
+  (do slice [(!(u64 1)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 2)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 2)).size 1] !x) ===# fromLiteral [[6, 7, 8]]
+  (do slice [(!(u64 4)).size 0] !x) ===# fromLiteral []
+  (do slice [(!(u64 4)).size 1] !x) ===# fromLiteral [[6, 7, 8]]
+
+partial
+sliceMixed : Property
+sliceMixed = fixedProperty $ do
+  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  (do slice [all, (!(u64 2)).size 0] !x) ===# fromLiteral [[], []]
+  (do slice [all, (!(u64 1)).size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [all, (!(u64 3)).size 0] !x) ===# fromLiteral [[], []]
+  (do slice [all, (!(u64 3)).size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [all, (!(u64 5)).size 0] !x) ===# fromLiteral [[], []]
+  (do slice [all, (!(u64 5)).size 2] !x) ===# fromLiteral [[4, 5], [7, 8]]
+  (do slice [at 0, (!(u64 2)).size 0] !x) ===# fromLiteral []
+  (do slice [at 0, (!(u64 1)).size 2] !x) ===# fromLiteral [4, 5]
+  (do slice [at 1, (!(u64 2)).size 0] !x) ===# fromLiteral []
+  (do slice [at 1, (!(u64 1)).size 2] !x) ===# fromLiteral [7, 8]
+  (do slice [at 1, (!(u64 3)).size 0] !x) ===# fromLiteral []
+  (do slice [at 1, (!(u64 3)).size 2] !x) ===# fromLiteral [7, 8]
+  (do slice [at 1, (!(u64 5)).size 0] !x) ===# fromLiteral []
+  (do slice [at 1, (!(u64 5)).size 2] !x) ===# fromLiteral [7, 8]
+  (do slice [(!(u64 0)).size 1, at 0] !x) ===# fromLiteral [3]
+  (do slice [(!(u64 0)).size 1, at 1] !x) ===# fromLiteral [4]
+  (do slice [(!(u64 0)).size 1, at 2] !x) ===# fromLiteral [5]
+  (do slice [(!(u64 1)).size 1, at 0] !x) ===# fromLiteral [6]
+  (do slice [(!(u64 1)).size 1, at 1] !x) ===# fromLiteral [7]
+  (do slice [(!(u64 1)).size 1, at 2] !x) ===# fromLiteral [8]
+  (do slice [(!(u64 2)).size 1, at 0] !x) ===# fromLiteral [6]
+  (do slice [(!(u64 2)).size 1, at 1] !x) ===# fromLiteral [7]
+  (do slice [(!(u64 2)).size 1, at 2] !x) ===# fromLiteral [8]
+  (do slice [(!(u64 4)).size 1, at 0] !x) ===# fromLiteral [6]
+  (do slice [(!(u64 4)).size 1, at 1] !x) ===# fromLiteral [7]
+  (do slice [(!(u64 4)).size 1, at 2] !x) ===# fromLiteral [8]
 
   let x : Array [60] Int32 = fromList [0..59]
-      x = reshape {to=[2, 5, 3, 2]} (fromLiteral {shape=[60]} {dtype=S32} $ cast x)
+      x = (do reshape {to=[2, 5, 3, 2]} !(fromLiteral {shape=[60]} {dtype=S32} $ cast x))
 
   let idx = fromLiteral {dtype=U64} 0
       start = fromLiteral {dtype=U64} 1
-  slice [at 1, 2.to 5, start.size 2, at idx] x ===# fromLiteral [[44, 46], [50, 52], [56, 58]]
+  (do slice [at 1, 2.to 5, (!start).size 2, at !idx] !x) ===# fromLiteral [[44, 46], [50, 52], [56, 58]]
 
 index : (idx : Nat) -> {auto 0 inDim : LT idx n} -> Literal [n] a -> Literal [] a
 index {inDim = (LTESucc _)} 0 (y :: _) = y
 index {inDim = (LTESucc _)} (S k) (_ :: xs) = index k xs
 
-covering
+partial
 sliceForVariableIndex : Property
 sliceForVariableIndex = property $ do
   idx <- forAll dims
   rem <- forAll dims
   lit <- forAll (literal [idx + S rem] nats)
   let x = fromLiteral {dtype=U32} lit
-  index @{inDim} idx lit === toLiteral (slice [at @{inDim} idx] x)
+  index @{inDim} idx lit === toLiteral (do slice [at @{inDim} idx] !x)
 
   where
   %hint
@@ -307,85 +345,89 @@ sliceForVariableIndex = property $ do
   inDim {idx = 0} = LTESucc LTEZero
   inDim {idx = (S k)} = LTESucc inDim
 
+partial
 concat : Property
 concat = fixedProperty $ do
   let vector = fromLiteral {dtype=S32} [3, 4, 5]
 
   let l = fromLiteral {shape=[0]} []
       r = fromLiteral [3, 4, 5]
-  concat 0 l r ===# vector
+  (do concat 0 !l !r) ===# vector
 
   let l = fromLiteral [3]
       r = fromLiteral [4, 5]
-  concat 0 l r ===# vector
+  (do concat 0 !l !r) ===# vector
 
   let l = fromLiteral [3, 4]
       r = fromLiteral [5]
-  concat 0 l r ===# vector
+  (do concat 0 !l !r) ===# vector
 
   let l = fromLiteral [3, 4, 5]
       r = fromLiteral {shape=[0]} []
-  concat 0 l r ===# vector
+  (do concat 0 !l !r) ===# vector
 
   let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
   let l = fromLiteral {shape=[0, 3]} []
       r = fromLiteral [[3, 4, 5], [6, 7, 8]]
-  concat 0 l r ===# arr
+  (do concat 0 !l !r) ===# arr
 
   let l = fromLiteral [[3, 4, 5]]
       r = fromLiteral [[6, 7, 8]]
-  concat 0 l r ===# arr
+  (do concat 0 !l !r) ===# arr
 
   let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
       r = fromLiteral {shape=[0, 3]} []
-  concat 0 l r ===# arr
+  (do concat 0 !l !r) ===# arr
 
   let l = fromLiteral {shape=[2, 0]} [[], []]
       r = fromLiteral [[3, 4, 5], [6, 7, 8]]
-  concat 1 l r ===# arr
+  (do concat 1 !l !r) ===# arr
 
   let l = fromLiteral [[3], [6]]
       r = fromLiteral [[4, 5], [7, 8]]
-  concat 1 l r ===# arr
+  (do concat 1 !l !r) ===# arr
 
   let l = fromLiteral [[3, 4], [6, 7]]
       r = fromLiteral [[5], [8]]
-  concat 1 l r ===# arr
+  (do concat 1 !l !r) ===# arr
 
   let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
       r = fromLiteral {shape=[2, 0]} [[], []]
-  concat 1 l r ===# arr
+  (do concat 1 !l !r) ===# arr
 
+partial
 diag : Property
 diag = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
-  diag x ===# fromLiteral []
+  (do diag !x) ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [[3]]
-  diag x ===# fromLiteral [3]
+  (do diag !x) ===# fromLiteral [3]
 
   let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
-  diag x ===# fromLiteral [1, 4]
+  (do diag !x) ===# fromLiteral [1, 4]
 
+partial
 triangle : Property
 triangle = fixedProperty $ do
   let x = fromLiteral {dtype=S32} []
-  triangle Upper x ===# fromLiteral []
-  triangle Lower x ===# fromLiteral []
+  (do triangle Upper !x) ===# fromLiteral []
+  (do triangle Lower !x) ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [[3]]
-  triangle Upper x ===# fromLiteral [[3]]
-  triangle Lower x ===# fromLiteral [[3]]
+  (do triangle Upper !x) ===# fromLiteral [[3]]
+  (do triangle Lower !x) ===# fromLiteral [[3]]
 
   let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
-  triangle Upper x ===# fromLiteral [[1, 2], [0, 4]]
-  triangle Lower x ===# fromLiteral [[1, 0], [3, 4]]
+  (do triangle Upper !x) ===# fromLiteral [[1, 2], [0, 4]]
+  (do triangle Lower !x) ===# fromLiteral [[1, 0], [3, 4]]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-  triangle Upper x ===# fromLiteral [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
-  triangle Lower x ===# fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
+  (do triangle Upper !x) ===# fromLiteral [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
+  (do triangle Lower !x) ===# fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
+partial
 identity : Property
 identity = fixedProperty $ do
   identity ===# fromLiteral {dtype=S32} []
@@ -400,49 +442,51 @@ identity = fixedProperty $ do
       [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]
     ]
 
+partial
 expand : Property
 expand = fixedProperty $ do
-  expand 0 3 ===# fromLiteral {dtype=S32} [3]
+  (do expand 0 !3) ===# fromLiteral {dtype=S32} [3]
 
   let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
       withExtraDim = fromLiteral [[[3, 4, 5]], [[6, 7, 8]]]
-  expand 1 x ===# withExtraDim
+  (do expand 1 !x) ===# withExtraDim
 
+partial
 broadcast : Property
 broadcast = fixedProperty $ do
-  broadcast {to=[]} {dtype=S32} 7 ===# 7
-  broadcast {to=[1]} {dtype=S32} 7 ===# fromLiteral [7]
-  broadcast {to=[2, 3]} 7 ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
-  broadcast {to=[1, 1, 1]} {dtype=S32} 7 ===# fromLiteral [[[7]]]
-  broadcast {to=[0]} 7 ===# fromLiteral []
+  (do broadcast {to=[]} {dtype=S32} !7) ===# 7
+  (do broadcast {to=[1]} {dtype=S32} !7) ===# fromLiteral [7]
+  (do broadcast {to=[2, 3]} {dtype=S32} !7) ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
+  (do broadcast {to=[1, 1, 1]} {dtype=S32} !7) ===# fromLiteral [[[7]]]
+  (do broadcast {to=[0]} {dtype=S32} !7) ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [7]
-  broadcast {to=[1]} x ===# fromLiteral [7]
+  (do broadcast {to=[1]} !x) ===# fromLiteral [7]
 
   let x = fromLiteral {dtype=S32} [7]
-  broadcast {to=[3]} x ===# fromLiteral [7, 7, 7]
+  (do broadcast {to=[3]} !x) ===# fromLiteral [7, 7, 7]
 
   let x = fromLiteral {dtype=S32} [7]
-  broadcast {to=[2, 3]} x ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
+  (do broadcast {to=[2, 3]} !x) ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
 
   let x = fromLiteral {dtype=S32} [5, 7]
-  broadcast {to=[2, 0]} x ===# fromLiteral [[], []]
+  (do broadcast {to=[2, 0]} !x) ===# fromLiteral [[], []]
 
   let x = fromLiteral {dtype=S32} [5, 7]
-  broadcast {to=[3, 2]} x ===# fromLiteral [[5, 7], [5, 7], [5, 7]]
+  (do broadcast {to=[3, 2]} !x) ===# fromLiteral [[5, 7], [5, 7], [5, 7]]
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  broadcast {to=[2, 3]} x ===# fromLiteral [[2, 3, 5], [7, 11, 13]]
+  (do broadcast {to=[2, 3]} !x) ===# fromLiteral [[2, 3, 5], [7, 11, 13]]
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  broadcast {to=[2, 0]} x ===# fromLiteral [[], []]
+  (do broadcast {to=[2, 0]} !x) ===# fromLiteral [[], []]
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  broadcast {to=[0, 3]} x ===# fromLiteral []
+  (do broadcast {to=[0, 3]} !x) ===# fromLiteral []
 
   let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
       expected = fromLiteral [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
-  broadcast {to=[2, 2, 3]} x ===# expected
+  (do broadcast {to=[2, 2, 3]} !x) ===# expected
 
   let x = fromLiteral {dtype=S32} [[[2, 3, 5]], [[7, 11, 13]]]
       expected = fromLiteral [
@@ -455,7 +499,7 @@ broadcast = fixedProperty $ do
           [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
         ]
       ]
-  broadcast {to=[2, 2, 5, 3]} x ===# expected
+  (do broadcast {to=[2, 2, 5, 3]} !x) ===# expected
 
 dimBroadcastable : List (a ** b ** DimBroadcastable a b)
 dimBroadcastable = [
@@ -490,37 +534,40 @@ broadcastableCannotStackDimensionGtOne : Broadcastable [3, 2] [3, 7] -> Void
 broadcastableCannotStackDimensionGtOne (Match Same) impossible
 broadcastableCannotStackDimensionGtOne (Nest Same) impossible
 
+partial
 squeeze : Property
 squeeze = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[3]]
-  squeeze x ===# 3
+  (do squeeze !x) ===# 3
 
   let x = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
-  squeeze x ===# x
+  (do squeeze !x) ===# x
 
   let squeezed = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-  squeeze x ===# squeezed
+  (do squeeze !x) ===# squeezed
 
   let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
-  squeeze x ===# fill {shape=[3, 2, 5]} {dtype=S32} 0
+  (do squeeze !x) ===# fill {shape=[3, 2, 5]} {dtype=S32} 0
 
 squeezableCannotRemoveNonOnes : Squeezable [1, 2] [] -> Void
 squeezableCannotRemoveNonOnes (Nest _) impossible
 
+partial
 (.T) : Property
 (.T) = fixedProperty $ do
-  (fromLiteral {dtype=S32} []).T ===# fromLiteral []
-  (fromLiteral {dtype=S32} [[3]]).T ===# fromLiteral [[3]]
+  (do (fromLiteral {dtype=S32} []).T) ===# fromLiteral []
+  (do (fromLiteral {dtype=S32} [[3]]).T) ===# fromLiteral [[3]]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
       expected = fromLiteral [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
   x.T ===# expected
 
+partial
 transpose : Property
 transpose = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[0, 1], [2, 3]]
-  transpose [0, 1] x ===# x
-  transpose [1, 0] x ===# fromLiteral [[0, 2], [1, 3]]
+  (do transpose [0, 1] !x) ===# x
+  (do transpose [1, 0] !x) ===# fromLiteral [[0, 2], [1, 3]]
 
   let x = fromLiteral {dtype=S32}
         [[[ 0,  1,  2,  3],
@@ -529,7 +576,7 @@ transpose = fixedProperty $ do
          [[12, 13, 14, 15],
           [16, 17, 18, 19],
           [20, 21, 22, 23]]]
-  transpose [0, 2, 1] x ===# fromLiteral
+  (do transpose [0, 2, 1] !x) ===# fromLiteral
     [[[ 0,  4,  8],
       [ 1,  5,  9],
       [ 2,  6, 10],
@@ -538,7 +585,7 @@ transpose = fixedProperty $ do
       [13, 17, 21],
       [14, 18, 22],
       [15, 19, 23]]]
-  transpose [2, 0, 1] x ===# fromLiteral
+  (do transpose [2, 0, 1] !x) ===# fromLiteral
     [[[ 0,  4,  8],
       [12, 16, 20]],
      [[ 1,  5,  9],
@@ -549,31 +596,32 @@ transpose = fixedProperty $ do
       [15, 19, 23]]]
 
   let x : Array [120] Int32 = fromList [0..119]
-      x : Tensor [2, 3, 4, 5] S32 = reshape $ fromLiteral {shape=[120]} (cast x)
-  transpose [0, 1, 2, 3] x ===# x
-  slice [all, at 1, at 0] (transpose [0, 2, 1, 3] x) ===# slice [all, at 0, at 1] x
-  slice [at 2, at 4, at 0, at 1] (transpose [2, 3, 1, 0] x) ===# slice [at 1, at 0, at 2, at 4] x
+      x : Ref $ Tensor [2, 3, 4, 5] S32 = (do reshape !(fromLiteral {shape=[120]} (cast x)))
+  (do transpose [0, 1, 2, 3] !x) ===# x
+  (do slice [all, at 1, at 0] !(transpose [0, 2, 1, 3] !x)) ===# (do slice [all, at 0, at 1] !x)
+  (do slice [at 2, at 4, at 0, at 1] !(transpose [2, 3, 1, 0] !x)) ===# (do slice [at 1, at 0, at 2, at 4] !x)
 
-covering
+partial
 mapResult : Property
 mapResult = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
   let x' = fromLiteral x
-  map (1.0 /) x ==~ toLiteral (map (1.0 /) x')
+  map (1.0 /) x ==~ toLiteral (do map (\x => 1.0 / pure x) !x')
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
-  map (+ 1) x === toLiteral (map (+ 1) x')
+  map (+ 1) x === toLiteral (do map (\x => pure x + 1) !x')
 
+partial
 mapNonTrivial : Property
 mapNonTrivial = fixedProperty $ do
-  map {a=S32} (\x => x + x) 1 ===# 2
-  map {a=S32} (\_ => 2) 1 ===# 2
-  map {a=S32} (map (+ 1)) 1 ===# 2
+  (do map {a=S32} (\x => pure x + pure x) !1) ===# 2
+  (do map {a=S32} (\_ => 2) !1) ===# 2
+  (do map {a=S32} (map (\x => pure x + 1)) !1) ===# 2
 
-covering
+partial
 map2Result : Property
 map2Result = fixedProperty $ do
   shape <- forAll shapes
@@ -582,49 +630,52 @@ map2Result = fixedProperty $ do
   [x, y] <- forAll (np [int32s, int32s])
   let x' = fromLiteral {dtype=S32} x
       y' = fromLiteral {dtype=S32} y
-  [| x + y |] === toLiteral (map2 Tensor.(+) x' y')
+  [| x + y |] === toLiteral (do map2 (\x, y => pure x + pure y) !x' !y')
 
   shape <- forAll shapes
   let doubles = literal shape doubles
   [x, y] <- forAll (np [doubles, doubles])
   let x' = fromLiteral {dtype=F64} x
       y' = fromLiteral {dtype=F64} y
-  [| x + y |] ==~ toLiteral (map2 Tensor.(+) x' y')
+  [| x + y |] ==~ toLiteral (do map2 (\x, y => pure x + pure y) !x' !y')
 
+partial
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
-  map2 (\x, y => x + x + y + y) 1 2 ===# 6
+  let x : Ref (Tensor [] S32) = 6
+  (do map2 (\x, y => pure x + pure x + pure y + pure y) !1 !2) ===# x
 
+partial
 reduce : Property
 reduce = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-  reduce @{Sum} [1] x ===# fromLiteral [6, -6]
+  (do reduce @{Sum} [1] !x) ===# fromLiteral [6, -6]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-2, -3, -4]]
-  reduce @{Sum} [0, 1] x ===# fromLiteral (-3)
+  (do reduce @{Sum} [0, 1] !x) ===# fromLiteral (-3)
 
   let x = fromLiteral {dtype=S32} [[[1], [2], [3]], [[-2], [-3], [-4]]]
-  reduce @{Sum} [0, 1] x ===# fromLiteral [-3]
+  (do reduce @{Sum} [0, 1] !x) ===# fromLiteral [-3]
 
   let x = fromLiteral {dtype=S32} [[[1, 2, 3]], [[-2, -3, -4]]]
-  reduce @{Sum} [0, 2] x ===# fromLiteral [-3]
+  (do reduce @{Sum} [0, 2] !x) ===# fromLiteral [-3]
 
   let x = fromLiteral {dtype=S32} [[[1, 2, 3], [-2, -3, -4]]]
-  reduce @{Sum} [1, 2] x ===# fromLiteral [-3]
+  (do reduce @{Sum} [1, 2] !x) ===# fromLiteral [-3]
 
   let x = fromLiteral {dtype=S32} [[[1, 2, 3], [4, 5, 6]], [[-2, -3, -4], [-6, -7, -8]]]
-  reduce @{Sum} [0, 2] x ===# fromLiteral [-3, -6]
+  (do reduce @{Sum} [0, 2] !x) ===# fromLiteral [-3, -6]
 
   let x = fromLiteral {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
-  reduce @{Sum} [0] x ===# fromLiteral [0, 0, 0]
+  (do reduce @{Sum} [0] !x) ===# fromLiteral [0, 0, 0]
 
   let x = fromLiteral {dtype=PRED} [[True, False, True], [True, False, False]]
-  reduce @{All} [1] x ===# fromLiteral [False, False]
+  (do reduce @{All} [1] !x) ===# fromLiteral [False, False]
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
 
-covering
+partial
 sort : Property
 sort = withTests 20 . property $ do
   d <- forAll dims
@@ -634,40 +685,40 @@ sort = withTests 20 . property $ do
   x <- forAll (literal [S d] int32s)
   let x = fromLiteral {dtype=S32} x
 
-  let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+  let sorted = (do sort (<) 0 !x)
+      init = (do slice [0.to d] !sorted)
+      tail = (do slice [1.to (S d)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd] int32s)
   let x = fromLiteral {dtype=S32} x
 
-  let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+  let sorted = (do sort (<) 0 !x)
+      init = (do slice [0.to d] !sorted)
+      tail = (do slice [1.to (S d)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let sorted = sort (<) 1 x
-      init = slice [all, 0.to dd] sorted
-      tail = slice [all, 1.to (S dd)] sorted
+  let sorted = (do sort (<) 1 !x)
+      init = (do slice [all, 0.to dd] !sorted)
+      tail = (do slice [all, 1.to (S dd)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   x <- forAll (literal [S d, S dd, S ddd] int32s)
   let x = fromLiteral {dtype=S32} x
 
-  let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+  let sorted = (do sort (<) 0 !x)
+      init = (do slice [0.to d] !sorted)
+      tail = (do slice [1.to (S d)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let sorted = sort (<) 1 x
-      init = slice [all, 0.to dd] sorted
-      tail = slice [all, 1.to (S dd)] sorted
+  let sorted = (do sort (<) 1 !x)
+      init = (do slice [all, 0.to dd] !sorted)
+      tail = (do slice [all, 1.to (S dd)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
-  let sorted = sort (<) 2 x
-      init = slice [all, all, 0.to ddd] sorted
-      tail = slice [all, all, 1.to (S ddd)] sorted
+  let sorted = (do sort (<) 2 !x)
+      init = (do slice [all, all, 0.to ddd] !sorted)
+      tail = (do slice [all, all, 1.to (S ddd)] !sorted)
   diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
 
   where
@@ -679,58 +730,61 @@ sort = withTests 20 . property $ do
   reflex : {n : _} -> LTE n n
   reflex = reflexive {ty=Nat}
 
+partial
 sortWithEmptyAxis : Property
 sortWithEmptyAxis = fixedProperty $ do
   let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
-  sort (<) 0 x ===# x
+  (do sort (<) 0 !x) ===# x
 
   let x = fromLiteral {shape=[0, 2, 3]} {dtype=S32} []
-  sort (<) 1 x ===# x
+  (do sort (<) 1 !x) ===# x
 
   let x = fromLiteral {shape=[2, 0, 3]} {dtype=S32} [[], []]
-  sort (<) 0 x ===# x
+  (do sort (<) 0 !x) ===# x
 
   let x = fromLiteral {shape=[2, 0, 3]} {dtype=S32} [[], []]
-  sort (<) 1 x ===# x
+  (do sort (<) 1 !x) ===# x
 
+partial
 sortWithRepeatedElements : Property
 sortWithRepeatedElements = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [1, 3, 4, 3, 2]
-  sort (<) 0 x ===# fromLiteral [1, 2, 3, 3, 4]
+  (do sort (<) 0 !x) ===# fromLiteral [1, 2, 3, 3, 4]
 
   let x = fromLiteral {dtype=S32} [[1, 4, 4], [3, 2, 5]]
-  sort (<) 0 x ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
-  sort (<) 1 x ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
+  (do sort (<) 0 !x) ===# fromLiteral [[1, 2, 4], [3, 4, 5]]
+  (do sort (<) 1 !x) ===# fromLiteral [[1, 4, 4], [2, 3, 5]]
 
+partial
 reverse : Property
 reverse = fixedProperty $ do
   let x = fromLiteral {shape=[0]} {dtype=S32} []
-  reverse [0] x ===# x
+  (do reverse [0] !x) ===# x
 
   let x = fromLiteral {shape=[0, 3]} {dtype=S32} []
-  reverse [0] x ===# x
-  reverse [1] x ===# x
-  reverse [0, 1] x ===# x
+  (do reverse [0] !x) ===# x
+  (do reverse [1] !x) ===# x
+  (do reverse [0, 1] !x) ===# x
 
   let x = fromLiteral {dtype=S32} [-2, 0, 1]
-  reverse [0] x ===# fromLiteral [1, 0, -2]
+  (do reverse [0] !x) ===# fromLiteral [1, 0, -2]
 
   let x = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
-  reverse [0] x ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
-  reverse [1] x ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
-  reverse [0, 1] x ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  (do reverse [0] !x) ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
+  (do reverse [1] !x) ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
+  (do reverse [0, 1] !x) ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
 
   let x = fromLiteral {dtype=S32} [
     [[[ 0,  1], [ 2,  3]], [[ 4,  5], [ 6,  7]], [[ 8,  9], [10, 11]]],
     [[[12, 13], [14, 15]], [[16, 17], [18, 19]], [[20, 21], [22, 23]]]
   ]
-  reverse [0, 3] x ===# fromLiteral [
+  (do reverse [0, 3] !x) ===# fromLiteral [
     [[[13, 12], [15, 14]], [[17, 16], [19, 18]], [[21, 20], [23, 22]]],
     [[[ 1,  0], [ 3,  2]], [[ 5,  4], [ 7,  6]], [[ 9,  8], [11, 10]]]
   ]
 
 namespace Vector
-  export
+  export partial
   (@@) : Property
   (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [-2, 0, 1]
@@ -738,7 +792,7 @@ namespace Vector
     l @@ r ===# -4
 
 namespace Matrix
-  export
+  export partial
   (@@) : Property
   (@@) = fixedProperty $ do
     let l = fromLiteral {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
@@ -750,46 +804,46 @@ namespace Matrix
     l @@ r ===# fromLiteral [[ -7,  -2], [  8, -11]]
 
 namespace S32
-  export covering
+  export partial
   testElementwiseUnary :
     (Int32 -> Int32) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32) ->
+    (forall shape . Tensor shape S32 -> Ref $ Tensor shape S32) ->
     Property
   testElementwiseUnary fInt fTensor = property $ do
     shape <- forAll shapes
     x <- forAll (literal shape int32s)
     let x' = fromLiteral x
-    [| fInt x |] === toLiteral (fTensor x')
+    [| fInt x |] === toLiteral (do fTensor !x')
 
 namespace F64
-  export covering
+  export partial
   testElementwiseUnary :
     (Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64) ->
+    (forall shape . Tensor shape F64 -> Ref $ Tensor shape F64) ->
     Property
   testElementwiseUnary fDouble fTensor = property $ do
     shape <- forAll shapes
     x <- forAll (literal shape doubles)
     let x' = fromLiteral x
-    [| fDouble x |] ==~ toLiteral (fTensor x')
+    [| fDouble x |] ==~ toLiteral (do fTensor !x')
 
 namespace PRED
-  export covering
+  export partial
   testElementwiseUnary :
     (Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED) ->
+    (forall shape . Tensor shape PRED -> Ref $ Tensor shape PRED) ->
     Property
   testElementwiseUnary fBool fTensor = property $ do
     shape <- forAll shapes
     x <- forAll (literal shape bool)
     let x' = fromLiteral x
-    [| fBool x |] === toLiteral (fTensor x')
+    [| fBool x |] === toLiteral (do fTensor !x')
 
-covering
+partial
 testElementwiseUnaryCases : List (PropertyName, Property)
 testElementwiseUnaryCases = [
-    ("negate S32", S32.testElementwiseUnary negate negate),
-    ("negate F64", F64.testElementwiseUnary negate negate),
+    ("negate S32", S32.testElementwiseUnary negate (Tensor.negate . pure)),
+    ("negate F64", F64.testElementwiseUnary negate (Tensor.negate . pure)),
     ("recip", F64.testElementwiseUnary recip recip),
     ("abs S32", S32.testElementwiseUnary abs abs),
     ("abs F64", F64.testElementwiseUnary abs abs),
@@ -832,10 +886,10 @@ testElementwiseUnaryCases = [
   atanh x = log ((1 + x) / (1 - x)) / 2
 
 namespace S32
-  export covering
+  export partial
   testElementwiseBinary :
     (Int32 -> Int32 -> Int32) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) ->
+    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> Ref (Tensor shape S32)) ->
     Property
   testElementwiseBinary fInt fTensor = property $ do
     shape <- forAll shapes
@@ -846,10 +900,10 @@ namespace S32
     [| fInt x y |] === toLiteral (fTensor x' y')
 
 namespace F64
-  export covering
+  export partial
   testElementwiseBinary :
     (Double -> Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) ->
+    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape F64)) ->
     Property
   testElementwiseBinary fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -860,10 +914,10 @@ namespace F64
     [| fDouble x y |] ==~ toLiteral (fTensor x' y')
 
 namespace PRED
-  export covering
+  export partial
   testElementwiseBinary :
     (Bool -> Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseBinary fBool fTensor = property $ do
     shape <- forAll shapes
@@ -873,7 +927,7 @@ namespace PRED
         y' = fromLiteral {dtype=PRED} y
     [| fBool x y |] === toLiteral (fTensor x' y')
 
-covering
+partial
 testElementwiseBinaryCases : List (PropertyName, Property)
 testElementwiseBinaryCases = [
     ("(+) F64", F64.testElementwiseBinary (+) (+)),
@@ -884,10 +938,10 @@ testElementwiseBinaryCases = [
     ("(*) S32", S32.testElementwiseBinary (*) (*)),
     ("(/)", F64.testElementwiseBinary (/) (/)),
     -- ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
-    ("min S32", S32.testElementwiseBinary min min),
-    ("max S32", S32.testElementwiseBinary max max),
-    ("min F64", F64.testElementwiseBinary min' min),
-    ("max F64", F64.testElementwiseBinary max' max),
+    ("min S32", S32.testElementwiseBinary min (\x, y => min !x !y)),
+    ("max S32", S32.testElementwiseBinary max (\x, y => max !x !y)),
+    ("min F64", F64.testElementwiseBinary min' (\x, y => min !x !y)),
+    ("max F64", F64.testElementwiseBinary max' (\x, y => max !x !y)),
     ("(&&)", PRED.testElementwiseBinary and (&&)),
     ("(||)", PRED.testElementwiseBinary or (||))
   ]
@@ -905,7 +959,7 @@ testElementwiseBinaryCases = [
   or : Bool -> Bool -> Bool
   or x y = x || y
 
-covering
+partial
 scalarMultiplication : Property
 scalarMultiplication = property $ do
   shape <- forAll shapes
@@ -917,7 +971,7 @@ scalarMultiplication = property $ do
           scalar' = fromLiteral {dtype=F64} (Scalar scalar)
       map (scalar *) lit ==~ toLiteral (scalar' * lit')
 
-covering
+partial
 scalarDivision : Property
 scalarDivision = property $ do
   shape <- forAll shapes
@@ -929,7 +983,7 @@ scalarDivision = property $ do
           scalar' = fromLiteral {dtype=F64} (Scalar scalar)
       map (/ scalar) lit ==~ toLiteral (lit' / scalar')
 
-covering
+partial
 neutralIsNeutralForSum : Property
 neutralIsNeutralForSum = property $ do
   shape <- forAll shapes
@@ -948,7 +1002,7 @@ neutralIsNeutralForSum = property $ do
   toLiteral right === x
   toLiteral left === x
 
-covering
+partial
 neutralIsNeutralForProd : Property
 neutralIsNeutralForProd = property $ do
   shape <- forAll shapes
@@ -967,29 +1021,29 @@ neutralIsNeutralForProd = property $ do
   toLiteral right === x
   toLiteral left === x
 
-covering
+partial
 neutralIsNeutralForAny : Property
 neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
-      right = (<+>) @{Any} x' (neutral @{Any})
-      left = (<+>) @{Any} (neutral @{Any}) x'
+      right = (<+>) @{Any} x' (neutral @{Monoid.Any})
+      left = (<+>) @{Any} (neutral @{Monoid.Any}) x'
   toLiteral right === x
   toLiteral left === x
 
-covering
+partial
 neutralIsNeutralForAll : Property
 neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = fromLiteral {dtype=PRED} x
-      right = (<+>) @{All} x' (neutral @{All})
-      left = (<+>) @{All} (neutral @{All}) x'
+      right = (<+>) @{All} x' (neutral @{Monoid.All})
+      left = (<+>) @{All} (neutral @{Monoid.All}) x'
   toLiteral right === x
   toLiteral left === x
 
-covering
+partial
 neutralIsNeutralForMin : Property
 neutralIsNeutralForMin = property $ do
   shape <- forAll shapes
@@ -1000,7 +1054,7 @@ neutralIsNeutralForMin = property $ do
   toLiteral right ==~ x
   toLiteral left ==~ x
 
-covering
+partial
 neutralIsNeutralForMax : Property
 neutralIsNeutralForMax = property $ do
   shape <- forAll shapes
@@ -1011,27 +1065,27 @@ neutralIsNeutralForMax = property $ do
   toLiteral right ==~ x
   toLiteral left ==~ x
 
-covering
+partial
 argmin : Property
 argmin = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = fromLiteral xs
-  slice [at (argmin xs)] xs ===# reduce [0] @{Min} xs
+  (do slice [at !(argmin !xs)] !xs) ===# (do reduce [0] @{Min} !xs)
 
-covering
+partial
 argmax : Property
 argmax = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = fromLiteral xs
-  slice [at (argmax xs)] xs ===# reduce [0] @{Max} xs
+  (do slice [at !(argmax !xs)] !xs) ===# (do reduce [0] @{Max} !xs)
 
 namespace S32
-  export covering
+  export partial
   testElementwiseComparator :
     (Int32 -> Int32 -> Bool) ->
-    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseComparator fInt fTensor = property $ do
     shape <- forAll shapes
@@ -1042,10 +1096,10 @@ namespace S32
     [| fInt x y |] === toLiteral (fTensor x' y')
 
 namespace F64
-  export covering
+  export partial
   testElementwiseComparator :
     (Double -> Double -> Bool) ->
-    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseComparator fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -1056,14 +1110,14 @@ namespace F64
     [| fDouble x y |] === toLiteral (fTensor x' y')
 
 namespace PRED
-  export covering
+  export partial
   testElementwiseComparator :
     (Bool -> Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
+    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
     Property
   testElementwiseComparator = testElementwiseBinary
 
-covering
+partial
 testElementwiseComparatorCases : List (PropertyName, Property)
 testElementwiseComparatorCases = [
     ("(==) F64", F64.testElementwiseComparator (==) (==)),
@@ -1082,53 +1136,62 @@ testElementwiseComparatorCases = [
     ("(>=) S32", S32.testElementwiseComparator (>=) (>=))
   ]
 
+partial
 select : Property
 select = fixedProperty $ do
   let onTrue = fromLiteral {dtype=S32} 1
       onFalse = fromLiteral 0
-  select (fromLiteral True) onTrue onFalse ===# onTrue
-  select (fromLiteral False) onTrue onFalse ===# onFalse
+  (do select !(fromLiteral True) !onTrue !onFalse) ===# onTrue
+  (do select !(fromLiteral False) !onTrue !onFalse) ===# onFalse
 
   let pred = fromLiteral [[False, True, True], [True, False, False]]
       onTrue = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
       onFalse = fromLiteral [[6, 7, 8], [9, 10, 11]]
       expected = fromLiteral [[6, 1, 2], [3, 10, 11]]
-  select pred onTrue onFalse ===# expected
+  (do select !pred !onTrue !onFalse) ===# expected
 
+partial
 condResultTrivialUsage : Property
 condResultTrivialUsage = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 0
-  cond (fromLiteral True) (+ 1) x (\x => x - 1) x ===# 1
+  (do cond !(fromLiteral True) (\x => pure x + 1) !x (\x => pure x - 1) !x) ===# 1
 
   let x = fromLiteral {dtype=S32} 0
-  cond (fromLiteral False) (+ 1) x (\x => x - 1) x ===# -1
+  (do cond !(fromLiteral False) (\x => pure x + 1) !x (\x => pure x - 1) !x) ===# -1
 
   let x = fromLiteral {dtype=S32} [2, 3]
       y = fromLiteral [[6, 7], [8, 9]]
-  cond (fromLiteral True) (fromLiteral 5 *) x diag y ===# fromLiteral [10, 15]
+  (do cond !(fromLiteral True) (\x => fromLiteral 5 * pure x) !x diag !y) ===# fromLiteral [10, 15]
 
   let x = fromLiteral {dtype=S32} [2, 3]
       y = fromLiteral [[6, 7], [8, 9]]
-  cond (fromLiteral False) (fromLiteral 5 *) x diag y ===# fromLiteral [6, 9]
+  (do cond !(fromLiteral False) (\x => fromLiteral 5 * pure x) !x diag !y) ===# fromLiteral [6, 9]
 
+partial
 condResultWithReusedArgs : Property
 condResultWithReusedArgs = fixedProperty $ do
   let x = fromLiteral {dtype=S32} 1
       y = fromLiteral {dtype=S32} 3
-  cond (fromLiteral True) (\z => z + z) x (\z => z * z) y ===# 2
-  cond (fromLiteral False) (\z => z + z) x (\z => z * z) y ===# 9
 
+      f : (Ref a -> Ref a -> Ref a) -> a -> Ref a
+      f g x = g (pure x) (pure x)
+
+  (do cond !(fromLiteral True) (f (+)) !x (f (*)) !y) ===# 2
+  (do cond !(fromLiteral False) (f (+)) !x (f (*)) !y) ===# 9
+
+partial
 erf : Property
 erf = fixedProperty $ do
   let x = fromLiteral [-1.5, -0.5, 0.5, 1.5]
       expected = fromLiteral [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
-  erf x ===# expected
+  (do erf !x) ===# expected
 
+partial
 cholesky : Property
 cholesky = fixedProperty $ do
   let x = fromLiteral [[1.0, 0.0], [2.0, 0.0]]
       expected = fromLiteral [[nan, 0], [nan, nan]]
-  cholesky x ===# expected
+  (do cholesky !x) ===# expected
 
   -- example generated with tensorflow
   let x = fromLiteral [
@@ -1141,8 +1204,9 @@ cholesky = fixedProperty $ do
               [0.47207308, 1.5615932 , 0.0       ],
               [0.9182292 , 0.6230785 , 1.2312902 ]
             ]
-  cholesky x ===# expected
+  (do cholesky !x) ===# expected
 
+partial
 triangularSolveResultAndInverse : Property
 triangularSolveResultAndInverse = fixedProperty $ do
   let a = fromLiteral [
@@ -1173,6 +1237,7 @@ triangularSolveResultAndInverse = fixedProperty $ do
   actual ===# expected
   a.T @@ actual ===# b
 
+partial
 triangularSolveIgnoresOppositeElems : Property
 triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = fromLiteral [[1.0, 2.0], [3.0, 4.0]]
@@ -1183,10 +1248,11 @@ triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let aUpper = fromLiteral [[1.0, 2.0], [0.0, 4.0]]
   a \| b ===# aUpper \| b
 
+partial
 trace : Property
 trace = fixedProperty $ do
   let x = fromLiteral {dtype=S32} [[-1, 5], [1, 4]]
-  trace x ===# 3
+  (do trace !x) ===# 3
 
 range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
@@ -1194,19 +1260,20 @@ range n = cast (Vect.range n)
 product1 : (x : Nat) -> product (the (List Nat) [x]) = x
 product1 x = rewrite plusZeroRightNeutral x in Refl
 
+partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
-iidKolmogorovSmirnov samples cdf =
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
+iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
 
-      indices : Tensor [n] F64 := cast (fromLiteral {dtype=U64} (range n))
-      sampleSize : Tensor [] F64 := cast (fromLiteral {dtype=U64} (Scalar n))
-      samplesFlat := reshape {sizesEqual=sym (product1 n)} {to=[n]} (cdf samples)
-      deviationFromCDF : Tensor [n] F64 := indices / sampleSize - (sort (<) 0 samplesFlat)
-   in reduce @{Max} [0] (abs deviationFromCDF)
+  let indices : Ref $ Tensor [n] F64 = castDtype !(fromLiteral {dtype=U64} (range n))
+      sampleSize : Ref $ Tensor [] F64 = castDtype !(fromLiteral {dtype=U64} (Scalar n))
+  samplesFlat <- reshape {sizesEqual=sym (product1 n)} {to=[n]} !(cdf samples)
+  deviationFromCDF <- the (Ref $ Tensor [n] F64) $ indices / sampleSize - sort (<) 0 samplesFlat
+  reduce @{Max} [0] !(abs deviationFromCDF)
 
-covering
+partial
 uniform : Property
 uniform = withTests 20 . property $ do
   bound <- forAll (literal [5] finiteDoubles)
@@ -1214,48 +1281,48 @@ uniform = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral bound
-      bound' = fromLiteral bound'
-      bound' = select (bound' == bound) (bound' + fill 1.0e-9) bound'
-      key = fromLiteral key
-      seed = fromLiteral seed
-      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
+  let ksTest = do
+    let bound = fromLiteral bound
+        bound' = fromLiteral bound'
+        bound' = select !(bound' == bound) !(bound' + fill 1.0e-9) !bound'
+    key <- fromLiteral key
+    seed <- fromLiteral seed
+    samples <- evalStateT seed !(uniform key !(broadcast !bound) !(broadcast !bound'))
 
-      uniformCdf : Tensor [2000, 5] F64 -> Tensor [2000, 5] F64
-      uniformCdf x = (x - broadcast bound) / broadcast (bound' - bound)
+    let uniformCdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
+        uniformCdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
 
-      ksTest := iidKolmogorovSmirnov samples uniformCdf
+    iidKolmogorovSmirnov samples uniformCdf
 
   diff (toLiteral ksTest) (<) 0.015
 
-covering
+partial
 uniformForNonFiniteBounds : Property
 uniformForNonFiniteBounds = property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
-      bound' = fromLiteral [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
-      key = fromLiteral key
-      seed = fromLiteral seed
-      samples = evalState seed (uniform key (broadcast bound) (broadcast bound'))
+  let samples = do
+    bound <- fromLiteral [0.0, 0.0, 0.0, -inf, -inf, -inf, inf, inf, nan]
+    bound' <- fromLiteral [-inf, inf, nan, -inf, inf, nan, inf, nan, nan]
+    key <- fromLiteral key
+    seed <- fromLiteral seed
+    evalStateT seed !(uniform key !(broadcast bound) !(broadcast bound'))
 
   samples ===# fromLiteral [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
 
-covering
+partial
 uniformForFiniteEqualBounds : Property
 uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
   let bound = fromLiteral [min @{Finite}, -1.0, -1.0e-308, 0.0, 1.0e-308, 1.0, max @{Finite}]
-      key = fromLiteral key
-      seed = fromLiteral seed
-      samples = evalState seed (uniform key bound bound)
+      samples = do evalStateT !(fromLiteral seed) !(uniform !(fromLiteral key) !bound !bound)
 
   samples ===# bound
 
-covering
+partial
 uniformSeedIsUpdated : Property
 uniformSeedIsUpdated = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
@@ -1263,20 +1330,27 @@ uniformSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral bound
-      bound' = fromLiteral bound'
-      key = fromLiteral key
-      seed = fromLiteral seed
+  let everything = do
+        bound <- fromLiteral bound
+        bound' <- fromLiteral bound'
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      rng = uniform key {shape=[10]} (broadcast bound) (broadcast bound')
-      (seed', sample) = runState seed rng
-      (seed'', sample') = runState seed' rng
+        rng <- uniform key {shape=[10]} !(broadcast bound) !(broadcast bound')
+        (seed', sample) <- runStateT seed rng
+        (seed'', sample') <- runStateT seed' rng
+        seeds <- concat 0 !(concat 0 seed seed') seed''
+        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
+        pure (seeds, samples)
 
-  diff (toLiteral seed') (/=) (toLiteral seed)
-  diff (toLiteral seed'') (/=) (toLiteral seed')
-  diff (toLiteral sample') (/=) (toLiteral sample)
+      [seed, seed', seed''] = toLiteral (do (seeds, _) <- everything; pure seeds)
+      [sample, sample'] = toLiteral (do (_, samples) <- everything; pure samples)
 
-covering
+  diff seed' (/=) seed
+  diff seed'' (/=) seed'
+  diff sample' (/=) sample
+
+partial
 uniformIsReproducible : Property
 uniformIsReproducible = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
@@ -1284,67 +1358,79 @@ uniformIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = fromLiteral bound
-      bound' = fromLiteral bound'
-      key = fromLiteral key
-      seed = fromLiteral seed
+  let [sample, sample'] = toLiteral $ do
+        bound <- fromLiteral bound
+        bound' <- fromLiteral bound'
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      rng = uniform {shape=[10]} key (broadcast bound) (broadcast bound')
-      sample = evalState seed rng
-      sample' = evalState seed rng
+        rng <- uniform {shape=[10]} key !(broadcast bound) !(broadcast bound')
+        sample <- evalStateT seed rng
+        sample' <- evalStateT seed rng
+        concat 0 !(expand 0 sample) !(expand 0 sample')
 
-  sample ===# sample'
+  sample ==~ sample'
 
-covering
+partial
 normal : Property
 normal = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let key = fromLiteral key
-      seed = fromLiteral seed
+  let ksTest = do
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      samples : Tensor [100, 100] F64 = evalState seed (normal key)
+        samples <- the (Ref $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
 
-      normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
-      normalCdf x = (fill 1.0 + erf (x / sqrt (fill 2.0))) / fill 2.0
+        let normalCdf : {shape : _} -> Tensor shape F64 -> Ref $ Tensor shape F64
+            normalCdf x = do (fill 1.0 + erf !(pure x / (sqrt !(fill 2.0)))) / fill 2.0
 
-      ksTest := iidKolmogorovSmirnov samples normalCdf
+        iidKolmogorovSmirnov samples normalCdf
 
   diff (toLiteral ksTest) (<) 0.02
 
-covering
+partial
 normalSeedIsUpdated : Property
 normalSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let key = fromLiteral key
-      seed = fromLiteral seed
-      rng = normal key {shape=[10]}
-      (seed', sample) = runState seed rng
-      (seed'', sample') = runState seed' rng
+  let everything = do
+        key <- fromLiteral key
+        seed <- fromLiteral seed
+        let rng = normal key {shape=[10]}
+        (seed', sample) <- runStateT seed rng
+        (seed'', sample') <- runStateT seed' rng
+        seeds <- concat 0 !(concat 0 seed seed') seed''
+        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
+        pure (seeds, samples)
 
-  diff (toLiteral seed') (/=) (toLiteral seed)
-  diff (toLiteral seed'') (/=) (toLiteral seed')
-  diff (toLiteral sample') (/=) (toLiteral sample)
+      [seed, seed', seed''] = toLiteral (do (seeds, _) <- everything; pure seeds)
+      [sample, sample'] = toLiteral (do (_, samples) <- everything; pure samples)
 
-covering
+  diff seed' (/=) seed
+  diff seed'' (/=) seed'
+  diff sample' (/=) sample
+
+partial
 normalIsReproducible : Property
 normalIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let key = fromLiteral key
-      seed = fromLiteral seed
+  let [sample, sample'] = toLiteral $ do
+        key <- fromLiteral key
+        seed <- fromLiteral seed
 
-      rng = normal {shape=[10]} key
-      sample = evalState seed rng
-      sample' = evalState seed rng
+        let rng = normal {shape=[10]} key
+        sample <- evalStateT seed rng
+        sample' <- evalStateT seed rng
+        concat 0 !(expand 0 sample) !(expand 0 sample')
 
-  sample ===# sample'
+  sample ==~ sample'
 
-export covering
+export partial
 group : Group
 group = MkGroup "Tensor" $ [
       ("toLiteral . fromLiteral", fromLiteralThenToLiteral)
@@ -1354,7 +1440,12 @@ group = MkGroup "Tensor" $ [
     , ("cast", cast)
     , ("reshape", reshape)
     , ("MultiSlice.slice", MultiSlice.slice)
-    , ("slice", TestTensor.slice)
+    , ("slice for static index", sliceStaticIndex)
+    , ("slice for static slice", sliceStaticSlice)
+    , ("slice for dynamic index", sliceDynamicIndex)
+    , ("slice for dynamic slice", sliceDynamicSlice)
+    , ("slice for static index and slice", sliceStaticMixed)
+    , ("slice for mixed static and dynamic index and slice", sliceMixed)
     , ("slice for variable index", sliceForVariableIndex)
     , ("concat", concat)
     , ("diag", diag)

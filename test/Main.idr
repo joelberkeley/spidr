@@ -22,18 +22,16 @@ import TestUtils
 import Utils.TestComparison
 
 import Unit.Model.TestKernel
-import Unit.Util.TestHashable
 import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-covering
+partial
 main : IO ()
 main = test [
       Utils.TestComparison.group
     , TestUtils.group
-    , Unit.Util.TestHashable.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group
     , Unit.TestTensor.group
