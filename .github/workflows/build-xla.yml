@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: |
-      git clone https://github.com/openxla/xla.git && cd xla
+        git clone https://github.com/openxla/xla.git && cd xla
     - run: |
-      ./configure
-      bazel build --test_output=all --spawn_strategy=sandboxed --nocheck_visibility //xla/...
+        ./configure
+        bazel build --test_output=all --spawn_strategy=sandboxed --nocheck_visibility //xla/...
