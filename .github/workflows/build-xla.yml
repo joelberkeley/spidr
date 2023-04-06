@@ -13,7 +13,8 @@
 # limitations under the License.
 on:
   push:
-    build-xla
+    branches:
+      - build-xla
 
 jobs:
   docs:
