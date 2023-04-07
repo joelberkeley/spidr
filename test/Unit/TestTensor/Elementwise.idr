@@ -315,6 +315,9 @@ all = [
     , ("(&&)", PRED.testElementwiseBinary and (&&))
     , ("(||)", PRED.testElementwiseBinary or (||))
 
+    , ("Scalarwise.(*)", scalarMultiplication)
+    , ("Scalarwise.(/)", scalarDivision)
+
     , ("(==) F64", F64.testElementwiseComparator (==) (==))
     , ("(==) S32", S32.testElementwiseComparator (==) (==))
     , ("(==) PRED", PRED.testElementwiseComparator (==) (==))
