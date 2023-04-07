@@ -15,6 +15,13 @@ limitations under the License.
 --}
 module Utils
 
+import Literal
+
+export
+[Finite] Bounded (Literal [] Double) where
+  min = Scalar (min @{Finite})
+  max = Scalar (max @{Finite})
+
 export
 isNan : Double -> Bool
 isNan x = x /= x

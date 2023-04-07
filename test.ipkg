@@ -17,7 +17,14 @@ modules =
   Unit.Model.TestKernel,
   Unit.TestDistribution,
   Unit.TestLiteral,
+
   Unit.TestTensor,
+  Unit.TestTensor.Elementwise,
+  Unit.TestTensor.HigherOrder,
+  Unit.TestTensor.Sampling,
+  Unit.TestTensor.Slice,
+  Unit.TestTensor.Structure,
+
   Unit.TestUtil,
 
   Main,
