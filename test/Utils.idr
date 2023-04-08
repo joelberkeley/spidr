@@ -16,6 +16,7 @@ limitations under the License.
 module Utils
 
 import Literal
+import Tensor
 
 export
 [Finite] Bounded (Literal [] Double) where
@@ -25,3 +26,7 @@ export
 export
 isNan : Double -> Bool
 isNan x = x /= x
+
+export partial
+unsafeToLiteral : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> Literal shape ty
+unsafeToLiteral = unsafePerformIO . toLiteral

@@ -34,7 +34,7 @@ namespace S32
     shape <- forAll shapes
     x <- forAll (literal shape int32s)
     let x' = fromLiteral x
-    [| fInt x |] === toLiteral (do fTensor !x')
+    [| fInt x |] === unsafeToLiteral (do fTensor !x')
 
 namespace F64
   export partial
@@ -46,7 +46,7 @@ namespace F64
     shape <- forAll shapes
     x <- forAll (literal shape doubles)
     let x' = fromLiteral x
-    [| fDouble x |] ==~ toLiteral (do fTensor !x')
+    [| fDouble x |] ==~ unsafeToLiteral (do fTensor !x')
 
 namespace PRED
   export partial
@@ -58,7 +58,7 @@ namespace PRED
     shape <- forAll shapes
     x <- forAll (literal shape bool)
     let x' = fromLiteral x
-    [| fBool x |] === toLiteral (do fTensor !x')
+    [| fBool x |] === unsafeToLiteral (do fTensor !x')
 
 namespace S32
   export partial
@@ -72,7 +72,7 @@ namespace S32
     [x, y] <- forAll (np [int32s, int32s])
     let x' = fromLiteral {dtype=S32} x
         y' = fromLiteral {dtype=S32} y
-    [| fInt x y |] === toLiteral (fTensor x' y')
+    [| fInt x y |] === unsafeToLiteral (fTensor x' y')
 
 namespace F64
   export partial
@@ -86,7 +86,7 @@ namespace F64
     [x, y] <- forAll (np [doubles, doubles])
     let x' = fromLiteral {dtype=F64} x
         y' = fromLiteral {dtype=F64} y
-    [| fDouble x y |] ==~ toLiteral (fTensor x' y')
+    [| fDouble x y |] ==~ unsafeToLiteral (fTensor x' y')
 
 namespace PRED
   export partial
@@ -100,7 +100,7 @@ namespace PRED
     [x, y] <- forAll (np [bools, bools])
     let x' = fromLiteral {dtype=PRED} x
         y' = fromLiteral {dtype=PRED} y
-    [| fBool x y |] === toLiteral (fTensor x' y')
+    [| fBool x y |] === unsafeToLiteral (fTensor x' y')
 
 partial
 scalarMultiplication : Property
@@ -112,7 +112,7 @@ scalarMultiplication = property $ do
       [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
       let lit' = fromLiteral {dtype=F64} lit
           scalar' = fromLiteral {dtype=F64} (Scalar scalar)
-      map (scalar *) lit ==~ toLiteral (scalar' * lit')
+      map (scalar *) lit ==~ unsafeToLiteral (scalar' * lit')
 
 partial
 scalarDivision : Property
@@ -124,7 +124,7 @@ scalarDivision = property $ do
       [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
       let lit' = fromLiteral {dtype=F64} lit
           scalar' = fromLiteral {dtype=F64} (Scalar scalar)
-      map (/ scalar) lit ==~ toLiteral (lit' / scalar')
+      map (/ scalar) lit ==~ unsafeToLiteral (lit' / scalar')
 
 namespace S32
   export partial
@@ -138,7 +138,7 @@ namespace S32
     [x, y] <- forAll (np [int32s, int32s])
     let x' = fromLiteral {dtype=S32} x
         y' = fromLiteral {dtype=S32} y
-    [| fInt x y |] === toLiteral (fTensor x' y')
+    [| fInt x y |] === unsafeToLiteral (fTensor x' y')
 
 namespace F64
   export partial
@@ -152,7 +152,7 @@ namespace F64
     [x, y] <- forAll (np [doubles, doubles])
     let x' = fromLiteral {dtype=F64} x
         y' = fromLiteral {dtype=F64} y
-    [| fDouble x y |] === toLiteral (fTensor x' y')
+    [| fDouble x y |] === unsafeToLiteral (fTensor x' y')
 
 namespace PRED
   export partial
@@ -171,15 +171,15 @@ neutralIsNeutralForSum = property $ do
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Sum} x' (neutral @{Sum})
       left = (<+>) @{Sum} (neutral @{Sum}) x'
-  toLiteral right ==~ x
-  toLiteral left ==~ x
+  unsafeToLiteral right ==~ x
+  unsafeToLiteral left ==~ x
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
       right = (<+>) @{Sum} x' (neutral @{Sum})
       left = (<+>) @{Sum} (neutral @{Sum}) x'
-  toLiteral right === x
-  toLiteral left === x
+  unsafeToLiteral right === x
+  unsafeToLiteral left === x
 
 partial
 neutralIsNeutralForProd : Property
@@ -190,15 +190,15 @@ neutralIsNeutralForProd = property $ do
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Prod} x' (neutral @{Prod})
       left = (<+>) @{Prod} (neutral @{Prod}) x'
-  toLiteral right ==~ x
-  toLiteral left ==~ x
+  unsafeToLiteral right ==~ x
+  unsafeToLiteral left ==~ x
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
       right = (<+>) @{Prod} x' (neutral @{Prod})
       left = (<+>) @{Prod} (neutral @{Prod}) x'
-  toLiteral right === x
-  toLiteral left === x
+  unsafeToLiteral right === x
+  unsafeToLiteral left === x
 
 partial
 neutralIsNeutralForAny : Property
@@ -208,8 +208,8 @@ neutralIsNeutralForAny = property $ do
   let x' = fromLiteral {dtype=PRED} x
       right = (<+>) @{Any} x' (neutral @{Monoid.Any})
       left = (<+>) @{Any} (neutral @{Monoid.Any}) x'
-  toLiteral right === x
-  toLiteral left === x
+  unsafeToLiteral right === x
+  unsafeToLiteral left === x
 
 partial
 neutralIsNeutralForAll : Property
@@ -219,8 +219,8 @@ neutralIsNeutralForAll = property $ do
   let x' = fromLiteral {dtype=PRED} x
       right = (<+>) @{All} x' (neutral @{Monoid.All})
       left = (<+>) @{All} (neutral @{Monoid.All}) x'
-  toLiteral right === x
-  toLiteral left === x
+  unsafeToLiteral right === x
+  unsafeToLiteral left === x
 
 partial
 neutralIsNeutralForMin : Property
@@ -230,8 +230,8 @@ neutralIsNeutralForMin = property $ do
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Min} x' (neutral @{Min})
       left = (<+>) @{Min} (neutral @{Min}) x'
-  toLiteral right ==~ x
-  toLiteral left ==~ x
+  unsafeToLiteral right ==~ x
+  unsafeToLiteral left ==~ x
 
 partial
 neutralIsNeutralForMax : Property
@@ -241,8 +241,8 @@ neutralIsNeutralForMax = property $ do
   let x' = fromLiteral {dtype=F64} x
       right = (<+>) @{Max} x' (neutral @{Max})
       left = (<+>) @{Max} (neutral @{Max}) x'
-  toLiteral right ==~ x
-  toLiteral left ==~ x
+  unsafeToLiteral right ==~ x
+  unsafeToLiteral left ==~ x
 
 min' : Double -> Double -> Double
 min' x y = if x == x && y == y then min x y else nan

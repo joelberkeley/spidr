@@ -194,7 +194,7 @@ sliceForVariableIndex = property $ do
   rem <- forAll dims
   lit <- forAll (literal [idx + S rem] nats)
   let x = fromLiteral {dtype=U32} lit
-  index @{inDim} idx lit === toLiteral (do slice [at @{inDim} idx] !x)
+  index @{inDim} idx lit === unsafeToLiteral (do slice [at @{inDim} idx] !x)
 
   where
   %hint

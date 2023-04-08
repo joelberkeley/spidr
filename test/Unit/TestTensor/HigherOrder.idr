@@ -31,11 +31,11 @@ mapResult = property $ do
 
   x <- forAll (literal shape doubles)
   let x' = fromLiteral x
-  map (1.0 /) x ==~ toLiteral (do map (\x => 1.0 / pure x) !x')
+  map (1.0 /) x ==~ unsafeToLiteral (do map (\x => 1.0 / pure x) !x')
 
   x <- forAll (literal shape int32s)
   let x' = fromLiteral {dtype=S32} x
-  map (+ 1) x === toLiteral (do map (\x => pure x + 1) !x')
+  map (+ 1) x === unsafeToLiteral (do map (\x => pure x + 1) !x')
 
 partial
 mapNonTrivial : Property
@@ -53,14 +53,14 @@ map2Result = fixedProperty $ do
   [x, y] <- forAll (np [int32s, int32s])
   let x' = fromLiteral {dtype=S32} x
       y' = fromLiteral {dtype=S32} y
-  [| x + y |] === toLiteral (do map2 (\x, y => pure x + pure y) !x' !y')
+  [| x + y |] === unsafeToLiteral (do map2 (\x, y => pure x + pure y) !x' !y')
 
   shape <- forAll shapes
   let doubles = literal shape doubles
   [x, y] <- forAll (np [doubles, doubles])
   let x' = fromLiteral {dtype=F64} x
       y' = fromLiteral {dtype=F64} y
-  [| x + y |] ==~ toLiteral (do map2 (\x, y => pure x + pure y) !x' !y')
+  [| x + y |] ==~ unsafeToLiteral (do map2 (\x, y => pure x + pure y) !x' !y')
 
 partial
 map2ResultWithReusedFnArgs : Property
@@ -108,7 +108,7 @@ sort = withTests 20 . property $ do
   let sorted = (do sort (<) 0 !x)
       init = (do slice [0.to d] !sorted)
       tail = (do slice [1.to (S d)] !sorted)
-  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+  diff (unsafeToLiteral init) (\x, y => all [| x <= y |]) (unsafeToLiteral tail)
 
   x <- forAll (literal [S d, S dd] int32s)
   let x = fromLiteral {dtype=S32} x
@@ -116,12 +116,12 @@ sort = withTests 20 . property $ do
   let sorted = (do sort (<) 0 !x)
       init = (do slice [0.to d] !sorted)
       tail = (do slice [1.to (S d)] !sorted)
-  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+  diff (unsafeToLiteral init) (\x, y => all [| x <= y |]) (unsafeToLiteral tail)
 
   let sorted = (do sort (<) 1 !x)
       init = (do slice [all, 0.to dd] !sorted)
       tail = (do slice [all, 1.to (S dd)] !sorted)
-  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+  diff (unsafeToLiteral init) (\x, y => all [| x <= y |]) (unsafeToLiteral tail)
 
   x <- forAll (literal [S d, S dd, S ddd] int32s)
   let x = fromLiteral {dtype=S32} x
@@ -129,17 +129,17 @@ sort = withTests 20 . property $ do
   let sorted = (do sort (<) 0 !x)
       init = (do slice [0.to d] !sorted)
       tail = (do slice [1.to (S d)] !sorted)
-  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+  diff (unsafeToLiteral init) (\x, y => all [| x <= y |]) (unsafeToLiteral tail)
 
   let sorted = (do sort (<) 1 !x)
       init = (do slice [all, 0.to dd] !sorted)
       tail = (do slice [all, 1.to (S dd)] !sorted)
-  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+  diff (unsafeToLiteral init) (\x, y => all [| x <= y |]) (unsafeToLiteral tail)
 
   let sorted = (do sort (<) 2 !x)
       init = (do slice [all, all, 0.to ddd] !sorted)
       tail = (do slice [all, all, 1.to (S ddd)] !sorted)
-  diff (toLiteral init) (\x, y => all [| x <= y |]) (toLiteral tail)
+  diff (unsafeToLiteral init) (\x, y => all [| x <= y |]) (unsafeToLiteral tail)
 
   where
   %hint
