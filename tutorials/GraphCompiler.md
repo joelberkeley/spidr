@@ -35,14 +35,14 @@ In this example, `pure` produces a `Ref a` from an `a`, as does `abs` (the eleme
 * the value is either a function argument or is on the left hand side of `x <- expression` Secondly, care is needed when reusing expressions to make sure you're not recomputation sections of the graph. For example, in
 ```idris
 whoops : Ref $ Tensor [3] S32
-whoops = let y = fromLiteral [1, 2, 3]
+whoops = let y = tensor [1, 2, 3]
              z = y + y
           in z * z
 ```
 `z` will be calculated twice, and `y` allocated four times (unless the graph compiler chooses to optimize that out). Instead, we can reuse `z` and `y` with
 ```idris
 ok : Ref $ Tensor [3] S32
-ok = do y <- fromLiteral [1, 2, 3]
+ok = do y <- tensor [1, 2, 3]
         z <- (pure y) + (pure y)
         (pure z) * (pure z)
 ```

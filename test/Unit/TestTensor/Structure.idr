@@ -29,70 +29,70 @@ import Utils.Cases
 partial
 reshape : Property
 reshape = fixedProperty $ do
-  (do reshape !3) ===# fromLiteral {dtype=S32} [3]
+  (do reshape !3) ===# tensor {dtype=S32} [3]
 
-  let x = fromLiteral {dtype=S32} [3, 4, 5]
-      flipped = fromLiteral [[3], [4], [5]]
+  let x = tensor {dtype=S32} [3, 4, 5]
+      flipped = tensor [[3], [4], [5]]
   (do reshape !x) ===# flipped
 
-  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-      flipped = fromLiteral [[3, 4], [5, 6], [7, 8]]
+  let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+      flipped = tensor [[3, 4], [5, 6], [7, 8]]
   (do reshape !x) ===# flipped
 
-  let withExtraDim = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+  let withExtraDim = tensor {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
   (do reshape !x) ===# withExtraDim
 
-  let flattened = fromLiteral {dtype=S32} [3, 4, 5, 6, 7, 8]
+  let flattened = tensor {dtype=S32} [3, 4, 5, 6, 7, 8]
   (do reshape !x) ===# flattened
 
 partial
 expand : Property
 expand = fixedProperty $ do
-  (do expand 0 !3) ===# fromLiteral {dtype=S32} [3]
+  (do expand 0 !3) ===# tensor {dtype=S32} [3]
 
-  let x = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
-      withExtraDim = fromLiteral [[[3, 4, 5]], [[6, 7, 8]]]
+  let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+      withExtraDim = tensor [[[3, 4, 5]], [[6, 7, 8]]]
   (do expand 1 !x) ===# withExtraDim
 
 partial
 broadcast : Property
 broadcast = fixedProperty $ do
   (do broadcast {to=[]} {dtype=S32} !7) ===# 7
-  (do broadcast {to=[1]} {dtype=S32} !7) ===# fromLiteral [7]
-  (do broadcast {to=[2, 3]} {dtype=S32} !7) ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
-  (do broadcast {to=[1, 1, 1]} {dtype=S32} !7) ===# fromLiteral [[[7]]]
-  (do broadcast {to=[0]} {dtype=S32} !7) ===# fromLiteral []
+  (do broadcast {to=[1]} {dtype=S32} !7) ===# tensor [7]
+  (do broadcast {to=[2, 3]} {dtype=S32} !7) ===# tensor [[7, 7, 7], [7, 7, 7]]
+  (do broadcast {to=[1, 1, 1]} {dtype=S32} !7) ===# tensor [[[7]]]
+  (do broadcast {to=[0]} {dtype=S32} !7) ===# tensor []
 
-  let x = fromLiteral {dtype=S32} [7]
-  (do broadcast {to=[1]} !x) ===# fromLiteral [7]
+  let x = tensor {dtype=S32} [7]
+  (do broadcast {to=[1]} !x) ===# tensor [7]
 
-  let x = fromLiteral {dtype=S32} [7]
-  (do broadcast {to=[3]} !x) ===# fromLiteral [7, 7, 7]
+  let x = tensor {dtype=S32} [7]
+  (do broadcast {to=[3]} !x) ===# tensor [7, 7, 7]
 
-  let x = fromLiteral {dtype=S32} [7]
-  (do broadcast {to=[2, 3]} !x) ===# fromLiteral [[7, 7, 7], [7, 7, 7]]
+  let x = tensor {dtype=S32} [7]
+  (do broadcast {to=[2, 3]} !x) ===# tensor [[7, 7, 7], [7, 7, 7]]
 
-  let x = fromLiteral {dtype=S32} [5, 7]
-  (do broadcast {to=[2, 0]} !x) ===# fromLiteral [[], []]
+  let x = tensor {dtype=S32} [5, 7]
+  (do broadcast {to=[2, 0]} !x) ===# tensor [[], []]
 
-  let x = fromLiteral {dtype=S32} [5, 7]
-  (do broadcast {to=[3, 2]} !x) ===# fromLiteral [[5, 7], [5, 7], [5, 7]]
+  let x = tensor {dtype=S32} [5, 7]
+  (do broadcast {to=[3, 2]} !x) ===# tensor [[5, 7], [5, 7], [5, 7]]
 
-  let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  (do broadcast {to=[2, 3]} !x) ===# fromLiteral [[2, 3, 5], [7, 11, 13]]
+  let x = tensor {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+  (do broadcast {to=[2, 3]} !x) ===# tensor [[2, 3, 5], [7, 11, 13]]
 
-  let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  (do broadcast {to=[2, 0]} !x) ===# fromLiteral [[], []]
+  let x = tensor {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+  (do broadcast {to=[2, 0]} !x) ===# tensor [[], []]
 
-  let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-  (do broadcast {to=[0, 3]} !x) ===# fromLiteral []
+  let x = tensor {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+  (do broadcast {to=[0, 3]} !x) ===# tensor []
 
-  let x = fromLiteral {dtype=S32} [[2, 3, 5], [7, 11, 13]]
-      expected = fromLiteral [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
+  let x = tensor {dtype=S32} [[2, 3, 5], [7, 11, 13]]
+      expected = tensor [[[2, 3, 5], [7, 11, 13]], [[2, 3, 5], [7, 11, 13]]]
   (do broadcast {to=[2, 2, 3]} !x) ===# expected
 
-  let x = fromLiteral {dtype=S32} [[[2, 3, 5]], [[7, 11, 13]]]
-      expected = fromLiteral [
+  let x = tensor {dtype=S32} [[[2, 3, 5]], [[7, 11, 13]]]
+      expected = tensor [
         [
           [[2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5], [2, 3, 5]],
           [[7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13], [7, 11, 13]]
@@ -107,83 +107,83 @@ broadcast = fixedProperty $ do
 partial
 triangle : Property
 triangle = fixedProperty $ do
-  let x = fromLiteral {dtype=S32} []
-  (do triangle Upper !x) ===# fromLiteral []
-  (do triangle Lower !x) ===# fromLiteral []
+  let x = tensor {dtype=S32} []
+  (do triangle Upper !x) ===# tensor []
+  (do triangle Lower !x) ===# tensor []
 
-  let x = fromLiteral {dtype=S32} [[3]]
-  (do triangle Upper !x) ===# fromLiteral [[3]]
-  (do triangle Lower !x) ===# fromLiteral [[3]]
+  let x = tensor {dtype=S32} [[3]]
+  (do triangle Upper !x) ===# tensor [[3]]
+  (do triangle Lower !x) ===# tensor [[3]]
 
-  let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
-  (do triangle Upper !x) ===# fromLiteral [[1, 2], [0, 4]]
-  (do triangle Lower !x) ===# fromLiteral [[1, 0], [3, 4]]
+  let x = tensor {dtype=S32} [[1, 2], [3, 4]]
+  (do triangle Upper !x) ===# tensor [[1, 2], [0, 4]]
+  (do triangle Lower !x) ===# tensor [[1, 0], [3, 4]]
 
-  let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-  (do triangle Upper !x) ===# fromLiteral [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
-  (do triangle Lower !x) ===# fromLiteral [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
+  let x = tensor {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+  (do triangle Upper !x) ===# tensor [[1, 2, 3], [0, 5, 6], [0, 0, 9]]
+  (do triangle Lower !x) ===# tensor [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
 partial
 diag : Property
 diag = fixedProperty $ do
-  let x = fromLiteral {dtype=S32} []
-  (do diag !x) ===# fromLiteral []
+  let x = tensor {dtype=S32} []
+  (do diag !x) ===# tensor []
 
-  let x = fromLiteral {dtype=S32} [[3]]
-  (do diag !x) ===# fromLiteral [3]
+  let x = tensor {dtype=S32} [[3]]
+  (do diag !x) ===# tensor [3]
 
-  let x = fromLiteral {dtype=S32} [[1, 2], [3, 4]]
-  (do diag !x) ===# fromLiteral [1, 4]
+  let x = tensor {dtype=S32} [[1, 2], [3, 4]]
+  (do diag !x) ===# tensor [1, 4]
 
 partial
 concat : Property
 concat = fixedProperty $ do
-  let vector = fromLiteral {dtype=S32} [3, 4, 5]
+  let vector = tensor {dtype=S32} [3, 4, 5]
 
-  let l = fromLiteral {shape=[0]} []
-      r = fromLiteral [3, 4, 5]
+  let l = tensor {shape=[0]} []
+      r = tensor [3, 4, 5]
   (do concat 0 !l !r) ===# vector
 
-  let l = fromLiteral [3]
-      r = fromLiteral [4, 5]
+  let l = tensor [3]
+      r = tensor [4, 5]
   (do concat 0 !l !r) ===# vector
 
-  let l = fromLiteral [3, 4]
-      r = fromLiteral [5]
+  let l = tensor [3, 4]
+      r = tensor [5]
   (do concat 0 !l !r) ===# vector
 
-  let l = fromLiteral [3, 4, 5]
-      r = fromLiteral {shape=[0]} []
+  let l = tensor [3, 4, 5]
+      r = tensor {shape=[0]} []
   (do concat 0 !l !r) ===# vector
 
-  let arr = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let arr = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
 
-  let l = fromLiteral {shape=[0, 3]} []
-      r = fromLiteral [[3, 4, 5], [6, 7, 8]]
+  let l = tensor {shape=[0, 3]} []
+      r = tensor [[3, 4, 5], [6, 7, 8]]
   (do concat 0 !l !r) ===# arr
 
-  let l = fromLiteral [[3, 4, 5]]
-      r = fromLiteral [[6, 7, 8]]
+  let l = tensor [[3, 4, 5]]
+      r = tensor [[6, 7, 8]]
   (do concat 0 !l !r) ===# arr
 
-  let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
-      r = fromLiteral {shape=[0, 3]} []
+  let l = tensor [[3, 4, 5], [6, 7, 8]]
+      r = tensor {shape=[0, 3]} []
   (do concat 0 !l !r) ===# arr
 
-  let l = fromLiteral {shape=[2, 0]} [[], []]
-      r = fromLiteral [[3, 4, 5], [6, 7, 8]]
+  let l = tensor {shape=[2, 0]} [[], []]
+      r = tensor [[3, 4, 5], [6, 7, 8]]
   (do concat 1 !l !r) ===# arr
 
-  let l = fromLiteral [[3], [6]]
-      r = fromLiteral [[4, 5], [7, 8]]
+  let l = tensor [[3], [6]]
+      r = tensor [[4, 5], [7, 8]]
   (do concat 1 !l !r) ===# arr
 
-  let l = fromLiteral [[3, 4], [6, 7]]
-      r = fromLiteral [[5], [8]]
+  let l = tensor [[3, 4], [6, 7]]
+      r = tensor [[5], [8]]
   (do concat 1 !l !r) ===# arr
 
-  let l = fromLiteral [[3, 4, 5], [6, 7, 8]]
-      r = fromLiteral {shape=[2, 0]} [[], []]
+  let l = tensor [[3, 4, 5], [6, 7, 8]]
+      r = tensor {shape=[2, 0]} [[], []]
   (do concat 1 !l !r) ===# arr
 
 dimBroadcastable : List (a ** b ** DimBroadcastable a b)
@@ -222,13 +222,13 @@ broadcastableCannotStackDimensionGtOne (Nest Same) impossible
 partial
 squeeze : Property
 squeeze = fixedProperty $ do
-  let x = fromLiteral {dtype=S32} [[3]]
+  let x = tensor {dtype=S32} [[3]]
   (do squeeze !x) ===# 3
 
-  let x = fromLiteral {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
+  let x = tensor {dtype=S32} [[[3, 4, 5]], [[6, 7, 8]]]
   (do squeeze !x) ===# x
 
-  let squeezed = fromLiteral {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let squeezed = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
   (do squeeze !x) ===# squeezed
 
   let x = fill {shape=[1, 3, 1, 1, 2, 5, 1]} {dtype=S32} 0
@@ -240,28 +240,28 @@ squeezableCannotRemoveNonOnes (Nest _) impossible
 partial
 (.T) : Property
 (.T) = fixedProperty $ do
-  (do (fromLiteral {dtype=S32} []).T) ===# fromLiteral []
-  (do (fromLiteral {dtype=S32} [[3]]).T) ===# fromLiteral [[3]]
+  (do (tensor {dtype=S32} []).T) ===# tensor []
+  (do (tensor {dtype=S32} [[3]]).T) ===# tensor [[3]]
 
-  let x = fromLiteral {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-      expected = fromLiteral [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+  let x = tensor {dtype=S32} [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+      expected = tensor [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
   x.T ===# expected
 
 partial
 transpose : Property
 transpose = fixedProperty $ do
-  let x = fromLiteral {dtype=S32} [[0, 1], [2, 3]]
+  let x = tensor {dtype=S32} [[0, 1], [2, 3]]
   (do transpose [0, 1] !x) ===# x
-  (do transpose [1, 0] !x) ===# fromLiteral [[0, 2], [1, 3]]
+  (do transpose [1, 0] !x) ===# tensor [[0, 2], [1, 3]]
 
-  let x = fromLiteral {dtype=S32}
+  let x = tensor {dtype=S32}
         [[[ 0,  1,  2,  3],
           [ 4,  5,  6,  7],
           [ 8,  9, 10, 11]],
          [[12, 13, 14, 15],
           [16, 17, 18, 19],
           [20, 21, 22, 23]]]
-  (do transpose [0, 2, 1] !x) ===# fromLiteral
+  (do transpose [0, 2, 1] !x) ===# tensor
     [[[ 0,  4,  8],
       [ 1,  5,  9],
       [ 2,  6, 10],
@@ -270,7 +270,7 @@ transpose = fixedProperty $ do
       [13, 17, 21],
       [14, 18, 22],
       [15, 19, 23]]]
-  (do transpose [2, 0, 1] !x) ===# fromLiteral
+  (do transpose [2, 0, 1] !x) ===# tensor
     [[[ 0,  4,  8],
       [12, 16, 20]],
      [[ 1,  5,  9],
@@ -281,7 +281,7 @@ transpose = fixedProperty $ do
       [15, 19, 23]]]
 
   let x : Array [120] Int32 = fromList [0..119]
-      x : Ref $ Tensor [2, 3, 4, 5] S32 = (do reshape !(fromLiteral {shape=[120]} (cast x)))
+      x : Ref $ Tensor [2, 3, 4, 5] S32 = (do reshape !(tensor {shape=[120]} (cast x)))
   (do transpose [0, 1, 2, 3] !x) ===# x
   (do slice [all, at 1, at 0] !(transpose [0, 2, 1, 3] !x)) ===# (do slice [all, at 0, at 1] !x)
   (do slice [at 2, at 4, at 0, at 1] !(transpose [2, 3, 1, 0] !x)) ===# (do slice [at 1, at 0, at 2, at 4] !x)
@@ -289,27 +289,27 @@ transpose = fixedProperty $ do
 partial
 reverse : Property
 reverse = fixedProperty $ do
-  let x = fromLiteral {shape=[0]} {dtype=S32} []
+  let x = tensor {shape=[0]} {dtype=S32} []
   (do reverse [0] !x) ===# x
 
-  let x = fromLiteral {shape=[0, 3]} {dtype=S32} []
+  let x = tensor {shape=[0, 3]} {dtype=S32} []
   (do reverse [0] !x) ===# x
   (do reverse [1] !x) ===# x
   (do reverse [0, 1] !x) ===# x
 
-  let x = fromLiteral {dtype=S32} [-2, 0, 1]
-  (do reverse [0] !x) ===# fromLiteral [1, 0, -2]
+  let x = tensor {dtype=S32} [-2, 0, 1]
+  (do reverse [0] !x) ===# tensor [1, 0, -2]
 
-  let x = fromLiteral {dtype=S32} [[0, 1, 2], [3, 4, 5]]
-  (do reverse [0] !x) ===# fromLiteral [[3, 4, 5], [0, 1, 2]]
-  (do reverse [1] !x) ===# fromLiteral [[2, 1, 0], [5, 4, 3]]
-  (do reverse [0, 1] !x) ===# fromLiteral [[5, 4, 3], [2, 1, 0]]
+  let x = tensor {dtype=S32} [[0, 1, 2], [3, 4, 5]]
+  (do reverse [0] !x) ===# tensor [[3, 4, 5], [0, 1, 2]]
+  (do reverse [1] !x) ===# tensor [[2, 1, 0], [5, 4, 3]]
+  (do reverse [0, 1] !x) ===# tensor [[5, 4, 3], [2, 1, 0]]
 
-  let x = fromLiteral {dtype=S32} [
+  let x = tensor {dtype=S32} [
     [[[ 0,  1], [ 2,  3]], [[ 4,  5], [ 6,  7]], [[ 8,  9], [10, 11]]],
     [[[12, 13], [14, 15]], [[16, 17], [18, 19]], [[20, 21], [22, 23]]]
   ]
-  (do reverse [0, 3] !x) ===# fromLiteral [
+  (do reverse [0, 3] !x) ===# tensor [
     [[[13, 12], [15, 14]], [[17, 16], [19, 18]], [[21, 20], [23, 22]]],
     [[[ 1,  0], [ 3,  2]], [[ 5,  4], [ 7,  6]], [[ 9,  8], [11, 10]]]
   ]

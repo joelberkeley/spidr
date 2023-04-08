@@ -62,8 +62,8 @@ import Tensor
 -->
 ```idris
 historicData : Ref $ Dataset [2] [1]
-historicData = let features = fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]
-                   targets = fromLiteral [[1.2], [-0.5], [0.7]]
+historicData = let features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]
+                   targets = tensor [[1.2], [-0.5], [0.7]]
                 in [| MkDataset features targets |]
 ```
 
@@ -72,7 +72,7 @@ and model that data
 ```idris
 model : Ref $ ConjugateGPRegression [2]
 model = let mkGP = \len => pure $ MkGP zero (matern52 !1.0 !(squeeze len))
-            model = MkConjugateGPR mkGP !(fromLiteral [0.5]) !0.2
+            model = MkConjugateGPR mkGP !(tensor [0.5]) !0.2
          in fit model lbfgs !historicData
 ```
 
@@ -81,7 +81,7 @@ then optimize over the marginal mean
 ```idris
 optimizer : Optimizer $ Tensor [1, 2] F64
 optimizer f =
-  let gs = gridSearch !(fromLiteral {a = Nat} [100, 100]) !(fromLiteral [0.0, 0.0]) !(fromLiteral [1.0, 1.0])
+  let gs = gridSearch !(tensor {a = Nat} [100, 100]) !(tensor [0.0, 0.0]) !(tensor [1.0, 1.0])
    in broadcast !(gs $ \x => do f !(broadcast x))
 
 newPoint : Ref $ Tensor [1, 2] F64
@@ -184,13 +184,13 @@ With this new functionality at hand, we'll return to our objective with failure 
 
 ```idris
 failureData : Ref $ Dataset [2] [1]
-failureData = let features = fromLiteral [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]
-                  targets = fromLiteral [[0.0], [0.0], [0.0], [1.0]]
+failureData = let features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]
+                  targets = tensor [[0.0], [0.0], [0.0], [1.0]]
                in [| MkDataset features targets |]
 
 failureModel : Ref $ ConjugateGPRegression [2]
 failureModel = let mkGP = \len => pure $ MkGP zero (rbf !(squeeze len))
-                   model = MkConjugateGPR mkGP !(fromLiteral [0.2]) !0.1
+                   model = MkConjugateGPR mkGP !(tensor [0.2]) !0.1
                 in fit model lbfgs !failureData
 ```
 

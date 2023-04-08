@@ -28,5 +28,5 @@ isNan : Double -> Bool
 isNan x = x /= x
 
 export partial
-unsafeToLiteral : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> Literal shape ty
-unsafeToLiteral = unsafePerformIO . toLiteral
+unsafeEval : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> Literal shape ty
+unsafeEval = unsafePerformIO . eval

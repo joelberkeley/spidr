@@ -25,15 +25,15 @@ import Utils.Cases
 partial
 rbfMatchesTFP : Property
 rbfMatchesTFP = fixedProperty $ do
-  let lengthScale = fromLiteral 0.4
-      x = fromLiteral [[-1.2], [-0.5], [0.3], [1.2]]
-      x' = fromLiteral [[-1.2], [-0.2], [0.8]]
+  let lengthScale = tensor 0.4
+      x = tensor [[-1.2], [-0.5], [0.3], [1.2]]
+      x' = tensor [[-1.2], [-0.2], [0.8]]
       -- calculated with tensorflow probability
       -- >>> rbf = tfp.math.psd_kernels.ExponentiatedQuadratic(length_scale=tf.cast(0.4, tf.float64))
       -- >>> x = [[-1.2], [-0.5], [0.3], [1.2]]
       -- >>> x_ = [[-1.2], [-0.2], [0.8]]
       -- >>> rbf.tensor(x, x_, x1_example_ndims=1, x2_example_ndims=1)
-      expected = fromLiteral [
+      expected = tensor [
           [1.00000000e+00, 4.39369377e-02, 3.72665456e-06],
           [2.16265177e-01, 7.54839608e-01, 5.08607003e-03],
           [8.83826492e-04, 4.57833372e-01, 4.57833372e-01],
