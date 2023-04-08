@@ -67,7 +67,7 @@ uniform = withTests 20 . property $ do
 
     iidKolmogorovSmirnov samples uniformCdf
 
-  diff (toLiteral ksTest) (<) 0.015
+  diff (unsafeToLiteral ksTest) (<) 0.015
 
 partial
 uniformForNonFiniteBounds : Property
@@ -116,8 +116,8 @@ uniformSeedIsUpdated = withTests 20 . property $ do
         samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
         pure (seeds, samples)
 
-      [seed, seed', seed''] = toLiteral (do (seeds, _) <- everything; pure seeds)
-      [sample, sample'] = toLiteral (do (_, samples) <- everything; pure samples)
+      [seed, seed', seed''] = unsafeToLiteral (do (seeds, _) <- everything; pure seeds)
+      [sample, sample'] = unsafeToLiteral (do (_, samples) <- everything; pure samples)
 
   diff seed' (/=) seed
   diff seed'' (/=) seed'
@@ -131,7 +131,7 @@ uniformIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = toLiteral $ do
+  let [sample, sample'] = unsafeToLiteral $ do
         bound <- fromLiteral bound
         bound' <- fromLiteral bound'
         key <- fromLiteral key
@@ -161,7 +161,7 @@ normal = withTests 20 . property $ do
 
         iidKolmogorovSmirnov samples normalCdf
 
-  diff (toLiteral ksTest) (<) 0.02
+  diff (unsafeToLiteral ksTest) (<) 0.02
 
 partial
 normalSeedIsUpdated : Property
@@ -179,8 +179,8 @@ normalSeedIsUpdated = withTests 20 . property $ do
         samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
         pure (seeds, samples)
 
-      [seed, seed', seed''] = toLiteral (do (seeds, _) <- everything; pure seeds)
-      [sample, sample'] = toLiteral (do (_, samples) <- everything; pure samples)
+      [seed, seed', seed''] = unsafeToLiteral (do (seeds, _) <- everything; pure seeds)
+      [sample, sample'] = unsafeToLiteral (do (_, samples) <- everything; pure samples)
 
   diff seed' (/=) seed
   diff seed'' (/=) seed'
@@ -192,7 +192,7 @@ normalIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = toLiteral $ do
+  let [sample, sample'] = unsafeToLiteral $ do
         key <- fromLiteral key
         seed <- fromLiteral seed
 

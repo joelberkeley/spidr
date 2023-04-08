@@ -38,19 +38,19 @@ fromLiteralThenToLiteral = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  x ==~ toLiteral (fromLiteral {dtype=F64} x)
+  x ==~ unsafePerformIO (toLiteral (fromLiteral {dtype=F64} x))
 
   x <- forAll (literal shape int32s)
-  x === toLiteral (fromLiteral {dtype=S32} x)
+  x === unsafePerformIO (toLiteral (fromLiteral {dtype=S32} x))
 
   x <- forAll (literal shape nats)
-  x === toLiteral (fromLiteral {dtype=U32} x)
+  x === unsafePerformIO (toLiteral (fromLiteral {dtype=U32} x))
 
   x <- forAll (literal shape nats)
-  x === toLiteral (fromLiteral {dtype=U64} x)
+  x === unsafePerformIO (toLiteral (fromLiteral {dtype=U64} x))
 
   x <- forAll (literal shape bool)
-  x === toLiteral (fromLiteral {dtype=PRED} x)
+  x === unsafePerformIO (toLiteral (fromLiteral {dtype=PRED} x))
 
 partial
 canConvertAtXlaNumericBounds : Property
@@ -59,37 +59,37 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
       f64max : Literal [] Double = max @{Finite}
       min' : Ref $ Tensor [] F64 = Types.min @{Finite}
       max' : Ref $ Tensor [] F64 = Types.max @{Finite}
-  toLiteral min' === f64min
-  toLiteral max' === f64max
-  toLiteral (fromLiteral f64min == min') === True
-  toLiteral (fromLiteral f64max == max') === True
+  unsafeToLiteral min' === f64min
+  unsafeToLiteral max' === f64max
+  unsafeToLiteral (fromLiteral f64min == min') === True
+  unsafeToLiteral (fromLiteral f64max == max') === True
 
   let s32min : Literal [] Int32 = Scalar min
       s32max : Literal [] Int32 = Scalar max
       min' : Ref $ Tensor [] S32 = Types.min @{Finite}
       max' : Ref $ Tensor [] S32 = Types.max @{Finite}
-  toLiteral min' === s32min
-  toLiteral max' === s32max
-  toLiteral (fromLiteral s32min == min') === True
-  toLiteral (fromLiteral s32max == max') === True
+  unsafeToLiteral min' === s32min
+  unsafeToLiteral max' === s32max
+  unsafeToLiteral (fromLiteral s32min == min') === True
+  unsafeToLiteral (fromLiteral s32max == max') === True
 
   let u32min : Literal [] Nat = 0
       u32max : Literal [] Nat = 4294967295
       min' : Ref $ Tensor [] U32 = Types.min @{Finite}
       max' : Ref $ Tensor [] U32 = Types.max @{Finite}
-  toLiteral min' === u32min
-  toLiteral max' === u32max
-  toLiteral (fromLiteral u32min == min') === True
-  toLiteral (fromLiteral u32max == max') === True
+  unsafeToLiteral min' === u32min
+  unsafeToLiteral max' === u32max
+  unsafeToLiteral (fromLiteral u32min == min') === True
+  unsafeToLiteral (fromLiteral u32max == max') === True
 
   let u64min : Literal [] Nat = 0
       u64max : Literal [] Nat = 18446744073709551615
       min' : Ref $ Tensor [] U64 = Types.min @{Finite}
       max' : Ref $ Tensor [] U64 = Types.max @{Finite}
-  toLiteral min' === u64min
-  toLiteral max' === u64max
-  toLiteral (fromLiteral u64min == min') === True
-  toLiteral (fromLiteral u64max == max') === True
+  unsafeToLiteral min' === u64min
+  unsafeToLiteral max' === u64max
+  unsafeToLiteral (fromLiteral u64min == min') === True
+  unsafeToLiteral (fromLiteral u64max == max') === True
 
 partial
 boundedNonFinite : Property
@@ -111,8 +111,8 @@ boundedNonFinite = fixedProperty $ do
 
   Types.min @{NonFinite} ===# fromLiteral (-inf)
   Types.max @{NonFinite} ===# fromLiteral inf
-  toLiteral {dtype=F64} (Types.min @{NonFinite}) === -inf
-  toLiteral {dtype=F64} (Types.max @{NonFinite}) === inf
+  unsafeToLiteral {dtype=F64} (Types.min @{NonFinite}) === -inf
+  unsafeToLiteral {dtype=F64} (Types.max @{NonFinite}) === inf
 
 partial
 show : Property

@@ -88,14 +88,14 @@ namespace S32
 |||   `toLiteral` on different `Tensor`s in a computation will be treated entirely independently.
 |||   `toLiteral` does not store intermediate values. This is a known limitation, and may change in
 |||   the future.
-||| * `toLiteral` performs logging as a side effect. You can disable this by adjusting the
-|||   TensorFlow logging level e.g. with `export TF_CPP_MIN_LOG_LEVEL=3`.
+||| * `toLiteral` performs logging. You can disable this by adjusting the TensorFlow logging level
+|||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
-toLiteral : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> Literal shape ty
+toLiteral : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> IO (Literal shape ty)
 toLiteral x = let MkTensor n nodes = evalState 0 x in
-  case unsafePerformIO $ runEitherT $ run {dtype} n nodes of
-       Right lit => lit
-       Left err => idris_crash (show err)
+  runEitherT (run {dtype} n nodes) <&> \case
+    Right lit => lit
+    Left err => idris_crash (show err)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.

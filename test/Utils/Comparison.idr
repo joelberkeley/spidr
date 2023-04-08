@@ -22,6 +22,8 @@ import public Hedgehog
 import Literal
 import Tensor
 
+import Utils
+
 export
 floatingPointTolerance : Double
 floatingPointTolerance = 0.000001
@@ -55,25 +57,25 @@ infix 1 ===#
 namespace PRED
   export partial
   (===#) : Monad m => {shape : _} -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> TestT m ()
-  x ===# y = (toLiteral x) === (toLiteral y)
+  x ===# y = unsafeToLiteral x === unsafeToLiteral y
 
 namespace S32
   export partial
   (===#) : Monad m => {shape : _} -> Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> TestT m ()
-  x ===# y = (toLiteral x) === (toLiteral y)
+  x ===# y = unsafeToLiteral x === unsafeToLiteral y
 
 namespace U32
   export partial
   (===#) : Monad m => {shape : _} -> Ref (Tensor shape U32) -> Ref (Tensor shape U32) -> TestT m ()
-  x ===# y = (toLiteral x) === (toLiteral y)
+  x ===# y = unsafeToLiteral x === unsafeToLiteral y
 
 namespace U64
   export partial
   (===#) : Monad m => {shape : _} -> Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> TestT m ()
-  x ===# y = (toLiteral x) === (toLiteral y)
+  x ===# y = unsafeToLiteral x === unsafeToLiteral y
 
 namespace F64
   export partial
   (===#) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
            Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> TestT m ()
-  x ===# y = (==~) {tol} (toLiteral x) (toLiteral y)
+  x ===# y = (==~) {tol} (unsafeToLiteral x) (unsafeToLiteral y)
