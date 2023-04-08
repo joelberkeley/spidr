@@ -65,18 +65,18 @@ end env expr = do
 
 ||| Construct a `Tensor` from `Literal` data.
 export
-fromLiteral : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Ref $ Tensor shape dtype
-fromLiteral lit = empty `end` FromLiteral {dtype} {shape} lit
+tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Ref $ Tensor shape dtype
+tensor lit = empty `end` FromLiteral {dtype} {shape} lit
 
 namespace F64
   export
   fromDouble : Double -> Ref $ Tensor [] F64
-  fromDouble = fromLiteral . Scalar
+  fromDouble = tensor . Scalar
 
 namespace S32
   export
   fromInteger : Integer -> Ref $ Tensor [] S32
-  fromInteger = fromLiteral . Scalar . fromInteger
+  fromInteger = tensor . Scalar . fromInteger
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computation graph.
@@ -84,15 +84,15 @@ namespace S32
 ||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
 ||| **Note:**
-||| * Each call to `toLiteral` will rebuild and execute the graph. Similarly, multiple calls to 
-|||   `toLiteral` on different `Tensor`s in a computation will be treated entirely independently.
-|||   `toLiteral` does not store intermediate values. This is a known limitation, and may change in
+||| * Each call to `eval` will rebuild and execute the graph. Similarly, multiple calls to
+|||   `eval` on different `Tensor`s in a computation will be treated entirely independently.
+|||   `eval` does not store intermediate values. This is a known limitation, and may change in
 |||   the future.
-||| * `toLiteral` performs logging. You can disable this by adjusting the TensorFlow logging level
+||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
-toLiteral : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> IO (Literal shape ty)
-toLiteral x = let MkTensor n nodes = evalState 0 x in
+eval : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> IO (Literal shape ty)
+eval x = let MkTensor n nodes = evalState 0 x in
   runEitherT (run {dtype} n nodes) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
@@ -117,16 +117,16 @@ export
   min = empty `end` MinFiniteValue {dtype}
   max = empty `end` MaxFiniteValue {dtype}
 
-||| Cast the element type. For example, `castDtype (fromLiteral {dtype=S32} [1, -2])` is
-||| `fromLiteral {dtype=F64} [1.0, -2.0]`.
+||| Cast the element type. For example, `castDtype (tensor {dtype=S32} [1, -2])` is
+||| `tensor {dtype=F64} [1.0, -2.0]`.
 export
 castDtype : Primitive.Integral a => Tensor shape a -> Ref $ Tensor shape F64
 castDtype $ MkTensor i env = env `end` ConvertElementType {dtype=F64} i
 
 ----------------------------- structural operations ----------------------------
 
-||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (fromLiteral [3, 4])` is
-||| `fromLiteral [[3], [4]]`. The output can have a different rank to the input.
+||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (tensor [3, 4])` is
+||| `tensor [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape :
   Primitive dtype =>
@@ -138,8 +138,7 @@ reshape $ MkTensor {shape} i env = env `end` Reshape shape to i
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
-||| `expand 1 $ fromLiteral [[1, 2], [3, 4], [5, 6]]` is
-||| `fromLiteral [[[1, 2]], [[3, 4]], [[5, 6]]]`.
+||| `expand 1 $ tensor [[1, 2], [3, 4], [5, 6]]` is `tensor [[[1, 2]], [[3, 4]], [[5, 6]]]`.
 export
 expand :
   Primitive dtype =>
@@ -175,17 +174,17 @@ namespace Squeezable
 |||
 ||| ```idris
 ||| x : Ref $ Tensor [2, 1, 3, 1] S32
-||| x = fromLiteral [[[[4], [5], [6]]], [[[7], [8], [9]]]]
+||| x = tensor [[[[4], [5], [6]]],
+|||             [[[7], [8], [9]]]]
 |||
 ||| y : Ref $ Tensor [2, 1, 3] S32
 ||| y = squeeze !x
 ||| ```
-|||
 ||| is
-|||
 ||| ```idris
 ||| y : Ref $ Tensor [2, 1, 3] S32
-||| y = fromLiteral [[[4, 5, 6]], [[7, 8, 9]]]
+||| y = tensor [[[4, 5, 6]],
+|||             [[7, 8, 9]]]
 ||| ```
 export
 squeeze :
@@ -267,26 +266,22 @@ namespace MultiSlice
 ||| Static indices are `Nat`s. For example, for
 ||| ```
 ||| x : Ref $ Tensor [5, 6] S32
-||| x = fromLiteral [
-|||       [ 0,  1,  2,  3,  4,  5],
-|||       [ 6,  7,  8,  9, 10, 11],
-|||       [12, 13, 14, 15, 16, 17],
-|||       [18, 19, 20, 21, 22, 23],
-|||       [24, 25, 26, 27, 28, 29]
-|||     ]
+||| x = tensor [[ 0,  1,  2,  3,  4,  5],
+|||             [ 6,  7,  8,  9, 10, 11],
+|||             [12, 13, 14, 15, 16, 17],
+|||             [18, 19, 20, 21, 22, 23],
+|||             [24, 25, 26, 27, 28, 29]]
 ||| ```
 ||| we can index as `slice [at 1] !x` to get
 ||| ```
 ||| x : Ref $ Tensor [6] S32
-||| x = fromLiteral [6, 7, 8, 9, 10, 11]
+||| x = tensor [6, 7, 8, 9, 10, 11]
 ||| ```
 ||| or we can slice as `slice [2.to 4] !x` to get
 ||| ```
 ||| x : Ref $ Tensor [2, 6] S32
-||| x = fromLiteral [
-|||       [12, 13, 14, 15, 16, 17],
-|||       [18, 19, 20, 21, 22, 23]
-|||     ]
+||| x = tensor [[12, 13, 14, 15, 16, 17],
+|||             [18, 19, 20, 21, 22, 23]]
 ||| ```
 ||| Note that in `2.to 4`, the 2 is inclusive, and the 4 exclusive, so we return indices 2 and 3.
 |||
@@ -295,33 +290,29 @@ namespace MultiSlice
 ||| Dynamic indices are scalar `U64` values, and the API works slightly differently because we
 ||| can't know the value of dynamic indices until the graph is executed. For indexing, with scalar
 ||| `U64` index `i` in `slice [at i] !x`, `i` is clamped to be a valid index into that dimension.
-||| For example, for `i = fromLiteral 1`, `slice [at i] !x` is
+||| For example, for `i = tensor 1`, `slice [at i] !x` is
 ||| ```
 ||| x : Ref $ Tensor [6] S32
-||| x = fromLiteral [6, 7, 8, 9, 10, 11]
+||| x = tensor [6, 7, 8, 9, 10, 11]
 ||| ```
-||| as in the static case. However, for `i = fromLiteral 10`, `slice [at i] x` returns the last row
+||| as in the static case. However, for `i = tensor 10`, `slice [at i] x` returns the last row
 ||| ```
 ||| x : Ref $ Tensor [6] S32
-||| x = fromLiteral [24, 25, 26, 27, 28, 29]
+||| x = tensor [24, 25, 26, 27, 28, 29]
 ||| ```
 ||| We can also slice by specifying a scalar `U64` start index, and a static size, as
-||| `slice [i.size 2] !x` with `i = fromLiteral 2` to get
+||| `slice [i.size 2] !x` with `i = tensor 2` to get
 ||| ```
 ||| x : Ref $ Tensor [2, 6] S32
-||| x = fromLiteral [
-|||       [12, 13, 14, 15, 16, 17],
-|||       [18, 19, 20, 21, 22, 23]
-|||     ]
+||| x = tensor [[12, 13, 14, 15, 16, 17],
+|||             [18, 19, 20, 21, 22, 23]]
 ||| ```
 ||| For a given slice `size`, the dynamic start index is clamped such that we always get `size`
-||| elements along that axis. For example, `slice [i.size 2] !x` with `i = fromLiteral 4` is
+||| elements along that axis. For example, `slice [i.size 2] !x` with `i = tensor 4` is
 ||| ```
 ||| x : Ref $ Tensor [2, 6] S32
-||| x = fromLiteral [
-|||       [18, 19, 20, 21, 22, 23],
-|||       [24, 25, 26, 27, 28, 29]
-|||     ]
+||| x = tensor [[18, 19, 20, 21, 22, 23],
+|||             [24, 25, 26, 27, 28, 29]]
 ||| ```
 ||| which starts at index 3 rather than index 4.
 |||
@@ -332,12 +323,12 @@ namespace MultiSlice
 ||| get
 ||| ```
 ||| x : Ref $ Tensor [2] S32
-||| x = fromLiteral [13, 19]
+||| x = tensor [13, 19]
 ||| ```
-||| or with `i = fromLiteral 2` in `slice [at 1, i.size 2] !x` to get
+||| or with `i = tensor 2` in `slice [at 1, i.size 2] !x` to get
 ||| ```
 ||| x : Ref $ Tensor [2] S32
-||| x = fromLiteral [7, 8]
+||| x = tensor [7, 8]
 ||| ```
 |||
 ||| Slices and indices apply to the leading axes of the tensor. For trailing axes omitted from the
@@ -346,10 +337,10 @@ namespace MultiSlice
 ||| as `slice [all, at 3] x` to get
 ||| ```
 ||| x : Ref $ Tensor [5] S32
-||| x = fromLiteral [[3], [9], [15], [21], [27]]
+||| x = tensor [[3], [9], [15], [21], [27]]
 ||| ```
 ||| This is exactly the same as the more manual `slice [0.to 5, at 3] !x` and
-||| `slice [(fromLiteral 0).size 5, at 3] !x`.
+||| `slice [(tensor 0).size 5, at 3] !x`.
 |||
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
@@ -415,9 +406,9 @@ slice at $ MkTensor i env = do
         pure (i :: idxs, insert i zero env)
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
-||| `concat 0 !(fromLiteral [[1, 2], [3, 4]]) !(fromLiteral [[5, 6]])` and
-||| `concat 1 !(fromLiteral [[3], [6]]) !(fromLiteral [[4, 5], [7, 8]])` are both
-||| `fromLiteral [[1, 2], [3, 4], [5, 6]]`.
+||| `concat 0 !(tensor [[1, 2], [3, 4]]) !(tensor [[5, 6]])` and
+||| `concat 1 !(tensor [[3], [6]]) !(tensor [[4, 5], [7, 8]])` are both
+||| `tensor [[1, 2], [3, 4], [5, 6]]`.
 export
 concat :
   Primitive dtype =>
@@ -432,11 +423,11 @@ concat axis (MkTensor i env) (MkTensor i' env') = mergeLeft env env' `end` Conca
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
 ||| x : Ref $ Tensor [3, 3] S32
-||| x = fromLiteral [[0, 1, 2],
-|||                  [3, 4, 5],
-|||                  [6, 7, 8]]
+||| x = tensor [[0, 1, 2],
+|||             [3, 4, 5],
+|||             [6, 7, 8]]
 ||| ```
-||| `diag !x` is `fromLiteral [0, 4, 8]`.
+||| `diag !x` is `tensor [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Ref (Tensor [n] dtype)
 diag $ MkTensor i env = env `end` Diag i
@@ -448,64 +439,63 @@ data Triangle = Upper | Lower
 ||| Get the upper- or lower-triangular component of a matrix. For example, for
 ||| ```
 ||| x : Ref $ Tensor [3, 3] S32
-||| x = fromLiteral [[1, 2, 3],
-|||                  [4, 5, 6],
-|||                  [7, 8, 9]]
+||| x = tensor [[1, 2, 3],
+|||             [4, 5, 6],
+|||             [7, 8, 9]]
 ||| ```
 ||| `triangle Lower !x` is
 ||| ```
 ||| x : Ref $ Tensor [3, 3] S32
-||| x = fromLiteral [[1, 0, 0],
-|||                  [4, 5, 0],
-|||                  [7, 8, 9]]
+||| x = tensor [[1, 0, 0],
+|||             [4, 5, 0],
+|||             [7, 8, 9]]
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Ref $ Tensor [n, n] dtype
 triangle tri $ MkTensor i env = env `end` Triangle (case tri of Upper => False; Lower => True) i
 
-||| Tranpose a matrix. For example, `(fromLiteral [[1, 2], [3, 4]]).T` is
-||| `fromLiteral [[1, 3], [2, 4]]`.
+||| Tranpose a matrix. For example, `(tensor [[1, 2], [3, 4]]).T` is `tensor [[1, 3], [2, 4]]`.
 export
 (.T) : Ref (Tensor [m, n] dtype) -> Ref (Tensor [n, m] dtype)
 x.T = do
   MkTensor i env <- x
   env `end` Transpose [1, 0] i
 
-||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can transpose
-||| any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting tensor
-||| corresponds to the `index i ordering`'th axis in the input tensor. For example, for
+||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can
+||| transpose any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting
+||| tensor corresponds to the `index i ordering`'th axis in the input tensor. For example, for
 ||| ```
 ||| x : Ref $ Tensor [2, 3, 4] S32
-||| x = fromLiteral [[[ 0,  1,  2,  3],
-|||                   [ 4,  5,  6,  7],
-|||                   [ 8,  9, 10, 11]],
-|||                  [[12, 13, 14, 15],
-|||                   [16, 17, 18, 19],
-|||                   [20, 21, 22, 23]]]
+||| x = tensor [[[ 0,  1,  2,  3],
+|||              [ 4,  5,  6,  7],
+|||              [ 8,  9, 10, 11]],
+|||             [[12, 13, 14, 15],
+|||              [16, 17, 18, 19],
+|||              [20, 21, 22, 23]]]
 ||| ```
 ||| `transpose [0, 2, 1] !x` is
 ||| ```
 ||| x : Ref $ Tensor [2, 4, 3] S32
-||| x = fromLiteral [[[ 0,  4,  8],
-|||                   [ 1,  5,  9],
-|||                   [ 2,  6, 10],
-|||                   [ 3,  7, 11]],
-|||                  [[12, 16, 20],
-|||                   [13, 17, 21],
-|||                   [14, 18, 22],
-|||                   [15, 19, 23]]]
+||| x = tensor [[[ 0,  4,  8],
+|||              [ 1,  5,  9],
+|||              [ 2,  6, 10],
+|||              [ 3,  7, 11]],
+|||             [[12, 16, 20],
+|||              [13, 17, 21],
+|||              [14, 18, 22],
+|||              [15, 19, 23]]]
 ||| ```
 ||| `transpose [2, 0, 1] !x` is
 ||| ```
 ||| x : Ref $ Tensor [4, 2, 3] S32
-||| x = fromLiteral [[[ 0,  4,  8],
-|||                   [12, 16, 20]],
-|||                  [[ 1,  5,  9],
-|||                   [13, 17, 21]],
-|||                  [[ 2,  6, 10],
-|||                   [14, 18, 22]],
-|||                  [[ 3,  7, 11],
-|||                   [15, 19, 23]]]
+||| x = tensor [[[ 0,  4,  8],
+|||              [12, 16, 20]],
+|||             [[ 1,  5,  9],
+|||              [13, 17, 21]],
+|||             [[ 2,  6, 10],
+|||              [14, 18, 22]],
+|||             [[ 3,  7, 11],
+|||              [15, 19, 23]]]
 ||| ```
 |||
 ||| In order to see what effect transposing a tensor has, it can help to bear in mind the following:
@@ -533,8 +523,8 @@ transpose ordering $ MkTensor i env = env `end` Transpose ordering i
 ||| is
 ||| ```
 ||| x : Ref $ Tensor [2, 2] S32
-||| x = [[1, 0],
-|||      [0, 1]]
+||| x = tensor [[1, 0],
+|||             [0, 1]]
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Ref $ Tensor [n, n] dtype
@@ -592,14 +582,14 @@ namespace Broadcastable
 |||
 ||| ```idris
 ||| x : Ref $ Tensor [2, 3] S32
-||| x = broadcast !(fromLiteral [4, 5, 6])
+||| x = broadcast !(tensor [4, 5, 6])
 ||| ```
 |||
 ||| is
 |||
 ||| ```idris
 ||| x : Ref $ Tensor [2, 3] S32
-||| x = fromLiteral [[4, 5, 6], [4, 5, 6]]
+||| x = tensor [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
 broadcast :
@@ -625,11 +615,12 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| is
 ||| ```idris
 ||| fives : Ref $ Tensor [2, 3] S32
-||| fives = fromLiteral [[5, 5, 5], [5, 5, 5]]
+||| fives = tensor [[5, 5, 5],
+|||                 [5, 5, 5]]
 ||| ```
 export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Ref $ Tensor shape dtype
-fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(fromLiteral (Scalar xs))
+fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar xs))
 
 ----------------------------- generic operations ----------------------------
 
@@ -644,8 +635,8 @@ arg = do
 ||| recip : Tensor [] F64 -> Ref (Tensor [] F64)
 ||| recip x = 1.0 / pure x
 ||| ```
-||| can be lifted to an element-wise reciprocal function as `map recip !(fromLiteral [-2, 0.4])`,
-||| which is `fromLiteral [-0.5, 2.5]`.
+||| can be lifted to an element-wise reciprocal function as `map recip !(tensor [-2, 0.4])`,
+||| which is `tensor [-0.5, 2.5]`.
 export
 map :
   (Primitive a, Primitive b) =>
@@ -664,8 +655,8 @@ map f $ MkTensor {shape = _} i env = do
 ||| addRecip x y = pure x + 1.0 / pure y
 ||| ```
 ||| can be lifted to an element-wise function as
-||| `map2 addRecip !(fromLiteral [3.0, -3.0]) !(fromLiteral [-2.0, 0.4])`, which is
-||| `fromLiteral [2.5, -0.5]`.
+||| `map2 addRecip !(tensor [3.0, -3.0]) !(tensor [-2.0, 0.4])`, which is
+||| `tensor [2.5, -0.5]`.
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
@@ -680,8 +671,8 @@ map2 f (MkTensor {shape = _} i env) (MkTensor i' env') = do
   mergeLeft env env' `end` Map (MkFn [p0, p1] j subEnv) [i, i'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
-||| For example, if `x = fromLiteral [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 !x` is
-||| `fromLiteral [3, 5, 7]` and `reduce @{Sum} 1 !x` to `fromLiteral [3, 12]`.
+||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 !x` is
+||| `tensor [3, 5, 7]` and `reduce @{Sum} 1 !x` to `tensor [3, 12]`.
 |||
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
@@ -711,9 +702,9 @@ reduce axes $ MkTensor i xEnv = do
 ||| **Note:** Sorting is not stable, meaning elements that compare equal according the ordering may
 ||| be sorted in a different order to the order they appear in the input.
 |||
-||| For example, for `x = fromLiteral [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 !x` is
-||| `fromLiteral [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 !x` is
-||| `fromLiteral [[1, 4, 6], [2, 3, 5]]`.
+||| For example, for `x = tensor [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 !x` is
+||| `tensor [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 !x` is
+||| `tensor [[1, 4, 6], [2, 3, 5]]`.
 export
 sort :
   Primitive dtype =>
@@ -731,26 +722,26 @@ sort comp dimension $ MkTensor i env = do
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
 ||| x : Ref $ Tensor [2, 3] S32
-||| x = fromLiteral [[-2, -1,  0],
-|||                  [ 1,  2,  3]]
+||| x = tensor [[-2, -1,  0],
+|||             [ 1,  2,  3]]
 ||| ```
 ||| `reverse [0] !x` is
 ||| ```
 ||| x : Ref $ Tensor [2, 3] S32
-||| x = fromLiteral [[ 1,  2,  3],
-|||                  [-2, -1,  0]]
+||| x = tensor [[ 1,  2,  3],
+|||             [-2, -1,  0]]
 ||| ```
 ||| `reverse [1] !x` is
 ||| ```
 ||| x : Ref $ Tensor [2, 3] S32
-||| x = fromLiteral [[ 0, -1, -2],
-|||                  [ 3,  2,  1]]
+||| x = tensor [[ 0, -1, -2],
+|||             [ 3,  2,  1]]
 ||| ```
 ||| and `reverse [0, 1] !x` is
 ||| ```
 ||| x : Ref $ Tensor [2, 3] S32
-||| x = fromLiteral [[ 3,  2,  1],
-|||                  [ 0, -1, -2]]
+||| x = tensor [[ 3,  2,  1],
+|||             [ 0, -1, -2]]
 ||| ```
 |||
 ||| **Note:** This function requires `axes` is ordered simply so that elements are unique.
@@ -773,8 +764,8 @@ binaryRef op x x' = do
   MkTensor i' env' <- x'
   mergeLeft env env' `end` BinaryElementwise op i i'
 
-||| Element-wise equality. For example, `fromLiteral [1, 2] /= fromLiteral [1, 3]` is
-||| `fromLiteral [True, False]`.
+||| Element-wise equality. For example, `tensor [1, 2] /= tensor [1, 3]` is
+||| `tensor [True, False]`.
 export
 (==) : Primitive.Eq dtype =>
        Ref (Tensor shape dtype) ->
@@ -782,8 +773,8 @@ export
        Ref (Tensor shape PRED)
 (==) = binaryRef Eq
 
-||| Element-wise inequality. For example, `fromLiteral [1, 2] /= fromLiteral [1, 3]` is
-||| `fromLiteral [False, True]`.
+||| Element-wise inequality. For example, `tensor [1, 2] /= tensor [1, 3]` is
+||| `tensor [False, True]`.
 export
 (/=) : Primitive.Eq dtype =>
        Ref (Tensor shape dtype) ->
@@ -791,8 +782,8 @@ export
        Ref (Tensor shape PRED)
 (/=) = binaryRef Ne
 
-||| Element-wise less than. For example, `fromLiteral [1, 2, 3] < fromLiteral [2, 2, 2]` is
-||| `fromLiteral [True, False, False]`.
+||| Element-wise less than. For example, `tensor [1, 2, 3] < tensor [2, 2, 2]` is
+||| `tensor [True, False, False]`.
 export
 (<) : Primitive.Ord dtype =>
       Ref (Tensor shape dtype) ->
@@ -800,8 +791,8 @@ export
       Ref (Tensor shape PRED)
 (<) = binaryRef Lt
 
-||| Element-wise greater than. For example, `fromLiteral [1, 2, 3] > fromLiteral [2, 2, 2]` is
-||| `fromLiteral [False, False, True]`.
+||| Element-wise greater than. For example, `tensor [1, 2, 3] > tensor [2, 2, 2]` is
+||| `tensor [False, False, True]`.
 export
 (>) : Primitive.Ord dtype =>
       Ref (Tensor shape dtype) ->
@@ -809,8 +800,8 @@ export
       Ref (Tensor shape PRED)
 (>) = binaryRef Gt
 
-||| Element-wise less than or equal. For example, `fromLiteral [1, 2, 3] <= fromLiteral [2, 2, 2]`
-||| is `fromLiteral [True, True, False]`.
+||| Element-wise less than or equal. For example, `tensor [1, 2, 3] <= tensor [2, 2, 2]`
+||| is `tensor [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype =>
        Ref (Tensor shape dtype) ->
@@ -819,7 +810,7 @@ export
 (<=) = binaryRef Le
 
 ||| Element-wise greater than or equal. For example,
-||| `fromLiteral [1, 2, 3] >= fromLiteral [2, 2, 2]` is `fromLiteral [False, True, True]`.
+||| `tensor [1, 2, 3] >= tensor [2, 2, 2]` is `tensor [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype =>
        Ref (Tensor shape dtype) ->
@@ -828,8 +819,8 @@ export
 (>=) = binaryRef Ge
 
 ||| Element-wise boolean and. For example,
-||| `fromLiteral [True, True, False, False] && fromLiteral [True, False, True, False]` is
-||| `fromLiteral [True, False, False, False]`.
+||| `tensor [True, True, False, False] && tensor [True, False, True, False]` is
+||| `tensor [True, False, False, False]`.
 export
 (&&) : Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)
 (&&) = binaryRef And
@@ -845,8 +836,8 @@ namespace Monoid
     neutral = fill True
 
 ||| Element-wise boolean or. For example,
-||| `fromLiteral [True, True, False, False] || fromLiteral [True, False, True, False]` is
-||| `fromLiteral [True, True, True, False]`.
+||| `tensor [True, True, False, False] || tensor [True, False, True, False]` is
+||| `tensor [True, True, True, False]`.
 export
 (||) : Ref (Tensor shape PRED) ->
        Ref (Tensor shape PRED) ->
@@ -866,8 +857,8 @@ namespace Monoid
 unary : UnaryOp -> Tensor s a -> Ref $ Tensor s a'
 unary op $ MkTensor i env = env `end` UnaryElementwise op i
 
-||| Element-wise boolean negation. For example, `not !(fromLiteral [True, False])` is
-||| `fromLiteral [False, True]`.
+||| Element-wise boolean negation. For example, `not !(tensor [True, False])` is
+||| `tensor [False, True]`.
 export
 not : Tensor shape PRED -> Ref $ Tensor shape PRED
 not = unary Not
@@ -877,15 +868,15 @@ not = unary Not
 ||| truthy, else the element from `onFalse`. For example, for
 ||| ```
 ||| preds : Ref $ Tensor [3] PRED
-||| preds = fromLiteral [False, True, False]
+||| preds = tensor [False, True, False]
 |||
 ||| onTrue : Ref $ Tensor [3] S32
-||| onTrue = fromLiteral [1, 2, 3]
+||| onTrue = tensor [1, 2, 3]
 |||
 ||| onFalse : Ref $ Tensor [3] S32
-||| onFalse = fromLiteral [4, 5, 6]
+||| onFalse = tensor [4, 5, 6]
 ||| ```
-||| `select !preds !onTrue !onFalse` is `fromLiteral [4, 2, 6]`.
+||| `select !preds !onTrue !onFalse` is `tensor [4, 2, 6]`.
 |||
 ||| @onTrue The elements to choose where the predicate elements are truthy.
 ||| @onFalse The elements to choose where the predicate elements are falsy.
@@ -905,14 +896,14 @@ select (MkTensor p pred) (MkTensor t true) (MkTensor f false) =
 ||| for
 ||| ```
 ||| x : Ref $ Tensor [2] S32
-||| x = fromLiteral [2, -1]
+||| x = tensor [2, -1]
 |||
 ||| y : Ref $ Tensor [2, 2] S32
-||| y = fromLiteral [[5, 6],
-|||                  [7, 8]]
+||| y = tensor [[5, 6],
+|||             [7, 8]]
 ||| ```
-||| `cond !(fromLiteral True) (fromLiteral 2 *) !x diag !y` is `fromLiteral [4, -2]` and
-||| `cond !(fromLiteral False) (fromLiteral 2 *) !x diag !y` to `fromLiteral [5, 8]`.
+||| `cond !(tensor True) (tensor 2 *) !x diag !y` is `tensor [4, -2]` and
+||| `cond !(tensor False) (tensor 2 *) !x diag !y` to `tensor [5, 8]`.
 |||
 ||| While both functions will be called for the purposes of defining the computation, only one will
 ||| be evaluated with its specified argument. That is, this function short-circuits.
@@ -940,7 +931,7 @@ infixl 9 @@
 
 namespace Vector
   ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
-  ||| the right-hand side tensor. For example `fromLiteral [0, 1, 2] @@ fromLiteral [-1, -3, -1]` is
+  ||| the right-hand side tensor. For example `tensor [0, 1, 2] @@ tensor [-1, -3, -1]` is
   ||| `-1`.
   export
   (@@) : Primitive.Num dtype =>
@@ -958,10 +949,11 @@ namespace Matrix
   |||
   ||| ```idris
   ||| x : Ref $ Tensor [2, 3] S32
-  ||| x = fromLiteral [[-1, -2, -3], [0, 1, 2]]
+  ||| x = tensor [[-1, -2, -3],
+  |||             [ 0,  1,  2]]
   |||
   ||| y : Ref $ Tensor [3, 1] S32
-  ||| y = fromLiteral [[4, 0, 5]]
+  ||| y = tensor [[4, 0, 5]]
   |||
   ||| z : Ref $ Tensor [2, 1] S32
   ||| z = x @@ y
@@ -971,7 +963,7 @@ namespace Matrix
   |||
   ||| ```idris
   ||| z : Ref $ Tensor [2, 1] S32
-  ||| z = fromLiteral [-19, 10]
+  ||| z = tensor [-19, 10]
   ||| ```
   export
   (@@) : (Primitive dtype, Primitive.Num dtype) =>
@@ -984,8 +976,8 @@ namespace Matrix
     MkTensor i' env' <- x'
     mergeLeft env env' `end` Dot i i'
 
-||| Element-wise addition. For example, `fromLiteral [1, 2] + fromLiteral [3, 4]` is
-||| `fromLiteral [4, 6]`.
+||| Element-wise addition. For example, `tensor [1, 2] + tensor [3, 4]` is
+||| `tensor [4, 6]`.
 export
 (+) : Primitive.Num dtype =>
       Ref (Tensor shape dtype) ->
@@ -1007,15 +999,15 @@ namespace Monoid
     Monoid (Ref $ Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
-||| Element-wise negation. For example, `- fromLiteral [1, -2]` is `fromLiteral [-1, 2]`.
+||| Element-wise negation. For example, `- tensor [1, -2]` is `tensor [-1, 2]`.
 export
 negate : Primitive.Neg dtype => Ref (Tensor shape dtype) -> Ref (Tensor shape dtype)
 negate x = do
   MkTensor i env <- x
   env `end` UnaryElementwise Neg i
 
-||| Element-wise subtraction. For example, `fromLiteral [3, 4] - fromLiteral [4, 2]` is
-||| `fromLiteral [-1, 2]`.
+||| Element-wise subtraction. For example, `tensor [3, 4] - tensor [4, 2]` is
+||| `tensor [-1, 2]`.
 export
 (-) : Primitive.Neg dtype =>
       Ref (Tensor shape dtype) ->
@@ -1023,8 +1015,8 @@ export
       Ref (Tensor shape dtype)
 (-) = binaryRef Sub
 
-||| Element-wise multiplication. For example, `fromLiteral [2, 3] * fromLiteral [4, 5]` is
-||| `fromLiteral [8, 15]`.
+||| Element-wise multiplication. For example, `tensor [2, 3] * tensor [4, 5]` is
+||| `tensor [8, 15]`.
 export
 (*) : Primitive.Num dtype =>
       Ref (Tensor shape dtype) ->
@@ -1033,8 +1025,8 @@ export
 (*) = binaryRef Mul
 
 namespace Scalarwise
-  ||| Multiplication by a scalar. For example, `fromLiteral 2 * fromLiteral [3, 5]` is
-  ||| `fromLiteral [6, 10]`.
+  ||| Multiplication by a scalar. For example, `tensor 2 * tensor [3, 5]` is
+  ||| `tensor [6, 10]`.
   |||
   ||| The RHS is required to be non-scalar simply to avoid ambiguities with element-wise `(*)`.
   export
@@ -1060,8 +1052,8 @@ namespace Monoid
     Monoid (Ref $ Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
-||| Element-wise floating point division. For example, `fromLiteral [2, 3] / fromLiteral [4, 5]` is
-||| `fromLiteral [0.5, 0.6]`.
+||| Element-wise floating point division. For example, `tensor [2, 3] / tensor [4, 5]` is
+||| `tensor [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype =>
       Ref (Tensor shape dtype) ->
@@ -1070,8 +1062,8 @@ export
 (/) = binaryRef Div
 
 namespace Scalarwise
-  ||| Floating point division by a scalar. For example, `fromLiteral [3.4, -5.6] / fromLiteral 2` is
-  ||| `fromLiteral [1.7, -2.8]`.
+  ||| Floating point division by a scalar. For example, `tensor [3.4, -5.6] / tensor 2` is
+  ||| `tensor [1.7, -2.8]`.
   |||
   ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
   export
@@ -1083,8 +1075,8 @@ namespace Scalarwise
     MkTensor {shape = _ :: _} _ _ <- l
     l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} !r
 
-||| The element-wise reciprocal. For example, `recip !(fromLiteral [-2, 0, 0.2])`
-||| is `fromLiteral [-0.5, nan, 5]`.
+||| The element-wise reciprocal. For example, `recip !(tensor [-2, 0, 0.2])`
+||| is `tensor [-0.5, nan, 5]`.
 export
 recip : Tensor shape F64 -> Ref $ Tensor shape F64
 recip = unary Reciprocal
@@ -1092,7 +1084,7 @@ recip = unary Reciprocal
 infixr 9 ^
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
-||| example, `fromLiteral [2, 25, -9] ^ fromLiteral [3, -0.5, 0.5]` is `fromLiteral [8, 0.2, nan]`.
+||| example, `tensor [2, 25, -9] ^ tensor [3, -0.5, 0.5]` is `tensor [8, 0.2, nan]`.
 |||
 ||| Note: The behaviour of this function is not well-defined at negative or positive infinity, or
 |||   NaN.
@@ -1102,34 +1094,34 @@ export
 (^) : Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape F64)
 (^) = binaryRef Pow
 
-||| Element-wise absolute value. For example, `abs !(fromLiteral [-2, 3])` is
-||| `fromLiteral [2, 3]`.
+||| Element-wise absolute value. For example, `abs !(tensor [-2, 3])` is
+||| `tensor [2, 3]`.
 export
 abs : Primitive.Abs dtype => Tensor shape dtype -> Ref $ Tensor shape dtype
 abs = unary Abs
 
-||| The element-wise natural exponential. For example, `exp !(fromLiteral [-1, 0, 2])` is
-||| `fromLiteral [1 / euler, 1, pow euler 2]`.
+||| The element-wise natural exponential. For example, `exp !(tensor [-1, 0, 2])` is
+||| `tensor [1 / euler, 1, pow euler 2]`.
 export
 exp : Tensor shape F64 -> Ref $ Tensor shape F64
 exp = unary Exp
 
 ||| The element-wise floor function. For example,
-||| `floor !(fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
-||| `fromLiteral [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
+||| `floor !(tensor [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
+||| `tensor [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
 floor : Tensor shape F64 -> Ref $ Tensor shape F64
 floor = unary Floor
 
 ||| The element-wise ceiling function. For example,
-||| `ceil !(fromLiteral [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
-||| `fromLiteral [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
+||| `ceil !(tensor [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
+||| `tensor [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
 ceil : Tensor shape F64 -> Ref $ Tensor shape F64
 ceil = unary Ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
-||| `log !(fromLiteral [1 / euler, 1, euler * euler])` is `fromLiteral [-1, 0, 2]`.
+||| `log !(tensor [1 / euler, 1, euler * euler])` is `tensor [-1, 0, 2]`.
 export
 log : Tensor shape F64 -> Ref $ Tensor shape F64
 log = unary Log
@@ -1204,20 +1196,20 @@ export
 erf : Tensor shape F64 -> Ref $ Tensor shape F64
 erf = unary Erf
 
-||| The element-wise square. For example, `square !(fromLiteral [-2, 0, 3])`
-||| is `fromLiteral [4, 0, 9]`.
+||| The element-wise square. For example, `square !(tensor [-2, 0, 3])`
+||| is `tensor [4, 0, 9]`.
 export
 square : Tensor shape F64 -> Ref $ Tensor shape F64
 square = unary Square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
-||| For example, `sqrt !(fromLiteral [0, 9])` is `fromLiteral [0, 3]`.
+||| For example, `sqrt !(tensor [0, 9])` is `tensor [0, 3]`.
 export
 sqrt : Tensor shape F64 -> Ref $ Tensor shape F64
 sqrt = unary Sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
-||| `min !(fromLiteral [-3, -1, 3]) !(fromLiteral [-1, 0, 1])` is `fromLiteral [-3, -1, 1]`.
+||| `min !(tensor [-3, -1, 3]) !(tensor [-1, 0, 1])` is `tensor [-3, -1, 1]`.
 export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ Tensor shape dtype
 min (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
@@ -1240,7 +1232,7 @@ namespace Monoid
       neutral = fill (1.0 / 0.0)
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
-||| `max !(fromLiteral [-3, -1, 3]) !(fromLiteral [-1, 0, 1])` is `fromLiteral [-1, 0, 3]`.
+||| `max !(tensor [-3, -1, 3]) !(tensor [-1, 0, 1])` is `tensor [-1, 0, 3]`.
 export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ Tensor shape dtype
 max (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
@@ -1277,7 +1269,7 @@ highlightNan minimize x with (x)
       select !(if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
-||| `argmin !(fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 2`. If the vector contains NaN values,
+||| `argmin !(tensor [-1, 3, -2, -2, 3])` is `tensor 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Ref $ Tensor [] U64
@@ -1286,7 +1278,7 @@ argmin x = do
   env `end` Argmin {out=U64} 0 i
 
 ||| The first index of the maximum value in a vector. For example,
-||| `argmax !(fromLiteral [-1, 3, -2, -2, 3])` is `fromLiteral 1`. If the vector contains NaN values,
+||| `argmax !(tensor [-1, 3, -2, -2, 3])` is `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
 export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Ref $ Tensor [] U64
@@ -1363,7 +1355,7 @@ namespace Vector
     squeeze !(a \| expand 1 (MkTensor {shape = [m]} i env))
 
 ||| Sum the elements along the diagonal of the input. For example,
-||| `trace !(fromLiteral [[-1, 5], [1, 4]])` is `3`.
+||| `trace !(tensor [[-1, 5], [1, 4]])` is `3`.
 export
 trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
@@ -1394,9 +1386,9 @@ inf = fromDouble (1.0 / 0.0)
 ||| Example usage, multiplying two uniform samples
 ||| ```
 ||| x : Ref $ Tensor [3] F64
-||| x = do key <- fromLiteral (Scalar 2)
+||| x = do key <- tensor (Scalar 2)
 |||        rng <- uniform key !(fill 0.0) !(fill 1.0)
-|||        initialState <- fromLiteral [Scalar 0]
+|||        initialState <- tensor [Scalar 0]
 |||        evalStateT initialState (do lift $ pure !rng * pure !rng)
 ||| ```
 |||
@@ -1437,9 +1429,9 @@ uniform (MkTensor iKey envKey) bound bound' = do
 ||| Example usage, multiplying two normal samples
 ||| ```
 ||| x : Ref $ Tensor [3] F64
-||| x = do key <- fromLiteral (Scalar 2)
+||| x = do key <- tensor (Scalar 2)
 |||        let rng = normal key
-|||        initialState <- fromLiteral [Scalar 0]
+|||        initialState <- tensor [Scalar 0]
 |||        evalStateT initialState (do lift $ pure !rng * pure !rng)
 ||| ```
 |||

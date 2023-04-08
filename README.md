@@ -21,16 +21,16 @@ import Tensor
 -->
 ```idris
 x : Ref $ Tensor [3] S32
-x = fromLiteral [1, 2, 3]
+x = tensor [1, 2, 3]
 
 y : Ref $ Tensor [3] S32
-y = x + fromLiteral [0, 1, 2]
+y = x + tensor [0, 1, 2]
 ```
 but this won't
 ```idris
 failing "elaboration"
   z : Tensor [3] S32
-  z = x + fromLiteral [0, 1]
+  z = x + tensor [0, 1]
 ```
 because you can't add a vector of length two to a vector of length three. Shape manipulation extends beyond comparing literal dimension sizes to arbitrary symbolic manipulation
 ```idris

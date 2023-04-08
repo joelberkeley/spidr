@@ -27,9 +27,9 @@ gaussianUnivariatePDF : Property
 gaussianUnivariatePDF = property $ do
   let doubles = literal [] doubles
   [mean, cov, x] <- forAll (np [doubles, doubles, doubles])
-  let gaussian = do pure $ MkGaussian !(fromLiteral [[mean]]) !(fromLiteral [[[cov]]])
-      actual = do pdf !gaussian !(fromLiteral [[x]])
-      expected = fromLiteral [| univariate x mean cov |]
+  let gaussian = do pure $ MkGaussian !(tensor [[mean]]) !(tensor [[[cov]]])
+      actual = do pdf !gaussian !(tensor [[x]])
+      expected = tensor [| univariate x mean cov |]
   actual ===# expected
 
     where
@@ -39,20 +39,20 @@ gaussianUnivariatePDF = property $ do
 partial
 gaussianMultivariatePDF : Property
 gaussianMultivariatePDF = fixedProperty $ do
-  let mean = fromLiteral [[-0.2], [0.3]]
-      cov = fromLiteral [[[1.2], [0.5]], [[0.5], [0.7]]]
-      x = fromLiteral [[1.1], [-0.5]]
+  let mean = tensor [[-0.2], [0.3]]
+      cov = tensor [[[1.2], [0.5]], [[0.5], [0.7]]]
+      x = tensor [[1.1], [-0.5]]
   (do pdf (MkGaussian !mean !cov) !x) ===# 0.016427375
 
 partial
 gaussianCDF : Property
 gaussianCDF = fixedProperty $ do
-  let gaussian = (do pure $ MkGaussian !(fromLiteral [[0.5]]) !(fromLiteral [[[1.44]]]))
+  let gaussian = (do pure $ MkGaussian !(tensor [[0.5]]) !(tensor [[[1.44]]]))
 
-  (do cdf !gaussian !(fromLiteral [[-1.5]])) ===# 0.04779036
-  (do cdf !gaussian !(fromLiteral [[-0.5]])) ===# 0.20232838
-  (do cdf !gaussian !(fromLiteral [[0.5]])) ===# 0.5
-  (do cdf !gaussian !(fromLiteral [[1.5]])) ===# 0.7976716
+  (do cdf !gaussian !(tensor [[-1.5]])) ===# 0.04779036
+  (do cdf !gaussian !(tensor [[-0.5]])) ===# 0.20232838
+  (do cdf !gaussian !(tensor [[0.5]])) ===# 0.5
+  (do cdf !gaussian !(tensor [[1.5]])) ===# 0.7976716
 
 export partial
 group : Group
