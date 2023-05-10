@@ -48,6 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install C XLA cpu
       run: ./install_c_xla.sh cpu
     - uses: actions/upload-artifact@v3
       with:
@@ -57,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install C XLA cuda111
       run: ./install_c_xla.sh cuda111
     - uses: actions/upload-artifact@v3
       with:
