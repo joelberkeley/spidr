@@ -49,8 +49,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install C XLA cpu
-      run: ./install_c_xla.sh cpu
-      run: mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
+      run: |
+        ./install_c_xla.sh cpu
+       mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
     - uses: actions/upload-artifact@v3
       with:
         name: c_xla_extension-x86_64-linux-cpu-${{ github.sha }}.so
@@ -60,8 +61,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install C XLA cuda111
-      run: ./install_c_xla.sh cuda111
-      run: mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
+      run: |
+        ./install_c_xla.sh cuda111
+        mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
     - uses: actions/upload-artifact@v3
       with:
         name: c_xla_extension-x86_64-linux-cuda111-${{ github.sha }}.so
