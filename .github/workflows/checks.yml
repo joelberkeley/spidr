@@ -51,7 +51,7 @@ jobs:
     - name: Install C XLA cpu
       run: |
         ./install_c_xla.sh cpu
-       mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
+        mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
     - uses: actions/upload-artifact@v3
       with:
         name: c_xla_extension-x86_64-linux-cpu-${{ github.sha }}.so
