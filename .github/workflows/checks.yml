@@ -25,17 +25,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Bazel
-      run: |
-        apt update && apt upgrade -y && apt install -y apt-transport-https curl gnupg
-        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-        mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-        apt update && apt install -y bazel
-    - name: Install XLA
-      run: |
-        apt install -y wget
-        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
-        (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
+      run: ./install_c_xla.sh cpu
     - name: Run tests
       run: pack run test.ipkg
       env:
@@ -54,3 +44,18 @@ jobs:
     - uses: actions/checkout@v3
     - name: Type-check tutorials
       run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
+  runs-on: ubuntu-latest
+  xla-cpu:
+    - uses: actions/checkout@v3
+      run: ./install_c_xla.sh cpu
+    - uses: actions/upload-artifact@v3
+      with:
+        name: c_xla_extension-x86_64-linux-cpu-${{ github.sha }}.so
+        path: backend/bazel-bin/libc_xla_extension.so
+  xla-gpu:
+    - uses: actions/checkout@v3
+      run: ./install_c_xla.sh cuda111
+    - uses: actions/upload-artifact@v3
+      with:
+        name: c_xla_extension-x86_64-linux-cuda111-${{ github.sha }}.so
+        path: backend/bazel-bin/libc_xla_extension.so
