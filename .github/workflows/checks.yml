@@ -46,6 +46,7 @@ jobs:
       run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
   xla-cpu:
     runs-on: ubuntu-latest
+    steps:
     - uses: actions/checkout@v3
       run: ./install_c_xla.sh cpu
     - uses: actions/upload-artifact@v3
@@ -54,6 +55,7 @@ jobs:
         path: backend/bazel-bin/libc_xla_extension.so
   xla-gpu:
     runs-on: ubuntu-latest
+    steps:
     - uses: actions/checkout@v3
       run: ./install_c_xla.sh cuda111
     - uses: actions/upload-artifact@v3
