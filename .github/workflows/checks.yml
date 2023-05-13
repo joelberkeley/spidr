@@ -26,7 +26,9 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install Bazel
       working-directory: backend
-      run: ./build.sh cpu
+      run: |
+        ./install_bazel.sh
+        ./build.sh cpu
     - name: Run tests
       run: pack --no-prompt run test.ipkg
       env:
@@ -63,6 +65,7 @@ jobs:
     - name: Build C XLA lib cpu
       working-directory: backend
       run: |
+        ./install_bazel.sh
         ./build.sh cpu
         ./package.sh
     - name: Publish C XLA lib cpu
@@ -78,6 +81,7 @@ jobs:
     - name: Build C XLA lib cuda111
       working-directory: backend
       run: |
+        ./install_bazel.sh
         ./build.sh cuda111
         ./package.sh
     - name: Publish C XLA lib cuda111
