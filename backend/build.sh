@@ -9,3 +9,8 @@ sudo apt update && sudo apt install -y bazel
 sudo apt install -y wget
 wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-$1.tar.gz | tar xz -C .
 BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension
+
+DIR=$(mktemp -d)
+mkdir -p $DIR/$TAR_PREFIX-$1/lib
+mv bazel-bin/libc_xla_extension.so $DIR/$TAR_PREFIX-$1/lib
+tar cfz $TAR_PREFIX-$1.tar.gz -C $DIR .
