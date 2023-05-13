@@ -25,7 +25,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Bazel
-      run: ./install_c_xla.sh cpu
+      working-directory: backend
+      run: ./build.sh cpu
     - name: Run tests
       run: pack run test.ipkg
       env:
@@ -63,7 +64,9 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build C XLA lib cpu
       working-directory: backend
-      run: ./build.sh cpu
+      run: |
+        ./build.sh cpu
+        ./package.sh ${{ env.TAR_PREFIX }} cpu
     - name: Upload C XLA lib cpu
       uses: actions/upload-release-asset@v1
       env:
@@ -76,7 +79,9 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build C XLA lib cuda111
       working-directory: backend
-      run: ./build.sh cuda111
+      run: |
+        ./build.sh cuda111
+        ./package.sh ${{ env.TAR_PREFIX }} cuda111
     - name: Upload C XLA lib cuda111
       uses: actions/upload-release-asset@v1
       env:
