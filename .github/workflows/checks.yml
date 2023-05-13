@@ -51,7 +51,7 @@ jobs:
         sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y apt-transport-https curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
         sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
         sudo apt-get install -y bazel
     - uses: actions/checkout@v3
     - name: Build C XLA cpu
