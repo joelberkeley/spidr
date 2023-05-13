@@ -53,8 +53,9 @@ jobs:
         ./install_c_xla.sh cpu
 
         git clone https://user:${{ secrets.GITHUB_TOKEN }}@github.com/joelberkeley/c-xla
-        mkdir -p c-xla/release/x86_64-linux-cpu
-        mv backend/bazel-bin/libc_xla_extension.so c-xla/release/${GITHUB_SHA}/x86_64-linux-cpu/libc_xla_extension.so
+        DIR=c-xla/release/${GITHUB_SHA}/x86_64-linux-cpu
+        mkdir -p $DIR
+        mv backend/bazel-bin/libc_xla_extension.so $DIR/libc_xla_extension.so
 
         git config user.name "github-actions"
         git config user.email "none"
