@@ -65,7 +65,7 @@ jobs:
     - name: Build C XLA lib cpu
       working-directory: backend
       run: |
-        ./install_bazel.sh
+        sudo ./install_bazel.sh
         ./build.sh cpu
         ./package.sh
     - name: Publish C XLA lib cpu
@@ -81,7 +81,7 @@ jobs:
     - name: Build C XLA lib cuda111
       working-directory: backend
       run: |
-        ./install_bazel.sh
+        sudo ./install_bazel.sh
         ./build.sh cuda111
         ./package.sh
     - name: Publish C XLA lib cuda111
