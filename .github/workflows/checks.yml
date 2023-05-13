@@ -61,7 +61,7 @@ jobs:
       with:
         tag_name: c-xla-${{ env.C_XLA_VERSION }}
         release_name: C XLA release ${{ env.C_XLA_VERSION }}
-        body: ""
+        body: "C XLA release ${{ env.C_XLA_VERSION }}"
     - uses: actions/checkout@v3
     - name: Build C XLA lib cpu
       working-directory: backend
