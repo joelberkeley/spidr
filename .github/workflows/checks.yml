@@ -66,7 +66,8 @@ jobs:
       working-directory: backend
       run: |
         ./build.sh cpu
-        ./package.sh ${{ env.TAR_PREFIX }} cpu
+        ./package.sh ${{ env.TAR_PREFIX }}-cpu
+        ls
     - name: Upload C XLA lib cpu
       uses: actions/upload-release-asset@v1
       env:
@@ -81,7 +82,8 @@ jobs:
       working-directory: backend
       run: |
         ./build.sh cuda111
-        ./package.sh ${{ env.TAR_PREFIX }} cuda111
+        ./package.sh ${{ env.TAR_PREFIX }}-cuda111
+        ls
     - name: Upload C XLA lib cuda111
       uses: actions/upload-release-asset@v1
       env:

@@ -1,7 +1,4 @@
-PREFIX=$2
-PLATFORM=$1
-
 DIR=$(mktemp -d)
-mkdir -p $DIR/$PREFIX-$PLATFORM/lib
-mv bazel-bin/libc_xla_extension.so $DIR/$PREFIX-$PLATFORM/lib
-tar cfz $PREFIX-$PLATFORM.tar.gz -C $DIR .
+mkdir -p $DIR/$1/lib
+mv bazel-bin/libc_xla_extension.so $DIR/$1/lib
+tar cfz $1.tar.gz -C $DIR .
