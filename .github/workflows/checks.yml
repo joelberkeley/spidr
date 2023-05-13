@@ -49,14 +49,17 @@ jobs:
       TAR_PREFIX: c_xla_extension-x86_64-linux
     runs-on: ubuntu-latest
     steps:
+    - name: Read C XLA version
+      working-directory: backend
+      run: echo "C_XLA_VERSION=$(cat VERSION)" >> $GITHUB_ENV
     - name: Create C XLA release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: c-xla-${{ github.sha }}
-        release_name: C XLA release ${{ github.sha }}
+        tag_name: c-xla-${{ env.C_XLA_VERSION }}
+        release_name: C XLA release ${{ env.C_XLA_VERSION }}
     - uses: actions/checkout@v3
     - name: Build C XLA lib cpu
       working-directory: backend
