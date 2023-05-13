@@ -64,8 +64,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.sha::7 }}
-        release_name: C XLA release ${{ github.sha::7 }}
+        tag_name: c-xla-${{ github.sha }}
+        release_name: C XLA release ${{ github.sha }}
     - name: Upload C XLA lib
       uses: actions/upload-release-asset@v1
       env:
