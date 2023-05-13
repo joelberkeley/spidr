@@ -52,7 +52,9 @@ jobs:
     steps:
     - name: Read C XLA version
       working-directory: backend
-      run: echo "C_XLA_VERSION=$(cat VERSION)" >> $GITHUB_ENV
+      run: |
+        C_XLA_VERSION=$(cat VERSION)
+        echo "C_XLA_VERSION=$C_XLA_VERSION" >> $GITHUB_ENV
     - name: Create C XLA release
       id: create_release
       uses: actions/create-release@v1
