@@ -66,4 +66,12 @@ brief = "spidr explores how we can advance probabilistic modelling with the late
 readme = "README.md"
 license = "Apache License, Version 2.0"
 
-prebuild = ""
+preinstall =
+  C_XLA_VERSION=$(cat VERSION)
+  curl -OL https://github.com/joelberkeley/spidr/releases/download/c-xla-$C_XLA_VERSION/c_xla_extension-x86_64-linux-cpu.tar.gz
+  sudo tar xzf c_xla_extension-x86_64-linux-cpu.tar.gz -C /usr/local/lib --strip-components 1
+  sudo bash -c 'echo "/usr/local/lib/c_xla_extension/lib" >> /etc/ld.so.conf.d/c_xla_extension.conf' && sudo ldconfig
+
+preclean =
+  sudo rm -r /usr/local/lib/c_xla_extension
+  sudo rm /etc/ld.so.conf.d/c_xla_extension.conf && sudo ldconfig
