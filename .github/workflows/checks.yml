@@ -51,11 +51,16 @@ jobs:
     - name: Install C XLA cpu
       run: |
         ./install_c_xla.sh cpu
-        mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
-    - uses: actions/upload-artifact@v3
-      with:
-        name: c_xla_extension-x86_64-linux-cpu-${{ github.sha }}.so
-        path: libc_xla_extension.so
+
+        git clone https://user:${{ secrets.GITHUB_TOKEN }}@github.com/joelberkeley/c-xla
+        mkdir -p c-xla/release/x86_64-linux-cpu
+        mv backend/bazel-bin/libc_xla_extension.so c-xla/release/${GITHUB_SHA}/x86_64-linux-cpu/libc_xla_extension.so
+
+        git config user.name "github-actions"
+        git config user.email "none"
+        git checkout -b tmp
+        git commit -m "add C XLA lib for x86_64-linux-cpu"
+        git push
   xla-gpu:
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +69,4 @@ jobs:
       run: |
         ./install_c_xla.sh cuda111
         mv backend/bazel-bin/libc_xla_extension.so .  # symlink workaround
-    - uses: actions/upload-artifact@v3
-      with:
-        name: c_xla_extension-x86_64-linux-cuda111-${{ github.sha }}.so
-        path: libc_xla_extension.so
+
