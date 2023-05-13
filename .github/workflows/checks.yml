@@ -61,7 +61,7 @@ jobs:
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
 
         git clone https://user:${{ secrets.GITHUB_TOKEN }}@github.com/joelberkeley/c-xla
-        DIR=c-xla/release/${ GITHUB_SHA }/x86_64-linux-cpu
+        DIR=c-xla/release/${{ github.sha }}/x86_64-linux-cpu
         mkdir -p $DIR
         mv backend/bazel-bin/libc_xla_extension.so $DIR/libc_xla_extension.so
 
