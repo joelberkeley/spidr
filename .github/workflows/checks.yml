@@ -65,10 +65,11 @@ jobs:
         mkdir -p $DIR
         mv backend/bazel-bin/libc_xla_extension.so $DIR/libc_xla_extension.so
 
-        git config user.name "github-actions"
+        cd c-xla
+        git add release
+        git config user.name "none"
         git config user.email "none"
-        git checkout -b tmp
-        git commit -am "add C XLA lib for x86_64-linux-cpu"
+        git commit -m "add C XLA lib for x86_64-linux-cpu"
         git push
   xla-gpu:
     runs-on: ubuntu-latest
