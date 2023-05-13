@@ -67,7 +67,7 @@ jobs:
       run: |
         ./build.sh cpu
         ./package.sh ${{ env.TAR_PREFIX }}-cpu
-    - name: Upload C XLA lib cpu
+    - name: Publish C XLA lib cpu
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,7 +82,7 @@ jobs:
       run: |
         ./build.sh cuda111
         ./package.sh ${{ env.TAR_PREFIX }}-cuda111
-    - name: Upload C XLA lib cuda111
+    - name: Publish C XLA lib cuda111
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
