@@ -57,7 +57,7 @@ jobs:
     - name: Build C XLA cpu
       run: |
         sudo apt-get install -y wget
-        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
+        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xz -C backend/
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
 
         git clone https://user:${{ secrets.GITHUB_TOKEN }}@github.com/joelberkeley/c-xla
