@@ -46,8 +46,6 @@ jobs:
     - name: Type-check tutorials
       run: res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
   c-xla:
-    env:
-      TAR_PREFIX: c_xla_extension-x86_64-linux
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -66,28 +64,28 @@ jobs:
       working-directory: backend
       run: |
         ./build.sh cpu
-        ./package.sh ${{ env.TAR_PREFIX }}-cpu
+        ./package.sh
     - name: Publish C XLA lib cpu
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: backend/${{ env.TAR_PREFIX }}-cpu.tar.gz
-        asset_name: ${{ env.TAR_PREFIX }}-cpu.tar.gz
+        asset_path: backend/c_xla_extension.tar.gz
+        asset_name: c_xla_extension-x86_64-linux-cpu.tar.gz
         asset_content_type: application/gzip
     - uses: actions/checkout@v3
     - name: Build C XLA lib cuda111
       working-directory: backend
       run: |
         ./build.sh cuda111
-        ./package.sh ${{ env.TAR_PREFIX }}-cuda111
+        ./package.sh
     - name: Publish C XLA lib cuda111
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: backend/${{ env.TAR_PREFIX }}-cuda111.tar.gz
-        asset_name: ${{ env.TAR_PREFIX }}-cuda111.tar.gz
+        asset_path: backend/c_xla_extension.tar.gz
+        asset_name: c_xla_extension-x86_64-linux-cuda111.tar.gz
         asset_content_type: application/gzip
