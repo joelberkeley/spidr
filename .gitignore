@@ -7,3 +7,5 @@ backend/xla_extension
 .vscode
 .fleet
 .idea
+.DS_Store
+*.tar.gz

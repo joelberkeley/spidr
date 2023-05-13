@@ -12,38 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 on:
-  pull_request:
-    branches: master
-
-env:
-  PACK_DIR: /root/.pack
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'backend/**'
 
 jobs:
-  test-unit:
-    runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Bazel
-      run: ./install_c_xla.sh cpu
-    - name: Run tests
-      run: pack run test.ipkg
-      env:
-        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
-  readme:
-    runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
-    steps:
-    - uses: actions/checkout@v3
-    - name: Type-check README
-      run: pack typecheck readme.ipkg
-  tutorials:
-    runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
-    steps:
-    - uses: actions/checkout@v3
-    - name: Type-check tutorials
-      run: res=0; for f in tutorials/*.ipkg; do pack typecheck $f || res=$?; done; $(exit $res)
   c-xla-cpu:
     env:
       TAR_NAME: c_xla_extension-x86_64-linux-cpu
@@ -65,7 +41,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.sha }}
-        release_name: C XLA release ${{ github.sha }}
+        release_name: C XLA release ${{ github.ref }}
     - name: Upload C XLA lib
       uses: actions/upload-release-asset@v1
       env:
