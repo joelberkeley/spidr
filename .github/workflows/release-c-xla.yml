@@ -32,6 +32,7 @@ jobs:
         ./build.sh cpu
         DIR=$(mktemp -d)
         mkdir -p $DIR/$TAR_NAME/lib
+        ls backend/bazel-bin
         mv backend/bazel-bin/libc_xla_extension.so $DIR/$TAR_NAME/lib
         tar cfz $TAR_NAME.tar.gz -C $DIR .
     - name: Create C XLA release
