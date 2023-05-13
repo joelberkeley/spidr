@@ -61,14 +61,14 @@ jobs:
         (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
 
         git clone https://user:${{ secrets.GITHUB_TOKEN }}@github.com/joelberkeley/c-xla
-        DIR=c-xla/release/${GITHUB_SHA}/x86_64-linux-cpu
+        DIR=c-xla/release/${ GITHUB_SHA }/x86_64-linux-cpu
         mkdir -p $DIR
         mv backend/bazel-bin/libc_xla_extension.so $DIR/libc_xla_extension.so
 
         git config user.name "github-actions"
         git config user.email "none"
         git checkout -b tmp
-        git commit -m "add C XLA lib for x86_64-linux-cpu"
+        git commit -am "add C XLA lib for x86_64-linux-cpu"
         git push
   xla-gpu:
     runs-on: ubuntu-latest
