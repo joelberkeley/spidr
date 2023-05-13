@@ -75,7 +75,7 @@ jobs:
         asset_path: backend/${{ env.TAR_NAME }}.tar.gz
         asset_name: ${{ env.TAR_NAME }}.tar.gz
         asset_content_type: application/gzip
-  c-xla-gpu:
+  c-xla-cuda111:
     env:
       TAR_NAME: c_xla_extension-x86_64-linux-cuda111
     runs-on: ubuntu-latest
