@@ -75,3 +75,34 @@ jobs:
         asset_path: backend/${{ env.TAR_NAME }}.tar.gz
         asset_name: ${{ env.TAR_NAME }}.tar.gz
         asset_content_type: application/gzip
+  c-xla-cuda111:
+    env:
+      TAR_NAME: c_xla_extension-x86_64-linux-cuda111
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build C XLA lib
+        uses: actions/checkout@v3
+    - working-directory: backend
+      run: |
+        ./build.sh cuda111
+        DIR=$(mktemp -d)
+        mkdir -p $DIR/$TAR_NAME/lib
+        mv bazel-bin/libc_xla_extension.so $DIR/$TAR_NAME/lib
+        tar cfz $TAR_NAME.tar.gz -C $DIR .
+    - name: Create C XLA release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: c-xla-${{ github.sha }}
+        release_name: C XLA release ${{ github.sha }}
+    - name: Upload C XLA lib
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: backend/${{ env.TAR_NAME }}.tar.gz
+        asset_name: ${{ env.TAR_NAME }}.tar.gz
+        asset_content_type: application/gzip
