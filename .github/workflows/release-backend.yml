@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 on:
-  pull_request:
+  push:
     branches: master
-#  push:
-#    branches:
-#      - master
-#    paths:
-#      - 'backend/VERSION'
+    paths:
+      - 'backend/VERSION'
 
 jobs:
   create-release:
