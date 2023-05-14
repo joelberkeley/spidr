@@ -4,7 +4,7 @@ _Accelerated machine learning with dependent types_
 
 spidr is in early development. The core linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
 
-To install, see [the instructions](INSTALL.md). See the online [API reference](https://joelberkeley.github.io/spidr/) (available for the latest release), and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
+To install, first install [pack](https://github.com/stefan-hoeck/idris2-pack), the run `pack install spidr` and follow the on-screen instructions. See the online [reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
 ### Motivation
 
