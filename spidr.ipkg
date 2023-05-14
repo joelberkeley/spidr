@@ -65,6 +65,3 @@ modules =
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."
 readme = "README.md"
 license = "Apache License, Version 2.0"
-
-preinstall = "./preinstall.sh"
-preclean = "./preclean.sh"

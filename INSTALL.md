@@ -16,14 +16,14 @@ If you intend to run spidr on GPU, skip to the [GPU instructions](#gpu)
 
 3. Install XLA
    ```bash
-   wget https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./xla_extension/lib/libxla_extension.so
+   curl -s -L https://github.com/elixir-nx/xla/releases/download/v$(cat XLA_EXT_VERSION)/xla_extension-x86_64-linux-cpu.tar.gz | sudo tar xz -C /usr/local/lib ./xla_extension/lib/libxla_extension.so
    ```
    ```bash
    sudo bash -c 'echo "/usr/local/lib/xla_extension/lib" >> /etc/ld.so.conf.d/xla_extension.conf' && sudo ldconfig
    ```
 4. Install the C interface to XLA
    ```bash
-   wget https://github.com/joelberkeley/spidr/releases/download/v0.0.6/c_xla_extension-x86_64-linux-cpu.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./c_xla_extension/lib/libc_xla_extension.so
+   curl -s -L https://github.com/joelberkeley/spidr/releases/download/c-xla-$(cat backend/VERSION)/c_xla_extension-x86_64-linux-cpu.tar.gz | sudo tar xz -C /usr/local/lib ./c_xla_extension/lib/libc_xla_extension.so
    ```
    ```bash
    sudo bash -c 'echo "/usr/local/lib/c_xla_extension/lib" >> /etc/ld.so.conf.d/c_xla_extension.conf' && sudo ldconfig
@@ -36,14 +36,14 @@ If you do *not* intend to run spidr on GPU, skip this section.
 3. Install the NVIDIA prerequisites for running TensorFlow on GPU, as listed on the TensorFlow GPU [installation page](https://www.tensorflow.org/install/gpu). **There is no need to install TensorFlow itself**.
 4. Install XLA
    ```bash
-   wget https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cuda111.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./xla_extension/lib/libxla_extension.so
+   curl -s -L https://github.com/elixir-nx/xla/releases/download/v$(cat XLA_EXT_VERSION)/xla_extension-x86_64-linux-cuda111.tar.gz | sudo tar xz -C /usr/local/lib ./xla_extension/lib/libxla_extension.so
    ```
    ```bash
    sudo bash -c 'echo "/usr/local/lib/xla_extension/lib" >> /etc/ld.so.conf.d/xla_extension.conf' && sudo ldconfig
    ```
 5. Install the C interface to XLA
    ```bash
-   wget https://github.com/joelberkeley/spidr/releases/download/v0.0.6/c_xla_extension-x86_64-linux-cuda111.tar.gz -qO- | sudo tar -C /usr/local/lib -xvz ./c_xla_extension/lib/libc_xla_extension.so
+   curl -s -L https://github.com/joelberkeley/spidr/releases/download/c-xla-$(cat backend/VERSION)/c_xla_extension-x86_64-linux-cuda111.tar.gz | sudo tar xz -C /usr/local/lib ./c_xla_extension/lib/libc_xla_extension.so
    ```
    ```bash
    sudo bash -c 'echo "/usr/local/lib/c_xla_extension/lib" >> /etc/ld.so.conf.d/c_xla_extension.conf' && sudo ldconfig
