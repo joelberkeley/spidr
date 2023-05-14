@@ -8,7 +8,11 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-Install [pack](https://github.com/stefan-hoeck/idris2-pack), the run `pack install spidr` and follow the on-screen instructions
+Install [pack](https://github.com/stefan-hoeck/idris2-pack), then run
+```
+pack install spidr
+```
+and follow the on-screen instructions.
 
 ### Motivation
 
