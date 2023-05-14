@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: master
 #  push:
 #    branches:
 #      - master
 #    paths:
 #      - 'backend/**'
-  pull_request:
-    branches:
-      - master
 
 jobs:
   release:
@@ -54,7 +52,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: backend/c_xla_extension.tar.gz
         asset_name: c_xla_extension-x86_64-linux-cpu.tar.gz
         asset_content_type: application/gzip
@@ -74,7 +72,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: backend/c_xla_extension.tar.gz
         asset_name: c_xla_extension-x86_64-linux-cuda111.tar.gz
         asset_content_type: application/gzip
