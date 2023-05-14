@@ -14,8 +14,8 @@
 on:
   pull_request:
     branches: master
-  paths:
-    - 'backend/**'
+    paths:
+      - 'backend/**'
 
 jobs:
   backend-version:
