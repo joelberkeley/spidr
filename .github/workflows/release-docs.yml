@@ -27,7 +27,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: |
-        pack --with-docs install spidr
+        pack --no-prompt --with-docs install spidr
         mv build/docs .
     - run: |
         git config --global --add safe.directory "$GITHUB_WORKSPACE"
