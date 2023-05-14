@@ -18,7 +18,7 @@ on:
 #    branches:
 #      - master
 #    paths:
-#      - 'backend/**'
+#      - 'backend/VERSION'
 
 jobs:
   create-release:
