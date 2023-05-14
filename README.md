@@ -4,7 +4,15 @@ _Accelerated machine learning with dependent types_
 
 spidr is in early development. The core linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
 
-To install, see [the instructions](INSTALL.md). We use [semantic versioning](https://semver.org/). See the online [API reference](https://joelberkeley.github.io/spidr/) (available for the latest release), and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
+See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
+
+### Install
+
+Install [pack](https://github.com/stefan-hoeck/idris2-pack), then run
+```
+pack install spidr
+```
+and follow the on-screen instructions.
 
 ### Motivation
 
@@ -29,7 +37,7 @@ y = x + tensor [0, 1, 2]
 but this won't
 ```idris
 failing "elaboration"
-  z : Tensor [3] S32
+  z : Ref $ Tensor [3] S32
   z = x + tensor [0, 1]
 ```
 because you can't add a vector of length two to a vector of length three. Shape manipulation extends beyond comparing literal dimension sizes to arbitrary symbolic manipulation
