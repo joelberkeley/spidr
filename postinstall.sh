@@ -20,12 +20,14 @@ then run
     curl -s -L https://github.com/joelberkeley/spidr/releases/download/c-xla-$C_XLA_EXT_VERSION/c_xla_extension-x86_64-linux-cuda111.tar.gz | sudo tar xz -C /usr/local/lib ./c_xla_extension/lib/libc_xla_extension.so
     sudo bash -c 'echo \"/usr/local/lib/c_xla_extension/lib\" >> /etc/ld.so.conf.d/c_xla_extension.conf' && sudo ldconfig
 
-When you uninstall spidr, you may wish to remove the XLA artifacts
+When you uninstall spidr, you may wish to remove installed XLA artifacts
 
     /etc/ld.so.conf.d/xla_extension.conf
     /etc/ld.so.conf.d/c_xla_extension.conf
     /usr/local/lib/xla_extension/
     /usr/local/lib/c_xla_extension/
 
-and update shared library links with `sudo ldconfig`.
+and update shared library links with
+
+    sudo ldconfig
 "
