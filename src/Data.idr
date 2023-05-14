@@ -21,15 +21,18 @@ import Tensor
 ||| Observed pairs of data points from feature and target domains. Data sets such as this are
 ||| commonly used in supervised learning settings.
 |||
-||| @features The shape of the feature domain.
-||| @targets The shape of the target domain.
+||| @featureShape The shape of the feature domain.
+||| @targetShape The shape of the target domain.
 public export
-data Dataset : (0 features : Shape) -> (0 targets : Shape) -> Type where
-  MkDataset :
-    {s : _} ->
-    Tensor (S s :: features) F64 ->
-    Tensor (S s :: targets) F64 ->
-    Dataset features targets
+record Dataset (0 featureShape, targetShape : Shape) where
+  constructor MkDataset
+  {s : Nat}
+
+  ||| The feature data
+  features : Tensor (S s :: featureShape) F64
+
+  ||| The target data
+  targets : Tensor (S s :: targetShape) F64
 
 ||| Concatenate two datasets along their leading axis.
 export

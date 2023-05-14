@@ -108,11 +108,11 @@ export
 
 ||| Fit the Gaussian process and noise to the specified data.
 export
-fit : ConjugateGPRegression features
-  -> (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
+fit : (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
+  -> ConjugateGPRegression features
   -> Ref $ ConjugateGPRegression features
-fit (MkConjugateGPR {p} mkPrior gpParams noise) optimizer (MkDataset x y) = do
+fit optimizer (MkDataset x y) (MkConjugateGPR {p} mkPrior gpParams noise) = do
   let objective : Tensor [S p] F64 -> Ref $ Tensor [] F64
       objective params = do
         priorParams <- slice [1.to (S p)] params

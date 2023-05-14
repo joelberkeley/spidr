@@ -16,6 +16,9 @@ limitations under the License.
 ||| This module contains general library utilities.
 module Util
 
+import Control.Monad.Identity
+import public Control.Monad.Reader
+import Data.Contravariant
 import public Data.List
 import public Data.List.Quantifiers
 import public Data.Nat
@@ -100,3 +103,8 @@ namespace List
     go : Nat -> List Nat -> List a -> List a
     go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
     go _ _ xs = xs
+
+||| Apply a function to the environment of a reader.
+export
+(>$<) : (env' -> env) -> Reader env a -> Reader env' a
+f >$< (MkReaderT g) = MkReaderT (g . f)

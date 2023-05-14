@@ -19,7 +19,7 @@ In this tutorial, we look at the design of spidr's Bayesian optimization functio
 
 ## A Bayesian optimization refresher
 
-Techniques such as Adam excel at optimizing functions whose value and gradient are cheap to evaluate, but when function evaluations are expensive and the gradient is unknown, these techniques can be infeasible. In Bayesian optimization we approach such problems by placing a probabilistic model over historic function evaluations, and substituting objective function evaluations with model evaluations. Model evaluations are cheap, and the gradients are known, but unlike the objective function which produces exact values (neglecting noise), a probabilistic model produces a predictive distribution. We must therefore adopt some method to choose candidate optima from the predictive distribution. This mapping from distribution to a notion of optimality can balance exploration and exploitation in the search for the objective optima.
+Techniques such as stochastic gradient descent excel at optimizing functions whose value and gradient are cheap to evaluate, but when function evaluations are expensive and the gradient is unknown, these techniques can be infeasible. In Bayesian optimization we approach such problems by placing a probabilistic model over historic function evaluations, and substituting objective function evaluations with model evaluations. Model evaluations are cheap, and the gradients are known, but unlike the objective function which produces exact values (neglecting noise), a probabilistic model produces a predictive distribution. We must therefore adopt some method to choose candidate optima from the predictive distribution. This mapping from distribution to a notion of optimality can balance exploration and exploitation in the search for the objective optima.
 
 ## Bayesian optimization design
 
@@ -41,12 +41,14 @@ We can represent choosing candidate optima visually:
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just name this representation `i` (for "in"). Thus, to find `n` new query points, we need a function `i -> Ref $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just call this representation our _environment_, and name it `env`. To find `n` new query points, we need a function `env -> Ref $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
 
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
 <!-- idris
+import Control.Monad.Reader
 import Control.Monad.Identity
+
 import Data.Stream
 
 import BayesianOptimization
@@ -73,7 +75,7 @@ and model that data
 model : Ref $ ConjugateGPRegression [2]
 model = let mkGP = \len => pure $ MkGP zero (matern52 !1.0 !(squeeze len))
             model = MkConjugateGPR mkGP !(tensor [0.5]) !0.2
-         in fit model lbfgs !historicData
+         in fit lbfgs !historicData model
 ```
 
 then optimize over the marginal mean
@@ -115,11 +117,11 @@ This is a particularly simple example of the standard approach of defining an _a
     +--------------+
 </pre>
 
-In this case, our acquisition function depends on the model (which in turn depends on the data). It is empirical. The optimizer does not depend on the data. Finally, the new points are empirical since they depend on the acquisition function. We can see from this simple setup that we want to be able to combine empirical objects and non-empirical objects to empirically find a new point. That is, we want to have a number of `i -> o`: functions from data and models in a representation `i` to a number of `o`, where the form of these functions depends on how we want to approach the problem at hand. We also want to be able to combine these `o` with non-empirical functionality.
+In this case, our acquisition function is built from the model and data (it is empirical). The optimizer is not empirical. Finally, the new points are empirical since they depend on the acquisition function. We can see from this simple setup that we want to be able to combine empirical objects and non-empirical objects to empirically find a new point. That is, we want to have a number of `env -> a`: functions from data and models in a representation `env` to a number of `a`, where the form of these functions depends on how we want to approach the problem at hand. We also want to be able to combine these `a` with non-empirical functionality.
 
 ## Modifying empirical values with `Functor`
 
-In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the data and models when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `i -> Acquisition batch feat`. We want to be able to treat the data and model as an _environment_, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, aptly named `Reader` (a `Reader i o` is just a thin wrapper round an `i -> o`). Having chosen `Reader` as our abstraction, we want to apply an `Optimizer` to an `Reader i (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Reader i` implements this interface. Let's see this in action:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the environment when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `env -> Acquisition batch feat`. We want to be able to treat the data and model as an environment, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, named `Reader`. A `Reader env a` is just a thin wrapper round an `env -> a`. Having chosen `Reader` as our abstraction, we want to apply an `Optimizer` to an `Reader env (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Reader env` implements this interface. Let's see this in action:
 
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
@@ -135,9 +137,9 @@ newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
 
 Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader i` context. For example, we can apply the `a -> b` function in `f : Reader i (a -> b)` to the `a` value in `x : Reader i a` as `f <*> x` (which is a `Reader i b`), and we can do this before we actually have access to any `i` values. The second method, `pure`, creates a `Reader i o` from an `o`.
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader env` context. For example, we can apply the `a -> b` function in `f : Reader env (a -> b)` to the `a` value in `x : Reader env a` as `f <*> x` (which is a `Reader env b`), and we can do this before we actually have access to the environment. The second method, `pure`, creates a `Reader env a` from any `a`.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader i (Acquisition batch feat)` and `oa : Reader i (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader env (Acquisition batch feat)` and `oa : Reader env (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -176,11 +178,11 @@ There are a number of ways to implement the solution, but we'll choose a relativ
 
 The final point is then gathered from `map optimizer (oa <*> fa)`, and this concludes our discussion of the core design. Next, we'll implement this in full, and introduce some convenience syntax on the way.
 
-## Separating representation from computation with `Empiric`
+## Specify the environment with contravariant functors
 
-The `Reader i o` type has proven flexible in allowing us to construct an acquisition tactic. However, since our representation of `i` of all the data and models is completely unconstrained, our `Reader i o` values will need to know how to handle this representation. Alongside actually constructing the empirical value, this means our `Reader i o` is doing two things. It would be nice to be able to separate these concerns of representation and computation. Consider for example `modelMean`. While that only uses the model directly, other acquisition functions can also depend directly on the data. Everything empirical depends on at least a model or some data, and in Bayesian optimization these two always appear together. In spidr, we choose to define an atomic empirical value as one that takes any subset of the data, and the corresponding model of that subset of data. We call this an `Empiric`. We can then compose each `Empiric` `emp` with functionality `f` to gather the data set and model from the `i` value. We provide the infix operator `>>>` for this, used as `f >>> emp`. This turns out to be a practical API for most cases, and where it doesn't fulfil our needs, we can always construct our `Reader i o` explicitly.
+The `Reader env a` type has proven flexible in allowing us to construct an acquisition tactic. Let's now look at how to construct our environment. spidr provides a minimal `DataModel` record that wraps a `Dataset` and `ProbabilisticModel`, and uses this as a common environment for building aquisition functions. But sometimes we'll want to use a different structure, and without adding complexity to the the empiric values themselves. Recall that a `Reader env a` is equivalent to a `env -> a`, and that we can modify the `a` with a `Functor`. A `Functor` is really a _covariant functor_, and there's an "opposite" construct, called a _contravariant functor_ which has a similar effect on the function input. Idris has a `Contravariant` interface, but due to language limitations it's not suitable for `Reader`, so spidr provides a standalone function `(>$<)`, which fulfills the roles of `Contravariant`'s equivalent to `map`.
 
-With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data. Recall that we can represent this in any form we like, and we'll simply use a dedicated `Data` set and `ProbabilisticModel`:
+With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data:
 
 ```idris
 failureData : Ref $ Dataset [2] [1]
@@ -191,10 +193,10 @@ failureData = let features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0
 failureModel : Ref $ ConjugateGPRegression [2]
 failureModel = let mkGP = \len => pure $ MkGP zero (rbf !(squeeze len))
                    model = MkConjugateGPR mkGP !(tensor [0.2]) !0.1
-                in fit model lbfgs !failureData
+                in fit lbfgs !failureData model
 ```
 
-and we'll gather all the data and models in a `record`:
+We'll gather all the data and models in a `record`:
 
 ```idris
 record Labelled o f where
@@ -207,10 +209,10 @@ Idris generates two methods `objective` and `failure` from this `record`, which 
 
 ```idris
 newPoint'' : Ref $ Tensor [1, 2] F64
-newPoint'' = let eci = objective >>> expectedConstrainedImprovement @{Latent} !0.5
-                 pof = failure >>> probabilityOfFeasibility @{%search} @{Latent} !0.5
-                 acquisition = map optimizer $ eci <*> pof
-                 dataAndModel = Label (!historicData, !model) (!failureData, !failureModel)
+newPoint'' = let eci = objective >$< expectedConstrainedImprovement @{Latent} !0.5
+                 pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} !0.5
+                 acquisition = map optimizer (eci <*> pof)
+                 dataAndModel = Label (MkDataModel !model !historicData) (MkDataModel !failureModel !failureData)
               in runReader dataAndModel acquisition
 ```
 
@@ -222,34 +224,32 @@ Once we've chosen some new points, we'll typically evaluate the objective functi
 objective : Tensor [n, 2] F64 -> Ref $ Tensor [n, 1] F64
 ```
 
-at these points. We can then update our historical data and models with these new observations, in whatever way is appropriate for our chosen representation. Suppose we used a `Pair` of data and model, and collected one data point, this may look like
+and then update the historic dataset with this new point and train the model the new data. spidr provides, for simple Bayesian optimization setups, a function `step` which combines this all into a single step that we can reuse
 
 ```idris
-observe : Tensor [1, 2] F64 -> (Dataset [2] [1], ConjugateGPRegression [2])
-                            -> Ref (Dataset [2] [1], ConjugateGPRegression [2])
-observe point (dataset, model) = let newData = MkDataset point !(objective point)
-                                  in pure (!(concat dataset newData), !(fit model lbfgs newData))
+step' : DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2]) ->
+        Ref $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+step' = let tactic = map optimizer $ expectedImprovementByModel @{Latent}
+         in step @{Latent} objective (fit lbfgs) tactic
 ```
 
-We can repeat the above process indefinitely, and spidr provides a function `loop` for this. It takes a tactic `Reader i (Ref $ Tensor (n :: features) F64)` like we discussed in earlier sections, an observer as above, and initial data and models. Now we could have also asked the user for a number of repetitions after which it should stop, or a more complex stopping condition such when a new point lies within some margin of error of a known optimum. However, this would be unnecessary, and could make it harder to subsitute our stopping condition for another. Instead, we choose to separate the concern of stopping from the actual iteration. Without a stopping condition, `loop` thus must produce a potentially-infinite sequence of values. It can do this with the `Stream` type.
-
-```idris
-covering
-iterations : Ref $ RefStream (Dataset [2] [1], ConjugateGPRegression [2])
-iterations = let tactic = map optimizer $ id >>> expectedImprovementByModel @{Latent}
-              in loop tactic observe (!historicData, !model)
-```
-
-We can peruse the values in this `Stream` in whatever way we like. We can simply take the first five iterations
+We can repeat this process indefinitely to produce an infinite stream of values
 
 ```idris
 covering
-firstFive : Ref $ Vect 5 (Dataset [2] [1], ConjugateGPRegression [2])
-firstFive = take 5 !iterations
+steps : Ref $ RefStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+steps = iterate step' (MkDataModel !model !historicData)
 ```
 
-or use more complex stopping conditions as mentioned earlier. Unfortunately, we can't give an example of this because spidr lacks the functionality to define conditionals based on `Tensor` data.
+We can now iterate over this stream, choosing to stop according to a variety of stopping conditions, such as a number of repetitions
 
+```idris
+covering
+firstFive : Ref $ Vect 5 (DataModel {probabilisticModel = Latent} $ ConjugateGPRegression [2])
+firstFive = take 5 !steps
+```
+
+or a more complex stopping condition such when a new point lies close to a known optimum.
 <!-- idris
 main : IO ()
 -->
