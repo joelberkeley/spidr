@@ -39,7 +39,7 @@ jobs:
         release_name: C XLA release ${{ env.C_XLA_VERSION }}
         body: "C XLA release ${{ env.C_XLA_VERSION }}"
   c-xla-cpu:
-    needs: release
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -59,7 +59,7 @@ jobs:
         asset_name: c_xla_extension-x86_64-linux-cpu.tar.gz
         asset_content_type: application/gzip
   c-xla-cuda:
-    needs: release
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
