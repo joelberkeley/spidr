@@ -4,7 +4,7 @@ C_XLA_EXT_VERSION=$(cat backend/VERSION)
 install_intructions() {
   cat <<- EOF
     curl -s -L https://github.com/elixir-nx/xla/releases/download/v$XLA_EXT_VERSION/xla_extension-x86_64-linux-$1.tar.gz | sudo tar xz -C /usr/local/lib ./xla_extension/lib/libxla_extension.so
-    curl -s -L https://github.com/joelberkeley/spidr/releases/download/c-xla-$C_XLA_EXT_VERSION/c_xla_extension-x86_64-linux-$1.tar.gz | sudo tar xz -C /usr/local/lib ./c_xla_extension/lib/libc_xla_extension.so
+    curl -s -L https://github.com/joelberkeley/spidr/releases/download/c-xla-v$C_XLA_EXT_VERSION/c_xla_extension-x86_64-linux-$1.tar.gz | sudo tar xz -C /usr/local/lib ./c_xla_extension/lib/libc_xla_extension.so
     echo "/usr/local/lib/xla_extension/lib" | sudo tee -a /etc/ld.so.conf.d/xla_extension.conf
     echo "/usr/local/lib/c_xla_extension/lib" | sudo tee -a /etc/ld.so.conf.d/c_xla_extension.conf
     sudo ldconfig

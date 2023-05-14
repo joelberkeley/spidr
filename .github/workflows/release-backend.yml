@@ -35,7 +35,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: c-xla-${{ env.C_XLA_VERSION }}
+        tag_name: c-xla-v${{ env.C_XLA_VERSION }}
         release_name: C XLA release ${{ env.C_XLA_VERSION }}
         body: "C XLA release ${{ env.C_XLA_VERSION }}"
   c-xla-cpu:
