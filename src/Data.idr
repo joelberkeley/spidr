@@ -18,11 +18,13 @@ module Data
 
 import Tensor
 
+%prefix_record_projections off
+
 ||| Observed pairs of data points from feature and target domains. Data sets such as this are
 ||| commonly used in supervised learning settings.
 |||
-||| @featureShape The shape of the feature domain.
-||| @targetShape The shape of the target domain.
+||| @features The shape of the feature domain.
+||| @targets The shape of the target domain.
 public export
 record Dataset (0 featureShape, targetShape : Shape) where
   constructor MkDataset
@@ -33,6 +35,8 @@ record Dataset (0 featureShape, targetShape : Shape) where
 
   ||| The target data
   targets : Tensor (S s :: targetShape) F64
+
+%prefix_record_projections on
 
 ||| Concatenate two datasets along their leading axis.
 export
