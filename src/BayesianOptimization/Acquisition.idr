@@ -24,6 +24,8 @@ import Tensor
 import Data
 import Model
 
+%prefix_record_projections off
+
 ||| A `DataModel` packages data with a model over that data.
 public export
 record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t marginal modelType} where
@@ -35,6 +37,8 @@ record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t mar
   ||| The data the model is trained on
   dataset : Dataset f t
 
+%prefix_record_projections on
+
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
 |||
@@ -42,8 +46,8 @@ record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t mar
 |||   at once.
 ||| @features The shape of the feature domain.
 public export 0
-Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 featureShape : Shape) -> Type
-Acquisition batchSize featureShape = Tensor (batchSize :: featureShape) F64 -> Ref $ Tensor [] F64
+Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
+Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Ref $ Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -52,10 +56,10 @@ Acquisition batchSize featureShape = Tensor (batchSize :: featureShape) F64 -> R
 ||| @best The current best observation.
 export
 expectedImprovement :
-  ProbabilisticModel featureShape [1] Gaussian m =>
+  ProbabilisticModel features [1] Gaussian m =>
   (model : m) ->
   (best : Tensor [] F64) ->
-  Acquisition 1 featureShape
+  Acquisition 1 features
 expectedImprovement model best at = do
   marginal <- marginalise model at
   best' <- broadcast {to=[_, 1]} best
@@ -69,8 +73,8 @@ expectedImprovement model best at = do
 ||| the observation value at each point.
 export
 expectedImprovementByModel :
-  ProbabilisticModel featureShape [1] Gaussian modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 featureShape
+  ProbabilisticModel features [1] Gaussian modelType =>
+  Reader (DataModel modelType) $ Acquisition 1 features
 expectedImprovementByModel = asks $ \env, at => do
   best <- squeeze =<< reduce @{Min} [0] !(mean {event=[1]} !(marginalise env.model env.dataset.features))
   expectedImprovement env.model best at
@@ -81,8 +85,8 @@ export
 probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] dist =>
-  ProbabilisticModel featureShape [1] dist modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 featureShape
+  ProbabilisticModel features [1] dist modelType =>
+  Reader (DataModel modelType) $ Acquisition 1 features
 probabilityOfFeasibility limit =
   asks $ \env, at => do cdf !(marginalise env.model at) !(broadcast {to=[_, 1]} limit)
 
@@ -94,8 +98,8 @@ export
 negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
-  ProbabilisticModel featureShape [1] Gaussian modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 featureShape
+  ProbabilisticModel features [1] Gaussian modelType =>
+  Reader (DataModel modelType) $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
   marginal <- marginalise env.model at
   squeeze =<< mean {event=[1]} marginal - fromDouble beta * variance {event=[1]} marginal
@@ -109,5 +113,5 @@ negativeLowerConfidenceBound beta = asks $ \env, at => do
 export
 expectedConstrainedImprovement :
   (limit : Tensor [] F64) ->
-  ProbabilisticModel featureShape [1] Gaussian modelType =>
-  Reader (DataModel modelType) (Acquisition 1 featureShape -> Acquisition 1 featureShape)
+  ProbabilisticModel features [1] Gaussian modelType =>
+  Reader (DataModel modelType) (Acquisition 1 features -> Acquisition 1 features)
