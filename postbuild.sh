@@ -1,6 +1,8 @@
 XLA_EXT_VERSION=$(cat backend/XLA_EXT_VERSION)
 C_XLA_EXT_VERSION=$(cat backend/VERSION)
 
+touch foo
+
 install_intructions() {
   cat <<- EOF
     curl -s -L https://github.com/elixir-nx/xla/releases/download/v$XLA_EXT_VERSION/xla_extension-x86_64-linux-$1.tar.gz | sudo tar xz -C /usr/local/lib ./xla_extension/lib/libxla_extension.so
