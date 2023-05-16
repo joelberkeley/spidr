@@ -66,4 +66,4 @@ brief = "spidr explores how we can advance probabilistic modelling with the late
 readme = "README.md"
 license = "Apache License, Version 2.0"
 
-postinstall = "./postinstall.sh"
+postbuild = "./postbuild.sh"
