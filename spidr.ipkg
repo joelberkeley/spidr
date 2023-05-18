@@ -29,6 +29,7 @@ modules =
   Compiler.Xla.Prim.TensorFlow.Core.Platform.Status,
   Compiler.Xla.Prim.Util,
 
+  Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math,
   Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix,
