@@ -15,21 +15,22 @@ main = Main
 
 modules =
   Unit.Model.TestKernel,
-  Unit.TestDistribution,
-  Unit.TestLiteral,
 
-  Unit.TestTensor,
   Unit.TestTensor.Elementwise,
   Unit.TestTensor.HigherOrder,
   Unit.TestTensor.Sampling,
   Unit.TestTensor.Slice,
   Unit.TestTensor.Structure,
 
+  Unit.TestDistribution,
+  Unit.TestLiteral,
+  Unit.TestTensor,
   Unit.TestUtil,
 
-  Main,
-
-  Utils,
   Utils.Cases,
   Utils.Comparison,
-  Utils.TestComparison
+  Utils.TestComparison,
+
+  Main,
+  TestUtils,
+  Utils
