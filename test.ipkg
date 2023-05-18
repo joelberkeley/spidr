@@ -29,7 +29,7 @@ modules =
 
   Utils.Cases,
   Utils.Comparison,
-  Utils.TestComparison
+  Utils.TestComparison,
 
   Main,
   TestUtils,
