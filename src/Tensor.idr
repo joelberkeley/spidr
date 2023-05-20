@@ -1075,15 +1075,25 @@ namespace Scalarwise
     MkTensor {shape = _ :: _} _ _ <- l
     l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} !r
 
-||| Natural division. Not defined for tensors containing zeroes.
-export partial
-div : Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> Ref (Tensor shape U64)
-div = binaryRef Div
+||| Element-wise division of natural numbers. For example, `div !(tensor [7, 8]) [2, 4]` is
+||| `tensor [3, 2]`.
+export
+div : Tensor shape U64 ->
+      (denom : Literal shape Nat) ->
+      {auto 0 isSucc : All IsSucc shape denom} ->
+      Ref $ Tensor shape U64
+div x y with (x)
+  _ | (MkTensor {shape = _} _ _) = binaryRef Div (pure x) (tensor {dtype = U64} y)
 
-||| Natural remainder. Not defined for tensors containing zeroes.
-export partial
-rem : Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> Ref (Tensor shape U64)
-rem = binaryRef Rem
+||| Element-wise remainder for natural numbers. For example, `rem !(tensor [7, 8]) [4, 3]` is
+||| `tensor [3, 2]`.
+export
+rem : Tensor shape U64 ->
+      (x : Literal shape Nat) ->
+      {auto 0 isSucc : All IsSucc shape x} ->
+      Ref $ Tensor shape U64
+rem x y with (x)
+  _ | (MkTensor {shape = _} _ _) = binaryRef Rem (pure x) (tensor {dtype = U64} y)
 
 ||| The element-wise reciprocal. For example, `recip !(tensor [-2, 0, 0.2])`
 ||| is `tensor [-0.5, nan, 5]`.

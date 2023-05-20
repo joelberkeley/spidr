@@ -74,19 +74,15 @@ namespace S32
         y' = tensor {dtype=S32} y
     [| fInt x y |] === unsafeEval (fTensor x' y')
 
-namespace U64
-  export partial
-  testElementwiseBinarySuccRight :
-    (Nat -> Nat -> Nat) ->
-    (forall shape . Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> Ref (Tensor shape U64)) ->
-    Property
-  testElementwiseBinarySuccRight fInt fTensor = property $ do
-    shape <- forAll shapes
-    let nats = literal shape nats
-    [x, y] <- forAll (np [nats, map (map S) nats])
-    let x' = tensor {dtype=U64} x
-        y' = tensor {dtype=U64} y
-    [| fInt x y |] === unsafeEval (fTensor x' y')
+partial
+div : Property
+div = fixedProperty $ do
+  (do div !(tensor [Scalar 7, Scalar 8]) [2, 4]) ===# tensor [3, 2]
+
+partial
+rem : Property
+rem = fixedProperty $ do
+  (do rem !(tensor [Scalar 7, Scalar 8]) [4, 3]) ===# tensor [3, 2]
 
 namespace F64
   export partial
@@ -332,8 +328,8 @@ all = [
     , ("Scalarwise.(*)", scalarMultiplication)
     , ("Scalarwise.(/)", scalarDivision)
 
-    , ("div", U64.testElementwiseBinarySuccRight div div)
-    , ("rem", U64.testElementwiseBinarySuccRight mod Tensor.rem)
+    , ("div", div)
+    , ("rem", rem)
 
     , ("(==) F64", F64.testElementwiseComparator (==) (==))
     , ("(==) S32", S32.testElementwiseComparator (==) (==))
