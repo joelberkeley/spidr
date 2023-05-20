@@ -104,6 +104,9 @@ cast = fixedProperty $ do
   cast @{toArray} lit === arr
   lit === cast arr
 
+allScalar : All IsSucc (Scalar 0) -> Void
+allScalar (Scalar _) impossible
+
 export
 group : Group
 group = MkGroup "Literal" $ [

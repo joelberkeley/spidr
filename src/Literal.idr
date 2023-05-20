@@ -202,10 +202,10 @@ export
   cast (x :: y) = cast @{toArray} x :: cast @{toArray} y
 
 namespace All
-  ||| An `All p shape xs` is an array (or scalar) of proofs about each element in `xs`.
-  ||| For example, an `All IsSucc shape xs` proves that every element in `xs` is non-zero.
+  ||| An `All p xs` is an array (or scalar) of proofs about each element in `xs`.
+  ||| For example, an `All IsSucc xs` proves that every element in `xs` is non-zero.
   public export
-  data All : (0 p : a -> Type) -> (shape : Shape) -> Literal shape a -> Type where
-    Scalar : forall x . p x -> All p [] (Scalar x)
-    Nil  : All p (0 :: _) []
-    (::) : All p ds x -> All p (d :: ds) xs -> All p (S d :: ds) (x :: xs)
+  data All : (0 p : a -> Type) -> Literal shape a -> Type where
+    Scalar : forall x . p x -> All p (Scalar x)
+    Nil  : All p []
+    (::) : All p x -> All p xs -> All p (x :: xs)
