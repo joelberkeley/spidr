@@ -33,7 +33,7 @@ import public Types
 public export
 data Literal : Shape -> Type -> Type where
   Scalar : a -> Literal [] a
-  Nil : Literal (0 :: _) _
+  Nil : Literal (0 :: ds) a
   (::) : Literal ds a -> Literal (d :: ds) a -> Literal (S d :: ds) a
 
 export

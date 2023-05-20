@@ -104,8 +104,14 @@ cast = fixedProperty $ do
   cast @{toArray} lit === arr
   lit === cast arr
 
-allScalar : All IsSucc (Scalar 0) -> Void
-allScalar (Scalar _) impossible
+scalarZeroNotSucc : All IsSucc (Scalar 0) -> Void
+scalarZeroNotSucc (Scalar _) impossible
+
+scalarZeroVectNotSucc0 : All IsSucc [Scalar 0, Scalar 1] -> Void
+scalarZeroVectNotSucc0 (x :: _) = scalarZeroNotSucc x
+
+scalarZeroVectNotSucc1 : All IsSucc [Scalar 1, Scalar 0] -> Void
+scalarZeroVectNotSucc1 (_ :: x :: _) = scalarZeroNotSucc x
 
 export
 group : Group

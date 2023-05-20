@@ -77,14 +77,16 @@ namespace S32
 partial
 div : Property
 div = fixedProperty $ do
-  (do div !(fill 9) {isSucc = [Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc]} [1, 2, 3, 4, 5]) ===# tensor [9, 4, 3, 2, 1]
-  (do div !(fill 1) {isSucc = [Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc]} [1, 2, 3]) ===# tensor [1, 0, 0]
+  (do div !(tensor {shape = [0]} []) {isSucc = []} []) ===# tensor []
+  (do div !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [9, 4, 3, 2, 1]
+  (do div !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [1, 0, 0]
 
 partial
 rem : Property
 rem = fixedProperty $ do
-  (do rem !(fill 9) {isSucc = [Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc]} [1, 2, 3, 4, 5]) ===# tensor [0, 1, 0, 1, 4]
-  (do rem !(fill 1) {isSucc = [Scalar ItIsSucc, Scalar ItIsSucc, Scalar ItIsSucc]} [1, 2, 3]) ===# tensor [1, 0, 0]
+  (do rem !(tensor {shape = [0]} []) {isSucc = []} []) ===# tensor []
+  (do rem !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [0, 1, 0, 1, 4]
+  (do rem !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [1, 0, 0]
 
 partial
 divAndRemReconstructOriginal : Property

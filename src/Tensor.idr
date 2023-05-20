@@ -1089,8 +1089,8 @@ div x y with (x)
 ||| `rem !(tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [1, 0]`.
 export
 rem : Tensor shape U64 ->
-      (x : Literal shape Nat) ->
-      {auto 0 isSucc : All IsSucc x} ->
+      (denom : Literal shape Nat) ->
+      {auto 0 isSucc : All IsSucc denom} ->
       Ref $ Tensor shape U64
 rem x y with (x)
   _ | (MkTensor {shape = _} _ _) = binaryRef Rem (pure x) (tensor {dtype = U64} y)
