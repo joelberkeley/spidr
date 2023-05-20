@@ -203,6 +203,7 @@ export
 
 namespace All
   ||| An `All p xs` is an array (or scalar) of proofs about each element in `xs`.
+  |||
   ||| For example, an `All IsSucc xs` proves that every element in `xs` is non-zero.
   public export
   data All : (0 p : a -> Type) -> Literal shape a -> Type where
