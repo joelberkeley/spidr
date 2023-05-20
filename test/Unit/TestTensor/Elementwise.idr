@@ -74,6 +74,31 @@ namespace S32
         y' = tensor {dtype=S32} y
     [| fInt x y |] === unsafeEval (fTensor x' y')
 
+partial
+div : Property
+div = fixedProperty $ do
+  (do div !(tensor {shape = [0]} []) []) ===# tensor []
+  (do div !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [9, 4, 3, 2, 1]
+  (do div !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [1, 0, 0]
+
+partial
+rem : Property
+rem = fixedProperty $ do
+  (do rem !(tensor {shape = [0]} []) []) ===# tensor []
+  (do rem !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [0, 1, 0, 1, 4]
+  (do rem !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [0, 1, 1]
+
+partial
+divAndRemReconstructOriginal : Property
+divAndRemReconstructOriginal = property $ do
+  [x, y] <- forAll (np [nats, nats])
+  numer <- forAll (literal [2] nats)
+  let denom : Literal [2] Nat
+      denom = [Scalar (S x), Scalar (S y)]
+
+      numer := tensor numer
+  (do (tensor denom) * div !numer denom + rem !numer denom) ===# numer
+
 namespace F64
   export partial
   testElementwiseBinary :
@@ -317,6 +342,10 @@ all = [
 
     , ("Scalarwise.(*)", scalarMultiplication)
     , ("Scalarwise.(/)", scalarDivision)
+
+    , ("div", div)
+    , ("rem", rem)
+    , ("div and rem reconstruct original", divAndRemReconstructOriginal)
 
     , ("(==) F64", F64.testElementwiseComparator (==) (==))
     , ("(==) S32", S32.testElementwiseComparator (==) (==))

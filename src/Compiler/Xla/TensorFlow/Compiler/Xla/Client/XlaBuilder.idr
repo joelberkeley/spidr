@@ -264,6 +264,10 @@ div : HasIO io => XlaOp -> XlaOp -> io XlaOp
 div = binaryOp prim__div
 
 export
+rem : HasIO io => XlaOp -> XlaOp -> io XlaOp
+rem = binaryOp prim__rem
+
+export
 max : HasIO io => XlaOp -> XlaOp -> io XlaOp
 max = binaryOp prim__max
 

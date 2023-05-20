@@ -40,7 +40,23 @@ data Fn : Nat -> Type where
   MkFn : {arity : _} -> Vect arity (Nat, ShapeAndType) -> Nat -> Env -> Fn arity
 
 public export
-data BinaryOp = Eq | Ne | Add | Sub | Mul | Div | Pow | Lt | Gt | Le | Ge | And | Or | Min | Max
+data BinaryOp =
+    Eq
+  | Ne
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | Rem
+  | Pow
+  | Lt
+  | Gt
+  | Le
+  | Ge
+  | And
+  | Or
+  | Min
+  | Max
 
 public export
 data UnaryOp =

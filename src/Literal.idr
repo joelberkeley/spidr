@@ -33,7 +33,7 @@ import public Types
 public export
 data Literal : Shape -> Type -> Type where
   Scalar : a -> Literal [] a
-  Nil : Literal (0 :: _) _
+  Nil : Literal (0 :: ds) a
   (::) : Literal ds a -> Literal (d :: ds) a -> Literal (S d :: ds) a
 
 export
@@ -201,3 +201,12 @@ export
   cast [] = []
   cast (x :: y) = cast @{toArray} x :: cast @{toArray} y
 
+namespace All
+  ||| An `All p xs` is an array (or scalar) of proofs about each element in `xs`.
+  |||
+  ||| For example, an `All IsSucc xs` proves that every element in `xs` is non-zero.
+  public export
+  data All : (0 p : a -> Type) -> Literal shape a -> Type where
+    Scalar : forall x . p x -> All p (Scalar x)
+    Nil  : All p []
+    (::) : All p x -> All p xs -> All p (x :: xs)
