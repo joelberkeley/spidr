@@ -22,10 +22,10 @@ import Tensor
 ||| An `Optimizer` finds the value, in a `Tensor`-valued feature space, which (approximately)
 ||| optimizes a scalar-valued function over that space.
 |||
-||| @domain The shape of a single point in the domain.
+||| @domain The type of the domain over which to find the optimal value.
 public export 0
-Optimizer : (domain : Shape) -> Type
-Optimizer domain = (Tensor domain F64 -> Ref $ Tensor [] F64) -> Ref $ Tensor domain F64
+Optimizer : (domain : Type) -> Type
+Optimizer domain = (domain -> Ref $ Tensor [] F64) -> Ref domain
 
 ||| Grid search over a scalar feature space. Grid search approximates the optimum by evaluating the
 ||| objective over a finite, evenly-spaced grid.
@@ -38,7 +38,7 @@ gridSearch : {d : _} ->
              (density : Vect d Nat) ->
              (lower : Tensor [d] F64) ->
              (upper : Tensor [d] F64) ->
-             Optimizer [d]
+             Optimizer $ Tensor [d] F64
 gridSearch {d=Z} _ _ _ _ = fromLiteral []
 gridSearch {d=S k} density lower upper f =
   let densityAll : Nat
@@ -67,4 +67,4 @@ gridSearch {d=S k} density lower upper f =
 |||
 ||| @initialPoints The points from which to start optimization.
 export
-lbfgs : (initialPoints : Tensor [n] F64) -> Optimizer [n]
+lbfgs : (initialPoints : Tensor [n] F64) -> Optimizer $ Tensor [n] F64

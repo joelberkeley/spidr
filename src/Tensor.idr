@@ -1309,15 +1309,6 @@ argmax x = do
   MkTensor i env <- highlightNan False x
   env `end` Argmax {out=U64} 0 i
 
-export
-div : Primitive.Integral dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-div (MkTensor exprl) (MkTensor exprr) = MkTensor $ Div exprl exprr
-
--- be sure to test negative S32 values
-export
-rem : Primitive.Integral dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
-rem (MkTensor exprl) (MkTensor exprr) = MkTensor $ Rem exprl exprr
-
 ---------------------------- other ----------------------------------
 
 ||| Cholesky decomposition. Computes the lower triangular matrix `L` from the symmetric, positive

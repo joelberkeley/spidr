@@ -81,7 +81,7 @@ model = let mkGP = \len => pure $ MkGP zero (matern52 !1.0 !(squeeze len))
 then optimize over the marginal mean
 
 ```idris
-optimizer : Optimizer [1, 2]
+optimizer : Optimizer $ Tensor [1, 2] F64
 optimizer f =
   let gs = gridSearch [100, 100] !(tensor [0.0, 0.0]) !(tensor [1.0, 1.0])
    in broadcast !(gs $ \x => do f !(broadcast x))
