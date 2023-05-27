@@ -15,7 +15,7 @@ limitations under the License.
 -->
 # The Graph Compiler
 
-_Note: We're not compiler experts, so this tutorial is more about spidr itself than a guide to compiler design._
+_Note: We're not compiler experts; this tutorial is more about spidr itself than a guide to compiler design._
 
 ## Efficiently reusing tensors, and working with `Ref`
 
