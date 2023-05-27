@@ -46,8 +46,8 @@ whoops = let y = tensor [1, 2, 3]
 ```idris
 ok : Ref $ Tensor [3] S32
 ok = do y <- tensor [1, 2, 3]
-        z <- (pure y) + (pure y)
-        (pure z) * (pure z)
+        z <- pure y + pure y
+        pure z * pure z
 ```
 Here, `y` and `z` will only be calculated once. This problem can happen more subtley when reusing values from another scope. For example, in
 ```idris
