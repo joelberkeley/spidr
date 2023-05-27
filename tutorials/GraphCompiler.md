@@ -30,10 +30,10 @@ import Tensor
 f : Tensor shape F64 -> Tensor shape F64 -> Ref $ Tensor shape F64
 f x y = (abs x + pure y) * pure x
 ```
-Here, `pure` produces a `Ref (Tensor shape F64)` from a `Tensor shape F64`, as does `abs` (the elementwise absolute value function). Addition `(+)` and multiplication `(*)` produce _and accept_ `Ref` so there is no need to wrap the output of `abs x + pure y` in `pure` before passing it to `(*)`. A rule of thumb is that you only need `pure` if both of these are true
+Here, `pure` produces a `Ref (Tensor shape F64)` from a `Tensor shape F64`, as does `abs` (the element-wise absolute value function). Addition `(+)` and multiplication `(*)` produce _and accept_ `Ref (Tensor shape dtype)` so there is no need to wrap the output of `abs x + pure y` in `pure` before passing it to `(*)`. A rule of thumb is that you only need `pure` if both of these are true
 
 * you're passing a tensor to an infix operator
-* the tensor is either a function argument or is on the left hand side of `x <- expression`
+* the tensor is either a function argument or is on the left hand side of a monadic bind `x <- expression`
 
 Second, care is needed when reusing expressions to make sure you don't recompute sections of the graph. For example, in
 ```idris
@@ -42,7 +42,7 @@ whoops = let y = tensor [1, 2, 3]
              z = y + y
           in z * z
 ```
-`z` will be calculated twice, and `y` allocated four times (unless the graph compiler chooses to optimize that out). Instead, we can reuse `z` and `y` with
+`z` will be calculated twice, and `y` allocated four times (unless the graph compiler chooses to optimize that out). Instead, we can reuse `y` and `z` with
 ```idris
 ok : Ref $ Tensor [3] S32
 ok = do y <- tensor [1, 2, 3]
