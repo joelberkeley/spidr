@@ -21,7 +21,7 @@ _Note: We're not compiler experts, so this tutorial is more about spidr itself t
 
 spidr explicitly caches tensors so they can be efficiently be reused. Our understanding is that the technique we have used to achieve this is called observable sharing. In this section we'll discuss what our implementation means for spidr's tensor API.
 
-Caching ensures that the computation you write will be the computation sent to the graph compiler. Unfortunately this comes with downsides. First, there is extra boilerplate. Most tensor operations accept `Tensor shape dtype` and output `Ref (Tensor shape dtype)`, so computations must handle the `Ref` effect. For example, what might be `abs (max x)` in another library can be `abs !(max x)` in spidr. One notable exception to this is for infix operators where, to avoid unreadable algebra, we have defined infix operators to accept `Ref (Tensor shape dtype)` values. This does mean you won't need to write `!(!x * !y) + !z`, but it also means you will need to wrap a bare `Tensor shape dtype` in `pure` to pass it to an infix operator. For example, in
+Caching ensures that the computation you write will be the computation sent to the graph compiler. Unfortunately this comes with syntactic downsides. First, there is extra boilerplate. Most tensor operations accept `Tensor shape dtype` and output `Ref (Tensor shape dtype)`, so computations must handle the `Ref` effect. For example, what might be `abs (max x y)` in another library can be `abs !(max !x !y)` in spidr. One notable exception to this is for infix operators where, to avoid unreadable algebra, we have defined infix operators to accept `Ref (Tensor shape dtype)` values. This does mean you won't need to write `!(!x * !y) + !z`, but it also means you will need to wrap any bare `Tensor shape dtype` values in `pure` to pass it to an infix operator. For example, in
 <!-- idris
 import Literal
 import Tensor
@@ -31,10 +31,11 @@ f : Tensor shape F64 -> Tensor shape F64 -> Ref $ Tensor shape F64
 f x y = (abs x + pure y) * pure x
 ```
 Here, `pure` produces a `Ref (Tensor shape F64)` from a `Tensor shape F64`, as does `abs` (the elementwise absolute value function). Addition `(+)` and multiplication `(*)` produce _and accept_ `Ref` so there is no need to wrap the output of `abs x + pure y` in `pure` before passing it to `(*)`. A rule of thumb is that you only need `pure` if both of these are true
+
 * you're passing a value to an infix operator
 * the value is either a function argument or is on the left hand side of `x <- expression`
 
-Second, care is needed when reusing expressions to make sure you don't recomputate sections of the graph. For example, in
+Second, care is needed when reusing expressions to make sure you don't recompute sections of the graph. For example, in
 ```idris
 whoops : Ref $ Tensor [3] S32
 whoops = let y = tensor [1, 2, 3]
@@ -76,4 +77,4 @@ okf e = max !(xf e) !(yf e)
 res : Ref $ Tensor [] F64
 res = okf !expensive
 ```
-Note we must pass the `Tensor [] F64`, rather than a `Ref (Tensor [] F64)`, to `xf`, `yf` and `okf`, if the tensor is to be reused.
+Note we must pass the `Tensor [] F64` to `xf`, `yf` and `okf`, rather than a `Ref (Tensor [] F64)`, if the tensor is to be reused.
