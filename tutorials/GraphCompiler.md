@@ -33,6 +33,7 @@ f x y = (abs x + pure y) * pure x
 Here, `pure` produces a `Ref (Tensor shape F64)` from a `Tensor shape F64`, as does `abs` (the elementwise absolute value function). Addition `(+)` and multiplication `(*)` produce _and accept_ `Ref` so there is no need to wrap the output of `abs x + pure y` in `pure` before passing it to `(*)`. A rule of thumb is that you only need `pure` if both of these are true
 * you're passing a value to an infix operator
 * the value is either a function argument or is on the left hand side of `x <- expression`
+
 Second, care is needed when reusing expressions to make sure you don't recomputate sections of the graph. For example, in
 ```idris
 whoops : Ref $ Tensor [3] S32
