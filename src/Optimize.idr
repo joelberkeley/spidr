@@ -16,6 +16,7 @@ limitations under the License.
 ||| This module contains definitions of function optimizers.
 module Optimize
 
+import Literal
 import Tensor
 
 ||| An `Optimizer` finds the value, in a `Tensor`-valued feature space, which (approximately)
@@ -23,22 +24,35 @@ import Tensor
 |||
 ||| @domain The type of the domain over which to find the optimal value.
 public export 0
-Optimizer : (0 domain : Type) -> Type
-Optimizer a = (a -> Ref $ Tensor [] F64) -> Ref a
+Optimizer : (domain : Type) -> Type
+Optimizer domain = (domain -> Ref $ Tensor [] F64) -> Ref domain
 
-||| Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search
-||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.
-|||
-||| **NOTE** This function is not yet implemented.
+||| Grid search over a scalar feature space. Grid search approximates the optimum by evaluating the
+||| objective over a finite, evenly-spaced grid.
 |||
 ||| @density The density of the grid.
 ||| @lower The lower (inclusive) bound of the grid.
 ||| @upper The upper (exclusive) bound of the grid.
 export
-gridSearch : (density : Tensor [d] U32) ->
+gridSearch : {d : _} ->
+             (density : Literal [d] Nat) ->
              (lower : Tensor [d] F64) ->
              (upper : Tensor [d] F64) ->
              Optimizer $ Tensor [d] F64
+gridSearch {d=Z} _ _ _ _ = fromLiteral []
+gridSearch {d=S k} density lower upper f =
+  let gridSize : Nat
+      gridSize = product density
+
+      prodDims : Tensor [S k] U64 := fromLiteral $ cast $ scanr (*) 1 (tail density)
+      idxs = fromLiteral {shape=[gridSize]} $ cast $ Vect.range gridSize
+      densityTensor = broadcast $ fromLiteral {shape=[S k]} {dtype=U64} (cast density)
+      grid = broadcast {to=[gridSize, S k]} (expand 1 idxs)
+        `div` broadcast {from=[S k]} (cast prodDims) `rem` densityTensor
+      gridRelative = cast grid / cast densityTensor
+      points = with Tensor.(+)
+        broadcast lower + broadcast {to=[gridSize, _]} (upper - lower) * gridRelative
+   in slice [at (argmin 0 (vmap f points))] points
 
 ||| The limited-memory BFGS (L-BFGS) optimization tactic, see
 |||

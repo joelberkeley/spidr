@@ -24,6 +24,7 @@ modules =
 
   Unit.TestDistribution,
   Unit.TestLiteral,
+  Unit.TestOptimize,
   Unit.TestTensor,
   Unit.TestUtil,
 

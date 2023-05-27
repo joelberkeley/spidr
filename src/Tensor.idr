@@ -629,6 +629,9 @@ arg = do
   i <- new
   pure (MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
 
+export
+vmap : (Tensor s d -> Ref $ Tensor s' d') -> Tensor (n :: s) d -> Ref $ Tensor (n :: s') d'
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
