@@ -49,7 +49,7 @@ ok = do y <- tensor [1, 2, 3]
         z <- pure y + pure y
         pure z * pure z
 ```
-Here, `y` and `z` will only be calculated once. This problem can happen more subtley when reusing values from another scope. For example, in
+Here, `y` and `z` will only be calculated once. This problem can occur more subtley when reusing values from another scope. For example, in
 ```idris
 expensive : Ref $ Tensor [] F64
 expensive = reduce @{Sum} [0] !(fill {shape = [100000]} 1.0)
