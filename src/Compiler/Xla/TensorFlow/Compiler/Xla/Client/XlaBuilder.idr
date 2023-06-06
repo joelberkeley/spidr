@@ -66,6 +66,13 @@ build (MkXlaBuilder ptr) (MkXlaOp root)= do
   pure (MkXlaComputation computationPtr)
 
 export
+getShape : HasIO io => XlaBuilder -> XlaOp -> io Xla.Shape
+getShape (MkXlaBuilder builder) (MkXlaOp op) = do
+  shape <- primIO $ prim__getShape builder op
+  shape <- onCollectAny shape Shape.delete
+  pure (MkShape shape)
+
+export
 opToString : XlaBuilder -> XlaOp -> String
 opToString (MkXlaBuilder builderPtr) (MkXlaOp opPtr) = prim__opToString builderPtr opPtr
 

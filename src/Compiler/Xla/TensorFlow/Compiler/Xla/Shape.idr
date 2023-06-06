@@ -25,3 +25,7 @@ namespace Xla
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
+
+export
+debugString : Shape -> String
+debugString (MkShape shape) = prim__debugString shape

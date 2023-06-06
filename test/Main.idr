@@ -21,6 +21,7 @@ import Hedgehog
 import TestUtils
 import Utils.TestComparison
 
+import Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder
 import Unit.Model.TestKernel
 import Unit.TestDistribution
 import Unit.TestTensor
@@ -34,6 +35,7 @@ main = test [
     , TestUtils.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group
+    , Unit.Compiler.Xla.TensorFlow.Compiler.Xla.Client.TestXlaBuilder.group
     , Unit.TestTensor.group
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group
