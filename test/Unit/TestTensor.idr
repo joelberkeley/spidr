@@ -132,8 +132,8 @@ show = fixedProperty $ do
   show x === "constant, shape=[3], metadata={:0}"
 
 partial
-cast : Property
-cast = property $ do
+castDtype : Property
+castDtype = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
@@ -295,7 +295,7 @@ group = MkGroup "Tensor" $ [
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("show", show)
-    , ("cast", cast)
+    , ("castDtype", castDtype)
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
