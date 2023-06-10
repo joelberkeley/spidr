@@ -146,9 +146,21 @@ namespace F64
     sample ==~ sample'
 
 Show (Compare p xs ys) where
-  show _ = ""
+  show _ = "Compare (contents omitted)"
 
-orderedPair : (shape : Shape) -> Gen (as : Literal shape Nat ** bs : Literal shape Nat ** Compare LT as bs)
+orderedPair : (shape : Shape) -> Gen (xs : Literal shape Nat ** ys ** Compare LT xs ys)
+orderedPair [] = [| lits nats nats |] where
+  ord : (n, m : Nat) -> LT n (S (n + m))
+  ord n m = LTESucc (lteAddRight n)
+
+  lits : Nat -> Nat -> (n : Literal [] Nat ** m ** Compare LT n m)
+  lits n m = (Scalar n ** Scalar (S (n + m)) ** Scalar (ord n m))
+
+orderedPair (0 :: _) = pure ([] ** [] ** [])
+orderedPair (S d :: ds) = do
+  (x ** y ** ord) <- orderedPair ds
+  (xs ** ys ** ords) <- orderedPair (d :: ds)
+  pure (x :: xs ** y :: ys ** ord :: ords)
 
 namespace U64
   export partial
@@ -158,15 +170,15 @@ namespace U64
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
-    let ksTest = do
-      samples <- evalStateT !(tensor seed) !(U64.uniform !(tensor key) [lower] [upper])
+    let uniformCdf : Tensor [1, 10] U64 -> Ref $ Tensor [1, 10] F64
+        uniformCdf x = do
+          lower <- castDtype !(tensor {dtype = U64} [lower])
+          let upper = castDtype !(tensor {dtype = U64} [upper])
+          (castDtype x - pure lower) / (upper - pure lower)
 
-      let uniformCdf : Tensor [1, 10] U64 -> Ref $ Tensor [1, 10] F64
-          uniformCdf x = do
-            lower <- castDtype !(tensor {dtype = U64} [lower])
-            let upper = castDtype !(tensor {dtype = U64} [upper])
-            (castDtype x - pure lower) / (upper - pure lower)
-
+    let ksTest := do
+      rand <- U64.uniform !(tensor key) [lower] [upper]
+      samples <- evalStateT !(tensor seed) rand
       iidKolmogorovSmirnov samples uniformCdf
 
     -- samples ===# fill 0

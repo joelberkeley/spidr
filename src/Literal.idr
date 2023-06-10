@@ -37,9 +37,6 @@ data Literal : Shape -> Type -> Type where
   (::) : Literal ds a -> Literal (d :: ds) a -> Literal (S d :: ds) a
 
 export
-(.shape) : (xs : Literal shape a) -> (s ** s = shape)
-
-export
 fromInteger : Integer -> Literal [] Int32
 fromInteger = Scalar . cast {to=Int32}
 
@@ -217,6 +214,6 @@ namespace All
 namespace Compare
   public export
   data Compare : (0 p : a -> b -> Type) -> Literal shape a -> Literal shape b -> Type where
-    Scalar : forall a, b. p a b -> Compare p (Scalar a) (Scalar b)
+    Scalar : forall a, b . p a b -> Compare p (Scalar a) (Scalar b)
     Nil : Compare p [] []
     (::) : Compare p as bs -> Compare p ass bss -> Compare p (as :: ass) (bs :: bss)

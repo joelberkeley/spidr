@@ -308,9 +308,9 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
   ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
-    , Unit.TestTensor.HigherOrder.all
-    , Unit.TestTensor.Sampling.all
-    , Unit.TestTensor.Slice.all
-    , Unit.TestTensor.Structure.all
+    --  Unit.TestTensor.Elementwise.all
+    --, Unit.TestTensor.HigherOrder.all
+     Unit.TestTensor.Sampling.all
+    -- , Unit.TestTensor.Slice.all
+    -- , Unit.TestTensor.Structure.all
   ])

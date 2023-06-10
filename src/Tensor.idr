@@ -1462,22 +1462,22 @@ namespace U64
   ||| @bound' A bound of the samples. See full docstring for details.
   export
   uniform :
+    {shape : _} ->
     (key : Tensor [] U64) ->
     (lower, upper : Literal shape Nat) ->
     {auto 0 boundsOrdered : Compare LT lower upper} ->
     Ref $ Rand $ Tensor shape U64
   uniform (MkTensor iKey envKey) lower upper = do
-    let (shape' ** shapesEq) = lower.shape
-    MkTensor iLower envLower <- tensor {dtype = U64} {shape = shape'} (rewrite shapesEq in lower)
-    MkTensor iUpper envUpper <- tensor {dtype = U64} {shape = shape'} (rewrite shapesEq in upper)
+    MkTensor iLower envLower <- tensor {dtype = U64} lower
+    MkTensor iUpper envUpper <- tensor {dtype = U64} upper
     let env = mergeLeft (mergeLeft envKey envLower) envUpper
     pure $ ST $ \(MkTensor iState envState) => do
       i <- new
       let env = mergeLeft envState env
-          env = insert i (UniformUInt iKey iState iLower iUpper shape') env
+          env = insert i (UniformUInt iKey iState iLower iUpper shape) env
           state = env `end` GetTupleElement 1 i
           value = env `end` GetTupleElement 0 i
-      pure (!state, rewrite sym shapesEq in !value)
+      pure (!state, !value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
