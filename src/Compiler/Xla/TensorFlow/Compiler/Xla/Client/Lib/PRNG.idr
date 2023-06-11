@@ -28,32 +28,40 @@ Cast BitGenerator Int where
   cast ThreeFry = 0
   cast Philox = 1
 
-%hide Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Client.Lib.PRNG.RngOutput
-
 public export
 record RngOutput where
   constructor MkRngOutput
   value : XlaOp
   state : XlaOp
 
-export
-uniformFloatingPointDistribution :
+uniformDistribution :
+  (GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO PrimRngOutput) ->
   HasIO io => XlaOp -> XlaOp -> BitGenerator -> XlaOp -> XlaOp -> Shape -> io RngOutput
-uniformFloatingPointDistribution
+uniformDistribution
+  f
   (MkXlaOp key)
   (MkXlaOp initialState)
   bitGenerator
   (MkXlaOp minval)
   (MkXlaOp maxval)
   (MkShape shape) = do
-    rngOutput <- primIO $ prim__uniformFloatingPointDistribution
-      key initialState (cast bitGenerator) minval maxval shape
+    rngOutput <- primIO $ f key initialState (cast bitGenerator) minval maxval shape
     let value = getField rngOutput "value"
         state = getField rngOutput "state"
     primIO $ prim__delete rngOutput
     value <- onCollectAny value XlaOp.delete
     state <- onCollectAny state XlaOp.delete
     pure (MkRngOutput {value = MkXlaOp value} {state = MkXlaOp state})
+
+export
+uniformFloatingPointDistribution :
+  HasIO io => XlaOp -> XlaOp -> BitGenerator -> XlaOp -> XlaOp -> Shape -> io RngOutput
+uniformFloatingPointDistribution = uniformDistribution prim__uniformFloatingPointDistribution
+
+export
+uniformIntDistribution:
+  HasIO io => XlaOp -> XlaOp -> BitGenerator -> XlaOp -> XlaOp -> Shape -> io RngOutput
+uniformIntDistribution = uniformDistribution prim__uniformIntDistribution
 
 export
 normalFloatingPointDistribution :

@@ -119,4 +119,5 @@ data Expr : Type where
   Cholesky : Nat -> Expr
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
+  UniformUInt : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr

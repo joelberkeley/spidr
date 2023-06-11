@@ -190,6 +190,15 @@ enqueue builder (UniformFloatingPoint key initialState minval maxval shape) = do
     !(lookup maxval)
     !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
+enqueue builder (UniformUInt key initialState minval maxval shape) = do
+  rngOutput <- uniformIntDistribution
+    !(lookup key)
+    !(lookup initialState)
+    ThreeFry
+    !(lookup minval)
+    !(lookup maxval)
+    !(mkShape {dtype=U64} shape)
+  tuple builder [value rngOutput, state rngOutput]
 enqueue builder (NormalFloatingPoint key initialState shape) = do
   rngOutput <- normalFloatingPointDistribution
     !(lookup key) !(lookup initialState) ThreeFry !(mkShape {dtype=F64} shape)

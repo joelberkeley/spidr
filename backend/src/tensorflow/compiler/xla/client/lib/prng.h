@@ -35,6 +35,15 @@ extern "C" {
         Shape& shape
     );
 
+    RngOutput* UniformIntDistribution(
+        XlaOp& key,
+        XlaOp& initial_state,
+        int bit_generator,
+        XlaOp& minval,
+        XlaOp& maxval,
+        Shape& shape
+    );
+
     RngOutput* NormalFloatingPointDistribution(
         XlaOp& key, XlaOp& initial_state, int bit_generator, Shape& shape
     );

@@ -20,18 +20,23 @@ import System.FFI
 import Compiler.Xla.Prim.Util
 
 public export
-RngOutput : Type
-RngOutput = Struct "RngOutput" [("value", AnyPtr), ("state", AnyPtr)]
+PrimRngOutput : Type
+PrimRngOutput = Struct "RngOutput" [("value", AnyPtr), ("state", AnyPtr)]
 
 export
 %foreign (libxla "delete_RngOutput")
-prim__delete : RngOutput -> PrimIO ()
+prim__delete : PrimRngOutput -> PrimIO ()
 
 export
 %foreign (libxla "UniformFloatingPointDistribution")
 prim__uniformFloatingPointDistribution:
-  GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO RngOutput
+  GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO PrimRngOutput
+
+export
+%foreign (libxla "UniformIntDistribution")
+prim__uniformIntDistribution:
+  GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO PrimRngOutput
 
 export
 %foreign (libxla "NormalFloatingPointDistribution")
-prim__normalFloatingPointDistribution: GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> PrimIO RngOutput
+prim__normalFloatingPointDistribution: GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> PrimIO PrimRngOutput

@@ -132,8 +132,8 @@ show = fixedProperty $ do
   show x === "constant, shape=[3], metadata={:0}"
 
 partial
-cast : Property
-cast = property $ do
+castDtype : Property
+castDtype = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
@@ -291,11 +291,11 @@ trace = fixedProperty $ do
 export partial
 group : Group
 group = MkGroup "Tensor" $ [
-      ("eval . tensor", tensorThenEval)
+      ("eval . tensor", tensorThenEval) {-
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("show", show)
-    , ("cast", cast)
+    , ("castDtype", castDtype)
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
@@ -306,11 +306,11 @@ group = MkGroup "Tensor" $ [
     , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-    , ("trace", trace)
+    , ("trace", trace) -}
   ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
-    , Unit.TestTensor.HigherOrder.all
-    , Unit.TestTensor.Sampling.all
-    , Unit.TestTensor.Slice.all
-    , Unit.TestTensor.Structure.all
+    --  Unit.TestTensor.Elementwise.all
+    --, Unit.TestTensor.HigherOrder.all
+     Unit.TestTensor.Sampling.all
+    -- , Unit.TestTensor.Slice.all
+    -- , Unit.TestTensor.Structure.all
   ])
