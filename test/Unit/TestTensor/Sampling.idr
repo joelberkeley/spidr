@@ -226,6 +226,8 @@ namespace U64
 
     diff seed' (/=) seed
     diff seed'' (/=) seed'
+    -- this is problematic because bounds [n, n + 1] always produce n. Could fix this by
+    -- allowing orderedLits to take a shift parameter that makes the range large
     diff sample' (/=) sample
 
   export partial

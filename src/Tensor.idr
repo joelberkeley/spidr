@@ -1442,24 +1442,23 @@ namespace F64
 
 namespace U64
   ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
-  ||| between `bound` and `bound'`. `bound` and `bound'` need not be ordered, and are both
-  ||| inclusive bounds.
+  ||| in [`lower`, `upper`).
   |||
   ||| The generated samples are a deterministic function of the input key and state, but may vary
   ||| between backends and library versions.
   |||
   ||| Example usage, multiplying two uniform samples
   ||| ```
-  ||| x : Tensor [3] U64
-  ||| x = let key = fromLiteral 2
-  |||         rng = uniform key (fill 0) (fill 100)
-  |||         initialState = fromLiteral [0]
-  |||      in evalState initialState [| rng * rng |]
+  ||| x : Ref $ Tensor [3] U64
+  ||| x = do key <- tensor (Scalar 2)
+  |||        rng <- uniform key 0 10
+  |||        initialState <- tensor [Scalar 0]
+  |||        evalStateT initialState (do lift $ pure !rng * pure !rng)
   ||| ```
   |||
   ||| @key Determines the stream of generated samples.
-  ||| @bound A bound of the samples. See full docstring for details.
-  ||| @bound' A bound of the samples. See full docstring for details.
+  ||| @lower The lower, inclusive, bound of the samples.
+  ||| @upper The upper, exclusive, bound of the samples.
   export
   uniform :
     {shape : _} ->
