@@ -186,7 +186,7 @@ namespace U64
           samples <- evalStateT !(tensor seed) !(U64.uniform !(tensor key) lower upper)
           let (denom ** ok) = succs 100
           expected <- !(tensor (range 100) * (tensor [| upper `minus` lower |])) `div` denom
-          squares <- (castDtype expected - castDtype samples) ^ fill 2.0
+          squares <- (castDtype expected - castDtype !(sort (<) 0 samples)) ^ fill 2.0
           sqrt !(reduce @{Sum} [0] squares / 100.0)
 
     diff (unsafeEval rmse) (<=) 0.15
