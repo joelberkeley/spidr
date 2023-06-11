@@ -312,7 +312,7 @@ all = [
     , ("uniform F64 updates seed", F64.uniformSeedIsUpdated)
     , ("uniform F64 produces same samples for same seed", F64.uniformIsReproducible)
     , ("uniform U64", U64.uniform)
-    -- , ("uniform U64 bounds are inclusive", uniformBoundsAreInclusive)
+    , ("uniform U64 bounds are inclusive, exclusive", uniformBoundsInclusiveExclusive)
     -- , ("uniform U64 updates seed", U64.uniformSeedIsUpdated)
     -- , ("uniform U64 produces same samples for same seed", U64.uniformIsReproducible)
     , ("normal", normal)
