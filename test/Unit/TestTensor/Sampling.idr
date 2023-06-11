@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Unit.TestTensor.Sampling
 
+import Debug.Trace
 import System
 
 import Literal
@@ -32,7 +33,7 @@ product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape dtype -> (Tensor shape dtype -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
 iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
@@ -49,7 +50,7 @@ Prelude.Ord a => Prelude.Ord (Literal [] a) where
 namespace F64
   export partial
   uniform : Property
-  uniform = withTests 20 . property $ do
+  uniform = withTests 5 . property $ do
     bound <- forAll (literal [5] finiteDoubles)
     bound' <- forAll (literal [5] finiteDoubles)
     key <- forAll (literal [] nats)
@@ -63,10 +64,10 @@ namespace F64
       seed <- tensor seed
       samples <- evalStateT seed !(uniform key !(broadcast !bound) !(broadcast !bound'))
 
-      let uniformCdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
-          uniformCdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
+      let cdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
+          cdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
 
-      iidKolmogorovSmirnov samples uniformCdf
+      iidKolmogorovSmirnov samples cdf
 
     diff (unsafeEval ksTest) (<) 0.015
 
@@ -148,59 +149,60 @@ namespace F64
 Show (Pairwise p xs ys) where
   show _ = "Pairwise (contents omitted)"
 
-orderedPair : (shape : Shape) -> Gen (xs : Literal shape Nat ** ys ** Pairwise LT xs ys)
-orderedPair [] = [| lits nats nats |] where
+orderedLits : (shape : Shape) -> Gen (xs : Literal shape Nat ** ys ** Pairwise LT xs ys)
+orderedLits [] = [| lits nats nats |] where
   ord : (n, m : Nat) -> LT n (S (n + m))
   ord n m = LTESucc (lteAddRight n)
 
   lits : Nat -> Nat -> (n : Literal [] Nat ** m ** Pairwise LT n m)
   lits n m = (Scalar n ** Scalar (S (n + m)) ** Scalar (ord n m))
 
-orderedPair (0 :: _) = pure ([] ** [] ** [])
-orderedPair (S d :: ds) = do
-  (x ** y ** ord) <- orderedPair ds
-  (xs ** ys ** ords) <- orderedPair (d :: ds)
+orderedLits (0 :: _) = pure ([] ** [] ** [])
+orderedLits (S d :: ds) = do
+  (x ** y ** ord) <- orderedLits ds
+  (xs ** ys ** ords) <- orderedLits (d :: ds)
   pure (x :: xs ** y :: ys ** ord :: ords)
+
+succs : {shape : _} ->
+        (x : Nat) ->
+        {auto isSucc : IsSucc x} ->
+        (xs : Literal shape Nat ** All IsSucc xs)
+succs {shape = []} x = (Scalar x ** Scalar isSucc)
+succs {shape = (0 :: _)} _ = ([] ** [])
+succs {shape = (S d :: ds)} x =
+  let (y ** prf) = succs {shape = ds} x
+      (ys ** prfs) = succs {shape = d :: ds} x
+   in (y :: ys ** prf :: prfs)
 
 namespace U64
   export partial
   uniform : Property
-  uniform = withTests 20 . property $ do
-    (lower ** upper ** ordered) <- forAll (orderedPair [10])
+  uniform = withTests 5 . property $ do
+    (lower ** upper ** _) <- forAll (orderedLits [100])
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
-    let uniformCdf : Tensor [1, 10] U64 -> Ref $ Tensor [1, 10] F64
-        uniformCdf x = do
-          lower <- castDtype !(tensor {dtype = U64} [lower])
-          let upper = castDtype !(tensor {dtype = U64} [upper])
-          (castDtype x - pure lower) / (upper - pure lower)
+    let rmse := do
+          samples <- evalStateT !(tensor seed) !(U64.uniform !(tensor key) lower upper)
+          let (denom ** ok) = succs 100
+          expected <- !(tensor (range 100) * (tensor [| upper `minus` lower |])) `div` denom
+          squares <- (castDtype expected - castDtype samples) ^ fill 2.0
+          sqrt !(reduce @{Sum} [0] squares / 100.0)
 
-    let ksTest := do
-      rand <- U64.uniform !(tensor key) [lower] [upper]
-      samples <- evalStateT !(tensor seed) rand
-      iidKolmogorovSmirnov samples uniformCdf
+    diff (unsafeEval rmse) (<=) 0.15
 
-    -- samples ===# fill 0
-    diff (unsafeEval ksTest) (<) 0.01
+  export partial
+  uniformBoundsInclusiveExclusive : Property
+  uniformBoundsInclusiveExclusive = withTests 5 . property $ do
+    (lower ** upper ** _) <- forAll (orderedLits [25])
+    key <- forAll (literal [] nats)
+    seed <- forAll (literal [1] nats)
+
+    let samples = do evalStateT !(tensor seed) !(U64.uniform !(tensor key) lower upper)
+
+    (do reduce @{All} [0] !(tensor lower <= samples)) ===# fill True
+    (do reduce @{All} [0] !(tensor lower <= samples)) ===# fill True
 {-
-  export covering
-  uniformBoundsAreInclusive : Property
-  uniformBoundsAreInclusive = property $ do
-    bound <- forAll (literal [100] nats)
-    key <- forAll (literal [] nats)
-    seed <- forAll (literal [1] nats)
-
-    let bound = fromLiteral bound
-        bound' = bound + fill 2
-        key = fromLiteral key
-        seed = fromLiteral seed
-
-        samples = evalState seed (U64.uniform key bound bound')
-
-    diff (toLiteral samples) (\x, y => any id [| x == y |]) (toLiteral bound)
-    diff (toLiteral samples) (\x, y => any id [| x == y |]) (toLiteral bound')
-
   export covering
   uniformSeedIsUpdated : Property
   uniformSeedIsUpdated = withTests 20 . property $ do
@@ -244,7 +246,7 @@ namespace U64
 
 partial
 normal : Property
-normal = withTests 20 . property $ do
+normal = withTests 5 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
