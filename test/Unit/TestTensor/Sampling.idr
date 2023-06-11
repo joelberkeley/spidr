@@ -184,9 +184,11 @@ namespace U64
 
     let rmse := do
           samples <- evalStateT !(tensor seed) !(U64.uniform !(tensor key) lower upper)
-          let (denom ** ok) = succs 100
-          expected <- !(tensor (range 100) * (tensor [| upper `minus` lower |])) `div` denom
-          squares <- (castDtype expected - castDtype !(sort (<) 0 samples)) ^ fill 2.0
+          let lower = castDtype !(tensor {dtype = U64} lower)
+              upper = castDtype !(tensor {dtype = U64} upper)
+              range = with Tensor.(/) castDtype !(tensor {dtype = U64} (range 100)) / fill 100.0
+              expected = with Tensor.(*) range * (upper - lower)
+          squares <- (expected - castDtype !(sort (<) 0 samples)) ^ fill 2.0
           sqrt !(reduce @{Sum} [0] squares / 100.0)
 
     diff (unsafeEval rmse) (<=) 0.15
@@ -202,47 +204,45 @@ namespace U64
 
     (do reduce @{All} [0] !(tensor lower <= samples)) ===# fill True
     (do reduce @{All} [0] !(tensor lower <= samples)) ===# fill True
-{-
-  export covering
+
+  export partial
   uniformSeedIsUpdated : Property
   uniformSeedIsUpdated = withTests 20 . property $ do
-    bound <- forAll (literal [10] nats)
-    bound' <- forAll (literal [10] nats)
+    (lower ** upper ** _) <- forAll (orderedLits [10])
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
-    let bound = fromLiteral bound
-        bound' = fromLiteral bound'
-        key = fromLiteral key
-        seed = fromLiteral seed
+    let everything = do
+          rand <- uniform !(tensor key) lower upper
+          seed <- tensor seed
+          (seed', sample) <- runStateT seed rand
+          (seed'', sample') <- runStateT seed' rand
+          seeds <- concat 0 !(concat 0 seed seed') seed''
+          samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
+          pure (seeds, samples)
 
-        rng = U64.uniform key {shape=[10]} (broadcast bound) (broadcast bound')
-        (seed', sample) = runState seed rng
-        (seed'', sample') = runState seed' rng
+        [seed, seed', seed''] = unsafeEval (do (seeds, _) <- everything; pure seeds)
+        [sample, sample'] = unsafeEval (do (_, samples) <- everything; pure samples)
 
-    diff (toLiteral seed') (/=) (toLiteral seed)
-    diff (toLiteral seed'') (/=) (toLiteral seed')
-    diff (toLiteral sample') (/=) (toLiteral sample)
+    diff seed' (/=) seed
+    diff seed'' (/=) seed'
+    diff sample' (/=) sample
 
-  export covering
+  export partial
   uniformIsReproducible : Property
   uniformIsReproducible = withTests 20 . property $ do
-    bound <- forAll (literal [10] nats)
-    bound' <- forAll (literal [10] nats)
+    (lower ** upper ** _) <- forAll (orderedLits [10])
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
-    let bound = fromLiteral bound
-        bound' = fromLiteral bound'
-        key = fromLiteral key
-        seed = fromLiteral seed
+    let [sample, sample'] = unsafeEval $ do
+          rand <- uniform !(tensor key) lower upper
+          seed <- tensor seed
+          sample <- evalStateT seed rand
+          sample' <- evalStateT seed rand
+          concat 0 !(expand 0 sample) !(expand 0 sample')
 
-        rng = U64.uniform {shape=[10]} key (broadcast bound) (broadcast bound')
-        sample = evalState seed rng
-        sample' = evalState seed rng
-
-    sample ===# sample'
--}
+    sample === sample'
 
 partial
 normal : Property
@@ -313,8 +313,8 @@ all = [
     , ("uniform F64 produces same samples for same seed", F64.uniformIsReproducible)
     , ("uniform U64", U64.uniform)
     , ("uniform U64 bounds are inclusive, exclusive", uniformBoundsInclusiveExclusive)
-    -- , ("uniform U64 updates seed", U64.uniformSeedIsUpdated)
-    -- , ("uniform U64 produces same samples for same seed", U64.uniformIsReproducible)
+    , ("uniform U64 updates seed", U64.uniformSeedIsUpdated)
+    , ("uniform U64 produces same samples for same seed", U64.uniformIsReproducible)
     , ("normal", normal)
     , ("normal updates seed", normalSeedIsUpdated)
     , ("normal produces same samples for same seed", normalIsReproducible)
