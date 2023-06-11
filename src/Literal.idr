@@ -211,9 +211,14 @@ namespace All
     Nil  : All p []
     (::) : All p x -> All p xs -> All p (x :: xs)
 
-namespace Compare
+namespace Pairwise
+  ||| A `Pairwise p xs ys` is an array (or scalar) of pairwise proofs about elements in `xs`
+  ||| and `ys`.
+  |||
+  ||| For example, a `Pairwise LT xs ys` proves that each number in `xs` is less than the
+  ||| number in `ys` at the same position.
   public export
-  data Compare : (0 p : a -> b -> Type) -> Literal shape a -> Literal shape b -> Type where
-    Scalar : forall a, b . p a b -> Compare p (Scalar a) (Scalar b)
-    Nil : Compare p [] []
-    (::) : Compare p as bs -> Compare p ass bss -> Compare p (as :: ass) (bs :: bss)
+  data Pairwise : (0 p : a -> b -> Type) -> Literal shape a -> Literal shape b -> Type where
+    Scalar : forall a, b . p a b -> Pairwise p (Scalar a) (Scalar b)
+    Nil : Pairwise p [] []
+    (::) : Pairwise p a b -> Pairwise p as bs -> Pairwise p (a :: as) (b :: bs)

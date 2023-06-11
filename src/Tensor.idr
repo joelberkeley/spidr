@@ -1465,7 +1465,7 @@ namespace U64
     {shape : _} ->
     (key : Tensor [] U64) ->
     (lower, upper : Literal shape Nat) ->
-    {auto 0 boundsOrdered : Compare LT lower upper} ->
+    {auto 0 boundsOrdered : Pairwise LT lower upper} ->
     Ref $ Rand $ Tensor shape U64
   uniform (MkTensor iKey envKey) lower upper = do
     MkTensor iLower envLower <- tensor {dtype = U64} lower

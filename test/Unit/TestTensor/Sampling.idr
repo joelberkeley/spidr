@@ -145,15 +145,15 @@ namespace F64
 
     sample ==~ sample'
 
-Show (Compare p xs ys) where
-  show _ = "Compare (contents omitted)"
+Show (Pairwise p xs ys) where
+  show _ = "Pairwise (contents omitted)"
 
-orderedPair : (shape : Shape) -> Gen (xs : Literal shape Nat ** ys ** Compare LT xs ys)
+orderedPair : (shape : Shape) -> Gen (xs : Literal shape Nat ** ys ** Pairwise LT xs ys)
 orderedPair [] = [| lits nats nats |] where
   ord : (n, m : Nat) -> LT n (S (n + m))
   ord n m = LTESucc (lteAddRight n)
 
-  lits : Nat -> Nat -> (n : Literal [] Nat ** m ** Compare LT n m)
+  lits : Nat -> Nat -> (n : Literal [] Nat ** m ** Pairwise LT n m)
   lits n m = (Scalar n ** Scalar (S (n + m)) ** Scalar (ord n m))
 
 orderedPair (0 :: _) = pure ([] ** [] ** [])
