@@ -149,18 +149,18 @@ namespace F64
 Show (Pairwise p xs ys) where
   show _ = "Pairwise (contents omitted)"
 
-orderedLits : (shape : Shape) -> Gen (xs : Literal shape Nat ** ys ** Pairwise LT xs ys)
-orderedLits [] = [| lits nats nats |] where
-  ord : (n, m : Nat) -> LT n (S (n + m))
-  ord n m = LTESucc (lteAddRight n)
+orderedLits : (shape : Shape) -> Nat -> Gen (xs : Literal shape Nat ** ys ** Pairwise LT xs ys)
+orderedLits [] shift = [| lits nats nats |] where
+  ord : (n, m, shift : Nat) -> LT n (S (n + shift + m))
+  ord n m shift = rewrite sym (plusAssociative n shift m) in LTESucc (lteAddRight n)
 
   lits : Nat -> Nat -> (n : Literal [] Nat ** m ** Pairwise LT n m)
-  lits n m = (Scalar n ** Scalar (S (n + m)) ** Scalar (ord n m))
+  lits n m = (Scalar n ** Scalar (S (n + shift + m)) ** Scalar (ord n m shift))
 
-orderedLits (0 :: _) = pure ([] ** [] ** [])
-orderedLits (S d :: ds) = do
-  (x ** y ** ord) <- orderedLits ds
-  (xs ** ys ** ords) <- orderedLits (d :: ds)
+orderedLits (0 :: _) _ = pure ([] ** [] ** [])
+orderedLits (S d :: ds) shift = do
+  (x ** y ** ord) <- orderedLits ds shift
+  (xs ** ys ** ords) <- orderedLits (d :: ds) shift
   pure (x :: xs ** y :: ys ** ord :: ords)
 
 succs : {shape : _} ->
@@ -178,7 +178,7 @@ namespace U64
   export partial
   uniform : Property
   uniform = withTests 5 . property $ do
-    (lower ** upper ** _) <- forAll (orderedLits [100])
+    (lower ** upper ** _) <- forAll (orderedLits [100] 0)
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
@@ -196,7 +196,7 @@ namespace U64
   export partial
   uniformBoundsInclusiveExclusive : Property
   uniformBoundsInclusiveExclusive = withTests 5 . property $ do
-    (lower ** upper ** _) <- forAll (orderedLits [25])
+    (lower ** upper ** _) <- forAll (orderedLits [25] 0)
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
@@ -208,7 +208,7 @@ namespace U64
   export partial
   uniformSeedIsUpdated : Property
   uniformSeedIsUpdated = withTests 20 . property $ do
-    (lower ** upper ** _) <- forAll (orderedLits [10])
+    (lower ** upper ** _) <- forAll (orderedLits [10] 100)
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
@@ -233,7 +233,7 @@ namespace U64
   export partial
   uniformIsReproducible : Property
   uniformIsReproducible = withTests 20 . property $ do
-    (lower ** upper ** _) <- forAll (orderedLits [10])
+    (lower ** upper ** _) <- forAll (orderedLits [10] 0)
     key <- forAll (literal [] nats)
     seed <- forAll (literal [1] nats)
 
