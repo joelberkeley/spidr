@@ -154,7 +154,7 @@ Zippable (Literal shape) where
 ||| `True` if no elements are `False`. `all []` is `True`.
 export
 all : Literal shape Bool -> Bool
-all xs = foldr (\x, y => x && y) True xs
+all xs = foldr (&&) True xs
 
 export
 Num a => Num (Literal [] a) where
