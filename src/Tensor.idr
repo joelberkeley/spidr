@@ -1399,11 +1399,12 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
 trace x with (x)
   _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
 
+{-
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
-Rand = StateT (Tensor [1] U64) Graph
+Rand = StateT (Tensor [1] U64) Ref
 
 inf : Graph $ Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
@@ -1436,7 +1437,6 @@ uniform :
   (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
   Graph $ Rand $ Tensor shape F64
-{-
 uniform (MkTensor iKey envKey) bound bound' = do
   minval@(MkTensor iMinval envMinval) <- min bound bound'
   maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
@@ -1455,7 +1455,6 @@ uniform (MkTensor iKey envKey) bound bound' = do
         value = select !((pure minval == inf) && (pure maxval == inf)) !inf !value
         value = select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) !value
     pure (!state, !value)
--}
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1475,7 +1474,6 @@ uniform (MkTensor iKey envKey) bound bound' = do
 ||| @key Determines the stream of generated samples.
 export
 normal : {shape : _} -> (key : Tensor [] U64) -> Graph $ Tensor shape F64
-{-
 normal $ MkTensor iKey envKey =
   ST $ \(MkTensor iState envState) => do
     i <- new
