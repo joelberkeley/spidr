@@ -28,7 +28,7 @@ namespace S32
   export partial
   testElementwiseUnary :
     (Int32 -> Int32) ->
-    (forall shape . Tensor shape S32 -> Ref $ Tensor shape S32) ->
+    (forall shape . Tensor shape S32 -> Graph $ Tensor shape S32) ->
     Property
   testElementwiseUnary fInt fTensor = property $ do
     shape <- forAll shapes
@@ -40,7 +40,7 @@ namespace F64
   export partial
   testElementwiseUnary :
     (Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Ref $ Tensor shape F64) ->
+    (forall shape . Tensor shape F64 -> Graph $ Tensor shape F64) ->
     Property
   testElementwiseUnary fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -52,7 +52,7 @@ namespace PRED
   export partial
   testElementwiseUnary :
     (Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Ref $ Tensor shape PRED) ->
+    (forall shape . Tensor shape PRED -> Graph $ Tensor shape PRED) ->
     Property
   testElementwiseUnary fBool fTensor = property $ do
     shape <- forAll shapes
@@ -64,7 +64,7 @@ namespace S32
   export partial
   testElementwiseBinary :
     (Int32 -> Int32 -> Int32) ->
-    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> Ref (Tensor shape S32)) ->
+    (forall shape . Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> Graph (Tensor shape S32)) ->
     Property
   testElementwiseBinary fInt fTensor = property $ do
     shape <- forAll shapes
@@ -103,7 +103,7 @@ namespace F64
   export partial
   testElementwiseBinary :
     (Double -> Double -> Double) ->
-    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape F64)) ->
+    (forall shape . Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)) ->
     Property
   testElementwiseBinary fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -117,7 +117,7 @@ namespace PRED
   export partial
   testElementwiseBinary :
     (Bool -> Bool -> Bool) ->
-    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
+    (forall shape . Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)) ->
     Property
   testElementwiseBinary fBool fTensor = property $ do
     shape <- forAll shapes
@@ -155,7 +155,7 @@ namespace S32
   export partial
   testElementwiseComparator :
     (Int32 -> Int32 -> Bool) ->
-    (forall shape . Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> Ref (Tensor shape PRED)) ->
+    (forall shape . Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> Graph (Tensor shape PRED)) ->
     Property
   testElementwiseComparator fInt fTensor = property $ do
     shape <- forAll shapes
@@ -169,7 +169,7 @@ namespace F64
   export partial
   testElementwiseComparator :
     (Double -> Double -> Bool) ->
-    (forall shape . Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape PRED)) ->
+    (forall shape . Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape PRED)) ->
     Property
   testElementwiseComparator fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -183,7 +183,7 @@ namespace PRED
   export partial
   testElementwiseComparator :
     (Bool -> Bool -> Bool) ->
-    (forall shape . Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)) ->
+    (forall shape . Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)) ->
     Property
   testElementwiseComparator = testElementwiseBinary
 

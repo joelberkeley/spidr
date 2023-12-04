@@ -41,7 +41,7 @@ We can represent choosing candidate optima visually:
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just call this representation our _environment_, and name it `env`. To find `n` new query points, we need a function `env -> Ref $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just call this representation our _environment_, and name it `env`. To find `n` new query points, we need a function `env -> Graph $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
 
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
@@ -63,7 +63,7 @@ import Optimize
 import Tensor
 -->
 ```idris
-historicData : Ref $ Dataset [2] [1]
+historicData : Graph $ Dataset [2] [1]
 historicData = let features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]
                    targets = tensor [[1.2], [-0.5], [0.7]]
                 in [| MkDataset features targets |]
@@ -72,7 +72,7 @@ historicData = let features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]
 and model that data
 
 ```idris
-model : Ref $ ConjugateGPRegression [2]
+model : Graph $ ConjugateGPRegression [2]
 model = let mkGP = \len => pure $ MkGP zero (matern52 !1.0 !(squeeze len))
             model = MkConjugateGPR mkGP !(tensor [0.5]) !0.2
          in fit lbfgs !historicData model
@@ -86,7 +86,7 @@ optimizer f =
   let gs = gridSearch !(tensor {a = Nat} [100, 100]) !(tensor [0.0, 0.0]) !(tensor [1.0, 1.0])
    in broadcast !(gs $ \x => do f !(broadcast x))
 
-newPoint : Ref $ Tensor [1, 2] F64
+newPoint : Graph $ Tensor [1, 2] F64
 newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} !model x)
 ```
 
@@ -127,7 +127,7 @@ In the above example, we constructed the acquisition function from our model, th
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model x = squeeze =<< mean {event=[1]} !(marginalise model x)
 
-newPoint' : Ref $ Tensor [1, 2] F64
+newPoint' : Graph $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
                 point = map optimizer acquisition
              in runReader !model point
@@ -185,12 +185,12 @@ The `Reader env a` type has proven flexible in allowing us to construct an acqui
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data:
 
 ```idris
-failureData : Ref $ Dataset [2] [1]
+failureData : Graph $ Dataset [2] [1]
 failureData = let features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]
                   targets = tensor [[0.0], [0.0], [0.0], [1.0]]
                in [| MkDataset features targets |]
 
-failureModel : Ref $ ConjugateGPRegression [2]
+failureModel : Graph $ ConjugateGPRegression [2]
 failureModel = let mkGP = \len => pure $ MkGP zero (rbf !(squeeze len))
                    model = MkConjugateGPR mkGP !(tensor [0.2]) !0.1
                 in fit lbfgs !failureData model
@@ -208,7 +208,7 @@ record Labelled o f where
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to extract the respective data and model. Putting it all together, here's our empirical point:
 
 ```idris
-newPoint'' : Ref $ Tensor [1, 2] F64
+newPoint'' : Graph $ Tensor [1, 2] F64
 newPoint'' = let eci = objective >$< expectedConstrainedImprovement @{Latent} !0.5
                  pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} !0.5
                  acquisition = map optimizer (eci <*> pof)
@@ -221,14 +221,14 @@ newPoint'' = let eci = objective >$< expectedConstrainedImprovement @{Latent} !0
 Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 
 ```idris
-objective : Tensor [n, 2] F64 -> Ref $ Tensor [n, 1] F64
+objective : Tensor [n, 2] F64 -> Graph $ Tensor [n, 1] F64
 ```
 
 and then update the historic dataset with this new point and train the model the new data. spidr provides, for simple Bayesian optimization setups, a function `step` which combines this all into a single step that we can reuse
 
 ```idris
 step' : DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2]) ->
-        Ref $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+        Graph $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
 step' = let tactic = map optimizer $ expectedImprovementByModel @{Latent}
          in step @{Latent} objective (fit lbfgs) tactic
 ```
@@ -237,7 +237,7 @@ We can repeat this process indefinitely to produce an infinite stream of values
 
 ```idris
 covering
-steps : Ref $ RefStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+steps : Graph $ RefStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
 steps = iterate step' (MkDataModel !model !historicData)
 ```
 
@@ -245,7 +245,7 @@ We can now iterate over this stream, choosing to stop according to a variety of 
 
 ```idris
 covering
-firstFive : Ref $ Vect 5 (DataModel {probabilisticModel = Latent} $ ConjugateGPRegression [2])
+firstFive : Graph $ Vect 5 (DataModel {probabilisticModel = Latent} $ ConjugateGPRegression [2])
 firstFive = take 5 !steps
 ```
 

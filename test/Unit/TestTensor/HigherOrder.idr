@@ -65,7 +65,7 @@ map2Result = fixedProperty $ do
 partial
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
-  let x : Ref (Tensor [] S32) = 6
+  let x : Graph (Tensor [] S32) = 6
   (do map2 (\x, y => pure x + pure x + pure y + pure y) !1 !2) ===# x
 
 partial
@@ -198,7 +198,7 @@ condResultWithReusedArgs = fixedProperty $ do
   let x = tensor {dtype=S32} 1
       y = tensor {dtype=S32} 3
 
-      f : (Ref a -> Ref a -> Ref a) -> a -> Ref a
+      f : (Graph a -> Graph a -> Graph a) -> a -> Graph a
       f g x = g (pure x) (pure x)
 
   (do cond !(tensor True) (f (+)) !x (f (*)) !y) ===# 2

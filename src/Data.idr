@@ -40,6 +40,6 @@ record Dataset (0 featureShape, targetShape : Shape) where
 
 ||| Concatenate two datasets along their leading axis.
 export
-concat : Dataset features targets -> Dataset features targets -> Ref $ Dataset features targets
+concat : Dataset features targets -> Dataset features targets -> Graph $ Dataset features targets
 concat (MkDataset {s=s} x y) (MkDataset {s=s'} x' y') =
   [| MkDataset {s=s + S s'} (concat 0 x x') (concat 0 y y') |]

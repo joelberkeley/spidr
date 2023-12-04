@@ -97,7 +97,7 @@ sliceStaticMixed = fixedProperty $ do
   (do slice [1.to 2, at 2] !x) ===# tensor [8]
 
 -- idris is having a hard time inferring types
-u64 : Nat -> Ref $ Tensor [] U64
+u64 : Nat -> Graph $ Tensor [] U64
 u64 = tensor . Scalar
 
 partial

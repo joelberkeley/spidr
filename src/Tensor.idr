@@ -18,8 +18,8 @@ limitations under the License.
 ||| types, so you can be sure that if your tensor code compiles, the shapes and types are
 ||| consistent.
 |||
-||| spidr achieves efficient reuse of tensor computations with `Ref`. See the tutorial
-||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Ref`.
+||| spidr achieves efficient reuse of tensor computations with `Graph`. See the tutorial
+||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Graph`.
 module Tensor
 
 import Control.Monad.Error.Either
@@ -45,37 +45,38 @@ import public Util
 ||| @dtype The element type.
 export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
-  MkTensor : {shape : _} -> Nat -> Env -> Tensor shape dtype
+  MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
-||| A `Ref a` is essentially a counter we use to generate a unique _reference_ for each `a`.
+record EnvN where
+  constructor MkEnvN
+  max : Nat
+  env : Env
+
+-- wrap this, once it's working, in a dedicated `Graph` type
 public export 0
-Ref : Type -> Type
-Ref = State Nat
+Graph : Type -> Type
+Graph = State EnvN
 
-new : Ref Nat
-new = do
-  n <- get
-  put (S n)
-  pure n
-
-end : Env -> Expr -> {shape : _} -> Ref $ Tensor shape dtype
-end env expr = do
-  i <- new
-  pure $ MkTensor i (insert i expr env)
+addNode : Expr -> {shape : _} -> Graph $ Tensor shape dtype
+addNode expr = do
+  MkEnvN max env <- get
+  let max = S max
+  put (MkEnvN max (insert max expr env))
+  pure $ MkTensor max
 
 ||| Construct a `Tensor` from `Literal` data.
 export
-tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Ref $ Tensor shape dtype
-tensor lit = empty `end` FromLiteral {dtype} {shape} lit
+tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Graph $ Tensor shape dtype
+tensor lit = addNode $ FromLiteral {dtype} {shape} lit
 
 namespace F64
   export
-  fromDouble : Double -> Ref $ Tensor [] F64
+  fromDouble : Double -> Graph $ Tensor [] F64
   fromDouble = tensor . Scalar
 
 namespace S32
   export
-  fromInteger : Integer -> Ref $ Tensor [] S32
+  fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
@@ -91,37 +92,38 @@ namespace S32
 ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
-eval : PrimitiveRW dtype ty => Ref (Tensor shape dtype) -> IO (Literal shape ty)
-eval x = let MkTensor n nodes = evalState 0 x in
-  runEitherT (run {dtype} n nodes) <&> \case
+eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
+eval x =
+  let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x in
+  runEitherT (run {dtype} n env) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
 export partial
-Show (Ref $ Tensor shape dtype) where
-  show x = let MkTensor n nodes = evalState 0 x in
-               case unsafePerformIO $ runEitherT $ toString n nodes of
+Show (Graph $ Tensor shape dtype) where
+  show x = let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x in
+               case unsafePerformIO $ runEitherT $ toString n env of
                     Right str => str
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
-[NonFinite] Primitive.Ord dtype => Bounded (Ref $ Tensor [] dtype) where
-  min = empty `end` MinValue {dtype}
-  max = empty `end` MaxValue {dtype}
+[NonFinite] Primitive.Ord dtype => Bounded (Graph $ Tensor [] dtype) where
+  min = addNode $ MinValue {dtype}
+  max = addNode $ MaxValue {dtype}
 
 ||| Finite bounds for numeric tensors.
 export
-[Finite] Primitive.Ord dtype => Bounded (Ref $ Tensor [] dtype) where
-  min = empty `end` MinFiniteValue {dtype}
-  max = empty `end` MaxFiniteValue {dtype}
+[Finite] Primitive.Ord dtype => Bounded (Graph $ Tensor [] dtype) where
+  min = addNode $ MinFiniteValue {dtype}
+  max = addNode $ MaxFiniteValue {dtype}
 
 ||| Cast the element type. For example, `castDtype (tensor {dtype=S32} [1, -2])` is
 ||| `tensor {dtype=F64} [1.0, -2.0]`.
 export
-castDtype : Primitive.Integral a => Tensor shape a -> Ref $ Tensor shape F64
-castDtype $ MkTensor i env = env `end` ConvertElementType {dtype=F64} i
+castDtype : Primitive.Integral a => Tensor shape a -> Graph $ Tensor shape F64
+castDtype $ MkTensor x = addNode $ ConvertElementType {dtype = F64} x
 
 ----------------------------- structural operations ----------------------------
 
@@ -133,8 +135,8 @@ reshape :
   {to : _} ->
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
-  Ref $ Tensor to dtype
-reshape $ MkTensor {shape} i env = env `end` Reshape shape to i
+  Graph $ Tensor to dtype
+reshape $ MkTensor {shape} i = addNode $ Reshape shape to i
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -145,8 +147,8 @@ expand :
   (axis : Nat) ->
   {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
-  Ref $ Tensor (insertAt axis 1 shape) dtype
-expand axis $ MkTensor {shape = _} i env = env `end` Reshape shape (insertAt axis 1 shape) i
+  Graph $ Tensor (insertAt axis 1 shape) dtype
+expand axis $ MkTensor {shape = _} i = addNode $ Reshape shape (insertAt axis 1 shape) i
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -173,16 +175,16 @@ namespace Squeezable
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
 |||
 ||| ```idris
-||| x : Ref $ Tensor [2, 1, 3, 1] S32
+||| x : Graph $ Tensor [2, 1, 3, 1] S32
 ||| x = tensor [[[[4], [5], [6]]],
 |||             [[[7], [8], [9]]]]
 |||
-||| y : Ref $ Tensor [2, 1, 3] S32
+||| y : Graph $ Tensor [2, 1, 3] S32
 ||| y = squeeze !x
 ||| ```
 ||| is
 ||| ```idris
-||| y : Ref $ Tensor [2, 1, 3] S32
+||| y : Graph $ Tensor [2, 1, 3] S32
 ||| y = tensor [[[4, 5, 6]],
 |||             [[7, 8, 9]]]
 ||| ```
@@ -192,8 +194,8 @@ squeeze :
   {to : _} ->
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
-  Ref $ Tensor to dtype
-squeeze $ MkTensor {shape} i env = env `end` Reshape shape to i
+  Graph $ Tensor to dtype
+squeeze $ MkTensor {shape} i = addNode $ Reshape shape to i
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -265,7 +267,7 @@ namespace MultiSlice
 |||
 ||| Static indices are `Nat`s. For example, for
 ||| ```
-||| x : Ref $ Tensor [5, 6] S32
+||| x : Graph $ Tensor [5, 6] S32
 ||| x = tensor [[ 0,  1,  2,  3,  4,  5],
 |||             [ 6,  7,  8,  9, 10, 11],
 |||             [12, 13, 14, 15, 16, 17],
@@ -274,12 +276,12 @@ namespace MultiSlice
 ||| ```
 ||| we can index as `slice [at 1] !x` to get
 ||| ```
-||| x : Ref $ Tensor [6] S32
+||| x : Graph $ Tensor [6] S32
 ||| x = tensor [6, 7, 8, 9, 10, 11]
 ||| ```
 ||| or we can slice as `slice [2.to 4] !x` to get
 ||| ```
-||| x : Ref $ Tensor [2, 6] S32
+||| x : Graph $ Tensor [2, 6] S32
 ||| x = tensor [[12, 13, 14, 15, 16, 17],
 |||             [18, 19, 20, 21, 22, 23]]
 ||| ```
@@ -292,25 +294,25 @@ namespace MultiSlice
 ||| `U64` index `i` in `slice [at i] !x`, `i` is clamped to be a valid index into that dimension.
 ||| For example, for `i = tensor 1`, `slice [at i] !x` is
 ||| ```
-||| x : Ref $ Tensor [6] S32
+||| x : Graph $ Tensor [6] S32
 ||| x = tensor [6, 7, 8, 9, 10, 11]
 ||| ```
 ||| as in the static case. However, for `i = tensor 10`, `slice [at i] x` returns the last row
 ||| ```
-||| x : Ref $ Tensor [6] S32
+||| x : Graph $ Tensor [6] S32
 ||| x = tensor [24, 25, 26, 27, 28, 29]
 ||| ```
 ||| We can also slice by specifying a scalar `U64` start index, and a static size, as
 ||| `slice [i.size 2] !x` with `i = tensor 2` to get
 ||| ```
-||| x : Ref $ Tensor [2, 6] S32
+||| x : Graph $ Tensor [2, 6] S32
 ||| x = tensor [[12, 13, 14, 15, 16, 17],
 |||             [18, 19, 20, 21, 22, 23]]
 ||| ```
 ||| For a given slice `size`, the dynamic start index is clamped such that we always get `size`
 ||| elements along that axis. For example, `slice [i.size 2] !x` with `i = tensor 4` is
 ||| ```
-||| x : Ref $ Tensor [2, 6] S32
+||| x : Graph $ Tensor [2, 6] S32
 ||| x = tensor [[18, 19, 20, 21, 22, 23],
 |||             [24, 25, 26, 27, 28, 29]]
 ||| ```
@@ -322,12 +324,12 @@ namespace MultiSlice
 ||| across axes, we can mix these four arbitrarily. For example, with `slice [2.to 4, at 1] !x` to
 ||| get
 ||| ```
-||| x : Ref $ Tensor [2] S32
+||| x : Graph $ Tensor [2] S32
 ||| x = tensor [13, 19]
 ||| ```
 ||| or with `i = tensor 2` in `slice [at 1, i.size 2] !x` to get
 ||| ```
-||| x : Ref $ Tensor [2] S32
+||| x : Graph $ Tensor [2] S32
 ||| x = tensor [7, 8]
 ||| ```
 |||
@@ -336,7 +338,7 @@ namespace MultiSlice
 ||| later axes and retain all indices in a leading axis, we can use the convenience function `all`,
 ||| as `slice [all, at 3] x` to get
 ||| ```
-||| x : Ref $ Tensor [5] S32
+||| x : Graph $ Tensor [5] S32
 ||| x = tensor [[3], [9], [15], [21], [27]]
 ||| ```
 ||| This is exactly the same as the more manual `slice [0.to 5, at 3] !x` and
@@ -348,14 +350,15 @@ slice :
   Primitive dtype =>
   (at : MultiSlice shape) ->
   Tensor shape dtype ->
-  Ref $ Tensor (slice at) dtype
+  Graph $ Tensor (slice at) dtype
+{-
 slice at $ MkTensor i env = do
   j <- new
   let env = insert j (Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) i) env
   (dynStartsIdxs, env) <- dynStarts [] env at
   k <- new
   let env = insert k (DynamicSlice dynStartsIdxs (mapd size id at) j) env
-  env `end` Reshape (mapd size id at) (MultiSlice.slice at) k
+  env `addNode` Reshape (mapd size id at) (MultiSlice.slice at) k
 
       where
       mapd :
@@ -386,10 +389,10 @@ slice at $ MkTensor i env = do
       zero : Expr
       zero = FromLiteral {shape=[]} {dtype=U64} 0
 
-      dynStarts : List Nat -> Env -> {shape : _} -> MultiSlice shape -> Ref (List Nat, Env)
+      dynStarts : List Nat -> Env -> {shape : _} -> MultiSlice shape -> Graph (List Nat, Env)
       dynStarts idxs env {shape} [] = f (length shape) (idxs, env)
         where
-        f : Nat -> (List Nat, Env) -> Ref (List Nat, Env)
+        f : Nat -> (List Nat, Env) -> Graph (List Nat, Env)
         f 0 (idxs, env) = pure (idxs, env)
         f (S k) (idxs, env) = do
           i <- new
@@ -404,6 +407,7 @@ slice at $ MkTensor i env = do
         (idxs, env) <- dynStarts idxs env ds
         i <- new
         pure (i :: idxs, insert i zero env)
+-}
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 !(tensor [[1, 2], [3, 4]]) !(tensor [[5, 6]])` and
@@ -417,20 +421,20 @@ concat :
   Tensor s' dtype ->
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
-  Ref $ Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor i env) (MkTensor i' env') = mergeLeft env env' `end` Concat axis i i'
+  Graph $ Tensor (replaceAt axis (index axis s + index axis s') s) dtype
+concat axis (MkTensor x) (MkTensor x') = addNode $ Concat axis x x'
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
-||| x : Ref $ Tensor [3, 3] S32
+||| x : Graph $ Tensor [3, 3] S32
 ||| x = tensor [[0, 1, 2],
 |||             [3, 4, 5],
 |||             [6, 7, 8]]
 ||| ```
 ||| `diag !x` is `tensor [0, 4, 8]`.
 export
-diag : Primitive dtype => Tensor [n, n] dtype -> Ref (Tensor [n] dtype)
-diag $ MkTensor i env = env `end` Diag i
+diag : Primitive dtype => Tensor [n, n] dtype -> Graph (Tensor [n] dtype)
+diag $ MkTensor x = addNode $ Diag x
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -438,34 +442,34 @@ data Triangle = Upper | Lower
 
 ||| Get the upper- or lower-triangular component of a matrix. For example, for
 ||| ```
-||| x : Ref $ Tensor [3, 3] S32
+||| x : Graph $ Tensor [3, 3] S32
 ||| x = tensor [[1, 2, 3],
 |||             [4, 5, 6],
 |||             [7, 8, 9]]
 ||| ```
 ||| `triangle Lower !x` is
 ||| ```
-||| x : Ref $ Tensor [3, 3] S32
+||| x : Graph $ Tensor [3, 3] S32
 ||| x = tensor [[1, 0, 0],
 |||             [4, 5, 0],
 |||             [7, 8, 9]]
 ||| ```
 export
-triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Ref $ Tensor [n, n] dtype
-triangle tri $ MkTensor i env = env `end` Triangle (case tri of Upper => False; Lower => True) i
+triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Graph $ Tensor [n, n] dtype
+triangle tri $ MkTensor x = addNode $ Triangle (case tri of Upper => False; Lower => True) x
 
 ||| Tranpose a matrix. For example, `(tensor [[1, 2], [3, 4]]).T` is `tensor [[1, 3], [2, 4]]`.
 export
-(.T) : Ref (Tensor [m, n] dtype) -> Ref (Tensor [n, m] dtype)
+(.T) : Graph (Tensor [m, n] dtype) -> Graph (Tensor [n, m] dtype)
 x.T = do
-  MkTensor i env <- x
-  env `end` Transpose [1, 0] i
+  MkTensor x <- x
+  addNode $ Transpose [1, 0] x
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can
 ||| transpose any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting
 ||| tensor corresponds to the `index i ordering`'th axis in the input tensor. For example, for
 ||| ```
-||| x : Ref $ Tensor [2, 3, 4] S32
+||| x : Graph $ Tensor [2, 3, 4] S32
 ||| x = tensor [[[ 0,  1,  2,  3],
 |||              [ 4,  5,  6,  7],
 |||              [ 8,  9, 10, 11]],
@@ -475,7 +479,7 @@ x.T = do
 ||| ```
 ||| `transpose [0, 2, 1] !x` is
 ||| ```
-||| x : Ref $ Tensor [2, 4, 3] S32
+||| x : Graph $ Tensor [2, 4, 3] S32
 ||| x = tensor [[[ 0,  4,  8],
 |||              [ 1,  5,  9],
 |||              [ 2,  6, 10],
@@ -487,7 +491,7 @@ x.T = do
 ||| ```
 ||| `transpose [2, 0, 1] !x` is
 ||| ```
-||| x : Ref $ Tensor [4, 2, 3] S32
+||| x : Graph $ Tensor [4, 2, 3] S32
 ||| x = tensor [[[ 0,  4,  8],
 |||              [12, 16, 20]],
 |||             [[ 1,  5,  9],
@@ -512,23 +516,23 @@ transpose :
   {auto 0 lengths : length ordering = length shape} ->
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
-  Ref $ Tensor (map (dflip List.index shape) ordering) dtype
-transpose ordering $ MkTensor i env = env `end` Transpose ordering i
+  Graph $ Tensor (map (dflip List.index shape) ordering) dtype
+transpose ordering $ MkTensor x = addNode $ Transpose ordering x
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
-||| x : Ref $ Tensor [2, 2] S32
+||| x : Graph $ Tensor [2, 2] S32
 ||| x = identity
 ||| ```
 ||| is
 ||| ```
-||| x : Ref $ Tensor [2, 2] S32
+||| x : Graph $ Tensor [2, 2] S32
 ||| x = tensor [[1, 0],
 |||             [0, 1]]
 ||| ```
 export
-identity : Primitive.Num dtype => {n : _} -> Ref $ Tensor [n, n] dtype
-identity = empty `end` Identity {dtype} n
+identity : Primitive.Num dtype => {n : _} -> Graph $ Tensor [n, n] dtype
+identity = addNode $ Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -581,14 +585,14 @@ namespace Broadcastable
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
 ||| ```idris
-||| x : Ref $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [2, 3] S32
 ||| x = broadcast !(tensor [4, 5, 6])
 ||| ```
 |||
 ||| is
 |||
 ||| ```idris
-||| x : Ref $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[4, 5, 6], [4, 5, 6]]
 ||| ```
 export
@@ -597,8 +601,8 @@ broadcast :
   {to : _} ->
   {auto shapesOK : Broadcastable from to} ->
   Tensor from dtype ->
-  Ref $ Tensor to dtype
-broadcast $ MkTensor {shape=_} i env = env `end` Broadcast {dtype} from to i
+  Graph $ Tensor to dtype
+broadcast $ MkTensor {shape = _} i = addNode $ Broadcast {dtype} from to i
 
 %hint
 export
@@ -609,30 +613,32 @@ scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 ||| A `Tensor` where every element has the specified value. For example,
 |||
 ||| ```idris
-||| fives : Ref $ Tensor [2, 3] S32
+||| fives : Graph $ Tensor [2, 3] S32
 ||| fives = fill 5
 ||| ```
 ||| is
 ||| ```idris
-||| fives : Ref $ Tensor [2, 3] S32
+||| fives : Graph $ Tensor [2, 3] S32
 ||| fives = tensor [[5, 5, 5],
 |||                 [5, 5, 5]]
 ||| ```
 export
-fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Ref $ Tensor shape dtype
+fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Graph $ Tensor shape dtype
 fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar xs))
 
 ----------------------------- generic operations ----------------------------
 
-arg : Primitive dtype => {shape : _} -> Ref (Tensor shape dtype, Nat, ShapeAndType)
+{-
+arg : Primitive dtype => {shape : _} -> Graph (Tensor shape dtype, Nat, ShapeAndType)
 arg = do
   i <- new
   pure (MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
+-}
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| recip : Tensor [] F64 -> Ref (Tensor [] F64)
+||| recip : Tensor [] F64 -> Graph (Tensor [] F64)
 ||| recip x = 1.0 / pure x
 ||| ```
 ||| can be lifted to an element-wise reciprocal function as `map recip !(tensor [-2, 0.4])`,
@@ -640,18 +646,20 @@ arg = do
 export
 map :
   (Primitive a, Primitive b) =>
-  (Tensor [] a -> Ref $ Tensor [] b) ->
+  (Tensor [] a -> Graph $ Tensor [] b) ->
   Tensor shape a ->
-  Ref $ Tensor shape b
+  Graph $ Tensor shape b
+{-
 map f $ MkTensor {shape = _} i env = do
   (arg, param) <- arg
   MkTensor l subEnv <- f arg
-  env `end` Map (MkFn [param] l subEnv) [i] (range $ length shape)
+  env `addNode` Map (MkFn [param] l subEnv) [i] (range $ length shape)
+-}
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Ref $ Tensor [] F64
+||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Graph $ Tensor [] F64
 ||| addRecip x y = pure x + 1.0 / pure y
 ||| ```
 ||| can be lifted to an element-wise function as
@@ -660,15 +668,17 @@ map f $ MkTensor {shape = _} i env = do
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -> Tensor [] b -> Ref $ Tensor [] c) ->
+  (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
   Tensor shape a ->
   Tensor shape b ->
-  Ref $ Tensor shape c
+  Graph $ Tensor shape c
+{-
 map2 f (MkTensor {shape = _} i env) (MkTensor i' env') = do
   (a0, p0) <- arg
   (a1, p1) <- arg
   MkTensor j subEnv <- f a0 a1
-  mergeLeft env env' `end` Map (MkFn [p0, p1] j subEnv) [i, i'] (range $ length shape)
+  mergeLeft env env' `addNode` Map (MkFn [p0, p1] j subEnv) [i, i'] (range $ length shape)
+-}
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 !x` is
@@ -678,13 +688,14 @@ map2 f (MkTensor {shape = _} i env) (MkTensor i' env') = do
 ||| @axis The axis along which to reduce elements.
 export
 reduce :
-  (reducer : Monoid (Ref $ Tensor [] dtype)) =>
+  (reducer : Monoid (Graph $ Tensor [] dtype)) =>
   Primitive dtype =>
   (axes : List Nat) ->
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
-  Ref $ Tensor (deleteAt axes shape) dtype
+  Graph $ Tensor (deleteAt axes shape) dtype
+{-
 reduce axes $ MkTensor i xEnv = do
   (a0, p0) <- arg
   (a1, p1) <- arg
@@ -693,7 +704,8 @@ reduce axes $ MkTensor i xEnv = do
 
   MkTensor j subEnv <- (<+>) @{semigroupT reducer} (pure a0) (pure a1)
   MkTensor k neutralEnv <- neutral @{reducer}
-  mergeLeft xEnv neutralEnv `end` Reduce (MkFn [p0, p1] j subEnv) k axes i
+  mergeLeft xEnv neutralEnv `addNode` Reduce (MkFn [p0, p1] j subEnv) k axes i
+-}
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -708,38 +720,40 @@ reduce axes $ MkTensor i xEnv = do
 export
 sort :
   Primitive dtype =>
-  (Ref (Tensor [] dtype) -> Ref (Tensor [] dtype) -> Ref (Tensor [] PRED)) ->
+  (Graph (Tensor [] dtype) -> Graph (Tensor [] dtype) -> Graph (Tensor [] PRED)) ->
   (dimension : Nat) ->
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
-  Ref $ Tensor shape dtype
+  Graph $ Tensor shape dtype
+{-
 sort comp dimension $ MkTensor i env = do
   (a0, p0) <- arg
   (a1, p1) <- arg
   MkTensor j subEnv <- comp (pure a0) (pure a1)
-  env `end` Sort (MkFn [p0, p1] j subEnv) dimension False [i]
+  env `addNode` Sort (MkFn [p0, p1] j subEnv) dimension False [i]
+-}
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
-||| x : Ref $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[-2, -1,  0],
 |||             [ 1,  2,  3]]
 ||| ```
 ||| `reverse [0] !x` is
 ||| ```
-||| x : Ref $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[ 1,  2,  3],
 |||             [-2, -1,  0]]
 ||| ```
 ||| `reverse [1] !x` is
 ||| ```
-||| x : Ref $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[ 0, -1, -2],
 |||             [ 3,  2,  1]]
 ||| ```
 ||| and `reverse [0, 1] !x` is
 ||| ```
-||| x : Ref $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[ 3,  2,  1],
 |||             [ 0, -1, -2]]
 ||| ```
@@ -753,127 +767,127 @@ reverse :
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
-  Ref $ Tensor shape dtype
-reverse axes $ MkTensor i env = env `end` Reverse axes i
+  Graph $ Tensor shape dtype
+reverse axes $ MkTensor x = addNode $ Reverse axes x
 
 ----------------------------- numeric operations ----------------------------
 
-binaryRef : BinaryOp -> Ref (Tensor s a) -> Ref (Tensor s a') -> Ref (Tensor s a'')
+binaryRef : BinaryOp -> Graph (Tensor s a) -> Graph (Tensor s a') -> Graph (Tensor s a'')
 binaryRef op x x' = do
-  MkTensor i env <- x
-  MkTensor i' env' <- x'
-  mergeLeft env env' `end` BinaryElementwise op i i'
+  MkTensor x <- x
+  MkTensor x' <- x'
+  addNode $ BinaryElementwise op x x'
 
 ||| Element-wise equality. For example, `tensor [1, 2] /= tensor [1, 3]` is
 ||| `tensor [True, False]`.
 export
 (==) : Primitive.Eq dtype =>
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape PRED)
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape PRED)
 (==) = binaryRef Eq
 
 ||| Element-wise inequality. For example, `tensor [1, 2] /= tensor [1, 3]` is
 ||| `tensor [False, True]`.
 export
 (/=) : Primitive.Eq dtype =>
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape PRED)
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape PRED)
 (/=) = binaryRef Ne
 
 ||| Element-wise less than. For example, `tensor [1, 2, 3] < tensor [2, 2, 2]` is
 ||| `tensor [True, False, False]`.
 export
 (<) : Primitive.Ord dtype =>
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape PRED)
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape PRED)
 (<) = binaryRef Lt
 
 ||| Element-wise greater than. For example, `tensor [1, 2, 3] > tensor [2, 2, 2]` is
 ||| `tensor [False, False, True]`.
 export
 (>) : Primitive.Ord dtype =>
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape PRED)
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape PRED)
 (>) = binaryRef Gt
 
 ||| Element-wise less than or equal. For example, `tensor [1, 2, 3] <= tensor [2, 2, 2]`
 ||| is `tensor [True, True, False]`.
 export
 (<=) : Primitive.Ord dtype =>
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape PRED)
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape PRED)
 (<=) = binaryRef Le
 
 ||| Element-wise greater than or equal. For example,
 ||| `tensor [1, 2, 3] >= tensor [2, 2, 2]` is `tensor [False, True, True]`.
 export
 (>=) : Primitive.Ord dtype =>
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape dtype) ->
-       Ref (Tensor shape PRED)
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape dtype) ->
+       Graph (Tensor shape PRED)
 (>=) = binaryRef Ge
 
 ||| Element-wise boolean and. For example,
 ||| `tensor [True, True, False, False] && tensor [True, False, True, False]` is
 ||| `tensor [True, False, False, False]`.
 export
-(&&) : Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED)
+(&&) : Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)
 (&&) = binaryRef And
 
 namespace Semigroup
   export
-  [All] Semigroup (Ref $ Tensor shape PRED) where
+  [All] Semigroup (Graph $ Tensor shape PRED) where
     (<+>) = (&&)
 
 namespace Monoid
   export
-  [All] {shape : _} -> Monoid (Ref $ Tensor shape PRED) using Tensor.Semigroup.All where
+  [All] {shape : _} -> Monoid (Graph $ Tensor shape PRED) using Tensor.Semigroup.All where
     neutral = fill True
 
 ||| Element-wise boolean or. For example,
 ||| `tensor [True, True, False, False] || tensor [True, False, True, False]` is
 ||| `tensor [True, True, True, False]`.
 export
-(||) : Ref (Tensor shape PRED) ->
-       Ref (Tensor shape PRED) ->
-       Ref (Tensor shape PRED)
+(||) : Graph (Tensor shape PRED) ->
+       Graph (Tensor shape PRED) ->
+       Graph (Tensor shape PRED)
 (||) = binaryRef Or
 
 namespace Semigroup
   export
-  [Any] Semigroup (Ref $ Tensor shape PRED) where
+  [Any] Semigroup (Graph $ Tensor shape PRED) where
     (<+>) = (||)
 
 namespace Monoid
   export
-  [Any] {shape : _} -> Monoid (Ref $ Tensor shape PRED) using Tensor.Semigroup.Any where
+  [Any] {shape : _} -> Monoid (Graph $ Tensor shape PRED) using Tensor.Semigroup.Any where
     neutral = fill False
 
-unary : UnaryOp -> Tensor s a -> Ref $ Tensor s a'
-unary op $ MkTensor i env = env `end` UnaryElementwise op i
+unary : UnaryOp -> Tensor s a -> Graph $ Tensor s a'
+unary op $ MkTensor x = addNode $ UnaryElementwise op x
 
 ||| Element-wise boolean negation. For example, `not !(tensor [True, False])` is
 ||| `tensor [False, True]`.
 export
-not : Tensor shape PRED -> Ref $ Tensor shape PRED
+not : Tensor shape PRED -> Graph $ Tensor shape PRED
 not = unary Not
 
 ||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
 ||| predicates, the output will use the corresponding element from `onTrue` if the element is
 ||| truthy, else the element from `onFalse`. For example, for
 ||| ```
-||| preds : Ref $ Tensor [3] PRED
+||| preds : Graph $ Tensor [3] PRED
 ||| preds = tensor [False, True, False]
 |||
-||| onTrue : Ref $ Tensor [3] S32
+||| onTrue : Graph $ Tensor [3] S32
 ||| onTrue = tensor [1, 2, 3]
 |||
-||| onFalse : Ref $ Tensor [3] S32
+||| onFalse : Graph $ Tensor [3] S32
 ||| onFalse = tensor [4, 5, 6]
 ||| ```
 ||| `select !preds !onTrue !onFalse` is `tensor [4, 2, 6]`.
@@ -886,19 +900,18 @@ select :
   Tensor shape PRED ->
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
-  Ref $ Tensor shape dtype
-select (MkTensor p pred) (MkTensor t true) (MkTensor f false) =
-  mergeLeft (mergeLeft pred true) false `end` Select p t f
+  Graph $ Tensor shape dtype
+select (MkTensor p) (MkTensor t) (MkTensor f) = addNode $ Select p t f
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
 ||| corresponding specified argument. The result of the evaluated function is returned. For example,
 ||| for
 ||| ```
-||| x : Ref $ Tensor [2] S32
+||| x : Graph $ Tensor [2] S32
 ||| x = tensor [2, -1]
 |||
-||| y : Ref $ Tensor [2, 2] S32
+||| y : Graph $ Tensor [2, 2] S32
 ||| y = tensor [[5, 6],
 |||             [7, 8]]
 ||| ```
@@ -915,16 +928,18 @@ cond :
   (Primitive tt, Primitive ft, Primitive dtype) =>
   {shape, ts, fs : _} ->
   Tensor [] PRED ->
-  (onTrue : Tensor ts tt -> Ref $ Tensor shape dtype) -> Tensor ts tt ->
-  (onFalse : Tensor fs ft -> Ref $ Tensor shape dtype) -> Tensor fs ft ->
-  Ref $ Tensor shape dtype
+  (onTrue : Tensor ts tt -> Graph $ Tensor shape dtype) -> Tensor ts tt ->
+  (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
+  Graph $ Tensor shape dtype
+{-
 cond (MkTensor pred envPred) onTrue (MkTensor true envTrue) onFalse (MkTensor false envFalse) = do
   (aTrue, pTrue) <- arg
   (aFalse, pFalse) <- arg
   MkTensor lTrue subEnvTrue <- onTrue aTrue
   MkTensor lFalse subEnvFalse <- onFalse aFalse
   let env = mergeLeft (mergeLeft envPred envTrue) envFalse
-  env `end` Cond pred (MkFn [pTrue] lTrue subEnvTrue) true (MkFn [pFalse] lFalse subEnvFalse) false
+  env `addNode` Cond pred (MkFn [pTrue] lTrue subEnvTrue) true (MkFn [pFalse] lFalse subEnvFalse) false
+-}
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -935,59 +950,59 @@ namespace Vector
   ||| `-1`.
   export
   (@@) : Primitive.Num dtype =>
-         Ref (Tensor [S m] dtype) ->
-         Ref (Tensor [S m] dtype) ->
-         Ref (Tensor [] dtype)
+         Graph (Tensor [S m] dtype) ->
+         Graph (Tensor [S m] dtype) ->
+         Graph (Tensor [] dtype)
   x @@ x' = do
-    MkTensor i env <- x
-    MkTensor i' env' <- x'
-    mergeLeft env env' `end` Dot i i'
+    MkTensor x <- x
+    MkTensor x' <- x'
+    addNode $ Dot x x'
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
   ||| and the first axis of the last. For example:
   |||
   ||| ```idris
-  ||| x : Ref $ Tensor [2, 3] S32
+  ||| x : Graph $ Tensor [2, 3] S32
   ||| x = tensor [[-1, -2, -3],
   |||             [ 0,  1,  2]]
   |||
-  ||| y : Ref $ Tensor [3, 1] S32
+  ||| y : Graph $ Tensor [3, 1] S32
   ||| y = tensor [[4, 0, 5]]
   |||
-  ||| z : Ref $ Tensor [2, 1] S32
+  ||| z : Graph $ Tensor [2, 1] S32
   ||| z = x @@ y
   ||| ```
   |||
   ||| is
   |||
   ||| ```idris
-  ||| z : Ref $ Tensor [2, 1] S32
+  ||| z : Graph $ Tensor [2, 1] S32
   ||| z = tensor [-19, 10]
   ||| ```
   export
   (@@) : (Primitive dtype, Primitive.Num dtype) =>
-         Ref (Tensor [n, S m] dtype) ->
-         Ref (Tensor (S m :: tl) dtype) ->
+         Graph (Tensor [n, S m] dtype) ->
+         Graph (Tensor (S m :: tl) dtype) ->
          {auto 0 vectorTail : length tl `LTE` 1} ->
-         Ref (Tensor (n :: tl) dtype)
+         Graph (Tensor (n :: tl) dtype)
   x @@ x' = do
-    MkTensor i env <- x
-    MkTensor i' env' <- x'
-    mergeLeft env env' `end` Dot i i'
+    MkTensor x <- x
+    MkTensor x' <- x'
+    addNode $ Dot x x'
 
 ||| Element-wise addition. For example, `tensor [1, 2] + tensor [3, 4]` is
 ||| `tensor [4, 6]`.
 export
 (+) : Primitive.Num dtype =>
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype)
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype)
 (+) = binaryRef Add
 
 namespace Semigroup
   export
-  [Sum] Primitive.Num dtype => Semigroup (Ref $ Tensor shape dtype) where
+  [Sum] Primitive.Num dtype => Semigroup (Graph $ Tensor shape dtype) where
     x <+> x' = x + x'
 
 namespace Monoid
@@ -996,32 +1011,32 @@ namespace Monoid
         Prelude.Num a =>
         PrimitiveRW dtype a =>
         Primitive.Num dtype =>
-    Monoid (Ref $ Tensor shape dtype) using Semigroup.Sum where
+    Monoid (Graph $ Tensor shape dtype) using Semigroup.Sum where
       neutral = fill 0
 
 ||| Element-wise negation. For example, `- tensor [1, -2]` is `tensor [-1, 2]`.
 export
-negate : Primitive.Neg dtype => Ref (Tensor shape dtype) -> Ref (Tensor shape dtype)
+negate : Primitive.Neg dtype => Graph (Tensor shape dtype) -> Graph (Tensor shape dtype)
 negate x = do
-  MkTensor i env <- x
-  env `end` UnaryElementwise Neg i
+  MkTensor i <- x
+  addNode $ UnaryElementwise Neg i
 
 ||| Element-wise subtraction. For example, `tensor [3, 4] - tensor [4, 2]` is
 ||| `tensor [-1, 2]`.
 export
 (-) : Primitive.Neg dtype =>
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype)
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype)
 (-) = binaryRef Sub
 
 ||| Element-wise multiplication. For example, `tensor [2, 3] * tensor [4, 5]` is
 ||| `tensor [8, 15]`.
 export
 (*) : Primitive.Num dtype =>
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype)
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype)
 (*) = binaryRef Mul
 
 namespace Scalarwise
@@ -1031,16 +1046,16 @@ namespace Scalarwise
   ||| The RHS is required to be non-scalar simply to avoid ambiguities with element-wise `(*)`.
   export
   (*) : Primitive.Num dtype =>
-        Ref (Tensor [] dtype) ->
-        Ref (Tensor (d :: ds) dtype) ->
-        Ref (Tensor (d :: ds) dtype)
+        Graph (Tensor [] dtype) ->
+        Graph (Tensor (d :: ds) dtype) ->
+        Graph (Tensor (d :: ds) dtype)
   l * r = do
-    MkTensor {shape=_ :: _} _ _ <- r
+    MkTensor {shape=_ :: _} _ <- r
     broadcast {shapesOK=scalarToAnyOk (d :: ds)} !l * r
 
 namespace Semigroup
   export
-  [Prod] Primitive.Num dtype => Semigroup (Ref $ Tensor shape dtype) where
+  [Prod] Primitive.Num dtype => Semigroup (Graph $ Tensor shape dtype) where
     (<+>) = (*)
 
 namespace Monoid
@@ -1049,16 +1064,16 @@ namespace Monoid
          Prelude.Num a =>
          PrimitiveRW dtype a =>
          Primitive.Num dtype =>
-    Monoid (Ref $ Tensor shape dtype) using Semigroup.Prod where
+    Monoid (Graph $ Tensor shape dtype) using Semigroup.Prod where
       neutral = fill 1
 
 ||| Element-wise floating point division. For example, `tensor [2, 3] / tensor [4, 5]` is
 ||| `tensor [0.5, 0.6]`.
 export
 (/) : Primitive.Fractional dtype =>
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype) ->
-      Ref (Tensor shape dtype)
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype) ->
+      Graph (Tensor shape dtype)
 (/) = binaryRef Div
 
 namespace Scalarwise
@@ -1068,11 +1083,11 @@ namespace Scalarwise
   ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
   export
   (/) : Primitive.Fractional dtype =>
-        Ref (Tensor (d :: ds) dtype) ->
-        Ref (Tensor [] dtype) ->
-        Ref (Tensor (d :: ds) dtype)
+        Graph (Tensor (d :: ds) dtype) ->
+        Graph (Tensor [] dtype) ->
+        Graph (Tensor (d :: ds) dtype)
   l / r = do
-    MkTensor {shape = _ :: _} _ _ <- l
+    MkTensor {shape = _ :: _} _ <- l
     l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} !r
 
 ||| Element-wise division of natural numbers. For example,
@@ -1081,9 +1096,9 @@ export
 div : Tensor shape U64 ->
       (denom : Literal shape Nat) ->
       {auto 0 isSucc : All IsSucc denom} ->
-      Ref $ Tensor shape U64
+      Graph $ Tensor shape U64
 div x y with (x)
-  _ | (MkTensor {shape = _} _ _) = binaryRef Div (pure x) (tensor {dtype = U64} y)
+  _ | (MkTensor {shape = _} _) = binaryRef Div (pure x) (tensor {dtype = U64} y)
 
 ||| Element-wise remainder for natural numbers. For example,
 ||| `rem !(tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [1, 0]`.
@@ -1091,14 +1106,14 @@ export
 rem : Tensor shape U64 ->
       (denom : Literal shape Nat) ->
       {auto 0 isSucc : All IsSucc denom} ->
-      Ref $ Tensor shape U64
+      Graph $ Tensor shape U64
 rem x y with (x)
-  _ | (MkTensor {shape = _} _ _) = binaryRef Rem (pure x) (tensor {dtype = U64} y)
+  _ | (MkTensor {shape = _} _) = binaryRef Rem (pure x) (tensor {dtype = U64} y)
 
 ||| The element-wise reciprocal. For example, `recip !(tensor [-2, 0, 0.2])`
 ||| is `tensor [-0.5, nan, 5]`.
 export
-recip : Tensor shape F64 -> Ref $ Tensor shape F64
+recip : Tensor shape F64 -> Graph $ Tensor shape F64
 recip = unary Reciprocal
 
 infixr 9 ^
@@ -1111,135 +1126,135 @@ infixr 9 ^
 |||
 ||| Note: The first root is used.
 export
-(^) : Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> Ref (Tensor shape F64)
+(^) : Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)
 (^) = binaryRef Pow
 
 ||| Element-wise absolute value. For example, `abs !(tensor [-2, 3])` is
 ||| `tensor [2, 3]`.
 export
-abs : Primitive.Abs dtype => Tensor shape dtype -> Ref $ Tensor shape dtype
+abs : Primitive.Abs dtype => Tensor shape dtype -> Graph $ Tensor shape dtype
 abs = unary Abs
 
 ||| The element-wise natural exponential. For example, `exp !(tensor [-1, 0, 2])` is
 ||| `tensor [1 / euler, 1, pow euler 2]`.
 export
-exp : Tensor shape F64 -> Ref $ Tensor shape F64
+exp : Tensor shape F64 -> Graph $ Tensor shape F64
 exp = unary Exp
 
 ||| The element-wise floor function. For example,
 ||| `floor !(tensor [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `tensor [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
-floor : Tensor shape F64 -> Ref $ Tensor shape F64
+floor : Tensor shape F64 -> Graph $ Tensor shape F64
 floor = unary Floor
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil !(tensor [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `tensor [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
-ceil : Tensor shape F64 -> Ref $ Tensor shape F64
+ceil : Tensor shape F64 -> Graph $ Tensor shape F64
 ceil = unary Ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log !(tensor [1 / euler, 1, euler * euler])` is `tensor [-1, 0, 2]`.
 export
-log : Tensor shape F64 -> Ref $ Tensor shape F64
+log : Tensor shape F64 -> Graph $ Tensor shape F64
 log = unary Log
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp !(-x)`.
 export
-logistic : Tensor shape F64 -> Ref $ Tensor shape F64
+logistic : Tensor shape F64 -> Graph $ Tensor shape F64
 logistic = unary Logistic
 
 ||| The element-wise sine.
 export
-sin : Tensor shape F64 -> Ref $ Tensor shape F64
+sin : Tensor shape F64 -> Graph $ Tensor shape F64
 sin = unary Sin
 
 ||| The element-wise cosine.
 export
-cos : Tensor shape F64 -> Ref $ Tensor shape F64
+cos : Tensor shape F64 -> Graph $ Tensor shape F64
 cos = unary Cos
 
 ||| The element-wise tangent.
 export
-tan : Tensor shape F64 -> Ref $ Tensor shape F64
+tan : Tensor shape F64 -> Graph $ Tensor shape F64
 tan = unary Tan
 
 ||| The element-wise inverse sine.
 export
-asin : Tensor shape F64 -> Ref $ Tensor shape F64
+asin : Tensor shape F64 -> Graph $ Tensor shape F64
 asin = unary Asin
 
 ||| The element-wise inverse cosine.
 export
-acos : Tensor shape F64 -> Ref $ Tensor shape F64
+acos : Tensor shape F64 -> Graph $ Tensor shape F64
 acos = unary Acos
 
 ||| The element-wise inverse tangent.
 export
-atan : Tensor shape F64 -> Ref $ Tensor shape F64
+atan : Tensor shape F64 -> Graph $ Tensor shape F64
 atan = unary Atan
 
 ||| The element-wise hyperbolic sine.
 export
-sinh : Tensor shape F64 -> Ref $ Tensor shape F64
+sinh : Tensor shape F64 -> Graph $ Tensor shape F64
 sinh = unary Sinh
 
 ||| The element-wise hyperbolic cosine.
 export
-cosh : Tensor shape F64 -> Ref $ Tensor shape F64
+cosh : Tensor shape F64 -> Graph $ Tensor shape F64
 cosh = unary Cosh
 
 ||| The element-wise hyperbolic tangent.
 export
-tanh : Tensor shape F64 -> Ref $ Tensor shape F64
+tanh : Tensor shape F64 -> Graph $ Tensor shape F64
 tanh = unary Tanh
 
 ||| The element-wise inverse hyperbolic sine.
 export
-asinh : Tensor shape F64 -> Ref $ Tensor shape F64
+asinh : Tensor shape F64 -> Graph $ Tensor shape F64
 asinh = unary Asinh
 
 ||| The element-wise inverse hyperbolic cosine.
 export
-acosh : Tensor shape F64 -> Ref $ Tensor shape F64
+acosh : Tensor shape F64 -> Graph $ Tensor shape F64
 acosh = unary Acosh
 
 ||| The element-wise inverse hyperbolic tangent.
 export
-atanh : Tensor shape F64 -> Ref $ Tensor shape F64
+atanh : Tensor shape F64 -> Graph $ Tensor shape F64
 atanh = unary Atanh
 
 ||| An approximation to the element-wise error function.
 export
-erf : Tensor shape F64 -> Ref $ Tensor shape F64
+erf : Tensor shape F64 -> Graph $ Tensor shape F64
 erf = unary Erf
 
 ||| The element-wise square. For example, `square !(tensor [-2, 0, 3])`
 ||| is `tensor [4, 0, 9]`.
 export
-square : Tensor shape F64 -> Ref $ Tensor shape F64
+square : Tensor shape F64 -> Graph $ Tensor shape F64
 square = unary Square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt !(tensor [0, 9])` is `tensor [0, 3]`.
 export
-sqrt : Tensor shape F64 -> Ref $ Tensor shape F64
+sqrt : Tensor shape F64 -> Graph $ Tensor shape F64
 sqrt = unary Sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min !(tensor [-3, -1, 3]) !(tensor [-1, 0, 1])` is `tensor [-3, -1, 1]`.
 export
-min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ Tensor shape dtype
-min (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
-  let x = MkTensor i env
-      op = mergeLeft env env' `end` BinaryElementwise Min i i'
+min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Graph $ Tensor shape dtype
+min (MkTensor {shape = _} i) x'@(MkTensor i') = do
+  let x = MkTensor i
+      op = addNode $ BinaryElementwise Min i i'
   select !(pure x == pure x) !(select !(pure x' == pure x') !op x') x
 
 namespace Semigroup
   export
-  [Min] {shape : _} -> Primitive.Ord dtype => Semigroup (Ref $ Tensor shape dtype) where
+  [Min] {shape : _} -> Primitive.Ord dtype => Semigroup (Graph $ Tensor shape dtype) where
     x <+> x' = min !x !x'
 
 namespace Monoid
@@ -1248,21 +1263,21 @@ namespace Monoid
         PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Ref $ Tensor shape dtype) using Semigroup.Min where
+    Monoid (Graph $ Tensor shape dtype) using Semigroup.Min where
       neutral = fill (1.0 / 0.0)
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max !(tensor [-3, -1, 3]) !(tensor [-1, 0, 1])` is `tensor [-1, 0, 3]`.
 export
-max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Ref $ Tensor shape dtype
-max (MkTensor {shape = _} i env) x'@(MkTensor i' env') = do
-  let x = MkTensor i env
-      op = mergeLeft env env' `end` BinaryElementwise Max i i'
+max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Graph $ Tensor shape dtype
+max (MkTensor {shape = _} i) x'@(MkTensor i') = do
+  let x = MkTensor i
+      op = addNode $ BinaryElementwise Max i i'
   select !(pure x == pure x) !(select !(pure x' == pure x') !op x') x
 
 namespace Semigroup
   export
-  [Max] Primitive.Ord dtype => Semigroup (Ref $ Tensor shape dtype) where
+  [Max] Primitive.Ord dtype => Semigroup (Graph $ Tensor shape dtype) where
     x <+> x' = max !x !x'
 
 namespace Monoid
@@ -1271,40 +1286,40 @@ namespace Monoid
         PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Ref $ Tensor shape dtype) using Semigroup.Max where
+    Monoid (Graph $ Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
 
-highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Ref $ Tensor [S n] dtype
+highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Graph $ Tensor [S n] dtype
 highlightNan minimize x with (x)
-  _ | (MkTensor {shape = _} _ _) =
+  _ | (MkTensor {shape = _} _) =
     cond !(reduce @{All} [0] !(pure x == pure x)) pure x extremizeNan x
 
     where
 
-    extremizeNan : {n : _} -> Tensor [S n] dtype -> Ref $ Tensor [S n] dtype
+    extremizeNan : {n : _} -> Tensor [S n] dtype -> Graph $ Tensor [S n] dtype
     extremizeNan x = do
       min' <- broadcast !(Types.min @{NonFinite})
       max' <- broadcast !(Types.max @{NonFinite})
-      let x : Ref _ = pure x
+      let x : Graph _ = pure x
       select !(if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin !(tensor [-1, 3, -2, -2, 3])` is `tensor 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
-argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Ref $ Tensor [] U64
+argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmin x = do
-  MkTensor i env <- highlightNan True x
-  env `end` Argmin {out=U64} 0 i
+  MkTensor x <- highlightNan True x
+  addNode $ Argmin {out=U64} 0 x
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax !(tensor [-1, 3, -2, -2, 3])` is `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
 export
-argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Ref $ Tensor [] U64
+argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmax x = do
-  MkTensor i env <- highlightNan False x
-  env `end` Argmax {out=U64} 0 i
+  MkTensor x <- highlightNan False x
+  addNode $ Argmax {out=U64} 0 x
 
 ---------------------------- other ----------------------------------
 
@@ -1313,8 +1328,8 @@ argmax x = do
 ||| positive semi-definite. The remaining matrix components - those not in the lower triangle or
 ||| diagonal - will always be zero.
 export
-cholesky : Tensor [S n, S n] F64 -> Ref $ Tensor [S n, S n] F64
-cholesky $ MkTensor i env = triangle Lower !(env `end` Cholesky i)
+cholesky : Tensor [S n, S n] F64 -> Graph $ Tensor [S n, S n] F64
+cholesky $ MkTensor x = triangle Lower !(addNode $ Cholesky x)
 
 infix 9 |\, \|
 
@@ -1327,11 +1342,11 @@ namespace Matrix
   ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (|\) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m, n] F64) -> Ref (Tensor [m, n] F64)
+  (|\) : Graph (Tensor [m, m] F64) -> Graph (Tensor [m, n] F64) -> Graph (Tensor [m, n] F64)
   x |\ x' = do
-    MkTensor i env <- x
-    MkTensor i' env' <- x'
-    mergeLeft env env' `end` TriangularSolve i i' True
+    MkTensor x <- x
+    MkTensor x' <- x'
+    addNode $ TriangularSolve x x' True
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1341,11 +1356,11 @@ namespace Matrix
   ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
-  (\|) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m, n] F64) -> Ref (Tensor [m, n] F64)
+  (\|) : Graph (Tensor [m, m] F64) -> Graph (Tensor [m, n] F64) -> Graph (Tensor [m, n] F64)
   x \| x' = do
-    MkTensor i env <- x
-    MkTensor i' env' <- x'
-    mergeLeft env env' `end` TriangularSolve i i' False
+    MkTensor x <- x
+    MkTensor x' <- x'
+    addNode $ TriangularSolve x x' False
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1356,10 +1371,10 @@ namespace Vector
   ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (|\) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
+  (|\) : Graph (Tensor [m, m] F64) -> Graph (Tensor [m] F64) -> Graph (Tensor [m] F64)
   a |\ b = do
-    MkTensor {shape=[_]} i env <- b
-    squeeze !(a |\ expand 1 (MkTensor {shape = [m]} i env))
+    MkTensor {shape = [_]} i <- b
+    squeeze !(a |\ expand 1 (MkTensor {shape = [m]} i))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1369,10 +1384,10 @@ namespace Vector
   ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
-  (\|) : Ref (Tensor [m, m] F64) -> Ref (Tensor [m] F64) -> Ref (Tensor [m] F64)
+  (\|) : Graph (Tensor [m, m] F64) -> Graph (Tensor [m] F64) -> Graph (Tensor [m] F64)
   a \| b = do
-    MkTensor {shape=[_]} i env <- b
-    squeeze !(a \| expand 1 (MkTensor {shape = [m]} i env))
+    MkTensor {shape=[_]} i <- b
+    squeeze !(a \| expand 1 (MkTensor {shape = [m]} i))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace !(tensor [[-1, 5], [1, 4]])` is `3`.
@@ -1380,17 +1395,17 @@ export
 trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
-        Ref (Tensor [] dtype)
+        Graph (Tensor [] dtype)
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
+  _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
-Rand = StateT (Tensor [1] U64) Ref
+Rand = StateT (Tensor [1] U64) Graph
 
-inf : Ref $ Tensor [] F64
+inf : Graph $ Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
@@ -1405,7 +1420,7 @@ inf = fromDouble (1.0 / 0.0)
 |||
 ||| Example usage, multiplying two uniform samples
 ||| ```
-||| x : Ref $ Tensor [3] F64
+||| x : Graph $ Tensor [3] F64
 ||| x = do key <- tensor (Scalar 2)
 |||        rng <- uniform key !(fill 0.0) !(fill 1.0)
 |||        initialState <- tensor [Scalar 0]
@@ -1420,7 +1435,8 @@ uniform :
   {shape : _} ->
   (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
-  Ref $ Rand $ Tensor shape F64
+  Graph $ Rand $ Tensor shape F64
+{-
 uniform (MkTensor iKey envKey) bound bound' = do
   minval@(MkTensor iMinval envMinval) <- min bound bound'
   maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
@@ -1430,8 +1446,8 @@ uniform (MkTensor iKey envKey) bound bound' = do
     i <- new
     let env = mergeLeft envState env
         env = insert i (UniformFloatingPoint iKey iState iMinval iMaxval shape) env
-        state = env `end` GetTupleElement 1 i
-        value = env `end` GetTupleElement 0 i
+        state = env `addNode` GetTupleElement 1 i
+        value = env `addNode` GetTupleElement 0 i
         -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
         -- samples between -inf and 0 should be at -inf, but XLA produces nan
         -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
@@ -1439,6 +1455,7 @@ uniform (MkTensor iKey envKey) bound bound' = do
         value = select !((pure minval == inf) && (pure maxval == inf)) !inf !value
         value = select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) !value
     pure (!state, !value)
+-}
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1448,7 +1465,7 @@ uniform (MkTensor iKey envKey) bound bound' = do
 |||
 ||| Example usage, multiplying two normal samples
 ||| ```
-||| x : Ref $ Tensor [3] F64
+||| x : Graph $ Tensor [3] F64
 ||| x = do key <- tensor (Scalar 2)
 |||        let rng = normal key
 |||        initialState <- tensor [Scalar 0]
@@ -1457,11 +1474,13 @@ uniform (MkTensor iKey envKey) bound bound' = do
 |||
 ||| @key Determines the stream of generated samples.
 export
-normal : {shape : _} -> (key : Tensor [] U64) -> Rand $ Tensor shape F64
+normal : {shape : _} -> (key : Tensor [] U64) -> Graph $ Tensor shape F64
+{-
 normal $ MkTensor iKey envKey =
   ST $ \(MkTensor iState envState) => do
     i <- new
     let env = insert i (NormalFloatingPoint iKey iState shape) $ mergeLeft envKey envState
-    state <- env `end` GetTupleElement 1 i
-    value <- env `end` GetTupleElement 0 i
+    state <- env `addNode` GetTupleElement 1 i
+    value <- env `addNode` GetTupleElement 0 i
     pure (state, value)
+-}
