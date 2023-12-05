@@ -645,7 +645,7 @@ map :
 map f $ MkTensor {shape = _} x = do
   MkEnvN max env <- get
   let max = S max
-      envWithParameter = MkEnvN max (insert max (Arg max) env)
+      envWithParameter = MkEnvN max (insert max (Arg x) env)
       (MkEnvN max subEnv, MkTensor result) = runState envWithParameter (f $ MkTensor max)
       fn = MkFn [(max, MkShapeAndType shape a)] result subEnv
   put (MkEnvN max env)
