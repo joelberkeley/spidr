@@ -644,8 +644,11 @@ map :
   Graph $ Tensor shape b
 map f $ MkTensor {shape = _} x = do
   MkEnvN max env <- get
-  let (MkEnvN _ subEnv, MkTensor l) = runState !get (f $ MkTensor $ S max)
-      fn = MkFn [(S max, MkShapeAndType shape a)] l subEnv
+  let max = S max
+      envWithParameter = MkEnvN max (insert env $ Arg max)
+      (MkEnvN max subEnv, MkTensor result) = runState envWithParameter (f $ MkTensor max)
+      fn = MkFn [(max, MkShapeAndType shape a)] result subEnv
+  put (MkEnvN max env)
   addNode $ Map fn [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
