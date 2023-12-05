@@ -62,9 +62,10 @@ Computation = StateT (SortedMap Nat XlaOp) (EitherT Err IO)
 
 lookup : Nat -> Computation XlaOp
 lookup n = do
-  case lookup n !get of
+  cache <- get
+  case lookup n cache of
        Nothing =>
-         lift $ left (IndexErr "Tried to look up value at index \{show n} but none was found.")
+         lift $ left (IndexErr "Tried to look up value at index \{show n} but found keys \{show $ toList (keys cache)}")
        Just op => pure op
 
 interpret : XlaBuilder -> Nat -> Env -> Computation XlaOp
