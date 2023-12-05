@@ -646,7 +646,7 @@ map f $ MkTensor {shape = _} x = do
   MkEnvN next env <- get
   let envWithParameter = MkEnvN (S next) (insert next (Arg next) env)
       (MkEnvN next subEnv, MkTensor result) = runState envWithParameter (f $ MkTensor next)
-      fn = MkFn [(max, MkShapeAndType shape a)] result subEnv
+      fn = MkFn [(next, MkShapeAndType shape a)] result subEnv
   put (MkEnvN next env)
   addNode $ Map fn [x] (range $ length shape)
 
