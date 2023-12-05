@@ -688,15 +688,19 @@ reduce :
   Tensor shape dtype ->
   Graph $ Tensor (deleteAt axes shape) dtype
 {-
-reduce axes $ MkTensor i xEnv = do
+reduce axes $ MkTensor i = do
+  MkEnvN max env <- get
+  let (MkEnvN _ subEnv, MkTensor l) = runState !get (f $ MkTensor $ S max)
+      fn = MkFn [(S max, MkShapeAndType shape a)] l subEnv
+
   (a0, p0) <- arg
   (a1, p1) <- arg
   let semigroupT : Monoid a -> Semigroup a
       semigroupT _ = %search
 
-  MkTensor j subEnv <- (<+>) @{semigroupT reducer} (pure a0) (pure a1)
-  MkTensor k neutralEnv <- neutral @{reducer}
-  mergeLeft xEnv neutralEnv `addNode` Reduce (MkFn [p0, p1] j subEnv) k axes i
+  let (subEnvN@(MkEnvN _ subEnv), MkTensor j) = runState !get $ (<+>) @{semigroupT reducer} (pure a0) (pure a1)
+      (MkEnvN _ neutralEnv, MkTensor k) = runState subEnvN $ neutral @{reducer}
+  addNode $ Reduce (MkFn [p0, p1] j subEnv) k axes i
 -}
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
