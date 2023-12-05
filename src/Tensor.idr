@@ -628,13 +628,6 @@ fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar xs))
 
 ----------------------------- generic operations ----------------------------
 
-{-
-arg : Primitive dtype => {shape : _} -> Graph (Tensor shape dtype, Nat, ShapeAndType)
-arg = do
-  i <- new
-  pure (MkTensor i (singleton i (Arg i)), (i, MkShapeAndType shape dtype))
--}
-
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
@@ -649,12 +642,12 @@ map :
   (Tensor [] a -> Graph $ Tensor [] b) ->
   Tensor shape a ->
   Graph $ Tensor shape b
-{-
-map f $ MkTensor {shape = _} i env = do
-  (arg, param) <- arg
-  MkTensor l subEnv <- f arg
-  env `addNode` Map (MkFn [param] l subEnv) [i] (range $ length shape)
--}
+map f $ MkTensor {shape = _} x = do
+  MkEnvN max env <- get
+  (subEnv, MkTensor l) <- runState !get (f $ MkTensor $ S max)
+  let shapeDtype = MkShapeAndType shape dtype
+      fn = MkFn [(S max, shapeDtype)] l subEnv
+  addNode $ Map fn [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
