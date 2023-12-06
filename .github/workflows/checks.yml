@@ -24,13 +24,15 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v3
-    - name: Install Bazel
+    - name: Build backend
       working-directory: backend
       run: |
         ./install_bazel.sh
         ./build.sh cpu
     - name: Run tests
-      run: pack --no-prompt run test.ipkg
+      run: |
+        pack --no-prompt build test.ipkg
+        pack run test.ipkg
       env:
         LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
   readme:
