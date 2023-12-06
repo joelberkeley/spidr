@@ -60,10 +60,9 @@ Graph = State EnvN
 
 addNode : Expr -> {shape : _} -> Graph $ Tensor shape dtype
 addNode expr = do
-  MkEnvN max env <- get
-  let max = S max
-  put (MkEnvN max (insert max expr env))
-  pure $ MkTensor max
+  MkEnvN next env <- get
+  put (MkEnvN (S next) (insert next expr env))
+  pure $ MkTensor next
 
 ||| Construct a `Tensor` from `Literal` data.
 export
