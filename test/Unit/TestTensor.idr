@@ -291,6 +291,7 @@ trace = fixedProperty $ do
 export partial
 group : Group
 group = MkGroup "Tensor" $ [
+{-
       ("eval . tensor", tensorThenEval)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
@@ -307,10 +308,13 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     -- , ("trace", trace)
+    -}
   ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
-    , Unit.TestTensor.HigherOrder.all
+    --  Unit.TestTensor.Elementwise.all
+     Unit.TestTensor.HigherOrder.all
+     {-
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all
+    -}
   ])

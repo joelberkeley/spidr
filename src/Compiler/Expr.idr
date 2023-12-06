@@ -29,6 +29,10 @@ public export
 data ShapeAndType : Type where
   MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
 
+Show ShapeAndType where
+  show (MkShapeAndType shape _ @{prim}) = "MkShapeAndType \{show shape} \{show $ xlaIdentifier @{prim}}"
+
+public export
 data Expr : Type where
 
 public export 0
@@ -120,3 +124,10 @@ data Expr : Type where
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+
+export
+Show Expr where
+  show (FromLiteral {shape} lit) = "FromLiteral \{show shape} <lit>"
+  show (Arg n) = "Arg \{show n}"
+  show (Map (MkFn params result env) args ds) = assert_total $ "Map (MkFn \{show params} \{show result} \{show $ SortedMap.toList env}) \{show args} \{show ds}"
+  show _ = "Other Expr"

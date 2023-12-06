@@ -22,6 +22,7 @@ limitations under the License.
 ||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Graph`.
 module Tensor
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import public Control.Monad.State
 import public Data.List
@@ -95,7 +96,7 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval x =
   let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x in
-  runEitherT (run {dtype} n env) <&> \case
+  runEitherT (run {dtype} n $ traceVal env) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 

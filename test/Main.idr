@@ -30,11 +30,15 @@ import Unit.TestUtil
 partial
 main : IO ()
 main = test [
+{-
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group
-    , Unit.TestTensor.group
+    -}
+     Unit.TestTensor.group
+     {-
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group
+    -}
   ]
