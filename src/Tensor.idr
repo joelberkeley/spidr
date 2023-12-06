@@ -95,10 +95,11 @@ namespace S32
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval x =
-  let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x in
-  runEitherT (run {dtype} n $ traceVal env) <&> \case
-    Right lit => lit
-    Left err => idris_crash (show err)
+  let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x
+      env = traceVal env 
+  in runEitherT (run {dtype} n $ traceVal env) <&> \case
+       Right lit => lit
+       Left err => idris_crash (show err)
 
 ||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
 ||| Useful for debugging.
