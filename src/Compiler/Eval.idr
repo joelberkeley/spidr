@@ -77,6 +77,7 @@ buildSub builder name (MkFn params result env) = do
   traverse_ (interpretParameter subBuilder) (enumerate params)
   root <- assert_total $ interpret subBuilder result env
   putStrLn "buildSub: \{show $ toList $ keys !get}"
+  assert_total $ idris_crash ""
   build subBuilder root
 
   where
