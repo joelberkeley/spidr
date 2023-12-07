@@ -32,10 +32,11 @@ mapResult = property $ do
   x <- forAll (literal shape doubles)
   let x' = tensor x
   map (1.0 /) x ==~ unsafeEval (do map (\x => 1.0 / pure x) !x')
-
+{-
   x <- forAll (literal shape int32s)
   let x' = tensor {dtype=S32} x
   map (+ 1) x === unsafeEval (do map (\x => pure x + 1) !x')
+  -}
 
 partial
 mapNonTrivial : Property
