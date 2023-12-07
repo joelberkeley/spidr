@@ -29,7 +29,7 @@ mapResult : Property
 mapResult = property $ do
   -- shape <- forAll shapes
 
-  x <- forAll (literal [] doubles)
+  x <- forAll (literal [2] doubles)
   let x' = tensor x
   map (1.0 /) x ==~ unsafeEval (do map (\x => 1.0 / pure x) !x')
 {-
