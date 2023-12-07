@@ -647,7 +647,7 @@ map :
 map f $ MkTensor {shape = _} i env = do
   (arg, param) <- arg
   MkTensor l subEnv <- f arg
-  env `end` Map (traceVal $ MkFn [param] l subEnv) [i] (range $ length shape)
+  env `end` traceVal (Map (MkFn [param] l subEnv) [i] (range $ length shape))
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
