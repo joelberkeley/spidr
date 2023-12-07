@@ -41,7 +41,16 @@ Env = SortedMap Nat Expr
 
 public export
 data Fn : Nat -> Type where
-  MkFn : {arity : _} -> Vect arity (Nat, ShapeAndType) -> Nat -> Env -> Fn arity
+
+  ||| @arity The function arity.
+  ||| @params The function parameter position in the graph, along with its shape and dtype.
+  ||| @result The position of the function result in the graph.
+  ||| @env The function graph. Includes only nodes in this scope, not outer or inner scope.
+  MkFn : {arity : _} ->
+         (params : Vect arity (Nat, ShapeAndType)) ->
+         (result : Nat) ->
+         (env : Env) ->
+         Fn arity
 
 public export
 data BinaryOp =
@@ -114,7 +123,13 @@ data Expr : Type where
   Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
-  Map : Fn n -> Vect n Nat -> Shape -> Expr
+
+  ||| Apply function `f` with given `arity` over `args`.
+  |||
+  ||| @f The function to apply.
+  ||| @args The arguments to apply `f` to.
+  Map : (f : Fn arity) -> (args : Vect arity Nat) -> Shape -> Expr
+
   Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
   Sort : Fn 2 -> Nat -> Bool -> List Nat -> Expr
   Reverse : List Nat -> Nat -> Expr

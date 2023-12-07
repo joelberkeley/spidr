@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Compiler.Eval
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import Control.Monad.Maybe
 import Control.Monad.State
@@ -71,10 +72,10 @@ lookup n = do
 interpret : XlaBuilder -> Nat -> Env -> Computation XlaOp
 
 buildSub : XlaBuilder -> String -> Fn arity -> Computation XlaComputation
-buildSub builder name (MkFn params i env) = do
+buildSub builder name (MkFn params result env) = do
   subBuilder <- createSubBuilder builder name
   traverse_ (interpretParameter subBuilder) (enumerate params)
-  root <- assert_total $ interpret subBuilder i env
+  root <- assert_total $ interpret subBuilder result env
   build subBuilder root
 
   where
