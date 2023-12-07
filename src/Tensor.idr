@@ -96,7 +96,7 @@ eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape t
 eval x =
   let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x in
    -- in idris_crash "crashing with env: \{show env}"
-      runEitherT (run {dtype} n $ env) <&> \case
+      runEitherT (run {dtype} n $ traceVal env) <&> \case
         Right lit => lit
         Left err => idris_crash (show err)
 
@@ -645,7 +645,7 @@ map :
   Graph $ Tensor shape b
 map f $ MkTensor {shape = _} x = do
   MkEnvN next env <- get
-  let envWithParameter = MkEnvN (S next) (insert next (Arg next) env)
+  let envWithParameter = MkEnvN (S next) (singleton next (Arg next))
       (MkEnvN next' subEnv, MkTensor result) = runState envWithParameter (f $ MkTensor next)
       fn = MkFn [(next, MkShapeAndType shape a)] result subEnv
   put (MkEnvN next' env)
