@@ -29,6 +29,10 @@ public export
 data ShapeAndType : Type where
   MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
 
+Show ShapeAndType where
+  show (MkShapeAndType shape _ @{prim}) = "MkShapeAndType \{show shape} \{show $ xlaIdentifier @{prim}}"
+
+public export
 data Expr : Type where
 
 public export 0
@@ -37,7 +41,16 @@ Env = SortedMap Nat Expr
 
 public export
 data Fn : Nat -> Type where
-  MkFn : {arity : _} -> Vect arity (Nat, ShapeAndType) -> Nat -> Env -> Fn arity
+
+  ||| @arity The function arity.
+  ||| @params The function parameter position in the graph, along with its shape and dtype.
+  ||| @result The position of the function result in the graph.
+  ||| @env The function graph. Includes only nodes in this scope, not outer or inner scope.
+  MkFn : {arity : _} ->
+         (params : Vect arity (Nat, ShapeAndType)) ->
+         (result : Nat) ->
+         (env : Env) ->
+         Fn arity
 
 public export
 data BinaryOp =
@@ -85,6 +98,11 @@ data UnaryOp =
   | Acosh
   | Atanh
 
+Show BinaryOp where
+  show Add = "Add"
+  show Div = "Div"
+  show _ = "BinaryOp"
+
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
@@ -105,7 +123,13 @@ data Expr : Type where
   Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
-  Map : Fn n -> Vect n Nat -> Shape -> Expr
+
+  ||| Apply function `f` with given `arity` over `args`.
+  |||
+  ||| @f The function to apply.
+  ||| @args The arguments to apply `f` to.
+  Map : (f : Fn arity) -> (args : Vect arity Nat) -> Shape -> Expr
+
   Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
   Sort : Fn 2 -> Nat -> Bool -> List Nat -> Expr
   Reverse : List Nat -> Nat -> Expr
@@ -120,3 +144,11 @@ data Expr : Type where
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+
+export
+Show Expr where
+  show (FromLiteral {shape} lit) = "FromLiteral \{show shape} <lit>"
+  show (Arg n) = "Arg \{show n}"
+  show (Map (MkFn params result env) args ds) = assert_total $ "Map (MkFn \{show params} \{show result} \{show $ SortedMap.toList env}) \{show args} \{show ds}"
+  show (BinaryElementwise op x y) = "BinaryElementwise \{show op} \{show x} \{show y}"
+  show _ = "Expr"

@@ -22,6 +22,7 @@ limitations under the License.
 ||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Ref`.
 module Tensor
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import public Control.Monad.State
 import public Data.List
@@ -646,7 +647,7 @@ map :
 map f $ MkTensor {shape = _} i env = do
   (arg, param) <- arg
   MkTensor l subEnv <- f arg
-  env `end` Map (MkFn [param] l subEnv) [i] (range $ length shape)
+  env `end` Map (traceVal $ MkFn [param] l subEnv) [i] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
