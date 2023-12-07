@@ -96,7 +96,7 @@ eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape t
 eval x = do
   let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x
   putStrLn "got env: \{show env}"
-  runEitherT (run {dtype} n env) <&> \case
+  runEitherT (run {dtype} n $ traceVal env) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 
