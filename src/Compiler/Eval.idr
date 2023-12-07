@@ -76,6 +76,7 @@ buildSub builder name (MkFn params result env) = do
   subBuilder <- createSubBuilder builder name
   traverse_ (interpretParameter subBuilder) (enumerate params)
   root <- assert_total $ interpret subBuilder result env
+  putStrLn "buildSub: \{show $ toList $ keys !get}"
   build subBuilder root
 
   where
@@ -199,6 +200,7 @@ enqueue builder (NormalFloatingPoint key initialState shape) = do
 
 interpret builder root env = do
   traverse_ interpretExpr (toList env)
+  putStrLn "interpret: \{show $ toList $ keys !get}"
   lookup root
 
   where
