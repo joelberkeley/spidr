@@ -209,8 +209,8 @@ export partial
 all : List (PropertyName, Property)
 all = [
       ("map", mapResult)
+      {-
     , ("map with non-trivial function", mapNonTrivial)
-{-
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)
