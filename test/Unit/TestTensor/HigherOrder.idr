@@ -37,7 +37,6 @@ mapResult = property $ do
   let x' = tensor {dtype=S32} x
   map (+ 1) x === unsafeEval (do map (\x => pure x + 1) !x')
 
-
 partial
 mapNonTrivial : Property
 mapNonTrivial = fixedProperty $ do

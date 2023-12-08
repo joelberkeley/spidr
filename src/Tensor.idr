@@ -95,7 +95,7 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval x = do
   let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x
-  runEitherT (run {dtype} n $ traceVal env) <&> \case
+  runEitherT (run {dtype} n env) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 
