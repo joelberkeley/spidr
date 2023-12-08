@@ -58,16 +58,21 @@ public export 0
 Graph : Type -> Type
 Graph = State EnvN
 
-addNode : Expr -> {shape : _} -> Graph $ Tensor shape dtype
+addNode : Expr -> Graph Nat
 addNode expr = do
   MkEnvN next env <- get
   put (MkEnvN (S next) (insert next expr env))
-  pure $ MkTensor next
+  pure next
+
+addTensor : Expr -> {shape : _} -> Graph $ Tensor shape dtype
+addTensor expr = do
+  x <- addNode expr
+  pure (MkTensor x)
 
 ||| Construct a `Tensor` from `Literal` data.
 export
 tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Graph $ Tensor shape dtype
-tensor lit = addNode $ FromLiteral {dtype} {shape} lit
+tensor lit = addTensor $ FromLiteral {dtype} {shape} lit
 
 namespace F64
   export
@@ -110,20 +115,20 @@ Show (Graph $ Tensor shape dtype) where
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
 [NonFinite] Primitive.Ord dtype => Bounded (Graph $ Tensor [] dtype) where
-  min = addNode $ MinValue {dtype}
-  max = addNode $ MaxValue {dtype}
+  min = addTensor $ MinValue {dtype}
+  max = addTensor $ MaxValue {dtype}
 
 ||| Finite bounds for numeric tensors.
 export
 [Finite] Primitive.Ord dtype => Bounded (Graph $ Tensor [] dtype) where
-  min = addNode $ MinFiniteValue {dtype}
-  max = addNode $ MaxFiniteValue {dtype}
+  min = addTensor $ MinFiniteValue {dtype}
+  max = addTensor $ MaxFiniteValue {dtype}
 
 ||| Cast the element type. For example, `castDtype (tensor {dtype=S32} [1, -2])` is
 ||| `tensor {dtype=F64} [1.0, -2.0]`.
 export
 castDtype : Primitive.Integral a => Tensor shape a -> Graph $ Tensor shape F64
-castDtype $ MkTensor x = addNode $ ConvertElementType {dtype = F64} x
+castDtype $ MkTensor x = addTensor $ ConvertElementType {dtype = F64} x
 
 ----------------------------- structural operations ----------------------------
 
@@ -136,7 +141,7 @@ reshape :
   {auto 0 sizesEqual : product from = product to} ->
   Tensor from dtype ->
   Graph $ Tensor to dtype
-reshape $ MkTensor {shape} i = addNode $ Reshape shape to i
+reshape $ MkTensor {shape} i = addTensor $ Reshape shape to i
 
 ||| Add a dimension of length one at the specified `axis`. The new dimension will be at the
 ||| specified `axis` in the new `Tensor` (as opposed to the original `Tensor`). For example,
@@ -148,7 +153,7 @@ expand :
   {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
   Graph $ Tensor (insertAt axis 1 shape) dtype
-expand axis $ MkTensor {shape = _} i = addNode $ Reshape shape (insertAt axis 1 shape) i
+expand axis $ MkTensor {shape = _} x = addTensor $ Reshape shape (insertAt axis 1 shape) x
 
 namespace Squeezable
   ||| A `Squeezable from to` constitutes proof that the shape `from` can be squeezed to the
@@ -195,7 +200,7 @@ squeeze :
   {auto 0 shapesSqueezable : Squeezable from to} ->
   Tensor from dtype ->
   Graph $ Tensor to dtype
-squeeze $ MkTensor {shape} i = addNode $ Reshape shape to i
+squeeze $ MkTensor {shape} x = addTensor $ Reshape shape to x
 
 ||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
@@ -351,22 +356,17 @@ slice :
   (at : MultiSlice shape) ->
   Tensor shape dtype ->
   Graph $ Tensor (slice at) dtype
-{-
-slice at $ MkTensor i env = do
-  j <- new
-  let env = insert j (Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) i) env
-  (dynStartsIdxs, env) <- dynStarts [] env at
-  k <- new
-  let env = insert k (DynamicSlice dynStartsIdxs (mapd size id at) j) env
-  env `addNode` Reshape (mapd size id at) (MultiSlice.slice at) k
+slice at $ MkTensor x = do
+  x <- addNode $ Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) x
+  x <- addNode $ DynamicSlice !(dynStarts [] at) (mapd size id at) x
+  addTensor $ Reshape (mapd size id at) (MultiSlice.slice at) x
 
       where
-      mapd :
-        ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
-        (Nat -> a) ->
-        {shape : Shape} ->
-        MultiSlice shape ->
-        List a
+      mapd : ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
+             (Nat -> a) ->
+             {shape : Shape} ->
+             MultiSlice shape ->
+             List a
       mapd _ dflt {shape} [] = Prelude.map dflt shape
       mapd f dflt (x :: xs) = f dflt x :: mapd f dflt xs
 
@@ -387,27 +387,17 @@ slice at $ MkTensor i env = do
       size _ (DynamicIndex _) = 1
 
       zero : Expr
-      zero = FromLiteral {shape=[]} {dtype=U64} 0
+      zero = FromLiteral {shape = []} {dtype = U64} 0
 
-      dynStarts : List Nat -> Env -> {shape : _} -> MultiSlice shape -> Graph (List Nat, Env)
-      dynStarts idxs env {shape} [] = f (length shape) (idxs, env)
+      dynStarts : List Nat -> {shape : _} -> MultiSlice shape -> Graph $ List Nat
+      dynStarts idxs {shape} [] = f (length shape) idxs
         where
-        f : Nat -> (List Nat, Env) -> Graph (List Nat, Env)
-        f 0 (idxs, env) = pure (idxs, env)
-        f (S k) (idxs, env) = do
-          i <- new
-          f k (i :: idxs, insert i zero env)
-      dynStarts idxs env (DynamicSlice (MkTensor i env') _ :: ds) = do
-        (idxs, env) <- dynStarts idxs env ds
-        pure (i :: idxs, mergeLeft env env')
-      dynStarts idxs env (DynamicIndex (MkTensor i env') :: ds) = do
-        (idxs, env) <- dynStarts idxs env ds
-        pure (i :: idxs, mergeLeft env env')
-      dynStarts idxs env (_ :: ds) = do
-        (idxs, env) <- dynStarts idxs env ds
-        i <- new
-        pure (i :: idxs, insert i zero env)
--}
+        f : Nat -> List Nat -> Graph $ List Nat
+        f 0 idxs = pure idxs
+        f (S k) idxs = f k (!(addNode zero) :: idxs)
+      dynStarts idxs (DynamicSlice (MkTensor i) _ :: ds) = (i ::) <$> dynStarts idxs ds
+      dynStarts idxs (DynamicIndex (MkTensor i) :: ds) = (i ::) <$> dynStarts idxs ds
+      dynStarts idxs (_ :: ds) = [| addNode zero :: dynStarts idxs ds |]
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 !(tensor [[1, 2], [3, 4]]) !(tensor [[5, 6]])` and
@@ -422,7 +412,7 @@ concat :
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
   Graph $ Tensor (replaceAt axis (index axis s + index axis s') s) dtype
-concat axis (MkTensor x) (MkTensor x') = addNode $ Concat axis x x'
+concat axis (MkTensor x) (MkTensor x') = addTensor $ Concat axis x x'
 
 ||| The diagonal of a matrix as a vector. For example, for
 ||| ```
@@ -434,7 +424,7 @@ concat axis (MkTensor x) (MkTensor x') = addNode $ Concat axis x x'
 ||| `diag !x` is `tensor [0, 4, 8]`.
 export
 diag : Primitive dtype => Tensor [n, n] dtype -> Graph (Tensor [n] dtype)
-diag $ MkTensor x = addNode $ Diag x
+diag $ MkTensor x = addTensor $ Diag x
 
 ||| Represents the upper- or lower-trinagular component of a matrix.
 public export
@@ -456,14 +446,14 @@ data Triangle = Upper | Lower
 ||| ```
 export
 triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Graph $ Tensor [n, n] dtype
-triangle tri $ MkTensor x = addNode $ Triangle (case tri of Upper => False; Lower => True) x
+triangle tri $ MkTensor x = addTensor $ Triangle (case tri of Upper => False; Lower => True) x
 
 ||| Tranpose a matrix. For example, `(tensor [[1, 2], [3, 4]]).T` is `tensor [[1, 3], [2, 4]]`.
 export
 (.T) : Graph (Tensor [m, n] dtype) -> Graph (Tensor [n, m] dtype)
 x.T = do
   MkTensor x <- x
-  addNode $ Transpose [1, 0] x
+  addTensor $ Transpose [1, 0] x
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can
 ||| transpose any number of axes in a tensor of arbitrary rank. The i'th axis in the resulting
@@ -517,7 +507,7 @@ transpose :
   {auto 0 unique : Sorted Neq ordering} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
   Graph $ Tensor (map (dflip List.index shape) ordering) dtype
-transpose ordering $ MkTensor x = addNode $ Transpose ordering x
+transpose ordering $ MkTensor x = addTensor $ Transpose ordering x
 
 ||| The identity tensor, with inferred shape and element type. For example,
 ||| ```
@@ -532,7 +522,7 @@ transpose ordering $ MkTensor x = addNode $ Transpose ordering x
 ||| ```
 export
 identity : Primitive.Num dtype => {n : _} -> Graph $ Tensor [n, n] dtype
-identity = addNode $ Identity {dtype} n
+identity = addTensor $ Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -602,7 +592,7 @@ broadcast :
   {auto shapesOK : Broadcastable from to} ->
   Tensor from dtype ->
   Graph $ Tensor to dtype
-broadcast $ MkTensor {shape = _} i = addNode $ Broadcast {dtype} from to i
+broadcast $ MkTensor {shape = _} i = addTensor $ Broadcast {dtype} from to i
 
 %hint
 export
@@ -648,7 +638,7 @@ map f $ MkTensor {shape = _} x = do
       subEnv = MkEnvN (S next) (singleton next (Arg next))
       (MkEnvN next subEnv, MkTensor result) = runState subEnv $ f (MkTensor next)
   put (MkEnvN next env)
-  addNode $ Map (MkFn params result subEnv) [x] (range $ length shape)
+  addTensor $ Map (MkFn params result subEnv) [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -673,7 +663,7 @@ map2 f (MkTensor {shape = _} x) (MkTensor x') = do
       (MkEnvN next subEnv, MkTensor result) =
         runState subEnv $ f (MkTensor next) (MkTensor (S next))
   put (MkEnvN next env)
-  addNode $ Map (MkFn params result subEnv) [x, x'] (range $ length shape)
+  addTensor $ Map (MkFn params result subEnv) [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 !x` is
@@ -702,7 +692,7 @@ reduce axes $ MkTensor x = do
   put (MkEnvN next env)
 
   MkTensor neutral' <- neutral @{reducer}
-  addNode $ Reduce (MkFn params result subEnv) neutral' axes x
+  addTensor $ Reduce (MkFn params result subEnv) neutral' axes x
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -729,7 +719,7 @@ sort comp dimension $ MkTensor x = do
       (MkEnvN next subEnv, MkTensor result) =
         runState subEnv $ comp (pure $ MkTensor next) (pure $ MkTensor (S next))
   put (MkEnvN next env)
-  addNode $ Sort (MkFn params result subEnv) dimension False [x]
+  addTensor $ Sort (MkFn params result subEnv) dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -766,7 +756,7 @@ reverse :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Graph $ Tensor shape dtype
-reverse axes $ MkTensor x = addNode $ Reverse axes x
+reverse axes $ MkTensor x = addTensor $ Reverse axes x
 
 ----------------------------- numeric operations ----------------------------
 
@@ -774,7 +764,7 @@ binaryRef : BinaryOp -> Graph (Tensor s a) -> Graph (Tensor s a') -> Graph (Tens
 binaryRef op x x' = do
   MkTensor x <- x
   MkTensor x' <- x'
-  addNode $ BinaryElementwise op x x'
+  addTensor $ BinaryElementwise op x x'
 
 ||| Element-wise equality. For example, `tensor [1, 2] /= tensor [1, 3]` is
 ||| `tensor [True, False]`.
@@ -867,7 +857,7 @@ namespace Monoid
     neutral = fill False
 
 unary : UnaryOp -> Tensor s a -> Graph $ Tensor s a'
-unary op $ MkTensor x = addNode $ UnaryElementwise op x
+unary op $ MkTensor x = addTensor $ UnaryElementwise op x
 
 ||| Element-wise boolean negation. For example, `not !(tensor [True, False])` is
 ||| `tensor [False, True]`.
@@ -899,7 +889,7 @@ select :
   (onTrue : Tensor shape dtype) ->
   (onFalse : Tensor shape dtype) ->
   Graph $ Tensor shape dtype
-select (MkTensor p) (MkTensor t) (MkTensor f) = addNode $ Select p t f
+select (MkTensor p) (MkTensor t) (MkTensor f) = addTensor $ Select p t f
 
 ||| Use a scalar predicate to choose which of two functions to evaluate. If the predicte is truthy,
 ||| evaluate `onTrue` on the corresponding specified argument, otherwise evaluate `onFalse` on the
@@ -934,13 +924,15 @@ cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
 
   let trueParams = [(next, MkShapeAndType [] tt)]
       trueEnv = MkEnvN (S next) (singleton next (Arg next))
-      (MkEnvN next trueEnv, MkTensor trueResult) = runState subEnv $ onTrue (MkTensor next)
+      (MkEnvN next trueEnv, MkTensor trueResult) = runState trueEnv $ onTrue (MkTensor next)
 
       falseParams = [(next, MkShapeAndType [] ft)]
       falseEnv = MkEnvN (S next) (singleton next (Arg next))
-      (MkEnvN next falseEnv, MkTensor falseResult) = runState subEnv $ onFalse (MkTensor next)
+      (MkEnvN next falseEnv, MkTensor falseResult) = runState falseEnv $ onFalse (MkTensor next)
 
-  addNode $ Cond pred
+  put (MkEnvN next env)
+
+  addTensor $ Cond pred
                  (MkFn trueParams trueResult trueEnv) true
                  (MkFn falseParams falseResult falseEnv) false
 
@@ -959,7 +951,7 @@ namespace Vector
   x @@ x' = do
     MkTensor x <- x
     MkTensor x' <- x'
-    addNode $ Dot x x'
+    addTensor $ Dot x x'
 
 namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
@@ -992,7 +984,7 @@ namespace Matrix
   x @@ x' = do
     MkTensor x <- x
     MkTensor x' <- x'
-    addNode $ Dot x x'
+    addTensor $ Dot x x'
 
 ||| Element-wise addition. For example, `tensor [1, 2] + tensor [3, 4]` is
 ||| `tensor [4, 6]`.
@@ -1022,7 +1014,7 @@ export
 negate : Primitive.Neg dtype => Graph (Tensor shape dtype) -> Graph (Tensor shape dtype)
 negate x = do
   MkTensor i <- x
-  addNode $ UnaryElementwise Neg i
+  addTensor $ UnaryElementwise Neg i
 
 ||| Element-wise subtraction. For example, `tensor [3, 4] - tensor [4, 2]` is
 ||| `tensor [-1, 2]`.
@@ -1252,7 +1244,7 @@ export
 min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Graph $ Tensor shape dtype
 min (MkTensor {shape = _} i) x'@(MkTensor i') = do
   let x = MkTensor i
-      op = addNode $ BinaryElementwise Min i i'
+      op = addTensor $ BinaryElementwise Min i i'
   select !(pure x == pure x) !(select !(pure x' == pure x') !op x') x
 
 namespace Semigroup
@@ -1275,7 +1267,7 @@ export
 max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Graph $ Tensor shape dtype
 max (MkTensor {shape = _} i) x'@(MkTensor i') = do
   let x = MkTensor i
-      op = addNode $ BinaryElementwise Max i i'
+      op = addTensor $ BinaryElementwise Max i i'
   select !(pure x == pure x) !(select !(pure x' == pure x') !op x') x
 
 namespace Semigroup
@@ -1313,7 +1305,7 @@ export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmin x = do
   MkTensor x <- highlightNan True x
-  addNode $ Argmin {out=U64} 0 x
+  addTensor $ Argmin {out=U64} 0 x
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax !(tensor [-1, 3, -2, -2, 3])` is `tensor 1`. If the vector contains NaN values,
@@ -1322,7 +1314,7 @@ export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmax x = do
   MkTensor x <- highlightNan False x
-  addNode $ Argmax {out=U64} 0 x
+  addTensor $ Argmax {out=U64} 0 x
 
 ---------------------------- other ----------------------------------
 
@@ -1332,7 +1324,7 @@ argmax x = do
 ||| diagonal - will always be zero.
 export
 cholesky : Tensor [S n, S n] F64 -> Graph $ Tensor [S n, S n] F64
-cholesky $ MkTensor x = triangle Lower !(addNode $ Cholesky x)
+cholesky $ MkTensor x = triangle Lower !(addTensor $ Cholesky x)
 
 infix 9 |\, \|
 
@@ -1349,7 +1341,7 @@ namespace Matrix
   x |\ x' = do
     MkTensor x <- x
     MkTensor x' <- x'
-    addNode $ TriangularSolve x x' True
+    addTensor $ TriangularSolve x x' True
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1363,7 +1355,7 @@ namespace Matrix
   x \| x' = do
     MkTensor x <- x
     MkTensor x' <- x'
-    addNode $ TriangularSolve x x' False
+    addTensor $ TriangularSolve x x' False
 
 namespace Vector
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1402,12 +1394,11 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
 trace x with (x)
   _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
 
-{-
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
-Rand = StateT (Tensor [1] U64) Ref
+Rand = StateT (Tensor [1] U64) Graph
 
 inf : Graph $ Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
@@ -1440,24 +1431,21 @@ uniform :
   (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
   Graph $ Rand $ Tensor shape F64
-uniform (MkTensor iKey envKey) bound bound' = do
-  minval@(MkTensor iMinval envMinval) <- min bound bound'
-  maxval@(MkTensor iMaxval envMaxval) <- max bound bound'
+uniform (MkTensor key) bound bound' = do
+  minval@(MkTensor iMinval) <- min bound bound'
+  maxval@(MkTensor iMaxval) <- max bound bound'
   let inf = broadcast !inf
-  let env = mergeLeft (mergeLeft envKey envMinval) envMaxval
-  pure $ ST $ \(MkTensor iState envState) => do
-    i <- new
-    let env = mergeLeft envState env
-        env = insert i (UniformFloatingPoint iKey iState iMinval iMaxval shape) env
-        state = env `addNode` GetTupleElement 1 i
-        value = env `addNode` GetTupleElement 0 i
-        -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
-        -- samples between -inf and 0 should be at -inf, but XLA produces nan
-        -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
-        value = select !((pure minval == - inf) && (pure maxval == fill 0)) !(- inf) !value
-        value = select !((pure minval == inf) && (pure maxval == inf)) !inf !value
-        value = select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) !value
-    pure (!state, !value)
+  pure $ ST $ \(MkTensor state) => do
+    x <- addNode $ UniformFloatingPoint key state iMinval iMaxval shape
+    state <- addTensor $ GetTupleElement 1 x
+    value <- addTensor $ GetTupleElement 0 x
+    -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
+    -- samples between -inf and 0 should be at -inf, but XLA produces nan
+    -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
+    value <- select !((pure minval == - inf) && (pure maxval == fill 0)) !(- inf) value
+    value <- select !((pure minval == inf) && (pure maxval == inf)) !inf value
+    value <- select !((pure minval == - inf) && (pure maxval == - inf)) !(- inf) value
+    pure (state, value)
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1476,12 +1464,10 @@ uniform (MkTensor iKey envKey) bound bound' = do
 |||
 ||| @key Determines the stream of generated samples.
 export
-normal : {shape : _} -> (key : Tensor [] U64) -> Graph $ Tensor shape F64
-normal $ MkTensor iKey envKey =
-  ST $ \(MkTensor iState envState) => do
-    i <- new
-    let env = insert i (NormalFloatingPoint iKey iState shape) $ mergeLeft envKey envState
-    state <- env `addNode` GetTupleElement 1 i
-    value <- env `addNode` GetTupleElement 0 i
+normal : {shape : _} -> (key : Tensor [] U64) -> Rand $ Tensor shape F64
+normal $ MkTensor key =
+  ST $ \(MkTensor state) => do
+    x <- addNode $ NormalFloatingPoint key state shape
+    state <- addTensor $ GetTupleElement 1 x
+    value <- addTensor $ GetTupleElement 0 x
     pure (state, value)
--}

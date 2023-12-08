@@ -57,7 +57,7 @@ gaussianCDF = fixedProperty $ do
 export partial
 group : Group
 group = MkGroup "Distribution" $ [
---      ("Gaussian univariate pdf", gaussianUnivariatePDF)
---    , ("Gaussian multivariate pdf", gaussianMultivariatePDF)
---    , ("Gaussian cdf", gaussianCDF)
+      ("Gaussian univariate pdf", gaussianUnivariatePDF)
+    , ("Gaussian multivariate pdf", gaussianMultivariatePDF)
+    , ("Gaussian cdf", gaussianCDF)
   ]

@@ -44,5 +44,5 @@ rbfMatchesTFP = fixedProperty $ do
 export partial
 group : Group
 group = MkGroup "Kernel" $ [
-    -- ("rbf matches tfp", rbfMatchesTFP)
+    ("rbf matches tfp", rbfMatchesTFP)
   ]

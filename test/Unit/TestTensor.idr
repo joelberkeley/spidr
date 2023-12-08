@@ -299,8 +299,8 @@ group = MkGroup "Tensor" $ [
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
-    -- , ("argmin", argmin)
-    -- , ("argmax", argmax)
+    , ("argmin", argmin)
+    , ("argmax", argmax)
     , ("select", select)
     , ("erf", erf)
     , ("cholesky", cholesky)
@@ -310,7 +310,7 @@ group = MkGroup "Tensor" $ [
   ] ++ concat (the (List _) [
       Unit.TestTensor.Elementwise.all
     , Unit.TestTensor.HigherOrder.all
-    -- , Unit.TestTensor.Sampling.all
-    -- , Unit.TestTensor.Slice.all
+    , Unit.TestTensor.Sampling.all
+    , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all
   ])

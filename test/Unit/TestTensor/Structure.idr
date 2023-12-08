@@ -325,6 +325,6 @@ all = [
     , ("broadcast", broadcast)
     , ("squeeze", squeeze)
     , ("(.T)", (.T))
-    -- , ("transpose", transpose)  -- depends on slice
+    , ("transpose", transpose)
     , ("reverse", reverse)
   ]

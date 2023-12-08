@@ -30,7 +30,6 @@ range n = cast (Vect.range n)
 product1 : (x : Nat) -> product (the (List Nat) [x]) = x
 product1 x = rewrite plusZeroRightNeutral x in Refl
 
-{-
 partial
 iidKolmogorovSmirnov :
   {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Graph $ Tensor shape F64) -> Graph $ Tensor [] F64
@@ -203,11 +202,10 @@ normalIsReproducible = withTests 20 . property $ do
         concat 0 !(expand 0 sample) !(expand 0 sample')
 
   sample ==~ sample'
--}
+
 export partial
 all : List (PropertyName, Property)
-all = []
-{-
+all = [
       ("uniform", uniform)
     , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
     , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
@@ -217,4 +215,3 @@ all = []
     , ("normal updates seed", normalSeedIsUpdated)
     , ("normal produces same samples for same seed", normalIsReproducible)
   ]
--}

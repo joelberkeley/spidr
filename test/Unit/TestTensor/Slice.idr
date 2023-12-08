@@ -205,7 +205,6 @@ sliceForVariableIndex = property $ do
 export partial
 all : List (PropertyName, Property)
 all = [
-{-
       ("MultiSlice.slice", MultiSlice.slice)
     , ("slice for static index", sliceStaticIndex)
     , ("slice for static slice", sliceStaticSlice)
@@ -214,5 +213,4 @@ all = [
     , ("slice for static index and slice", sliceStaticMixed)
     , ("slice for mixed static and dynamic index and slice", sliceMixed)
     , ("slice for variable index", sliceForVariableIndex)
-    -}
   ]
