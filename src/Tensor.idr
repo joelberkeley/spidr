@@ -922,11 +922,11 @@ cond :
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
   MkEnvN next env <- get
 
-  let trueParams = [(next, MkShapeAndType [] tt)]
+  let trueParams = [(next, MkShapeAndType ts tt)]
       trueEnv = MkEnvN (S next) (singleton next (Arg next))
       (MkEnvN next trueEnv, MkTensor trueResult) = runState trueEnv $ onTrue (MkTensor next)
 
-      falseParams = [(next, MkShapeAndType [] ft)]
+      falseParams = [(next, MkShapeAndType fs ft)]
       falseEnv = MkEnvN (S next) (singleton next (Arg next))
       (MkEnvN next falseEnv, MkTensor falseResult) = runState falseEnv $ onFalse (MkTensor next)
 
