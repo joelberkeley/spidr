@@ -58,10 +58,11 @@ export
 Show Err where
   show (IndexErr msg) = "IndexErr: \{msg}"
 
-Computation : Type -> Type
+0 Computation : Type -> Type
 Computation = StateT (SortedMap Nat XlaOp) (EitherT Err IO)
 
-lookup : Nat -> Computation XlaOp
+||| Look up the `XlaOp` at `position` in the graph.
+lookup : (position : Nat) -> Computation XlaOp
 lookup n = do
   cache <- get
   case lookup n cache of
@@ -71,22 +72,30 @@ lookup n = do
 
 interpret : XlaBuilder -> Nat -> Env -> Computation XlaOp
 
-buildSub : XlaBuilder -> String -> Fn arity -> Computation XlaComputation
+||| Build a computation from an inner function
+|||
+||| @xlaBuilder The enclosing XLA builder in which this function is built.
+|||   This is not the XLA builder used to build the computation itself.
+||| @computationName The name of the computation.
+||| @arity The function arity.
+||| @f The function to build.
+buildSub : (xlaBuilder : XlaBuilder) ->
+           (computationName : String) ->
+           (f : Fn arity) ->
+           Computation XlaComputation
 buildSub builder name (MkFn params result env) = do
   subBuilder <- createSubBuilder builder name
   traverse_ (interpretParameter subBuilder) (enumerate params)
   root <- assert_total $ interpret subBuilder result env
-  putStrLn "buildSub: \{show $ toList $ keys !get}"
-  assert_total $ idris_crash ""
   build subBuilder root
 
   where
 
   interpretParameter : XlaBuilder -> (Nat, Nat, ShapeAndType) -> Computation ()
-  interpretParameter builder (position, i, MkShapeAndType shape dtype) = do
+  interpretParameter builder (positionInFnParams, positionInGraph, MkShapeAndType shape dtype) = do
     xlaShape <- mkShape {dtype} shape
-    param <- parameter builder position xlaShape name
-    put $ insert i param !get
+    param <- parameter builder positionInFnParams xlaShape name
+    put $ insert positionInGraph param !get
 
 covering
 enqueue : XlaBuilder -> Expr -> Computation XlaOp
@@ -201,7 +210,6 @@ enqueue builder (NormalFloatingPoint key initialState shape) = do
 
 interpret builder root env = do
   traverse_ interpretExpr (toList env)
-  putStrLn "interpret: \{show $ toList $ keys !get}"
   lookup root
 
   where

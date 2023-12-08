@@ -30,13 +30,13 @@ mapResult = property $ do
   -- shape <- forAll shapes
 
   x <- forAll (literal [2] doubles)
-  let x' = tensor x
-  map (1.0 /) x ==~ unsafeEval (do map (\x => 1.0 / pure x) !x')
-{-
+  let x' = tensor {dtype = F64} x
+  map id x ==~ unsafeEval (do map pure !x')
+
   x <- forAll (literal shape int32s)
   let x' = tensor {dtype=S32} x
   map (+ 1) x === unsafeEval (do map (\x => pure x + 1) !x')
-  -}
+
 
 partial
 mapNonTrivial : Property
@@ -209,8 +209,8 @@ export partial
 all : List (PropertyName, Property)
 all = [
       ("map", mapResult)
-      {-
     , ("map with non-trivial function", mapNonTrivial)
+    {-
     , ("map2", map2Result)
     , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
     , ("reduce", reduce)

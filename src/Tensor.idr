@@ -22,7 +22,6 @@ limitations under the License.
 ||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Graph`.
 module Tensor
 
-import System
 import Debug.Trace
 import Control.Monad.Error.Either
 import public Control.Monad.State
@@ -96,8 +95,6 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval x = do
   let (MkEnvN _ env, MkTensor n) = runState (MkEnvN 0 empty) x
-  putStrLn "got env: \{show env}"
-  sleep 2
   runEitherT (run {dtype} n $ traceVal env) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
@@ -634,7 +631,7 @@ fill xs = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar xs))
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```idris
-||| recip : Tensor [] F64 -> Graph (Tensor [] F64)
+||| recip : Tensor [] F64 -> Graph $ Tensor [] F64
 ||| recip x = 1.0 / pure x
 ||| ```
 ||| can be lifted to an element-wise reciprocal function as `map recip !(tensor [-2, 0.4])`,
@@ -647,7 +644,7 @@ map :
   Graph $ Tensor shape b
 map f $ MkTensor {shape = _} x = do
   MkEnvN next env <- get
-  let params = [(next, MkShapeAndType shape a)]
+  let params = [(next, MkShapeAndType [] a)]
       subEnv = MkEnvN (S next) (singleton next (Arg next))
       (MkEnvN next subEnv, MkTensor result) = runState subEnv (f $ MkTensor next)
   put (MkEnvN next env)
