@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module Compiler.Eval
 
-import Debug.Trace
 import Control.Monad.Error.Either
 import Control.Monad.Maybe
 import Control.Monad.State
