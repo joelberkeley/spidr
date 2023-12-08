@@ -27,9 +27,9 @@ import Utils.Cases
 partial
 mapResult : Property
 mapResult = property $ do
-  -- shape <- forAll shapes
+  shape <- forAll shapes
 
-  x <- forAll (literal [2] doubles)
+  x <- forAll (literal shape doubles)
   let x' = tensor {dtype = F64} x
   map id x ==~ unsafeEval (do map pure !x')
 
