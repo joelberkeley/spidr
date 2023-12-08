@@ -646,7 +646,7 @@ map f $ MkTensor {shape = _} x = do
   MkEnvN next env <- get
   let params = [(next, MkShapeAndType [] a)]
       subEnv = MkEnvN (S next) (singleton next (Arg next))
-      (MkEnvN next subEnv, MkTensor result) = runState subEnv (f $ MkTensor next)
+      (MkEnvN next subEnv, MkTensor result) = runState subEnv $ f (MkTensor next)
   put (MkEnvN next env)
   addNode $ Map (MkFn params result subEnv) [x] (range $ length shape)
 
@@ -666,13 +666,14 @@ map2 :
   Tensor shape a ->
   Tensor shape b ->
   Graph $ Tensor shape c
-{-
-map2 f (MkTensor {shape = _} i env) (MkTensor i' env') = do
-  (a0, p0) <- arg
-  (a1, p1) <- arg
-  MkTensor j subEnv <- f a0 a1
-  mergeLeft env env' `addNode` Map (MkFn [p0, p1] j subEnv) [i, i'] (range $ length shape)
--}
+map2 f (MkTensor {shape = _} x) (MkTensor x') = do
+  MkEnvN next env <- get
+  let params = [(next, MkShapeAndType [] a), (S next, MkShapeAndType [] b)]
+      subEnv = MkEnvN (S (S next)) $ fromList [(S next, Arg (S next)), (next, Arg next)]
+      (MkEnvN next subEnv, MkTensor result) =
+        runState subEnv $ f (MkTensor next) (MkTensor (S next))
+  put (MkEnvN next env)
+  addNode $ Map (MkFn params result subEnv) [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 !x` is
@@ -689,21 +690,19 @@ reduce :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Graph $ Tensor (deleteAt axes shape) dtype
-{-
-reduce axes $ MkTensor i = do
-  MkEnvN max env <- get
-  let (MkEnvN _ subEnv, MkTensor l) = runState !get (f $ MkTensor $ S max)
-      fn = MkFn [(S max, MkShapeAndType shape a)] l subEnv
-
-  (a0, p0) <- arg
-  (a1, p1) <- arg
+reduce axes $ MkTensor x = do
   let semigroupT : Monoid a -> Semigroup a
       semigroupT _ = %search
 
-  let (subEnvN@(MkEnvN _ subEnv), MkTensor j) = runState !get $ (<+>) @{semigroupT reducer} (pure a0) (pure a1)
-      (MkEnvN _ neutralEnv, MkTensor k) = runState subEnvN $ neutral @{reducer}
-  addNode $ Reduce (MkFn [p0, p1] j subEnv) k axes i
--}
+  MkEnvN next env <- get
+  let params = [(next, MkShapeAndType [] dtype), (S next, MkShapeAndType [] dtype)]
+      subEnv = MkEnvN (S (S next)) $ fromList [(S next, Arg (S next)), (next, Arg next)]
+      (MkEnvN next subEnv, MkTensor result) = runState subEnv $ (<+>) @{semigroupT reducer}
+        (pure $ MkTensor next) (pure $ MkTensor (S next))
+  put (MkEnvN next env)
+
+  MkTensor neutral' <- neutral @{reducer}
+  addNode $ Reduce (MkFn params result subEnv) neutral' axes x
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -723,13 +722,14 @@ sort :
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Graph $ Tensor shape dtype
-{-
-sort comp dimension $ MkTensor i env = do
-  (a0, p0) <- arg
-  (a1, p1) <- arg
-  MkTensor j subEnv <- comp (pure a0) (pure a1)
-  env `addNode` Sort (MkFn [p0, p1] j subEnv) dimension False [i]
--}
+sort comp dimension $ MkTensor x = do
+  MkEnvN next env <- get
+  let params = [(next, MkShapeAndType [] dtype), (S next, MkShapeAndType [] dtype)]
+      subEnv = MkEnvN (S (S next)) $ fromList [(S next, Arg (S next)), (next, Arg next)]
+      (MkEnvN next subEnv, MkTensor result) =
+        runState subEnv $ comp (pure $ MkTensor next) (pure $ MkTensor (S next))
+  put (MkEnvN next env)
+  addNode $ Sort (MkFn params result subEnv) dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -929,15 +929,20 @@ cond :
   (onTrue : Tensor ts tt -> Graph $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
   Graph $ Tensor shape dtype
-{-
-cond (MkTensor pred envPred) onTrue (MkTensor true envTrue) onFalse (MkTensor false envFalse) = do
-  (aTrue, pTrue) <- arg
-  (aFalse, pFalse) <- arg
-  MkTensor lTrue subEnvTrue <- onTrue aTrue
-  MkTensor lFalse subEnvFalse <- onFalse aFalse
-  let env = mergeLeft (mergeLeft envPred envTrue) envFalse
-  env `addNode` Cond pred (MkFn [pTrue] lTrue subEnvTrue) true (MkFn [pFalse] lFalse subEnvFalse) false
--}
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
+  MkEnvN next env <- get
+
+  let trueParams = [(next, MkShapeAndType [] tt)]
+      trueEnv = MkEnvN (S next) (singleton next (Arg next))
+      (MkEnvN next trueEnv, MkTensor trueResult) = runState subEnv $ onTrue (MkTensor next)
+
+      falseParams = [(next, MkShapeAndType [] ft)]
+      falseEnv = MkEnvN (S next) (singleton next (Arg next))
+      (MkEnvN next falseEnv, MkTensor falseResult) = runState subEnv $ onFalse (MkTensor next)
+
+  addNode $ Cond pred
+                 (MkFn trueParams trueResult trueEnv) true
+                 (MkFn falseParams falseResult falseEnv) false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
