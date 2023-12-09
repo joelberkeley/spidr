@@ -18,6 +18,7 @@ module Compiler.Expr
 import Data.SortedMap
 import Decidable.Equality
 
+import Control.Monad.State
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Literal
@@ -32,9 +33,23 @@ data ShapeAndType : Type where
 public export
 data Expr : Type where
 
-public export 0
-Env : Type
-Env = SortedMap Nat Expr
+export
+data Env = MkEnv Nat (SortedMap Nat Expr)
+
+export
+empty : Env
+empty = MkEnv 0 empty
+
+export
+addNode : Expr -> State Env Nat
+addNode expr = do
+  MkEnv next env <- get
+  put (MkEnv (S next) (insert next expr env))
+  pure next
+
+export
+toList : Env -> List (Nat, Expr)
+toList (MkEnv _ env) = toList env
 
 public export
 data Fn : Nat -> Type where
@@ -136,3 +151,30 @@ data Expr : Type where
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+
+public export 0
+FnExpr : Nat -> Type
+FnExpr 0 = State Env Nat
+FnExpr (S k) = Nat -> FnExpr k
+
+applyN : FnExpr arity -> Vect arity Nat -> State Env Nat
+applyN f [] = f
+applyN f (x :: xs) = applyN (f x) xs
+
+export
+addFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env (Fn arity)
+addFn params f = do
+  MkEnv next env <- get
+  let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next empty) $ do
+        xs <- traverse addArg params
+        result <- applyN f xs
+        pure (zip xs params, result)
+  put (MkEnv next env)
+  pure (MkFn params result subEnv)
+
+  where
+  addArg : ShapeAndType -> State Env Nat
+  addArg st = do
+    MkEnv next env <- get
+    put (MkEnv (S next) (insert next (Arg next) env))
+    pure next
