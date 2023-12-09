@@ -22,7 +22,6 @@ limitations under the License.
 ||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Graph`.
 module Tensor
 
-import Debug.Trace
 import Control.Monad.Error.Either
 import public Control.Monad.State
 import public Data.List

@@ -237,7 +237,7 @@ We can repeat this process indefinitely to produce an infinite stream of values
 
 ```idris
 covering
-steps : Graph $ RefStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+steps : Graph $ GraphStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
 steps = iterate step' (MkDataModel !model !historicData)
 ```
 

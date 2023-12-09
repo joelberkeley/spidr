@@ -27,20 +27,20 @@ import Data
 import Model
 import Tensor
 
-||| A `Stream`-like collection where each successive element is wrapped in an additional `Graph`.
+||| A `Stream`-like collection where each successive element extends the `Graph`.
 public export
-data RefStream : Type -> Type where
-  (::) : a -> Inf (Graph (RefStream a)) -> RefStream a
+data GraphStream : Type -> Type where
+  (::) : a -> Inf (Graph (GraphStream a)) -> GraphStream a
 
-||| Take `n` values from a `RefStream`, sequencing the `Graph` effects.
+||| Take `n` values from a `GraphStream`, sequencing the `Graph` effects.
 public export
-take : (n : Nat) -> RefStream a -> Graph $ Vect n a
+take : (n : Nat) -> GraphStream a -> Graph $ Vect n a
 take Z _ = pure Nil
 take (S k) (x :: xs) = pure (x :: !(take k !xs))
 
 ||| Create an infinite stream of values from a generator function and a starting value.
 export covering
-iterate : (a -> Graph a) -> a -> Graph $ RefStream a
+iterate : (a -> Graph a) -> a -> Graph $ GraphStream a
 iterate f x = do
   x' <- f x
   pure (x' :: iterate f x')
