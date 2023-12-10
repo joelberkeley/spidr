@@ -32,6 +32,7 @@ mapResult = property $ do
   x <- forAll (literal shape doubles)
   let x' = tensor {dtype = F64} x
   map id x ==~ unsafeEval (do map pure !x')
+  map (1.0 /) x ==~ unsafeEval (do map (\x => 1.0 / pure x) !x')
 
   x <- forAll (literal shape int32s)
   let x' = tensor {dtype=S32} x
