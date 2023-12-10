@@ -39,7 +39,9 @@ import public Util
 
 ----------------------------- core definitions ----------------------------
 
-||| A symbolic scalar or array.
+||| A symbolic scalar or array. Construct a `Tensor` with the function `tensor`.
+|||
+||| This is a node in the computational graph.
 |||
 ||| @shape The `Tensor` shape.
 ||| @dtype The element type.
@@ -47,6 +49,8 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
+||| A computational graph (well, technically it is the effect of modifying a graph, by
+||| e.g. adding node).
 export
 data Graph a = MkGraph (State Env a)
 
@@ -73,7 +77,12 @@ addTensor expr = do
   x <- MkGraph (addNode expr)
   pure (MkTensor x)
 
-||| Construct a `Tensor` from `Literal` data.
+||| Construct a `Tensor` from `Literal` data. For example
+||| ```
+||| x : Graph $ Tensor [2, 3] S32
+||| x = tensor [[1, 2, 3],
+|||             [4, 5, 6]]
+||| ```
 export
 tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Graph $ Tensor shape dtype
 tensor lit = addTensor $ FromLiteral {dtype} {shape} lit
@@ -89,7 +98,7 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
-||| computation graph.
+||| computational graph.
 |||
 ||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
@@ -108,7 +117,9 @@ eval $ MkGraph x = do
     Right lit => lit
     Left err => idris_crash (show err)
 
-||| A string representation of an unevaluated `Tensor`, detailing all enqueued Xla operations.
+||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
+||| operations.
+|||
 ||| Useful for debugging.
 export partial
 Show (Graph $ Tensor shape dtype) where
