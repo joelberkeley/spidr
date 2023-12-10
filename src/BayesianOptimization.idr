@@ -27,20 +27,20 @@ import Data
 import Model
 import Tensor
 
-||| A `Stream`-like collection where each successive element is wrapped in an additional `Ref`.
+||| A `Stream`-like collection where each successive element extends the `Graph`.
 public export
-data RefStream : Type -> Type where
-  (::) : a -> Inf (Ref (RefStream a)) -> RefStream a
+data GraphStream : Type -> Type where
+  (::) : a -> Inf (Graph (GraphStream a)) -> GraphStream a
 
-||| Take `n` values from a `RefStream`, sequencing the `Ref` effects.
+||| Take `n` values from a `GraphStream`, sequencing the `Graph` effects.
 public export
-take : (n : Nat) -> RefStream a -> Ref $ Vect n a
+take : (n : Nat) -> GraphStream a -> Graph $ Vect n a
 take Z _ = pure Nil
 take (S k) (x :: xs) = pure (x :: !(take k !xs))
 
 ||| Create an infinite stream of values from a generator function and a starting value.
 export covering
-iterate : (a -> Ref a) -> a -> Ref $ RefStream a
+iterate : (a -> Graph a) -> a -> Graph $ GraphStream a
 iterate f x = do
   x' <- f x
   pure (x' :: iterate f x')
@@ -52,12 +52,12 @@ iterate f x = do
 ||| @tactic The tactic, such as an optimized acquisition function, to find a new point from the
 |||   data and model
 export
-step : (objective : forall n . Tensor (n :: features) F64 -> Ref $ Tensor (n :: targets) F64) ->
+step : (objective : forall n . Tensor (n :: features) F64 -> Graph $ Tensor (n :: targets) F64) ->
        (probabilisticModel : ProbabilisticModel features targets marginal model) =>
-       (train : Dataset features targets -> model -> Ref $ model) ->
-       (tactic : Reader (DataModel {probabilisticModel} model) (Ref $ Tensor (1 :: features) F64)) ->
+       (train : Dataset features targets -> model -> Graph $ model) ->
+       (tactic : Reader (DataModel {probabilisticModel} model) (Graph $ Tensor (1 :: features) F64)) ->
        DataModel {probabilisticModel} model ->
-       Ref $ DataModel {probabilisticModel} model
+       Graph $ DataModel {probabilisticModel} model
 step objective train tactic env = do
   newPoint <- runReader env tactic
   dataset <- concat env.dataset $ MkDataset newPoint !(objective newPoint)

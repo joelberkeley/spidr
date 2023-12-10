@@ -281,7 +281,7 @@ transpose = fixedProperty $ do
       [15, 19, 23]]]
 
   let x : Array [120] Int32 = fromList [0..119]
-      x : Ref $ Tensor [2, 3, 4, 5] S32 = (do reshape !(tensor {shape=[120]} (cast x)))
+      x : Graph $ Tensor [2, 3, 4, 5] S32 = (do reshape !(tensor {shape=[120]} (cast x)))
   (do transpose [0, 1, 2, 3] !x) ===# x
   (do slice [all, at 1, at 0] !(transpose [0, 2, 1, 3] !x)) ===# (do slice [all, at 0, at 1] !x)
   (do slice [at 2, at 4, at 0, at 1] !(transpose [2, 3, 1, 0] !x)) ===# (do slice [at 1, at 0, at 2, at 4] !x)

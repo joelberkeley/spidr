@@ -30,14 +30,14 @@ Kernel features =
   {sk, sk' : _} ->
   Tensor (sk :: features) F64 ->
   Tensor (sk' :: features) F64 ->
-  Ref $ Tensor [sk, sk'] F64
+  Graph $ Tensor [sk, sk'] F64
 
 scaledL2Norm :
   Tensor [] F64 ->
   {d, n, n' : _} ->
   Tensor [n, S d] F64 ->
   Tensor [n', S d] F64 ->
-  Ref $ Tensor [n, n'] F64
+  Graph $ Tensor [n, n'] F64
 scaledL2Norm len x x' =
   let xs = broadcast {to=[n, n', S d]} =<< expand 1 x
    in reduce @{Sum} [2] =<< ((xs - broadcast !(expand 0 x')) / pure len) ^ fill 2.0

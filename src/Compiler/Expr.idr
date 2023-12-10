@@ -18,6 +18,7 @@ module Compiler.Expr
 import Data.SortedMap
 import Decidable.Equality
 
+import Control.Monad.State
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Literal
@@ -29,15 +30,39 @@ public export
 data ShapeAndType : Type where
   MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
 
+public export
 data Expr : Type where
 
-public export 0
-Env : Type
-Env = SortedMap Nat Expr
+export
+data Env = MkEnv Nat (SortedMap Nat Expr)
+
+export
+empty : Env
+empty = MkEnv 0 empty
+
+export
+addNode : Expr -> State Env Nat
+addNode expr = do
+  MkEnv next env <- get
+  put (MkEnv (S next) (insert next expr env))
+  pure next
+
+export
+toList : Env -> List (Nat, Expr)
+toList (MkEnv _ env) = toList env
 
 public export
 data Fn : Nat -> Type where
-  MkFn : {arity : _} -> Vect arity (Nat, ShapeAndType) -> Nat -> Env -> Fn arity
+
+  ||| @arity The function arity.
+  ||| @params The function parameter position in the graph, along with its shape and dtype.
+  ||| @result The position of the function result in the graph.
+  ||| @env The function graph. Includes only nodes in this scope, not outer or inner scope.
+  MkFn : {arity : _} ->
+         (params : Vect arity (Nat, ShapeAndType)) ->
+         (result : Nat) ->
+         (env : Env) ->
+         Fn arity
 
 public export
 data BinaryOp =
@@ -105,7 +130,13 @@ data Expr : Type where
   Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
-  Map : Fn n -> Vect n Nat -> Shape -> Expr
+
+  ||| Apply function `f` with given `arity` over `args`.
+  |||
+  ||| @f The function to apply.
+  ||| @args The arguments to apply `f` to.
+  Map : (f : Fn arity) -> (args : Vect arity Nat) -> Shape -> Expr
+
   Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
   Sort : Fn 2 -> Nat -> Bool -> List Nat -> Expr
   Reverse : List Nat -> Nat -> Expr
@@ -120,3 +151,30 @@ data Expr : Type where
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+
+public export 0
+FnExpr : Nat -> Type
+FnExpr 0 = State Env Nat
+FnExpr (S k) = Nat -> FnExpr k
+
+applyN : FnExpr arity -> Vect arity Nat -> State Env Nat
+applyN f [] = f
+applyN f (x :: xs) = applyN (f x) xs
+
+export
+addFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env (Fn arity)
+addFn params f = do
+  MkEnv next env <- get
+  let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next empty) $ do
+        xs <- traverse addArg params
+        result <- applyN f xs
+        pure (zip xs params, result)
+  put (MkEnv next env)
+  pure (MkFn params result subEnv)
+
+  where
+  addArg : ShapeAndType -> State Env Nat
+  addArg st = do
+    MkEnv next env <- get
+    put (MkEnv (S next) (insert next (Arg next) env))
+    pure next

@@ -30,7 +30,8 @@ mapResult = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  let x' = tensor x
+  let x' = tensor {dtype = F64} x
+  map id x ==~ unsafeEval (do map pure !x')
   map (1.0 /) x ==~ unsafeEval (do map (\x => 1.0 / pure x) !x')
 
   x <- forAll (literal shape int32s)
@@ -65,7 +66,7 @@ map2Result = fixedProperty $ do
 partial
 map2ResultWithReusedFnArgs : Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
-  let x : Ref (Tensor [] S32) = 6
+  let x : Graph (Tensor [] S32) = 6
   (do map2 (\x, y => pure x + pure x + pure y + pure y) !1 !2) ===# x
 
 partial
@@ -198,7 +199,7 @@ condResultWithReusedArgs = fixedProperty $ do
   let x = tensor {dtype=S32} 1
       y = tensor {dtype=S32} 3
 
-      f : (Ref a -> Ref a -> Ref a) -> a -> Ref a
+      f : (Graph a -> Graph a -> Graph a) -> a -> Graph a
       f g x = g (pure x) (pure x)
 
   (do cond !(tensor True) (f (+)) !x (f (*)) !y) ===# 2

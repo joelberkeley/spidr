@@ -56,26 +56,26 @@ infix 1 ===#
 
 namespace PRED
   export partial
-  (===#) : Monad m => {shape : _} -> Ref (Tensor shape PRED) -> Ref (Tensor shape PRED) -> TestT m ()
+  (===#) : Monad m => {shape : _} -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace S32
   export partial
-  (===#) : Monad m => {shape : _} -> Ref (Tensor shape S32) -> Ref (Tensor shape S32) -> TestT m ()
+  (===#) : Monad m => {shape : _} -> Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace U32
   export partial
-  (===#) : Monad m => {shape : _} -> Ref (Tensor shape U32) -> Ref (Tensor shape U32) -> TestT m ()
+  (===#) : Monad m => {shape : _} -> Graph (Tensor shape U32) -> Graph (Tensor shape U32) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace U64
   export partial
-  (===#) : Monad m => {shape : _} -> Ref (Tensor shape U64) -> Ref (Tensor shape U64) -> TestT m ()
+  (===#) : Monad m => {shape : _} -> Graph (Tensor shape U64) -> Graph (Tensor shape U64) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace F64
   export partial
   (===#) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
-           Ref (Tensor shape F64) -> Ref (Tensor shape F64) -> TestT m ()
+           Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> TestT m ()
   x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)

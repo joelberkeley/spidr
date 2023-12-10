@@ -47,7 +47,7 @@ record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t mar
 ||| @features The shape of the feature domain.
 public export 0
 Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
-Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Ref $ Tensor [] F64
+Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Graph $ Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.

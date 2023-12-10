@@ -32,15 +32,15 @@ product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Ref $ Tensor shape F64) -> Ref $ Tensor [] F64
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Graph $ Tensor shape F64) -> Graph $ Tensor [] F64
 iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
 
-  let indices : Ref $ Tensor [n] F64 = castDtype !(tensor {dtype=U64} (range n))
-      sampleSize : Ref $ Tensor [] F64 = castDtype !(tensor {dtype=U64} (Scalar n))
+  let indices : Graph $ Tensor [n] F64 = castDtype !(tensor {dtype=U64} (range n))
+      sampleSize : Graph $ Tensor [] F64 = castDtype !(tensor {dtype=U64} (Scalar n))
   samplesFlat <- reshape {sizesEqual=sym (product1 n)} {to=[n]} !(cdf samples)
-  deviationFromCDF <- the (Ref $ Tensor [n] F64) $ indices / sampleSize - sort (<) 0 samplesFlat
+  deviationFromCDF <- the (Graph $ Tensor [n] F64) $ indices / sampleSize - sort (<) 0 samplesFlat
   reduce @{Max} [0] !(abs deviationFromCDF)
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
@@ -62,7 +62,7 @@ uniform = withTests 20 . property $ do
     seed <- tensor seed
     samples <- evalStateT seed !(uniform key !(broadcast !bound) !(broadcast !bound'))
 
-    let uniformCdf : Tensor [2000, 5] F64 -> Ref $ Tensor [2000, 5] F64
+    let uniformCdf : Tensor [2000, 5] F64 -> Graph $ Tensor [2000, 5] F64
         uniformCdf x = Tensor.(/) (pure x - broadcast !bound) (broadcast !(bound' - bound))
 
     iidKolmogorovSmirnov samples uniformCdf
@@ -154,9 +154,9 @@ normal = withTests 20 . property $ do
         key <- tensor key
         seed <- tensor seed
 
-        samples <- the (Ref $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
+        samples <- the (Graph $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
 
-        let normalCdf : {shape : _} -> Tensor shape F64 -> Ref $ Tensor shape F64
+        let normalCdf : {shape : _} -> Tensor shape F64 -> Graph $ Tensor shape F64
             normalCdf x = do (fill 1.0 + erf !(pure x / (sqrt !(fill 2.0)))) / fill 2.0
 
         iidKolmogorovSmirnov samples normalCdf

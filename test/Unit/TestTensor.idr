@@ -57,8 +57,8 @@ canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
       f64max : Literal [] Double = max @{Finite}
-      min' : Ref $ Tensor [] F64 = Types.min @{Finite}
-      max' : Ref $ Tensor [] F64 = Types.max @{Finite}
+      min' : Graph $ Tensor [] F64 = Types.min @{Finite}
+      max' : Graph $ Tensor [] F64 = Types.max @{Finite}
   unsafeEval min' === f64min
   unsafeEval max' === f64max
   unsafeEval (tensor f64min == min') === True
@@ -66,8 +66,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let s32min : Literal [] Int32 = Scalar min
       s32max : Literal [] Int32 = Scalar max
-      min' : Ref $ Tensor [] S32 = Types.min @{Finite}
-      max' : Ref $ Tensor [] S32 = Types.max @{Finite}
+      min' : Graph $ Tensor [] S32 = Types.min @{Finite}
+      max' : Graph $ Tensor [] S32 = Types.max @{Finite}
   unsafeEval min' === s32min
   unsafeEval max' === s32max
   unsafeEval (tensor s32min == min') === True
@@ -75,8 +75,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u32min : Literal [] Nat = 0
       u32max : Literal [] Nat = 4294967295
-      min' : Ref $ Tensor [] U32 = Types.min @{Finite}
-      max' : Ref $ Tensor [] U32 = Types.max @{Finite}
+      min' : Graph $ Tensor [] U32 = Types.min @{Finite}
+      max' : Graph $ Tensor [] U32 = Types.max @{Finite}
   unsafeEval min' === u32min
   unsafeEval max' === u32max
   unsafeEval (tensor u32min == min') === True
@@ -84,8 +84,8 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 
   let u64min : Literal [] Nat = 0
       u64max : Literal [] Nat = 18446744073709551615
-      min' : Ref $ Tensor [] U64 = Types.min @{Finite}
-      max' : Ref $ Tensor [] U64 = Types.max @{Finite}
+      min' : Graph $ Tensor [] U64 = Types.min @{Finite}
+      max' : Graph $ Tensor [] U64 = Types.max @{Finite}
   unsafeEval min' === u64min
   unsafeEval max' === u64max
   unsafeEval (tensor u64min == min') === True
@@ -94,18 +94,18 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
 partial
 boundedNonFinite : Property
 boundedNonFinite = fixedProperty $ do
-  let min' : Ref $ Tensor [] S32 = Types.min @{NonFinite}
-      max' : Ref $ Tensor [] S32 = Types.max @{NonFinite}
+  let min' : Graph $ Tensor [] S32 = Types.min @{NonFinite}
+      max' : Graph $ Tensor [] S32 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
-  let min' : Ref $ Tensor [] U32 = Types.min @{NonFinite}
-      max' : Ref $ Tensor [] U32 = Types.max @{NonFinite}
+  let min' : Graph $ Tensor [] U32 = Types.min @{NonFinite}
+      max' : Graph $ Tensor [] U32 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
-  let min' : Ref $ Tensor [] U64 = Types.min @{NonFinite}
-      max' : Ref $ Tensor [] U64 = Types.max @{NonFinite}
+  let min' : Graph $ Tensor [] U64 = Types.min @{NonFinite}
+      max' : Graph $ Tensor [] U64 = Types.max @{NonFinite}
   min' ===# Types.min @{Finite}
   max' ===# Types.max @{Finite}
 
@@ -117,10 +117,10 @@ boundedNonFinite = fixedProperty $ do
 partial
 show : Property
 show = fixedProperty $ do
-  let x : Ref $ Tensor [] S32 = 1
+  let x : Graph $ Tensor [] S32 = 1
   show x === "constant, shape=[], metadata={:0}"
 
-  let x : Ref $ Tensor [] S32 = 1 + 2
+  let x : Graph $ Tensor [] S32 = 1 + 2
   show x ===
     """
     add, shape=[], metadata={:0}
@@ -137,15 +137,15 @@ cast = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
-  let x : Ref $ Tensor shape F64 = (do castDtype !(tensor {dtype=U32} lit))
+  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype=U32} lit))
   x ===# tensor (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape nats)
-  let x : Ref $ Tensor shape F64 = (do castDtype !(tensor {dtype=U64} lit))
+  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype=U64} lit))
   x ===# tensor (map (cast {to=Double}) lit)
 
   lit <- forAll (literal shape int32s)
-  let x : Ref $ Tensor shape F64 = (do castDtype !(tensor {dtype=S32} lit))
+  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype=S32} lit))
   x ===# tensor (map (cast {to=Double}) lit)
 
 partial
