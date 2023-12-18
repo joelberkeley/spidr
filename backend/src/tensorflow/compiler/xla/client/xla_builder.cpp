@@ -281,6 +281,21 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* Call(
+        XlaBuilder* builder,
+        XlaComputation& computation,
+        XlaOp* operands,
+        int operands_len
+    ) {
+        xla::XlaBuilder* builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        xla::XlaOp* operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+        xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
+        auto operands_span = absl::Span<const xla::XlaOp>(operands_, operands_len);
+
+        xla::XlaOp res = xla::Call(builder_, computation_, operands_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Add, lhs, rhs); }
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Sub, lhs, rhs); }
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }

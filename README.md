@@ -53,7 +53,7 @@ spidr benefits from much of what XLA has to offer, namely the performance benefi
 
 #### Graph generation
 
-This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization, just-in-time compilation, and automatic differentiation like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html#jax.vmap), [`jit`](https://jax.readthedocs.io/en/latest/_autosummary/jax.jit.html#jax.jit) and [`grad`](https://jax.readthedocs.io/en/latest/debugging/checkify_guide.html#grad).
+This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html#jax.vmap) and [`grad`](https://jax.readthedocs.io/en/latest/debugging/checkify_guide.html#grad).
 
 ### Acknowledgements
 

@@ -134,6 +134,10 @@ export
 prim__cholesky : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
+%foreign (libxla "Call")
+prim__call : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 

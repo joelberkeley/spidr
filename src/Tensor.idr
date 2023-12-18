@@ -116,6 +116,34 @@ eval $ MkGraph x = do
     Right lit => lit
     Left err => idris_crash (show err)
 
+||| `jit` lets you reuse a function without retracing the graph on every call.
+|||
+||| For example, you could use this to reduce the time it takes to compile a large model loss
+||| function, as well as the size in memory of the compiled graph
+||| ```
+||| while : (condition : Tensor [] F64 -> Tensor [] PRED) ->
+|||         (f : Tensor shape F64 -> Graph $ Tensor shape F64) ->
+|||         (start : Tensor shape F64) ->
+|||         Tensor shape F64
+|||
+||| sgd : (Tensor shape F64 -> Graph $ Tensor [] F64) -> Graph $ Tensor shape F64
+||| sgd loss = do
+|||   loss <- jit loss
+|||   -- hmmm ... to use `while` we already pre-compile `f`, so there's no point in `jit` for `while` ... what's a good example then?
+||| ```
+|||
+||| This uses the same mechanism as when sharing tensors, but spidr doesn't do this automatically
+||| for functions.
+export
+jit : Primitive ta =>
+      -- can we erase sa and sb?
+      {sa, sb : _} ->
+      (Tensor sa ta -> Graph $ Tensor sb tb) ->
+      Graph (Tensor sa ta -> Graph $ Tensor sb tb)
+jit {sa, sb} f = do
+  f <- MkGraph $ shareFn [MkShapeAndType sa ta] (\x => unwrap $ f (MkTensor x))
+  pure $ the (_ -> Graph _) $ \(MkTensor x) => addTensor (Call f [x])
+
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.
 |||

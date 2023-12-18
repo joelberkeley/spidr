@@ -16,7 +16,7 @@ limitations under the License.
 module Compiler.Expr
 
 import Decidable.Equality
-
+import Data.SortedMap
 import Control.Monad.State
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
@@ -26,32 +26,51 @@ import Types
 import Util
 
 public export
-data ShapeAndType : Type where
-  MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
-
-public export
 data Expr : Type where
 
--- we use `List (Nat, Expr)` for O(1) append (all we do when building the graph is append)
--- we can't use `(Nat, List Expr)`, or even better `(n ** Vect n Expr)`, because we don't handle
+public export
+data Fn : Nat -> Type
+
+-- we use `List (Nat, a)` for O(1) append (all we do when building the graph is append)
+-- we can't use `(Nat, List a)`, or even better `(n ** Vect n a)`, because we don't handle
 -- scoping properly so node pointers aren't contiguous and don't match list indices
+public export 0
+TopSort : Type -> Type
+TopSort a = (Nat, List (Nat, a))
+
+-- perhaps a better option is to use a single list for both functions and nodes, by
+-- combining them with a `data Node = F (a ** Fn a) | E Expr` ... this is so that we
+-- can efficiently build nodes and functions in order
 export
-data Env = MkEnv Nat (List (Nat, Expr))
+data Env = MkEnv (TopSort (arity ** Fn arity)) (TopSort Expr)
 
 export
 empty : Env
-empty = MkEnv 0 []
+empty = MkEnv (0, []) (0, [])
 
 export
 addNode : Expr -> State Env Nat
 addNode expr = do
-  MkEnv next env <- get
-  put $ MkEnv (S next) ((next, expr) :: env)
+  MkEnv children (next, env) <- get
+  put $ MkEnv children (S next, (next, expr) :: env)
   pure next
 
 export
 toList : Env -> List (Nat, Expr)
-toList (MkEnv _ env) = reverse env
+toList (MkEnv _ (_, env)) = reverse env
+
+export
+findChild : Env -> Nat -> Maybe (a ** Fn a)
+-- list indices don't correspond to nodes do they? Aren't we meant to
+findChild (MkEnv (_, children) _) n = lookup n $ SortedMap.fromList children
+
+export
+childKeys : Env -> List Nat
+childKeys (MkEnv (_, children) _) = keys $ SortedMap.fromList children
+
+public export
+data ShapeAndType : Type where
+  MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
 
 public export
 data Fn : Nat -> Type where
@@ -118,6 +137,13 @@ data Expr : Type where
   Arg : Nat -> Expr
   Tuple : List Nat -> Expr
   GetTupleElement : Nat -> Nat -> Expr
+
+  ||| Apply a cached function to arguments.
+  |||
+  ||| @f The function pointer.
+  ||| @xs The function arguments.
+  Call : (f : Nat) -> (xs : List Nat) -> Expr
+
   MinValue : Primitive dtype => Expr
   MaxValue : Primitive dtype => Expr
   MinFiniteValue : Primitive dtype => Expr
@@ -166,17 +192,25 @@ applyN f (x :: xs) = applyN (f x) xs
 export
 addFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env (Fn arity)
 addFn params f = do
-  MkEnv next env <- get
-  let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next []) $ do
+  MkEnv (nc, children) (next, env) <- get
+  let (subEnv@(MkEnv (nc, _) (next, _)), params, result) = runState (MkEnv (nc, []) (next, [])) $ do
         xs <- traverse addArg params
         result <- applyN f xs
         pure (zip xs params, result)
-  put (MkEnv next env)
+  put (MkEnv (nc, children) (next, env))
   pure (MkFn params result subEnv)
 
   where
   addArg : ShapeAndType -> State Env Nat
   addArg st = do
-    MkEnv next env <- get
-    put (MkEnv (S next) ((next, Arg next) :: env))
+    MkEnv children (next, env) <- get
+    put (MkEnv children (S next, (next, Arg next) :: env))
     pure next
+
+export
+shareFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env Nat
+shareFn params f = do
+  fn <- addFn params f
+  MkEnv (nc, comps) ops <- get
+  put (MkEnv (S nc, (nc, (_ ** fn)) :: comps) ops)
+  pure nc
