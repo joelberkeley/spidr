@@ -35,7 +35,7 @@ data Expr : Type where
 
 -- we use `List Nat` for O(1) insertion (and all we do when building the graph is insert)
 -- we can't use `List Nat`, or even better `(n ** Vect n Nat)`, because we don't handle
--- scoping properly so indices don't match node pointers.
+-- scoping properly so node pointers aren't contiguous and don't match list indices.
 export
 data Env = MkEnv Nat (List (Nat, Expr))
 
