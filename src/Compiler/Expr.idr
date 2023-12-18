@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module Compiler.Expr
 
-import Data.Vect
 import Decidable.Equality
 
 import Control.Monad.State
