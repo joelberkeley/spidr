@@ -49,8 +49,7 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
-||| A computational graph (well, technically it is the effect of modifying a graph, by
-||| e.g. adding node).
+||| The effect of building a computational graph, typically by adding nodes.
 export
 data Graph a = MkGraph (State Env a)
 
