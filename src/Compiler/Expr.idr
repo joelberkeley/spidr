@@ -32,9 +32,9 @@ data ShapeAndType : Type where
 public export
 data Expr : Type where
 
--- we use `List Nat` for O(1) insertion (and all we do when building the graph is insert)
--- we can't use `List Nat`, or even better `(n ** Vect n Nat)`, because we don't handle
--- scoping properly so node pointers aren't contiguous and don't match list indices.
+-- we use `List (Nat, Expr)` for O(1) insertion (and all we do when building the graph is insert)
+-- we can't use `List Expr`, or even better `(n ** Vect n Expr)`, because we don't handle scoping
+-- properly so node pointers aren't contiguous and don't match list indices
 export
 data Env = MkEnv Nat (List (Nat, Expr))
 
