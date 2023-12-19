@@ -2,10 +2,7 @@ package test
 
 depends =
   spidr,
-  contrib,
   hedgehog,
-  elab-util,
-  pretty-show,
   sop
 
 sourcedir = "test"

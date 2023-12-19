@@ -1,7 +1,6 @@
 package spidr
 version = 0.0.6
 
-depends = contrib
 opts = "--total"
 sourcedir = "src"
 modules =
