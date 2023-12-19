@@ -20,7 +20,7 @@ import Control.Monad.Maybe
 import Control.Monad.State
 import Data.List
 import Data.List.Elem
-import public Data.SortedMap
+import Data.SortedMap
 import Decidable.Equality
 
 import Compiler.Expr

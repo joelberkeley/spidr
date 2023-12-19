@@ -15,7 +15,6 @@ limitations under the License.
 --}
 module Compiler.Expr
 
-import Data.SortedMap
 import Decidable.Equality
 
 import Control.Monad.State
@@ -33,23 +32,26 @@ data ShapeAndType : Type where
 public export
 data Expr : Type where
 
+-- we use `List (Nat, Expr)` for O(1) append (all we do when building the graph is append)
+-- we can't use `(Nat, List Expr)`, or even better `(n ** Vect n Expr)`, because we don't handle
+-- scoping properly so node pointers aren't contiguous and don't match list indices
 export
-data Env = MkEnv Nat (SortedMap Nat Expr)
+data Env = MkEnv Nat (List (Nat, Expr))
 
 export
 empty : Env
-empty = MkEnv 0 empty
+empty = MkEnv 0 []
 
 export
 addNode : Expr -> State Env Nat
 addNode expr = do
   MkEnv next env <- get
-  put (MkEnv (S next) (insert next expr env))
+  put $ MkEnv (S next) ((next, expr) :: env)
   pure next
 
 export
 toList : Env -> List (Nat, Expr)
-toList (MkEnv _ env) = toList env
+toList (MkEnv _ env) = reverse env
 
 public export
 data Fn : Nat -> Type where
@@ -165,7 +167,7 @@ export
 addFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env (Fn arity)
 addFn params f = do
   MkEnv next env <- get
-  let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next empty) $ do
+  let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next []) $ do
         xs <- traverse addArg params
         result <- applyN f xs
         pure (zip xs params, result)
@@ -176,5 +178,5 @@ addFn params f = do
   addArg : ShapeAndType -> State Env Nat
   addArg st = do
     MkEnv next env <- get
-    put (MkEnv (S next) (insert next (Arg next) env))
+    put (MkEnv (S next) ((next, Arg next) :: env))
     pure next
