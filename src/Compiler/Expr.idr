@@ -32,7 +32,7 @@ data ShapeAndType : Type where
 public export
 data Expr : Type where
 
--- we use `List (Nat, Expr)` for O(1) insertion (and all we do when building the graph is insert)
+-- we use `List (Nat, Expr)` for O(1) append (all we do when building the graph is append)
 -- we can't use `(Nat, List Expr)`, or even better `(n ** Vect n Expr)`, because we don't handle
 -- scoping properly so node pointers aren't contiguous and don't match list indices
 export
