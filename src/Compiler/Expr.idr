@@ -48,8 +48,8 @@ empty = MkEnv (0, []) (0, [])
 export
 addNode : Expr -> State Env Nat
 addNode expr = do
-  MkEnv next env <- get
-  put $ MkEnv (S next) ((next, expr) :: env)
+  MkEnv children (next, env) <- get
+  put $ MkEnv children (S next, (next, expr) :: env)
   pure next
 
 export
@@ -204,5 +204,5 @@ shareFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env Na
 shareFn params f = do
   fn <- addFn params f
   MkEnv (nc, comps) ops <- get
-  put (MkEnv (S nc, insert nc (_ ** fn) comps) ops)
+  put (MkEnv (S nc, (nc, (_ ** fn)) :: comps) ops)
   pure nc
