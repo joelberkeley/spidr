@@ -50,8 +50,8 @@ addNode expr = do
   pure next
 
 export
-toList : Env -> List (Nat, Expr)
-toList (MkEnv _ env) = reverse env
+toList : Env -> (Nat, List (Nat, Expr))
+toList (MkEnv n env) = (n, reverse env)
 
 public export
 data Fn : Nat -> Type where

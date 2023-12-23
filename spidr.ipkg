@@ -1,6 +1,7 @@
 package spidr
 version = 0.0.6
 
+depends = array
 opts = "--total"
 sourcedir = "src"
 modules =
@@ -8,6 +9,7 @@ modules =
   BayesianOptimization.Acquisition,
 
   Compiler.Eval,
+  Compiler.Eval2,
   Compiler.Expr,
   Compiler.LiteralRW,
 
