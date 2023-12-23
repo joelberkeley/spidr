@@ -60,38 +60,39 @@ LErrIO a = L1 IO (LEither Err a)
 Cache n = MArray n (Maybe XlaOp)
 
 interpret : XlaBuilder -> List (Nat, Expr) -> {n : Nat} -> Cache n -@ LErrIO (Cache n)
-interpret _          []              cache = pure1 (LEither.Right cache)
+interpret _          []              cache = pure1 $ Right cache
 interpret xlaBuilder ((i, x) :: ixs) cache = do
-  cacheOrErr <- interpret xlaBuilder ixs cache
-  case cacheOrErr of
-    Left err => pure1 $ Left err
-    Right cache => do
-      cacheOrErr <- interpretE x cache
-      case cacheOrErr of
-        Left err => ?interpret_err
-        Right (xlaOp # cache) => case (natToFin i n) of
-          Nothing => ?interpret_natToFin_err
-          Just i => pure1 $ Right $ set i (Just xlaOp) cache
+  Right cache <- interpret xlaBuilder ixs cache
+    | Left err => pure1 $ Left err
+  Right (xlaOp # cache) <- interpretE x cache
+    | Left err => ?interpret_err
+  let Just i = natToFin i n
+        | Nothing => ?interpret_natToFin_err
+  pure1 $ Right $ set i (Just xlaOp) cache
 
   where
 
-  interpretE : Expr -> {n : Nat} -> Cache n -@ LErrIO (CRes XlaOp $ Cache n)
+  interpretE : Expr -> Cache n -@ LErrIO (CRes XlaOp $ Cache n)
   interpretE (FromLiteral {dtype} lit) cache = do
     xlaOp <- constantLiteral xlaBuilder !(write {dtype} lit)
     pure1 $ Right $ (xlaOp # cache)
-  interpretE (Diag x) cache =
-    case (natToFin x n) of
-      Nothing => ?interpretE_diag_err
-      Just x => do
-        let 1 (xlaOp # cache) = get x cache
-        xlaOp <- liftIO1 $ getMatrixDiagonal xlaOp
-        pure1 $ Right $ (xlaOp # cache)
-  interpretE  _        _     = ?interpretE_rhs
+  interpretE (Diag x) cache = do
+    let Just x = natToFin x n
+          | Nothing => ?interpretE_outOfBounds
+        (maybeXlaOp # cache) = Core.get x cache
+        Just xlaOp = maybeXlaOp
+          | Nothing => ?interpretE_xlaOpMissing
+    xlaOp <- getMatrixDiagonal xlaOp
+    pure1 $ Right (xlaOp # cache)
+  interpretE _        _     = ?interpretE_rhs
 
 compile : String -> Nat -> Env -> ErrIO XlaComputation
 compile builderName root = do
   xlaBuilder <- mkXlaBuilder builderName
-  let (max, env) = toList env  -- convert all Nat to Fin n here to save the headache later on
+  -- convert all Nat to Fin n here to save the headache later on
+  let (max, env) = toList env
+  -- consider unsafeAlloc to avoid headache of handling Maybe ... we know it's safe because it's
+  -- topologically sorted
   root <- alloc max Nothing (foo xlaBuilder env)
   build xlaBuilder root
 
@@ -99,16 +100,14 @@ compile builderName root = do
 
   foo : XlaBuilder -> List (Nat, Expr) -> {n : Nat} -> Cache n -@ !* (ErrIO XlaOp)
   foo xlaBuilder env cache = MkBang $ do
-    let foo : LErrIO (Cache n) = interpret xlaBuilder env cache
-    1 cacheOrErr <- run foo
-    case cacheOrErr of
-      Left err => left err
-      Right cache => case (natToFin root n) of
-        Nothing => ?compile_rhs_natToFin_err
-        Just root => let (maybeXlaOp # cache) = get root cache
-                      in case maybeXlaOp of
-                           Nothing => ?compile_rhs_noXlaOp_err
-                           Just xlaOp => right xlaOp
+    Right cache <- liftIO1 $ interpret xlaBuilder env cache
+      | Left err => ?compile_interpretErr
+    let Just root = natToFin root n
+          | Nothing => ?compile_outOfBounds
+        (maybeXlaOp # cache) = get root cache
+        Just xlaOp = maybeXlaOp
+          | Nothing => ?compile_xlaOpMissing
+    discarding cache $ right xlaOp
 
 export
 execute : PrimitiveRW dtype a => Nat -> Env -> {shape : _} -> ErrIO $ Literal shape a
