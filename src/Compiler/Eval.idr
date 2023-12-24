@@ -113,8 +113,8 @@ compile builderName root env = do
                List (Nat, Expr) ->
                {n : Nat} ->
                Cache n -@
-               L IO (!* Either Err XlaOp)
-  createRoot xlaBuilder env cache = do
+               IO (!* Either Err XlaOp)
+  createRoot xlaBuilder env cache = run $ do
     Right cache <- interpret xlaBuilder env cache | Left err => pure $ MkBang $ Left err
     let Just root' = natToFin root n
           | _ => discarding cache $ pure $ MkBang $ Left $ OutOfBounds root n
