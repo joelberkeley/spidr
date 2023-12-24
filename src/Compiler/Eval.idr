@@ -113,14 +113,14 @@ compile builderName root env = do
                List (Nat, Expr) ->
                {n : Nat} ->
                Cache n -@
-               L1 IO (!* Either Err XlaOp)
+               L IO (!* Either Err XlaOp)
   createRoot xlaBuilder env cache = do
-    Right cache <- interpret xlaBuilder env cache | Left err => pure1 $ MkBang $ Left err
+    Right cache <- interpret xlaBuilder env cache | Left err => pure $ MkBang $ Left err
     let Just root' = natToFin root n
-          | _ => pure1 $ discarding cache $ MkBang $ Left $ OutOfBounds root n
-        Just xlaOp # cache := Core.get root' cache
-          | _ => pure1 $ MkBang $ Left $ NoValueFound root
-    pure1 $ discarding cache $ MkBang $ Right xlaOp
+          | _ => discarding cache $ pure $ MkBang $ Left $ OutOfBounds root n
+        Just xlaOp # cache = Core.get root' cache
+          | _ => pure $ MkBang $ Left $ NoValueFound root
+    discarding cache $ pure $ MkBang $ Right xlaOp
 
 export
 execute : PrimitiveRW dtype a => Nat -> Env -> {shape : _} -> ErrIO $ Literal shape a
