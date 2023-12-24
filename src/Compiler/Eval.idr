@@ -125,7 +125,7 @@ interpret xlaBuilder (MkFn params root env) = do
     else
      let broadcastDims = Prelude.map (+ length to `minus` length from) $ range $ length from
       in broadcastInDim !(get x) to broadcastDims
-  interpretE (Map {arity} f xs dims) = do
+  interpretE (Map f xs dims) = do
     subBuilder <- createSubBuilder xlaBuilder "computation"
     computation <- lift $ compile subBuilder f
     map xlaBuilder (toList !(traverse get xs)) computation dims
