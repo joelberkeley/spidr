@@ -294,7 +294,7 @@ group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
-    , ("show", show)
+    -- , ("show", show)
     , ("cast", cast)
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))

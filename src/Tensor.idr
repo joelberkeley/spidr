@@ -111,8 +111,8 @@ namespace S32
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x = do
-  let (env, MkTensor n) = runState empty x
-  runEitherT (run {dtype} n env) <&> \case
+  let (env, MkTensor root) = runState empty x
+  runEitherT (execute {dtype} (MkFn [] root env)) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 

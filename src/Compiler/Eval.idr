@@ -15,12 +15,12 @@ limitations under the License.
 --}
 module Compiler.Eval
 
-import Data.Linear
-import Data.Array
-import Data.Fin
-import Control.Monad.Error.Either
+import Control.Monad.Either
+import Control.Monad.Reader
 import Control.Monad.Trans
-import Control.Linear.LIO
+import Data.IOArray
+import Data.List
+import Data.List.Elem
 
 import Compiler.Expr
 import Compiler.LiteralRW
@@ -51,81 +51,174 @@ export
 data Err = OutOfBounds Nat Nat
          | NoValueFound Nat
 
+export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (NoValueFound idx) = "No value found at index \{show idx}"
 
-data LEither : Type -> Type -> Type where
-  Left : e -> LEither e a
-  Right : (1 _ : a) -> LEither e a
+public export 0
+ErrIO : Type -> Type
+ErrIO = EitherT Err IO
 
-0 ErrIO : Type -> Type
-ErrIO a = EitherT Err IO a
-
-0 LErrIO : Type -> Type
-LErrIO a = L1 IO (LEither Err a)
-
-0 Cache : Nat -> Type
-Cache n = MArray n (Maybe XlaOp)
-
-interpret : XlaBuilder -> List (Nat, Expr) -> {n : Nat} -> Cache n -@ LErrIO (Cache n)
-interpret _          []              cache = pure1 $ Right cache
-interpret xlaBuilder ((i, x) :: ixs) cache = do
-  Right cache <- interpret xlaBuilder ixs cache | Left err => pure1 $ Left err
-  Right (xlaOp # cache) <- interpretE x cache | Left err => ?interpret_err
-  let Just i = natToFin i n | _ => ?interpret_natToFin_err
-  pure1 $ Right $ set i (Just xlaOp) cache
-
-  where
-
-  interpretE : Expr -> Cache n -@ LErrIO (CRes XlaOp $ Cache n)
-  interpretE (FromLiteral {dtype} lit) cache = do
-    xlaOp <- constantLiteral xlaBuilder !(write {dtype} lit)
-    pure1 $ Right $ xlaOp # cache
-  interpretE (Diag x) cache = do
-    let Just x' = natToFin x n | _ => pure1 $ discarding cache $ Left $ OutOfBounds x n
-        Just xlaOp # cache = Core.get x' cache | _ => pure1 $ Left $ NoValueFound x
-    xlaOp <- getMatrixDiagonal xlaOp
-    pure1 $ Right (xlaOp # cache)
-  interpretE _        _     = ?interpretE_rhs
-
-compile : String -> Nat -> Env -> ErrIO XlaComputation
-compile builderName root env = do
-  xlaBuilder <- mkXlaBuilder builderName
-  -- convert all Nat to Fin n here to save the headache later on
-  let (max, env) = toList env
-  -- consider unsafeAlloc to avoid headache of handling Maybe ... we know it's safe because it's
-  -- topologically sorted
-  let 1 bar0 : L1 IO (LEither Err $ !* XlaOp) = alloc max Nothing (createRoot xlaBuilder env)
-      bar1 : L IO (Either Err XlaOp) = do
-        root <- bar0
-        pure $ unrestricted root
-      bar2 : IO (Either Err XlaOp) = run bar1
-      bar3 : EitherT IO Err XlaOp = do
-        Right root <- bar2 | Left err => left err
-        right root
-  root <- bar3
+covering
+compile : XlaBuilder -> Fn arity -> ErrIO XlaComputation
+compile xlaBuilder (MkFn params root env) = do
+  let (max, exprs) = toList env
+  cache <- newArray (cast max)
+  root <- runReaderT cache $ do
+    traverse_ interpretParameter (enumerate params)
+    traverse_ (\(i, expr) => do set i !(interpretE expr)) exprs
+    get root
   build xlaBuilder root
 
   where
 
-  createRoot : XlaBuilder ->
-               List (Nat, Expr) ->
-               {n : Nat} ->
-               Cache n -@
-               IO (!* Either Err XlaOp)
-  createRoot xlaBuilder env cache = run $ do
-    Right cache <- interpret xlaBuilder env cache | Left err => pure $ MkBang $ Left err
-    let Just root' = natToFin root n
-          | _ => discarding cache $ pure $ MkBang $ Left $ OutOfBounds root n
-        Just xlaOp # cache = Core.get root' cache
-          | _ => pure $ MkBang $ Left $ NoValueFound root
-    discarding cache $ pure $ MkBang $ Right xlaOp
+  0 Builder : Type -> Type
+  Builder = ReaderT (IOArray XlaOp) ErrIO
+
+  set : Nat -> XlaOp -> Builder ()
+  set idx xlaOp = do
+    True <- lift $ writeArray !ask (cast idx) xlaOp | False => lift $ left ?hnreowvgn
+    pure ()
+
+  get : Nat -> Builder XlaOp
+  get idx = do
+    Just xlaOp <- lift $ readArray !ask (cast idx) | _ => lift $ left ?fheow
+    pure xlaOp
+
+  interpretParameter : (Nat, Nat, ShapeAndType) -> Builder ()
+  interpretParameter (posInFnParams, posInGraph, MkShapeAndType shape dtype) = do
+    xlaShape <- mkShape {dtype} shape
+    param <- parameter xlaBuilder posInFnParams xlaShape (show posInFnParams)
+    set posInGraph param
+
+  interpretE : Expr -> Builder XlaOp
+  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} lit)
+  interpretE (Arg x) = get x
+  interpretE (Tuple xs) = tuple xlaBuilder !(traverse get xs)
+  interpretE (GetTupleElement idx x) = getTupleElement !(get x) idx
+  interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
+  interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder
+  interpretE (MinFiniteValue {dtype}) = minFiniteValue {dtype} xlaBuilder
+  interpretE (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} xlaBuilder
+  interpretE (ConvertElementType x) = convertElementType {dtype = F64} !(get x)
+  interpretE (Reshape from to x) = reshape !(get x) (range $ length from) to
+  interpretE (Slice starts stops strides x) = slice !(get x) starts stops strides
+  interpretE (DynamicSlice starts sizes x) =
+    dynamicSlice !(get x) !(traverse get starts) sizes
+  interpretE (Concat axis x y) = concatInDim xlaBuilder [!(get x), !(get y)] (cast axis)
+  interpretE (Diag x) = getMatrixDiagonal !(get x)
+  interpretE (Triangle tri x) = triangle !(get x) tri
+  interpretE (Transpose ordering x) = transpose !(get x) ordering
+  interpretE (Identity {dtype} n) = let n = cast n in identityMatrix {dtype} xlaBuilder n n
+  interpretE (Broadcast {dtype} from to x) =
+    if elem 0 to && from /= to
+    then do
+      literal <- allocLiteral {dtype} to
+      constantLiteral xlaBuilder literal
+    else
+     let broadcastDims = Prelude.map (+ length to `minus` length from) $ range $ length from
+      in broadcastInDim !(get x) to broadcastDims
+  interpretE (Map f xs dims) = do
+    subBuilder <- createSubBuilder xlaBuilder "computation"
+    computation <- lift $ compile subBuilder f
+    map xlaBuilder (toList !(traverse get xs)) computation dims
+  interpretE (Reduce f neutral axes x) = do
+    subBuilder <- createSubBuilder xlaBuilder "computation"
+    computation <- lift $ compile subBuilder f
+    reduce !(get x) !(get neutral) computation axes
+  interpretE (Sort f axis isStable xs) = do
+    subBuilder <- createSubBuilder xlaBuilder "comparator"
+    comparator <- lift $ compile subBuilder f
+    sort !(traverse get xs) comparator axis isStable
+  interpretE (Reverse axes x) = rev !(get x) axes
+  interpretE (BinaryElementwise f x y) = toXla f !(get x) !(get y)
+    where
+    toXla : BinaryOp -> HasIO io => XlaOp -> XlaOp -> io XlaOp
+    toXla = \case
+      Eq  => eq
+      Ne  => ne
+      Add => add
+      Sub => sub
+      Mul => mul
+      Div => div
+      Rem => rem
+      Pow => pow
+      Lt  => lt
+      Gt  => gt
+      Le  => le
+      Ge  => ge
+      And => and
+      Or  => or
+      Min => min
+      Max => max
+  interpretE (UnaryElementwise f x) = toXla f !(get x)
+    where
+    toXla : UnaryOp -> HasIO io => XlaOp -> io XlaOp
+    toXla = \case
+      Not        => not
+      Neg        => neg
+      Reciprocal => reciprocal
+      Ceil       => ceil
+      Floor      => floor
+      Abs        => abs
+      Log        => log
+      Exp        => exp
+      Logistic   => logistic
+      Erf        => erf
+      Square     => square
+      Sqrt       => sqrt
+      Sin        => sin
+      Cos        => cos
+      Tan        => tan
+      Asin       => asin
+      Acos       => acos
+      Atan       => atan
+      Sinh       => sinh
+      Cosh       => cosh
+      Tanh       => tanh
+      Asinh      => asinh
+      Acosh      => acosh
+      Atanh      => atanh
+  interpretE (Argmin {out} axis x) = argMin {outputType=out} !(get x) axis
+  interpretE (Argmax {out} axis x) = argMax {outputType=out} !(get x) axis
+  interpretE (Select pred true false) = select !(get pred) !(get true) !(get false)
+  interpretE (Cond pred fTrue true fFalse false) = do
+    subBuilderT <- createSubBuilder xlaBuilder "truthy computation"
+    subBuilderF <- createSubBuilder xlaBuilder "falsy computation"
+    trueComp <- lift $ compile subBuilderT fTrue
+    falseComp <- lift $ compile subBuilderF fFalse
+    conditional !(get pred) !(get true) trueComp !(get false) falseComp
+  interpretE (Dot l r) = dot !(get l) !(get r)
+  interpretE (Cholesky x) = cholesky !(get x) True
+  interpretE (TriangularSolve a b lower) =
+    triangularSolve !(get a) !(get b) True lower False NoTranspose
+  interpretE (UniformFloatingPoint key initialState minval maxval shape) = do
+    rngOutput <- uniformFloatingPointDistribution
+      !(get key)
+      !(get initialState)
+      ThreeFry
+      !(get minval)
+      !(get maxval)
+      !(mkShape {dtype=F64} shape)
+    tuple xlaBuilder [value rngOutput, state rngOutput]
+  interpretE (NormalFloatingPoint key initialState shape) = do
+    rngOutput <- normalFloatingPointDistribution
+      !(get key) !(get initialState) ThreeFry !(mkShape {dtype=F64} shape)
+    tuple xlaBuilder [value rngOutput, state rngOutput]
 
 export
-execute : PrimitiveRW dtype a => Nat -> Env -> {shape : _} -> ErrIO $ Literal shape a
-execute root env = do
-  computation <- compile "root" root env
+toString : Nat -> Env -> ErrIO String
+toString root env = ?toString_rhs {- do
+  builder <- mkXlaBuilder "toString"
+  root <- interpret builder env root
+  pure $ opToString builder root -}
+
+export covering
+execute : PrimitiveRW dtype a => Fn 0 -> {shape : _} -> ErrIO $ Literal shape a
+execute f = do
+  xlaBuilder <- mkXlaBuilder "root"
+  computation <- compile xlaBuilder f
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   client <- getOrCreateLocalClient platform
