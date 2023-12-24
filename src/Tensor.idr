@@ -122,8 +122,8 @@ eval $ MkGraph x = do
 ||| Useful for debugging.
 export partial
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor x) = runState empty x in
-                         case unsafePerformIO $ runEitherT $ toString x env of
+  show $ MkGraph x = let (env, MkTensor root) = runState empty x in
+                         case unsafePerformIO $ runEitherT $ toString (MkFn [] root env) of
                               Right str => str
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.

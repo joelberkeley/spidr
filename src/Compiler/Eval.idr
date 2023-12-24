@@ -61,15 +61,21 @@ ErrIO : Type -> Type
 ErrIO = EitherT Err IO
 
 covering
+interpret : XlaBuilder -> Fn arity -> ErrIO XlaOp
+
+covering
 compile : XlaBuilder -> Fn arity -> ErrIO XlaComputation
-compile xlaBuilder (MkFn params root env) = do
+compile xlaBuilder f = do
+  root <- interpret xlaBuilder f
+  build xlaBuilder root
+
+interpret xlaBuilder (MkFn params root env) = do
   let (max, exprs) = toList env
   cache <- newArray (cast max)
-  root <- runReaderT cache $ do
+  runReaderT cache $ do
     traverse_ interpretParameter (enumerate params)
     traverse_ (\(i, expr) => do set i !(interpretE expr)) exprs
     get root
-  build xlaBuilder root
 
   where
 
@@ -119,18 +125,18 @@ compile xlaBuilder (MkFn params root env) = do
     else
      let broadcastDims = Prelude.map (+ length to `minus` length from) $ range $ length from
       in broadcastInDim !(get x) to broadcastDims
-  interpretE (Map f xs dims) = do
+  interpretE (Map {arity} f xs dims) = do
     subBuilder <- createSubBuilder xlaBuilder "computation"
     computation <- lift $ compile subBuilder f
     map xlaBuilder (toList !(traverse get xs)) computation dims
   interpretE (Reduce f neutral axes x) = do
-    subBuilder <- createSubBuilder xlaBuilder "computation"
+    subBuilder <- createSubBuilder xlaBuilder "monoid binary op"
     computation <- lift $ compile subBuilder f
     reduce !(get x) !(get neutral) computation axes
   interpretE (Sort f axis isStable xs) = do
     subBuilder <- createSubBuilder xlaBuilder "comparator"
-    comparator <- lift $ compile subBuilder f
-    sort !(traverse get xs) comparator axis isStable
+    computation <- lift $ compile xlaBuilder f
+    sort !(traverse get xs) computation axis isStable
   interpretE (Reverse axes x) = rev !(get x) axes
   interpretE (BinaryElementwise f x y) = toXla f !(get x) !(get y)
     where
@@ -186,9 +192,9 @@ compile xlaBuilder (MkFn params root env) = do
   interpretE (Cond pred fTrue true fFalse false) = do
     subBuilderT <- createSubBuilder xlaBuilder "truthy computation"
     subBuilderF <- createSubBuilder xlaBuilder "falsy computation"
-    trueComp <- lift $ compile subBuilderT fTrue
-    falseComp <- lift $ compile subBuilderF fFalse
-    conditional !(get pred) !(get true) trueComp !(get false) falseComp
+    compTrue <- lift $ compile subBuilderT fTrue
+    compFalse <- lift $ compile subBuilderF fFalse
+    conditional !(get pred) !(get true) compTrue !(get false) compFalse
   interpretE (Dot l r) = dot !(get l) !(get r)
   interpretE (Cholesky x) = cholesky !(get x) True
   interpretE (TriangularSolve a b lower) =
@@ -207,12 +213,12 @@ compile xlaBuilder (MkFn params root env) = do
       !(get key) !(get initialState) ThreeFry !(mkShape {dtype=F64} shape)
     tuple xlaBuilder [value rngOutput, state rngOutput]
 
-export
-toString : Nat -> Env -> ErrIO String
-toString root env = ?toString_rhs {- do
-  builder <- mkXlaBuilder "toString"
-  root <- interpret builder env root
-  pure $ opToString builder root -}
+export covering
+toString : Fn 0 -> ErrIO String
+toString f = do
+  xlaBuilder <- mkXlaBuilder "toString"
+  root <- interpret xlaBuilder f
+  pure $ opToString xlaBuilder root
 
 export covering
 execute : PrimitiveRW dtype a => Fn 0 -> {shape : _} -> ErrIO $ Literal shape a
