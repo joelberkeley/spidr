@@ -135,7 +135,7 @@ interpret xlaBuilder (MkFn params root env) = do
     reduce !(get x) !(get neutral) computation axes
   interpretE (Sort f axis isStable xs) = do
     subBuilder <- createSubBuilder xlaBuilder "comparator"
-    computation <- lift $ compile xlaBuilder f
+    computation <- lift $ compile subBuilder f
     sort !(traverse get xs) computation axis isStable
   interpretE (Reverse axes x) = rev !(get x) axes
   interpretE (BinaryElementwise f x y) = toXla f !(get x) !(get y)
