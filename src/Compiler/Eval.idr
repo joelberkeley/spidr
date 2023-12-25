@@ -49,12 +49,12 @@ import Util
 
 export
 data Err = OutOfBounds Nat Nat
-         | NoValueFound Nat
+         | ValueNotFound Nat
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
-  show (NoValueFound idx) = "No value found at index \{show idx}"
+  show (ValueNotFound idx) = "Value requested but not found at index \{show idx}"
 
 public export 0
 ErrIO : Type -> Type
@@ -84,12 +84,17 @@ interpret xlaBuilder (MkFn params root env) = do
 
   set : Nat -> XlaOp -> Builder ()
   set idx xlaOp = do
-    True <- lift $ writeArray !ask (cast idx) xlaOp | False => lift $ left ?hnreowvgn
+    cache <- ask
+    True <- lift $ writeArray cache (cast idx) xlaOp
+      | False => lift $ left $ OutOfBounds idx (cast $ max cache)
     pure ()
 
   get : Nat -> Builder XlaOp
   get idx = do
-    Just xlaOp <- lift $ readArray !ask (cast idx) | _ => lift $ left ?fheow
+    cache <- ask
+    Just xlaOp <- lift $ readArray cache (cast idx)
+      | _ => lift $ left $ let max = cast (max cache)
+                            in if idx >= max then OutOfBounds idx max else ValueNotFound idx
     pure xlaOp
 
   interpretParameter : (Nat, Nat, ShapeAndType) -> Builder ()
