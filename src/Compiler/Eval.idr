@@ -119,6 +119,8 @@ enqueue builder env (Call f xs) = do
     Just comp => pure comp
     -- we don't need to index here, we can just build the next function in the list ... it will
     -- be the right one ... but we'll need to know which is the "next"
+
+    -- are we failing to find the child env in a nested function (i.e. deep nesting)?
     Nothing => case findChild env f of
       Nothing => lift $ left (IndexErr "Tried to look up child env at index \{show f} with keys \{show $ childKeys env}")
       Just (_ ** comp) => do
