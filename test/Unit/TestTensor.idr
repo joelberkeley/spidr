@@ -56,6 +56,8 @@ pure2 : {shape : _} -> Tensor shape S32 -> Graph $ Tensor shape S32
 pure2 x = do g <- jit pure
              g !(g x)
 
+-- is this nested jit or chained jit?
+-- that is, are we missing e.g. `jit (\x => do f <- jit exp; !(f x) + !(f x))`
 nestedJit : Tensor [] F64 -> Graph $ Tensor [] F64
 nestedJit x = do
   f <- jit $ exp >=> square
