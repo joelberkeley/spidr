@@ -52,6 +52,27 @@ tensorThenEval = property $ do
   x <- forAll (literal shape bool)
   x === unsafePerformIO (eval (tensor {dtype=PRED} x))
 
+pure2 : {shape : _} -> Tensor shape S32 -> Graph $ Tensor shape S32
+pure2 x = do g <- jit pure
+             g !(g x)
+
+-- is this nested jit or chained jit?
+-- that is, are we missing e.g. `jit (\x => do f <- jit exp; f x + f x)`
+nestedJit : Tensor [] F64 -> Graph $ Tensor [] F64
+nestedJit x = do
+  f <- jit exp
+  g <- jit f
+  g x
+
+-- add test for shape and type changes e.g. using reduce or convertDtype
+-- add test for cond where functions are pre-jitted
+-- add test for multiple un-nested jits
+partial
+jit : Property
+jit = property $ do
+  (unsafeEval (do pure2 !1)) === 1
+  (unsafeEval (do nestedJit !(-3.0))) ==~ [| exp (-3.0) |]
+
 partial
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
@@ -292,6 +313,7 @@ export partial
 group : Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
+    , ("jit", jit)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("show", show)

@@ -110,6 +110,13 @@ extern "C" {
     );
     XlaOp* Cholesky(XlaOp& a, int lower);
 
+    XlaOp* Call(
+        XlaBuilder* builder,
+        XlaComputation& computation,
+        XlaOp* operands,
+        int operands_len
+    );
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs);
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs);

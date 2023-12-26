@@ -58,16 +58,26 @@ Show Err where
   show (IndexErr msg) = "IndexErr: \{msg}"
 
 0 Computation : Type -> Type
-Computation = StateT (SortedMap Nat XlaOp) (EitherT Err IO)
+Computation = StateT (SortedMap Nat XlaComputation, SortedMap Nat XlaOp) (EitherT Err IO)
 
 ||| Look up the `XlaOp` at `position` in the graph.
 lookup : (position : Nat) -> Computation XlaOp
 lookup n = do
-  cache <- get
+  (_, cache) <- get
   case lookup n cache of
        Nothing =>
-         lift $ left (IndexErr "Tried to look up value at index \{show n} but found keys \{show $ toList (keys cache)}")
+         lift $ left (IndexErr "Tried to look up XlaOp at index \{show n} but found keys \{show $ toList (keys cache)}")
        Just op => pure op
+
+namespace XlaComputation
+  ||| Look up the `XlaComputation` at `position` in the graph.
+  lookup : (position : Nat) -> Computation XlaComputation
+  lookup n = do
+    (cache, _) <- get
+    case lookup n cache of
+         Nothing =>
+           lift $ left (IndexErr "Tried to look up XlaComputation at index \{show n} but found keys \{show $ toList (keys cache)}")
+         Just comp => pure comp
 
 interpret : XlaBuilder -> Nat -> Env -> Computation XlaOp
 
@@ -94,29 +104,48 @@ buildSub builder name (MkFn params result env) = do
   interpretParameter builder (positionInFnParams, positionInGraph, MkShapeAndType shape dtype) = do
     xlaShape <- mkShape {dtype} shape
     param <- parameter builder positionInFnParams xlaShape name
-    put $ insert positionInGraph param !get
+    (comps, ops) <- get
+    put (comps, insert positionInGraph param ops)
 
 covering
-enqueue : XlaBuilder -> Expr -> Computation XlaOp
-enqueue builder (FromLiteral {dtype} lit) = constantLiteral builder !(write {dtype} lit)
-enqueue _       (Arg x) = lookup x
-enqueue builder (Tuple xs) = tuple builder !(traverse lookup xs)
-enqueue builder (GetTupleElement idx x) = getTupleElement !(lookup x) idx
-enqueue builder (MinValue {dtype}) = minValue {dtype} builder
-enqueue builder (MaxValue {dtype}) = maxValue {dtype} builder
-enqueue builder (MinFiniteValue {dtype}) = minFiniteValue {dtype} builder
-enqueue builder (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} builder
-enqueue _       (ConvertElementType x) = convertElementType {dtype = F64} !(lookup x)
-enqueue _       (Reshape from to x) = reshape !(lookup x) (range $ length from) to
-enqueue _       (Slice starts stops strides x) = slice !(lookup x) starts stops strides
-enqueue _       (DynamicSlice starts sizes x) =
+enqueue : XlaBuilder -> Env -> Expr -> Computation XlaOp
+enqueue builder _   (FromLiteral {dtype} lit) = constantLiteral builder !(write {dtype} lit)
+enqueue _       _   (Arg x) = lookup x
+enqueue builder _   (Tuple xs) = tuple builder !(traverse lookup xs)
+enqueue builder _   (GetTupleElement idx x) = getTupleElement !(lookup x) idx
+enqueue builder env (Call f xs) = do
+  (cachedComps, _) <- get
+  builtComp <- case lookup f cachedComps of
+    Just comp => pure comp
+    -- we don't need to index here, we can just build the next function in the list ... it will
+    -- be the right one ... but we'll need to know which is the "next"
+
+    -- this works for unnested scenarios, but fails to find the child env when we have deeper
+    -- nesting. The env is presumably being stored in the wrong place, or we're trying to
+    -- access the nesting in the wrong order
+    Nothing => case findChild env f of
+      Nothing => lift $ left (IndexErr "Tried to look up child env at index \{show f} with keys \{show $ childKeys env}")
+      Just (_ ** comp) => do
+        comp <- buildSub builder "name" comp
+        (comps, ops) <- get
+        put (insert f comp comps, ops)
+        pure comp
+  call builder builtComp !(traverse lookup xs)
+enqueue builder _   (MinValue {dtype}) = minValue {dtype} builder
+enqueue builder _   (MaxValue {dtype}) = maxValue {dtype} builder
+enqueue builder _   (MinFiniteValue {dtype}) = minFiniteValue {dtype} builder
+enqueue builder _   (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} builder
+enqueue _       _   (ConvertElementType x) = convertElementType {dtype = F64} !(lookup x)
+enqueue _       _   (Reshape from to x) = reshape !(lookup x) (range $ length from) to
+enqueue _       _   (Slice starts stops strides x) = slice !(lookup x) starts stops strides
+enqueue _       _   (DynamicSlice starts sizes x) =
   dynamicSlice !(lookup x) !(traverse lookup starts) sizes
-enqueue builder (Concat axis x y) = concatInDim builder [!(lookup x), !(lookup y)] (cast axis)
-enqueue _       (Diag x) = getMatrixDiagonal !(lookup x)
-enqueue _       (Triangle tri x) = triangle !(lookup x) tri
-enqueue _       (Transpose ordering x) = transpose !(lookup x) ordering
-enqueue builder (Identity {dtype} n) = let n = cast n in identityMatrix {dtype} builder n n
-enqueue builder (Broadcast {dtype} from to x) =
+enqueue builder _   (Concat axis x y) = concatInDim builder [!(lookup x), !(lookup y)] (cast axis)
+enqueue _       _   (Diag x) = getMatrixDiagonal !(lookup x)
+enqueue _       _   (Triangle tri x) = triangle !(lookup x) tri
+enqueue _       _   (Transpose ordering x) = transpose !(lookup x) ordering
+enqueue builder _   (Identity {dtype} n) = let n = cast n in identityMatrix {dtype} builder n n
+enqueue builder _   (Broadcast {dtype} from to x) =
   if elem 0 to && from /= to
   then do
     literal <- allocLiteral {dtype} to
@@ -124,17 +153,17 @@ enqueue builder (Broadcast {dtype} from to x) =
   else
    let broadcastDims = map (+ length to `minus` length from) $ range $ length from
     in broadcastInDim !(lookup x) to broadcastDims
-enqueue builder (Map f xs dims) = do
+enqueue builder _   (Map f xs dims) = do
   computation <- buildSub builder "computation" f
   map builder (toList !(traverse lookup xs)) computation dims
-enqueue builder (Reduce f neutral axes x) = do
+enqueue builder _   (Reduce f neutral axes x) = do
   computation <- buildSub builder "computation" f
   reduce !(lookup x) !(lookup neutral) computation axes
-enqueue builder (Sort f axis isStable xs) = do
+enqueue builder _   (Sort f axis isStable xs) = do
   comparator <- buildSub builder "comparator" f
   sort !(traverse lookup xs) comparator axis isStable 
-enqueue _       (Reverse axes x) = rev !(lookup x) axes
-enqueue _       (BinaryElementwise f x y) = toXla f !(lookup x) !(lookup y)
+enqueue _       _   (Reverse axes x) = rev !(lookup x) axes
+enqueue _       _   (BinaryElementwise f x y) = toXla f !(lookup x) !(lookup y)
   where
   toXla : BinaryOp -> HasIO io => XlaOp -> XlaOp -> io XlaOp
   toXla = \case
@@ -154,7 +183,7 @@ enqueue _       (BinaryElementwise f x y) = toXla f !(lookup x) !(lookup y)
     Or  => or
     Min => min
     Max => max
-enqueue _       (UnaryElementwise f x) = toXla f !(lookup x)
+enqueue _       _   (UnaryElementwise f x) = toXla f !(lookup x)
   where
   toXla : UnaryOp -> HasIO io => XlaOp -> io XlaOp
   toXla = \case
@@ -182,18 +211,18 @@ enqueue _       (UnaryElementwise f x) = toXla f !(lookup x)
     Asinh      => asinh
     Acosh      => acosh
     Atanh      => atanh
-enqueue _       (Argmin {out} axis x) = argMin {outputType=out} !(lookup x) axis
-enqueue _       (Argmax {out} axis x) = argMax {outputType=out} !(lookup x) axis
-enqueue _       (Select pred true false) = select !(lookup pred) !(lookup true) !(lookup false)
-enqueue builder (Cond pred fTrue true fFalse false) = do
+enqueue _       _   (Argmin {out} axis x) = argMin {outputType=out} !(lookup x) axis
+enqueue _       _   (Argmax {out} axis x) = argMax {outputType=out} !(lookup x) axis
+enqueue _       _   (Select pred true false) = select !(lookup pred) !(lookup true) !(lookup false)
+enqueue builder _   (Cond pred fTrue true fFalse false) = do
   trueComp <- buildSub builder "truthy computation" fTrue
   falseComp <- buildSub builder "falsy computation" fFalse
   conditional !(lookup pred) !(lookup true) trueComp !(lookup false) falseComp
-enqueue _       (Dot l r) = dot !(lookup l) !(lookup r)
-enqueue _       (Cholesky x) = cholesky !(lookup x) True
-enqueue _       (TriangularSolve a b lower) =
+enqueue _       _   (Dot l r) = dot !(lookup l) !(lookup r)
+enqueue _       _   (Cholesky x) = cholesky !(lookup x) True
+enqueue _       _   (TriangularSolve a b lower) =
   triangularSolve !(lookup a) !(lookup b) True lower False NoTranspose
-enqueue builder (UniformFloatingPoint key initialState minval maxval shape) = do
+enqueue builder _   (UniformFloatingPoint key initialState minval maxval shape) = do
   rngOutput <- uniformFloatingPointDistribution
     !(lookup key)
     !(lookup initialState)
@@ -202,7 +231,7 @@ enqueue builder (UniformFloatingPoint key initialState minval maxval shape) = do
     !(lookup maxval)
     !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
-enqueue builder (NormalFloatingPoint key initialState shape) = do
+enqueue builder _   (NormalFloatingPoint key initialState shape) = do
   rngOutput <- normalFloatingPointDistribution
     !(lookup key) !(lookup initialState) ThreeFry !(mkShape {dtype=F64} shape)
   tuple builder [value rngOutput, state rngOutput]
@@ -213,20 +242,22 @@ interpret builder root env = do
 
   where
   interpretExpr : (Nat, Expr) -> Computation ()
-  interpretExpr (n, expr) = put (insert n !(enqueue builder expr) !get)
+  interpretExpr (n, expr) = do
+    (comps, ops) <- get
+    put (comps, insert n !(enqueue builder env expr) ops)
 
 export
 toString : Nat -> Env -> EitherT Err IO String
 toString root env = do
   builder <- mkXlaBuilder "toString"
-  xlaOp <- evalStateT empty (interpret builder root env)
+  xlaOp <- evalStateT (empty, empty) (interpret builder root env)
   pure $ opToString builder xlaOp
 
 export
 run : PrimitiveRW dtype a => Nat -> Env -> {shape : _} -> EitherT Err IO (Literal shape a)
 run root env = do
   builder <- mkXlaBuilder "root" 
-  root <- evalStateT empty (interpret builder root env)
+  root <- evalStateT (empty, empty) (interpret builder root env)
   computation <- XlaBuilder.build builder root
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
