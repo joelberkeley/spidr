@@ -39,7 +39,8 @@ TopSort : Type -> Type
 TopSort a = (Nat, List (Nat, a))
 
 -- perhaps a better option is to use a single list for both functions and nodes, by
--- combining them with a data Node = F (a ** Fn a) | E Expr
+-- combining them with a `data Node = F (a ** Fn a) | E Expr` ... this is so that we
+-- can efficiently build nodes and functions in order
 export
 data Env = MkEnv (TopSort (arity ** Fn arity)) (TopSort Expr)
 
@@ -62,6 +63,10 @@ export
 findChild : Env -> Nat -> Maybe (a ** Fn a)
 -- list indices don't correspond to nodes do they? Aren't we meant to
 findChild (MkEnv (_, children) _) n = lookup n $ SortedMap.fromList children
+
+export
+childKeys : Env -> List Nat
+childKeys (MkEnv (_, children) _) = keys $ SortedMap.fromList children
 
 public export
 data ShapeAndType : Type where

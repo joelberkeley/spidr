@@ -117,8 +117,10 @@ enqueue builder env (Call f xs) = do
   (cachedComps, _) <- get
   builtComp <- case lookup f cachedComps of
     Just comp => pure comp
+    -- we don't need to index here, we can just build the next function in the list ... it will
+    -- be the right one ... but we'll need to know which is the "next"
     Nothing => case findChild env f of
-      Nothing => lift $ left (IndexErr "Tried to look up child env at index \{show f} but key not found")
+      Nothing => lift $ left (IndexErr "Tried to look up child env at index \{show f} with keys \{show $ childKeys env}")
       Just (_ ** comp) => do
         comp <- buildSub builder "name" comp
         (comps, ops) <- get
