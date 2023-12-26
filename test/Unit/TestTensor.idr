@@ -69,7 +69,7 @@ partial
 jit : Property
 jit = property $ do
   (unsafeEval (do pure2 !1)) === 1
-  -- (unsafeEval (do nestedJit !(-3.0))) ==~ [| exp 4.5 |]
+  (unsafeEval (do nestedJit !(-3.0))) ==~ [| exp 4.5 |]
 
 partial
 canConvertAtXlaNumericBounds : Property
