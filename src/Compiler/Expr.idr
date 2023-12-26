@@ -16,7 +16,7 @@ limitations under the License.
 module Compiler.Expr
 
 import Decidable.Equality
-
+import Data.SortedMap
 import Control.Monad.State
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
@@ -38,6 +38,8 @@ public export 0
 TopSort : Type -> Type
 TopSort a = (Nat, List (Nat, a))
 
+-- perhaps a better option is to use a single list for both functions and nodes, by
+-- combining them with a data Node = F (a ** Fn a) | E Expr
 export
 data Env = MkEnv (TopSort (arity ** Fn arity)) (TopSort Expr)
 
@@ -58,7 +60,8 @@ toList (MkEnv _ (_, env)) = reverse env
 
 export
 findChild : Env -> Nat -> Maybe (a ** Fn a)
-findChild (MkEnv (_, children) _) n = lookup n children
+-- list indices don't correspond to nodes do they? Aren't we meant to
+findChild (MkEnv (_, children) _) n = lookup n $ SortedMap.fromList children
 
 public export
 data ShapeAndType : Type where
