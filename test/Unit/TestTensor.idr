@@ -60,9 +60,9 @@ pure2 x = do g <- jit pure
 -- that is, are we missing e.g. `jit (\x => do f <- jit exp; f x + f x)`
 nestedJit : Tensor [] F64 -> Graph $ Tensor [] F64
 nestedJit x = do
-  f <- jit $ exp >=> square
-  f <- jit $ (sqrt >=> f)
-  f x
+  f <- jit exp
+  g <- jit f
+  g x
 
 -- add test for shape and type changes e.g. using reduce or convertDtype
 -- add test for cond where functions are pre-jitted

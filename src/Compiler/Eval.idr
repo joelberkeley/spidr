@@ -120,7 +120,9 @@ enqueue builder env (Call f xs) = do
     -- we don't need to index here, we can just build the next function in the list ... it will
     -- be the right one ... but we'll need to know which is the "next"
 
-    -- this works for unnested scenarios, but fails to find the child env when we have deeper nesting. The env is presumably being stored in the wrong place
+    -- this works for unnested scenarios, but fails to find the child env when we have deeper
+    -- nesting. The env is presumably being stored in the wrong place, or we're trying to
+    -- access the nesting in the wrong order
     Nothing => case findChild env f of
       Nothing => lift $ left (IndexErr "Tried to look up child env at index \{show f} with keys \{show $ childKeys env}")
       Just (_ ** comp) => do
