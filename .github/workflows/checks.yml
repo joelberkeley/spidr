@@ -29,10 +29,10 @@ jobs:
       run: |
         ./install_bazel.sh
         ./build.sh cpu
+    - name: Build tests
+      run: pack --no-prompt build test.ipkg
     - name: Run tests
-      run: |
-        pack --no-prompt build test.ipkg
-        pack run test.ipkg
+      run: pack run test.ipkg
       env:
         LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
   readme:

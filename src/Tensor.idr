@@ -111,8 +111,8 @@ namespace S32
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x = do
-  let (env, MkTensor n) = runState empty x
-  runEitherT (run {dtype} n env) <&> \case
+  let (env, MkTensor root) = runState empty x
+  runEitherT (execute {dtype} (MkFn [] root env)) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 
@@ -122,8 +122,8 @@ eval $ MkGraph x = do
 ||| Useful for debugging.
 export partial
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor x) = runState empty x in
-                         case unsafePerformIO $ runEitherT $ toString x env of
+  show $ MkGraph x = let (env, MkTensor root) = runState empty x in
+                         case unsafePerformIO $ runEitherT $ toString (MkFn [] root env) of
                               Right str => str
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
