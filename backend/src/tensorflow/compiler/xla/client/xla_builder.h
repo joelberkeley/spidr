@@ -18,6 +18,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/xla_builder.h"
 
 #include "../literal.h"
+#include "../service/gpu/runtime/support.h"
 #include "xla_computation.h"
 
 extern "C" {
@@ -105,6 +106,7 @@ extern "C" {
     XlaOp* Le(XlaOp& lhs, XlaOp& rhs);
 
     XlaOp* Dot(XlaOp& lhs, XlaOp& rhs);
+    XlaOp* DotGeneral(XlaOp& lhs, XlaOp& rhs, DotDimensionNumbers& dimension_numbers);
     XlaOp* TriangularSolve(
         XlaOp& a, XlaOp& b, int left_side, int lower, int unit_diagonal, int transpose_a
     );

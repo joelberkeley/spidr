@@ -35,6 +35,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
+import Compiler.Xla.TensorFlow.Compiler.Xla.Service.GPU.Runtime.Support
 import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
@@ -201,6 +202,13 @@ interpret xlaBuilder (MkFn params root env) = do
     compFalse <- lift $ compile subBuilderF fFalse
     conditional !(get pred) !(get true) compTrue !(get false) compFalse
   interpretE (Dot l r) = dot !(get l) !(get r)
+  interpretE (DotGeneral lb lc rb rc l r) = do
+    dimensionNumbers <- allocDotDimensionNumbers
+    traverse_ (addLhsContractingDimensions dimensionNumbers) lc
+    traverse_ (addRhsContractingDimensions dimensionNumbers) rc
+    traverse_ (addLhsBatchDimensions dimensionNumbers) lb
+    traverse_ (addRhsBatchDimensions dimensionNumbers) rb
+    dotGeneral dimensionNumbers !(get l) !(get r)
   interpretE (Cholesky x) = cholesky !(get x) True
   interpretE (TriangularSolve a b lower) =
     triangularSolve !(get a) !(get b) True lower False NoTranspose

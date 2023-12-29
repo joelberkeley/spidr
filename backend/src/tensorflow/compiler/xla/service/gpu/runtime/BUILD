@@ -1,4 +1,4 @@
-# Copyright 2022 Joel Berkeley
+# Copyright 2023 Joel Berkeley
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +13,13 @@
 # limitations under the License.
 
 cc_library(
-    name = "client",
+    name = "runtime",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
         "@xla_extension//:xla_extension",
-        "//src:src",
-        "//src/tensorflow/compiler/xla:xla",
-        "//src/tensorflow/compiler/xla/service/gpu/runtime:runtime",
-        "//src/tensorflow/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],
 )

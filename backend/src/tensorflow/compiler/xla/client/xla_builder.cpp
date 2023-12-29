@@ -24,6 +24,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
 #include "../literal.h"
+#include "../service/gpu/runtime/support.h"
 #include "xla_builder.h"
 #include "xla_computation.h"
 
@@ -254,6 +255,14 @@ extern "C" {
         auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
         auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
         xla::XlaOp res = xla::Dot(lhs_, rhs_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* DotGeneral(XlaOp& lhs, XlaOp& rhs, DotDimensionNumbers& dimension_numbers) {
+        auto& lhs_ = reinterpret_cast<xla::XlaOp&>(lhs);
+        auto& rhs_ = reinterpret_cast<xla::XlaOp&>(rhs);
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        xla::XlaOp res = xla::DotGeneral(lhs_, rhs_, dimension_numbers_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 

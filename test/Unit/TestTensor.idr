@@ -184,6 +184,36 @@ namespace Matrix
     l @@ r ===# tensor [[ -7,  -2], [  8, -11]]
 
 partial
+matmul : Property
+matmul = fixedProperty $ do
+  let l = fill {shape = [3, 4, 5, 6]} {dtype = S32} 1
+      r = fill {shape = [3, 4, 6, 7]} 1
+  (do matmul [0, 1] [3] [0, 1] [2] !l !r) ===# fill {shape = [3, 4, 5, 7]} 1
+
+  -- inputs generated with jax.random.uniform, expected generated with jax.lax.dot_general
+  let l = tensor {dtype = F64} [[[0.64, 0.18, 0.02, 0.56],
+                                 [0.55,  0.1, 0.34, 0.04],
+                                 [0.09, 0.79, 0.35, 0.53]],
+                                [[0.03, 0.42, 0.58, 0.91],
+                                 [0.27, 0.15, 0.94, 0.52],
+                                 [0.51, 0.91, 0.73, 0.96]]]
+      r = tensor [[[0.53, 0.97],
+                   [0.62, 0.87],
+                   [0.63,  0.2],
+                   [0.74, 0.85]],
+                  [[0.22, 0.32],
+                   [0.74, 0.79],
+                   [0.37, 0.13],
+                   [0.05, 0.61]]]
+      expected = tensor [[[0.8778, 1.2574],
+                          [0.5973, 0.7225],
+                          [1.1502, 1.2951]],
+                         [[0.5775, 0.9719],
+                          [0.5442, 0.6443],
+                          [1.1037, 1.5626]]]
+  (do matmul [0] [2] [0] [1] !l !r) ===# expected
+
+partial
 argmin : Property
 argmin = property $ do
   d <- forAll dims
@@ -299,6 +329,7 @@ group = MkGroup "Tensor" $ [
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
+    , ("matmul", matmul)
     , ("argmin", argmin)
     , ("argmax", argmax)
     , ("select", select)
