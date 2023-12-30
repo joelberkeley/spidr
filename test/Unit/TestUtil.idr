@@ -50,6 +50,8 @@ namespace List
     List.enumerate [5] === [(0, 5)]
     List.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
+  -- test multiIndex, filterbyIndex, and unique
+
   deleteAtForNoIndices : (xs : List a) -> deleteAt [] xs = xs
   deleteAtForNoIndices [] = Refl
   deleteAtForNoIndices (_ :: _) = Refl

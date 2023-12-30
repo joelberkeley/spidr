@@ -976,43 +976,9 @@ namespace Matrix
     MkTensor x' <- x'
     addTensor $ Dot x x'
 
-{-
--- this would be free at runtime because the string would be compiled into a Shape by Idris
-einstein : String -> (left, right : Shape) -> Maybe Shape
-einstein s left right = impl (asList s) [] left right
-
-  where
-
-  impl : AsList a -> List Char -> (acc, l, r : Shape) -> Maybe Shape
-  impl Nil       _    acc [] [] = Just acc
-  impl Nil       _    _   _  _  = Nothing
-  impl (c :: cs) seen acc l  r  = case c of
-    "," => ?comma
-
-fromString : (s : String) -> {auto 0 ok : IsJust (einstein s left right)} -> Shape
--}
-
-
+||| The shape of the result of a `dotGeneral` operation.
 public export
-dim : (axes : List Nat) ->
-      (shape : Shape) ->
-      {auto 0 inBounds : All (flip InBounds shape) axes} ->
-      Shape
-dim axes shape = map (dflip index shape) axes
-
-public export
-filterByIndex : (idxs : List Nat) -> (xs : List a) -> List a
-filterByIndex idxs xs = impl 0 xs
-  where
-  impl : Nat -> List a -> List a
-  impl _ [] = []
-  impl n (x :: xs) = if elem n idxs then impl (S n) xs else x :: impl (S n) xs
-
-public export
-contract : (lBatch : List Nat) ->
-           (lContract : List Nat) ->
-           (rBatch : List Nat) ->
-           (rContract : List Nat) ->
+contract : (lBatch, lContract, rBatch, rContract : List Nat) ->
            (ls, rs : Shape) ->
            {auto 0 lInBoundsBatch : All (flip InBounds ls) lBatch} ->
            {auto 0 lInBoundsContract : All (flip InBounds ls) lContract} ->
@@ -1022,31 +988,40 @@ contract : (lBatch : List Nat) ->
 contract lBatch lContract rBatch rContract ls rs =
   let lResultDims = filterByIndex (lBatch ++ lContract) ls
       rResultDims = filterByIndex (rBatch ++ rContract) rs
-   in dim lBatch ls ++ lResultDims ++ rResultDims
+   in multiIndex lBatch ls ++ lResultDims ++ rResultDims
 
-public export
-unique : Prelude.Eq a => List a -> Bool
-unique [] = True
-unique (x :: xs) = not (elem x xs) && unique xs
-
+||| Matrix multiplication.
+|||
+||| This is a much more general version of `(@@)`, in which you can specify any number of batch
+||| and contracting axes. Matrix multiplication is done over each contracting axis.
+||| A batching axis appears in both left and right operands, and is used to vectorize the
+||| multiplication over an axis. For example, with
+||| ```
+||| let x : Tensor [3, 4, 5, 6] F64
+|||     y : Tensor [3, 4, 6, 7] F64
+||| ```
+||| we can vectorize over the first two axes `[0, 1]`, and do a standard matrix multiplication
+||| over the remaining axes by specifying the axes with length 6 as contracting axes, like
+||| ```
+||| let z : Graph $ Tensor [3, 4, 5, 7] F64 = dotGeneral [0, 1] [3] [0, 1] [2] x y
+||| ```
+|||
+||| Note this API is somewhat of a quickfix to bring general matrix multiplication to the tensor
+|||   API. Expect it to change in the future.
 export
-matmul : Primitive.Num dtype =>
-         (lBatch : List Nat) ->
-         (lContract : List Nat) ->
-         (rBatch : List Nat) ->
-         (rContract : List Nat) ->
-         {auto 0 lUnique : unique (lBatch ++ lContract) = True} ->
-         {auto 0 rUnique : unique (rBatch ++ rContract) = True} ->
-         {auto 0 lInBoundsBatch : All (flip InBounds ls) lBatch} ->
-         {auto 0 lInBoundsContract : All (flip InBounds ls) lContract} ->
-         {auto 0 rInBoundsBatch : All (flip InBounds rs) rBatch} ->
-         {auto 0 rInBoundsContract : All (flip InBounds rs) rContract} ->
-         {auto 0 batchDimsEq : dim lBatch ls = dim rBatch rs} ->
-         {auto 0 contractDimsEq : dim lContract ls = dim rContract rs} ->
-         Tensor ls dtype ->
-         Tensor rs dtype ->
-         Graph $ Tensor (contract lBatch lContract rBatch rContract ls rs) dtype
-matmul lb lc rb rc (MkTensor x) (MkTensor y) = addTensor $ DotGeneral lb lc rb rc x y
+dotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) ->
+             {auto 0 lUnique : unique (lBatch ++ lContract) = True} ->
+             {auto 0 rUnique : unique (rBatch ++ rContract) = True} ->
+             {auto 0 lInBoundsBatch : All (flip InBounds ls) lBatch} ->
+             {auto 0 lInBoundsContract : All (flip InBounds ls) lContract} ->
+             {auto 0 rInBoundsBatch : All (flip InBounds rs) rBatch} ->
+             {auto 0 rInBoundsContract : All (flip InBounds rs) rContract} ->
+             {auto 0 batchDimsEq : multiIndex lBatch ls = multiIndex rBatch rs} ->
+             {auto 0 contractDimsEq : multiIndex lContract ls = multiIndex rContract rs} ->
+             Tensor ls dtype ->
+             Tensor rs dtype ->
+             Graph $ Tensor (contract lBatch lContract rBatch rContract ls rs) dtype
+dotGeneral lb lc rb rc (MkTensor x) (MkTensor y) = addTensor $ DotGeneral lb lc rb rc x y
 
 ||| Element-wise addition. For example, `tensor [1, 2] + tensor [3, 4]` is
 ||| `tensor [4, 6]`.

@@ -66,6 +66,40 @@ namespace List
   enumerate : List a -> List (Nat, a)
   enumerate xs = toList (enumerate (fromList xs))
 
+  ||| Index multiple values from a list at once. For example,
+  ||| `multiIndex [1, 3] [5, 6, 7, 8]` is `[6, 8]`.
+  |||
+  ||| @idxs The indices at which to index.
+  ||| @xs The list to index.
+  public export
+  multiIndex : (idxs : List Nat) ->
+               (xs : List a) ->
+               {auto 0 inBounds : All (flip InBounds xs) idxs} ->
+               List a
+  multiIndex idxs xs = map (dflip index xs) idxs
+
+  ||| Remove all elements in `xs` at indices in `idxs`. For example,
+  ||| `filterByIndex [1, 3] [5, 6, 7, 8]` is `[5, 7]`.
+  |||
+  ||| @idxs The indices to remove.
+  ||| @xs The list to remove values from, by index.
+  public export
+  filterByIndex : (idxs : List Nat) ->
+                  (xs : List a) ->
+                  {auto 0 inBounds : All (flip InBounds xs) idxs} ->
+                  List a
+  filterByIndex idxs xs = impl 0 xs
+    where
+    impl : Nat -> List a -> List a
+    impl _ [] = []
+    impl n (x :: xs) = if elem n idxs then impl (S n) xs else x :: impl (S n) xs
+
+  ||| `True` if there are no duplicate elements in the list, else `False`.
+  public export
+  unique : Prelude.Eq a => List a -> Bool
+  unique [] = True
+  unique (x :: xs) = not (elem x xs) && unique xs
+
   namespace All
     ||| Map a constrained function over a list given a list of constraints.
     public export
