@@ -184,11 +184,50 @@ namespace Matrix
     l @@ r ===# tensor [[ -7,  -2], [  8, -11]]
 
 partial
-matmul : Property
-matmul = fixedProperty $ do
+dotGeneral : Property
+dotGeneral = fixedProperty $ do
+  (do dotGeneral [] [] [] [] !2 !3) ===# tensor {dtype = S32} 6
+
+  -- add complete test cases for [2, 2] * [2, 2] incl two batches, no batches etc.
+
   let l = fill {shape = [3, 4, 5, 6]} {dtype = S32} 1
       r = fill {shape = [3, 4, 6, 7]} 1
-  (do matmul [0, 1] [3] [0, 1] [2] !l !r) ===# fill {shape = [3, 4, 5, 7]} 6
+  -- contract on nothing
+  (do dotGeneral [] [] [] [] !l !r) ===# fill 1
+  (do dotGeneral [0] [] [0] [] !l !r) ===# fill 1
+  (do dotGeneral [1] [] [1] [] !l !r) ===# fill 1
+  (do dotGeneral [3] [] [2] [] !l !r) ===# fill 1
+  -- there are obviously too many combinations to do this explicitly
+  -- 52, just for contract on nothing ... we need a different way to test this,
+  -- mainly because there are also lots of combinations of inputs
+  --
+  -- if we specified batch and contracting dims with a dedicated data type, we could Gen
+  -- the input shapes, and perhaps values into a full property test. Indeed this seems
+  -- like a particularly good case for property testing. Do we want to test the API
+  -- minimally for now, make it experimental, then do a proper API with complete testing
+  -- as a separate piece of work?
+  (do dotGeneral [0, 1] [] [0, 1] [] !l !r) ===# fill 1
+  (do dotGeneral [0, 3] [] [0, 2] [] !l !r) ===# fill 1
+  (do dotGeneral [1, 3] [] [1, 2] [] !l !r) ===# fill 1
+  (do dotGeneral [0, 1, 3] [] [0, 1, 2] [] !l !r) ===# fill 1
+
+  -- contract on 3
+
+  -- contract on 4
+  (do dotGeneral [0, 3] [1] [0, 2] [1] !l !r) ===# fill 4
+  (do dotGeneral [0] [1] [0] [1] !l !r) ===# fill 4
+  (do dotGeneral [] [1] [] [1] !l !r) ===# fill 4
+
+  -- contract on 6
+  (do dotGeneral [0, 1] [3] [0, 1] [2] !l !r) ===# fill 6
+  (do dotGeneral [0] [3] [0] [2] !l !r) ===# fill 6
+  (do dotGeneral [] [3] [] [2] !l !r) ===# fill 6
+
+  -- contract on 3 and 4
+
+  -- contract on 3 and 6
+
+  -- contract on 4 and 6
 
   -- inputs generated with jax.random.uniform, expected generated with jax.lax.dot_general
   let l = tensor {dtype = F64} [[[0.64, 0.18, 0.02, 0.56],
@@ -211,7 +250,7 @@ matmul = fixedProperty $ do
                          [[0.5775, 0.9719],
                           [0.5442, 0.6443],
                           [1.1037, 1.5626]]]
-  (do matmul [0] [2] [0] [1] !l !r) ===# expected
+  (do dotGeneral [0] [2] [0] [1] !l !r) ===# expected
 
   -- more test cases
 
@@ -331,7 +370,7 @@ group = MkGroup "Tensor" $ [
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
-    , ("matmul", matmul)
+    , ("dotGeneral", dotGeneral)
     , ("argmin", argmin)
     , ("argmax", argmax)
     , ("select", select)
