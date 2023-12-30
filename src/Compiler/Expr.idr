@@ -149,13 +149,7 @@ data Expr : Type where
   Select : Nat -> Nat -> Nat -> Expr
   Cond : Nat -> Fn 1 -> Nat -> Fn 1 -> Nat -> Expr
   Dot : Nat -> Nat -> Expr
-  DotGeneral : (lBatch : List Nat) ->
-               (lContract : List Nat) ->
-               (rBatch : List Nat) ->
-               (rContract : List Nat) ->
-               Nat ->
-               Nat ->
-               Expr
+  DotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) -> Nat -> Nat -> Expr
   Cholesky : Nat -> Expr
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
