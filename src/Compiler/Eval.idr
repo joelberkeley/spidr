@@ -35,7 +35,6 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import Compiler.Xla.TensorFlow.Compiler.Xla.Service.GPU.Runtime.Support
 import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
 import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
