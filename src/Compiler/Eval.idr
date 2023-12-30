@@ -208,7 +208,7 @@ interpret xlaBuilder (MkFn params root env) = do
     traverse_ (addRhsContractingDimensions dimensionNumbers) rc
     traverse_ (addLhsBatchDimensions dimensionNumbers) lb
     traverse_ (addRhsBatchDimensions dimensionNumbers) rb
-    dotGeneral dimensionNumbers !(get l) !(get r)
+    dotGeneral !(get l) !(get r) dimensionNumbers
   interpretE (Cholesky x) = cholesky !(get x) True
   interpretE (TriangularSolve a b lower) =
     triangularSolve !(get a) !(get b) True lower False NoTranspose

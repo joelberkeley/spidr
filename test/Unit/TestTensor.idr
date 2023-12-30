@@ -188,7 +188,7 @@ matmul : Property
 matmul = fixedProperty $ do
   let l = fill {shape = [3, 4, 5, 6]} {dtype = S32} 1
       r = fill {shape = [3, 4, 6, 7]} 1
-  (do matmul [0, 1] [3] [0, 1] [2] !l !r) ===# fill {shape = [3, 4, 5, 7]} 1
+  (do matmul [0, 1] [3] [0, 1] [2] !l !r) ===# fill {shape = [3, 4, 5, 7]} 6
 
   -- inputs generated with jax.random.uniform, expected generated with jax.lax.dot_general
   let l = tensor {dtype = F64} [[[0.64, 0.18, 0.02, 0.56],

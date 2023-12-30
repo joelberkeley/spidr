@@ -227,8 +227,8 @@ dot : HasIO io => XlaOp -> XlaOp -> io XlaOp
 dot = binaryOp prim__dot
 
 export
-dotGeneral : HasIO io => DotDimensionNumbers -> XlaOp -> XlaOp -> io XlaOp
-dotGeneral (MkDotDimensionNumbers dimensionNumbers) (MkXlaOp l) (MkXlaOp r) = do
+dotGeneral : HasIO io => XlaOp -> XlaOp -> DotDimensionNumbers -> io XlaOp
+dotGeneral (MkXlaOp l) (MkXlaOp r) (MkDotDimensionNumbers dimensionNumbers) = do
   opPtr <- primIO $ prim__dotGeneral l r dimensionNumbers
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)

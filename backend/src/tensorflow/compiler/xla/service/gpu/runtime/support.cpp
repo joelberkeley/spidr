@@ -29,28 +29,28 @@ extern "C" {
     void DotDimensionNumbers_add_lhs_contracting_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
     ) {
-        auto dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
         dimension_numbers_.add_lhs_contracting_dimensions(dim);
     }
 
     void DotDimensionNumbers_add_rhs_contracting_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
     ) {
-        auto dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
         dimension_numbers_.add_rhs_contracting_dimensions(dim);
     }
 
     void DotDimensionNumbers_add_lhs_batch_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
     ) {
-        auto dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
         dimension_numbers_.add_lhs_batch_dimensions(dim);
     }
 
     void DotDimensionNumbers_add_rhs_batch_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
     ) {
-        auto dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
         dimension_numbers_.add_rhs_batch_dimensions(dim);
     }
 }
