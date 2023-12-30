@@ -986,8 +986,10 @@ contract : (lBatch, lContract, rBatch, rContract : List Nat) ->
            {auto 0 rInBoundsContract : All (flip InBounds rs) rContract} ->
            Shape
 contract lBatch lContract rBatch rContract ls rs =
-  let lResultDims = filterByIndex (lBatch ++ lContract) ls
-      rResultDims = filterByIndex (rBatch ++ rContract) rs
+  let lResultDims = filterByIndex {inBounds = lInBoundsBatch ++ lInBoundsContract}
+                                  (lBatch ++ lContract) ls
+      rResultDims = filterByIndex {inBounds = rInBoundsBatch ++ rInBoundsContract}
+                                  (rBatch ++ rContract) rs
    in multiIndex lBatch ls ++ lResultDims ++ rResultDims
 
 ||| Matrix multiplication.

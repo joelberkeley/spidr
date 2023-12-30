@@ -66,6 +66,19 @@ namespace List
   enumerate : List a -> List (Nat, a)
   enumerate xs = toList (enumerate (fromList xs))
 
+  ||| `True` if there are no duplicate elements in the list, else `False`.
+  public export
+  unique : Prelude.Eq a => List a -> Bool
+  unique [] = True
+  unique (x :: xs) = not (elem x xs) && unique xs
+
+  namespace All
+    ||| Map a constrained function over a list given a list of constraints.
+    public export
+    map : (f : (x : a) -> {0 ok : p x} -> b) -> (xs : List a) -> {auto 0 allOk : All p xs} -> List b
+    map f [] {allOk = []} = []
+    map f (x :: xs) {allOk = ok :: _} = f {ok} x :: map f xs
+
   ||| Index multiple values from a list at once. For example,
   ||| `multiIndex [1, 3] [5, 6, 7, 8]` is `[6, 8]`.
   |||
@@ -93,19 +106,6 @@ namespace List
     impl : Nat -> List a -> List a
     impl _ [] = []
     impl n (x :: xs) = if elem n idxs then impl (S n) xs else x :: impl (S n) xs
-
-  ||| `True` if there are no duplicate elements in the list, else `False`.
-  public export
-  unique : Prelude.Eq a => List a -> Bool
-  unique [] = True
-  unique (x :: xs) = not (elem x xs) && unique xs
-
-  namespace All
-    ||| Map a constrained function over a list given a list of constraints.
-    public export
-    map : (f : (x : a) -> {0 ok : p x} -> b) -> (xs : List a) -> {auto 0 allOk : All p xs} -> List b
-    map f [] {allOk = []} = []
-    map f (x :: xs) {allOk = ok :: _} = f {ok} x :: map f xs
 
   ||| A `Sorted f xs` proves that for all consecutive elements `x` and `y` in `xs`, `f x y` exists.
   ||| For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing numerical
@@ -137,6 +137,12 @@ namespace List
     go : Nat -> List Nat -> List a -> List a
     go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
     go _ _ xs = xs
+
+||| Concatenate lists of proofs.
+public export
+(++) : All p xs -> All p ys -> All p (xs ++ ys)
+[] ++ pys = pys
+(px :: pxs) ++ pys = px :: (pxs ++ pys)
 
 ||| Apply a function to the environment of a reader.
 export
