@@ -213,6 +213,8 @@ matmul = fixedProperty $ do
                           [1.1037, 1.5626]]]
   (do matmul [0] [2] [0] [1] !l !r) ===# expected
 
+  -- more test cases
+
 partial
 argmin : Property
 argmin = property $ do
