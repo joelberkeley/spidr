@@ -15,26 +15,42 @@ limitations under the License.
 */
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
+#include "xla_data.pb.h"
+
 extern "C" {
-    struct DotDimensionNumbers;
+    DotDimensionNumbers* DotDimensionNumbers_new() {
+        return reinterpret_cast<DotDimensionNumbers*>(new xla::DotDimensionNumbers());
+    }
 
-    DotDimensionNumbers* DotDimensionNumbers_new();
-
-    void DotDimensionNumbers_delete(DotDimensionNumbers* dimension_numbers);
+    void DotDimensionNumbers_delete(DotDimensionNumbers* dimension_numbers) {
+        delete reinterpret_cast<xla::DotDimensionNumbers*>(dimension_numbers);
+    }
 
     void DotDimensionNumbers_add_lhs_contracting_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
-    );
+    ) {
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        dimension_numbers_.add_lhs_contracting_dimensions(dim);
+    }
 
     void DotDimensionNumbers_add_rhs_contracting_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
-    );
+    ) {
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        dimension_numbers_.add_rhs_contracting_dimensions(dim);
+    }
 
     void DotDimensionNumbers_add_lhs_batch_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
-    );
+    ) {
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        dimension_numbers_.add_lhs_batch_dimensions(dim);
+    }
 
     void DotDimensionNumbers_add_rhs_batch_dimensions(
         DotDimensionNumbers& dimension_numbers, int dim
-    );
+    ) {
+        auto& dimension_numbers_ = reinterpret_cast<xla::DotDimensionNumbers&>(dimension_numbers);
+        dimension_numbers_.add_rhs_batch_dimensions(dim);
+    }
 }
