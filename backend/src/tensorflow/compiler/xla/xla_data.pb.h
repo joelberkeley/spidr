@@ -15,9 +15,9 @@ limitations under the License.
 */
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
-#include "support.h"
-
 extern "C" {
+    struct DotDimensionNumbers;
+
     DotDimensionNumbers* DotDimensionNumbers_new() {
         return reinterpret_cast<DotDimensionNumbers*>(new xla::DotDimensionNumbers());
     }

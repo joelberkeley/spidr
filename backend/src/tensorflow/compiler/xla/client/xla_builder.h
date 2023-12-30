@@ -18,7 +18,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/xla_builder.h"
 
 #include "../literal.h"
-#include "../service/gpu/runtime/support.h"
+#include "../xla_data.pb.h"
 #include "xla_computation.h"
 
 extern "C" {

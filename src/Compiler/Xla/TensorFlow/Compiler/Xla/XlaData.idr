@@ -15,6 +15,8 @@ limitations under the License.
 --}
 module Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 
+import Compiler.Xla.Prim.TensorFlow.Compiler.Xla.XlaData
+
 export
 interface Primitive dtype where
   xlaIdentifier : Int
@@ -60,3 +62,39 @@ export data F64 : Type where
 export
 Primitive F64 where
   xlaIdentifier = 12
+
+namespace Xla
+  public export
+  data DotDimensionNumbers : Type where
+    MkDotDimensionNumbers : GCAnyPtr -> DotDimensionNumbers
+
+export
+delete : HasIO io => AnyPtr -> io ()
+delete = primIO . prim__dotDimensionNumbersDelete
+
+export
+allocDotDimensionNumbers : HasIO io => io DotDimensionNumbers
+allocDotDimensionNumbers = do
+  ptr <- primIO prim__dotDimensionNumbersNew
+  ptr <- onCollectAny ptr delete
+  pure (MkDotDimensionNumbers ptr)
+
+export
+addLhsContractingDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
+addLhsContractingDimensions (MkDotDimensionNumbers dimension_numbers) n =
+  primIO $ prim__addLhsContractingDimensions dimension_numbers (cast n)
+
+export
+addRhsContractingDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
+addRhsContractingDimensions (MkDotDimensionNumbers dimension_numbers) n =
+  primIO $ prim__addRhsContractingDimensions dimension_numbers (cast n)
+
+export
+addLhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
+addLhsBatchDimensions (MkDotDimensionNumbers dimension_numbers) n =
+  primIO $ prim__addLhsBatchDimensions dimension_numbers (cast n)
+
+export
+addRhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
+addRhsBatchDimensions (MkDotDimensionNumbers dimension_numbers) n =
+  primIO $ prim__addRhsBatchDimensions dimension_numbers (cast n)

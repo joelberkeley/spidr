@@ -22,7 +22,6 @@ cc_library(
         "@xla_extension//:xla_extension",
         "//src:src",
         "//src/tensorflow/compiler/xla:xla",
-        "//src/tensorflow/compiler/xla/service/gpu/runtime:runtime",
         "//src/tensorflow/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],
