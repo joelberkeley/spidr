@@ -81,14 +81,14 @@ namespace List
 
     deleteAt [] ys === ys
 
-    (i0 ** p0) <- forAll $ inBounds y ys
-    (i1 ** p1) <- forAll $ inBounds y ys
-
     let xs : List Nat
         xs = y :: ys
 
-        x0 := index i0 xs
-        x1 := index i1 xs
+    (i0 ** p0) <- forAll $ index xs
+    (i1 ** p1) <- forAll $ index xs
+
+    let x0 = index i0 xs
+        x1 = index i1 xs
 
     deleteAt [i0] xs === deleteAt i0 xs
     deleteAt [i0, i0] xs === deleteAt i0 xs

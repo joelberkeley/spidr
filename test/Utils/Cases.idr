@@ -96,9 +96,10 @@ Show a => Show (InBounds {a} k xs) where
   show (InLater prf) = "InLater (\{show prf})"
 
 export
-inBounds : (x : a) -> (xs : List a) -> Gen (k ** InBounds k (x :: xs))
-inBounds x [] = pure (0 ** InFirst)
-inBounds x (y :: ys) = do
-  (n ** prf) <- inBounds y ys
+index : (xs : List a) -> {auto 0 nonEmpty : NonEmpty xs} -> Gen (k ** InBounds k xs)
+index [] impossible
+index (x :: []) = pure (0 ** InFirst)
+index (x :: x' :: xs) = do
+  (n ** prf) <- index (x' :: xs)
   b <- bool
-  pure $ if b then (n ** inBoundsCons (y :: ys) prf) else (S n ** InLater prf)
+  pure $ if b then (n ** inBoundsCons (x' :: xs) prf) else (S n ** InLater prf)
