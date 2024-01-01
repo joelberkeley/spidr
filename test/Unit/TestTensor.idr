@@ -215,7 +215,7 @@ dotGeneral = fixedProperty $ do
 
   -- contract on 3, 4 and 6
   (do dotGeneral [] [] [0, 1, 3] [0, 1, 2] !l !r) ===# fill 72
-  (do dotGeneral [] [] [3, 1, 0] [1, 0, 2] !l !r) ===# fill 72
+  (do dotGeneral [] [] [3, 0, 1] [2, 0, 1] !l !r) ===# fill 72
 
   -- inputs generated with jax.random.uniform, expected generated with jax.lax.dot_general
   let l = tensor {dtype = F64} [[[0.64, 0.18, 0.02, 0.56],

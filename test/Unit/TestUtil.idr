@@ -94,17 +94,28 @@ namespace List
     deleteAt [i0, i0] xs === deleteAt i0 xs
     deleteAt [i0, i1] xs === deleteAt [i1, i0] xs
 
-    let inBoundsDelete : (prf : InBounds j xs) -> LTE i j -> InBounds i (deleteAt {prf} j xs)
+    let inBoundsDelete : {i : _} ->
+                         (prf : InBounds j xs) ->
+                         LT i j ->
+                         InBounds i (deleteAt {prf} j xs)
+        inBoundsDelete {i = Z}   (InLater _)  (LTESucc LTEZero) = InFirst
+        inBoundsDelete {i = S k} (InLater ib) (LTESucc lt)      = InLater (inBoundsDelete ib lt)
 
-        0 notLTEreverse : Not (LTE i j) -> LTE j i
-        notLTEreverse = lteSuccLeft . notLTEImpliesGT
+        inj : Not (Prelude.S m = S n) -> Not (m = n)
+        inj ne refl = absurd $ ne $ cong S refl
+
+        notEqLteIsLt : {i, j : Nat} -> Not (i = j) -> LTE i j -> LTE (S i) j
+        notEqLteIsLt {i = Z}   {j = Z}   ne _             = absurd (ne Refl)
+        notEqLteIsLt {i = Z}   {j = S _} _  LTEZero       = LTESucc LTEZero
+        notEqLteIsLt {i = S _} {j = Z}   _  (LTESucc lte) impossible
+        notEqLteIsLt {i = S _} {j = S _} ne (LTESucc lte) = LTESucc (notEqLteIsLt (inj ne) lte)
 
     case decEq i0 i1 of
       Yes _ => pure ()  -- tested above
-      No notEq => case isLTE i0 i1 of
-        Yes lte   => let 0 prf = inBoundsDelete p1 lte
+      No ne => case isLTE i0 i1 of
+        Yes lte   => let 0 prf = inBoundsDelete p1 (notEqLteIsLt ne lte)
                       in deleteAt [i0, i1] xs === deleteAt {prf} i0 (deleteAt i1 xs)
-        No notLte => let 0 prf = inBoundsDelete p0 (notLTEreverse notLte)
+        No notLte => let 0 prf = inBoundsDelete p0 (notLTEImpliesGT notLte)
                       in deleteAt [i0, i1] xs === deleteAt {prf} i1 (deleteAt i0 xs)
 
   repeatedNotLT : Sorted LT [x, x] -> Void
