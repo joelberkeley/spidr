@@ -518,7 +518,7 @@ transpose :
   (ordering : List Nat) ->
   Tensor shape dtype ->
   {auto 0 lengths : length ordering = length shape} ->
-  {auto 0 orderingUnique : unique ordering = True} ->
+  {auto 0 axesUnique : unique ordering = True} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
   Graph $ Tensor (multiIndex ordering shape) dtype
 transpose ordering $ MkTensor x = addTensor $ Transpose ordering x
