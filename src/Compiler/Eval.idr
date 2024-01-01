@@ -201,12 +201,12 @@ interpret xlaBuilder (MkFn params root env) = do
     compFalse <- lift $ compile subBuilderF fFalse
     conditional !(get pred) !(get true) compTrue !(get false) compFalse
   interpretE (Dot l r) = dot !(get l) !(get r)
-  interpretE (DotGeneral lb lc rb rc l r) = do
+  interpretE (DotGeneral lb rb lc rc l r) = do
     dimensionNumbers <- allocDotDimensionNumbers
-    traverse_ (addLhsContractingDimensions dimensionNumbers) lc
-    traverse_ (addRhsContractingDimensions dimensionNumbers) rc
     traverse_ (addLhsBatchDimensions dimensionNumbers) lb
     traverse_ (addRhsBatchDimensions dimensionNumbers) rb
+    traverse_ (addLhsContractingDimensions dimensionNumbers) lc
+    traverse_ (addRhsContractingDimensions dimensionNumbers) rc
     dotGeneral !(get l) !(get r) dimensionNumbers
   interpretE (Cholesky x) = cholesky !(get x) True
   interpretE (TriangularSolve a b lower) =

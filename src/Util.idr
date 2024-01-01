@@ -67,10 +67,29 @@ namespace List
   enumerate xs = toList (enumerate (fromList xs))
 
   ||| `True` if there are no duplicate elements in the list, else `False`.
+  |||
+  ||| This function has time complexity quadratic in the list length.
   public export
-  unique : Prelude.Eq a => List a -> Bool
+  unique : Eq a => List a -> Bool
   unique [] = True
   unique (x :: xs) = not (elem x xs) && unique xs
+
+  -- for some reason type inference doesn't work on the numbers in this proof if they're
+  -- put in the test module
+  unique' : HList [
+        unique [1] = True
+      , unique [0, 1] = True
+      , unique [1, 0] = True
+      , unique [0, 0] = False
+      , unique [0, 0, 1] = False
+      , unique [0, 1, 0] = False
+      , unique [1, 0, 0] = False
+      , unique [1, 1, 0] = False
+      , unique [1, 0, 1] = False
+      , unique [0, 1, 1] = False
+      , unique [1, 2, 3] = True
+    ]
+  unique' = %search
 
   namespace All
     ||| Map a constrained function over a list given a list of constraints.
@@ -91,21 +110,21 @@ namespace List
                List a
   multiIndex idxs xs = map (dflip index xs) idxs
 
-  ||| Remove all elements in `xs` at indices in `idxs`. For example,
-  ||| `filterByIndex [1, 3] [5, 6, 7, 8]` is `[5, 7]`.
+  ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]`
+  ||| is `[6, 8]`.
   |||
-  ||| @idxs The indices to remove.
-  ||| @xs The list to remove values from, by index.
+  ||| @idxs The indices of the values to delete.
+  ||| @xs The list to delete values from.
   public export
-  filterByIndex : (idxs : List Nat) ->
-                  (xs : List a) ->
-                  {auto 0 inBounds : All (flip InBounds xs) idxs} ->
-                  List a
-  filterByIndex idxs xs = impl 0 xs
+  deleteAt : (idxs : List Nat) ->
+             (xs : List a) ->
+             {auto 0 inBounds : All (flip InBounds xs) idxs} ->
+             List a
+  deleteAt idxs xs = impl 0 xs
     where
     impl : Nat -> List a -> List a
     impl _ [] = []
-    impl n (x :: xs) = if elem n idxs then impl (S n) xs else x :: impl (S n) xs
+    impl i (x :: xs) = if elem i idxs then impl (S i) xs else x :: impl (S i) xs
 
   ||| A `Sorted f xs` proves that for all consecutive elements `x` and `y` in `xs`, `f x y` exists.
   ||| For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing numerical
@@ -121,22 +140,11 @@ namespace List
     ||| A list is sorted if its tail is sorted and the head is sorted w.r.t. the head of the tail.
     SCons : (y : a) -> f y x -> Sorted f (x :: xs) -> Sorted f (y :: x :: xs)
 
-  ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]
-  ||| is `[6, 8]`.
-  |||
-  ||| @idxs The indices of the values to delete.
-  ||| @xs The list to delete values from.
+  ||| If an index is in bounds for a list, it's also in bounds for a longer list
   public export
-  deleteAt :
-    (idxs : List Nat) ->
-    (xs : List a) ->
-    {auto 0 unique : Sorted LT idxs} ->
-    {auto 0 inBounds : All (flip InBounds xs) idxs} ->
-    List a
-  deleteAt idxs xs = go 0 idxs xs where
-    go : Nat -> List Nat -> List a -> List a
-    go j (i :: is) (x :: xs) = ifThenElse (i == j) (go (S j) is xs) (x :: go (S j) (i :: is) xs)
-    go _ _ xs = xs
+  inBoundsCons : (xs : List a) -> InBounds k xs -> InBounds k (x :: xs)
+  inBoundsCons _ InFirst = InFirst
+  inBoundsCons (_ :: ys) (InLater prf) = InLater (inBoundsCons ys prf)
 
 ||| Concatenate lists of proofs.
 public export
