@@ -200,8 +200,6 @@ dotGeneral = fixedProperty $ do
   (do dotGeneral [1, 3] [1, 2] [] [] !l !r) ===# fill 1
   (do dotGeneral [0, 1, 3] [0, 1, 2] [] [] !l !r) ===# fill 1
 
-  -- contract on 3
-
   -- contract on 4
   (do dotGeneral [0, 3] [0, 2] [1] [1] !l !r) ===# fill 4
   (do dotGeneral [0] [0] [1] [1] !l !r) ===# fill 4
@@ -212,14 +210,12 @@ dotGeneral = fixedProperty $ do
   (do dotGeneral [0] [0] [3] [2] !l !r) ===# fill 6
   (do dotGeneral [] [] [3] [2] !l !r) ===# fill 6
 
-  -- contract on 3 and 4
-  -- add one test case
-
   -- contract on 3 and 6
-  -- add one test case
+  (do dotGeneral [1] [1] [0, 3] [0, 2] !l !r) ===# fill 18
 
-  -- contract on 4 and 6
-  -- add one test case
+  -- contract on 3, 4 and 6
+  (do dotGeneral [] [] [0, 1, 3] [0, 1, 2] !l !r) ===# fill 72
+  (do dotGeneral [] [] [3, 1, 0] [1, 0, 2] !l !r) ===# fill 72
 
   -- inputs generated with jax.random.uniform, expected generated with jax.lax.dot_general
   let l = tensor {dtype = F64} [[[0.64, 0.18, 0.02, 0.56],
