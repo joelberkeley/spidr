@@ -520,7 +520,7 @@ transpose :
   {auto 0 lengths : length ordering = length shape} ->
   {auto 0 orderingUnique : unique ordering = True} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
-  Graph $ Tensor (map (dflip List.index shape) ordering) dtype
+  Graph $ Tensor (multiIndex ordering shape) dtype
 transpose ordering $ MkTensor x = addTensor $ Transpose ordering x
 
 ||| The identity tensor, with inferred shape and element type. For example,
