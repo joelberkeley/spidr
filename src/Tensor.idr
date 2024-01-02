@@ -518,9 +518,9 @@ transpose :
   (ordering : List Nat) ->
   Tensor shape dtype ->
   {auto 0 lengths : length ordering = length shape} ->
-  {auto 0 unique : Sorted Neq ordering} ->
+  {auto 0 axesUnique : unique ordering = True} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
-  Graph $ Tensor (map (dflip List.index shape) ordering) dtype
+  Graph $ Tensor (multiIndex ordering shape) dtype
 transpose ordering $ MkTensor x = addTensor $ Transpose ordering x
 
 ||| The identity tensor, with inferred shape and element type. For example,
@@ -975,6 +975,62 @@ namespace Matrix
     MkTensor x <- x
     MkTensor x' <- x'
     addTensor $ Dot x x'
+
+||| The output shape of a `dotGeneral` operation.
+public export
+contract : (lBatch, rBatch, lContract, rContract : List Nat) ->
+           (ls, rs : Shape) ->
+           {auto 0 lInBoundsBatch : All (flip InBounds ls) lBatch} ->
+           {auto 0 rInBoundsBatch : All (flip InBounds rs) rBatch} ->
+           {auto 0 lInBoundsContract : All (flip InBounds ls) lContract} ->
+           {auto 0 rInBoundsContract : All (flip InBounds rs) rContract} ->
+           Shape
+contract lBatch rBatch lContract rContract ls rs =
+  let lResultDims = deleteAt {inBounds = lInBoundsBatch ++ lInBoundsContract}
+                             (lBatch ++ lContract) ls
+      rResultDims = deleteAt {inBounds = rInBoundsBatch ++ rInBoundsContract}
+                             (rBatch ++ rContract) rs
+   in multiIndex lBatch ls ++ lResultDims ++ rResultDims
+
+||| Matrix multiplication.
+|||
+||| This is a much more general version of `(@@)`, in which you can specify any number of batch
+||| and contracting axes. Matrix multiplication is done over each contracting axis.
+||| The operation is vectorized over batch axes. For each contracting axis on the left-hand
+||| operand, there is one contracting axis on the right-hand operand. These can be different axes
+||| in each operand. The same is true for each batch axis.
+|||
+||| For example, we can vectorize over a typical rank-two matrix multiplication as follows: given
+||| two inputs tensors
+||| ```
+||| let x : Tensor [3, 4, 5, 6] F64
+|||     y : Tensor [3, 4, 6, 7] F64
+||| ```
+||| we do
+||| ```
+||| let z : Graph $ Tensor [3, 4, 5, 7] F64 = dotGeneral [0, 1] [0, 1] [3] [2] x y
+||| ```
+||| Here, we vectorized over the first two axes `[0, 1]`, and do standard matrix multiplication
+||| over the remaining axes by specifying the axes 3 and 2 respectively as contracting axes. Notice
+||| how the batch axes appear once each at the start of the output shape, and the contracting axis
+||| disappears. Remaining axes appear in order from left to right.
+|||
+||| Note this API is somewhat of a quickfix to bring general matrix multiplication to the tensor
+|||   API. It is not thoroughly tested. Expect it to change in the future.
+export
+dotGeneral : (lBatch, rBatch, lContract, rContract : List Nat) ->
+             {auto 0 lUnique : unique (lBatch ++ lContract) = True} ->
+             {auto 0 rUnique : unique (rBatch ++ rContract) = True} ->
+             {auto 0 lInBoundsBatch : All (flip InBounds ls) lBatch} ->
+             {auto 0 rInBoundsBatch : All (flip InBounds rs) rBatch} ->
+             {auto 0 lInBoundsContract : All (flip InBounds ls) lContract} ->
+             {auto 0 rInBoundsContract : All (flip InBounds rs) rContract} ->
+             {auto 0 batchDimsEq : multiIndex lBatch ls = multiIndex rBatch rs} ->
+             {auto 0 contractDimsEq : multiIndex lContract ls = multiIndex rContract rs} ->
+             Tensor ls dtype ->
+             Tensor rs dtype ->
+             Graph $ Tensor (contract lBatch rBatch lContract rContract ls rs) dtype
+dotGeneral lb rb lc rc (MkTensor x) (MkTensor y) = addTensor $ DotGeneral lb rb lc rc x y
 
 ||| Element-wise addition. For example, `tensor [1, 2] + tensor [3, 4]` is
 ||| `tensor [4, 6]`.

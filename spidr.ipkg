@@ -24,6 +24,7 @@ modules =
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Literal,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.Shape,
   Compiler.Xla.Prim.TensorFlow.Compiler.Xla.ShapeUtil,
+  Compiler.Xla.Prim.TensorFlow.Compiler.Xla.XlaData,
   Compiler.Xla.Prim.TensorFlow.Core.CommonRuntime.GPU.GPUInit,
   Compiler.Xla.Prim.TensorFlow.Core.Platform.Status,
   Compiler.Xla.Prim.Util,

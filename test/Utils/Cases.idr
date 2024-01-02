@@ -17,10 +17,12 @@ module Utils.Cases
 
 import public Data.SOP
 import Data.Bounded
+import Data.List
 import public Hedgehog
 
 import Literal
 import Types
+import Util
 
 namespace Double
   export
@@ -87,3 +89,17 @@ doubles = frequency [(1, finiteDoubles), (3, element [-inf, inf, nan])]
 export
 doublesWithoutNan : Gen Double
 doublesWithoutNan = frequency [(1, finiteDoubles), (3, element [-inf, inf])]
+
+export
+Show a => Show (InBounds {a} k xs) where
+  show InFirst = "InFirst"
+  show (InLater prf) = "InLater (\{show prf})"
+
+export
+index : (xs : List a) -> {auto 0 nonEmpty : NonEmpty xs} -> Gen (k ** InBounds k xs)
+index [] impossible
+index (x :: []) = pure (0 ** InFirst)
+index (x :: x' :: xs) = do
+  (n ** prf) <- index (x' :: xs)
+  b <- bool
+  pure $ if b then (n ** inBoundsCons (x' :: xs) prf) else (S n ** InLater prf)

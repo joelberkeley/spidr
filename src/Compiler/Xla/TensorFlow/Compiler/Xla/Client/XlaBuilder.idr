@@ -22,6 +22,7 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
+import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.Util
 import Types
 import Util
@@ -224,6 +225,13 @@ le = binaryOp prim__le
 export
 dot : HasIO io => XlaOp -> XlaOp -> io XlaOp
 dot = binaryOp prim__dot
+
+export
+dotGeneral : HasIO io => XlaOp -> XlaOp -> DotDimensionNumbers -> io XlaOp
+dotGeneral (MkXlaOp l) (MkXlaOp r) (MkDotDimensionNumbers dimensionNumbers) = do
+  opPtr <- primIO $ prim__dotGeneral l r dimensionNumbers
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
 
 public export
 data Transpose = NoTranspose | Transpose_ | Adjoint

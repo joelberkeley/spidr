@@ -15,6 +15,8 @@ limitations under the License.
 --}
 module Unit.TestUtil
 
+import Decidable.Equality
+
 import Util
 
 import Utils.Cases
@@ -50,22 +52,71 @@ namespace List
     List.enumerate [5] === [(0, 5)]
     List.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
-  deleteAtForNoIndices : (xs : List a) -> deleteAt [] xs = xs
-  deleteAtForNoIndices [] = Refl
-  deleteAtForNoIndices (_ :: _) = Refl
+  uniqueEmpty : Eq a => unique (the (List a) []) = True
+  uniqueEmpty = Refl
 
-  deleteAtHead : (x : a) -> (xs : List a) -> deleteAt [0] (x :: xs) = xs
-  deleteAtHead _ [] = Refl
-  deleteAtHead _ (_ :: _) = Refl
+  multiIndex : HList [
+        multiIndex {inBounds = []} [] [] = []
+      , multiIndex [] [0] = []
+      , multiIndex [0] [1] = [1]
+      , multiIndex [] [2, 3] = []
+      , multiIndex [0] [2, 3] = [2]
+      , multiIndex [1] [2, 3] = [3]
+      , multiIndex [0, 0] [2, 3] = [2, 2]
+      , multiIndex [0, 1] [2, 3] = [2, 3]
+      , multiIndex [1, 0] [2, 3] = [3, 2]
+      , multiIndex [1, 1] [2, 3] = [3, 3]
+      , multiIndex [] [3, 4, 5] = []
+      , multiIndex [0] [3, 4, 5] = [3]
+      , multiIndex [1] [3, 4, 5] = [4]
+      , multiIndex [2] [3, 4, 5] = [5]
+      , multiIndex [1, 2, 0] [3, 4, 5] = [4, 5, 3]
+    ]
+  multiIndex = %search
 
-  deleteAtLater : (x, y : a) -> (xs : List a) -> deleteAt [1] (x :: y :: xs) = (x :: xs)
-  deleteAtLater _ _ [] = Refl
-  deleteAtLater _ _ (_ :: _) = Refl
+  deleteAt : Property
+  deleteAt = property $ do
+    ys <- forAll $ list (constant 0 10) (nat (constant 0 100))
+    y <- forAll $ nat (constant 0 100)
 
-  deleteAtHeadAndLater :
-    (x, y, z : a) -> (xs : List a) -> deleteAt [0, 2] (x :: y :: z :: xs) = (y :: xs)
-  deleteAtHeadAndLater _ _ _ [] = Refl
-  deleteAtHeadAndLater _ _ _ (_ :: _) = Refl
+    deleteAt [] ys === ys
+
+    let xs : List Nat
+        xs = y :: ys
+
+    (i0 ** p0) <- forAll $ index xs
+    (i1 ** p1) <- forAll $ index xs
+
+    let x0 = index i0 xs
+        x1 = index i1 xs
+
+    deleteAt [i0] xs === deleteAt i0 xs
+    deleteAt [i0, i0] xs === deleteAt i0 xs
+    deleteAt [i0, i1] xs === deleteAt [i1, i0] xs
+
+    let inBoundsDelete : {i : _} ->
+                         (prf : InBounds j xs) ->
+                         LT i j ->
+                         InBounds i (deleteAt {prf} j xs)
+        inBoundsDelete {i = Z}   (InLater _)  (LTESucc LTEZero) = InFirst
+        inBoundsDelete {i = S k} (InLater ib) (LTESucc lt)      = InLater (inBoundsDelete ib lt)
+
+        inj : Not (Prelude.S m = S n) -> Not (m = n)
+        inj ne refl = absurd $ ne $ cong S refl
+
+        notEqLteIsLt : {i, j : Nat} -> Not (i = j) -> LTE i j -> LTE (S i) j
+        notEqLteIsLt {i = Z}   {j = Z}   ne _             = absurd (ne Refl)
+        notEqLteIsLt {i = Z}   {j = S _} _  LTEZero       = LTESucc LTEZero
+        notEqLteIsLt {i = S _} {j = Z}   _  (LTESucc lte) impossible
+        notEqLteIsLt {i = S _} {j = S _} ne (LTESucc lte) = LTESucc (notEqLteIsLt (inj ne) lte)
+
+    case decEq i0 i1 of
+      Yes _ => pure ()  -- tested above
+      No ne => case isLTE i0 i1 of
+        Yes lte   => let 0 prf = inBoundsDelete p1 (notEqLteIsLt ne lte)
+                      in deleteAt [i0, i1] xs === deleteAt {prf} i0 (deleteAt i1 xs)
+        No notLte => let 0 prf = inBoundsDelete p0 (notLTEImpliesGT notLte)
+                      in deleteAt [i0, i1] xs === deleteAt {prf} i1 (deleteAt i0 xs)
 
   repeatedNotLT : Sorted LT [x, x] -> Void
   repeatedNotLT SNil impossible
