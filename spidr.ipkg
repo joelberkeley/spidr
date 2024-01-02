@@ -50,14 +50,14 @@ modules =
 
   Constants,
 
-  Control.Function,
-  Control.Monad,
+  Control.Local.Function,
+  Control.Local.Monad.Reader,
 
-  Data.List,
+  Data.Local.List,
+  Data.Local.Nat,
+  Data.Local.Vect,
   Data.Literal,
-  Data.Nat,
   Data.Supervised,
-  Data.Vect,
 
   Distribution,
 
