@@ -20,8 +20,8 @@ import Control.Monad.Identity
 import public Data.Nat
 import Distribution
 import Data.Literal
+import Data.Supervised
 import Tensor
-import Data
 import Model
 
 %prefix_record_projections off
