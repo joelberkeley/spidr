@@ -25,8 +25,9 @@ limitations under the License.
 ||| * A `Literal` is implemented in pure Idris. As such, it can contain elements of any type, and
 |||   implements a number of standard Idris interfaces. This, along with its convenient syntax,
 |||   makes it particularly useful for testing operations on `Tensor`s.
-module Data.Local.Literal
+module Data.Literal
 
+import Data.Vect
 import public Types
 
 ||| A scalar or array of values.

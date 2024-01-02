@@ -22,7 +22,7 @@ import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Data.Literal
 import Primitive
-import Types
+import Data.Vect
 
 public export
 data ShapeAndType : Type where

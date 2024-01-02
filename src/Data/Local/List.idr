@@ -16,8 +16,11 @@ limitations under the License.
 ||| This module extends the standard library's Data.List
 module Data.Local.List
 
+import Control.Local.Function
 import public Data.List
 import public Data.List.Quantifiers
+import Data.Local.Vect
+import Data.Vect
 
 ||| All numbers from `0` to `n - 1` inclusive, in increasing order.
 |||
