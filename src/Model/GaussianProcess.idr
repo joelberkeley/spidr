@@ -21,8 +21,8 @@ import Data.Nat
 
 import Constants
 import Distribution
-import Data
-import Literal
+import Data.Supervised
+import Data.Literal
 import Model
 import Model.Kernel
 import Model.MeanFunction

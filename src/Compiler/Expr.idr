@@ -20,10 +20,9 @@ import Decidable.Equality
 import Control.Monad.State
 import Compiler.LiteralRW
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import Literal
+import Data.Literal
 import Primitive
 import Types
-import Util
 
 public export
 data ShapeAndType : Type where

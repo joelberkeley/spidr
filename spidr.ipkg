@@ -49,9 +49,17 @@ modules =
   Compiler.Xla.Util,
 
   Constants,
-  Data,
+
+  Control.Function,
+  Control.Monad,
+
+  Data.List,
+  Data.Literal,
+  Data.Nat,
+  Data.Supervised,
+  Data.Vect,
+
   Distribution,
-  Literal,
 
   Model,
   Model.GaussianProcess,
@@ -61,8 +69,7 @@ modules =
   Optimize,
   Primitive,
   Tensor,
-  Types,
-  Util
+  Types
 
 brief = "spidr explores how we can advance probabilistic modelling with the latest in software and hardware engineering."
 readme = "README.md"

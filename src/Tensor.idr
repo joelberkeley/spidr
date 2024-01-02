@@ -32,7 +32,7 @@ import Decidable.Equality
 import Compiler.Eval
 import Compiler.Expr
 import Compiler.LiteralRW
-import Literal
+import Data.Literal
 import public Primitive
 import public Types
 import public Util

@@ -25,7 +25,7 @@ limitations under the License.
 ||| * A `Literal` is implemented in pure Idris. As such, it can contain elements of any type, and
 |||   implements a number of standard Idris interfaces. This, along with its convenient syntax,
 |||   makes it particularly useful for testing operations on `Tensor`s.
-module Literal
+module Data.Local.Literal
 
 import public Types
 
@@ -187,6 +187,18 @@ export
           first = showWithIndent indent x
           rest = foldMap (\e => ",\n" ++ indent ++ showWithIndent indent e) (toVect xs)
        in "[" ++ first ++ rest ++ "]"
+
+||| An `Array shape ty` is either:
+||| 
+||| * a single value of type `ty` (for `shape` `[]`), or
+||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
+|||
+||| @shape The shape of the array.
+||| @dtype The type of elements of the array.
+public export 0
+Array : (0 shape : Shape) -> (0 ty : Type) -> Type
+Array [] ty = ty
+Array (d :: ds) ty = Vect d (Array ds ty)
 
 export
 {shape : _} -> Cast (Array shape a) (Literal shape a) where

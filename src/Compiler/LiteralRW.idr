@@ -17,8 +17,8 @@ module Compiler.LiteralRW
 
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
-import Literal
-import Util
+import Data.Literal
+import Data.Literal
 
 range : (n : Nat) -> Literal [n] Nat
 range n = impl n []

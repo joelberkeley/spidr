@@ -17,7 +17,7 @@ limitations under the License.
 module Distribution
 
 import Data.Nat
-import Literal
+import Data.Literal
 import Tensor
 import Constants
 

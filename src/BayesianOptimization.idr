@@ -23,7 +23,7 @@ module BayesianOptimization
 import Control.Monad.Reader
 
 import public BayesianOptimization.Acquisition as BayesianOptimization
-import Data
+import Data.Supervised
 import Model
 import Tensor
 

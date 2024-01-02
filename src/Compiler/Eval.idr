@@ -42,7 +42,7 @@ import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 import Compiler.Xla.TensorFlow.Core.Platform.Status
 import Compiler.Xla.TensorFlow.StreamExecutor.Platform
 
-import Literal
+import Data.Literal
 import Primitive
 import Types
 import Util

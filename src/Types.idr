@@ -16,9 +16,6 @@ limitations under the License.
 ||| This module contains common library types.
 module Types
 
-import public Data.Nat
-import public Data.Vect
-
 ||| Describes the shape of a `Tensor`. For example, a `Tensor` of `Double`s with contents
 ||| `[[0, 1, 2], [3, 4, 5]]` has two elements in its outer-most axis, and each of those elements
 ||| has three `Double`s in it, so this has shape [2, 3]. A `Tensor` can have axes of zero length,
@@ -27,18 +24,6 @@ import public Data.Vect
 public export 0
 Shape : Type
 Shape = List Nat
-
-||| An `Array shape dtype` is either:
-||| 
-||| * a single value of type `dtype` (for `shape` `[]`), or
-||| * an arbitrarily nested array of `Vect`s of such values (for any other `shape`)
-|||
-||| @shape The shape of the array.
-||| @dtype The type of elements of the array.
-public export 0
-Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
-Array [] dtype = dtype
-Array (d :: ds) dtype = Vect d (Array ds dtype)
 
 ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
 public export
