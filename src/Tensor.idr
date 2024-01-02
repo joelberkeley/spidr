@@ -49,6 +49,11 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
+export
+data TensorList : Vect (S n) (Shape, Type) -> Type where
+  -- how to store the dtypes, which need to be erased?
+  MkTensorList : Nat -> {shapes : _} -> TensorList shapes
+
 ||| The effect of building a computational graph, typically by adding nodes.
 export
 data Graph a = MkGraph (State Env a)
@@ -95,6 +100,30 @@ namespace S32
   export
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
+
+public export 0
+hlistShape : Vect (S n) (shape ** dtype ** Tensor shape dtype) -> Vect (S n) [(shape, dtype)]
+hlistShape [(shape ** dtype ** _)] = [(shape, dtype)]
+hlistShape ((shape ** dtype ** _) :: ts) = (shape, dtype) :: hlistShape ts
+
+export
+hlist : (xs : Vect (S n) (s ** t ** Tensor s t)) -> Graph $ TensorList (hlistShape xs)
+hlist xs = addNode $ Tuple $ map (\x => let MkTensor x' = snd (snd x) in x')
+
+export
+index : (idx : Fin (S n)) -> TensorList {n} shapes -> Graph $ uncurry Tensor (index idx shapes)
+index idx (MkTensorList x) = addNode $ GetTupleElement (cast idx) x
+
+namespace TensorList
+  public export 0
+  Literals : (shapes : Vect (S n) (Shape, Type)) -> Type
+  Literals [(shape, dtype)] = Literal shape dtype
+  Literals ((shape, dtype) :: shapes) = (Literal shape dtype, Literals shapes)
+
+  -- need PrimitiveRW dtype ty, but how? All?
+  -- also need to
+  export
+  eval : Graph (TensorList shapes) -> IO $ Literals shapes
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
