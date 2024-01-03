@@ -49,9 +49,16 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
+infix 9 #:
+
+public export
+record (#:) a b where
+  constructor Re
+  fst : a
+  0 snd : b
+
 export
-data TensorList : Vect (S n) (Shape, Type) -> Type where
-  -- how to store the dtypes, which need to be erased?
+data TensorList : Vect n (Shape #: Type) -> Type where
   MkTensorList : Nat -> {shapes : _} -> TensorList shapes
 
 ||| The effect of building a computational graph, typically by adding nodes.
@@ -101,14 +108,30 @@ namespace S32
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
-public export 0
-hlistShape : Vect (S n) (shape ** dtype ** Tensor shape dtype) -> Vect (S n) [(shape, dtype)]
-hlistShape [(shape ** dtype ** _)] = [(shape, dtype)]
-hlistShape ((shape ** dtype ** _) :: ts) = (shape, dtype) :: hlistShape ts
+public export
+data TVect : Vect n (Shape #: Type) -> Type where
+  Nil : TVect []
+  (::) : PrimitiveRW dtype ty =>
+         {shape : _} ->
+         {0 dtype : _} ->
+         Tensor shape dtype ->
+         TVect ts ->
+         TVect (Re shape dtype :: ts)
+
+namespace TVect
+  public export
+  index : (idx : Fin n) -> {0 shapes : _} -> TVect {n} shapes ->
+          let (Re shape dtype) = index idx shapes in Tensor shape dtype
+  index FZ (x :: xs) = x
+  index (FS n) (x :: xs) = index n xs
 
 export
-hlist : (xs : Vect (S n) (s ** t ** Tensor s t)) -> Graph $ TensorList (hlistShape xs)
-hlist xs = addNode $ Tuple $ map (\x => let MkTensor x' = snd (snd x) in x')
+hlist : TVect (s :: ss) -> Graph $ TensorList (s :: ss)
+hlist tensors = addTensor $ Tuple (nodes tensors)
+  where
+  nodes : TVect (s :: ss) -> List Nat
+  nodes [MkTensor x] = [x]
+  nodes (MkTensor x :: xs) = x :: nodes xs
 
 export
 index : (idx : Fin (S n)) -> TensorList {n} shapes -> Graph $ uncurry Tensor (index idx shapes)
@@ -116,9 +139,9 @@ index idx (MkTensorList x) = addNode $ GetTupleElement (cast idx) x
 
 namespace TensorList
   public export 0
-  Literals : (shapes : Vect (S n) (Shape, Type)) -> Type
-  Literals [(shape, dtype)] = Literal shape dtype
-  Literals ((shape, dtype) :: shapes) = (Literal shape dtype, Literals shapes)
+  Literals : (shapes : Vect (S n) (Shape #: Type)) -> Type
+  Literals [Re @{prim {ty}} shape dtype] = Literal shape ty  -- PrimitiveRW dtype ty needed
+  Literals (Re @{prim {ty}} shape dtype :: shapes) = (Literal shape ty, Literals shapes)
 
   -- need PrimitiveRW dtype ty, but how? All?
   -- also need to
