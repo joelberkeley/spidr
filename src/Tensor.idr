@@ -1170,6 +1170,14 @@ export
 (^) : Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)
 (^) = binaryRef Pow
 
+export
+iota : Primitive dtype =>
+       {shape : _} ->
+       (axis : Nat) ->
+       {auto 0 inBounds : InBounds axis shape} ->
+       Tensor shape dtype
+iota dimension = addTensor $ Iota shape dimension
+
 ||| Element-wise absolute value. For example, `abs !(tensor [-2, 3])` is
 ||| `tensor [2, 3]`.
 export

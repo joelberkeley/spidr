@@ -122,6 +122,7 @@ data Expr : Type where
   MaxValue : Primitive dtype => Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
+  Iota : Primitive dtype => Shape -> Nat -> Expr
   ConvertElementType : Primitive dtype => Nat -> Expr
   Reshape : Shape -> Shape -> Nat -> Expr
   Slice : List Nat -> List Nat -> List Nat -> Nat -> Expr

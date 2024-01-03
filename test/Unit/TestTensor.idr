@@ -115,6 +115,22 @@ boundedNonFinite = fixedProperty $ do
   unsafeEval {dtype=F64} (Types.max @{NonFinite}) === inf
 
 partial
+iota : Property
+iota = fixedProperty $ do
+  d <- forAll dims
+  ds <- forAll shapes
+  axis <- forAll (d :: ds)
+  -- either test that an increment along `axis` is 1, and an increment in any other direction is 0
+  -- or (almost certainly harder with no benefit) take the difference between slices along the axis,
+  -- which should be 1 everywhere, and the difference between slices along other axes,
+  -- which should be 0 everywhere
+  let actual = iota (d :: ds) {dtype = S32}
+  ?iotaS32
+
+  let actual = iota (d :: ds) {dtype = F64}
+  ?iotaF64
+
+partial
 show : Property
 show = fixedProperty $ do
   let x : Graph $ Tensor [] S32 = 1
@@ -351,6 +367,7 @@ group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
+    , ("iota", iota)
     , ("show", show)
     , ("cast", cast)
     , ("identity", identity)
