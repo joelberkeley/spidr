@@ -146,12 +146,6 @@ namespace List
   inBoundsCons _ InFirst = InFirst
   inBoundsCons (_ :: ys) (InLater prf) = InLater (inBoundsCons ys prf)
 
-||| Concatenate lists of proofs.
-public export
-(++) : All p xs -> All p ys -> All p (xs ++ ys)
-[] ++ pys = pys
-(px :: pxs) ++ pys = px :: (pxs ++ pys)
-
 ||| Apply a function to the environment of a reader.
 export
 (>$<) : (env' -> env) -> Reader env a -> Reader env' a
