@@ -30,7 +30,9 @@ jobs:
         ./install_bazel.sh
         ./build.sh cpu
     - name: Build tests
-      run: pack --no-prompt build test.ipkg
+      run: |
+        pack switch HEAD
+        pack --no-prompt build test.ipkg
     - name: Run tests
       run: pack run test.ipkg
       env:
