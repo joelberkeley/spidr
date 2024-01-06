@@ -39,7 +39,7 @@ indexed = go shape []
   go (0 :: _) _ = []
   go (S d :: ds) idxs = concat $ map (\i => go ds (snoc idxs i)) (range (S d))
 
-export
+public export
 interface Primitive dtype => LiteralRW dtype ty where
   set : Literal -> List Nat -> ty -> IO ()
   get : Literal -> List Nat -> ty
@@ -80,14 +80,6 @@ LiteralRW U64 Nat where
   set = UInt64t.set
   get = UInt64t.get
 
-infixr 9 #:, ##::
-
-public export
-record (#:) a b where
-  constructor (##::)
-  fst : a
-  0 snd : b
-
 namespace LiteralRWVect
   public export
   data LiteralRWVect : Vect n (Shape #: Type #: Type) -> Type where
@@ -95,14 +87,6 @@ namespace LiteralRWVect
     (::) : LiteralRW dtype ty ->
            LiteralRWVect stt ->
            LiteralRWVect ((shape ##:: dtype ##:: ty) :: stt)
-
-namespace LiteralVect
-  public export
-  data LiteralVect : Vect n (Types.Shape #: Type #: Type) -> Type where
-    Nil : LiteralVect []
-    (::) : Literal shape ty ->
-           LiteralVect stt ->
-           LiteralVect ((shape ##:: dtype ##:: ty) :: stt)
 
 namespace Tuple
   export
