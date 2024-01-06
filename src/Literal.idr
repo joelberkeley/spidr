@@ -28,6 +28,7 @@ limitations under the License.
 module Literal
 
 import public Types
+import Util
 
 ||| A scalar or array of values.
 public export
@@ -210,3 +211,11 @@ namespace All
     Scalar : forall x . p x -> All p (Scalar x)
     Nil  : All p []
     (::) : All p x -> All p xs -> All p (x :: xs)
+
+namespace LiteralVect
+  public export
+  data LiteralVect : Vect n (Shape #: Type #: Type) -> Type where
+    Nil : LiteralVect []
+    (::) : Literal shape ty ->
+           LiteralVect stt ->
+           LiteralVect ((shape ##:: dtype ##:: ty) :: stt)

@@ -54,6 +54,50 @@ tensorThenEval = property $ do
   x === unsafePerformIO (eval (tensor {dtype=PRED} x))
 
 partial
+evalTuple : Property
+evalTuple = property $ do
+  s0 <- forAll shapes
+  s1 <- forAll shapes
+  s2 <- forAll shapes
+
+  x0 <- forAll (literal s0 doubles)
+  x1 <- forAll (literal s1 int32s)
+  x2 <- forAll (literal s2 nats)
+
+  let [] = unsafePerformIO $ TensorVect.eval (pure [])
+
+  let [x0'] = the (LiteralVect [(s0 ##:: F64 ##:: Double)]) $ unsafePerformIO $ TensorVect.eval (do y0 <- tensor x0; pure [y0])
+
+  x0' === x0
+
+  let [x0', x1'] = the (LiteralVect [(s0 ##:: F64 ##:: Double), (s1 ##:: S32 ##:: Int32)]) $ unsafePerformIO $ TensorVect.eval (do y0 <- tensor x0; y1 <- tensor x1; pure [y0, y1])
+
+  x0' === x0
+  x1' === x1
+
+  let [x0', x1', x2'] = the (LiteralVect [(s0 ##:: F64 ##:: Double), (s1 ##:: S32 ##:: Int32), (s2 ##:: U64 ##:: Nat)]) $ unsafePerformIO $ TensorVect.eval (do y0 <- tensor x0; y1 <- tensor x1; y2 <- tensor x2; pure [y0, y1, y2])
+
+  x0' === x0
+  x1' === x1
+  x2' === x2
+
+partial
+evalTupleNonTrivial : Property
+evalTupleNonTrivial = property $ do
+  let xs : Graph $ TensorVect [([] ##:: F64 ##:: Double), ([2] ##:: F64 ##:: Double)] =
+           do y0 <- tensor [1.0, -2.0, 0.4]
+              y1 <- tensor 3.0
+              u <- exp y0
+              v <- slice [at 1] u + pure y1
+              w <- slice [0.to 2] u
+              pure [v, w]
+
+      [v, w] = unsafePerformIO $ TensorVect.eval xs
+
+  v ==~ Scalar (exp (-2.0) + 3.0)
+  w ==~ [| exp [1.0, -2.0] |]
+
+partial
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
@@ -402,6 +446,8 @@ export partial
 group : Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
+    , ("eval multiple tensors", evalTuple)
+    , ("eval multiple tensors for non-trivial graph", evalTuple)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)
