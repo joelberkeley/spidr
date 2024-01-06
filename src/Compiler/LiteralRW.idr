@@ -79,3 +79,34 @@ export
 LiteralRW U64 Nat where
   set = UInt64t.set
   get = UInt64t.get
+
+infixr 9 #:, ##::
+
+public export
+record (#:) a b where
+  constructor (##::)
+  fst : a
+  0 snd : b
+
+namespace LiteralRWVect
+  public export
+  data LiteralRWVect : Vect n (Shape #: Type #: Type) -> Type where
+    Nil : LiteralRWVect []
+    (::) : LiteralRW dtype ty ->
+           LiteralRWVect stt ->
+           LiteralRWVect ((shape ##:: dtype ##:: ty) :: stt)
+
+namespace LiteralVect
+  public export
+  data LiteralVect : Vect n (Types.Shape #: Type #: Type) -> Type where
+    Nil : LiteralVect []
+    (::) : Literal shape ty ->
+           LiteralVect stt ->
+           LiteralVect ((shape ##:: dtype ##:: ty) :: stt)
+
+namespace Tuple
+  export
+  read : {shapes : _} -> LiteralRWVect shapes => Literal -> LiteralVect shapes
+  read {shapes = []} @{[]} lit = []
+  read {shapes = ((shape ##:: dtype ##:: _) :: ss)} @{(p :: ps)} lit =
+    map (get {dtype} lit) indexed :: read {shapes = ss} @{ps} lit

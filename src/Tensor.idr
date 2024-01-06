@@ -49,18 +49,6 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
-infixr 9 #:, ##::
-
-public export
-record (#:) a b where
-  constructor (##::)
-  fst : a
-  0 snd : b
-
-export
-data TensorList : Vect n (Shape #: Type) -> Type where
-  MkTensorList : Nat -> {shapes : _} -> TensorList shapes
-
 ||| The effect of building a computational graph, typically by adding nodes.
 export
 data Graph a = MkGraph (State Env a)
@@ -108,52 +96,33 @@ namespace S32
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
-namespace TVect
-  public export
-  data TVect : Vect n (Shape #: Type) -> Type where
-    Nil : TVect []
-    (::) : Tensor shape dtype -> TVect ss -> TVect ((shape ##:: dtype) :: ss)
-
-  public export
-  index : (idx : Fin n) -> {0 shapes : _} -> TVect {n} shapes ->
-          let (shape ##:: dtype) = index idx shapes in Tensor shape dtype
-  index FZ (x :: xs) = x
-  index (FS n) (x :: xs) = index n xs
-
-export
-tensorlist : TVect (s :: ss) -> Graph $ TensorList (s :: ss)
-tensorlist tensors = let ((shapes ** eq), xs) = nodes tensors
-                      in MkGraph $ do x <- addNode $ Tuple xs
-                                      pure (rewrite sym eq in MkTensorList {shapes} x)
-  where
-  nodes : TVect (s' :: ss') -> ((sss ** sss === (s' :: ss')), List Nat)
-  nodes [MkTensor {shape} {dtype} x] = (([(shape ##:: dtype)] ** Refl), [x])
-  nodes (MkTensor {shape} {dtype} x :: xx :: xs) =
-    let ((shapes ** eq), xxs) = nodes (xx :: xs)
-     in ((((shape ##:: dtype) :: shapes) ** cong ((shape ##:: dtype) ::) eq), x :: xxs)
-
-export
-index : (idx : Fin n) ->
-        {shapes : _} ->
-        TensorList {n} shapes ->
-        let (shape ##:: dtype) = index idx shapes in Graph $ Tensor shape dtype
-index idx (MkTensorList x) = addNode $ GetTupleElement (cast idx) x
-
 namespace TensorList
   public export
-  data PrimitiveList : Vect n (Shape #: Type) -> Type where
-    Nil : PrimitiveList []
-    (::) : PrimitiveRW dtype ty ->
-           PrimitiveList ps ->
-           PrimitiveList ((shape ##:: dtype) :: ps)
+  data TensorVect : Vect n (Shape #: Type #: Type) -> Type where
+    Nil : TensorVect []
+    (::) : Tensor shape dtype -> TensorVect stt -> TensorVect ((shape ##:: dtype ##:: ty) :: stt)
 
-  public export 0
-  Literals : (shapes : Vect (S n) (Shape #: Type)) -> PrimitiveList shapes -> Type
-  Literals [shape ##:: dtype] ((::) {ty} _ []) = Literal shape ty
-  Literals (shape ##:: dtype :: s :: ss) ((::) {ty} _ ps) = (Literal shape ty, Literals (s :: ss) ps)
+  export partial
+  eval : PrimitiveRWVect shapes => Graph (TensorVect shapes) -> IO $ LiteralVect shapes
+  eval @{prim} $ MkGraph tensors = do
+      let graph = do ts <- tensors
+                     let (ss, xs) = nodes ts
+                     x <- addNode (Tuple xs)
+                     pure (ss, x)
+          (env, ((shapes ** eq), root)) = runState empty graph
+      runEitherT (Tuple.execute @{rewrite sym eq in prim} {shapes} (MkFn [] root env)) <&> \case
+        Right lits => rewrite eq in lits
+        Left err => idris_crash (show err)
 
-  export
-  eval : (ps : PrimitiveList shapes) => Graph (TensorList shapes) -> IO $ Literals shapes ps
+    where
+
+    nodes : TensorVect ss -> ((ss' ** ss === ss'), List Nat)
+    nodes [] = (([] ** Refl), [])
+    nodes ((::) {ty} (MkTensor {shape} {dtype} x) xs) =
+      let ((shapes ** eq), xs) = nodes xs
+          stt : ?
+          stt = (shape ##:: dtype ##:: ty)
+       in (((stt :: shapes) ** cong (stt ::) eq), x :: xs)
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
@@ -171,7 +140,7 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x = do
   let (env, MkTensor root) = runState empty x
-  runEitherT (execute {dtype} (MkFn [] root env)) <&> \case
+  runEitherT (Eval.execute {dtype} (MkFn [] root env)) <&> \case
     Right lit => lit
     Left err => idris_crash (show err)
 
