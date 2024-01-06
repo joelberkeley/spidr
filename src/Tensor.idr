@@ -49,11 +49,11 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Nat -> {shape : _} -> Tensor shape dtype
 
-infix 9 #:
+infixr 9 #:, ##::
 
 public export
 record (#:) a b where
-  constructor Re
+  constructor (##::)
   fst : a
   0 snd : b
 
@@ -108,45 +108,52 @@ namespace S32
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
-public export
-data TVect : Vect n (Shape #: Type) -> Type where
-  Nil : TVect []
-  (::) : PrimitiveRW dtype ty =>
-         {shape : _} ->
-         {0 dtype : _} ->
-         Tensor shape dtype ->
-         TVect ts ->
-         TVect (Re shape dtype :: ts)
-
 namespace TVect
   public export
+  data TVect : Vect n (Shape #: Type) -> Type where
+    Nil : TVect []
+    (::) : Tensor shape dtype -> TVect ss -> TVect ((shape ##:: dtype) :: ss)
+
+  public export
   index : (idx : Fin n) -> {0 shapes : _} -> TVect {n} shapes ->
-          let (Re shape dtype) = index idx shapes in Tensor shape dtype
+          let (shape ##:: dtype) = index idx shapes in Tensor shape dtype
   index FZ (x :: xs) = x
   index (FS n) (x :: xs) = index n xs
 
 export
-hlist : TVect (s :: ss) -> Graph $ TensorList (s :: ss)
-hlist tensors = addTensor $ Tuple (nodes tensors)
+tensorlist : TVect (s :: ss) -> Graph $ TensorList (s :: ss)
+tensorlist tensors = let ((shapes ** eq), xs) = nodes tensors
+                      in MkGraph $ do x <- addNode $ Tuple xs
+                                      pure (rewrite sym eq in MkTensorList {shapes} x)
   where
-  nodes : TVect (s :: ss) -> List Nat
-  nodes [MkTensor x] = [x]
-  nodes (MkTensor x :: xs) = x :: nodes xs
+  nodes : TVect (s' :: ss') -> ((sss ** sss === (s' :: ss')), List Nat)
+  nodes [MkTensor {shape} {dtype} x] = (([(shape ##:: dtype)] ** Refl), [x])
+  nodes (MkTensor {shape} {dtype} x :: xx :: xs) =
+    let ((shapes ** eq), xxs) = nodes (xx :: xs)
+     in ((((shape ##:: dtype) :: shapes) ** cong ((shape ##:: dtype) ::) eq), x :: xxs)
 
 export
-index : (idx : Fin (S n)) -> TensorList {n} shapes -> Graph $ uncurry Tensor (index idx shapes)
+index : (idx : Fin n) ->
+        {shapes : _} ->
+        TensorList {n} shapes ->
+        let (shape ##:: dtype) = index idx shapes in Graph $ Tensor shape dtype
 index idx (MkTensorList x) = addNode $ GetTupleElement (cast idx) x
 
 namespace TensorList
-  public export 0
-  Literals : (shapes : Vect (S n) (Shape #: Type)) -> Type
-  Literals [Re @{prim {ty}} shape dtype] = Literal shape ty  -- PrimitiveRW dtype ty needed
-  Literals (Re @{prim {ty}} shape dtype :: shapes) = (Literal shape ty, Literals shapes)
+  public export
+  data PrimitiveList : Vect n (Shape #: Type) -> Type where
+    Nil : PrimitiveList []
+    (::) : PrimitiveRW dtype ty ->
+           PrimitiveList ps ->
+           PrimitiveList ((shape ##:: dtype) :: ps)
 
-  -- need PrimitiveRW dtype ty, but how? All?
-  -- also need to
+  public export 0
+  Literals : (shapes : Vect (S n) (Shape #: Type)) -> PrimitiveList shapes -> Type
+  Literals [shape ##:: dtype] ((::) {ty} _ []) = Literal shape ty
+  Literals (shape ##:: dtype :: s :: ss) ((::) {ty} _ ps) = (Literal shape ty, Literals (s :: ss) ps)
+
   export
-  eval : Graph (TensorList shapes) -> IO $ Literals shapes
+  eval : (ps : PrimitiveList shapes) => Graph (TensorList shapes) -> IO $ Literals shapes ps
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
