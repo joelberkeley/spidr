@@ -249,25 +249,18 @@ execute f = do
   lit <- exec f
   pure (read {dtype} lit)
 
-namespace PrimitiveRWVect
-  public export
-  data PrimitiveRWVect : Vect n (Types.Shape #: Type #: Type) -> Type where
-    Nil : PrimitiveRWVect []
-    (::) : PrimitiveRW dtype ty ->
-           PrimitiveRWVect stt ->
-           PrimitiveRWVect ((shape ##:: dtype ##:: ty) :: stt)
-
-  export
-  toLiteralRWVect : PrimitiveRWVect shapes -> LiteralRWVect shapes
-  toLiteralRWVect [] = []
-  toLiteralRWVect ((::) p {dtype} {ty} ps) = ((::) (literalRW p) {dtype} {ty} (toLiteralRWVect ps))
-    where
-    literalRW : PrimitiveRW dtype ty -> LiteralRW dtype ty
-    -- literalRW _ = %search
-
 namespace Tuple
   export covering
   execute : {shapes : _} -> PrimitiveRWVect shapes => Fn 0 -> ErrIO $ LiteralVect shapes
   execute @{ps} f = do
     lit <- exec f
     pure (read @{toLiteralRWVect ps} {shapes} lit)
+
+    where
+
+    toLiteralRWVect : PrimitiveRWVect s -> LiteralRWVect s
+    toLiteralRWVect [] = []
+    toLiteralRWVect ((::) p {dtype} {ty} ps) = ((::) (literalRW p) {dtype} {ty} (toLiteralRWVect ps))
+      where
+      literalRW : PrimitiveRW dtype ty -> LiteralRW dtype ty
+      literalRW p = believe_me p

@@ -96,7 +96,7 @@ namespace S32
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
-namespace TensorList
+namespace TensorVect
   public export
   data TensorVect : Vect n (Shape #: Type #: Type) -> Type where
     Nil : TensorVect []
