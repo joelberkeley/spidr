@@ -81,20 +81,20 @@ allocDotDimensionNumbers = do
 
 export
 addLhsContractingDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
-addLhsContractingDimensions (MkDotDimensionNumbers dimension_numbers) n =
-  primIO $ prim__addLhsContractingDimensions dimension_numbers (cast n)
+addLhsContractingDimensions (MkDotDimensionNumbers dimensionNumbers) n =
+  primIO $ prim__addLhsContractingDimensions dimensionNumbers (cast n)
 
 export
 addRhsContractingDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
-addRhsContractingDimensions (MkDotDimensionNumbers dimension_numbers) n =
-  primIO $ prim__addRhsContractingDimensions dimension_numbers (cast n)
+addRhsContractingDimensions (MkDotDimensionNumbers dimensionNumbers) n =
+  primIO $ prim__addRhsContractingDimensions dimensionNumbers (cast n)
 
 export
 addLhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
-addLhsBatchDimensions (MkDotDimensionNumbers dimension_numbers) n =
-  primIO $ prim__addLhsBatchDimensions dimension_numbers (cast n)
+addLhsBatchDimensions (MkDotDimensionNumbers dimensionNumbers) n =
+  primIO $ prim__addLhsBatchDimensions dimensionNumbers (cast n)
 
 export
 addRhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
-addRhsBatchDimensions (MkDotDimensionNumbers dimension_numbers) n =
-  primIO $ prim__addRhsBatchDimensions dimension_numbers (cast n)
+addRhsBatchDimensions (MkDotDimensionNumbers dimensionNumbers) n =
+  primIO $ prim__addRhsBatchDimensions dimensionNumbers (cast n)
