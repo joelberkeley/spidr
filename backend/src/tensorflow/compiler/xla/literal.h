@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "shape.h"
+#include "shape_util.h"
 
 extern "C" {
     struct Literal;
@@ -22,11 +23,11 @@ extern "C" {
 
     void Literal_delete(Literal* lit);
 
-    int Literal_Get_bool(Literal& lit, int* indices);
-    int Literal_Get_int(Literal& lit, int* indices);
-    double Literal_Get_double(Literal& lit, int* indices);
+    int Literal_Get_bool(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index);
+    int Literal_Get_int(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index);
+    double Literal_Get_double(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index);
 
-    void Literal_Set_bool(Literal& lit, int* indices, int value);
-    void Literal_Set_int(Literal& lit, int* indices, int value);
-    void Literal_Set_double(Literal& lit, int* indices, double value);
+    void Literal_Set_bool(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, int value);
+    void Literal_Set_int(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, int value);
+    void Literal_Set_double(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, double value);
 }

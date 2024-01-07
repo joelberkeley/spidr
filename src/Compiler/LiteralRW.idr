@@ -17,6 +17,7 @@ module Compiler.LiteralRW
 
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
+import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Literal
 import Util
 
@@ -41,19 +42,22 @@ indexed = go shape []
 
 public export
 interface Primitive dtype => LiteralRW dtype ty where
-  set : Literal -> List Nat -> ty -> IO ()
-  get : Literal -> List Nat -> ty
+  set : Literal -> List Nat -> ShapeIndex -> ty -> IO ()
+  get : Literal -> List Nat -> ShapeIndex -> ty
 
 export
 write : (HasIO io, LiteralRW dtype a) => {shape : _} -> Literal shape a -> io Literal
 write xs = liftIO $ do
   literal <- allocLiteral {dtype} shape
-  sequence_ [| (\idxs => set {dtype} literal idxs) indexed xs |]
+  shapeIndex <- allocShapeIndex
+  sequence_ [| (\idxs => set {dtype} literal idxs shapeIndex) indexed xs |]
   pure literal
 
 export
-read : LiteralRW dtype a => Literal -> {shape : _} -> Literal shape a
-read lit = map (get {dtype} lit) indexed
+read : HasIO io => LiteralRW dtype a => Literal -> {shape : _} -> io $ Literal shape a
+read lit = do
+  shapeIndex <- allocShapeIndex
+  pure $ map (\mIdx => get {dtype} lit mIdx shapeIndex) indexed
 
 export
 LiteralRW PRED Bool where
@@ -90,7 +94,14 @@ namespace LiteralRWVect
 
 namespace Tuple
   export
-  read : {shapes : _} -> LiteralRWVect shapes => Literal -> LiteralVect shapes
-  read {shapes = []} @{[]} lit = []
-  read {shapes = ((shape ##:: dtype ##:: _) :: ss)} @{(p :: ps)} lit =
-    map (get {dtype} lit) indexed :: read {shapes = ss} @{ps} lit
+  read : HasIO io => {shapes : _} -> LiteralRWVect shapes => Literal -> io $ LiteralVect shapes
+  read lit = impl 0
+    where
+    impl : {s : _} -> LiteralRWVect s => Nat -> io $ LiteralVect s
+    impl {s = []} _ = pure []
+    impl {s = ((shape ##:: dtype ##:: _) :: ss)} @{(p :: ps)} n = do
+      shapeIndex <- allocShapeIndex
+      pushFront shapeIndex n
+      let head = map (\mIdx => get {dtype} lit mIdx shapeIndex) (indexed {shape})
+      tail <- impl {s = ss} @{ps} (S n)
+      pure (head :: tail)

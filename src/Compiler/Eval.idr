@@ -245,16 +245,12 @@ exec f = do
 
 export covering
 execute : PrimitiveRW dtype a => Fn 0 -> {shape : _} -> ErrIO $ Literal shape a
-execute f = do
-  lit <- exec f
-  pure (read {dtype} lit)
+execute f = read {dtype} !(exec f)
 
 namespace Tuple
   export covering
   execute : {shapes : _} -> PrimitiveRWVect shapes => Fn 0 -> ErrIO $ LiteralVect shapes
-  execute @{ps} f = do
-    lit <- exec f
-    pure (read @{toLiteralRWVect ps} {shapes} lit)
+  execute @{ps} f = read @{%search} @{toLiteralRWVect ps} {shapes} !(exec f)
 
     where
 

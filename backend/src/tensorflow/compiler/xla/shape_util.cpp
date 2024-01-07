@@ -17,8 +17,24 @@ limitations under the License.
 #include "tensorflow/compiler/xla/shape_util.h"
 
 #include "shape.h"
+#include "shape_util.h"
 
 extern "C" {
+    ShapeIndex* ShapeIndex_new() {
+        return reinterpret_cast<ShapeIndex*>(new xla::ShapeIndex());
+    }
+    void ShapeIndex_delete(ShapeIndex* s) {
+        delete reinterpret_cast<xla::ShapeIndex*>(s);
+    }
+
+    void ShapeIndex_push_back(ShapeIndex& shape_index, int value) {
+        reinterpret_cast<xla::ShapeIndex&>(shape_index).push_back(value);
+    }
+
+    void ShapeIndex_push_front(ShapeIndex& shape_index, int value) {
+        reinterpret_cast<xla::ShapeIndex&>(shape_index).push_front(value);
+    }
+
     Shape* MakeShape(int primitive_type, int* shape, int rank) {
         int64_t shape64[rank];
         std::copy(shape, shape + rank, shape64);

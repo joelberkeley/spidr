@@ -21,6 +21,32 @@ import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
 import Compiler.Xla.Util
 import Types
 
+public export
+data ShapeIndex : Type where
+  MkShapeIndex : GCAnyPtr -> ShapeIndex
+
+namespace ShapeIndex
+  export
+  delete : HasIO io => AnyPtr -> io ()
+  delete = primIO . prim__shapeIndexDelete
+
+export
+allocShapeIndex : HasIO io => io ShapeIndex
+allocShapeIndex = do
+  ptr <- primIO prim__shapeIndexNew
+  ptr <- onCollectAny ptr ShapeIndex.delete
+  pure (MkShapeIndex ptr)
+
+export
+pushBack : HasIO io => ShapeIndex -> Nat -> io ()
+pushBack (MkShapeIndex shapeIndex) value =
+  primIO $ prim__shapeIndexPushBack shapeIndex (cast value)
+
+export
+pushFront : HasIO io => ShapeIndex -> Nat -> io ()
+pushFront (MkShapeIndex shapeIndex) value =
+  primIO $ prim__shapeIndexPushFront shapeIndex (cast value)
+
 export
 mkShape : (HasIO io, Primitive dtype) => Types.Shape -> io Xla.Shape
 mkShape shape = do
