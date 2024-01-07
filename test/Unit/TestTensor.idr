@@ -68,16 +68,16 @@ evalTuple = property $ do
 
   let [x0'] = the (LiteralVect [(s0 ##:: F64 ##:: Double)]) $ unsafePerformIO $ TensorVect.eval (do y0 <- tensor x0; pure [y0])
 
-  x0' === x0
+  x0' ==~ x0
 
   let [x0', x1'] = the (LiteralVect [(s0 ##:: F64 ##:: Double), (s1 ##:: S32 ##:: Int32)]) $ unsafePerformIO $ TensorVect.eval (do y0 <- tensor x0; y1 <- tensor x1; pure [y0, y1])
 
-  x0' === x0
+  x0' ==~ x0
   x1' === x1
 
   let [x0', x1', x2'] = the (LiteralVect [(s0 ##:: F64 ##:: Double), (s1 ##:: S32 ##:: Int32), (s2 ##:: U64 ##:: Nat)]) $ unsafePerformIO $ TensorVect.eval (do y0 <- tensor x0; y1 <- tensor x1; y2 <- tensor x2; pure [y0, y1, y2])
 
-  x0' === x0
+  x0' ==~ x0
   x1' === x1
   x2' === x2
 

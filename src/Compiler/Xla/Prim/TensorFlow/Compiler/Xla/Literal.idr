@@ -29,40 +29,40 @@ prim__delete : AnyPtr -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Set_bool")
-prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_bool")
-literalGetBool : GCAnyPtr -> GCPtr Int -> Int
+literalGetBool : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int
 
 export
 %foreign (libxla "Literal_Set_double")
-prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Double -> PrimIO ()
+prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Double -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_double")
-literalGetDouble : GCAnyPtr -> GCPtr Int -> Double
+literalGetDouble : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Double
 
 export
 %foreign (libxla "Literal_Set_int32_t")
-prim__literalSetInt32t : GCAnyPtr -> GCPtr Int -> Int -> PrimIO ()
+prim__literalSetInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_int32_t")
-literalGetInt32t : GCAnyPtr -> GCPtr Int -> Int
+literalGetInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int
 
 export
 %foreign (libxla "Literal_Set_uint32_t")
-prim__literalSetUInt32t : GCAnyPtr -> GCPtr Int -> Bits32 -> PrimIO ()
+prim__literalSetUInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits32 -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_uint32_t")
-literalGetUInt32t : GCAnyPtr -> GCPtr Int -> Bits32
+literalGetUInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits32
 
 export
 %foreign (libxla "Literal_Set_uint64_t")
-prim__literalSetUInt64t : GCAnyPtr -> GCPtr Int -> Bits64 -> PrimIO ()
+prim__literalSetUInt64t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits64 -> PrimIO ()
 
 export
 %foreign (libxla "Literal_Get_uint64_t")
-literalGetUInt64t : GCAnyPtr -> GCPtr Int -> Bits64
+literalGetUInt64t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits64

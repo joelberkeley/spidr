@@ -41,65 +41,65 @@ allocLiteral shape = do
 
 namespace Bool
   export
-  set : Literal -> List Nat -> Bool -> IO ()
-  set (MkLiteral lit) idxs value = do
+  set : Literal -> List Nat -> ShapeIndex -> Bool -> IO ()
+  set (MkLiteral lit) idxs (MkShapeIndex shapeIndex) value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetBool lit idxsArrayPtr (if value then 1 else 0)
+    primIO $ prim__literalSetBool lit idxsArrayPtr (cast $ length idxs) shapeIndex (if value then 1 else 0)
 
   export
-  get : Literal -> List Nat -> Bool
-  get (MkLiteral lit) idxs = unsafePerformIO $ do
+  get : Literal -> List Nat -> ShapeIndex -> Bool
+  get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ cIntToBool $ literalGetBool lit idxsArrayPtr
+    pure $ cIntToBool $ literalGetBool lit idxsArrayPtr (cast $ length idxs) shapeIndex
 
 namespace Double
   export
-  set : Literal -> List Nat -> Double -> IO ()
-  set (MkLiteral lit) idxs value = do
+  set : Literal -> List Nat -> ShapeIndex -> Double -> IO ()
+  set (MkLiteral lit) idxs (MkShapeIndex shapeIndex) value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetDouble lit idxsArrayPtr value
+    primIO $ prim__literalSetDouble lit idxsArrayPtr (cast $ length idxs) shapeIndex value
 
   export
-  get : Literal -> List Nat -> Double
-  get (MkLiteral lit) idxs = unsafePerformIO $ do
+  get : Literal -> List Nat -> ShapeIndex -> Double
+  get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ literalGetDouble lit idxsArrayPtr
+    pure $ literalGetDouble lit idxsArrayPtr (cast $ length idxs) shapeIndex
 
 namespace Int32t
   export
-  set : Literal -> List Nat -> Int32 -> IO ()
-  set (MkLiteral lit) idxs value = do
+  set : Literal -> List Nat -> ShapeIndex -> Int32 -> IO ()
+  set (MkLiteral lit) idxs (MkShapeIndex shapeIndex) value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetInt32t lit idxsArrayPtr (cast value)
+    primIO $ prim__literalSetInt32t lit idxsArrayPtr (cast $ length idxs) shapeIndex (cast value)
 
   export
-  get : Literal -> List Nat -> Int32
-  get (MkLiteral lit) idxs = unsafePerformIO $ do
+  get : Literal -> List Nat -> ShapeIndex -> Int32
+  get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ cast $ literalGetInt32t lit idxsArrayPtr
+    pure $ cast $ literalGetInt32t lit idxsArrayPtr (cast $ length idxs) shapeIndex
 
 namespace UInt32t
   export
-  set : Literal -> List Nat -> Nat -> IO ()
-  set (MkLiteral lit) idxs value = do
+  set : Literal -> List Nat -> ShapeIndex -> Nat -> IO ()
+  set (MkLiteral lit) idxs (MkShapeIndex shapeIndex) value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetUInt32t lit idxsArrayPtr (cast value)
+    primIO $ prim__literalSetUInt32t lit idxsArrayPtr (cast $ length idxs) shapeIndex (cast value)
 
   export
-  get : Literal -> List Nat -> Nat
-  get (MkLiteral lit) idxs = unsafePerformIO $ do
+  get : Literal -> List Nat -> ShapeIndex -> Nat
+  get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ cast $ literalGetUInt32t lit idxsArrayPtr
+    pure $ cast $ literalGetUInt32t lit idxsArrayPtr (cast $ length idxs) shapeIndex
 
 namespace UInt64t
   export
-  set : Literal -> List Nat -> Nat -> IO ()
-  set (MkLiteral lit) idxs value = do
+  set : Literal -> List Nat -> ShapeIndex -> Nat -> IO ()
+  set (MkLiteral lit) idxs (MkShapeIndex shapeIndex) value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetUInt64t lit idxsArrayPtr (cast value)
+    primIO $ prim__literalSetUInt64t lit idxsArrayPtr (cast $ length idxs) shapeIndex (cast value)
 
   export
-  get : Literal -> List Nat -> Nat
-  get (MkLiteral lit) idxs = unsafePerformIO $ do
+  get : Literal -> List Nat -> ShapeIndex -> Nat
+  get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    pure $ cast $ literalGetUInt64t lit idxsArrayPtr
+    pure $ cast $ literalGetUInt64t lit idxsArrayPtr (cast $ length idxs) shapeIndex
