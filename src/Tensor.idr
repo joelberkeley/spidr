@@ -614,6 +614,9 @@ scalarToAnyOk : (to : Shape) -> Broadcastable [] to
 scalarToAnyOk [] = Same
 scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
 
+export
+prependBroadcastable : (xs : Shape) -> Broadcastable ys (xs ++ ys)
+
 ||| A `Tensor` where every element has the specified value. For example,
 |||
 ||| ```idris

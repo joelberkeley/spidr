@@ -117,18 +117,31 @@ boundedNonFinite = fixedProperty $ do
 partial
 iota : Property
 iota = fixedProperty $ do
-  d <- forAll dims
-  ds <- forAll shapes
-  axis <- forAll (d :: ds)
-  -- either test that an increment along `axis` is 1, and an increment in any other direction is 0
-  -- or (almost certainly harder with no benefit) take the difference between slices along the axis,
-  -- which should be 1 everywhere, and the difference between slices along other axes,
-  -- which should be 0 everywhere
-  let actual = iota (d :: ds) {dtype = S32}
-  ?iotaS32
+  init <- forAll shapes
+  mid <- forAll dims
+  tail <- forAll shapes
 
-  let actual = iota (d :: ds) {dtype = F64}
-  ?iotaF64
+  broadcastTail : (tail : Shape) -> Tensor [n] dtype -> Tensor (n :: tail) dtype
+  broadcastTail [] x = x
+  broadcastTail (d :: ds) =
+    let xs = broadcastTail ds x
+     in broadcast $ expand 1 xs
+
+  lengthInBoundsCons : (x : a) -> (xs : List a) -> InBounds (length xs) (x :: xs)
+
+  appendInBounds : (xs : List a) -> InBounds n ys -> InBounds n (xs ++ ys)
+
+  let rangeV = tensor {dtype = S32} $ cast (Vect.range n)
+      rangeVTail = broadcastTail tail rangeV
+      rangeFull = broadcast {shapesOK = prependBroadcastable init} rangeVTail
+      inBounds = appendInBounds init (lengthInBoundsCons mid tail)
+      actual : Graph (Tensor (init ++ mid :: tail) S32) = iota {inBounds} (length tail)
+
+  actual ===# rangeFull
+
+  let actual : Graph (Tensor (init ++ mid :: tail) F64) = iota {inBounds} (length tail)
+
+  actual ===# (do castDtype !expected)
 
 partial
 show : Property
