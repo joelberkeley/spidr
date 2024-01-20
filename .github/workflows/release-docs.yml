@@ -27,6 +27,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: |
+        pack switch HEAD
         pack --no-prompt --with-docs install spidr
         mv build/docs .
     - run: |
