@@ -1178,8 +1178,8 @@ iota : Primitive dtype =>
        {shape : _} ->
        (axis : Nat) ->
        {auto 0 inBounds : InBounds axis shape} ->
-       Tensor shape dtype
-iota dimension = addTensor $ Iota shape dimension
+       Graph $ Tensor shape dtype
+iota dimension = addTensor $ Iota shape {dtype} dimension
 
 ||| Element-wise absolute value. For example, `abs !(tensor [-2, 3])` is
 ||| `tensor [2, 3]`.
