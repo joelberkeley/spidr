@@ -94,10 +94,3 @@ export PrimitiveRW S32 Int32 where
 export PrimitiveRW U32 Nat where
 export PrimitiveRW U64 Nat where
 export PrimitiveRW F64 Double where
-
-public export
-data PrimitiveRWVect : Vect n (Shape #: Type #: Type) -> Type where
-  Nil : PrimitiveRWVect []
-  (::) : PrimitiveRW dtype ty ->
-         PrimitiveRWVect stt ->
-         PrimitiveRWVect ((shape ##:: dtype ##:: ty) :: stt)

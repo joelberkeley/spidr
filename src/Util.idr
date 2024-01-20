@@ -150,11 +150,3 @@ namespace List
 export
 (>$<) : (env' -> env) -> Reader env a -> Reader env' a
 f >$< (MkReaderT g) = MkReaderT (g . f)
-
-infixr 9 #:, ##::
-
-public export
-record (#:) a b where
-  constructor (##::)
-  fst : a
-  0 snd : b

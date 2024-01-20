@@ -96,33 +96,11 @@ namespace S32
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
-namespace TensorVect
-  public export
-  data TensorVect : Vect n (Shape #: Type #: Type) -> Type where
-    Nil : TensorVect []
-    (::) : Tensor shape dtype -> TensorVect stt -> TensorVect ((shape ##:: dtype ##:: ty) :: stt)
-
-  export partial
-  eval : PrimitiveRWVect shapes => Graph (TensorVect shapes) -> IO $ LiteralVect shapes
-  eval @{prim} $ MkGraph tensors = do
-      let graph = do ts <- tensors
-                     let (ss, xs) = nodes ts
-                     x <- addNode (Tuple xs)
-                     pure (ss, x)
-          (env, ((shapes ** eq), root)) = runState empty graph
-      runEitherT (Tuple.execute @{rewrite sym eq in prim} {shapes} (MkFn [] root env)) <&> \case
-        Right lits => rewrite eq in lits
-        Left err => idris_crash (show err)
-
-    where
-
-    nodes : TensorVect ss -> ((ss' ** ss === ss'), List Nat)
-    nodes [] = (([] ** Refl), [])
-    nodes ((::) {ty} (MkTensor {shape} {dtype} x) xs) =
-      let ((shapes ** eq), xs) = nodes xs
-          stt : ?
-          stt = (shape ##:: dtype ##:: ty)
-       in (((stt :: shapes) ** cong (stt ::) eq), x :: xs)
+partial
+panicIO : ErrIO a -> IO a
+panicIO x = runEitherT x <&> \case
+  Right x => x
+  Left err => idris_crash (show err)
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
@@ -138,11 +116,46 @@ namespace TensorVect
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-eval $ MkGraph x = do
+eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
-  runEitherT (Eval.execute {dtype} (MkFn [] root env)) <&> \case
-    Right lit => lit
-    Left err => idris_crash (show err)
+   in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
+
+namespace TensorVect
+  public export
+  data TensorVect : List (Type, Type, Shape) -> Type where
+    Nil : TensorVect []
+    (::) : PrimitiveRW dtype ty =>
+           Tensor shape dtype ->
+           TensorVect stt ->
+           TensorVect ((dtype, ty, shape) :: stt)
+
+namespace LiteralVect
+  public export
+  data LiteralVect : List (Type, Shape) -> Type where
+    Nil : LiteralVect []
+    (::) : Literal shape ty ->
+           LiteralVect stt ->
+           LiteralVect ((ty, shape) :: stt)
+
+namespace Tuple
+  export partial
+  eval : Graph (TensorVect shapes) -> IO $ LiteralVect (Prelude.map Builtin.snd shapes)
+  eval $ MkGraph tensors = do
+      let graph = do ts <- tensors
+                     x <- addNode (Tuple $ nodes ts)
+                     pure (x, ts)
+          (env, root, tensors) = runState empty graph
+      panicIO $ execute (MkFn [] root env) >>= readAll tensors 0
+
+    where
+
+    nodes : TensorVect ss -> List Nat
+    nodes [] = []
+    nodes (MkTensor x :: xs) = x :: nodes xs
+
+    readAll : HasIO io => TensorVect s -> Nat -> Literal -> io $ LiteralVect (Prelude.map Builtin.snd s)
+    readAll [] _ _ = pure []
+    readAll (MkTensor {dtype} _ :: ts) n lit = [| read {dtype} [n] lit :: readAll ts (S n) lit |]
 
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.

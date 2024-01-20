@@ -16,7 +16,7 @@ limitations under the License.
 module Compiler.LiteralRW
 
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
+import public Compiler.Xla.TensorFlow.Compiler.Xla.Literal
 import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Literal
 import Util
@@ -46,18 +46,30 @@ interface Primitive dtype => LiteralRW dtype ty where
   get : Literal -> List Nat -> ShapeIndex -> ty
 
 export
-write : (HasIO io, LiteralRW dtype a) => {shape : _} -> Literal shape a -> io Literal
-write xs = liftIO $ do
+write : HasIO io =>
+        LiteralRW dtype a =>
+        {shape : _} ->
+        List Nat ->
+        Literal shape a ->
+        io Literal
+write idxs xs = liftIO $ do
   literal <- allocLiteral {dtype} shape
   shapeIndex <- allocShapeIndex
+  traverse_ (pushBack shapeIndex) idxs
   sequence_ [| (\idxs => set {dtype} literal idxs shapeIndex) indexed xs |]
   pure literal
 
 export
-read : HasIO io => LiteralRW dtype a => Literal -> {shape : _} -> io $ Literal shape a
-read lit = do
+read : HasIO io =>
+       LiteralRW dtype a =>
+       {shape : _} ->
+       List Nat ->
+       Literal ->
+       io $ Literal shape a
+read idxs lit = do
   shapeIndex <- allocShapeIndex
-  pure $ map (\mIdx => get {dtype} lit mIdx shapeIndex) indexed
+  traverse_ (pushBack shapeIndex) idxs
+  pure $ map (\mIdx => get {dtype} lit mIdx shapeIndex) (indexed {shape})
 
 export
 LiteralRW PRED Bool where
@@ -83,25 +95,3 @@ export
 LiteralRW U64 Nat where
   set = UInt64t.set
   get = UInt64t.get
-
-namespace LiteralRWVect
-  public export
-  data LiteralRWVect : Vect n (Shape #: Type #: Type) -> Type where
-    Nil : LiteralRWVect []
-    (::) : LiteralRW dtype ty ->
-           LiteralRWVect stt ->
-           LiteralRWVect ((shape ##:: dtype ##:: ty) :: stt)
-
-namespace Tuple
-  export
-  read : HasIO io => {shapes : _} -> LiteralRWVect shapes => Literal -> io $ LiteralVect shapes
-  read lit = impl 0
-    where
-    impl : {s : _} -> LiteralRWVect s => Nat -> io $ LiteralVect s
-    impl {s = []} _ = pure []
-    impl {s = ((shape ##:: dtype ##:: _) :: ss)} @{(p :: ps)} n = do
-      shapeIndex <- allocShapeIndex
-      pushFront shapeIndex n
-      let head = map (\mIdx => get {dtype} lit mIdx shapeIndex) (indexed {shape})
-      tail <- impl {s = ss} @{ps} (S n)
-      pure (head :: tail)
