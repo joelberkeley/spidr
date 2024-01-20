@@ -23,8 +23,6 @@ module Primitive
 
 import Compiler.LiteralRW
 import public Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import Types
-import Util
 
 %hide Prelude.Num
 %hide Prelude.Neg
