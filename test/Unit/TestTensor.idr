@@ -64,18 +64,22 @@ evalTuple = property $ do
   x1 <- forAll (literal s1 int32s)
   x2 <- forAll (literal s2 nats)
 
+  let y0 = tensor {dtype = F64} x0
+      y1 = tensor {dtype = S32} x1
+      y2 = tensor {dtype = U64} x2
+
   let [] = unsafePerformIO $ eval (pure [])
 
-  let [x0'] = unsafePerformIO $ Tuple.eval $ the (Graph $ TensorVect [T _ _ Double]) (do y0 <- tensor x0; pure [y0])
+  let [x0'] = unsafePerformIO $ eval (do pure [!y0])
 
   x0' ==~ x0
 
-  let [x0', x1'] = unsafePerformIO $ Tuple.eval (do y0 <- tensor x0; y1 <- tensor x1; pure [y0, y1])
+  let [x0', x1'] = unsafePerformIO $ eval (do pure [!y0, !y1])
 
   x0' ==~ x0
   x1' === x1
 
-  let [x0', x1', x2'] = unsafePerformIO $ Tuple.eval (do y0 <- tensor x0; y1 <- tensor x1; y2 <- tensor x2; pure [y0, y1, y2])
+  let [x0', x1', x2'] = unsafePerformIO $ eval (do pure [!y0, !y1, !y2])
 
   x0' ==~ x0
   x1' === x1
