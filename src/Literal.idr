@@ -28,7 +28,6 @@ limitations under the License.
 module Literal
 
 import public Types
-import Util
 
 ||| A scalar or array of values.
 public export
