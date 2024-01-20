@@ -104,7 +104,7 @@ interpret xlaBuilder (MkFn params root env) = do
     set posInGraph param
 
   interpretE : Expr -> Builder XlaOp
-  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} lit)
+  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
   interpretE (Arg x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse get xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(get x) idx
@@ -233,30 +233,12 @@ toString f = do
   root <- interpret xlaBuilder f
   pure $ opToString xlaBuilder root
 
-covering
-exec : Fn 0 -> ErrIO $ Literal
-exec f = do
+export covering
+execute : Fn 0 -> ErrIO Literal
+execute f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   client <- getOrCreateLocalClient platform
   executeAndTransfer client computation
-
-export covering
-execute : PrimitiveRW dtype a => Fn 0 -> {shape : _} -> ErrIO $ Literal shape a
-execute f = read {dtype} !(exec f)
-
-namespace Tuple
-  export covering
-  execute : {shapes : _} -> PrimitiveRWVect shapes => Fn 0 -> ErrIO $ LiteralVect shapes
-  execute @{ps} f = read @{%search} @{toLiteralRWVect ps} {shapes} !(exec f)
-
-    where
-
-    toLiteralRWVect : PrimitiveRWVect s -> LiteralRWVect s
-    toLiteralRWVect [] = []
-    toLiteralRWVect ((::) p {dtype} {ty} ps) = ((::) (literalRW p) {dtype} {ty} (toLiteralRWVect ps))
-      where
-      literalRW : PrimitiveRW dtype ty -> LiteralRW dtype ty
-      literalRW p = believe_me p
