@@ -120,26 +120,18 @@ eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
    in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
 
-namespace TensorVect
+namespace TensorList
   public export
-  data TensorVect : List Shape -> List Type -> Type where
-    Nil : TensorVect [] []
+  data TensorList : List (Shape, Type) -> Type where
+    Nil : TensorList []
     (::) : PrimitiveRW dtype ty =>
            Tensor shape dtype ->
-           TensorVect shapes tys ->
-           TensorVect (shape :: shapes) (ty :: tys)
-
-namespace LiteralVect
-  public export
-  data LiteralVect : List Shape -> List Type -> Type where
-    Nil : LiteralVect [] []
-    (::) : Literal shape ty ->
-           LiteralVect shapes tys ->
-           LiteralVect (shape :: shapes) (ty :: tys)
+           TensorList sts ->
+           TensorList ((shape, ty) :: sts)
 
 namespace Tuple
   export partial
-  eval : Graph (TensorVect shapes tys) -> IO $ LiteralVect shapes tys
+  eval : Graph (TensorList shapes) -> IO $ All (uncurry Literal) shapes
   eval $ MkGraph tensors = do
       let graph = do ts <- tensors
                      x <- addNode (Tuple $ nodes ts)
@@ -149,11 +141,11 @@ namespace Tuple
 
     where
 
-    nodes : TensorVect s t -> List Nat
+    nodes : TensorList s -> List Nat
     nodes [] = []
     nodes (MkTensor x :: xs) = x :: nodes xs
 
-    readAll : HasIO io => TensorVect s t -> Nat -> Literal -> io $ LiteralVect s t
+    readAll : HasIO io => TensorList s -> Nat -> Literal -> io $ All (uncurry Literal) s
     readAll [] _ _ = pure []
     readAll (MkTensor {dtype} _ :: ts) n lit = [| read {dtype} [n] lit :: readAll ts (S n) lit |]
 
