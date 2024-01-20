@@ -43,6 +43,10 @@ empty : Env
 empty = MkEnv 0 []
 
 export
+addNode1 : Expr -> Env -> (Nat, Env)
+addNode1 x (MkEnv n xs) = (n, MkEnv (S n) ((n, x) :: xs))
+
+export
 addNode : Expr -> State Env Nat
 addNode expr = do
   MkEnv next env <- get

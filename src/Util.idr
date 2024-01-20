@@ -126,6 +126,12 @@ namespace List
     impl _ [] = []
     impl i (x :: xs) = if elem i idxs then impl (S i) xs else x :: impl (S i) xs
 
+  namespace All2
+    public export
+    data All2 : (0 p : a -> b -> Type) -> List a -> List b -> Type where
+      Nil : All2 p [] []
+      (::) : forall xs, ys . p x y -> All2 p xs ys -> All2 p (x :: xs) (y :: ys)
+
   ||| A `Sorted f xs` proves that for all consecutive elements `x` and `y` in `xs`, `f x y` exists.
   ||| For example, a `Sorted LT xs` proves that all `Nat`s in `xs` appear in increasing numerical
   ||| order.

@@ -110,44 +110,66 @@ panicIO x = runEitherT x <&> \case
 ||| **Note:**
 ||| * Each call to `eval` will rebuild and execute the graph. Similarly, multiple calls to
 |||   `eval` on different `Tensor`s in a computation will be treated entirely independently.
-|||   `eval` does not store intermediate values. This is a known limitation, and may change in
-|||   the future.
-||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
-|||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
+|||   `eval` does not store intermediate values. If you want to evaluate multiple tensors, use
+|||   `Tuple.eval`.
+||| * `eval` performs logging. You can disable this by adjusting the logging level
+|||   with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
    in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
 
-namespace TensorList
-  public export
-  data TensorList : List (Shape, Type) -> Type where
-    Nil : TensorList []
-    (::) : PrimitiveRW dtype ty =>
-           Tensor shape dtype ->
-           TensorList sts ->
-           TensorList ((shape, ty) :: sts)
-
 namespace Tuple
   export partial
-  eval : Graph (TensorList shapes) -> IO $ All (uncurry Literal) shapes
-  eval $ MkGraph tensors = do
+  eval : Graph (All2 Tensor shapes dtypes) ->
+         All2 PrimitiveRW dtypes tys =>
+         IO $ All2 Literal shapes tys
+  eval @{prims} $ MkGraph tensors = do
       let graph = do ts <- tensors
                      x <- addNode (Tuple $ nodes ts)
                      pure (x, ts)
           (env, root, tensors) = runState empty graph
-      panicIO $ execute (MkFn [] root env) >>= readAll tensors 0
+      panicIO $ execute (MkFn [] root env) >>= readAll tensors prims 0
 
     where
 
-    nodes : TensorList s -> List Nat
+    nodes : All2 Tensor ss ds -> List Nat
     nodes [] = []
     nodes (MkTensor x :: xs) = x :: nodes xs
 
-    readAll : HasIO io => TensorList s -> Nat -> Literal -> io $ All (uncurry Literal) s
-    readAll [] _ _ = pure []
-    readAll (MkTensor {dtype} _ :: ts) n lit = [| read {dtype} [n] lit :: readAll ts (S n) lit |]
+    readAll : HasIO io =>
+              All2 Tensor ss ds ->
+              All2 PrimitiveRW ds ts ->
+              Nat ->
+              Literal ->
+              io $ All2 Literal ss ts
+    readAll [] [] _ _ = pure []
+    readAll (MkTensor {dtype} _ :: ts) (prim :: prims) n lit =
+      [| read {dtype} [n] lit :: readAll ts prims (S n) lit |]
+
+partial
+foo : IO Bool
+foo = do
+  let x0 : Literal [] Double
+      y0 := tensor {dtype = F64} x0
+  [x0'] <- eval {tys = %search} (do pure [!y0])
+  pure (x0 == x0')
+
+namespace Example
+  interface RW (a : Type) (b : Type) | a where
+
+  RW Nat Int32 where
+  RW Bool Double where
+
+  eval : All2 Literal shape as -> All2 RW as bs => All2 Literal shape bs
+
+  eq : Bool
+  eq = let xs : Literal [2] Int32
+           xs' : Literal [2] Nat
+
+           [xs''] := eval [xs']
+        in xs == xs''
 
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.

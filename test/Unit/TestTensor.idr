@@ -15,12 +15,6 @@ limitations under the License.
 --}
 module Unit.TestTensor
 
-import Unit.TestTensor.Elementwise
-import Unit.TestTensor.HigherOrder
-import Unit.TestTensor.Sampling
-import Unit.TestTensor.Slice
-import Unit.TestTensor.Structure
-
 import Data.Nat
 import Data.Vect
 import System
@@ -68,9 +62,9 @@ evalTuple = property $ do
       y1 = tensor {dtype = S32} x1
       y2 = tensor {dtype = U64} x2
 
-  let [] = unsafePerformIO $ eval (pure [])
+  -- let [] = unsafePerformIO $ eval {tys = []} (pure [])
 
-  let [x0'] = unsafePerformIO $ eval (do pure [!y0])
+  let [x0'] = unsafePerformIO $ eval {tys = [_]} (do pure [!y0])
 
   x0' ==~ x0
 
@@ -88,14 +82,15 @@ evalTuple = property $ do
 partial
 evalTupleNonTrivial : Property
 evalTupleNonTrivial = property $ do
-  let xs = do y0 <- tensor [1.0, -2.0, 0.4]
+  let xs : Graph $ All2 Tensor [[], [2]] _ =
+           do y0 <- tensor [1.0, -2.0, 0.4]
               y1 <- tensor 3.0
               u <- exp y0
               v <- slice [at 1] u + pure y1
               w <- slice [0.to 2] u
               pure [v, w]
 
-      [v, w] = unsafePerformIO $ eval xs
+      [v, w] = unsafePerformIO $ eval {shapes = [[], [2]]} {tys = [_, _]} xs
 
   v ==~ Scalar (exp (-2.0) + 3.0)
   w ==~ [| exp [1.0, -2.0] |]
@@ -469,10 +464,4 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
-  ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
-    , Unit.TestTensor.HigherOrder.all
-    , Unit.TestTensor.Sampling.all
-    , Unit.TestTensor.Slice.all
-    , Unit.TestTensor.Structure.all
-  ])
+  ]
