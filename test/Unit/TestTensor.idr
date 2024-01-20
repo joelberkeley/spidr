@@ -141,7 +141,7 @@ iota = fixedProperty $ do
 
   let actual : Graph (Tensor (init ++ mid :: tail) F64) = iota {inBounds} (length tail)
 
-  actual ===# (do castDtype !expected)
+  actual ===# (do castDtype !rangeFull)
 
 partial
 show : Property
