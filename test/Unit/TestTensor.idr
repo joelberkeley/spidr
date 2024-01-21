@@ -117,7 +117,7 @@ boundedNonFinite = fixedProperty $ do
 
 partial
 iota : Property
-iota = fixedProperty $ do
+iota = property $ do
   init <- forAll shapes
   mid <- forAll dims
   tail <- forAll shapes
