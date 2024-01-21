@@ -193,7 +193,7 @@ namespace Squeezable
 
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
 |||
-||| ```idris
+||| ```
 ||| x : Graph $ Tensor [2, 1, 3, 1] S32
 ||| x = tensor [[[[4], [5], [6]]],
 |||             [[[7], [8], [9]]]]
@@ -202,7 +202,7 @@ namespace Squeezable
 ||| y = squeeze !x
 ||| ```
 ||| is
-||| ```idris
+||| ```
 ||| y : Graph $ Tensor [2, 1, 3] S32
 ||| y = tensor [[[4, 5, 6]],
 |||             [[7, 8, 9]]]
@@ -586,16 +586,30 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
+||| A shape can be extended with any number of leading dimensions.
+|||
+||| @leading The leading dimensions.
+export
+broadcastableByLeading : (leading : List Nat) -> Broadcastable shape (leading ++ shape)
+broadcastableByLeading [] = Same
+broadcastableByLeading (l :: ls) = Nest (broadcastableByLeading ls)
+
+||| A scalar can be broadcast to any shape.
+%hint
+export
+scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+scalarToAnyOk to = rewrite sym $ appendNilRightNeutral to in broadcastableByLeading to
+
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
-||| ```idris
+||| ```
 ||| x : Graph $ Tensor [2, 3] S32
 ||| x = broadcast !(tensor [4, 5, 6])
 ||| ```
 |||
 ||| is
 |||
-||| ```idris
+||| ```
 ||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[4, 5, 6], [4, 5, 6]]
 ||| ```
@@ -608,20 +622,14 @@ broadcast :
   Graph $ Tensor to dtype
 broadcast $ MkTensor {shape = _} x = addTensor $ Broadcast {dtype} from to x
 
-%hint
-export
-scalarToAnyOk : (to : Shape) -> Broadcastable [] to
-scalarToAnyOk [] = Same
-scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
-
 ||| A `Tensor` where every element has the specified value. For example,
 |||
-||| ```idris
+||| ```
 ||| fives : Graph $ Tensor [2, 3] S32
 ||| fives = fill 5
 ||| ```
 ||| is
-||| ```idris
+||| ```
 ||| fives : Graph $ Tensor [2, 3] S32
 ||| fives = tensor [[5, 5, 5],
 |||                 [5, 5, 5]]
@@ -630,11 +638,43 @@ export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Graph $ Tensor shape dtype
 fill x = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar x))
 
+||| A constant where values increment from zero along the specified `axis`. For example,
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = iota 1
+||| ```
+||| is the same as
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = tensor [[0, 1, 2, 3, 4],
+|||             [0, 1, 2, 3, 4],
+|||             [0, 1, 2, 3, 4]]
+||| ```
+||| and
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = iota 0
+||| ```
+||| is the same as
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = tensor [[0, 0, 0, 0, 0],
+|||             [1, 1, 1, 1, 1],
+|||             [2, 2, 2, 2, 2]]
+||| ```
+export
+iota : Primitive.Num dtype =>
+       {shape : _} ->
+       (axis : Nat) ->
+       {auto 0 inBounds : InBounds axis shape} ->
+       Graph $ Tensor shape dtype
+iota dimension = addTensor $ Iota shape {dtype} dimension
+
 ----------------------------- generic operations ----------------------------
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
-||| ```idris
+||| ```
 ||| recip : Tensor [] F64 -> Graph $ Tensor [] F64
 ||| recip x = 1.0 / pure x
 ||| ```
@@ -652,7 +692,7 @@ map f $ MkTensor {shape = _} x = do
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
-||| ```idris
+||| ```
 ||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Graph $ Tensor [] F64
 ||| addRecip x y = pure x + 1.0 / pure y
 ||| ```
@@ -947,7 +987,7 @@ namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
   ||| and the first axis of the last. For example:
   |||
-  ||| ```idris
+  ||| ```
   ||| x : Graph $ Tensor [2, 3] S32
   ||| x = tensor [[-1, -2, -3],
   |||             [ 0,  1,  2]]
@@ -961,7 +1001,7 @@ namespace Matrix
   |||
   ||| is
   |||
-  ||| ```idris
+  ||| ```
   ||| z : Graph $ Tensor [2, 1] S32
   ||| z = tensor [-19, 10]
   ||| ```

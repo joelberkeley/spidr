@@ -31,6 +31,7 @@ import Tensor
 import Utils
 import Utils.Comparison
 import Utils.Cases
+import Utils.Proof
 
 partial
 tensorThenEval : Property
@@ -113,6 +114,58 @@ boundedNonFinite = fixedProperty $ do
   Types.max @{NonFinite} ===# tensor inf
   unsafeEval {dtype=F64} (Types.min @{NonFinite}) === -inf
   unsafeEval {dtype=F64} (Types.max @{NonFinite}) === inf
+
+partial
+iota : Property
+iota = property $ do
+  init <- forAll shapes
+  mid <- forAll dims
+  tail <- forAll shapes
+
+  let broadcastTail : Primitive dtype =>
+                      {n : _} ->
+                      (tail : Shape) ->
+                      Tensor [n] dtype ->
+                      Graph $ Tensor (n :: tail) dtype
+      broadcastTail [] x = pure x
+      broadcastTail (d :: ds) x = do
+        x <- broadcastTail ds x
+        broadcast !(expand 1 x)
+
+  let rangeFull = do
+        rangeV <- tensor {dtype = U64} $ cast (Vect.range mid)
+        rangeVTail <- broadcastTail tail rangeV
+        broadcast {shapesOK = broadcastableByLeading init} rangeVTail
+      inBounds = appendNonEmptyLengthInBounds init mid tail
+      actual : Graph (Tensor (init ++ mid :: tail) U64) = iota {inBounds} (length init)
+
+  actual ===# rangeFull
+
+  let actual : Graph (Tensor (init ++ mid :: tail) F64) = iota {inBounds} (length init)
+
+  actual ===# (do castDtype !rangeFull)
+
+partial
+iotaExamples : Property
+iotaExamples = fixedProperty $ do
+  iota 0 ===# tensor {dtype = S32} [0, 1, 2, 3]
+  iota 1 ===# tensor {dtype = S32} [[0], [0], [0], [0]]
+
+  iota 1 ===# tensor {dtype = S32} [[0, 1, 2, 3, 4],
+                                    [0, 1, 2, 3, 4],
+                                    [0, 1, 2, 3, 4]]
+
+  iota 0 ===# tensor {dtype = S32} [[0, 0, 0, 0, 0],
+                                    [1, 1, 1, 1, 1],
+                                    [2, 2, 2, 2, 2]]
+
+  iota 1 ===# tensor {dtype = F64} [[0.0, 1.0, 2.0, 3.0, 4.0],
+                                    [0.0, 1.0, 2.0, 3.0, 4.0],
+                                    [0.0, 1.0, 2.0, 3.0, 4.0]]
+
+  iota 0 ===# tensor {dtype = F64} [[0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [1.0, 1.0, 1.0, 1.0, 1.0],
+                                    [2.0, 2.0, 2.0, 2.0, 2.0]]
 
 partial
 show : Property
@@ -351,6 +404,8 @@ group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
+    , ("iota", iota)
+    , ("iota examples", iotaExamples)
     , ("show", show)
     , ("cast", cast)
     , ("identity", identity)

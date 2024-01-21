@@ -144,6 +144,8 @@ extern "C" {
 
     XlaOp* Pow(XlaOp& lhs, XlaOp& rhs);
 
+    XlaOp* Iota(XlaBuilder* builder, Shape& shape, int iota_dimension);
+
     XlaOp* ConvertElementType(XlaOp& operand, int new_element_type);
 
     XlaOp* Neg(XlaOp& operand);
