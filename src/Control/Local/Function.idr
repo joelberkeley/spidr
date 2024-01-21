@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module extends the standard library's Control.Function
-module Control.Local.Function
+module Control.L.Function
 
 ||| A dependent variant of `flip` where the return type can depend on the input values. `dflip`
 ||| flips the order of arguments for a function, such that `dflip f x y` is the same as `f y x`.

@@ -13,14 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module extends the standard library's Control.Monad
-module Control.L.Monad.Reader
+||| This module extends the standard library's Data.Nat
+module Data.L.Nat
 
-import Control.Monad.Identity
-import public Control.Monad.Reader
-import Data.Contravariant
+import public Data.Nat
 
-||| Apply a function to the environment of a reader.
-export
-(>$<) : (env' -> env) -> Reader env a -> Reader env' a
-f >$< (MkReaderT g) = MkReaderT (g . f)
+||| A `Neq x y` proves `x` is not equal to `y`.
+public export 0
+Neq : Nat -> Nat -> Type
+Neq x y = Either (LT x y) (GT x y)

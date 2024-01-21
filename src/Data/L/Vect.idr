@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module extends the standard library's Data.Vect
-module Data.Local.Vect
+module Data.L.Vect
 
 import public Data.Vect
 

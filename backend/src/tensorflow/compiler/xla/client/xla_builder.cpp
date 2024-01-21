@@ -350,6 +350,13 @@ extern "C" {
 
     XlaOp* Pow(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Pow, lhs, rhs); }
 
+    XlaOp* Iota(XlaBuilder* builder, Shape& shape, int iota_dimension) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        auto& shape_ = reinterpret_cast<xla::Shape&>(shape);
+        xla::XlaOp res = xla::Iota(builder_, shape_, iota_dimension);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* ConvertElementType(XlaOp& operand, int new_element_type) {
         auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
         auto new_element_type_ = (xla::PrimitiveType) new_element_type;

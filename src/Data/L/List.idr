@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| This module extends the standard library's Data.List
-module Data.Local.List
+module Data.L.List
 
-import Control.Local.Function
+import Control.L.Function
 import public Data.List
 import public Data.List.Quantifiers
-import Data.Local.Vect
+import Data.L.Vect
 import Data.Vect
 
 ||| All numbers from `0` to `n - 1` inclusive, in increasing order.

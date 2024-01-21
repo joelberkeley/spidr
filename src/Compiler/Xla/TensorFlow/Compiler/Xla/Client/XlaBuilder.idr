@@ -356,6 +356,13 @@ pow : HasIO io => XlaOp -> XlaOp -> io XlaOp
 pow = binaryOp prim__pow
 
 export
+iota : HasIO io => XlaBuilder -> Xla.Shape -> Nat -> io XlaOp
+iota (MkXlaBuilder xlaBuilder) (MkShape shape) iota_dimension = do
+  opPtr <- primIO $ prim__iota xlaBuilder shape (cast iota_dimension)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+export
 convertElementType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
 convertElementType (MkXlaOp operand) = do
   opPtr <- primIO $ prim__convertElementType operand (xlaIdentifier {dtype})

@@ -13,12 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module extends the standard library's Data.Nat
-module Data.Local.Nat
+module Utils.Proof
 
-import public Data.Nat
+import Util
 
-||| A `Neq x y` proves `x` is not equal to `y`.
-public export 0
-Neq : Nat -> Nat -> Type
-Neq x y = Either (LT x y) (GT x y)
+import Data.List
+
+export
+appendNonEmptyLengthInBounds : (xs : List a) ->
+                               (y : a) ->
+                               (ys : List a) ->
+                               InBounds (length xs) (xs ++ y :: ys)
+appendNonEmptyLengthInBounds [] _ _ = InFirst
+appendNonEmptyLengthInBounds (x :: xs) y ys = InLater $ appendNonEmptyLengthInBounds xs y ys

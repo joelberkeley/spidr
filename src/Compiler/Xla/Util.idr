@@ -18,7 +18,7 @@ module Compiler.Xla.Util
 import System.FFI
 
 import Compiler.Xla.Prim.Util
-import Data.Local.List
+import Data.L.List
 
 export
 cIntToBool : Int -> Bool

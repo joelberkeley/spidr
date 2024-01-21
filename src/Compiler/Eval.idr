@@ -113,6 +113,7 @@ interpret xlaBuilder (MkFn params root env) = do
   interpretE (MinFiniteValue {dtype}) = minFiniteValue {dtype} xlaBuilder
   interpretE (MaxFiniteValue {dtype}) = maxFiniteValue {dtype} xlaBuilder
   interpretE (ConvertElementType x) = convertElementType {dtype = F64} !(get x)
+  interpretE (Iota {dtype} shape dim) = iota xlaBuilder !(mkShape {dtype} shape) dim
   interpretE (Reshape from to x) = reshape !(get x) (range $ length from) to
   interpretE (Slice starts stops strides x) = slice !(get x) starts stops strides
   interpretE (DynamicSlice starts sizes x) =
