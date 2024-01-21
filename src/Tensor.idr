@@ -586,19 +586,19 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
-||| A shape can be broadcast arbitrarily to the front.
+||| A shape can be extended with any number of leading dimensions.
 |||
-||| @xs The dimensions to add to the front.
+||| @leading The leading dimensions.
 export
-prependBroadcastable : (xs : List Nat) -> Broadcastable ys (xs ++ ys)
-prependBroadcastable [] = Same
-prependBroadcastable (x :: xs) = Nest (prependBroadcastable xs)
+broadcastableByLeading : (leading : List Nat) -> Broadcastable shape (leading ++ shape)
+broadcastableByLeading [] = Same
+broadcastableByLeading (l :: ls) = Nest (broadcastableByLeading ls)
 
 ||| A scalar can be broadcast to any shape.
 %hint
 export
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
-scalarToAnyOk to = rewrite sym $ appendNilRightNeutral to in prependBroadcastable to
+scalarToAnyOk to = rewrite sym $ appendNilRightNeutral to in broadcastableByLeading to
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
@@ -1178,7 +1178,7 @@ export
 (^) : Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)
 (^) = binaryRef Pow
 
-||| A constant where values increment along the specified `axis`, starting from zero. For example,
+||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
 ||| x : Graph $ Tensor [3, 5] S32
 ||| x = iota 1
