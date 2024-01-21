@@ -31,6 +31,7 @@ import Tensor
 import Utils
 import Utils.Comparison
 import Utils.Cases
+import Utils.Proof
 
 partial
 tensorThenEval : Property
@@ -121,21 +122,22 @@ iota = fixedProperty $ do
   mid <- forAll dims
   tail <- forAll shapes
 
-  broadcastTail : (tail : Shape) -> Tensor [n] dtype -> Tensor (n :: tail) dtype
-  broadcastTail [] x = x
-  broadcastTail (d :: ds) =
-    let xs = broadcastTail ds x
-     in broadcast $ expand 1 xs
+  let broadcastTail : Primitive dtype =>
+                      {n : _} ->
+                      (tail : Shape) ->
+                      Tensor [n] dtype ->
+                      Graph $ Tensor (n :: tail) dtype
+      broadcastTail [] x = pure x
+      broadcastTail (d :: ds) x = do
+        x <- broadcastTail ds x
+        broadcast !(expand 1 x)
 
-  lengthInBoundsCons : (x : a) -> (xs : List a) -> InBounds (length xs) (x :: xs)
-
-  appendInBounds : (xs : List a) -> InBounds n ys -> InBounds n (xs ++ ys)
-
-  let rangeV = tensor {dtype = S32} $ cast (Vect.range n)
-      rangeVTail = broadcastTail tail rangeV
-      rangeFull = broadcast {shapesOK = prependBroadcastable init} rangeVTail
-      inBounds = appendInBounds init (lengthInBoundsCons mid tail)
-      actual : Graph (Tensor (init ++ mid :: tail) S32) = iota {inBounds} (length tail)
+  let rangeFull = do
+        rangeV <- tensor {dtype = U64} $ cast (Vect.range mid)
+        rangeVTail <- broadcastTail tail rangeV
+        broadcast {shapesOK = prependBroadcastable init} rangeVTail
+      inBounds = appendInBounds init (lengthInBoundsCons tail)
+      actual : Graph (Tensor (init ++ mid :: tail) U64) = iota {inBounds} (length tail)
 
   actual ===# rangeFull
 

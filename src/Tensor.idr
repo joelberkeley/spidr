@@ -586,6 +586,16 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
+export
+prependBroadcastable : (xs : Shape) -> Broadcastable ys (xs ++ ys)
+prependBroadcastable [] = Same
+prependBroadcastable (x :: xs) = Nest (prependBroadcastable xs)
+
+%hint
+export
+scalarToAnyOk : (to : Shape) -> Broadcastable [] to
+scalarToAnyOk to = rewrite sym $ appendNilRightNeutral to in prependBroadcastable to
+
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
 ||| ```idris
@@ -607,15 +617,6 @@ broadcast :
   Tensor from dtype ->
   Graph $ Tensor to dtype
 broadcast $ MkTensor {shape = _} x = addTensor $ Broadcast {dtype} from to x
-
-%hint
-export
-scalarToAnyOk : (to : Shape) -> Broadcastable [] to
-scalarToAnyOk [] = Same
-scalarToAnyOk (_ :: xs) = Nest (scalarToAnyOk xs)
-
-export
-prependBroadcastable : (xs : Shape) -> Broadcastable ys (xs ++ ys)
 
 ||| A `Tensor` where every element has the specified value. For example,
 |||
