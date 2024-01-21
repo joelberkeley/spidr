@@ -146,6 +146,25 @@ iota = property $ do
   actual ===# (do castDtype !rangeFull)
 
 partial
+iotaExamples : Property
+iotaExamples = fixedProperty $ do
+  iota 1 ===# tensor {dtype = S32} [[0, 1, 2, 3, 4],
+                                    [0, 1, 2, 3, 4],
+                                    [0, 1, 2, 3, 4]]
+
+  iota 0 ===# tensor {dtype = S32} [[0, 0, 0, 0, 0],
+                                    [1, 1, 1, 1, 1],
+                                    [2, 2, 2, 2, 2]]
+
+  iota 1 ===# tensor {dtype = F64} [[0., 1., 2., 3., 4.],
+                                    [0., 1., 2., 3., 4.],
+                                    [0., 1., 2., 3., 4.]]
+
+  iota 0 ===# tensor {dtype = F64} [[0., 0., 0., 0., 0.],
+                                    [1., 1., 1., 1., 1.],
+                                    [2., 2., 2., 2., 2.]]
+
+partial
 show : Property
 show = fixedProperty $ do
   let x : Graph $ Tensor [] S32 = 1
@@ -383,6 +402,7 @@ group = MkGroup "Tensor" $ [
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)
+    , ("iota examples", iotaExamples)
     , ("show", show)
     , ("cast", cast)
     , ("identity", identity)
