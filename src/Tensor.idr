@@ -1180,14 +1180,15 @@ export
 
 ||| A constant where values increment along the specified `axis`, starting from zero. For example,
 ||| ```
-||| x : Graph $ Tensor [2, 3] S32
+||| x : Graph $ Tensor [3, 5] S32
 ||| x = iota 1
 ||| ```
 ||| is the same as
 ||| ```
-||| x : Graph $ Tensor [2, 3] S32
-||| x = tensor [[0, 1, 2],
-|||             [0, 1, 2]]
+||| x : Graph $ Tensor [3, 5] S32
+||| x = tensor [[0, 1, 2, 3, 4],
+|||             [0, 1, 2, 3, 4],
+|||             [0, 1, 2, 3, 4]]
 ||| ```
 export
 iota : Primitive.Num dtype =>
