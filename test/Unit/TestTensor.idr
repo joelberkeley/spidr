@@ -136,12 +136,12 @@ iota = property $ do
         rangeV <- tensor {dtype = U64} $ cast (Vect.range mid)
         rangeVTail <- broadcastTail tail rangeV
         broadcast {shapesOK = prependBroadcastable init} rangeVTail
-      inBounds = appendInBounds init (lengthInBoundsCons tail)
-      actual : Graph (Tensor (init ++ mid :: tail) U64) = iota {inBounds} (length tail)
+      inBounds = appendNonEmptyLengthInBounds init mid tail
+      actual : Graph (Tensor (init ++ mid :: tail) U64) = iota {inBounds} (length init)
 
   actual ===# rangeFull
 
-  let actual : Graph (Tensor (init ++ mid :: tail) F64) = iota {inBounds} (length tail)
+  let actual : Graph (Tensor (init ++ mid :: tail) F64) = iota {inBounds} (length init)
 
   actual ===# (do castDtype !rangeFull)
 

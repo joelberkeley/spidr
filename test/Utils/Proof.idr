@@ -20,11 +20,9 @@ import Util
 import Data.List
 
 export
-lengthInBoundsCons : (xs : List a) -> InBounds (length xs) (x :: xs)
-lengthInBoundsCons [] = InFirst
-lengthInBoundsCons (_ :: xs) = InLater (lengthInBoundsCons xs)
-
-export
-appendInBounds : (xs : List a) -> {ys : _} -> InBounds n ys -> InBounds n (xs ++ ys)
-appendInBounds [] prf = prf
-appendInBounds (_ :: xs) prf = inBoundsCons (xs ++ ys) (appendInBounds xs prf)
+appendNonEmptyLengthInBounds : (xs : List a) ->
+                               (y : a) ->
+                               (ys : List a) ->
+                               InBounds (length xs) (xs ++ y :: ys)
+appendNonEmptyLengthInBounds [] _ _ = InFirst
+appendNonEmptyLengthInBounds (x :: xs) y ys = InLater $ appendNonEmptyLengthInBounds xs y ys
