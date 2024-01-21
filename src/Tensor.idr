@@ -193,7 +193,7 @@ namespace Squeezable
 
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
 |||
-||| ```idris
+||| ```
 ||| x : Graph $ Tensor [2, 1, 3, 1] S32
 ||| x = tensor [[[[4], [5], [6]]],
 |||             [[[7], [8], [9]]]]
@@ -202,7 +202,7 @@ namespace Squeezable
 ||| y = squeeze !x
 ||| ```
 ||| is
-||| ```idris
+||| ```
 ||| y : Graph $ Tensor [2, 1, 3] S32
 ||| y = tensor [[[4, 5, 6]],
 |||             [[7, 8, 9]]]
@@ -586,11 +586,15 @@ namespace Broadcastable
     ||| [3] to [5, 3]
     Nest : Broadcastable f t -> Broadcastable f (_ :: t)
 
+||| A shape can be broadcast arbitrarily to the front.
+|||
+||| @xs The dimensions to add to the front.
 export
-prependBroadcastable : (xs : Shape) -> Broadcastable ys (xs ++ ys)
+prependBroadcastable : (xs : List Nat) -> Broadcastable ys (xs ++ ys)
 prependBroadcastable [] = Same
 prependBroadcastable (x :: xs) = Nest (prependBroadcastable xs)
 
+||| A scalar can be broadcast to any shape.
 %hint
 export
 scalarToAnyOk : (to : Shape) -> Broadcastable [] to
@@ -598,14 +602,14 @@ scalarToAnyOk to = rewrite sym $ appendNilRightNeutral to in prependBroadcastabl
 
 ||| Broadcast a `Tensor` to a new compatible shape. For example,
 |||
-||| ```idris
+||| ```
 ||| x : Graph $ Tensor [2, 3] S32
 ||| x = broadcast !(tensor [4, 5, 6])
 ||| ```
 |||
 ||| is
 |||
-||| ```idris
+||| ```
 ||| x : Graph $ Tensor [2, 3] S32
 ||| x = tensor [[4, 5, 6], [4, 5, 6]]
 ||| ```
@@ -620,12 +624,12 @@ broadcast $ MkTensor {shape = _} x = addTensor $ Broadcast {dtype} from to x
 
 ||| A `Tensor` where every element has the specified value. For example,
 |||
-||| ```idris
+||| ```
 ||| fives : Graph $ Tensor [2, 3] S32
 ||| fives = fill 5
 ||| ```
 ||| is
-||| ```idris
+||| ```
 ||| fives : Graph $ Tensor [2, 3] S32
 ||| fives = tensor [[5, 5, 5],
 |||                 [5, 5, 5]]
@@ -638,7 +642,7 @@ fill x = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar x))
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
-||| ```idris
+||| ```
 ||| recip : Tensor [] F64 -> Graph $ Tensor [] F64
 ||| recip x = 1.0 / pure x
 ||| ```
@@ -656,7 +660,7 @@ map f $ MkTensor {shape = _} x = do
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
-||| ```idris
+||| ```
 ||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Graph $ Tensor [] F64
 ||| addRecip x y = pure x + 1.0 / pure y
 ||| ```
@@ -951,7 +955,7 @@ namespace Matrix
   ||| Matrix multiplication with a matrix or vector. Contraction is along the last axis of the first
   ||| and the first axis of the last. For example:
   |||
-  ||| ```idris
+  ||| ```
   ||| x : Graph $ Tensor [2, 3] S32
   ||| x = tensor [[-1, -2, -3],
   |||             [ 0,  1,  2]]
@@ -965,7 +969,7 @@ namespace Matrix
   |||
   ||| is
   |||
-  ||| ```idris
+  ||| ```
   ||| z : Graph $ Tensor [2, 1] S32
   ||| z = tensor [-19, 10]
   ||| ```
@@ -1174,8 +1178,19 @@ export
 (^) : Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)
 (^) = binaryRef Pow
 
+||| A constant where values increment along the specified `axis`, starting from zero. For example,
+||| ```
+||| x : Graph $ Tensor [2, 3] S32
+||| x = iota 1
+||| ```
+||| is the same as
+||| ```
+||| x : Graph $ Tensor [2, 3] S32
+||| x = tensor [[0, 1, 2],
+|||             [0, 1, 2]]
+||| ```
 export
-iota : Primitive dtype =>
+iota : Primitive.Num dtype =>
        {shape : _} ->
        (axis : Nat) ->
        {auto 0 inBounds : InBounds axis shape} ->
