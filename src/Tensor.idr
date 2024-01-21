@@ -1190,6 +1190,18 @@ export
 |||             [0, 1, 2, 3, 4],
 |||             [0, 1, 2, 3, 4]]
 ||| ```
+||| and
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = iota 0
+||| ```
+||| is the same as
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = tensor [[0, 0, 0, 0, 0],
+|||             [1, 1, 1, 1, 1],
+|||             [2, 2, 2, 2, 2]]
+||| ```
 export
 iota : Primitive.Num dtype =>
        {shape : _} ->
