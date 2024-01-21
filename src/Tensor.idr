@@ -638,6 +638,38 @@ export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Graph $ Tensor shape dtype
 fill x = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar x))
 
+||| A constant where values increment from zero along the specified `axis`. For example,
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = iota 1
+||| ```
+||| is the same as
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = tensor [[0, 1, 2, 3, 4],
+|||             [0, 1, 2, 3, 4],
+|||             [0, 1, 2, 3, 4]]
+||| ```
+||| and
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = iota 0
+||| ```
+||| is the same as
+||| ```
+||| x : Graph $ Tensor [3, 5] S32
+||| x = tensor [[0, 0, 0, 0, 0],
+|||             [1, 1, 1, 1, 1],
+|||             [2, 2, 2, 2, 2]]
+||| ```
+export
+iota : Primitive.Num dtype =>
+       {shape : _} ->
+       (axis : Nat) ->
+       {auto 0 inBounds : InBounds axis shape} ->
+       Graph $ Tensor shape dtype
+iota dimension = addTensor $ Iota shape {dtype} dimension
+
 ----------------------------- generic operations ----------------------------
 
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
@@ -1177,38 +1209,6 @@ infixr 9 ^
 export
 (^) : Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)
 (^) = binaryRef Pow
-
-||| A constant where values increment from zero along the specified `axis`. For example,
-||| ```
-||| x : Graph $ Tensor [3, 5] S32
-||| x = iota 1
-||| ```
-||| is the same as
-||| ```
-||| x : Graph $ Tensor [3, 5] S32
-||| x = tensor [[0, 1, 2, 3, 4],
-|||             [0, 1, 2, 3, 4],
-|||             [0, 1, 2, 3, 4]]
-||| ```
-||| and
-||| ```
-||| x : Graph $ Tensor [3, 5] S32
-||| x = iota 0
-||| ```
-||| is the same as
-||| ```
-||| x : Graph $ Tensor [3, 5] S32
-||| x = tensor [[0, 0, 0, 0, 0],
-|||             [1, 1, 1, 1, 1],
-|||             [2, 2, 2, 2, 2]]
-||| ```
-export
-iota : Primitive.Num dtype =>
-       {shape : _} ->
-       (axis : Nat) ->
-       {auto 0 inBounds : InBounds axis shape} ->
-       Graph $ Tensor shape dtype
-iota dimension = addTensor $ Iota shape {dtype} dimension
 
 ||| Element-wise absolute value. For example, `abs !(tensor [-2, 3])` is
 ||| `tensor [2, 3]`.
