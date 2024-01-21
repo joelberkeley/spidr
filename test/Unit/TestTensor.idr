@@ -148,6 +148,9 @@ iota = property $ do
 partial
 iotaExamples : Property
 iotaExamples = fixedProperty $ do
+  iota 0 ===# tensor {dtype = S32} [0, 1, 2, 3]
+  iota 1 ===# tensor {dtype = S32} [[0], [0], [0], [0]]
+
   iota 1 ===# tensor {dtype = S32} [[0, 1, 2, 3, 4],
                                     [0, 1, 2, 3, 4],
                                     [0, 1, 2, 3, 4]]
