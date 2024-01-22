@@ -13,16 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Utils.Proof
+module Data.L.Literal
 
-import Util
-
-import Data.List
+import Literal
 
 export
-appendNonEmptyLengthInBounds : (xs : List a) ->
-                               (y : a) ->
-                               (ys : List a) ->
-                               InBounds (length xs) (xs ++ y :: ys)
-appendNonEmptyLengthInBounds [] _ _ = InFirst
-appendNonEmptyLengthInBounds (x :: xs) y ys = InLater $ appendNonEmptyLengthInBounds xs y ys
+[Finite] Bounded (Literal [] Double) where
+  min = Scalar (min @{Finite})
+  max = Scalar (max @{Finite})

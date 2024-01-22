@@ -13,19 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Utils
+module Data.L.Tensor
 
-import Literal
 import Tensor
-
-export
-[Finite] Bounded (Literal [] Double) where
-  min = Scalar (min @{Finite})
-  max = Scalar (max @{Finite})
-
-export
-isNan : Double -> Bool
-isNan x = x /= x
 
 export partial
 unsafeEval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty

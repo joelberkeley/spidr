@@ -20,7 +20,7 @@ import Tensor
 import Model.Kernel
 
 import Utils.Comparison
-import Utils.Cases
+import Hedgehog.L.Gen
 
 partial
 rbfMatchesTFP : Property

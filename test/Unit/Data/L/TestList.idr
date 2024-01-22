@@ -15,7 +15,7 @@ limitations under the License.
 --}
 module Unit.Data.Local.TestList
 
-import Utils.Cases
+import Hedgehog.L.Gen
 import Utils.Comparison
 
 import Data.List

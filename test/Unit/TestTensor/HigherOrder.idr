@@ -22,7 +22,7 @@ import Tensor
 
 import Utils
 import Utils.Comparison
-import Utils.Cases
+import Hedgehog.L.Gen
 
 partial
 mapResult : Property

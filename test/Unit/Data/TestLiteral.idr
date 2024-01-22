@@ -18,7 +18,7 @@ module Unit.Data.TestLiteral
 import Literal
 
 import Utils.Comparison
-import Utils.Cases
+import Hedgehog.L.Gen
 
 map : Property
 map = fixedProperty $ do

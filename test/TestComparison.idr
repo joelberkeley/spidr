@@ -15,12 +15,12 @@ limitations under the License.
 --}
 module Utils.TestComparison
 
-import Utils.Cases
+import Hedgehog.L.Gen
 import Utils.Comparison
 
 -- compilation is very slow without these
-%hide Utils.Cases.Literal.inf
-%hide Utils.Cases.Literal.nan
+%hide Hedgehog.L.Gen.Literal.inf
+%hide Hedgehog.L.Gen.Literal.nan
 
 sufficientlyEqCases : List (Double, Double)
 sufficientlyEqCases = [
