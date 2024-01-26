@@ -97,8 +97,8 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 partial
-crash : Show e => Monad m => EitherT e m a -> m a
-crash x = runEitherT x <&> \case
+try : Show e => Monad m => EitherT e m a -> m a
+try x = runEitherT x <&> \case
   Right x => x
   Left err => idris_crash (show err)
 
@@ -117,7 +117,7 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
-   in crash $ execute (MkFn [] root env) >>= read {dtype} []
+   in try $ execute (MkFn [] root env) >>= read {dtype} []
 
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
@@ -155,7 +155,7 @@ namespace TensorList
                      x <- addNode (Tuple $ nodes ts)
                      pure (x, ts)
           (env, root, tensors) = runState empty graph
-      crash $ execute (MkFn [] root env) >>= readAll tensors 0
+      try $ execute (MkFn [] root env) >>= readAll tensors 0
 
     where
 
@@ -173,9 +173,8 @@ namespace TensorList
 ||| Useful for debugging.
 export partial
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor root) = runState empty x in
-                         case unsafePerformIO $ runEitherT $ toString (MkFn [] root env) of
-                              Right str => str
+  show $ MkGraph x = let (env, MkTensor root) = runState empty x
+                      in unsafePerformIO $ try $ toString (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
