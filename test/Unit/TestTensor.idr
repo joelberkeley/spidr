@@ -62,18 +62,18 @@ evalTuple = property $ do
       y1 = tensor {dtype = S32} x1
       y2 = tensor {dtype = U64} x2
 
-  -- let [] = unsafePerformIO $ eval {tys = []} (pure [])
+  let [] = unsafePerformIO $ eval {tys = []} (pure [])
 
   let [x0'] = unsafePerformIO $ eval {tys = [_]} (do pure [!y0])
 
   x0' ==~ x0
 
-  let [x0', x1'] = unsafePerformIO $ eval (do pure [!y0, !y1])
+  let [x0', x1'] = unsafePerformIO $ eval {tys = [_, _]} (do pure [!y0, !y1])
 
   x0' ==~ x0
   x1' === x1
 
-  let [x0', x1', x2'] = unsafePerformIO $ eval (do pure [!y0, !y1, !y2])
+  let [x0', x1', x2'] = unsafePerformIO $ eval {tys = [_, _, _]} (do pure [!y0, !y1, !y2])
 
   x0' ==~ x0
   x1' === x1
@@ -82,15 +82,14 @@ evalTuple = property $ do
 partial
 evalTupleNonTrivial : Property
 evalTupleNonTrivial = property $ do
-  let xs : Graph $ All2 Tensor [[], [2]] _ =
-           do y0 <- tensor [1.0, -2.0, 0.4]
+  let xs = do y0 <- tensor [1.0, -2.0, 0.4]
               y1 <- tensor 3.0
               u <- exp y0
               v <- slice [at 1] u + pure y1
               w <- slice [0.to 2] u
               pure [v, w]
 
-      [v, w] = unsafePerformIO $ eval {shapes = [[], [2]]} {tys = [_, _]} xs
+      [v, w] = unsafePerformIO $ eval {tys = [_, _]} xs
 
   v ==~ Scalar (exp (-2.0) + 3.0)
   w ==~ [| exp [1.0, -2.0] |]

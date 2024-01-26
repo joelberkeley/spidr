@@ -108,10 +108,9 @@ panicIO x = runEitherT x <&> \case
 ||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
 ||| **Note:**
-||| * Each call to `eval` will rebuild and execute the graph. Similarly, multiple calls to
-|||   `eval` on different `Tensor`s in a computation will be treated entirely independently.
-|||   `eval` does not store intermediate values. If you want to evaluate multiple tensors, use
-|||   `Tuple.eval`.
+||| * Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on different
+|||   tensors, even if they are in the same computation, will be treated entirely independently.
+|||   To efficiently evaluate multiple tensors at once, use `All2.eval`.
 ||| * `eval` performs logging. You can disable this by adjusting the logging level
 |||   with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
@@ -120,7 +119,15 @@ eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
    in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
 
-namespace Tuple
+namespace All2
+  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. This function constructs and compiles
+  ||| the graph just once.
+  |||
+  ||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
+  |||
+  ||| **Note:**
+  ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
+  |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
   eval : Graph (All2 Tensor shapes dtypes) ->
          All2 PrimitiveRW dtypes tys =>
@@ -148,6 +155,7 @@ namespace Tuple
     readAll (MkTensor {dtype} _ :: ts) (prim :: prims) n lit =
       [| read {dtype} [n] lit :: readAll ts prims (S n) lit |]
 
+{-
 partial
 foo : IO Bool
 foo = do
@@ -170,6 +178,7 @@ namespace Example
 
            [xs''] := eval [xs']
         in xs == xs''
+-}
 
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.
