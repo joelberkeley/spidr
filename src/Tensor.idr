@@ -97,8 +97,8 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 partial
-panicIO : ErrIO a -> IO a
-panicIO x = runEitherT x <&> \case
+crash : EitherT m a -> m a
+crash x = runEitherT x <&> \case
   Right x => x
   Left err => idris_crash (show err)
 
@@ -117,7 +117,7 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
-   in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
+   in crash $ execute (MkFn [] root env) >>= read {dtype} []
 
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
@@ -145,7 +145,7 @@ namespace TensorList
                      x <- addNode (Tuple $ nodes ts)
                      pure (x, ts)
           (env, root, tensors) = runState empty graph
-      panicIO $ execute (MkFn [] root env) >>= readAll tensors 0
+      crash $ execute (MkFn [] root env) >>= readAll tensors 0
 
     where
 
