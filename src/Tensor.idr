@@ -97,7 +97,7 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 partial
-crash : Show e => EitherT e m a -> m a
+crash : Show e => Monad m => EitherT e m a -> m a
 crash x = runEitherT x <&> \case
   Right x => x
   Left err => idris_crash (show err)
