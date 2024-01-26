@@ -27,6 +27,12 @@ import Utils.Comparison
 import Utils.Cases
 import Utils.Proof
 
+import Unit.TestTensor.Elementwise
+import Unit.TestTensor.HigherOrder
+import Unit.TestTensor.Sampling
+import Unit.TestTensor.Slice
+import Unit.TestTensor.Structure
+
 partial
 tensorThenEval : Property
 tensorThenEval = property $ do
@@ -463,4 +469,10 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
-  ]
+  ] ++ concat (the (List _) [
+      Unit.TestTensor.Elementwise.all
+    , Unit.TestTensor.HigherOrder.all
+    , Unit.TestTensor.Sampling.all
+    , Unit.TestTensor.Slice.all
+    , Unit.TestTensor.Structure.all
+  ])

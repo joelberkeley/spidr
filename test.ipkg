@@ -13,6 +13,12 @@ main = Main
 modules =
   Unit.Model.TestKernel,
 
+  Unit.TestTensor.Elementwise,
+  Unit.TestTensor.HigherOrder,
+  Unit.TestTensor.Sampling,
+  Unit.TestTensor.Slice,
+  Unit.TestTensor.Structure,
+
   Unit.TestDistribution,
   Unit.TestLiteral,
   Unit.TestTensor,
