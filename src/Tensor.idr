@@ -105,13 +105,12 @@ panicIO x = runEitherT x <&> \case
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
 |||
-||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
+||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
 ||| **Note:**
-||| * Each call to `eval` will rebuild and execute the graph. Similarly, multiple calls to
-|||   `eval` on different `Tensor`s in a computation will be treated entirely independently.
-|||   `eval` does not store intermediate values. This is a known limitation, and may change in
-|||   the future.
+||| * Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on different
+|||   tensors, even if they are in the same computation, will be treated entirely independently.
+|||   To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
 ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
@@ -121,6 +120,8 @@ eval $ MkGraph x =
    in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
 
 namespace TensorList
+  ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
+  ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
   public export
   data TensorList : List (Shape, Type) -> Type where
     Nil : TensorList []
@@ -129,7 +130,14 @@ namespace TensorList
            TensorList sts ->
            TensorList ((shape, ty) :: sts)
 
-namespace Tuple
+  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. In contrast to `Tensor.eval`, this
+  ||| function constructs and compiles the graph just once.
+  |||
+  ||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
+  |||
+  ||| **Note:**
+  ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
+  |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
   eval : Graph (TensorList shapes) -> IO $ All (uncurry Literal) shapes
   eval $ MkGraph tensors = do
