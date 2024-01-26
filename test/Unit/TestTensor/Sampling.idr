@@ -103,7 +103,7 @@ uniformSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let everything = do
+  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval $ do
         bound <- tensor bound
         bound' <- tensor bound'
         key <- tensor key
@@ -112,12 +112,7 @@ uniformSeedIsUpdated = withTests 20 . property $ do
         rng <- uniform key {shape=[10]} !(broadcast bound) !(broadcast bound')
         (seed', sample) <- runStateT seed rng
         (seed'', sample') <- runStateT seed' rng
-        seeds <- concat 0 !(concat 0 seed seed') seed''
-        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
-        pure (seeds, samples)
-
-      [seed, seed', seed''] = unsafeEval (do (seeds, _) <- everything; pure seeds)
-      [sample, sample'] = unsafeEval (do (_, samples) <- everything; pure samples)
+        pure [seed, seed', seed'', sample, sample']
 
   diff seed' (/=) seed
   diff seed'' (/=) seed'
@@ -131,7 +126,7 @@ uniformIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafeEval $ do
+  let [sample, sample'] = unsafePerformIO $ eval $ do
         bound <- tensor bound
         bound' <- tensor bound'
         key <- tensor key
@@ -140,7 +135,7 @@ uniformIsReproducible = withTests 20 . property $ do
         rng <- uniform {shape=[10]} key !(broadcast bound) !(broadcast bound')
         sample <- evalStateT seed rng
         sample' <- evalStateT seed rng
-        concat 0 !(expand 0 sample) !(expand 0 sample')
+        pure [sample, sample']
 
   sample ==~ sample'
 
@@ -169,18 +164,13 @@ normalSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let everything = do
+  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval $ do
         key <- tensor key
         seed <- tensor seed
         let rng = normal key {shape=[10]}
         (seed', sample) <- runStateT seed rng
         (seed'', sample') <- runStateT seed' rng
-        seeds <- concat 0 !(concat 0 seed seed') seed''
-        samples <- concat 0 !(expand 0 sample) !(expand 0 sample')
-        pure (seeds, samples)
-
-      [seed, seed', seed''] = unsafeEval (do (seeds, _) <- everything; pure seeds)
-      [sample, sample'] = unsafeEval (do (_, samples) <- everything; pure samples)
+        pure [seed, seed', seed'', sample, sample']
 
   diff seed' (/=) seed
   diff seed'' (/=) seed'
@@ -192,14 +182,14 @@ normalIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafeEval $ do
+  let [sample, sample'] = unsafePerformIO $ eval $ do
         key <- tensor key
         seed <- tensor seed
 
         let rng = normal {shape=[10]} key
         sample <- evalStateT seed rng
         sample' <- evalStateT seed rng
-        concat 0 !(expand 0 sample) !(expand 0 sample')
+        pure [sample, sample']
 
   sample ==~ sample'
 
