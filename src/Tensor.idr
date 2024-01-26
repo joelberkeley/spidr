@@ -119,17 +119,12 @@ eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
    in crash $ execute (MkFn [] root env) >>= read {dtype} []
 
-public export
-data All2 : (a -> b -> Type) -> List a -> List b -> Type where
-  Nil : All2 f [] []
-  (::) : forall xs, ys . f x y -> All2 f xs ys -> All2 f (x :: xs) (y :: ys)
-
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
   ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
   public export
   data TensorList : List Shape -> List Type -> Type where
-    Nil : TensorList []
+    Nil : TensorList [] []
     (::) : PrimitiveRW dtype ty =>
            Tensor shape dtype ->
            TensorList shapes tys ->
