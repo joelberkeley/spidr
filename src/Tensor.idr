@@ -150,12 +150,10 @@ namespace TensorList
   |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
   eval : Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
-  eval $ MkGraph tensors =
-    let graph = do ts <- tensors
-                   x <- addNode (Tuple $ nodes ts)
-                   pure (x, ts)
-        (env, root, tensors) = runState empty graph
-     in try $ execute (MkFn [] root env) >>= readAll tensors 0
+  eval $ MkGraph xs =
+    let (env, xs) = runState empty xs
+        (env, root) = runState env (addNode $ Tuple $ nodes xs)
+     in try $ execute (MkFn [] root env) >>= readAll xs 0
 
     where
 
