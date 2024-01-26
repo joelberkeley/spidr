@@ -119,16 +119,21 @@ eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
    in crash $ execute (MkFn [] root env) >>= read {dtype} []
 
+public export
+data All2 : (a -> b -> Type) -> List a -> List b -> Type where
+  Nil : All2 f [] []
+  (::) : forall xs, ys . f x y -> All2 f xs ys -> All2 f (x :: xs) (y :: ys)
+
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
   ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
   public export
-  data TensorList : List (Shape, Type) -> Type where
+  data TensorList : List Shape -> List Type -> Type where
     Nil : TensorList []
     (::) : PrimitiveRW dtype ty =>
            Tensor shape dtype ->
-           TensorList sts ->
-           TensorList ((shape, ty) :: sts)
+           TensorList shapes tys ->
+           TensorList (shape :: shapes) (ty :: tys)
 
   ||| Evaluate a list of `Tensor`s as a list of `Literal`s. In contrast to `Tensor.eval` called on
   ||| multiple tensors, this function constructs and compiles the graph just once.
@@ -139,7 +144,7 @@ namespace TensorList
   ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
   |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
-  eval : Graph (TensorList shapes) -> IO $ All (uncurry Literal) shapes
+  eval : Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
   eval $ MkGraph tensors = do
       let graph = do ts <- tensors
                      x <- addNode (Tuple $ nodes ts)
