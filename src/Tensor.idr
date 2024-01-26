@@ -130,8 +130,18 @@ namespace TensorList
            TensorList shapes tys ->
            TensorList (shape :: shapes) (ty :: tys)
 
-  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. In contrast to `Tensor.eval` called on
-  ||| multiple tensors, this function constructs and compiles the graph just once.
+  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
+  ||| shapes and element types. For example,
+  ||| ```
+  ||| main : IO ()
+  ||| main = do [x, y] <- eval $ do x <- tensor {dtype = F64} [1.2, 3.4]
+  |||                               y <- reduce @{Sum} [0] x
+  |||                               pure [x, y]
+  |||           printLn x
+  |||           printLn y
+  ||| ```
+  ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
+  ||| compiles the graph just once.
   |||
   ||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
   |||
@@ -149,11 +159,11 @@ namespace TensorList
 
     where
 
-    nodes : TensorList s -> List Nat
+    nodes : TensorList s t -> List Nat
     nodes [] = []
     nodes (MkTensor x :: xs) = x :: nodes xs
 
-    readAll : HasIO io => TensorList s -> Nat -> Literal -> io $ All (uncurry Literal) s
+    readAll : HasIO io => TensorList s t -> Nat -> Literal -> io $ All2 Literal s t
     readAll [] _ _ = pure []
     readAll (MkTensor {dtype} _ :: ts) n lit = [| read {dtype} [n] lit :: readAll ts (S n) lit |]
 
