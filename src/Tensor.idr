@@ -130,8 +130,8 @@ namespace TensorList
            TensorList sts ->
            TensorList ((shape, ty) :: sts)
 
-  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. In contrast to `Tensor.eval`, this
-  ||| function constructs and compiles the graph just once.
+  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. In contrast to `Tensor.eval` called on
+  ||| multiple tensors, this function constructs and compiles the graph just once.
   |||
   ||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
   |||
