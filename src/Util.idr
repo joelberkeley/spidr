@@ -127,6 +127,7 @@ namespace List
     impl i (x :: xs) = if elem i idxs then impl (S i) xs else x :: impl (S i) xs
 
   namespace All2
+    ||| A binary version of `All` from the standard library.
     public export
     data All2 : (0 p : a -> b -> Type) -> List a -> List b -> Type where
       Nil : All2 p [] []
