@@ -44,7 +44,8 @@ namespace Bool
   set : Literal -> List Nat -> ShapeIndex -> Bool -> IO ()
   set (MkLiteral lit) idxs (MkShapeIndex shapeIndex) value = do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
-    primIO $ prim__literalSetBool lit idxsArrayPtr (cast $ length idxs) shapeIndex (if value then 1 else 0)
+    primIO $
+      prim__literalSetBool lit idxsArrayPtr (cast $ length idxs) shapeIndex (boolToCInt value)
 
   export
   get : Literal -> List Nat -> ShapeIndex -> Bool
