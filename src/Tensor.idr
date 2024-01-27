@@ -142,8 +142,8 @@ namespace All2
   eval : Graph (All2 Tensor shapes dtypes) ->
          All2 PrimitiveRW dtypes tys =>
          IO $ All2 Literal shapes tys
-  eval @{prims} $ MkGraph tensors =
-      let graph = do addNode (Tuple $ nodes !tensors)
+  eval @{prims} $ MkGraph xs =
+      let graph = do addNode (Tuple $ nodes !xs)
           (env, root) = runState empty graph
        in try $ execute (MkFn [] root env) >>= readAll prims 0
 
@@ -153,14 +153,9 @@ namespace All2
     nodes [] = []
     nodes (MkTensor x :: xs) = x :: nodes xs
 
-    readAll : HasIO io =>
-              All2 PrimitiveRW ds ts ->
-              Nat ->
-              Literal ->
-              io $ All2 Literal ss ts
+    readAll : HasIO io => All2 PrimitiveRW ds ts -> Nat -> Literal -> io $ All2 Literal ss ts
     readAll [] _ _ = pure []
-    readAll ((::) {x} _ prims) n lit =
-      [| read {dtype = x} [n] lit :: readAll ts prims (S n) lit |]
+    readAll ((::) {x} _ prims) n lit = [| read {dtype = x} [n] lit :: readAll ts prims (S n) lit |]
 
 {-
 partial
