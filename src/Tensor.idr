@@ -96,25 +96,74 @@ namespace S32
   fromInteger : Integer -> Graph $ Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
+partial
+try : Show e => Monad m => EitherT e m a -> m a
+try x = runEitherT x <&> \case
+  Right x => x
+  Left err => idris_crash (show err)
+
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
 |||
-||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
+||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
 ||| **Note:**
-||| * Each call to `eval` will rebuild and execute the graph. Similarly, multiple calls to
-|||   `eval` on different `Tensor`s in a computation will be treated entirely independently.
-|||   `eval` does not store intermediate values. This is a known limitation, and may change in
-|||   the future.
+||| * Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on different
+|||   tensors, even if they are in the same computation, will be treated entirely independently.
+|||   To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
 ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-eval $ MkGraph x = do
+eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
-  runEitherT (execute {dtype} (MkFn [] root env)) <&> \case
-    Right lit => lit
-    Left err => idris_crash (show err)
+   in try $ execute (MkFn [] root env) >>= read {dtype} []
+
+namespace TensorList
+  ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
+  ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
+  public export
+  data TensorList : List Shape -> List Type -> Type where
+    Nil : TensorList [] []
+    (::) : PrimitiveRW dtype ty =>
+           Tensor shape dtype ->
+           TensorList shapes tys ->
+           TensorList (shape :: shapes) (ty :: tys)
+
+  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
+  ||| shapes and element types. For example,
+  ||| ```
+  ||| main : IO ()
+  ||| main = do [x, y] <- eval $ do x <- tensor {dtype = F64} [1.2, 3.4]
+  |||                               y <- reduce @{Sum} [0] x
+  |||                               pure [x, y]
+  |||           printLn x
+  |||           printLn y
+  ||| ```
+  ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
+  ||| compiles the graph just once.
+  |||
+  ||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
+  |||
+  ||| **Note:**
+  ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
+  |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
+  export partial
+  eval : Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+  eval $ MkGraph xs =
+    let (env, xs) = runState empty xs
+        (env, root) = runState env (addNode $ Tuple $ nodes xs)
+     in try $ execute (MkFn [] root env) >>= readAll xs 0
+
+    where
+
+    nodes : TensorList s t -> List Nat
+    nodes [] = []
+    nodes (MkTensor x :: xs) = x :: nodes xs
+
+    readAll : HasIO io => TensorList s t -> Nat -> Literal -> io $ All2 Literal s t
+    readAll [] _ _ = pure []
+    readAll (MkTensor {dtype} _ :: ts) n lit = [| read {dtype} [n] lit :: readAll ts (S n) lit |]
 
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.
@@ -122,9 +171,8 @@ eval $ MkGraph x = do
 ||| Useful for debugging.
 export partial
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor root) = runState empty x in
-                         case unsafePerformIO $ runEitherT $ toString (MkFn [] root env) of
-                              Right str => str
+  show $ MkGraph x = let (env, MkTensor root) = runState empty x
+                      in unsafePerformIO $ try $ toString (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export

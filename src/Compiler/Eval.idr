@@ -104,7 +104,7 @@ interpret xlaBuilder (MkFn params root env) = do
     set posInGraph param
 
   interpretE : Expr -> Builder XlaOp
-  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} lit)
+  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
   interpretE (Arg x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse get xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(get x) idx
@@ -234,12 +234,11 @@ toString f = do
   pure $ opToString xlaBuilder root
 
 export covering
-execute : PrimitiveRW dtype a => Fn 0 -> {shape : _} -> ErrIO $ Literal shape a
+execute : Fn 0 -> ErrIO Literal
 execute f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   gpuStatus <- validateGPUMachineManager
   platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   client <- getOrCreateLocalClient platform
-  lit <- executeAndTransfer client computation
-  pure (read {dtype} lit)
+  executeAndTransfer client computation

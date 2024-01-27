@@ -16,7 +16,8 @@ limitations under the License.
 module Compiler.LiteralRW
 
 import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
+import public Compiler.Xla.TensorFlow.Compiler.Xla.Literal
+import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
 import Literal
 import Util
 
@@ -39,21 +40,36 @@ indexed = go shape []
   go (0 :: _) _ = []
   go (S d :: ds) idxs = concat $ map (\i => go ds (snoc idxs i)) (range (S d))
 
-export
+public export
 interface Primitive dtype => LiteralRW dtype ty where
-  set : Literal -> List Nat -> ty -> IO ()
-  get : Literal -> List Nat -> ty
+  set : Literal -> List Nat -> ShapeIndex -> ty -> IO ()
+  get : Literal -> List Nat -> ShapeIndex -> ty
 
 export
-write : (HasIO io, LiteralRW dtype a) => {shape : _} -> Literal shape a -> io Literal
-write xs = liftIO $ do
+write : HasIO io =>
+        LiteralRW dtype a =>
+        {shape : _} ->
+        List Nat ->
+        Literal shape a ->
+        io Literal
+write idxs xs = liftIO $ do
   literal <- allocLiteral {dtype} shape
-  sequence_ [| (\idxs => set {dtype} literal idxs) indexed xs |]
+  shapeIndex <- allocShapeIndex
+  traverse_ (pushBack shapeIndex) idxs
+  sequence_ [| (\idxs => set {dtype} literal idxs shapeIndex) indexed xs |]
   pure literal
 
 export
-read : LiteralRW dtype a => Literal -> {shape : _} -> Literal shape a
-read lit = map (get {dtype} lit) indexed
+read : HasIO io =>
+       LiteralRW dtype a =>
+       {shape : _} ->
+       List Nat ->
+       Literal ->
+       io $ Literal shape a
+read idxs lit = do
+  shapeIndex <- allocShapeIndex
+  traverse_ (pushBack shapeIndex) idxs
+  pure $ map (\mIdx => get {dtype} lit mIdx shapeIndex) (indexed {shape})
 
 export
 LiteralRW PRED Bool where

@@ -16,5 +16,12 @@ limitations under the License.
 #include "shape.h"
 
 extern "C" {
+    struct ShapeIndex;
+
+    ShapeIndex* ShapeIndex_new();
+    void ShapeIndex_delete(ShapeIndex* s);
+    void ShapeIndex_push_back(ShapeIndex& shape_index, int value);
+    void ShapeIndex_push_front(ShapeIndex& shape_index, int value);
+
     Shape* MakeShape(int primitive_type, int* shape, int rank);
 }

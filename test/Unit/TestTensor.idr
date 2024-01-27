@@ -54,6 +54,53 @@ tensorThenEval = property $ do
   x === unsafePerformIO (eval (tensor {dtype=PRED} x))
 
 partial
+evalTuple : Property
+evalTuple = property $ do
+  s0 <- forAll shapes
+  s1 <- forAll shapes
+  s2 <- forAll shapes
+
+  x0 <- forAll (literal s0 doubles)
+  x1 <- forAll (literal s1 int32s)
+  x2 <- forAll (literal s2 nats)
+
+  let y0 = tensor {dtype = F64} x0
+      y1 = tensor {dtype = S32} x1
+      y2 = tensor {dtype = U64} x2
+
+  let [] = unsafePerformIO $ eval (pure [])
+
+  let [x0'] = unsafePerformIO $ eval (do pure [!y0])
+
+  x0' ==~ x0
+
+  let [x0', x1'] = unsafePerformIO $ eval (do pure [!y0, !y1])
+
+  x0' ==~ x0
+  x1' === x1
+
+  let [x0', x1', x2'] = unsafePerformIO $ eval (do pure [!y0, !y1, !y2])
+
+  x0' ==~ x0
+  x1' === x1
+  x2' === x2
+
+partial
+evalTupleNonTrivial : Property
+evalTupleNonTrivial = property $ do
+  let xs = do y0 <- tensor [1.0, -2.0, 0.4]
+              y1 <- tensor 3.0
+              u <- exp y0
+              v <- slice [at 1] u + pure y1
+              w <- slice [0.to 2] u
+              pure [v, w]
+
+      [v, w] = unsafePerformIO $ eval xs
+
+  v ==~ Scalar (exp (-2.0) + 3.0)
+  w ==~ [| exp [1.0, -2.0] |]
+
+partial
 canConvertAtXlaNumericBounds : Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
@@ -402,6 +449,8 @@ export partial
 group : Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
+    , ("eval multiple tensors", evalTuple)
+    , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)

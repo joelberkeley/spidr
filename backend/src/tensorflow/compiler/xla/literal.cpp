@@ -17,6 +17,7 @@ limitations under the License.
 
 #include "literal.h"
 #include "shape.h"
+#include "shape_util.h"
 
 extern "C" {
     Literal* Literal_new(Shape& shape) {
@@ -31,61 +32,85 @@ extern "C" {
 }
 
 template <typename NativeT>
-NativeT Literal_Get(Literal& lit, int* indices) {
+NativeT Literal_Get(Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index) {
     xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
-    int64_t rank = lit_.shape().rank();
-    int64_t multi_index[rank];
-    std::copy(indices, indices + rank, multi_index);
-    return lit_.Get<NativeT>(absl::Span<const int64_t>(multi_index, rank));
+    int64_t multi_index_[multi_index_len];
+    std::copy(multi_index, multi_index + multi_index_len, multi_index_);
+    auto multi_index_span = absl::Span<const int64_t>(multi_index_, multi_index_len);
+    auto& shape_index_ = reinterpret_cast<xla::ShapeIndex&>(shape_index);
+    return lit_.Get<NativeT>(multi_index_span, shape_index_);
 };
 
 template <typename NativeT>
-void Literal_Set(Literal& lit, int* indices, NativeT value) {
+void Literal_Set(
+    Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, NativeT value
+) {
     xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
-    int64_t rank = lit_.shape().rank();
-    int64_t multi_index[rank];
-    std::copy(indices, indices + rank, multi_index);
-    lit_.Set<NativeT>(absl::Span<const int64_t>(multi_index, rank), value);
+    int64_t multi_index_[multi_index_len];
+    std::copy(multi_index, multi_index + multi_index_len, multi_index_);
+    auto multi_index_span = absl::Span<const int64_t>(multi_index_, multi_index_len);
+    auto& shape_index_ = reinterpret_cast<xla::ShapeIndex&>(shape_index);
+    lit_.Set<NativeT>(multi_index_span, shape_index_, value);
 };
 
 extern "C" {
-    int Literal_Get_bool(Literal& lit, int* indices) {
-        return (int) Literal_Get<bool>(lit, indices);
+    int Literal_Get_bool(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index
+    ) {
+        return (int) Literal_Get<bool>(lit, multi_index, multi_index_len, shape_index);
     }
 
-    int Literal_Get_int32_t(Literal& lit, int* indices) {
-        return Literal_Get<int32_t>(lit, indices);
+    int Literal_Get_int32_t(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index
+    ) {
+        return Literal_Get<int32_t>(lit, multi_index, multi_index_len, shape_index);
     }
 
-    int Literal_Get_uint32_t(Literal& lit, int* indices) {
-        return (int) Literal_Get<uint32_t>(lit, indices);
+    int Literal_Get_uint32_t(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index
+    ) {
+        return (int) Literal_Get<uint32_t>(lit, multi_index, multi_index_len, shape_index);
     }
 
-    int Literal_Get_uint64_t(Literal& lit, int* indices) {
-        return (int) Literal_Get<uint64_t>(lit, indices);
+    int Literal_Get_uint64_t(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index
+    ) {
+        return (int) Literal_Get<uint64_t>(lit, multi_index, multi_index_len, shape_index);
     }
 
-    double Literal_Get_double(Literal& lit, int* indices) {
-        return Literal_Get<double>(lit, indices);
+    double Literal_Get_double(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index
+    ) {
+        return Literal_Get<double>(lit, multi_index, multi_index_len, shape_index);
     }
 
-    void Literal_Set_bool(Literal& lit, int* indices, int value) {
-        Literal_Set<bool>(lit, indices, (bool) value);
+    void Literal_Set_bool(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, int value
+    ) {
+        Literal_Set<bool>(lit, multi_index, multi_index_len, shape_index, (bool) value);
     }
 
-    void Literal_Set_int32_t(Literal& lit, int* indices, int value) {
-        Literal_Set<int32_t>(lit, indices, value);
+    void Literal_Set_int32_t(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, int value
+    ) {
+        Literal_Set<int32_t>(lit, multi_index, multi_index_len, shape_index, value);
     }
 
-    void Literal_Set_uint32_t(Literal& lit, int* indices, int value) {
-        Literal_Set<uint32_t>(lit, indices, (uint32_t) value);
+    void Literal_Set_uint32_t(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, int value
+    ) {
+        Literal_Set<uint32_t>(lit, multi_index, multi_index_len, shape_index, (uint32_t) value);
     }
 
-    void Literal_Set_uint64_t(Literal& lit, int* indices, int value) {
-        Literal_Set<uint64_t>(lit, indices, (uint64_t) value);
+    void Literal_Set_uint64_t(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, int value
+    ) {
+        Literal_Set<uint64_t>(lit, multi_index, multi_index_len, shape_index, (uint64_t) value);
     }
 
-    void Literal_Set_double(Literal& lit, int* indices, double value) {
-        Literal_Set<double>(lit, indices, value);
+    void Literal_Set_double(
+        Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, double value
+    ) {
+        Literal_Set<double>(lit, multi_index, multi_index_len, shape_index, value);
     }
 }

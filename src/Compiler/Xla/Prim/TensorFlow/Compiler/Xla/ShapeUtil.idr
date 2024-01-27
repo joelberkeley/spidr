@@ -20,5 +20,21 @@ import System.FFI
 import Compiler.Xla.Prim.Util
 
 export
+%foreign (libxla "ShapeIndex_new")
+prim__shapeIndexNew : PrimIO AnyPtr
+
+export
+%foreign (libxla "ShapeIndex_delete")
+prim__shapeIndexDelete : AnyPtr -> PrimIO ()
+
+export
+%foreign (libxla "ShapeIndex_push_back")
+prim__shapeIndexPushBack : GCAnyPtr -> Int -> PrimIO ()
+
+export
+%foreign (libxla "ShapeIndex_push_front")
+prim__shapeIndexPushFront : GCAnyPtr -> Int -> PrimIO ()
+
+export
 %foreign (libxla "MakeShape")
 prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
