@@ -117,7 +117,7 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
-   in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
+   in try $ execute (MkFn [] root env) >>= read {dtype} []
 
 namespace All2
   ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
