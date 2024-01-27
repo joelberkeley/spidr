@@ -157,7 +157,6 @@ namespace All2
     readAll [] _ _ = pure []
     readAll ((::) {x} _ prims) n lit = [| read {dtype = x} [n] lit :: readAll ts prims (S n) lit |]
 
-{-
 partial
 foo : IO Bool
 foo = do
@@ -165,22 +164,6 @@ foo = do
       y0 := tensor {dtype = F64} x0
   [x0'] <- eval {tys = %search} (do pure [!y0])
   pure (x0 == x0')
-
-namespace Example
-  interface RW (a : Type) (b : Type) | a where
-
-  RW Nat Int32 where
-  RW Bool Double where
-
-  eval : All2 Literal shape as -> All2 RW as bs => All2 Literal shape bs
-
-  eq : Bool
-  eq = let xs : Literal [2] Int32
-           xs' : Literal [2] Nat
-
-           [xs''] := eval [xs']
-        in xs == xs''
--}
 
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.
