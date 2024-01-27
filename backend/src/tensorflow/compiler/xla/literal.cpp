@@ -43,8 +43,8 @@ NativeT Literal_Get(Literal& lit, int* multi_index, int multi_index_len, ShapeIn
 
 template <typename NativeT>
 void Literal_Set(
-    Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, NativeT value)
-{
+    Literal& lit, int* multi_index, int multi_index_len, ShapeIndex& shape_index, NativeT value
+) {
     xla::Literal& lit_ = reinterpret_cast<xla::Literal&>(lit);
     int64_t multi_index_[multi_index_len];
     std::copy(multi_index, multi_index + multi_index_len, multi_index_);

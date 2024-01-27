@@ -97,15 +97,15 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 partial
-panicIO : ErrIO a -> IO a
-panicIO x = runEitherT x <&> \case
+try : Show e => Monad m => EitherT e m a -> m a
+try x = runEitherT x <&> \case
   Right x => x
   Left err => idris_crash (show err)
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
 |||
-||| This function will execute the graph on GPU if one is found, else it will use the host CPU.
+||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
 |||
 ||| **Note:**
 ||| * Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on different
@@ -120,8 +120,18 @@ eval $ MkGraph x =
    in panicIO $ execute (MkFn [] root env) >>= read {dtype} []
 
 namespace All2
-  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. This function constructs and compiles
-  ||| the graph just once.
+  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
+  ||| shapes and element types. For example,
+  ||| ```
+  ||| main : IO ()
+  ||| main = do [x, y] <- eval $ do x <- tensor {dtype = F64} [1.2, 3.4]
+  |||                               y <- reduce @{Sum} [0] x
+  |||                               pure [x, y]
+  |||           printLn x
+  |||           printLn y
+  ||| ```
+  ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
+  ||| compiles the graph just once.
   |||
   ||| `eval` will execute the graph on GPU if one is found, else it will use the host CPU.
   |||
@@ -132,12 +142,10 @@ namespace All2
   eval : Graph (All2 Tensor shapes dtypes) ->
          All2 PrimitiveRW dtypes tys =>
          IO $ All2 Literal shapes tys
-  eval @{prims} $ MkGraph tensors = do
-      let graph = do ts <- tensors
-                     x <- addNode (Tuple $ nodes ts)
-                     pure (x, ts)
-          (env, root, tensors) = runState empty graph
-      panicIO $ execute (MkFn [] root env) >>= readAll tensors prims 0
+  eval @{prims} $ MkGraph tensors =
+      let graph = do addNode (Tuple $ nodes !tensors)
+          (env, root) = runState empty graph
+       in try $ execute (MkFn [] root env) >>= readAll prims 0
 
     where
 
@@ -146,14 +154,13 @@ namespace All2
     nodes (MkTensor x :: xs) = x :: nodes xs
 
     readAll : HasIO io =>
-              All2 Tensor ss ds ->
               All2 PrimitiveRW ds ts ->
               Nat ->
               Literal ->
               io $ All2 Literal ss ts
-    readAll [] [] _ _ = pure []
-    readAll (MkTensor {dtype} _ :: ts) (prim :: prims) n lit =
-      [| read {dtype} [n] lit :: readAll ts prims (S n) lit |]
+    readAll [] _ _ = pure []
+    readAll ((::) {x} _ prims) n lit =
+      [| read {dtype = x} [n] lit :: readAll ts prims (S n) lit |]
 
 {-
 partial
@@ -186,9 +193,8 @@ namespace Example
 ||| Useful for debugging.
 export partial
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor root) = runState empty x in
-                         case unsafePerformIO $ runEitherT $ toString (MkFn [] root env) of
-                              Right str => str
+  show $ MkGraph x = let (env, MkTensor root) = runState empty x
+                      in unsafePerformIO $ try $ toString (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
