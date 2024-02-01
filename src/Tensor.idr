@@ -498,10 +498,10 @@ replaceAt at (MkTensor replacement) (MkTensor target) =
 
   where
 
-  toList : MultiIndex shape replacement -> List Nat
-  toList INil = []
-  toList (IConsStatic idx idxs) = idx :: toList idxs
-  toList (IConsDynamic idx idxs) = idx :: toList idxs
+  toList : MultiIndex s r -> Graph $ List Nat
+  toList INil = pure []
+  toList (IConsStatic idx idxs) = toList $ IConsDynamic !(tensor $ Scalar idx) idxs
+  toList (IConsDynamic (MkTensor idx) idxs) = (idx ::) <&> toList idxs
 
 foo : Graph $ Tensor [3, 4, 5] S32
 foo = let x : Graph $ Tensor [2, 2, 4] S32
