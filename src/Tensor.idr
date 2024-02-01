@@ -473,19 +473,19 @@ data MultiIndex : (sizes, bounds : Shape) -> Type where
 namespace MultiIndex
   public export
   Nil : MultiIndex [] []
-  Nil = SNil
+  Nil = INil
 
   namespace Static
     public export
     (::) : (idx : Nat) ->
            {auto inBounds : LTE (idx + s)} ->
            MultiIndex bs ss ->
-           MultiIndex (b :: bs) (s :: ss)
-    (::) idx {inBounds} idxs = InConsStatic idx {inBounds} idxs 
+           MultiIndex (s :: ss) (b :: bs)
+    (::) = IConsStatic
 
   namespace Dynamic
     public export
-    (::) : Tensor [] U64 -> MultiIndex bs ss -> MultiIndex (b :: bs) (s :: ss)
+    (::) : Tensor [] U64 -> MultiIndex ss bs -> MultiIndex (s :: ss) (b :: bs)
     (::) = IConsDynamic
 
 export
