@@ -157,10 +157,10 @@ dynamicSlice (MkXlaOp opPtr) startIndices sizeIndices = do
 
 export
 dynamicUpdateSlice : HasIO io => XlaOp -> XlaOp -> List XlaOp -> io XlaOp
-dynamicUpdateSlice (MkXlaOp operand) (MkXlaOp update) start_indices = do
+dynamicUpdateSlice (MkXlaOp operand) (MkXlaOp update) startIndices = do
   MkXlaOpArray startIndicesArrayPtr <- mkXlaOpArray startIndices
   opPtr <- primIO $ prim__dynamicUpdateSlice
-    operand update startIndicesArrayPtr (cast $ length start_indices)
+    operand update startIndicesArrayPtr (cast $ length startIndices)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
