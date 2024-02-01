@@ -127,6 +127,7 @@ data Expr : Type where
   Reshape : Shape -> Shape -> Nat -> Expr
   Slice : List Nat -> List Nat -> List Nat -> Nat -> Expr
   DynamicSlice : List Nat -> List Nat -> Nat -> Expr
+  DynamicUpdateSlice : Nat -> Nat -> List Nat -> Expr
   Concat : Nat -> Nat -> Nat -> Expr
   Diag : Nat -> Expr
   Triangle : (lower : Bool) -> Nat -> Expr

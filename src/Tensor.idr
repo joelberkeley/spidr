@@ -461,6 +461,53 @@ slice at $ MkTensor x = do
       dynStarts idxs (DynamicIndex (MkTensor i) :: ds) = (i ::) <$> dynStarts idxs ds
       dynStarts idxs (_ :: ds) = [| addNode zero :: dynStarts idxs ds |]
 
+export
+data MultiIndex : (bounds, sizes : Shape) -> Type where
+  INil : MultiIndex [] []
+  IConsStatic : (idx : Nat) ->
+                {auto inBounds : LTE (idx + s)} ->
+                MultiIndex bs ss ->
+                MultiIndex (b :: bs) (s :: ss)
+  IConsDynamic : Tensor [] U64 -> MultiIndex bs ss -> MultiIndex (b :: bs) (s :: ss)
+
+namespace MultiIndex
+  public export
+  Nil : MultiIndex [] []
+  Nil = SNil
+
+  namespace Static
+    public export
+    (::) : (idx : Nat) ->
+           {auto inBounds : LTE (idx + s)} ->
+           MultiIndex bs ss ->
+           MultiIndex (b :: bs) (s :: ss)
+    (::) = InConsStatic
+
+  namespace Dynamic
+    public export
+    (::) : Tensor [] U64 -> MultiIndex bs ss -> MultiIndex (b :: bs) (s :: ss)
+    (::) = IConsDynamic
+
+export
+replaceAt : MultiIndex shape replacement ->
+            Tensor replacement dtype ->
+            Tensor shape dtype ->
+            Graph $ Tensor shape dtype
+replaceAt at (MkTensor replacement) (MkTensor target) =
+  addTensor $ DynamicUpdateSlice (toList at) replacement target
+
+  where
+
+  toList : MultIndex shape replacement -> List Nat
+  toList INil = []
+  toList (IConsStatic idx idxs) = idx :: toList idxs
+  toList (IConsDynamic idx idxs) = idx :: toList idxs
+
+foo : Graph $ Tensor [3, 4, 5] S32
+foo = let x : Graph $ Tensor [2, 2, 4] S32
+          y = Graph $ Tensor [3, 4, 5] S32
+       in replaceAt [0, 0, 0] !x !y
+
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 !(tensor [[1, 2], [3, 4]]) !(tensor [[5, 6]])` and
 ||| `concat 1 !(tensor [[3], [6]]) !(tensor [[4, 5], [7, 8]])` are both
