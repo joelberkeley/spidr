@@ -462,13 +462,13 @@ slice at $ MkTensor x = do
       dynStarts idxs (_ :: ds) = [| addNode zero :: dynStarts idxs ds |]
 
 export
-data MultiIndex : (bounds, sizes : Shape) -> Type where
+data MultiIndex : (sizes, bounds : Shape) -> Type where
   INil : MultiIndex [] []
   IConsStatic : (idx : Nat) ->
-                {auto inBounds : LTE (idx + s)} ->
-                MultiIndex bs ss ->
-                MultiIndex (b :: bs) (s :: ss)
-  IConsDynamic : Tensor [] U64 -> MultiIndex bs ss -> MultiIndex (b :: bs) (s :: ss)
+                {auto inBounds : LTE (idx + s) b} ->
+                MultiIndex ss bs ->
+                MultiIndex (s :: ss) (b :: bs)
+  IConsDynamic : Tensor [] U64 -> MultiIndex ss bs -> MultiIndex (s :: ss) (b :: bs)
 
 namespace MultiIndex
   public export
@@ -481,7 +481,7 @@ namespace MultiIndex
            {auto inBounds : LTE (idx + s)} ->
            MultiIndex bs ss ->
            MultiIndex (b :: bs) (s :: ss)
-    (::) = InConsStatic
+    (::) idx {inBounds} idxs = InConsStatic idx {inBounds} idxs 
 
   namespace Dynamic
     public export
@@ -489,7 +489,7 @@ namespace MultiIndex
     (::) = IConsDynamic
 
 export
-replaceAt : MultiIndex shape replacement ->
+replaceAt : MultiIndex replacement shape ->
             Tensor replacement dtype ->
             Tensor shape dtype ->
             Graph $ Tensor shape dtype
@@ -498,7 +498,7 @@ replaceAt at (MkTensor replacement) (MkTensor target) =
 
   where
 
-  toList : MultIndex shape replacement -> List Nat
+  toList : MultiIndex shape replacement -> List Nat
   toList INil = []
   toList (IConsStatic idx idxs) = idx :: toList idxs
   toList (IConsDynamic idx idxs) = idx :: toList idxs
