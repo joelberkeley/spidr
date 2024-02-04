@@ -478,7 +478,7 @@ namespace MultiIndex
   namespace Static
     public export
     (::) : (idx : Nat) ->
-           {auto inBounds : LTE (idx + s)} ->
+           {auto inBounds : LTE (idx + s) b} ->
            MultiIndex bs ss ->
            MultiIndex (s :: ss) (b :: bs)
     (::) = IConsStatic
@@ -489,11 +489,11 @@ namespace MultiIndex
     (::) = IConsDynamic
 
 export
-replaceAt : MultiIndex replacement shape ->
-            Tensor replacement dtype ->
-            Tensor shape dtype ->
-            Graph $ Tensor shape dtype
-replaceAt at (MkTensor replacement) (MkTensor target) =
+replace : MultiIndex replacement shape ->
+          Tensor replacement dtype ->
+          Tensor shape dtype ->
+          Graph $ Tensor shape dtype
+replace at (MkTensor replacement) (MkTensor target) =
   addTensor $ DynamicUpdateSlice (toList at) replacement target
 
   where
