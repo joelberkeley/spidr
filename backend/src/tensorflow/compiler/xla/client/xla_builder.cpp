@@ -176,7 +176,7 @@ extern "C" {
     XlaOp* DynamicSlice(
         XlaOp& operand, XlaOp* start_indices, int start_indices_len, int* slice_sizes, int slice_sizes_len
     ) {
-        auto operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
         auto start_indices_ = reinterpret_cast<xla::XlaOp*>(start_indices);
 
         int64_t slice_sizes64[slice_sizes_len];
@@ -186,6 +186,20 @@ extern "C" {
             operand_,
             absl::Span<xla::XlaOp>(start_indices_, start_indices_len),
             absl::Span<const int64_t>(slice_sizes64, slice_sizes_len)
+        );
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* DynamicUpdateSlice(
+        XlaOp& operand, XlaOp& update, XlaOp* start_indices, int start_indices_len
+    ) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto& update_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto start_indices_ = reinterpret_cast<xla::XlaOp*>(start_indices);
+
+        xla::XlaOp res = xla::DynamicUpdateSlice(
+            operand_, update_, absl::Span<xla::XlaOp>(start_indices_, start_indices_len)
         );
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
