@@ -368,7 +368,7 @@ updateSliceMixed = fixedProperty $ do
                          [[21, 22, 23],
                           [24, 25, 26]]]
 
-  (do updateSlice [!(u64 1), 0, !(u64 3)] !update !target ===# expected
+  (do updateSlice [!(u64 1), 0, !(u64 3)] !update !target) ===# expected
 
 export partial
 all : List (PropertyName, Property)
