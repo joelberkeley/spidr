@@ -482,7 +482,7 @@ namespace MultiIndex
     public export
     (::) : (idx : Nat) ->
            {auto inBounds : LTE (idx + s) b} ->
-           MultiIndex bs ss ->
+           MultiIndex ss bs ->
            MultiIndex (s :: ss) (b :: bs)
     (::) = IConsStatic
 
@@ -540,12 +540,12 @@ updateSlice at (MkTensor replacement) (MkTensor target) =
 
   toList : MultiIndex s r -> Graph $ List Nat
   toList INil = pure []
-  toList (IConsStatic idx idxs) = toList $ IConsDynamic !(tensor $ Scalar idx) idxs
-  toList (IConsDynamic (MkTensor idx) idxs) = (idx ::) <&> toList idxs
+  toList (IConsStatic {s, b} idx idxs) = toList $ IConsDynamic {s, b} !(tensor $ Scalar idx) idxs
+  toList (IConsDynamic (MkTensor idx) idxs) = map (idx ::) $ toList idxs
 
 foo : Graph $ Tensor [3, 4, 5] S32
 foo = let x : Graph $ Tensor [2, 2, 4] S32
-          y = Graph $ Tensor [3, 4, 5] S32
+          y : Graph $ Tensor [3, 4, 5] S32
        in updateSlice [0, 0, 0] !x !y
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
