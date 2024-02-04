@@ -25,9 +25,18 @@ import Primitive
 import Types
 import Util
 
+infix 9 ###
+
 public export
-data ShapeAndType : Type where
-  MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
+data FullShape : Type where
+  (###) : Shape -> (0 dtype : Type) -> Primitive dtype => FullShape
+
+export
+new : Ref Nat
+new = do
+  n <- get
+  put (S n)
+  pure n
 
 public export
 data Expr : Type where
@@ -61,10 +70,14 @@ data Fn : Nat -> Type where
   ||| @result The position of the function result in the graph.
   ||| @env The function graph. Includes only nodes in this scope, not outer or inner scope.
   MkFn : {arity : _} ->
-         (params : Vect arity (Nat, ShapeAndType)) ->
+         (params : Vect arity (Nat, FullShape)) ->
          (result : Nat) ->
          (env : Env) ->
          Fn arity
+
+public export 0
+ProgramShape : Type
+ProgramShape = SortedMap Nat Shape
 
 public export
 data BinaryOp =
@@ -84,6 +97,25 @@ data BinaryOp =
   | Or
   | Min
   | Max
+
+export
+Show BinaryOp where
+  show Eq = "Eq"
+  show Ne = "Ne"
+  show Add = "Add"
+  show Sub = "Sub"
+  show Mul = "Mul"
+  show Div = "Div"
+  show Rem = "Rem"
+  show Pow = "Pow"
+  show Lt = "Lt"
+  show Gt = "Gt"
+  show Le = "Le"
+  show Ge = "Ge"
+  show And = "And"
+  show Or = "Or"
+  show Min = "Min"
+  show Max = "Max"
 
 public export
 data UnaryOp =
@@ -112,6 +144,32 @@ data UnaryOp =
   | Acosh
   | Atanh
 
+Show UnaryOp where
+  show Not = "Not"
+  show Neg = "Neg"
+  show Reciprocal = "Reciprocal"
+  show Ceil = "Ceil"
+  show Floor = "Floor"
+  show Abs = "Abs"
+  show Log = "Log"
+  show Exp = "Exp"
+  show Logistic = "Logistic"
+  show Erf = "Erf"
+  show Square = "Square"
+  show Sqrt = "Sqrt"
+  show Sin = "Sin"
+  show Cos = "Cos"
+  show Tan = "Tan"
+  show Asin = "Asin"
+  show Acos = "Acos"
+  show Atan = "Atan"
+  show Sinh = "Sinh"
+  show Cosh = "Cosh"
+  show Tanh = "Tanh"
+  show Asinh = "Asinh"
+  show Acosh = "Acosh"
+  show Atanh = "Atanh"
+
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
@@ -133,18 +191,11 @@ data Expr : Type where
   Transpose : List Nat -> Nat -> Expr
   Identity : Primitive dtype => Nat -> Expr
   Broadcast : Primitive dtype => Shape -> Shape -> Nat -> Expr
-
-  ||| Apply function `f` with given `arity` over `args`.
-  |||
-  ||| @f The function to apply.
-  ||| @args The arguments to apply `f` to.
-  Map : (f : Fn arity) -> (args : Vect arity Nat) -> Shape -> Expr
-
   Reduce : Fn 2 -> Nat -> List Nat -> Nat -> Expr
   Sort : Fn 2 -> Nat -> Bool -> List Nat -> Expr
   Reverse : List Nat -> Nat -> Expr
-  BinaryElementwise : BinaryOp -> Nat -> Nat -> Expr
-  UnaryElementwise : UnaryOp -> Nat -> Expr
+  UnaryElementwise : {shape : Shape} -> UnaryOp -> Nat -> Expr
+  BinaryElementwise : {shape : Shape} -> BinaryOp -> Nat -> Nat -> Expr
   Argmin : Primitive out => Nat -> Nat -> Expr
   Argmax : Primitive out => Nat -> Nat -> Expr
   Select : Nat -> Nat -> Nat -> Expr
@@ -166,7 +217,7 @@ applyN f [] = f
 applyN f (x :: xs) = applyN (f x) xs
 
 export
-addFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env (Fn arity)
+addFn : {arity : _} -> Vect arity FullShape -> FnExpr arity -> State Env (Fn arity)
 addFn params f = do
   MkEnv next env <- get
   let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next []) $ do
@@ -177,8 +228,20 @@ addFn params f = do
   pure (MkFn params result subEnv)
 
   where
-  addArg : ShapeAndType -> State Env Nat
+  addArg : FullShape -> State Env Nat
   addArg st = do
     MkEnv next env <- get
     put (MkEnv (S next) ((next, Arg next) :: env))
     pure next
+
+export
+Show Expr where
+  show (FromLiteral {shape} _) = "FromLiteral {shape = \{show shape}}"
+  show (Arg i) = "Arg \{show i}"
+  show (Diag i) = "Diag \{show i}"
+  show (Reshape from to i) = "Reshape \{show from} \{show to} \{show i}"
+  show (Broadcast from to i) = "Broadcast \{show from} \{show to} \{show i}"
+  show (UnaryElementwise {shape} op i) = "UnaryElementwise \{show op} \{show i}"
+  show (BinaryElementwise {shape} op i j) = "BinaryElementwise \{show op} \{show i} \{show j}"
+  show (Concat axis x y) = "Concat \{show axis} \{show x} \{show y}"
+  show _ = "OtherExpr"

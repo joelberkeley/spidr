@@ -22,6 +22,7 @@ limitations under the License.
 ||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Graph`.
 module Tensor
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import public Control.Monad.State
 import public Data.List
@@ -32,6 +33,7 @@ import Decidable.Equality
 import Compiler.Eval
 import Compiler.Expr
 import Compiler.LiteralRW
+import Compiler.Transform
 import Literal
 import public Primitive
 import public Types
@@ -720,44 +722,53 @@ iota dimension = addTensor $ Iota shape {dtype} dimension
 
 ----------------------------- generic operations ----------------------------
 
-||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
-||| For example,
-||| ```
-||| recip : Tensor [] F64 -> Graph $ Tensor [] F64
-||| recip x = 1.0 / pure x
-||| ```
-||| can be lifted to an element-wise reciprocal function as `map recip !(tensor [-2, 0.4])`,
-||| which is `tensor [-0.5, 2.5]`.
-export
-map :
-  (Primitive a, Primitive b) =>
-  (Tensor [] a -> Graph $ Tensor [] b) ->
-  Tensor shape a ->
-  Graph $ Tensor shape b
-map f $ MkTensor {shape = _} x = do
-  g <- MkGraph $ addFn [MkShapeAndType [] a] (\x => unwrap $ f (MkTensor x))
-  addTensor $ Map g [x] (range $ length shape)
+lookup' : Nat -> Program -> Expr
+lookup' x env = case lookup x env of
+  Just expr => expr
+  Nothing => assert_total $ idris_crash ""
 
-||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
-||| For example,
+||| Apply a function between tensors to the trailing dimensions of a tensor. For example, for
 ||| ```
-||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Graph $ Tensor [] F64
-||| addRecip x y = pure x + 1.0 / pure y
+||| x : Ref $ Tensor [2, 3, 3] S32
+||| x = tensor [[[ 0,  1,  2],
+|||              [ 3,  4,  5],
+|||              [ 6,  7,  8]],
+|||             [[ 9, 10, 11],
+|||              [12, 13, 14],
+|||              [15, 16, 17]]]
 ||| ```
-||| can be lifted to an element-wise function as
-||| `map2 addRecip !(tensor [3.0, -3.0]) !(tensor [-2.0, 0.4])`, which is
-||| `tensor [2.5, -0.5]`.
-export
-map2 :
-  (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
-  Tensor shape a ->
-  Tensor shape b ->
-  Graph $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = do
-  g <- MkGraph $ addFn [MkShapeAndType [] a, MkShapeAndType [] b]
-                       (\x, x' => unwrap $ f (MkTensor x) (MkTensor x'))
-  addTensor $ Map g [x, x'] (range $ length shape)
+||| `vmap diag !x` is `tensor [[0, 4, 8], [9, 13, 17]]`.
+export partial
+vmap :
+  Primitive a =>
+  (Tensor from a -> Graph $ Tensor to b) ->
+  Tensor (n :: from) a -> Graph $ Tensor (n :: to) b
+vmap f (MkTensor {shape = n :: from} x) = do
+  (progShape, prog) <- get
+  -- rather than separate Program and ProgramShape, just combine them and pass it separately to
+  -- Transform.vmap
+  j <- new
+  MkTensor {shape = _} result <- f (MkTensor j (singleton j []) (singleton j (Arg j)))
+  (vmappedProgShape, vmappedProg, l) <- vmap result n j x to unVmappedProg progShape
+  pure (MkTensor l)
+
+{-
+namespace Binary
+  ||| `vmap` for mapping over binary functions.
+  export partial
+  vmap :
+    (Primitive d0, Primitive d1) =>
+    (Tensor s0 d0 -> Tensor s1 d1 -> Ref $ Tensor s2 d2) ->
+    Tensor (n :: s0) d0 -> Tensor (n :: s1) d1 -> Ref $ Tensor (n :: s2) d2
+
+namespace Ternary
+  ||| `vmap` for mapping over ternary functions.
+  export partial
+  vmap :
+    (Primitive d0, Primitive d1, Primitive d2) =>
+    (Tensor s0 d0 -> Tensor s1 d1 -> Tensor s2 d2 -> Ref $ Tensor s3 d3) ->
+    Tensor (n :: s0) d0 -> Tensor (n :: s1) d1 -> Tensor (n :: s2) d2 -> Ref $ Tensor (n :: s3) d3
+-}
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 !x` is
