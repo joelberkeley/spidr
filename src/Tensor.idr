@@ -540,7 +540,9 @@ updateSlice at (MkTensor update) (MkTensor target) =
 
   toList : MultiIndex s r -> Graph $ List Nat
   toList INil = pure []
-  toList (IConsStatic {s, b} idx idxs) = toList $ IConsDynamic {s, b} !(tensor $ Scalar idx) idxs
+  toList (IConsStatic idx idxs) = do
+    MkTensor idx <- !(tensor $ Scalar idx)
+    map (idx ::) $ toList idxs
   toList (IConsDynamic (MkTensor idx) idxs) = map (idx ::) $ toList idxs
 
 foo : Graph $ Tensor [3, 4, 5] S32
