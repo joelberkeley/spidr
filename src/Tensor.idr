@@ -533,8 +533,8 @@ updateSlice : (at : MultiIndex rShape shape) ->
               (update : Tensor rShape dtype) ->
               (target : Tensor shape dtype) ->
               Graph $ Tensor shape dtype
-updateSlice at (MkTensor replacement) (MkTensor target) =
-  addTensor $ DynamicUpdateSlice (toList at) replacement target
+updateSlice at (MkTensor update) (MkTensor target) =
+  addTensor $ DynamicUpdateSlice update target (toList at)
 
   where
 
