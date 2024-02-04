@@ -541,7 +541,7 @@ updateSlice at (MkTensor update) (MkTensor target) =
   toList : MultiIndex s r -> Graph $ List Nat
   toList INil = pure []
   toList (IConsStatic idx idxs) = do
-    MkTensor idx <- tensor $ Scalar idx
+    MkTensor idx <- tensor {dtype = U64} $ Scalar idx
     map (idx ::) $ toList idxs
   toList (IConsDynamic (MkTensor idx) idxs) = map (idx ::) $ toList idxs
 
