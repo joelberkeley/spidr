@@ -461,7 +461,7 @@ slice at $ MkTensor x = do
       dynStarts idxs (DynamicIndex (MkTensor i) :: ds) = (i ::) <$> dynStarts idxs ds
       dynStarts idxs (_ :: ds) = [| addNode zero :: dynStarts idxs ds |]
 
-||| The starting index of a tensor slice.
+||| The starting index of a slice, with shape `sizes`, of a tensor with shape `bounds`.
 export
 data MultiIndex : (sizes, bounds : Shape) -> Type where
   INil : MultiIndex [] []
