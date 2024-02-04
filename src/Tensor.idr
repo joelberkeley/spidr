@@ -461,6 +461,7 @@ slice at $ MkTensor x = do
       dynStarts idxs (DynamicIndex (MkTensor i) :: ds) = (i ::) <$> dynStarts idxs ds
       dynStarts idxs (_ :: ds) = [| addNode zero :: dynStarts idxs ds |]
 
+||| The starting index of a tensor slice.
 export
 data MultiIndex : (sizes, bounds : Shape) -> Type where
   INil : MultiIndex [] []
@@ -471,11 +472,13 @@ data MultiIndex : (sizes, bounds : Shape) -> Type where
   IConsDynamic : Tensor [] U64 -> MultiIndex ss bs -> MultiIndex (s :: ss) (b :: bs)
 
 namespace MultiIndex
+  ||| Scalar.
   public export
   Nil : MultiIndex [] []
   Nil = INil
 
   namespace Static
+    ||| A `Nat` starting index. This is statically restricted to be in bounds.
     public export
     (::) : (idx : Nat) ->
            {auto inBounds : LTE (idx + s) b} ->
@@ -484,16 +487,53 @@ namespace MultiIndex
     (::) = IConsStatic
 
   namespace Dynamic
+    ||| A scalar `U64` starting index. This is dynamically truncated to be in bounds.
     public export
     (::) : Tensor [] U64 -> MultiIndex ss bs -> MultiIndex (s :: ss) (b :: bs)
     (::) = IConsDynamic
 
+||| Replace a slice of a tensor. For example, for
+||| ```
+||| target : Graph $ Tensor [3, 4] S32
+||| target = tensor [[ 0,  1,  2,  3],
+|||                  [ 4,  5,  6,  7],
+|||                  [ 8,  9, 10, 11]]
+|||
+||| update : Graph $ Tensor [2, 2] S32
+||| update = tensor [[12, 13],
+|||                  [14, 15]]
+||| ```
+||| `updateSlice [0, 1] !update !target` is
+||| ```
+||| y : Graph $ Tensor [3, 4] S32
+||| y = tensor [[ 0, 12, 13,  3],
+|||             [ 4, 14, 15,  7],
+|||             [ 8,  9, 10, 11]]
+||| ```
+||| The starting index can be specified along each axis using either a `Nat` or a `U64` scalar.
+||| Note that the updated slice will always be replaced by `update`, and lie fully within `target`.
+||| This is constrained by the types for `Nat`. However, for `U64` scalar, the start index `at` is
+||| truncated to the maximum index for which the slice remains within `target`. For example,
+||| `updateSlice [0, !(tensor $ Scalar 2)] !update !target` and
+||| `updateSlice [0, !(tensor $ Scalar 3)] !update !target`
+||| ```
+||| are both
+||| ```
+||| y : Graph $ Tensor [3, 4] S32
+||| y = tensor [[ 0,  1, 12, 13],
+|||             [ 4,  5, 14, 15],
+|||             [ 8,  9, 10, 11]]
+||| ```
+|||
+||| @at The starting index of the slice to replace.
+||| @replacement The tensor to replace the slice with.
+||| @target The tensor in which to replace the slice.
 export
-replace : MultiIndex replacement shape ->
-          Tensor replacement dtype ->
-          Tensor shape dtype ->
-          Graph $ Tensor shape dtype
-replace at (MkTensor replacement) (MkTensor target) =
+updateSlice : (at : MultiIndex rShape shape) ->
+              (update : Tensor rShape dtype) ->
+              (target : Tensor shape dtype) ->
+              Graph $ Tensor shape dtype
+updateSlice at (MkTensor replacement) (MkTensor target) =
   addTensor $ DynamicUpdateSlice (toList at) replacement target
 
   where
@@ -506,7 +546,7 @@ replace at (MkTensor replacement) (MkTensor target) =
 foo : Graph $ Tensor [3, 4, 5] S32
 foo = let x : Graph $ Tensor [2, 2, 4] S32
           y = Graph $ Tensor [3, 4, 5] S32
-       in replaceAt [0, 0, 0] !x !y
+       in updateSlice [0, 0, 0] !x !y
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 !(tensor [[1, 2], [3, 4]]) !(tensor [[5, 6]])` and
