@@ -545,11 +545,6 @@ updateSlice at (MkTensor update) (MkTensor target) =
     map (idx ::) $ toList idxs
   toList (IConsDynamic (MkTensor idx) idxs) = map (idx ::) $ toList idxs
 
-foo : Graph $ Tensor [3, 4, 5] S32
-foo = let x : Graph $ Tensor [2, 2, 4] S32
-          y : Graph $ Tensor [3, 4, 5] S32
-       in updateSlice [0, 0, 0] !x !y
-
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 !(tensor [[1, 2], [3, 4]]) !(tensor [[5, 6]])` and
 ||| `concat 1 !(tensor [[3], [6]]) !(tensor [[4, 5], [7, 8]])` are both
