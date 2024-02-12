@@ -12,7 +12,7 @@ EOF
 }
 
 echo "
-spidr Idris API installed. Now install either the CPU or CUDA backend. To install the CPU backend, run
+spidr Idris API installed. Now install either the CPU or CUDA backend. The following instructions are for Ubuntu Linux. To install the CPU backend, run
 
 $(install_intructions cpu)
 

@@ -12,7 +12,7 @@ Install [pack](https://github.com/stefan-hoeck/idris2-pack), then run
 ```
 pack install spidr
 ```
-and follow the on-screen instructions.
+and follow the on-screen instructions. Note we currently only support Ubuntu Linux.
 
 ### Motivation
 
