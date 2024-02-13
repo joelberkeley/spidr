@@ -50,7 +50,7 @@ jobs:
       run: |
         brew install chezscheme coreutils gmp
         git clone https://github.com/stefan-hoeck/idris2-pack.git
-        cd idris2-pack && make micropack SCHEME=scheme
+        (cd idris2-pack && make micropack SCHEME=scheme)
         pack --no-prompt build test.ipkg
     - name: Run tests
       run: pack run test.ipkg
