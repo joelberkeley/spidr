@@ -19,19 +19,38 @@ env:
   PACK_DIR: /root/.pack
 
 jobs:
-  test-unit:
+  test-unit-ubuntu:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build backend
       working-directory: backend
       run: |
         ./install_bazel.sh
-        ./build.sh cpu
+        ./build.sh x86_64-linux-cpu
     - name: Build tests
       run: |
         pack switch HEAD
+        pack --no-prompt build test.ipkg
+    - name: Run tests
+      run: pack run test.ipkg
+      env:
+        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
+  test-unit-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build backend
+      working-directory: backend
+      run: |
+        brew install bazelisk
+        ./build.sh aarch64-darwin-cpu
+    - name: Build tests
+      run: |
+        brew install chezscheme coreutils gmp
+        git clone https://github.com/stefan-hoeck/idris2-pack.git
+        cd idris2-pack && make micropack SCHEME=scheme
         pack --no-prompt build test.ipkg
     - name: Run tests
       run: pack run test.ipkg
@@ -41,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check README
       run: |
         pack switch HEAD
@@ -50,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check tutorials
       run: |
         pack switch HEAD
