@@ -45,6 +45,7 @@ jobs:
       working-directory: backend
       run: |
         brew install bazelisk
+        bazelisk
         ./build.sh aarch64-darwin-cpu
     - name: Build tests
       run: |
