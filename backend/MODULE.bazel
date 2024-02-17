@@ -1,0 +1,4 @@
+local_path_override(
+    module_name = "xla_extension",
+    path = ".",
+)
