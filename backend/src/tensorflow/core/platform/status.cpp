@@ -13,16 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "tensorflow/core/platform/status.h"
+#include "xla/status.h"
 
 #include "status.h"
 
 extern "C" {
     void Status_delete(Status* status) {
-        delete reinterpret_cast<tensorflow::Status*>(status);
+        delete reinterpret_cast<xla::Status*>(status);
     }
 
     int Status_ok(Status& status) {
-        return (int) reinterpret_cast<tensorflow::Status&>(status).ok();
+        return (int) reinterpret_cast<xla::Status&>(status).ok();
     }
 }
