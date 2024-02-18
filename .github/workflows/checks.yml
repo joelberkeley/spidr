@@ -28,7 +28,7 @@ jobs:
       working-directory: backend
       run: |
         bash install_bazel.sh
-        bash build.sh x86_64-linux-gnu-cpu
+        bash build.sh x86_64-linux-cpu
     - name: Build tests
       run: |
         pack switch HEAD
