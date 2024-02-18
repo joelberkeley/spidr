@@ -19,9 +19,7 @@ limitations under the License.
 
 extern "C" {
     Platform* PlatformUtil_GetPlatform(const char* platform_name) {
-        tensorflow::se::Platform* platform =
-            xla::PlatformUtil::GetPlatform(platform_name).ConsumeValueOrDie();
-
+        auto platform = *xla::PlatformUtil::GetPlatform(platform_name);
         return reinterpret_cast<Platform*>(platform);
     }
 }
