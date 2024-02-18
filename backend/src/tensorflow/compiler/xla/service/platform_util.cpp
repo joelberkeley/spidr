@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "tensorflow/compiler/xla/service/platform_util.h"
+#include "xla/service/platform_util.h"
 
 #include "../../../stream_executor/platform.h"
 
