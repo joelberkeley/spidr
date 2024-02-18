@@ -16,7 +16,7 @@ limitations under the License.
 #include "xla/client/client_library.h"
 #include "xla/client/local_client.h"
 
-#include "../../../stream_executor/platform.h"
+#include "../stream_executor/platform.h"
 #include "client_library.h"
 
 extern "C" {

@@ -15,7 +15,7 @@ limitations under the License.
 */
 #include "xla/service/platform_util.h"
 
-#include "../../../stream_executor/platform.h"
+#include "../stream_executor/platform.h"
 
 extern "C" {
     Platform* PlatformUtil_GetPlatform(const char* platform_name) {
