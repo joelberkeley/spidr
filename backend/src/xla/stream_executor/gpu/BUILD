@@ -20,7 +20,8 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla_extension//:xla_extension",
-        "//src/xla/stream_executor/gpu:gpu",
+        "//src/xla:xla",
+        "//src/xla/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],
 )
