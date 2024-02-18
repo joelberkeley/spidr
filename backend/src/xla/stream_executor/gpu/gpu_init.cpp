@@ -20,11 +20,11 @@ limitations under the License.
 
 extern "C" {
     Status* ValidateGPUMachineManager() {
-        xla::Status status = xla::ValidateGPUMachineManager();
-        return reinterpret_cast<Status*>(new xla::Status(status));
+        tsl::Status status = stream_executor::ValidateGPUMachineManager();
+        return reinterpret_cast<Status*>(new tsl::Status(status));
     }
 
     Platform* GPUMachineManager() {
-        return reinterpret_cast<Platform*>(xla::GPUMachineManager());
+        return reinterpret_cast<Platform*>(stream_executor::GPUMachineManager());
     }
 }
