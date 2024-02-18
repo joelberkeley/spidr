@@ -45,7 +45,7 @@ jobs:
       working-directory: backend
       run: |
         sudo ./install_bazel.sh
-        ./build.sh cpu
+        ./build.sh x86_64-linux-cpu
         ./package.sh
     - name: Publish C XLA lib cpu
       uses: actions/upload-release-asset@v1
@@ -65,7 +65,7 @@ jobs:
       working-directory: backend
       run: |
         sudo ./install_bazel.sh
-        ./build.sh cuda111
+        ./build.sh x86_64-linux-cuda111
         ./package.sh
     - name: Publish C XLA lib cuda111
       uses: actions/upload-release-asset@v1
