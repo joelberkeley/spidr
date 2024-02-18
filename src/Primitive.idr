@@ -22,7 +22,7 @@ limitations under the License.
 module Primitive
 
 import Compiler.LiteralRW
-import public Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
+import public Compiler.Xla.Xla.XlaData
 
 %hide Prelude.Num
 %hide Prelude.Neg

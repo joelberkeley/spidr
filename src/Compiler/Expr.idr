@@ -19,7 +19,7 @@ import Decidable.Equality
 
 import Control.Monad.State
 import Compiler.LiteralRW
-import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
+import Compiler.Xla.Xla.XlaData
 import Literal
 import Primitive
 import Types
