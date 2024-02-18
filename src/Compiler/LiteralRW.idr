@@ -15,9 +15,9 @@ limitations under the License.
 --}
 module Compiler.LiteralRW
 
-import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import public Compiler.Xla.TensorFlow.Compiler.Xla.Literal
-import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
+import Compiler.Xla.Xla.XlaData
+import public Compiler.Xla.Xla.Literal
+import Compiler.Xla.Xla.ShapeUtil
 import Literal
 import Util
 
