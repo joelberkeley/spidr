@@ -23,7 +23,7 @@ extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
-        auto platform_ = reinterpret_cast<tensorflow::se::Platform*>(platform);
+        auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
 
         absl::optional<std::set<int>> allowed_devices_ = absl::nullopt;
         if (allowed_devices_len > 0) {

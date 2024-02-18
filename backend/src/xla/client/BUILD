@@ -21,8 +21,8 @@ cc_library(
     deps = [
         "@xla_extension//:xla_extension",
         "//src:src",
-        "//src/tensorflow/compiler/xla:xla",
-        "//src/tensorflow/stream_executor:stream_executor",
+        "//src/xla:xla",
+        "//src/xla/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],
 )

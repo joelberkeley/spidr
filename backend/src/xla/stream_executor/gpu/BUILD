@@ -20,8 +20,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla_extension//:xla_extension",
-        "//src/tensorflow/core/platform:platform",
-        "//src/tensorflow/stream_executor:stream_executor",
+        "//src/xla/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],
 )
