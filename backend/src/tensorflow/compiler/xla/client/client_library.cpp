@@ -31,9 +31,7 @@ extern "C" {
                 std::set<int>(allowed_devices, allowed_devices + allowed_devices_len);
         }
 
-        xla::LocalClient* client =
-            xla::ClientLibrary::GetOrCreateLocalClient(platform_, allowed_devices_)
-            .ConsumeValueOrDie();
+        auto client = *xla::ClientLibrary::GetOrCreateLocalClient(platform_, allowed_devices_);
 
         return reinterpret_cast<LocalClient*>(client);
     }

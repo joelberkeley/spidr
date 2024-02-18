@@ -24,8 +24,7 @@ extern "C" {
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::Literal& literal_ = reinterpret_cast<xla::Literal&>(literal);
 
-        std::unique_ptr<xla::GlobalData> global_data =
-            client_.TransferToServer(literal_).ConsumeValueOrDie();
+        std::unique_ptr<xla::GlobalData> global_data = *client_.TransferToServer(literal_);
 
         return reinterpret_cast<GlobalData*>(global_data.release());
     }
@@ -41,9 +40,7 @@ extern "C" {
         xla::GlobalData** arguments_ = reinterpret_cast<xla::GlobalData**>(arguments);
 
         auto arguments_span = absl::Span<xla::GlobalData* const>(arguments_, arguments_len);
-        xla::Literal lit = client_
-            .ExecuteAndTransfer(computation_, arguments_span)
-            .ConsumeValueOrDie();
+        auto lit = *client_.ExecuteAndTransfer(computation_, arguments_span);
 
         xla::Literal* res = new xla::Literal(lit.shape(), false);
         res->MoveFrom(std::move(lit));
