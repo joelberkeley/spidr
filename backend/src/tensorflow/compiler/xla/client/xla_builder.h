@@ -15,7 +15,7 @@ limitations under the License.
 */
 #include <functional>
 
-#include "tensorflow/compiler/xla/client/xla_builder.h"
+#include "xla/client/xla_builder.h"
 
 #include "../literal.h"
 #include "../xla_data.pb.h"
