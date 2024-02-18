@@ -239,6 +239,6 @@ execute f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   gpuStatus <- validateGPUMachineManager
-  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
+  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "cpu"
   client <- getOrCreateLocalClient platform
   executeAndTransfer client computation
