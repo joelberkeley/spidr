@@ -1,2 +1,3 @@
-curl -s -L https://github.com/elixir-nx/xla/releases/download/v$(cat XLA_EXT_VERSION)/xla_extension-x86_64-linux-$1.tar.gz | tar xz
-BAZEL_CXXOPTS='-std=c++14' bazel-6.4.0 build //:c_xla_extension
+curl -s -L https://github.com/elixir-nx/xla/releases/download/v$(cat XLA_EXT_VERSION)/xla_extension-aarch64-darwin-cpu.tar.gz | tar xz
+# curl -s -L https://github.com/elixir-nx/xla/releases/download/v$(cat XLA_EXT_VERSION)/xla_extension-x86_64-linux-$1.tar.gz | tar xz
+BUILD_CUSTOM_PROTOBUF=1 BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension
