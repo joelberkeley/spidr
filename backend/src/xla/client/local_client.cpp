@@ -21,11 +21,13 @@ limitations under the License.
 
 extern "C" {
     GlobalData* LocalClient_TransferToServer(LocalClient& client, Literal& literal) {
+        std::cout << "LocalClient_TransferToServer ..." << std::endl;
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::Literal& literal_ = reinterpret_cast<xla::Literal&>(literal);
 
         std::unique_ptr<xla::GlobalData> global_data = *client_.TransferToServer(literal_);
 
+        std::cout << "... return" << std::endl;
         return reinterpret_cast<GlobalData*>(global_data.release());
     }
 
@@ -35,6 +37,7 @@ extern "C" {
         GlobalData** arguments,
         int arguments_len
     ) {
+        std::cout << "LocalClient_ExecuteAndTransfer ..." << std::endl;
         xla::LocalClient& client_ = reinterpret_cast<xla::LocalClient&>(client);
         xla::XlaComputation& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
         xla::GlobalData** arguments_ = reinterpret_cast<xla::GlobalData**>(arguments);
@@ -44,6 +47,8 @@ extern "C" {
 
         xla::Literal* res = new xla::Literal(lit.shape(), false);
         res->MoveFrom(std::move(lit));
+
+        std::cout << "... return" << std::endl;
         return reinterpret_cast<Literal*>(res);
     }
 }
