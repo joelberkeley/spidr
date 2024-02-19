@@ -23,6 +23,7 @@ extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
+        std::cout << "ClientLibrary_GetOrCreateLocalClient ..." << std::endl;
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
 
         absl::optional<std::set<int>> allowed_devices_ = absl::nullopt;
@@ -33,6 +34,7 @@ extern "C" {
 
         auto client = *xla::ClientLibrary::GetOrCreateLocalClient(platform_, allowed_devices_);
 
+        std::cout << "... return" << std::endl;
         return reinterpret_cast<LocalClient*>(client);
     }
 }
