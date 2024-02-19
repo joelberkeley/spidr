@@ -25,6 +25,12 @@ extern "C" {
     ) {
         std::cout << "ClientLibrary_GetOrCreateLocalClient ..." << std::endl;
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
+        std::cout << "... platform " << platform_->Name() << std::endl;
+
+        for (int i = 0; i < allowed_devices_len; i ++) {
+            std::cout << "... allowed_devices[" << i << "] " << allowed_devices[i] << std::endl;
+        }
+        std::cout << "... allowed_devices_len " << allowed_devices_len << std::endl;
 
         absl::optional<std::set<int>> allowed_devices_ = absl::nullopt;
         if (allowed_devices_len > 0) {
