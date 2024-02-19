@@ -72,7 +72,7 @@ extern "C" {
     XlaComputation* XlaBuilder_Build(XlaBuilder& s, XlaOp& root) {
         auto& s_ = reinterpret_cast<xla::XlaBuilder&>(s);
         auto& root_ = reinterpret_cast<xla::XlaOp&>(root);
-        xla::XlaComputation* non_stack = new xla::XlaComputation(*s_.Build(root_));
+        xla::XlaComputation* non_stack = new xla::XlaComputation(std::move(*s_.Build(root_)));
         return reinterpret_cast<XlaComputation*>(non_stack);
     }
 
