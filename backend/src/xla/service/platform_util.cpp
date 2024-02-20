@@ -20,7 +20,7 @@ limitations under the License.
 extern "C" {
     Platform* PlatformUtil_GetPlatform(const char* platform_name) {
         std::cout << "PlatformUtil_GetPlatform ..." << std::endl;
-        auto platform = *xla::PlatformUtil::GetPlatform(platform_name);
+        auto* platform = xla::PlatformUtil::GetPlatform(platform_name).value();
         std::cout << "... successfully called GetPlatform() on " << platform_name << std::endl;
         return reinterpret_cast<Platform*>(platform);
     }
