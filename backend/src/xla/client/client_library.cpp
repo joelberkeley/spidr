@@ -28,24 +28,14 @@ extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
-        std::cout << "ClientLibrary_GetOrCreateLocalClient ..." << std::endl;
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
-        std::cout << "... platform " << platform_->Name() << std::endl;
-
-        for (int i = 0; i < allowed_devices_len; i ++) {
-            std::cout << "... allowed_devices[" << i << "] " << allowed_devices[i] << std::endl;
-        }
-        std::cout << "... allowed_devices_len " << allowed_devices_len << std::endl;
 
         std::cout << "... trying with cpu " << std::endl;
-        *xla::ClientLibrary::GetOrCreateLocalClient();
+//        *xla::ClientLibrary::GetOrCreateLocalClient();
         std::cout << "... worked with cpu " << std::endl;
 
-        xla::LocalClientOptions options;
-        options.set_platform(platform_);
-        xla::LocalClient* client = xla::ClientLibrary::GetOrCreateLocalClient(options).value();
+        auto& client = *xla::ClientLibrary::GetOrCreateLocalClient(platform_, std::nullopt);
 
-        std::cout << "... return" << std::endl;
         return reinterpret_cast<LocalClient*>(client);
     }
 }
