@@ -36,11 +36,10 @@ extern "C" {
         }
         std::cout << "... allowed_devices_len " << allowed_devices_len << std::endl;
 
-
-        std::cout << "... trying with cpu " << allowed_devices_len << std::endl;
-        xla::ClientLibrary::GetOrCreateLocalClient(
+        std::cout << "... trying with cpu " << std::endl;
+        *xla::ClientLibrary::GetOrCreateLocalClient(
             *xla::PlatformUtil::GetPlatform("cpu"), absl::nullopt);
-        std::cout << "... worked with cpu " << allowed_devices_len << std::endl;
+        std::cout << "... worked with cpu " << std::endl;
 
         xla::LocalClientOptions options;
         options.set_platform(platform_);
