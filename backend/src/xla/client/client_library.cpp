@@ -22,6 +22,7 @@ limitations under the License.
 #include "../stream_executor/platform.h"
 #include "client_library.h"
 #include <cstddef>
+#include <set>
 
 extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
@@ -38,7 +39,7 @@ extern "C" {
 
         std::cout << "... trying with cpu " << std::endl;
         *xla::ClientLibrary::GetOrCreateLocalClient(
-            *xla::PlatformUtil::GetPlatform("cpu"), absl::nullopt);
+            *xla::PlatformUtil::GetPlatform("Host"), {});
         std::cout << "... worked with cpu " << std::endl;
 
         xla::LocalClientOptions options;
