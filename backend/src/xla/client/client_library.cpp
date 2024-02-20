@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "xla/client/client_library.h"
+#include "backend/xla_extension/include/absl/types/optional.h"
+#include "xla/stream_executor/host/host_platform_id.h"
 #include "xla/client/local_client.h"
+#include "xla/service/platform_util.h"
 
 #include "../stream_executor/platform.h"
 #include "client_library.h"
+#include <cstddef>
 
 extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
@@ -32,13 +36,15 @@ extern "C" {
         }
         std::cout << "... allowed_devices_len " << allowed_devices_len << std::endl;
 
-        absl::optional<std::set<int>> allowed_devices_ = absl::nullopt;
-        if (allowed_devices_len > 0) {
-            allowed_devices_ =
-                std::set<int>(allowed_devices, allowed_devices + allowed_devices_len);
-        }
 
-        auto client = *xla::ClientLibrary::GetOrCreateLocalClient(platform_, allowed_devices_);
+        std::cout << "... trying with cpu " << allowed_devices_len << std::endl;
+        xla::ClientLibrary::GetOrCreateLocalClient(
+            *xla::PlatformUtil::GetPlatform("cpu"), absl::nullopt);
+        std::cout << "... worked with cpu " << allowed_devices_len << std::endl;
+
+        xla::LocalClientOptions options;
+        options.set_platform(platform_);
+        auto client = *xla::ClientLibrary::GetOrCreateLocalClient(options);
 
         std::cout << "... return" << std::endl;
         return reinterpret_cast<LocalClient*>(client);
