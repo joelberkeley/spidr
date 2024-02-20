@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "xla/client/client_library.h"
-#include "backend/xla_extension/include/absl/types/optional.h"
+#include "absl/types/optional.h"
 #include "xla/stream_executor/host/host_platform_id.h"
 #include "xla/client/local_client.h"
 #include "xla/service/platform_util.h"
