@@ -34,7 +34,7 @@ extern "C" {
 //        *xla::ClientLibrary::GetOrCreateLocalClient();
         std::cout << "... worked with cpu " << std::endl;
 
-        auto& client = *xla::ClientLibrary::GetOrCreateLocalClient(platform_, std::nullopt);
+        const auto& client = *xla::ClientLibrary::GetOrCreateLocalClient(platform_, std::nullopt);
 
         return reinterpret_cast<LocalClient*>(client);
     }
