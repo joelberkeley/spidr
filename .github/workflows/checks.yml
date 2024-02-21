@@ -45,7 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - name: Download backend artifacts
+    - uses: actions/checkout@v4
+    - name: Download XLA backend artifacts
       uses: actions/download-artifact@v4
     - name: Build tests
       run: |
