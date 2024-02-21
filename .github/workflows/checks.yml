@@ -66,7 +66,7 @@ jobs:
         merge-multiple: true
     - name: Run tests
       run: |
-        ls -R
+        chmod +x test
         ./test
   readme:
     runs-on: ubuntu-latest
