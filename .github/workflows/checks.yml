@@ -65,14 +65,12 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         merge-multiple: true
-    - name: Install dependencies
+    - name: Install runtime dependencies
       run: |
         sudo apt install chezscheme
     - name: Run tests
       run: |
         tar xfz test.tar.gz . && rm test.tar.gz
-        pwd
-        ls -Rl
         ./test
   readme:
     runs-on: ubuntu-latest
