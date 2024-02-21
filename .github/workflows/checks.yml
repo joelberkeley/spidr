@@ -39,6 +39,7 @@ jobs:
         path: backend/xla_extension/libxla_extension.so
         if-no-files-found: error
   test-unit:
+    needs: build-backend
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
