@@ -45,7 +45,6 @@ extern "C" {
         xla::Literal* res = new xla::Literal(lit.shape(), false);
         res->MoveFrom(std::move(lit));
 
-        std::cout << "... return" << std::endl;
         return reinterpret_cast<Literal*>(res);
     }
 }

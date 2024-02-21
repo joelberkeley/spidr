@@ -28,6 +28,7 @@ extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
+        std::cout << "ClientLibrary_GetOrCreateLocalClient ..." << std::endl;
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
 
         std::cout << "... creating local client" << std::endl;
