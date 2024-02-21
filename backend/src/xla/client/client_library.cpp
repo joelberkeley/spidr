@@ -29,11 +29,6 @@ extern "C" {
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
-
-        std::cout << "... trying with cpu " << std::endl;
-//        *xla::ClientLibrary::GetOrCreateLocalClient();
-        std::cout << "... worked with cpu " << std::endl;
-
         auto client = xla::ClientLibrary::GetOrCreateLocalClient(platform_, std::nullopt).value();
 
         return reinterpret_cast<LocalClient*>(client);
