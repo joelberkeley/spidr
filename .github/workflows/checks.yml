@@ -67,8 +67,8 @@ jobs:
         merge-multiple: true
     - name: Run tests
       run: |
-        tar xfz test.tar.gz .
-        echo "current dir: ${pwd}"
+        tar xfz test.tar.gz . && rm test.tar.gz
+        pwd
         ls -R
         ./test
   readme:
