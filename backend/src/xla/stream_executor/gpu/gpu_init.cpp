@@ -20,15 +20,11 @@ limitations under the License.
 
 extern "C" {
     Status* ValidateGPUMachineManager() {
-        std::cout << "ValidateGPUMachineManager ..." << std::endl;
         tsl::Status status = stream_executor::ValidateGPUMachineManager();
-        std::cout << "... return" << std::endl;
         return reinterpret_cast<Status*>(new tsl::Status(status));
     }
 
     Platform* GPUMachineManager() {
-        std::cout << "GPUMachineManager ..." << std::endl;
-        std::cout << "... return" << std::endl;
         return reinterpret_cast<Platform*>(stream_executor::GPUMachineManager());
     }
 }
