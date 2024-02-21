@@ -72,7 +72,7 @@ jobs:
       run: |
         tar xfz test.tar.gz . && rm test.tar.gz
         pwd
-        ls -R
+        ls -Rl
         ./test
   readme:
     runs-on: ubuntu-latest
