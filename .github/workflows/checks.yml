@@ -49,10 +49,11 @@ jobs:
       run: |
         pack switch HEAD
         pack --no-prompt build test.ipkg
+        tar cfz test.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        path: build/exec/
+        path: test.tar.gz
         if-no-files-found: error
   test-unit:
     needs:
@@ -66,8 +67,8 @@ jobs:
         merge-multiple: true
     - name: Run tests
       run: |
-        chmod +x test
-        ./test
+        tar xzf test.tar.gz .
+        ./exec/test
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
