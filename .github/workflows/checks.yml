@@ -22,7 +22,7 @@ jobs:
   build-backend:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build backend
       working-directory: backend
       run: |
@@ -44,22 +44,18 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - name: Download backend artifacts
-    - uses: actions/download-artifact@v4
-      with:
-        path: backend/
+      uses: actions/download-artifact@v4
     - name: Build tests
       run: |
         pack switch HEAD
         pack --no-prompt build test.ipkg
     - name: Run tests
       run: pack run test.ipkg
-      env:
-        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check README
       run: |
         pack switch HEAD
@@ -68,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check tutorials
       run: |
         pack switch HEAD
