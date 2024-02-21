@@ -67,8 +67,8 @@ jobs:
         merge-multiple: true
     - name: Run tests
       run: |
-        tar xzf test.tar.gz .
-        ./exec/test
+        tar xfz test.tar.gz .
+        ./test
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
