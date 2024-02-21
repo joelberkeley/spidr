@@ -52,7 +52,7 @@ jobs:
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        path: build/
+        path: build/exec/
         if-no-files-found: error
   test-unit:
     needs:
@@ -60,7 +60,6 @@ jobs:
       - build-tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
@@ -68,7 +67,7 @@ jobs:
     - name: Run tests
       run: |
         ls -R
-        ./build/exec/test
+        ./test
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
