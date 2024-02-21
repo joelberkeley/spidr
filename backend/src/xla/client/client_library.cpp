@@ -29,7 +29,10 @@ extern "C" {
         Platform* platform, int* allowed_devices, int allowed_devices_len
     ) {
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
+
+        std::cout << "... creating local client" << std::endl;
         auto client = xla::ClientLibrary::GetOrCreateLocalClient(platform_, std::nullopt).value();
+        std::cout << "... created local client" << std::endl;
 
         return reinterpret_cast<LocalClient*>(client);
     }
