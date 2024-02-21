@@ -67,7 +67,7 @@ jobs:
         merge-multiple: true
     - name: Install dependencies
       run: |
-        apt install chezscheme
+        sudo apt install chezscheme
     - name: Run tests
       run: |
         tar xfz test.tar.gz . && rm test.tar.gz
