@@ -68,7 +68,7 @@ jobs:
     - name: Run tests
       run: |
         tar xfz test.tar.gz .
-        pwd
+        echo "current dir: ${pwd}"
         ls -R
         ./test
   readme:
