@@ -19,9 +19,8 @@ env:
   PACK_DIR: /root/.pack
 
 jobs:
-  test-unit:
+  build-backend:
     runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v3
     - name: Build backend
@@ -29,6 +28,24 @@ jobs:
       run: |
         bash install_bazel.sh
         bash build.sh x86_64-linux-gnu-cpu
+    - uses: actions/upload-artifact@v4
+      with:
+        name: libc_xla_extension.so
+        path: backend/bazel-bin/libc_xla_extension.so
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v4
+      with:
+        name: libxla_extension.so
+        path: backend/xla_extension/libxla_extension.so
+        if-no-files-found: error
+  test-unit:
+    runs-on: ubuntu-latest
+    container: ghcr.io/stefan-hoeck/idris2-pack
+    steps:
+    - name: Download backend artifacts
+    - uses: actions/download-artifact@v4
+      with:
+        path: backend/
     - name: Build tests
       run: |
         pack switch HEAD
