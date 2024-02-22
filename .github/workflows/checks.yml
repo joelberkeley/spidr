@@ -26,8 +26,12 @@ jobs:
     - name: Build backend
       working-directory: backend
       run: |
-        bash install_bazel.sh
-        bash build.sh x86_64-linux-gnu-cpu
+        git checkout
+        docker run --name xla -w /xla -it -d --rm -v $PWD:/xla tensorflow/build:latest-python3.9 bash
+        docker exec xla ./configure.py --backend=CPU
+        docker exec xla bazel build //xla/...  --spawn_strategy=sandboxed --test_output=all
+        ls
+        bash build.sh
     - name: Upload C XLA
       uses: actions/upload-artifact@v4
       with:
