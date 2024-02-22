@@ -32,7 +32,7 @@ extern "C" {
         auto platform_ = reinterpret_cast<xla::se::Platform*>(platform);
 
         std::cout << "... creating local client" << std::endl;
-        auto client = xla::ClientLibrary::GetOrCreateLocalClient(platform_, std::nullopt).value();
+        auto client = xla::ClientLibrary::GetOrCreateCompileOnlyClient(platform_).value();
         std::cout << "... created local client" << std::endl;
 
         return reinterpret_cast<LocalClient*>(client);
