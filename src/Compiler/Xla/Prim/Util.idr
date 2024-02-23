@@ -19,7 +19,7 @@ import System.FFI
 
 public export
 libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libxla"
+libxla fname = "C:" ++ fname ++ ",libc_xla"
 
 export
 %foreign (libxla "sizeof_int")
