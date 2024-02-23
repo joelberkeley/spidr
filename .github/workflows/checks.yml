@@ -19,30 +19,21 @@ env:
   PACK_DIR: /root/.pack
 
 jobs:
-  build-backend:
+  linux-cpu-static:
     runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
-    - name: Build backend
+    - name: Build XLA static Linux CPU
       working-directory: backend
       run: |
-        git checkout
-        docker run --name xla -w /xla -it -d --rm -v $PWD:/xla tensorflow/build:latest-python3.9 bash
-        docker exec xla ./configure.py --backend=CPU
-        docker exec xla bazel build //xla/...  --spawn_strategy=sandboxed --test_output=all
-        ls
-        bash build.sh
-    - name: Upload C XLA
-      uses: actions/upload-artifact@v4
-      with:
-        name: libc_xla_extension.so
-        path: backend/bazel-bin/libc_xla_extension.so
-        if-no-files-found: error
+        git clone https://github.com/openxla/xla
+        BAZEL_CXXOPTS='-std=c++17' bazel build --experimental_repo_remote_exec //:xla_local
     - name: Upload XLA
       uses: actions/upload-artifact@v4
       with:
-        name: libxla_extension.so
-        path: backend/xla_extension/lib/libxla_extension.so
+        name: libxla.so
+        path: backend/bazel-bin/libxla.so
         if-no-files-found: error
   build-tests:
     runs-on: ubuntu-latest
@@ -61,7 +52,7 @@ jobs:
         if-no-files-found: error
   test-unit:
     needs:
-      - build-backend
+      - linux-cpu-static
       - build-tests
     runs-on: ubuntu-latest
     steps:
