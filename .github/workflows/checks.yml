@@ -33,7 +33,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: libxla.so
-        path: backend/bazel-bin/libxla.so
+        path: backend/bazel-bin/libxla_local.so
         if-no-files-found: error
   build-tests:
     runs-on: ubuntu-latest
