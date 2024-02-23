@@ -5,7 +5,9 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/client:client",
+        "@xla//xla/client/lib:math",
+        "@xla//xla/client/lib:matrix",
+        "@xla//xla/client/lib:prng",
         "//src/xla:xla",
         "//src/xla/client:client",
     ],
