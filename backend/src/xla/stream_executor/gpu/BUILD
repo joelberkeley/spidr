@@ -6,7 +6,6 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/stream_executor/gpu:gpu_cudamallocasync_allocator",
-        "@tsl//tsl/platform:status",
         "//src/xla:xla",
         "//src/xla/stream_executor:stream_executor",
     ],
