@@ -6,6 +6,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/client:client",
+        "@xla//xla/client:client_library",
         "//src:src",
         "//src/xla:xla",
         "//src/xla/stream_executor:stream_executor",
