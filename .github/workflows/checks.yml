@@ -28,12 +28,12 @@ jobs:
       working-directory: backend
       run: |
         git clone https://github.com/openxla/xla
-        BAZEL_CXXOPTS='-std=c++17' bazel build --experimental_repo_remote_exec //:xla_local
+        BAZEL_CXXOPTS='-std=c++17' bazel build --experimental_repo_remote_exec //:c_xla
     - name: Upload XLA
       uses: actions/upload-artifact@v4
       with:
-        name: libxla.so
-        path: backend/bazel-bin/libxla_local.so
+        name: libc_xla.so
+        path: backend/bazel-bin/libc_xla.so
         if-no-files-found: error
   build-tests:
     runs-on: ubuntu-latest

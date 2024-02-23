@@ -1,5 +1,5 @@
 cc_binary(
-    name = "xla_local",
+    name = "c_xla",
     linkshared = True,
     srcs = [
         "//src/xla:xla",
