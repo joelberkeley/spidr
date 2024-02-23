@@ -19,7 +19,7 @@ env:
   PACK_DIR: /root/.pack
 
 jobs:
-  linux-cpu-static:
+  xla-linux-cpu:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
     steps:
@@ -52,7 +52,7 @@ jobs:
         if-no-files-found: error
   test-unit:
     needs:
-      - linux-cpu-static
+      - xla-linux-cpu
       - build-tests
     runs-on: ubuntu-latest
     steps:
