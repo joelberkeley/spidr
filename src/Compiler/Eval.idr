@@ -39,6 +39,7 @@ import Compiler.Xla.Xla.Service.PlatformUtil
 import Compiler.Xla.Xla.Client.ClientLibrary
 import Compiler.Xla.Xla.Client.LocalClient
 import Compiler.Xla.Xla.StreamExecutor.GPU.GPUInit
+import Compiler.Xla.Xla.StreamExecutor.Host.HostPlatform
 import Compiler.Xla.Xla.Status
 import Compiler.Xla.Xla.StreamExecutor.Platform
 
