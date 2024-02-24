@@ -17,7 +17,7 @@ limitations under the License.
 #include "xla/stream_executor/gpu/gpu_init.h"
 
 #include "../../status.h"
-#include "../platform.h"
+#include "gpu_init.h"
 
 extern "C" {
     Status* ValidateGPUMachineManager() {
