@@ -15,6 +15,7 @@ limitations under the License.
 */
 #include <string_view>
 
+#include "tsl/platform/status.h"
 #include "xla/stream_executor/platform.h"
 #include "xla/stream_executor/platform_manager.h"
 
