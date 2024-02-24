@@ -6,6 +6,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/stream_executor:platform_manager",
+        "//src/xla:xla",
     ],
     visibility = ["//visibility:public"],
 )
