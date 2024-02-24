@@ -16,7 +16,6 @@ limitations under the License.
 #include "tsl/platform/status.h"
 #include "xla/stream_executor/gpu/gpu_init.h"
 
-#include "../../status.h"
 #include "gpu_init.h"
 
 extern "C" {
