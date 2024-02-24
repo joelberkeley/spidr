@@ -27,7 +27,7 @@ extern "C" {
         auto status = stream_executor::PlatformManager::RegisterPlatform(
             std::unique_ptr<stream_executor::Platform>(platform_)
         );
-        return reinterpret_cast<Status*>(status);
+        return reinterpret_cast<Status*>(new tsl::Status(status));
     }
 
     Platform* PlatformManager_PlatformWithName(char* target) {
