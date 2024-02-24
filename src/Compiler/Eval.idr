@@ -42,6 +42,7 @@ import Compiler.Xla.Xla.StreamExecutor.GPU.GPUInit
 import Compiler.Xla.Xla.StreamExecutor.Host.HostPlatform
 import Compiler.Xla.Xla.Status
 import Compiler.Xla.Xla.StreamExecutor.Platform
+import Compiler.Xla.Xla.StreamExecutor.PlatformManager
 
 import Literal
 import Primitive
@@ -239,6 +240,15 @@ execute : Fn 0 -> ErrIO Literal
 execute f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  platform <- if ok !validateGPUMachineManager then gpuMachineManager else hostPlatform
-  client <- getOrCreateLocalClient platform
+  client <- getOrCreateLocalClient !platform
   executeAndTransfer client computation
+
+  where
+
+  platform : HasIO io => io Platform
+  platform =
+    if ok !validateGPUMachineManager
+    then gpuMachineManager
+    else do host <- hostPlatform
+            _ <- registerPlatform host  -- err if fails
+            platformWithName "Host"
