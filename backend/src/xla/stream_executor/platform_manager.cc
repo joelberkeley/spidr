@@ -13,12 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <string_view>
+
 #include "xla/stream_executor/platform.h"
 #include "xla/stream_executor/platform_manager.h"
 
 #include "platform.h"
 #include "platform_manager.h"
-#include <string_view>
 
 extern "C" {
     Status* PlatformManager_RegisterPlatform(Platform* platform) {
