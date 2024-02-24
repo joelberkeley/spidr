@@ -19,6 +19,6 @@ limitations under the License.
 
 extern "C" {
     Platform* HostPlatform() {
-        return reinterpret_cast<Platform*>(stream_executor::HostPlatform())
+        return reinterpret_cast<Platform*>(stream_executor::host::HostPlatform());
     }
 }
