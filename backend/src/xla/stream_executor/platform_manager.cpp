@@ -24,7 +24,7 @@ limitations under the License.
 extern "C" {
     Status* PlatformManager_RegisterPlatform(Platform* platform) {
         auto platform_ = reinterpret_cast<stream_executor::Platform*>(platform);
-        auto status = stream_executor::PlatformManager::RegisterPlatform(*platform_);
+        auto status = stream_executor::PlatformManager::RegisterPlatform(std::move(*platform_));
         return reinterpret_cast<Status*>(status);
     }
 
