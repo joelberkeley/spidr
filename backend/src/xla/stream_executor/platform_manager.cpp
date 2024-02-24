@@ -24,13 +24,13 @@ limitations under the License.
 extern "C" {
     Status* PlatformManager_RegisterPlatform(Platform* platform) {
         auto platform_ = reinterpret_cast<stream_executor::Platform*>(platform);
-        auto status = stream_executor::PlatformManager::RegisterPlatform(platform_);
+        auto status = stream_executor::PlatformManager::RegisterPlatform(*platform_);
         return reinterpret_cast<Status*>(status);
     }
 
     Platform* PlatformManager_PlatformWithName(char* target) {
         std::string_view target_ = target;
-        auto platform = *stream_executor::PlatformManager::RegisterPlatform(target_);
+        auto platform = *stream_executor::PlatformManager::PlatformWithName(target_);
         return reinterpret_cast<Platform*>(platform);
     }
 }
