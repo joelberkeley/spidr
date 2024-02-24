@@ -15,6 +15,10 @@ limitations under the License.
 --}
 module Compiler.Xla.Prim.Xla.StreamExecutor.PlatformManager
 
+import System.FFI
+
+import Compiler.Xla.Prim.Util
+
 export
 %foreign (libxla "PlatformManager_RegisterPlatform")
 prim__registerPlatform : AnyPtr -> PrimIO AnyPtr
