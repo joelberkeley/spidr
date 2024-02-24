@@ -238,7 +238,6 @@ execute : Fn 0 -> ErrIO Literal
 execute f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  gpuStatus <- validateGPUMachineManager
-  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "cpu"
+  platform <- if ok !validateGPUMachineManager then gpuMachineManager else hostPlatform
   client <- getOrCreateLocalClient platform
   executeAndTransfer client computation

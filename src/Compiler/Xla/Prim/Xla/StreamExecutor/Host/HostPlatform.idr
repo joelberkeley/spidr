@@ -1,5 +1,5 @@
-/*
-Copyright 2022 Joel Berkeley
+{--
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,15 +12,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "xla/service/platform_util.h"
+--}
+module Compiler.Xla.Prim.Xla.StreamExecutor.Host.HostPlatform
 
-#include "../stream_executor/platform.h"
+import System.FFI
 
-extern "C" {
-    // todo remove if host_platform works?
-    Platform* PlatformUtil_GetPlatform(const char* platform_name) {
-        auto* platform = xla::PlatformUtil::GetPlatform(platform_name).value();
-        return reinterpret_cast<Platform*>(platform);
-    }
-}
+import Compiler.Xla.Prim.Util
+
+export
+%foreign (libxla "HostPlatform")
+prim__hostPlatform : PrimIO AnyPtr
