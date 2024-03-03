@@ -13,8 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <cstddef>
 extern "C" {
     int sizeof_int();
 
+    size_t size(char*);
     void set_array_int(int* arr, int idx, int value);
 }

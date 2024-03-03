@@ -1,5 +1,5 @@
-/*
-Copyright 2022 Joel Berkeley
+{--
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,14 +12,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-// we have included this as it appears to be the source of HloModuleProto, but
-// can't find it, so we'll rely on a transitive BUILD target
-#include "../service/hlo.pb.h"
+--}
+module Compiler.Xla.PjRt.C.PjRt_C_API
 
-extern "C" {
-    struct XlaComputation;
+import System.FFI
 
-    void XlaComputation_delete(XlaComputation* s);
-    HloModuleProto& XlaComputation_proto(XlaComputation* s);
-}
+import Compiler.Xla.Prim.Util
+
+%foreign (libxla "GetPjrtApi")
+prim__getPjrtApi : PrimIO AnyPtr
+
+export
+getPjrtApi : HasIO io => io PjRt
+getPjrtApi = MkPjrtApi <&> primIO prim__getPjrtApi
