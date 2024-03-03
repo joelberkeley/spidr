@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Joel Berkeley
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,13 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// we have included this as it appears to be the source of HloModuleProto, but
-// can't find it, so we'll rely on a transitive BUILD target
-#include "../service/hlo.pb.h"
+#include "xla/pjrt/c/pjrt_executable.h"
 
 extern "C" {
-    struct XlaComputation;
-
-    void XlaComputation_delete(XlaComputation* s);
-    HloModuleProto& XlaComputation_proto(XlaComputation* s);
+  CompileOptions* CompileOptions_new();
 }

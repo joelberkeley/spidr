@@ -21,4 +21,10 @@ extern "C" {
     void XlaComputation_delete(XlaComputation* s) {
         delete reinterpret_cast<xla::XlaComputation*>(s);
     }
+
+    HloModuleProto& XlaComputation_proto(XlaComputation* s) {
+        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
+        // am i handling the memory correctly here?
+        return reinterpret_cast<HloModuleProto&>(s->proto());
+    }
 }
