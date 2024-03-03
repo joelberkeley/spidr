@@ -2,7 +2,7 @@ cc_library(
     name = "pjrt",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.c"]),
+    srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/pjrt:pjrt_executable",
