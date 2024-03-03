@@ -5,7 +5,7 @@ cc_library(
     srcs = glob(["*.c"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/pjrt:pjrt_client",  // not sure about this
+        "@xla//xla/pjrt:pjrt_client",
     ],
     visibility = ["//visibility:public"],
 )
