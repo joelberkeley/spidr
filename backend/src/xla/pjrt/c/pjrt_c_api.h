@@ -25,106 +25,42 @@ limitations under the License.
 extern "C" {
 #endif
 
-void pjrt_error_destroy(PJRT_Api* api, PJRT_Error_Destroy_Args* args) {
-  api->PJRT_Error_Destroy(args);
+void pjrt_error_destroy(PJRT_Api* api, PJRT_Error_Destroy_Args* args);
 }
 
-void pjrt_error_message(PJRT_Api* api, PJRT_Error_Message_Args* args) {
-  api->PJRT_Error_Message(args);
-}
+void pjrt_error_message(PJRT_Api* api, PJRT_Error_Message_Args* args);
 
 // how is a C enum represented through FFI? An integer of some sort?
-PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args) {
-  api->PJRT_Error_GetCode(args);
-}
+PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args);
 
-PJRT_Error* pjrt_client_create(PJRT_Api* api, PJRT_Client_Create_Args* args) {
-  return api->PJRT_Client_Create(args);
-}
+PJRT_Error* pjrt_client_create(PJRT_Api* api, PJRT_Client_Create_Args* args);
 
-PJRT_Program* PJRT_Program_new(char* code) {
-  auto format = pjrt::kHloFormat;
-  auto program = new PJRT_Program{
-    .struct_size = PJRT_Program_STRUCT_SIZE,
-    .extension_start = nullptr,
-    .code = code,
-    .code_size = strlen(code),
-    .format = format,
-    .format_size = strlen(format),
-  };
-}
+PJRT_Program* PJRT_Program_new(char* code);
 
 PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
   PJRT_Client* client, CompileOptions* options, PJRT_Program* program
-) {
-  // move ->ToProto()->SerializeAsString() out and accept char*
-  auto options_str = options->ToProto()->SerializeAsString();
+);
 
-  return new PJRT_Client_Compile_Args{
-    .struct_size = PJRT_Client_Compile_Args_STRUCT_SIZE,
-    .extension_start = nullptr,
-    .client = client,
-    .compile_options = options,
-    .compile_options_size = strlen(options),
-    .program = &program,
-  };
-}
+PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args);
 
-PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args) {
-  return args->executable;
-}
+PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args);
 
-PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
-  return api->PJRT_Client_Compile(args);
-}
-
-PJRT_ExecuteOptions* PJRT_ExecuteOptions_new() {
-  return new PJRT_ExecuteOptions{
-    .struct_size = PJRT_ExecuteOptions_STRUCT_SIZE,
-    .extension_start = nullptr,
-    .send_callbacks = nullptr,
-    .recv_callbacks = nullptr,
-    .num_send_ops = 0,
-    .num_recv_ops = 0,
-    .launch_id = 0,
-    .non_donatable_input_indices = nullptr,
-    .num_non_donatable_input_indices = 0,
-  };
-}
+PJRT_ExecuteOptions* PJRT_ExecuteOptions_new();
 
 PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
   PJRT_LoadedExecutable* executable, PJRT_ExecuteOptions* options
-) {
-  return PJRT_LoadedExecutable_Execute_Args{
-    .struct_size = PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE,
-    .extension_start = nullptr,
-    .executable = executable,
-    .options = options,
-    .argument_lists = {nullptr},
-    .num_devices = 1,
-    .num_args = 0,
-    .output_lists = {{nullptr}},
-    .device_complete_events = nullptr,
-    .execute_device = nullptr,
-  };
-}
+);
 
 PJRT_Buffer*** PJRT_LoadedExecutable_Execute_Args_output_lists(
   PJRT_LoadedExecutable_Execute_Args* args
-) {
-  return args->output_lists;
-}
+);
 
 // hacky shortcut
-Literal* LiteralSingleton(PJRT_Buffer*** output_lists) {
-  return output_lists[0][0]->ToLiteralSync();
-}
+Literal* LiteralSingleton(PJRT_Buffer*** output_lists);
 
 PJRT_Error* pjrt_loadedexecutable_execute(
   PJRT_Api* api, PJRT_LoadedExecutable_Execute_Args* args
-) {
-  return api->PJRT_LoadedExecutable_Execute(args);
-}
+);
 
 // does this test show us how to copy a PJRT_Buffer to xla::Literal?
 // TEST_F(PjrtCApiBufferTest, ToHostBufferNoHostLayout) {
