@@ -13,25 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <cstring>
-#include <string>
-
 #include "xla/service/hlo.pb.h"
-
-const char* c_string_copy(std::string str) {
-    char *res = NULL;
-    auto len = str.length();
-    res = (char *) malloc(len + 1);
-    strncpy(res, str.c_str(), len);
-    res[len] = '\0';
-    return res;
-}
 
 extern "C" {
     struct HloModuleProto;
 
-    char* SerializeAsString(HloModuleProto* s) {
-        auto s_ = reinterpret_cast<xla::HloModuleProto*>(s);
-        return c_string_copy(s->SerializeAsString());
-    }
+    const char* SerializeAsString(HloModuleProto* s);
 }

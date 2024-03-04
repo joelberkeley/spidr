@@ -21,5 +21,5 @@ extern "C" {
     struct XlaComputation;
 
     void XlaComputation_delete(XlaComputation* s);
-    HloModuleProto& XlaComputation_proto(XlaComputation* s);
+    const HloModuleProto& XlaComputation_proto(XlaComputation* s);
 }

@@ -17,20 +17,18 @@ limitations under the License.
 
 extern "C" {
   CompileOptions* CompileOptions_new() {
-    auto build_options = new stream_executor::xla::ExecutableBuildOptions;
-    build_options.set_device_ordinal(0);
+    auto build_options = new xla::ExecutableBuildOptions;
+    build_options->set_device_ordinal(0);
     auto device_assignment = new xla::DeviceAssignment(1, 1);
-    device_assignment(0, 0) = 0;
-    build_options.set_device_assignment(device_assignment);
-    auto options_str = xla::CompileOptions{
-      .executable_build_options = build_options
-    }
+    (*device_assignment)(0, 0) = 0;
+    build_options->set_device_assignment(*device_assignment);
 
-    return new xla::CompileOptions{
+    auto options = new xla::CompileOptions{
       .argument_layouts = std::nullopt,
-      .executable_build_options = build_options,
+      .executable_build_options = *build_options,
       .env_option_overrides = {},
       .target_config = std::nullopt,
     };
+    return reinterpret_cast<CompileOptions*>(options);
   }
 }

@@ -29,6 +29,10 @@ cIntToBool x =
   in (assert_total idris_crash) msg
 
 export
+isNullPtr : AnyPtr -> Bool
+isNullPtr ptr = cIntToBool $ prim__isNullPtr ptr
+
+export
 boolToCInt : Bool -> Int
 boolToCInt True = 1
 boolToCInt False = 0

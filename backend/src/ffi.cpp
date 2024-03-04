@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 extern "C" {
+    int isnull(void* ptr) {
+        return ptr == nullptr;
+    }
+
     int sizeof_int() {
         return sizeof(int);
     }

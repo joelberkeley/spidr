@@ -13,15 +13,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.PjRt.C.PjRt_C_API
-
-import System.FFI
-
-import Compiler.Xla.Prim.Util
-
-%foreign (libxla "GetPjrtApi")
-prim__getPjrtApi : PrimIO AnyPtr
-
-export
-getPjrtApi : HasIO io => io PjRt
-getPjrtApi = MkPjrtApi <&> primIO prim__getPjrtApi
+module Compiler.Xla.Prim.Xla.PJRT.C.PJRT_C_API_CPU
