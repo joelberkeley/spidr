@@ -22,6 +22,10 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla"
 
 export
+%foreign (libxla "isnull")
+prim__isNullPtr : AnyPtr -> Int
+
+export
 %foreign (libxla "sizeof_int")
 sizeofInt : Int
 

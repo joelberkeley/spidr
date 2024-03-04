@@ -15,6 +15,8 @@ limitations under the License.
 */
 #include <cstddef>
 extern "C" {
+    int isnull(void* ptr);
+
     int sizeof_int();
 
     size_t size(char*);

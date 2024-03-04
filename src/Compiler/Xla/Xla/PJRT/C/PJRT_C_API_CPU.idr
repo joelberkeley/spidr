@@ -13,29 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.PjRt.C.PjRt_C_API
+module Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU
 
 import System.FFI
 
 import Compiler.Xla.Prim.Util
 
-public export
-data PjrtApi = MkPjrtApi AnyPtr
+-- we're going to need to alias this C function so we can differentiate between
+-- versions of GetPjrtApi for various devices
+%foreign (libxla "GetPjrtApi")
+prim__getPjrtApi : PrimIO AnyPtr
 
 export
-data PJRT_Program = MkPJRT_Program GCAnyPtr
-
-{-
-public export
-PJRT_Program : Type
-PJRT_Program = Struct "PJRT_Program" [
-      ("struct_size", Bits64)
-    , ("extension_start", GCAnyPtr)
-    , ("code", GCAnyPtr)
-    , ("code_size", Bits64)
-    , ("format", GCAnyPtr)
-    , ("format_size", Bits64)
-  ]
--}
-
--- setField program "code" (believe_me "<prog>")
+getPjrtApi : HasIO io => io PjRt
+getPjrtApi = MkPJRT_Api <&> primIO prim__getPjrtApi
