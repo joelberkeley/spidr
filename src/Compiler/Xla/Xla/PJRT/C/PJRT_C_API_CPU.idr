@@ -25,5 +25,5 @@ import Compiler.Xla.Prim.Util
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
-getPjrtApi : HasIO io => io PjRt
+getPjrtApi : HasIO io => io PjRtApi
 getPjrtApi = MkPJRT_Api <&> primIO prim__getPjrtApi
