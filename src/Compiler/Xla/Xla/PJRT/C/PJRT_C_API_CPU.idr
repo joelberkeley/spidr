@@ -18,6 +18,7 @@ module Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU
 import System.FFI
 
 import Compiler.Xla.Prim.Util
+import Compiler.Xla.Xla.PJRT.C.PJRT_C_API
 
 -- we're going to need to alias this C function so we can differentiate between
 -- versions of GetPjrtApi for various devices
@@ -25,5 +26,5 @@ import Compiler.Xla.Prim.Util
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
-getPjrtApi : HasIO io => io PjRtApi
-getPjrtApi = MkPJRT_Api <&> primIO prim__getPjrtApi
+getPjrtApi : HasIO io => io PjrtApi
+getPjrtApi = MkPjrtApi <$> primIO prim__getPjrtApi
