@@ -40,6 +40,8 @@ modules =
   Compiler.Xla.Xla.Client.LocalClient,
   Compiler.Xla.Xla.Client.XlaBuilder,
   Compiler.Xla.Xla.Client.XlaComputation,
+  Compiler.Xla.Xla.PJRT.C.PJRT_C_API,
+  Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU,
   Compiler.Xla.Xla.Service.PlatformUtil,
   Compiler.Xla.Xla.StreamExecutor.GPU.GPUInit,
   Compiler.Xla.Xla.StreamExecutor.Host.HostPlatform,

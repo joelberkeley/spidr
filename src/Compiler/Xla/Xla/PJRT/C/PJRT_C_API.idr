@@ -15,9 +15,11 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.PJRT.C.PJRT_C_API
 
+import Control.Monad.Either
 import System.FFI
 
 import Compiler.Xla.Prim.Util
+import Compiler.Xla.Util
 
 -- keep the API as close to the PJRT api as possible except:
 -- * don't expose _Args, so we don't need to handle null ptrs. I really doubt we'd
@@ -26,7 +28,7 @@ import Compiler.Xla.Prim.Util
 -- we can use onCollectAny to GC our data!
 -- we can hide GCAnyPtr/AnyPtr in a more type-safe Idris API
 
-export
+public export
 data PjrtApi = MkPjrtApi AnyPtr
 
 public export 0
@@ -46,8 +48,8 @@ prim__mkPjrtErrorDestroyArgs : AnyPtr -> PrimIO AnyPtr
 %foreign (libxla "pjrt_error_destroy")
 prim__pjrtErrorDestroy : AnyPtr -> AnyPtr -> PrimIO ()
 
-destroyPjrtError : AnyPtr -> IO ()
-destroyPjrtError err = do
+destroyPjrtError : AnyPtr -> AnyPtr -> IO ()
+destroyPjrtError api err = do
   destroyArgs <- primIO $ prim__mkPjrtErrorDestroyArgs err
   primIO $ prim__pjrtErrorDestroy api destroyArgs
   free destroyArgs
@@ -124,26 +126,27 @@ prim__mkPjrtClientCreateArgs : PrimIO AnyPtr
 prim__pjrtClientCreateArgsClient : AnyPtr -> AnyPtr
 
 %foreign (libxla "pjrt_client_create")
-prim__pjrtClientCreate : AnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+prim__pjrtClientCreate : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Destroy_Args_new")
 prim__mkPjrtClientDestroyArgs : AnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Destroy")
-prim__pjrtClientDestroy : AnyPtr -> PrimIO ()
+prim__pjrtClientDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
-  if isNullPtr err
-  then do let client = prim__pjrtClientCreateArgsClient args
-          free args
-          client <- onCollectAny client destroyClient
-          right $ PjrtClient client
-  else do err <- onCollectAny err destroyPjrtError
-          left $ MkPjrtError err
+  if (isNullPtr err) then
+    do let client = prim__pjrtClientCreateArgsClient args
+       free args
+       client <- onCollectAny client destroyClient
+       right $ MkPjrtClient client
+    else
+      do err <- onCollectAny err (destroyPjrtError api)
+         left $ MkPjrtError err
 
   where
 
@@ -154,12 +157,12 @@ pjrtClientCreate (MkPjrtApi api) = do
     free args
     unless (isNullPtr err) $ do
       args <- primIO $ prim__mkPjrtErrorMessageArgs err
-      prim__pjrtErrorMessage api args
+      primIO $ prim__pjrtErrorMessage api args
       msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
       -- mention the address of the client?
       printLn "Failed to destroy PJRT_Client, continuing operation."
-      free msgArgs
-      destroyPjrtError err
+      free args
+      destroyPjrtError api err
 
 export
 data PjrtProgram = MkPjrtProgram GCAnyPtr
