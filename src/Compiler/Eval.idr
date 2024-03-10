@@ -31,18 +31,12 @@ import Compiler.Xla.Xla.Client.Lib.Matrix
 import Compiler.Xla.Xla.Client.Lib.PRNG
 import Compiler.Xla.Xla.Client.XlaBuilder
 import Compiler.Xla.Xla.Client.XlaComputation
+import Compiler.Xla.Xla.PJRT.C.PJRT_C_API
+import Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU
 import Compiler.Xla.Xla.Literal
 import Compiler.Xla.Xla.Shape
 import Compiler.Xla.Xla.ShapeUtil
 import Compiler.Xla.Xla.XlaData
-import Compiler.Xla.Xla.Service.PlatformUtil
-import Compiler.Xla.Xla.Client.ClientLibrary
-import Compiler.Xla.Xla.Client.LocalClient
-import Compiler.Xla.Xla.StreamExecutor.GPU.GPUInit
-import Compiler.Xla.Xla.StreamExecutor.Host.HostPlatform
-import Compiler.Xla.Xla.Status
-import Compiler.Xla.Xla.StreamExecutor.Platform
-import Compiler.Xla.Xla.StreamExecutor.PlatformManager
 
 import Literal
 import Primitive
@@ -240,15 +234,10 @@ execute : Fn 0 -> ErrIO Literal
 execute f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  client <- getOrCreateLocalClient !platform
-  executeAndTransfer client computation
-
-  where
-
-  platform : HasIO io => io Platform
-  platform =
-    if ok !validateGPUMachineManager
-    then gpuMachineManager
-    else do host <- hostPlatform
-            _ <- registerPlatform host  -- err if fails
-            platformWithName "Host"
+  api <- getPjrtApi  -- need a gpu version
+  client <- pjrtClientCreate api
+  code <- ?serialize computation
+  program <- mkPjrtProgram code
+  loadedExec <- pjrtClientCompile api client program "<compile options>"
+  buffer <- pjrtLoadedExecutableExecute api loadedExec
+  ?rhs

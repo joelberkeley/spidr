@@ -30,5 +30,13 @@ export
 sizeofInt : Int
 
 export
+%foreign (libxla "sizeof_ptr")
+sizeofPtr : Int
+
+export
+%foreign (libxla "index")
+prim__index : Int -> AnyPtr -> AnyPtr
+
+export
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()

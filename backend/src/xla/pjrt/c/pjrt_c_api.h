@@ -42,21 +42,26 @@ PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
   PJRT_Client* client, PJRT_Program* program, char* compile_options
 );
 PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args);
+// alternatively the similar function PJRT_Compile ... what's the difference?
 PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args);
 PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
   PJRT_LoadedExecutable* executable
 );
 PJRT_Error* pjrt_loadedexecutable_destroy(PJRT_Api* api, PJRT_LoadedExecutable_Destroy_Args* args);
-//PJRT_ExecuteOptions* PJRT_ExecuteOptions_new();
-//PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
-//  PJRT_LoadedExecutable* executable, PJRT_ExecuteOptions* options
-//);
-//PJRT_Buffer*** PJRT_LoadedExecutable_Execute_Args_output_lists(
-//  PJRT_LoadedExecutable_Execute_Args* args
-//);
+
+PJRT_ExecuteOptions* PJRT_ExecuteOptions_new();
+PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
+  PJRT_LoadedExecutable* executable,
+  PJRT_ExecuteOptions* options,
+  PJRT_Buffer*** output_lists,
+);
+PJRT_Buffer** const* PJRT_LoadedExecutable_Execute_Args_output_lists(
+  PJRT_LoadedExecutable_Execute_Args* args
+);
 PJRT_Error* pjrt_loadedexecutable_execute(
   PJRT_Api* api, PJRT_LoadedExecutable_Execute_Args* args
 );
+
 //PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(PJRT_Buffer* src);
 PJRT_Error* pjrt_buffer_tohostbuffer(PJRT_Api* api, PJRT_Buffer_ToHostBuffer_Args* args);
 // does this test show us how to copy a PJRT_Buffer to xla::Literal?

@@ -171,42 +171,43 @@ PJRT_Error* pjrt_loadedexecutable_destroy(
   return api->PJRT_LoadedExecutable_Destroy(args);
 }
 
-//PJRT_ExecuteOptions* PJRT_ExecuteOptions_new() {
-//  return new PJRT_ExecuteOptions{
-//    .struct_size = PJRT_ExecuteOptions_STRUCT_SIZE,
-//    .extension_start = nullptr,
-//    .send_callbacks = nullptr,
-//    .recv_callbacks = nullptr,
-//    .num_send_ops = 0,
-//    .num_recv_ops = 0,
-//    .launch_id = 0,
-//    .non_donatable_input_indices = nullptr,
-//    .num_non_donatable_input_indices = 0,
-//  };
-//}
+PJRT_ExecuteOptions* PJRT_ExecuteOptions_new() {
+  return new PJRT_ExecuteOptions{
+    .struct_size = PJRT_ExecuteOptions_STRUCT_SIZE,
+    .extension_start = nullptr,
+    .send_callbacks = nullptr,
+    .recv_callbacks = nullptr,
+    .num_send_ops = 0,
+    .num_recv_ops = 0,
+    .launch_id = 0,
+    .non_donatable_input_indices = nullptr,
+    .num_non_donatable_input_indices = 0,
+  };
+}
 
-//PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
-//  PJRT_LoadedExecutable* executable, PJRT_ExecuteOptions* options
-//) {
-//  return new PJRT_LoadedExecutable_Execute_Args{
-//    .struct_size = PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE,
-//    .extension_start = nullptr,
-//    .executable = executable,
-//    .options = options,
-//    .argument_lists = nullptr,
-//    .num_devices = 1,
-//    .num_args = 0,
-//    .output_lists = nullptr,
-//    .device_complete_events = nullptr,
-//    .execute_device = nullptr,
-//  };
-//}
+PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
+  PJRT_LoadedExecutable* executable,
+  PJRT_ExecuteOptions* options,
+  PJRT_Buffer*** output_lists,
+) {
+  return new PJRT_LoadedExecutable_Execute_Args{
+    .struct_size = PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE,
+    .extension_start = nullptr,
+    .executable = executable,
+    .options = options,
+    .argument_lists = nullptr,
+    .num_devices = 1,
+    .num_args = 0,
+    .output_lists = output_lists,
+    .device_complete_events = nullptr,
+    .execute_device = nullptr,
+  };
+}
 
-// hacky shortcut
-PJRT_Buffer* PJRT_LoadedExecutable_Execute_Args_output_singleton(
+PJRT_Buffer** const* PJRT_LoadedExecutable_Execute_Args_output_lists(
   PJRT_LoadedExecutable_Execute_Args* args
 ) {
-  return args->output_lists[0][0];
+  return args->output_lists;
 }
 
 PJRT_Error* pjrt_loadedexecutable_execute(
