@@ -71,6 +71,10 @@ PJRT_Error_GetCode_Args* PJRT_Error_GetCode_Args_new(PJRT_Error* error) {
   };
 }
 
+int PJRT_Error_GetCode_Args_code(PJRT_Error_GetCode_Args* args) {
+  return (int) args->code;
+}
+
 // how is a C enum represented through FFI? An integer of some sort?
 PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args) {
   return api->PJRT_Error_GetCode(args);

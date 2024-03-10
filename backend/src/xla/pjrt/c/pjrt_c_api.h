@@ -27,6 +27,7 @@ char* PJRT_Error_Message_Args_message(PJRT_Error_Message_Args* args);
 void pjrt_error_message(PJRT_Api* api, PJRT_Error_Message_Args* args);
 
 PJRT_Error_GetCode_Args* PJRT_Error_GetCode_Args_new(PJRT_Error* error);
+int PJRT_Error_GetCode_Args_code(PJRT_Error_GetCode_Args* args);
 PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args);
 
 PJRT_Client_Create_Args* PJRT_Client_Create_Args_new();

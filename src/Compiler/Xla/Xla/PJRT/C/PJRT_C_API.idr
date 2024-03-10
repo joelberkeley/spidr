@@ -66,8 +66,14 @@ prim__pjrtErrorMessage : AnyPtr -> AnyPtr -> PrimIO ()
 export
 pjrtErrorMessage : HasIO io => PjrtError -> io ()
 
+%foreign (libxla "PJRT_Error_GetCode_Args_new")
+prim__mkPjrtErrorGetCodeArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Error_GetCode_Args_code")
+prim__mkPjrtErrorGetCodeArgsCode : AnyPtr -> Int
+
 %foreign (libxla "pjrt_error_getcode")
-prim__pjrtErrorGetcode : AnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+prim__pjrtErrorGetCode : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 -- i'm going to keep the Idris API as close as possible to the C API, and convert the
 -- errors further up the stack
@@ -137,6 +143,26 @@ prim__pjrtClientDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 -- warnDestroyFailure : PjrtApi -> IO GCAnyPtr -> IO ()
 -- warnDestroyFailure api err =
 
+-- add address of target pointer?
+handleErrOnDestroy : AnyPtr -> AnyPtr -> String -> IO ()
+handleErrOnDestroy api err target = unless (isNullPtr err) $ do
+  args <- primIO $ prim__mkPjrtErrorMessageArgs err
+  primIO $ prim__pjrtErrorMessage api args
+  msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
+  free args
+
+  args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
+  getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
+  if (isNullPtr getCodeErr) then do
+      let code = prim__mkPjrtErrorGetCodeArgsCode args
+      printLn "WARN: Failed to destroy \{target} with error code \{show code}; message: \{msg}"
+    else do
+      printLn "WARN: Failed to fetch error code"
+      printLn "WARN: Failed to destroy \{target} with unknown error code; message: \{msg}"
+      destroyPjrtError api getCodeErr
+  free args
+  destroyPjrtError api err
+
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
@@ -158,14 +184,7 @@ pjrtClientCreate (MkPjrtApi api) = do
     args <- primIO $ prim__mkPjrtClientDestroyArgs client
     err <- primIO $ prim__pjrtClientDestroy api args
     free args
-    unless (isNullPtr err) $ do
-      args <- primIO $ prim__mkPjrtErrorMessageArgs err
-      primIO $ prim__pjrtErrorMessage api args
-      msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
-      -- mention the address of the client?
-      printLn "WARN: Failed to destroy PJRT_Client with error \{show code}: \{msg}"
-      free args
-      destroyPjrtError api err
+    handleErrOnDestroy api err "PJRT_Client"
 
 export
 data PjrtProgram = MkPjrtProgram GCAnyPtr
@@ -181,7 +200,7 @@ mkPjrtProgram code = do
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
-prim__mkPjrtClientCompileArgs : PrimIO AnyPtr
+prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> String -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
@@ -193,13 +212,18 @@ prim__pjrtClientCompile : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 prim__pjrtLoadedExecutableDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_LoadedExecutable_Destroy_Args_new")
-prim__mkPjrtLoadedExecutableDestroyArgs : PrimIO AnyPtr
+prim__mkPjrtLoadedExecutableDestroyArgs : AnyPtr -> PrimIO AnyPtr
 
 export
 data PjrtLoadedExecutable = MkPjrtLoadedExecutable GCAnyPtr
 
-pjrtClientCompile : PjrtClient -> PrjtProgram -> String -> ErrIO PjrtError PjrtLoadedExecutable
-pjrtClientCompile (MkPjrtClient client) (MkPrjtProgram program) compileOptions = do
+pjrtClientCompile :
+  PjrtApi ->
+  PjrtClient ->
+  PjrtProgram ->
+  String ->
+  ErrIO PjrtError PjrtLoadedExecutable
+pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) compileOptions = do
   args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions
   err <- primIO $ prim__pjrtClientCompile api args
   if (isNullPtr err) then do
@@ -216,13 +240,6 @@ pjrtClientCompile (MkPjrtClient client) (MkPrjtProgram program) compileOptions =
   destroyExecutable : AnyPtr -> IO ()
   destroyExecutable executable = do
     args <- primIO $ prim__mkPjrtLoadedExecutableDestroyArgs executable
-    err <- primIO $ prim__mkPjrtLoadedExecutableDestroy api args
+    err <- primIO $ prim__pjrtLoadedExecutableDestroy api args
     free args
-    unless (isNullPtr err) $ do
-      args <- primIO $ prim__mkPjrtErrorMessageArgs err
-      primIO $ prim__pjrtErrorMessage api args
-      msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
-      -- mention the address of the client?
-      printLn "WARN: Failed to destroy PJRT_LoadedExecutable with error \{show code}: \{msg}"
-      free args
-      destroyPjrtError api err
+    handleErrOnDestroy api err "PJRT_LoadedExecutable"
