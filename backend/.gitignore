@@ -1,3 +1,3 @@
 /bazel-*
 bazelisk
-xla/
+/xla/
