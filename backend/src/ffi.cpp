@@ -14,12 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 extern "C" {
+    void* deref(void** ptr) {
+        return *ptr;
+    }
+
     int isnull(void* ptr) {
         return ptr == nullptr;
     }
 
     int sizeof_int() {
         return sizeof(int);
+    }
+
+    int sizeof_ptr() {
+        return sizeof(void*);
+    }
+
+    void* index(int idx, void** ptr) {
+        return ptr[idx];
     }
 
     void set_array_int(int* arr, int idx, int value) {

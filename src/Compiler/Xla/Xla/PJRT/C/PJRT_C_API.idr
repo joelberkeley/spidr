@@ -163,19 +163,21 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   free args
   destroyPjrtError api err
 
+try : AnyPtr -> AnyPtr -> a -> ErrIO PjrtError a
+try api err onOk = if (isNullPtr err) then right onOk else do
+  err <- onCollectAny err (destroyPjrtError api)
+  left $ MkPjrtError err
+
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
-  if (isNullPtr err) then do
-      let client = prim__pjrtClientCreateArgsClient args
-      free args
-      client <- onCollectAny client destroyClient
-      right $ MkPjrtClient client
-    else do
-      err <- onCollectAny err (destroyPjrtError api)
-      left $ MkPjrtError err
+  try api err =<< do
+    let client = prim__pjrtClientCreateArgsClient args
+    free args
+    client <- onCollectAny client destroyClient
+    pure $ MkPjrtClient client
 
   where
 
@@ -196,7 +198,7 @@ export
 mkPjrtProgram : HasIO io => String -> io PjrtProgram
 mkPjrtProgram code = do
   ptr <- primIO $ prim__mkPjrtProgram code
-  ptr <- onCollectAny ptr free  -- can we `free` a program? do we need a "destroy"?
+  ptr <- onCollectAny ptr free
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
@@ -205,7 +207,7 @@ prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> String -> PrimIO AnyPtr
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
 
-%foreign (libxla "PJRT_Client_Compile")
+%foreign (libxla "pjrt_client_compile")
 prim__pjrtClientCompile : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "pjrt_loadedexecutable_destroy")
@@ -217,6 +219,7 @@ prim__mkPjrtLoadedExecutableDestroyArgs : AnyPtr -> PrimIO AnyPtr
 export
 data PjrtLoadedExecutable = MkPjrtLoadedExecutable GCAnyPtr
 
+export
 pjrtClientCompile :
   PjrtApi ->
   PjrtClient ->
@@ -226,14 +229,11 @@ pjrtClientCompile :
 pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) compileOptions = do
   args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions
   err <- primIO $ prim__pjrtClientCompile api args
-  if (isNullPtr err) then do
-      let executable = prim__pjrtClientCompileArgsExecutable args
-      free args
-      executable <- onCollectAny executable destroyExecutable
-      right $ MkPjrtLoadedExecutable executable
-    else do
-      err <- onCollectAny err (destroyPjrtError api)
-      left $ MkPjrtError err
+  let executable = prim__pjrtClientCompileArgsExecutable args
+  free args
+  try api err =<< do
+    executable <- onCollectAny executable destroyExecutable
+    pure $ MkPjrtLoadedExecutable executable
 
   where
 
@@ -243,3 +243,30 @@ pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) 
     err <- primIO $ prim__pjrtLoadedExecutableDestroy api args
     free args
     handleErrOnDestroy api err "PJRT_LoadedExecutable"
+
+%foreign (libxla "PJRT_ExecuteOptions_new")
+prim__mkPjrtExecuteOptions : PrimIO AnyPtr
+
+%foreign (libxla "PJRT_LoadedExecutable_Execute_Args_new")
+prim__mkPjrtLoadedExecutableExecuteArgs : GCAnyPtr -> AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_loadedexecutable_execute")
+prim__pjrtLoadedExecutableExecute : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+export
+data PjrtBuffer = MkPjrtBuffer AnyPtr
+
+export
+pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
+pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
+  outputListsInner <- malloc sizeofPtr
+  outputLists <- malloc sizeofPtr
+  options <- primIO prim__mkPjrtExecuteOptions
+  args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists
+  err <- primIO $ prim__pjrtLoadedExecutableExecute api args
+  let buffer = prim__index 0 outputListsInner
+  free outputListsInner
+  free outputLists
+  free options
+  free args
+  try api err $ MkPjrtBuffer buffer  -- todo gc with PJRT_Buffer_Destroy
