@@ -134,19 +134,22 @@ prim__mkPjrtClientDestroyArgs : AnyPtr -> PrimIO AnyPtr
 %foreign (libxla "PJRT_Client_Destroy")
 prim__pjrtClientDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+-- warnDestroyFailure : PjrtApi -> IO GCAnyPtr -> IO ()
+-- warnDestroyFailure api err =
+
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
-  if (isNullPtr err) then
-    do let client = prim__pjrtClientCreateArgsClient args
-       free args
-       client <- onCollectAny client destroyClient
-       right $ MkPjrtClient client
-    else
-      do err <- onCollectAny err (destroyPjrtError api)
-         left $ MkPjrtError err
+  if (isNullPtr err) then do
+      let client = prim__pjrtClientCreateArgsClient args
+      free args
+      client <- onCollectAny client destroyClient
+      right $ MkPjrtClient client
+    else do
+      err <- onCollectAny err (destroyPjrtError api)
+      left $ MkPjrtError err
 
   where
 
@@ -160,7 +163,7 @@ pjrtClientCreate (MkPjrtApi api) = do
       primIO $ prim__pjrtErrorMessage api args
       msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
       -- mention the address of the client?
-      printLn "Failed to destroy PJRT_Client, continuing operation."
+      printLn "WARN: Failed to destroy PJRT_Client with error \{show code}: \{msg}"
       free args
       destroyPjrtError api err
 
@@ -174,5 +177,52 @@ export
 mkPjrtProgram : HasIO io => String -> io PjrtProgram
 mkPjrtProgram code = do
   ptr <- primIO $ prim__mkPjrtProgram code
-  ptr <- onCollectAny ptr free
+  ptr <- onCollectAny ptr free  -- can we `free` a program? do we need a "destroy"?
   pure (MkPjrtProgram ptr)
+
+%foreign (libxla "PJRT_Client_Compile_Args_new")
+prim__mkPjrtClientCompileArgs : PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Client_Compile_Args_executable")
+prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
+
+%foreign (libxla "PJRT_Client_Compile")
+prim__pjrtClientCompile : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_loadedexecutable_destroy")
+prim__pjrtLoadedExecutableDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_LoadedExecutable_Destroy_Args_new")
+prim__mkPjrtLoadedExecutableDestroyArgs : PrimIO AnyPtr
+
+export
+data PjrtLoadedExecutable = MkPjrtLoadedExecutable GCAnyPtr
+
+pjrtClientCompile : PjrtClient -> PrjtProgram -> String -> ErrIO PjrtError PjrtLoadedExecutable
+pjrtClientCompile (MkPjrtClient client) (MkPrjtProgram program) compileOptions = do
+  args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions
+  err <- primIO $ prim__pjrtClientCompile api args
+  if (isNullPtr err) then do
+      let executable = prim__pjrtClientCompileArgsExecutable args
+      free args
+      executable <- onCollectAny executable destroyExecutable
+      right $ MkPjrtLoadedExecutable executable
+    else do
+      err <- onCollectAny err (destroyPjrtError api)
+      left $ MkPjrtError err
+
+  where
+
+  destroyExecutable : AnyPtr -> IO ()
+  destroyExecutable executable = do
+    args <- primIO $ prim__mkPjrtLoadedExecutableDestroyArgs executable
+    err <- primIO $ prim__mkPjrtLoadedExecutableDestroy api args
+    free args
+    unless (isNullPtr err) $ do
+      args <- primIO $ prim__mkPjrtErrorMessageArgs err
+      primIO $ prim__pjrtErrorMessage api args
+      msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
+      -- mention the address of the client?
+      printLn "WARN: Failed to destroy PJRT_LoadedExecutable with error \{show code}: \{msg}"
+      free args
+      destroyPjrtError api err

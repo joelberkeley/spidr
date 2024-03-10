@@ -30,18 +30,22 @@ PJRT_Error_GetCode_Args* PJRT_Error_GetCode_Args_new(PJRT_Error* error);
 PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args);
 
 PJRT_Client_Create_Args* PJRT_Client_Create_Args_new();
-PJRT_Client* PJRT_Client_Create_Args_client();
+PJRT_Client* PJRT_Client_Create_Args_client(PJRT_Client_Create_Args* args);
 PJRT_Error* pjrt_client_create(PJRT_Api* api, PJRT_Client_Create_Args* args);
 
 PJRT_Client_Destroy_Args* PJRT_Client_Destroy_Args_new(PJRT_Client* client);
 PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args);
 
 PJRT_Program* PJRT_Program_new(char* code);
-//PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
-//  PJRT_Client* client, CompileOptions* options, PJRT_Program* program
-//);
-//PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args);
+PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
+  PJRT_Client* client, PJRT_Program* program, char* compile_options
+);
+PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args);
 PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args);
+PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
+  PJRT_LoadedExecutable* executable
+);
+PJRT_Error* pjrt_loadedexecutable_destroy(PJRT_Api* api, PJRT_LoadedExecutable_Destroy_Args* args);
 //PJRT_ExecuteOptions* PJRT_ExecuteOptions_new();
 //PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
 //  PJRT_LoadedExecutable* executable, PJRT_ExecuteOptions* options
