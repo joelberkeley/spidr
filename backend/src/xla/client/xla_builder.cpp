@@ -28,15 +28,6 @@ limitations under the License.
 #include "xla_builder.h"
 #include "xla_computation.h"
 
-const char* c_string_copy(std::string str) {
-    char *res = NULL;
-    auto len = str.length();
-    res = (char *) malloc(len + 1);
-    strncpy(res, str.c_str(), len);
-    res[len] = '\0';
-    return res;
-}
-
 extern "C" {
     int sizeof_XlaOp() {
         return sizeof(xla::XlaOp);

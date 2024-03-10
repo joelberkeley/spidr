@@ -16,6 +16,7 @@ limitations under the License.
 #include <cstddef>
 
 // remove these when we've pulled out build config
+#include "xla/pjrt/c/pjrt_c_api.h"
 #include "xla/pjrt/c/pjrt_c_api_helpers.h"
 #include "xla/pjrt/pjrt_executable.h"
 #include "xla/pjrt/pjrt_client.h"
@@ -86,16 +87,20 @@ PJRT_Client_Create_Args* PJRT_Client_Create_Args_new() {
     .kv_put_callback = nullptr,
     .kv_put_user_arg = nullptr,
     .client = nullptr,
-  }
+  };
 }
 
 PJRT_Client_Destroy_Args* PJRT_Client_Destroy_Args_new(PJRT_Client* client) {
   return new PJRT_Client_Destroy_Args{
-    ...
-  }
+    .struct_size = PJRT_LoadedExecutable_Destroy_Args_STRUCT_SIZE,
+    .extension_start = nullptr,
+    .client = client,
+  };
 }
 
-PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args);
+PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args) {
+  return api->PJRT_Client_Destroy(args);
+}
 
 PJRT_Client* PJRT_Client_Create_Args_client(PJRT_Client_Create_Args* args) {
   return args->client;
@@ -120,29 +125,46 @@ PJRT_Program* PJRT_Program_new(char* code) {
 }
 
 PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
-  PJRT_Client* client, CompileOptions* options, PJRT_Program* program
+  PJRT_Client* client, PJRT_Program* program, char* compile_options
 ) {
   // move ->ToProto()->SerializeAsString() out and accept char*
-  auto options_ = reinterpret_cast<xla::CompileOptions*>(options);
-  auto options_str = options_->ToProto()->SerializeAsString();
+//  auto options_ = reinterpret_cast<xla::CompileOptions*>(options);
+//  auto options_str = options_->ToProto()->SerializeAsString();
 
   return new PJRT_Client_Compile_Args{
     .struct_size = PJRT_Client_Compile_Args_STRUCT_SIZE,
     .extension_start = nullptr,
     .client = client,
     .program = program,
-    // FIXME these two args aren't co-operating
-//    .compile_options = options_str.c_str(),
-//    .compile_options_size = options_str.size(),
+    .compile_options = compile_options,
+    // strlen won't work here if ->SerializeAsString() doesn't terminate the string.
+    // in that case, pass the length too.
+    .compile_options_size = strlen(compile_options),
   };
 }
 
-//PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args) {
-//  return args->executable;
-//}
+PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args) {
+  return args->executable;
+}
 
 PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
   return api->PJRT_Client_Compile(args);
+}
+
+PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
+  PJRT_LoadedExecutable* executable
+) {
+  return new PJRT_LoadedExecutable_Destroy_Args{
+    .struct_size = PJRT_LoadedExecutable_Destroy_Args_STRUCT_SIZE,
+    .extension_start = nullptr,
+    .executable = executable,
+  };
+}
+
+PJRT_Error* pjrt_loadedexecutable_destroy(
+  PJRT_Api* api, PJRT_LoadedExecutable_Destroy_Args* args
+) {
+  return api->PJRT_LoadedExecutable_Destroy(args);
 }
 
 //PJRT_ExecuteOptions* PJRT_ExecuteOptions_new() {
