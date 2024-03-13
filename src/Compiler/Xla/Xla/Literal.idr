@@ -32,10 +32,9 @@ delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
 export
-allocLiteral : HasIO io => Primitive dtype => Types.Shape -> io Literal
-allocLiteral shape = do
-  MkShape shapePtr <- mkShape {dtype} shape
-  litPtr <- primIO $ prim__allocLiteral shapePtr
+allocLiteral : HasIO io => Xla.Shape -> io Literal
+allocLiteral (MkShape shape) = do
+  litPtr <- primIO $ prim__allocLiteral shape
   litPtr <- onCollectAny litPtr Literal.delete
   pure (MkLiteral litPtr)
 

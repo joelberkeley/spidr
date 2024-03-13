@@ -19,7 +19,9 @@ import Control.Monad.Either
 import System.FFI
 
 import Compiler.Xla.Prim.Util
+import Compiler.Xla.Prim.Xla.Literal
 import Compiler.Xla.Util
+import Compiler.Xla.Xla.Literal
 
 -- keep the API as close to the PJRT api as possible except:
 -- * don't expose _Args, so we don't need to handle null ptrs. I really doubt we'd

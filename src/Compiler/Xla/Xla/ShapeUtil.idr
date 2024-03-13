@@ -55,7 +55,7 @@ export
 mkTupleShape : HasIO io => List Xla.Shape -> io Xla.Shape
 mkTupleShape shapes = do
   MkShapeArray shapeArray <- mkShapeArray shapes
-  shape <- primIO $ prim__mkTupleShape shapeArray (cast $ length shapes)
+  shape <- primIO $ prim__makeTupleShape shapeArray (cast $ length shapes)
   shape <- onCollectAny shape Shape.delete
   pure (MkShape shape)
 

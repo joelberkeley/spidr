@@ -17,6 +17,7 @@ module Compiler.LiteralRW
 
 import Compiler.Xla.Xla.XlaData
 import public Compiler.Xla.Xla.Literal
+import Compiler.Xla.Xla.Shape
 import Compiler.Xla.Xla.ShapeUtil
 import Literal
 import Util
@@ -53,7 +54,8 @@ write : HasIO io =>
         Literal shape a ->
         io Literal
 write idxs xs = liftIO $ do
-  literal <- allocLiteral {dtype} shape
+  shape <- mkShape {dtype} shape
+  literal <- allocLiteral shape
   shapeIndex <- allocShapeIndex
   traverse_ (pushBack shapeIndex) idxs
   sequence_ [| (\idxs => set {dtype} literal idxs shapeIndex) indexed xs |]
