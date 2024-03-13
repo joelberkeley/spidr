@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "xla/client/xla_computation.h"
+#include "xla/pjrt/pjrt_executable.h"
+
 #include "pjrt_executable.h"
-#include "backend/xla/xla/client/xla_computation.h"
-#include "backend/xla/xla/pjrt/pjrt_executable.h"
+#include "../service/hlo.pb.h"
 
 extern "C" {
   CompileOptions* CompileOptions_new() {
@@ -34,7 +36,7 @@ extern "C" {
     return reinterpret_cast<CompileOptions*>(options);
   }
 
-  char* CompileOptions_SerializeAsString(CompileOptions* s) {
+  const char* CompileOptions_SerializeAsString(CompileOptions* s) {
     auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
     return c_string_copy(s_->ToProto()->SerializeAsString());
   }
