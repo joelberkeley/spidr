@@ -216,19 +216,19 @@ PJRT_Error* pjrt_loadedexecutable_execute(
   return api->PJRT_LoadedExecutable_Execute(args);
 }
 
-//PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(
-//  PJRT_Buffer* src, void* dst
-//) {
-//  return new PJRT_Buffer_ToHostBuffer_Args{
-//    .struct_size = PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE,
-//    .extension_start = nullptr,
-//    .src = src,
-//    .host_layout = nullptr,
-//    .dst = dst,
-//    .dst_size = 0,  // overriden, not sure if I need to specify this
-//    .event = nullptr,
-//  };
-//}
+PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(
+  PJRT_Buffer* src, void* dst, size_t dst_size
+) {
+  return new PJRT_Buffer_ToHostBuffer_Args{
+    .struct_size = PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE,
+    .extension_start = nullptr,
+    .src = src,
+    .host_layout = nullptr,
+    .dst = dst,
+    .dst_size = dst_size,
+    .event = nullptr,
+  };
+}
 
 PJRT_Error* pjrt_buffer_tohostbuffer(PJRT_Api* api, PJRT_Buffer_ToHostBuffer_Args* args) {
   return api->PJRT_Buffer_ToHostBuffer(args);

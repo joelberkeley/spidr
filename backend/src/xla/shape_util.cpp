@@ -35,6 +35,21 @@ extern "C" {
         reinterpret_cast<xla::ShapeIndex&>(shape_index).push_front(value);
     }
 
+    // does it matter that the header file uses c int64_t
+    // but this (and XLA) uses the cpp version?
+    //
+    // !! only valid for arrays, not tuples, so this might not work
+    int64_t ByteSizeOfElements(Shape& shape) {
+        auto shape_ = reinterpret_cast<xla::Shape&>(shape);
+        return xla::ShapeUtil::ByteSizeOfElements(shape_);
+    }
+
+    Shape* MakeTupleShape(Shape* shapes, int shapes_len) {
+        auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
+        auto shapes_span = absl::Span<xla::Shape>(shapes_, shapes_len);
+        return xla::ShapeUtil::MakeTupleShape(shapes_span);
+    }
+
     Shape* MakeShape(int primitive_type, int* shape, int rank) {
         int64_t shape64[rank];
         std::copy(shape, shape + rank, shape64);

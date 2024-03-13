@@ -25,3 +25,15 @@ namespace Xla
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
+
+public export
+data ShapeArray = MkShapeArray GCAnyPtr
+
+export
+mkShapeArray : HasIO io => List Shape -> io ShapeArray
+mkShapeArray shapes = do
+  arr <- malloc (cast (length shapes) * sizeOfShape)
+  traverse_ (\(idx, (MkShape shape)) =>
+    primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate (fromList shapes))
+  arr <- onCollectAny arr free
+  pure (MkShapeArray arr)

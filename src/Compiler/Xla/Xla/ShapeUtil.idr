@@ -48,6 +48,18 @@ pushFront (MkShapeIndex shapeIndex) value =
   primIO $ prim__shapeIndexPushFront shapeIndex (cast value)
 
 export
+byteSizeOfElements : Xla.Shape -> Bits64
+byteSizeOfElements (MkShape shape) = prim__byteSizeOfElements shape
+
+export
+mkTupleShape : HasIO io => List Xla.Shape -> io Xla.Shape
+mkTupleShape shapes = do
+  MkShapeArray shapeArray <- mkShapeArray shapes
+  shape <- primIO $ prim__mkTupleShape shapeArray (cast $ length shapes)
+  shape <- onCollectAny shape Shape.delete
+  pure (MkShape shape)
+
+export
 mkShape : (HasIO io, Primitive dtype) => Types.Shape -> io Xla.Shape
 mkShape shape = do
   let dtypeEnum = xlaIdentifier {dtype}

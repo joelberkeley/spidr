@@ -20,6 +20,14 @@ import System.FFI
 import Compiler.Xla.Prim.Util
 
 export
+%foreign (libxla "Literal_untyped_data")
+prim__literalUntypedData : GCAnyPtr -> AnyPtr
+
+export
+%foreign (libxla "Literal_size_bytes")
+prim__literalSizeBytes : GCAnyPtr -> Int
+
+export
 %foreign (libxla "Literal_new")
 prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 

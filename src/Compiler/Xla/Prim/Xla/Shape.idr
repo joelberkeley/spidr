@@ -22,3 +22,11 @@ import Compiler.Xla.Prim.Util
 export
 %foreign (libxla "Shape_delete")
 prim__delete : AnyPtr -> PrimIO ()
+
+export
+%foreign (libxla "sizeof_Shape")
+sizeOfShape : Int
+
+export
+%foreign (libxla "set_array_Shape")
+prim__setArrayShape : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()

@@ -20,6 +20,15 @@ limitations under the License.
 #include "shape_util.h"
 
 extern "C" {
+    // technically for LiteralBase. Do we care?
+    void* Literal_untyped_data(Literal* s) {
+        return reinterpret_cast<xla::Literal*>(s)->untyped_data();
+    }
+
+    int64_t Literal_size_bytes(Literal* s) {
+        return reinterpret_cast<xla::Literal*>(s)->size_bytes();
+    }
+
     Literal* Literal_new(Shape& shape) {
         xla::Shape& shape_ = reinterpret_cast<xla::Shape&>(shape);
         xla::Literal* lit = new xla::Literal(shape_, true);

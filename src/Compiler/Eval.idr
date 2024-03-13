@@ -231,8 +231,8 @@ toString f = do
   pure $ opToString xlaBuilder root
 
 export covering
-execute : Fn 0 -> ErrIO Literal
-execute f = do
+execute : Fn 0 -> Xla.Shape -> ErrIO ()
+execute f shape = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   api <- getPjrtApi  -- need a gpu version
@@ -242,4 +242,5 @@ execute f = do
   compileOptions <- mkCompileOptions
   loadedExec <- pjrtClientCompile api client program !(serializeAsString compileOptions)
   buffer <- pjrtLoadedExecutableExecute api loadedExec
-  ?rhs
+  literal <- allocLiteral
+  pjrtBufferToHostBuffer api buffer lit

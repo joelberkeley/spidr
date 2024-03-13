@@ -53,7 +53,7 @@ PJRT_ExecuteOptions* PJRT_ExecuteOptions_new();
 PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
   PJRT_LoadedExecutable* executable,
   PJRT_ExecuteOptions* options,
-  PJRT_Buffer*** output_lists,
+  PJRT_Buffer*** output_lists
 );
 PJRT_Buffer** const* PJRT_LoadedExecutable_Execute_Args_output_lists(
   PJRT_LoadedExecutable_Execute_Args* args
@@ -62,7 +62,9 @@ PJRT_Error* pjrt_loadedexecutable_execute(
   PJRT_Api* api, PJRT_LoadedExecutable_Execute_Args* args
 );
 
-//PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(PJRT_Buffer* src);
+PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(
+  PJRT_Buffer* src, void* dst, size_t dst_size
+);
 PJRT_Error* pjrt_buffer_tohostbuffer(PJRT_Api* api, PJRT_Buffer_ToHostBuffer_Args* args);
 // does this test show us how to copy a PJRT_Buffer to xla::Literal?
 // TEST_F(PjrtCApiBufferTest, ToHostBufferNoHostLayout) {
