@@ -24,3 +24,21 @@ data XlaComputation : Type where
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
+
+{-
+until I work out how to handle memory of an HloModuleProto
+
+export
+data HloModuleProto = MkHloModuleProto GCAnyPtr
+
+export
+proto : XlaComputation -> HloModuleProto
+proto (MkXlaComputation computation) = do
+
+  pure $ MkHloModuleProto proto
+-}
+
+export
+serializeAsString : HasIO io => XlaComputation -> io String
+serializeAsString (MkXlaComputation computation) =
+  primIO $ prim__xlaComputationSerializeAsString computation
