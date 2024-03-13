@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "pjrt_executable.h"
+#include "backend/xla/xla/client/xla_computation.h"
+#include "backend/xla/xla/pjrt/pjrt_executable.h"
 
 extern "C" {
   CompileOptions* CompileOptions_new() {
@@ -30,5 +32,10 @@ extern "C" {
       .target_config = std::nullopt,
     };
     return reinterpret_cast<CompileOptions*>(options);
+  }
+
+  char* CompileOptions_SerializeAsString(CompileOptions* s) {
+    auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
+    return c_string_copy(s_->ToProto()->SerializeAsString());
   }
 }

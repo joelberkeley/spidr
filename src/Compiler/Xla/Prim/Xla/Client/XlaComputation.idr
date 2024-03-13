@@ -22,3 +22,16 @@ import Compiler.Xla.Prim.Util
 export
 %foreign (libxla "XlaComputation_delete")
 prim__delete : AnyPtr -> PrimIO ()
+
+{-
+until I work out how to memory handle an HloModuleProto
+
+-- doesn't belong here, see cpp
+export
+%foreign (libxla "HloModuleProto_SerializeAsString")
+prim__hloModuleProtoSerializeAsString : AnyPtr -> PrimIO String
+-}
+
+export
+%foreign (libxla "XlaComputation_SerializeAsString")
+prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO String

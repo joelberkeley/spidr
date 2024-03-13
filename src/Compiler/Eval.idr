@@ -33,6 +33,7 @@ import Compiler.Xla.Xla.Client.XlaBuilder
 import Compiler.Xla.Xla.Client.XlaComputation
 import Compiler.Xla.Xla.PJRT.C.PJRT_C_API
 import Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU
+import Compiler.Xla.Xla.PJRT.PjrtExecutable
 import Compiler.Xla.Xla.Literal
 import Compiler.Xla.Xla.Shape
 import Compiler.Xla.Xla.ShapeUtil
@@ -236,8 +237,9 @@ execute f = do
   computation <- compile xlaBuilder f
   api <- getPjrtApi  -- need a gpu version
   client <- pjrtClientCreate api
-  code <- ?serialize computation
+  code <- serializeAsString computation
   program <- mkPjrtProgram code
-  loadedExec <- pjrtClientCompile api client program "<compile options>"
+  compileOptions <- mkCompileOptions
+  loadedExec <- pjrtClientCompile api client program !(serializeAsString compileOptions)
   buffer <- pjrtLoadedExecutableExecute api loadedExec
   ?rhs
