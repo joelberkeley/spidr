@@ -47,7 +47,10 @@ extern "C" {
     Shape* MakeTupleShape(Shape* shapes, int shapes_len) {
         auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
         auto shapes_span = absl::Span<xla::Shape>(shapes_, shapes_len);
-        return xla::ShapeUtil::MakeTupleShape(shapes_span);
+
+        xla::Shape* xla_shape = new xla::Shape();
+        *xla_shape = xla::ShapeUtil::MakeTupleShape(shapes_span);
+        return reinterpret_cast<Shape*>(xla_shape);
     }
 
     Shape* MakeShape(int primitive_type, int* shape, int rank) {

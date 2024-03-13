@@ -188,7 +188,7 @@ PJRT_ExecuteOptions* PJRT_ExecuteOptions_new() {
 PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
   PJRT_LoadedExecutable* executable,
   PJRT_ExecuteOptions* options,
-  PJRT_Buffer*** output_lists,
+  PJRT_Buffer*** output_lists
 ) {
   return new PJRT_LoadedExecutable_Execute_Args{
     .struct_size = PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE,

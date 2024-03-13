@@ -19,5 +19,5 @@ extern "C" {
   struct CompileOptions;
 
   CompileOptions* CompileOptions_new();
-  char* CompileOptions_SerializeAsString(CompileOptions* s);
+  const char* CompileOptions_SerializeAsString(CompileOptions* s);
 }
