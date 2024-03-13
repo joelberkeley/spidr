@@ -15,6 +15,9 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.Shape
 
+import System.FFI
+import Util
+
 import Compiler.Xla.Prim.Xla.Shape
 
 namespace Xla

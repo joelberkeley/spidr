@@ -15,6 +15,10 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.PJRT.PjrtExecutable
 
+import System.FFI
+
+import Compiler.Xla.Prim.Util
+
 export
 data CompileOptions = MkCompileOptions GCAnyPtr
 
@@ -26,11 +30,11 @@ mkCompileOptions : HasIO io => io CompileOptions
 mkCompileOptions = do
   options <- primIO prim__mkCompileOptions
   -- is `free` sufficient? does CompileOptions own any of its members?
-  options <- onCollectAny free options
+  options <- onCollectAny options free
   pure (MkCompileOptions options)
 
 %foreign (libxla "CompileOptions_SerializeAsString")
-prim__compileOptionsSerializeAsString : AnyPtr -> PrimIO String
+prim__compileOptionsSerializeAsString : GCAnyPtr -> PrimIO String
 
 export
 serializeAsString : HasIO io => CompileOptions -> io String

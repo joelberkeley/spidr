@@ -47,11 +47,13 @@ import Util
 export
 data Err = OutOfBounds Nat Nat
          | ValueNotFound Nat
+         | PjrtErr PjrtError
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value requested but not found at index \{show idx}"
+  show _ = "PjrtErr"
 
 public export 0
 ErrIO : Type -> Type
@@ -123,7 +125,8 @@ interpret xlaBuilder (MkFn params root env) = do
   interpretE (Broadcast {dtype} from to x) =
     if elem 0 to && from /= to
     then do
-      literal <- allocLiteral {dtype} to
+      shape <- mkShape {dtype} to
+      literal <- allocLiteral shape
       constantLiteral xlaBuilder literal
     else
      let broadcastDims = Prelude.map (+ length to `minus` length from) $ range $ length from
@@ -231,16 +234,19 @@ toString f = do
   pure $ opToString xlaBuilder root
 
 export covering
-execute : Fn 0 -> Xla.Shape -> ErrIO ()
+execute : Fn 0 -> Xla.Shape -> ErrIO Literal
 execute f shape = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  api <- getPjrtApi  -- need a gpu version
-  client <- pjrtClientCreate api
-  code <- serializeAsString computation
-  program <- mkPjrtProgram code
-  compileOptions <- mkCompileOptions
-  loadedExec <- pjrtClientCompile api client program !(serializeAsString compileOptions)
-  buffer <- pjrtLoadedExecutableExecute api loadedExec
-  literal <- allocLiteral
-  pjrtBufferToHostBuffer api buffer lit
+  let foo = do
+    api <- getPjrtApi  -- need a gpu version
+    client <- pjrtClientCreate api
+    code <- serializeAsString computation
+    program <- mkPjrtProgram code
+    compileOptions <- mkCompileOptions
+    loadedExec <- pjrtClientCompile api client program !(serializeAsString compileOptions)
+    buffer <- pjrtLoadedExecutableExecute api loadedExec
+    literal <- allocLiteral shape
+    pjrtBufferToHostBuffer api buffer literal
+    pure literal
+  bimapEitherT PjrtErr id foo
