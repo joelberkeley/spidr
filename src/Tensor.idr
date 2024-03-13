@@ -115,9 +115,12 @@ try x = runEitherT x <&> \case
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-eval $ MkGraph x =
+eval $ MkGraph {shape} x =
   let (env, MkTensor root) = runState empty x
-   in try $ execute (MkFn [] root env) >>= read {dtype} []
+   in try $ do
+        shape <- mkShape shape {dtype}
+        lit <- execute (MkFn [] root env) shape
+        read {dtype} [] lit
 
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
@@ -152,10 +155,17 @@ namespace TensorList
   eval : Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
   eval $ MkGraph xs =
     let (env, xs) = runState empty xs
-        (env, root) = runState env (addNode $ Tuple $ nodes xs)
-     in try $ execute (MkFn [] root env) >>= readAll xs 0
+        (env, root, ioShape) = runState env (addNode $ Tuple $ nodes xs)
+     in try $ do
+          shape <- mkTupleShape !(buildShapes xs)
+          lit <- execute (MkFn [] root env) shape
+          readAll xs 0 lit
 
     where
+
+    buildShapes : HasIO io => TensorList s t -> io $ List Xla.Shape
+    buildShapes [] = pure []
+    buildShapes (MkTensor {shape, dtype} _ :: ts) = [| mkShape shape {dtype} :: buildShapes ts |]
 
     nodes : TensorList s t -> List Nat
     nodes [] = []

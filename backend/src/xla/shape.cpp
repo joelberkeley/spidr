@@ -21,4 +21,12 @@ extern "C" {
     void Shape_delete(Shape* s) {
         delete reinterpret_cast<xla::Shape*>(s);
     }
+
+    int sizeof_Shape() {
+        return sizeof(xla::Shape);
+    }
+
+    void set_array_Shape(Shape* arr, int idx, Shape* shape) {
+        reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
+    }
 }

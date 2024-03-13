@@ -13,11 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <stdint.h>
+
 #include "shape.h"
 #include "shape_util.h"
 
 extern "C" {
     struct Literal;
+
+    void* Literal_untyped_data(Literal* s);
+    int64_t Literal_size_bytes(Literal* s);
 
     Literal* Literal_new(Shape& shape);
 

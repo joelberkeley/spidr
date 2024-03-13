@@ -17,4 +17,5 @@ extern "C" {
     struct Shape;
 
     void Shape_delete(Shape* s);
+
 }

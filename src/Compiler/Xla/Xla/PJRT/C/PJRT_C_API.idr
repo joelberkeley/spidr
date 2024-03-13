@@ -29,7 +29,7 @@ import Compiler.Xla.Util
 -- we can hide GCAnyPtr/AnyPtr in a more type-safe Idris API
 
 public export
-data PjrtApi = MkPjrtApi AnyPtr
+data PjrtApi = MkPjrtApi AnyPtr  -- this is just a struct, should I `free` it? do i own it?
 
 public export 0
 ErrIO : Type -> Type -> Type
@@ -254,7 +254,7 @@ prim__mkPjrtLoadedExecutableExecuteArgs : GCAnyPtr -> AnyPtr -> AnyPtr -> PrimIO
 prim__pjrtLoadedExecutableExecute : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 export
-data PjrtBuffer = MkPjrtBuffer AnyPtr
+data PjrtBuffer = MkPjrtBuffer AnyPtr  -- will be GCAnyPtr once completed
 
 export
 pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
@@ -270,3 +270,19 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   free options
   free args
   try api err $ MkPjrtBuffer buffer  -- todo gc with PJRT_Buffer_Destroy
+
+%foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")
+prim__mkPjrtBufferToHostBufferArgs : AnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_buffer_tohostbuffer")
+prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+export
+pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError ()
+pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
+  let untypedData = prim__literalUntypedData literal
+      sizeBytes = prim__literalSizeBytes literal
+  args <- primIO $ prim__mkPjrtBufferToHostBufferArgs buffer untypedData sizeBytes
+  err <- primIO $ prim__pjrtBufferToHostBuffer api args
+  free args
+  try api err ()

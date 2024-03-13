@@ -37,4 +37,12 @@ prim__shapeIndexPushFront : GCAnyPtr -> Int -> PrimIO ()
 
 export
 %foreign (libxla "MakeShape")
+prim__byteSizeOfElements : GCAnyPtr -> Bits64
+
+export
+%foreign (libxla "MakeTupleShape")
+prim__makeTupleShape : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
+
+export
+%foreign (libxla "MakeShape")
 prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
