@@ -2,7 +2,6 @@ cc_binary(
     name = "c_xla",
     linkshared = True,
     srcs = [
-        "@xla//xla/pjrt/c:pjrt_c_api_cpu",
         "//src/xla:xla",
         "//src/xla/client:client",
         "//src/xla/client/lib:lib",
@@ -15,7 +14,6 @@ cc_binary(
         "//src:src",
     ],
     deps = [
-        "@xla//xla/pjrt/c:pjrt_c_api_cpu",
         "//src/xla:xla",
         "//src/xla/client:client",
         "//src/xla/client/lib:lib",
