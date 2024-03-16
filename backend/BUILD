@@ -8,9 +8,6 @@ cc_binary(
         "//src/xla/pjrt:pjrt",
         "//src/xla/pjrt/c:pjrt_c",
         "//src/xla/service:service",
-        "//src/xla/stream_executor:stream_executor",
-        "//src/xla/stream_executor/gpu:gpu",
-        "//src/xla/stream_executor/host:host",
         "//src:src",
     ],
     deps = [
@@ -20,9 +17,6 @@ cc_binary(
         "//src/xla/pjrt:pjrt",
         "//src/xla/pjrt/c:pjrt_c",
         "//src/xla/service:service",
-        "//src/xla/stream_executor:stream_executor",
-        "//src/xla/stream_executor/gpu:gpu",
-        "//src/xla/stream_executor/host:host",
         "//src:src",
     ],
 )
