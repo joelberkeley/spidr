@@ -31,6 +31,11 @@ jobs:
         bazel build --verbose_failures --experimental_repo_remote_exec //:c_xla
       env:
         BAZEL_CXXOPTS: -std=c++17
+    - name: Persist Bazel cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/bazel
+        key: ${{ runner.os }}  # add backend version?
     - name: Upload XLA
       uses: actions/upload-artifact@v4
       with:

@@ -13,7 +13,6 @@ cc_library(
         "//src:src",
         "//src/xla:xla",
         "//src/xla/service:service",
-        "//src/xla/stream_executor:stream_executor",
     ],
     visibility = ["//visibility:public"],
 )
