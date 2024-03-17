@@ -109,9 +109,7 @@ extern "C" {
   }
 
   PJRT_Program* PJRT_Program_new(char* code) {
-    // are we allocating memory here in std::string?
-    // if so, how can we not, since we're using `free` to free the struct
-    auto format = new std::string(pjrt::kHloFormat);
+    auto format = pjrt::kHloFormat;
     return new PJRT_Program{
       .struct_size = PJRT_Program_STRUCT_SIZE,
       .extension_start = nullptr,
