@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <cstddef>
+#include <iostream>
 
 // remove these when we've pulled out build config
 #include "xla/pjrt/c/pjrt_c_api.h"
