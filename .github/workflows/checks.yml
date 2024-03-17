@@ -37,6 +37,7 @@ jobs:
       env:
         BAZEL_CXXOPTS: -std=c++17
     - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+      if: '!cancelled()'
       uses: actions/cache/save@v4
       with:
         path: ~/.cache/bazel
