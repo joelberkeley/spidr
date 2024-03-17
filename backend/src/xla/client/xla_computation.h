@@ -20,6 +20,7 @@ limitations under the License.
 extern "C" {
     struct XlaComputation;
 
-    void XlaComputation_delete(XlaComputation* s);
-    const HloModuleProto& XlaComputation_proto(XlaComputation* s);
+    // void XlaComputation_delete(XlaComputation* s);
+    // const HloModuleProto& XlaComputation_proto(XlaComputation* s);
+    const char* XlaComputation_SerializeAsString(XlaComputation* s);
 }

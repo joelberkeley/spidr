@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "xla/client/xla_computation.h"
-#include "xla/pjrt/pjrt_executable.h"
 
 #include "pjrt_executable.h"
 #include "../service/hlo.pb.h"
