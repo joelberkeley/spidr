@@ -17,5 +17,6 @@ extern "C" {
     struct Shape;
 
     void Shape_delete(Shape* s);
-
-}
+    int sizeof_Shape();
+    void set_array_Shape(Shape* arr, int idx, Shape* shape);
+s}

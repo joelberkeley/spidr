@@ -36,6 +36,11 @@ jobs:
         bazel build --verbose_failures --experimental_repo_remote_exec //:c_xla
       env:
         BAZEL_CXXOPTS: -std=c++17
+    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
     - name: Upload XLA
       uses: actions/upload-artifact@v4
       with:
