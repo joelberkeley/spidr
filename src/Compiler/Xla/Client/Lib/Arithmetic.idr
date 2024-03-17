@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Client.Lib.Arithmetic
+module Compiler.Xla.Client.Lib.Arithmetic
 
-import Compiler.Xla.Prim.Util
-import Compiler.Xla.Xla.Client.XlaBuilder
-import Compiler.Xla.Xla.XlaData
+import Compiler.FFI
+import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.XlaData
 
 %foreign (libxla "ArgMax")
 prim__argMax : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr

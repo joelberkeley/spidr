@@ -13,21 +13,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Shape
+module Compiler.Xla.Shape
 
-import System.FFI
 import Util
-
-import Compiler.Xla.Prim.Xla.Shape
+import Compiler.FFI
 
 namespace Xla
   public export
   data Shape : Type where
     MkShape : GCAnyPtr -> Shape
 
+%foreign (libxla "Shape_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
+
+%foreign (libxla "sizeof_Shape")
+sizeOfShape : Int
+
+%foreign (libxla "set_array_Shape")
+prim__setArrayShape : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 public export
 data ShapeArray = MkShapeArray GCAnyPtr

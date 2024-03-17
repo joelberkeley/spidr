@@ -13,17 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Prim.Util
+module Compiler.FFI
 
 import public System.FFI
+import Util
 
 public export
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla"
-
-export
-%foreign (libxla "isnull")
-prim__isNullPtr : AnyPtr -> Int
 
 export
 %foreign (libxla "sizeof_int")
@@ -38,5 +35,37 @@ export
 prim__index : Int -> AnyPtr -> AnyPtr
 
 export
+cIntToBool : Int -> Bool
+cIntToBool 0 = False
+cIntToBool 1 = True
+cIntToBool x =
+  let msg = "Internal error: expected 0 or 1 from XLA C API for boolean conversion, got " ++ show x
+  in (assert_total idris_crash) msg
+
+%foreign (libxla "isnull")
+prim__isNullPtr : AnyPtr -> Int
+
+export
+isNullPtr : AnyPtr -> Bool
+isNullPtr ptr = cIntToBool $ prim__isNullPtr ptr
+
+export
+boolToCInt : Bool -> Int
+boolToCInt True = 1
+boolToCInt False = 0
+
+public export
+data IntArray : Type where
+  MkIntArray : GCPtr Int -> IntArray
+
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
+
+export
+mkIntArray : (HasIO io, Cast a Int) => List a -> io IntArray
+mkIntArray xs = do
+  ptr <- malloc (cast (length xs) * sizeofInt)
+  let ptr = prim__castPtr ptr
+  traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
+  ptr <- onCollect ptr (free . prim__forgetPtr)
+  pure (MkIntArray ptr)

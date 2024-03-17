@@ -13,13 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Client.XlaComputation
+module Compiler.Xla.Client.XlaComputation
 
-import Compiler.Xla.Prim.Xla.Client.XlaComputation
+import Compiler.FFI
 
 public export
 data XlaComputation : Type where
   MkXlaComputation : GCAnyPtr -> XlaComputation
+
+%foreign (libxla "XlaComputation_delete")
+prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
@@ -36,7 +39,16 @@ proto : XlaComputation -> HloModuleProto
 proto (MkXlaComputation computation) = do
 
   pure $ MkHloModuleProto proto
+
+-- doesn't belong here, see cpp
+export
+%foreign (libxla "HloModuleProto_SerializeAsString")
+prim__hloModuleProtoSerializeAsString : AnyPtr -> PrimIO String
 -}
+
+export
+%foreign (libxla "XlaComputation_SerializeAsString")
+prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO String
 
 export
 serializeAsString : HasIO io => XlaComputation -> io String
