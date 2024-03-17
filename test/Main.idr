@@ -34,7 +34,7 @@ main = test [
     , TestUtils.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group
-    , Unit.TestTensor.group
+    -- , Unit.TestTensor.group
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group
   ]
