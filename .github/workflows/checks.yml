@@ -24,6 +24,11 @@ jobs:
     container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
+    - name: Fetch Bazel cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
     - name: Build XLA static Linux CPU
       working-directory: backend
       run: |
@@ -31,11 +36,6 @@ jobs:
         bazel build --verbose_failures --experimental_repo_remote_exec //:c_xla
       env:
         BAZEL_CXXOPTS: -std=c++17
-    - name: Persist Bazel cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/bazel
-        key: ${{ runner.os }}  # add backend version?
     - name: Upload XLA
       uses: actions/upload-artifact@v4
       with:
