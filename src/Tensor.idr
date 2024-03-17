@@ -31,8 +31,8 @@ import Decidable.Equality
 
 import Compiler.Eval
 import Compiler.Expr
-import Compiler.Xla.Xla.Shape
-import Compiler.Xla.Xla.ShapeUtil
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
 import Compiler.LiteralRW
 import Literal
 import public Primitive

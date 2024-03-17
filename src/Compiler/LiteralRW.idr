@@ -15,10 +15,10 @@ limitations under the License.
 --}
 module Compiler.LiteralRW
 
-import Compiler.Xla.Xla.XlaData
-import public Compiler.Xla.Xla.Literal
-import Compiler.Xla.Xla.Shape
-import Compiler.Xla.Xla.ShapeUtil
+import Compiler.Xla.XlaData
+import public Compiler.Xla.Literal
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
 import Literal
 import Util
 
