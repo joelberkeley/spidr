@@ -15,9 +15,12 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.Client.Lib.Arithmetic
 
-import Compiler.Xla.Prim.Xla.Client.Lib.Arithmetic
+import Compiler.Xla.Prim.Util
 import Compiler.Xla.Xla.Client.XlaBuilder
 import Compiler.Xla.Xla.XlaData
+
+%foreign (libxla "ArgMax")
+prim__argMax : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 
 export
 argMax : (HasIO io, Primitive outputType) => XlaOp -> Nat -> io XlaOp
@@ -25,6 +28,9 @@ argMax (MkXlaOp input) axis = do
   opPtr <- primIO $ prim__argMax input (xlaIdentifier {dtype=outputType}) (cast axis)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "ArgMin")
+prim__argMin : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 
 export
 argMin : (HasIO io, Primitive outputType) => XlaOp -> Nat -> io XlaOp

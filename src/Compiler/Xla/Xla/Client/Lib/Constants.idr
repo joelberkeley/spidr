@@ -15,9 +15,12 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.Client.Lib.Constants
 
-import Compiler.Xla.Prim.Xla.Client.Lib.Constants
+import Compiler.Xla.Prim.Util
 import Compiler.Xla.Xla.Client.XlaBuilder
 import Compiler.Xla.Xla.XlaData
+
+%foreign (libxla "MinValue")
+prim__minValue : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 minValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp
@@ -26,6 +29,9 @@ minValue (MkXlaBuilder builder) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "MinFiniteValue")
+prim__minFiniteValue : GCAnyPtr -> Int -> PrimIO AnyPtr
+
 export
 minFiniteValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp
 minFiniteValue (MkXlaBuilder builder) = do
@@ -33,12 +39,18 @@ minFiniteValue (MkXlaBuilder builder) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "MaxValue")
+prim__maxValue : GCAnyPtr -> Int -> PrimIO AnyPtr
+
 export
 maxValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp
 maxValue (MkXlaBuilder builder) = do
   opPtr <- primIO $ prim__maxValue builder (xlaIdentifier {dtype})
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "MaxFiniteValue")
+prim__maxFiniteValue : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 maxFiniteValue : (HasIO io, Primitive dtype) => XlaBuilder -> io XlaOp

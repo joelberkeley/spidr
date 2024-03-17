@@ -36,6 +36,7 @@ extern "C" {
     }
 
     Shape* MakeTupleShape(Shape* shapes, int shapes_len) {
+        std::cout << "MakeTupleShape ..." << std::endl;
         auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
         auto shapes_span = absl::Span<xla::Shape>(shapes_, shapes_len);
 

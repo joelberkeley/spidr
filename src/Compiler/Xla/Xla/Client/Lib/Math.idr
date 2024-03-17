@@ -15,52 +15,88 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.Client.Lib.Math
 
-import Compiler.Xla.Prim.Xla.Client.Lib.Math
+import Compiler.Xla.Prim.Util
 import Compiler.Xla.Xla.Client.XlaBuilder
+
+%foreign (libxla "Square")
+prim__square : GCAnyPtr -> PrimIO AnyPtr
 
 export
 square : HasIO io => XlaOp -> io XlaOp
 square = unaryOp prim__square
 
+%foreign (libxla "Reciprocal")
+prim__reciprocal : GCAnyPtr -> PrimIO AnyPtr
+
 export
 reciprocal : HasIO io => XlaOp -> io XlaOp
 reciprocal = unaryOp prim__reciprocal
+
+%foreign (libxla "Acos")
+prim__acos : GCAnyPtr -> PrimIO AnyPtr
 
 export
 acos : HasIO io => XlaOp -> io XlaOp
 acos = unaryOp prim__acos
 
+%foreign (libxla "Asin")
+prim__asin : GCAnyPtr -> PrimIO AnyPtr
+
 export
 asin : HasIO io => XlaOp -> io XlaOp
 asin = unaryOp prim__asin
+
+%foreign (libxla "Atan")
+prim__atan : GCAnyPtr -> PrimIO AnyPtr
 
 export
 atan : HasIO io => XlaOp -> io XlaOp
 atan = unaryOp prim__atan
 
+%foreign (libxla "Tan")
+prim__tan : GCAnyPtr -> PrimIO AnyPtr
+
 export
 tan : HasIO io => XlaOp -> io XlaOp
 tan = unaryOp prim__tan
+
+%foreign (libxla "Acosh")
+prim__acosh : GCAnyPtr -> PrimIO AnyPtr
 
 export
 acosh : HasIO io => XlaOp -> io XlaOp
 acosh = unaryOp prim__acosh
 
+%foreign (libxla "Asinh")
+prim__asinh : GCAnyPtr -> PrimIO AnyPtr
+
 export
 asinh : HasIO io => XlaOp -> io XlaOp
 asinh = unaryOp prim__asinh
+
+%foreign (libxla "Atanh")
+prim__atanh : GCAnyPtr -> PrimIO AnyPtr
 
 export
 atanh : HasIO io => XlaOp -> io XlaOp
 atanh = unaryOp prim__atanh
 
+%foreign (libxla "Cosh")
+prim__cosh : GCAnyPtr -> PrimIO AnyPtr
+
 export
 cosh : HasIO io => XlaOp -> io XlaOp
 cosh = unaryOp prim__cosh
 
+%foreign (libxla "Sinh")
+prim__sinh : GCAnyPtr -> PrimIO AnyPtr
+
 export
 sinh : HasIO io => XlaOp -> io XlaOp
 sinh = unaryOp prim__sinh
+
+%foreign (libxla "Erf")
+prim__erf : GCAnyPtr -> PrimIO AnyPtr
 
 export
 erf : HasIO io => XlaOp -> io XlaOp

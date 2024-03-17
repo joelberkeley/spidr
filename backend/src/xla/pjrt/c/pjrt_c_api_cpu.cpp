@@ -19,6 +19,7 @@ limitations under the License.
 
 extern "C" {
   const PJRT_Api* GetPjrtApi() {
+    std::cout << "GetPjrtApi ..." << std::endl;
     return GetPjrtApi();
   }
 }
