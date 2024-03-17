@@ -170,6 +170,7 @@ try api err onOk = if (isNullPtr err) then right onOk else do
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
+  putStrLn "pjrtClientCreate ..."
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
   try api err =<< do
@@ -226,6 +227,7 @@ pjrtClientCompile :
   String ->
   ErrIO PjrtError PjrtLoadedExecutable
 pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) compileOptions = do
+  putStrLn "pjrtClientCompile ..."
   args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions
   err <- primIO $ prim__pjrtClientCompile api args
   let executable = prim__pjrtClientCompileArgsExecutable args
@@ -258,6 +260,7 @@ data PjrtBuffer = MkPjrtBuffer AnyPtr  -- will be GCAnyPtr once completed
 export
 pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
+  putStrLn "pjrtLoadedExecutableExecute ..."
   outputListsInner <- malloc sizeofPtr
   outputLists <- malloc sizeofPtr
   options <- primIO prim__mkPjrtExecuteOptions
@@ -279,6 +282,7 @@ prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 export
 pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError ()
 pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
+  putStrLn "pjrtBufferToHostBuffer ..."
   let untypedData = prim__literalUntypedData literal
       sizeBytes = prim__literalSizeBytes literal
   args <- primIO $ prim__mkPjrtBufferToHostBufferArgs buffer untypedData sizeBytes
