@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Client.Lib.Matrix
+module Compiler.Xla.Client.Lib.Matrix
 
-import Compiler.Xla.Xla.Client.XlaBuilder
-import Compiler.Xla.Xla.XlaData
-import Compiler.Xla.Util
+import Compiler.FFI
+import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.XlaData
 
 %foreign (libxla "IdentityMatrix")
 prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr

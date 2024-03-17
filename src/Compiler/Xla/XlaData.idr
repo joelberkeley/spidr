@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.XlaData
+module Compiler.Xla.XlaData
 
-import Compiler.Xla.Prim.Xla.XlaData
+import Compiler.FFI
 
 export
 interface Primitive dtype where
@@ -68,9 +68,15 @@ namespace Xla
   data DotDimensionNumbers : Type where
     MkDotDimensionNumbers : GCAnyPtr -> DotDimensionNumbers
 
+%foreign (libxla "DotDimensionNumbers_delete")
+prim__dotDimensionNumbersDelete : AnyPtr -> PrimIO ()
+
 export
 delete : HasIO io => AnyPtr -> io ()
 delete = primIO . prim__dotDimensionNumbersDelete
+
+%foreign (libxla "DotDimensionNumbers_new")
+prim__dotDimensionNumbersNew : PrimIO AnyPtr
 
 export
 allocDotDimensionNumbers : HasIO io => io DotDimensionNumbers
@@ -79,20 +85,32 @@ allocDotDimensionNumbers = do
   ptr <- onCollectAny ptr delete
   pure (MkDotDimensionNumbers ptr)
 
+%foreign (libxla "DotDimensionNumbers_add_lhs_contracting_dimensions")
+prim__addLhsContractingDimensions : GCAnyPtr -> Int -> PrimIO ()
+
 export
 addLhsContractingDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
 addLhsContractingDimensions (MkDotDimensionNumbers dimensionNumbers) n =
   primIO $ prim__addLhsContractingDimensions dimensionNumbers (cast n)
+
+%foreign (libxla "DotDimensionNumbers_add_rhs_contracting_dimensions")
+prim__addRhsContractingDimensions : GCAnyPtr -> Int -> PrimIO ()
 
 export
 addRhsContractingDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
 addRhsContractingDimensions (MkDotDimensionNumbers dimensionNumbers) n =
   primIO $ prim__addRhsContractingDimensions dimensionNumbers (cast n)
 
+%foreign (libxla "DotDimensionNumbers_add_lhs_batch_dimensions")
+prim__addLhsBatchDimensions : GCAnyPtr -> Int -> PrimIO ()
+
 export
 addLhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
 addLhsBatchDimensions (MkDotDimensionNumbers dimensionNumbers) n =
   primIO $ prim__addLhsBatchDimensions dimensionNumbers (cast n)
+
+%foreign (libxla "DotDimensionNumbers_add_rhs_batch_dimensions")
+prim__addRhsBatchDimensions : GCAnyPtr -> Int -> PrimIO ()
 
 export
 addRhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()

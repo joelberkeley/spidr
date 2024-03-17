@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Client.Lib.Math
+module Compiler.Xla.Client.Lib.Math
 
-import Compiler.Xla.Prim.Util
-import Compiler.Xla.Xla.Client.XlaBuilder
+import Compiler.FFI
+import Compiler.Xla.Client.XlaBuilder
 
 %foreign (libxla "Square")
 prim__square : GCAnyPtr -> PrimIO AnyPtr

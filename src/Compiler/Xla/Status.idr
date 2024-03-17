@@ -1,5 +1,5 @@
 {--
-Copyright 2024 Joel Berkeley
+Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,18 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU
+module Compiler.Xla.Status
 
-import System.FFI
+import Compiler.FFI
 
-import Compiler.Xla.Prim.Util
-import Compiler.Xla.Xla.PJRT.C.PJRT_C_API
+public export
+data Status : Type where
+  MkStatus : GCAnyPtr -> Status
 
--- we're going to need to alias this C function so we can differentiate between
--- versions of GetPjrtApi for various devices
-%foreign (libxla "GetPjrtApi")
-prim__getPjrtApi : PrimIO AnyPtr
+%foreign (libxla "Status_delete")
+prim__delete : AnyPtr -> PrimIO ()
 
 export
-getPjrtApi : HasIO io => io PjrtApi
-getPjrtApi = MkPjrtApi <$> primIO prim__getPjrtApi
+delete : AnyPtr -> IO ()
+delete = primIO . prim__delete
+
+%foreign (libxla "Status_ok")
+prim__ok : GCAnyPtr -> Int
+
+export
+ok : Status -> Bool
+ok (MkStatus ptr) = cIntToBool (prim__ok ptr)

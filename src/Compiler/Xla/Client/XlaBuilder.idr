@@ -13,17 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Client.XlaBuilder
+module Compiler.Xla.Client.XlaBuilder
 
-import System.FFI
-
-import Compiler.Xla.Prim.Xla.Client.XlaBuilder
-import Compiler.Xla.Xla.Client.XlaComputation
-import Compiler.Xla.Xla.XlaData
-import Compiler.Xla.Xla.Literal
-import Compiler.Xla.Xla.Shape
-import Compiler.Xla.Xla.XlaData
-import Compiler.Xla.Util
+import Compiler.FFI
+import Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.XlaData
+import Compiler.Xla.Literal
+import Compiler.Xla.Shape
+import Compiler.Xla.XlaData
 import Types
 import Util
 
@@ -36,14 +33,23 @@ data XlaOp : Type where
   MkXlaOp : GCAnyPtr -> XlaOp
 
 namespace XlaBuilder
+  %foreign (libxla "XlaBuilder_delete")
+  prim__delete : AnyPtr -> PrimIO ()
+
   export
   delete : HasIO io => AnyPtr -> io ()
   delete = primIO . XlaBuilder.prim__delete
 
 namespace XlaOp
+  %foreign (libxla "XlaOp_delete")
+  prim__delete : AnyPtr -> PrimIO ()
+
   export
   delete : HasIO io => AnyPtr -> io ()
   delete = primIO . XlaOp.prim__delete
+
+%foreign (libxla "XlaBuilder_new")
+prim__mkXlaBuilder : String -> PrimIO AnyPtr
 
 export
 mkXlaBuilder : HasIO io => String -> io XlaBuilder
@@ -52,12 +58,18 @@ mkXlaBuilder computationName = do
   ptr <- onCollectAny ptr XlaBuilder.delete
   pure (MkXlaBuilder ptr)
 
+%foreign (libxla "CreateSubBuilder")
+prim__createSubBuilder : GCAnyPtr -> String -> PrimIO AnyPtr
+
 export
 createSubBuilder : HasIO io => XlaBuilder -> String -> io XlaBuilder
 createSubBuilder (MkXlaBuilder builderPtr) computationName = do
   subBuilderPtr <- primIO (prim__createSubBuilder builderPtr computationName)
   subBuilderPtr <- onCollectAny subBuilderPtr XlaBuilder.delete
   pure (MkXlaBuilder subBuilderPtr)
+
+%foreign (libxla "XlaBuilder_Build")
+prim__build : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
 export
 build : HasIO io => XlaBuilder -> XlaOp -> io XlaComputation
@@ -66,9 +78,18 @@ build (MkXlaBuilder ptr) (MkXlaOp root)= do
   computationPtr <- onCollectAny computationPtr XlaComputation.delete
   pure (MkXlaComputation computationPtr)
 
+%foreign (libxla "XlaBuilder_OpToString")
+prim__opToString : GCAnyPtr -> GCAnyPtr -> String
+
 export
 opToString : XlaBuilder -> XlaOp -> String
 opToString (MkXlaBuilder builderPtr) (MkXlaOp opPtr) = prim__opToString builderPtr opPtr
+
+%foreign (libxla "sizeof_XlaOp")
+sizeOfXlaOp : Int
+
+%foreign (libxla "set_array_XlaOp")
+prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
 
 data XlaOpArray : Type where
   MkXlaOpArray : GCAnyPtr -> XlaOpArray
@@ -82,12 +103,18 @@ mkXlaOpArray ops = do
   arr <- onCollectAny arr free
   pure (MkXlaOpArray arr)
 
+%foreign (libxla "Parameter")
+prim__parameter : GCAnyPtr -> Int -> GCAnyPtr -> String -> PrimIO AnyPtr
+
 export
 parameter : HasIO io => XlaBuilder -> Nat -> Xla.Shape -> String -> io XlaOp
 parameter (MkXlaBuilder builderPtr) position (MkShape shapePtr) name = do
   opPtr <- primIO $ prim__parameter builderPtr (cast position) shapePtr name
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "ConstantLiteral")
+prim__constantLiteral : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 constantLiteral : HasIO io => XlaBuilder -> Literal -> io XlaOp
@@ -96,6 +123,9 @@ constantLiteral (MkXlaBuilder builderPtr) (MkLiteral literalPtr) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Broadcast")
+prim__broadcast : GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
+
 export
 broadcast : HasIO io => XlaOp -> List Nat -> io XlaOp
 broadcast (MkXlaOp opPtr) broadcastSizes = do
@@ -103,6 +133,9 @@ broadcast (MkXlaOp opPtr) broadcastSizes = do
   opPtr <- primIO $ prim__broadcast opPtr broadcastSizesArrayPtr (cast $ length broadcastSizes)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "BroadcastInDim")
+prim__broadcastInDim : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 broadcastInDim : HasIO io => XlaOp -> List Nat -> List Nat -> io XlaOp
@@ -116,6 +149,9 @@ broadcastInDim (MkXlaOp opPtr) outDimSize broadcastDimensions = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Reshape")
+prim__reshape : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
 export
 reshape : HasIO io => XlaOp -> List Nat -> List Nat -> io XlaOp
 reshape (MkXlaOp opPtr) dimensions newSizes = do
@@ -127,6 +163,9 @@ reshape (MkXlaOp opPtr) dimensions newSizes = do
     newSizesArrayPtr (cast $ length newSizes)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "Slice")
+prim__slice : GCAnyPtr -> GCPtr Int -> Int -> GCPtr Int -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 slice : HasIO io => XlaOp -> List Nat -> List Nat -> List Nat -> io XlaOp
@@ -143,6 +182,9 @@ slice (MkXlaOp opPtr) startIndices limitIndices strides = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "DynamicSlice")
+prim__dynamicSlice : GCAnyPtr -> GCAnyPtr -> Int -> GCPtr Int -> Int -> PrimIO AnyPtr
+
 export
 dynamicSlice : HasIO io => XlaOp -> List XlaOp -> List Nat -> io XlaOp
 dynamicSlice (MkXlaOp opPtr) startIndices sizeIndices = do
@@ -154,6 +196,9 @@ dynamicSlice (MkXlaOp opPtr) startIndices sizeIndices = do
     sizeIndicesArrayPtr (cast $ length sizeIndices)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "ConcatInDim")
+prim__concatInDim : GCAnyPtr -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 
 export
 concatInDim :
@@ -170,12 +215,18 @@ concatInDim (MkXlaBuilder builder) operands dimension = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Select")
+prim__select : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 select : HasIO io => XlaOp -> XlaOp -> XlaOp -> io XlaOp
 select (MkXlaOp pred) (MkXlaOp onTrue) (MkXlaOp onFalse) = do
   opPtr <- primIO $ prim__select pred onTrue onFalse
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "Tuple")
+prim__tuple : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
@@ -184,6 +235,9 @@ tuple (MkXlaBuilder builder) elements = do
   opPtr <- primIO $ prim__tuple builder xlaOpArrayPtr (cast $ length elements)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "GetTupleElement")
+prim__getTupleElement : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
@@ -198,33 +252,57 @@ binaryOp prim__f (MkXlaOp x) (MkXlaOp y) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Eq")
+prim__eq : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 eq : HasIO io => XlaOp -> XlaOp -> io XlaOp
 eq = binaryOp prim__eq
+
+%foreign (libxla "Ne")
+prim__ne : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 ne : HasIO io => XlaOp -> XlaOp -> io XlaOp
 ne = binaryOp prim__ne
 
+%foreign (libxla "Ge")
+prim__ge : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 ge : HasIO io => XlaOp -> XlaOp -> io XlaOp
 ge = binaryOp prim__ge
+
+%foreign (libxla "Gt")
+prim__gt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 gt : HasIO io => XlaOp -> XlaOp -> io XlaOp
 gt = binaryOp prim__gt
 
+%foreign (libxla "Lt")
+prim__lt : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 lt : HasIO io => XlaOp -> XlaOp -> io XlaOp
 lt = binaryOp prim__lt
+
+%foreign (libxla "Le")
+prim__le : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 le : HasIO io => XlaOp -> XlaOp -> io XlaOp
 le = binaryOp prim__le
 
+%foreign (libxla "Dot")
+prim__dot : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 dot : HasIO io => XlaOp -> XlaOp -> io XlaOp
 dot = binaryOp prim__dot
+
+%foreign (libxla "DotGeneral")
+prim__dotGeneral : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 dotGeneral : HasIO io => XlaOp -> XlaOp -> DotDimensionNumbers -> io XlaOp
@@ -232,6 +310,9 @@ dotGeneral (MkXlaOp l) (MkXlaOp r) (MkDotDimensionNumbers dimensionNumbers) = do
   opPtr <- primIO $ prim__dotGeneral l r dimensionNumbers
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "TriangularSolve")
+prim__triangularSolve : GCAnyPtr -> GCAnyPtr -> Int -> Int -> Int -> Int -> PrimIO AnyPtr
 
 public export
 data Transpose = NoTranspose | Transpose_ | Adjoint
@@ -248,6 +329,9 @@ triangularSolve (MkXlaOp a) (MkXlaOp b) leftSide lower unitDiagonal transposeA =
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Cholesky")
+prim__cholesky : GCAnyPtr -> Int -> PrimIO AnyPtr
+
 export
 cholesky : HasIO io => XlaOp -> Bool -> io XlaOp
 cholesky (MkXlaOp a) lower = do
@@ -255,37 +339,64 @@ cholesky (MkXlaOp a) lower = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Add")
+prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 add : HasIO io => XlaOp -> XlaOp -> io XlaOp
 add = binaryOp prim__add
+
+%foreign (libxla "Sub")
+prim__sub : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 sub : HasIO io => XlaOp -> XlaOp -> io XlaOp
 sub = binaryOp prim__sub
 
+%foreign (libxla "Mul")
+prim__mul : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 mul : HasIO io => XlaOp -> XlaOp -> io XlaOp
 mul = binaryOp prim__mul
+
+%foreign (libxla "Div")
+prim__div : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 div : HasIO io => XlaOp -> XlaOp -> io XlaOp
 div = binaryOp prim__div
 
+%foreign (libxla "Rem")
+prim__rem : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 rem : HasIO io => XlaOp -> XlaOp -> io XlaOp
 rem = binaryOp prim__rem
+
+%foreign (libxla "Max")
+prim__max : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 max : HasIO io => XlaOp -> XlaOp -> io XlaOp
 max = binaryOp prim__max
 
+%foreign (libxla "Min")
+prim__min : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 min : HasIO io => XlaOp -> XlaOp -> io XlaOp
 min = binaryOp prim__min
 
+%foreign (libxla "And")
+prim__and : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 and : HasIO io => XlaOp -> XlaOp -> io XlaOp
 and = binaryOp prim__and
+
+%foreign (libxla "Or")
+prim__or : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 or : HasIO io => XlaOp -> XlaOp -> io XlaOp
@@ -298,9 +409,15 @@ unaryOp prim__f (MkXlaOp x) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Not")
+prim__not : GCAnyPtr -> PrimIO AnyPtr
+
 export
 not : HasIO io => XlaOp -> io XlaOp
 not = unaryOp prim__not
+
+%foreign (libxla "Reduce")
+prim__reduce : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 reduce : HasIO io => XlaOp -> XlaOp -> XlaComputation -> List Nat -> io XlaOp
@@ -311,49 +428,85 @@ reduce (MkXlaOp operand) (MkXlaOp initValue) (MkXlaComputation computation) dime
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Abs")
+prim__abs : GCAnyPtr -> PrimIO AnyPtr
+
 export
 abs : HasIO io => XlaOp -> io XlaOp
 abs = unaryOp prim__abs
+
+%foreign (libxla "Exp")
+prim__exp : GCAnyPtr -> PrimIO AnyPtr
 
 export
 exp : HasIO io => XlaOp -> io XlaOp
 exp = unaryOp prim__exp
 
+%foreign (libxla "Floor")
+prim__floor : GCAnyPtr -> PrimIO AnyPtr
+
 export
 floor : HasIO io => XlaOp -> io XlaOp
 floor = unaryOp prim__floor
+
+%foreign (libxla "Ceil")
+prim__ceil : GCAnyPtr -> PrimIO AnyPtr
 
 export
 ceil : HasIO io => XlaOp -> io XlaOp
 ceil = unaryOp prim__ceil
 
+%foreign (libxla "Log")
+prim__log : GCAnyPtr -> PrimIO AnyPtr
+
 export
 log : HasIO io => XlaOp -> io XlaOp
 log = unaryOp prim__log
+
+%foreign (libxla "Logistic")
+prim__logistic : GCAnyPtr -> PrimIO AnyPtr
 
 export
 logistic : HasIO io => XlaOp -> io XlaOp
 logistic = unaryOp prim__logistic
 
+%foreign (libxla "Cos")
+prim__cos : GCAnyPtr -> PrimIO AnyPtr
+
 export
 cos : HasIO io => XlaOp -> io XlaOp
 cos = unaryOp prim__cos
+
+%foreign (libxla "Sin")
+prim__sin : GCAnyPtr -> PrimIO AnyPtr
 
 export
 sin : HasIO io => XlaOp -> io XlaOp
 sin = unaryOp prim__sin
 
+%foreign (libxla "Tanh")
+prim__tanh : GCAnyPtr -> PrimIO AnyPtr
+
 export
 tanh : HasIO io => XlaOp -> io XlaOp
 tanh = unaryOp prim__tanh
+
+%foreign (libxla "Sqrt")
+prim__sqrt : GCAnyPtr -> PrimIO AnyPtr
 
 export
 sqrt : HasIO io => XlaOp -> io XlaOp
 sqrt = unaryOp prim__sqrt
 
+%foreign (libxla "Pow")
+prim__pow : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 pow : HasIO io => XlaOp -> XlaOp -> io XlaOp
 pow = binaryOp prim__pow
+
+%foreign (libxla "Iota")
+prim__iota : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 iota : HasIO io => XlaBuilder -> Xla.Shape -> Nat -> io XlaOp
@@ -362,6 +515,9 @@ iota (MkXlaBuilder xlaBuilder) (MkShape shape) iota_dimension = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "ConvertElementType")
+prim__convertElementType : GCAnyPtr -> Int -> PrimIO AnyPtr
+
 export
 convertElementType : (HasIO io, Primitive dtype) => XlaOp -> io XlaOp
 convertElementType (MkXlaOp operand) = do
@@ -369,9 +525,15 @@ convertElementType (MkXlaOp operand) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Neg")
+prim__neg : GCAnyPtr -> PrimIO AnyPtr
+
 export
 neg : HasIO io => XlaOp -> io XlaOp
 neg = unaryOp prim__neg
+
+%foreign (libxla "Transpose")
+prim__transpose : GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
 
 export
 transpose : HasIO io => XlaOp -> List Nat -> io XlaOp
@@ -381,6 +543,9 @@ transpose (MkXlaOp operand) permutation = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Rev")
+prim__rev : GCAnyPtr -> GCPtr Int -> Int -> PrimIO AnyPtr
+
 export
 rev : HasIO io => XlaOp -> List Nat -> io XlaOp
 rev (MkXlaOp operand) dimensions = do
@@ -388,6 +553,9 @@ rev (MkXlaOp operand) dimensions = do
   opPtr <- primIO $ prim__rev operand dimensionsIntArrayPtr (cast $ length dimensions)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "Sort")
+prim__sort : GCAnyPtr -> Int -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 
 export
 sort : HasIO io => List XlaOp -> XlaComputation -> Nat -> Bool -> io XlaOp
@@ -400,6 +568,10 @@ sort operands (MkXlaComputation comparator) dimension isStable = do
     (boolToCInt isStable)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "Map")
+prim__map :
+  GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCPtr Int -> Int -> AnyPtr -> Int -> PrimIO AnyPtr
 
 export
 map : HasIO io => XlaBuilder -> List XlaOp -> XlaComputation -> List Nat -> io XlaOp
@@ -418,6 +590,9 @@ map (MkXlaBuilder builder) operands (MkXlaComputation computation) dimensions = 
 public export
 data RandomAlgorithm = RngDefault | RngThreeFry | RngPhilox
 
+%foreign (libxla "RngBitGenerator")
+prim__rngBitGenerator : Int -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
 export
 rngBitGenerator : HasIO io => RandomAlgorithm -> XlaOp -> Xla.Shape -> io XlaOp
 rngBitGenerator algorithm (MkXlaOp initialState) (MkShape shape) = do
@@ -428,6 +603,9 @@ rngBitGenerator algorithm (MkXlaOp initialState) (MkShape shape) = do
   opPtr <- primIO $ prim__rngBitGenerator algorithm initialState shape
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "Conditional")
+prim__conditional : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 conditional : HasIO io => XlaOp -> XlaOp -> XlaComputation -> XlaOp -> XlaComputation -> io XlaOp

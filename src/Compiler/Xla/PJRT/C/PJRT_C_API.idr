@@ -13,15 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.PJRT.C.PJRT_C_API
+module Compiler.Xla.PJRT.C.PJRT_C_API
 
 import Control.Monad.Either
-import System.FFI
 
-import Compiler.Xla.Prim.Util
-import Compiler.Xla.Prim.Xla.Literal
-import Compiler.Xla.Util
-import Compiler.Xla.Xla.Literal
+import Compiler.FFI
+import Compiler.Xla.Literal
 
 -- keep the API as close to the PJRT api as possible except:
 -- * don't expose _Args, so we don't need to handle null ptrs. I really doubt we'd

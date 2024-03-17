@@ -13,13 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Literal
+module Compiler.Xla.Literal
 
-import Compiler.Xla.Prim.Xla.Literal
-import Compiler.Xla.Xla.Shape
-import Compiler.Xla.Xla.ShapeUtil
-import Compiler.Xla.Xla.XlaData
-import Compiler.Xla.Util
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
+import Compiler.Xla.XlaData
+import Compiler.FFI
 import Types
 
 namespace Xla
@@ -27,9 +26,15 @@ namespace Xla
   data Literal : Type where
     MkLiteral : GCAnyPtr -> Literal
 
+%foreign (libxla "Literal_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
+
+%foreign (libxla "Literal_new")
+prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 
 export
 allocLiteral : HasIO io => Xla.Shape -> io Literal
@@ -37,6 +42,20 @@ allocLiteral (MkShape shape) = do
   litPtr <- primIO $ prim__allocLiteral shape
   litPtr <- onCollectAny litPtr Literal.delete
   pure (MkLiteral litPtr)
+
+export
+%foreign (libxla "Literal_size_bytes")
+prim__literalSizeBytes : GCAnyPtr -> Int
+
+export
+%foreign (libxla "Literal_untyped_data")
+prim__literalUntypedData : GCAnyPtr -> AnyPtr
+
+%foreign (libxla "Literal_Set_bool")
+prim__literalSetBool : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int -> PrimIO ()
+
+%foreign (libxla "Literal_Get_bool")
+literalGetBool : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int
 
 namespace Bool
   export
@@ -52,6 +71,12 @@ namespace Bool
     MkIntArray idxsArrayPtr <- mkIntArray idxs
     pure $ cIntToBool $ literalGetBool lit idxsArrayPtr (cast $ length idxs) shapeIndex
 
+%foreign (libxla "Literal_Set_double")
+prim__literalSetDouble : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Double -> PrimIO ()
+
+%foreign (libxla "Literal_Get_double")
+literalGetDouble : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Double
+
 namespace Double
   export
   set : Literal -> List Nat -> ShapeIndex -> Double -> IO ()
@@ -64,6 +89,12 @@ namespace Double
   get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
     pure $ literalGetDouble lit idxsArrayPtr (cast $ length idxs) shapeIndex
+
+%foreign (libxla "Literal_Set_int32_t")
+prim__literalSetInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int -> PrimIO ()
+
+%foreign (libxla "Literal_Get_int32_t")
+literalGetInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Int
 
 namespace Int32t
   export
@@ -78,6 +109,12 @@ namespace Int32t
     MkIntArray idxsArrayPtr <- mkIntArray idxs
     pure $ cast $ literalGetInt32t lit idxsArrayPtr (cast $ length idxs) shapeIndex
 
+%foreign (libxla "Literal_Set_uint32_t")
+prim__literalSetUInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits32 -> PrimIO ()
+
+%foreign (libxla "Literal_Get_uint32_t")
+literalGetUInt32t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits32
+
 namespace UInt32t
   export
   set : Literal -> List Nat -> ShapeIndex -> Nat -> IO ()
@@ -90,6 +127,12 @@ namespace UInt32t
   get (MkLiteral lit) idxs (MkShapeIndex shapeIndex) = unsafePerformIO $ do
     MkIntArray idxsArrayPtr <- mkIntArray idxs
     pure $ cast $ literalGetUInt32t lit idxsArrayPtr (cast $ length idxs) shapeIndex
+
+%foreign (libxla "Literal_Set_uint64_t")
+prim__literalSetUInt64t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits64 -> PrimIO ()
+
+%foreign (libxla "Literal_Get_uint64_t")
+literalGetUInt64t : GCAnyPtr -> GCPtr Int -> Int -> GCAnyPtr -> Bits64
 
 namespace UInt64t
   export

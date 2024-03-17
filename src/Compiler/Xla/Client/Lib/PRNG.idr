@@ -13,13 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Xla.Client.Lib.PRNG
+module Compiler.Xla.Client.Lib.PRNG
 
-import System.FFI
-
-import Compiler.Xla.Prim.Xla.Client.Lib.PRNG
-import Compiler.Xla.Xla.Client.XlaBuilder
-import Compiler.Xla.Xla.Shape
+import Compiler.FFI
+import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.Shape
 
 public export
 data BitGenerator = ThreeFry | Philox
@@ -28,13 +26,21 @@ Cast BitGenerator Int where
   cast ThreeFry = 0
   cast Philox = 1
 
-%hide Compiler.Xla.Prim.Xla.Client.Lib.PRNG.RngOutput
-
 public export
 record RngOutput where
   constructor MkRngOutput
   value : XlaOp
   state : XlaOp
+
+PrimRngOutput : Type
+PrimRngOutput = Struct "RngOutput" [("value", AnyPtr), ("state", AnyPtr)]
+
+%foreign (libxla "delete_RngOutput")
+prim__delete : PrimRngOutput -> PrimIO ()
+
+%foreign (libxla "UniformFloatingPointDistribution")
+prim__uniformFloatingPointDistribution:
+  GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO PrimRngOutput
 
 export
 uniformFloatingPointDistribution :
@@ -54,6 +60,10 @@ uniformFloatingPointDistribution
     value <- onCollectAny value XlaOp.delete
     state <- onCollectAny state XlaOp.delete
     pure (MkRngOutput {value = MkXlaOp value} {state = MkXlaOp state})
+
+%foreign (libxla "NormalFloatingPointDistribution")
+prim__normalFloatingPointDistribution:
+  GCAnyPtr -> GCAnyPtr -> Int -> GCAnyPtr -> PrimIO PrimRngOutput
 
 export
 normalFloatingPointDistribution :
