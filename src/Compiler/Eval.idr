@@ -24,20 +24,20 @@ import Data.List.Elem
 
 import Compiler.Expr
 import Compiler.LiteralRW
-import Compiler.Xla.Xla.Client.Lib.Arithmetic
-import Compiler.Xla.Xla.Client.Lib.Constants
-import Compiler.Xla.Xla.Client.Lib.Math
-import Compiler.Xla.Xla.Client.Lib.Matrix
-import Compiler.Xla.Xla.Client.Lib.PRNG
-import Compiler.Xla.Xla.Client.XlaBuilder
-import Compiler.Xla.Xla.Client.XlaComputation
-import Compiler.Xla.Xla.PJRT.C.PJRT_C_API
-import Compiler.Xla.Xla.PJRT.C.PJRT_C_API_CPU
-import Compiler.Xla.Xla.PJRT.PjrtExecutable
-import Compiler.Xla.Xla.Literal
-import Compiler.Xla.Xla.Shape
-import Compiler.Xla.Xla.ShapeUtil
-import Compiler.Xla.Xla.XlaData
+import Compiler.Xla.Client.Lib.Arithmetic
+import Compiler.Xla.Client.Lib.Constants
+import Compiler.Xla.Client.Lib.Math
+import Compiler.Xla.Client.Lib.Matrix
+import Compiler.Xla.Client.Lib.PRNG
+import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.PJRT.C.PJRT_C_API
+import Compiler.Xla.PJRT.C.PJRT_C_API_CPU
+import Compiler.Xla.PJRT.PjrtExecutable
+import Compiler.Xla.Literal
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
+import Compiler.Xla.XlaData
 
 import Literal
 import Primitive

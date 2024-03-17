@@ -22,7 +22,7 @@ limitations under the License.
 module Primitive
 
 import Compiler.LiteralRW
-import public Compiler.Xla.Xla.XlaData
+import public Compiler.Xla.XlaData
 
 %hide Prelude.Num
 %hide Prelude.Neg
