@@ -37,6 +37,7 @@ extern "C" {
 
     // until I work out how to handle memory of HloModuleProto
     const char* XlaComputation_SerializeAsString(XlaComputation* s) {
+        std::cout << "XlaComputation_SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
         return c_string_copy(s_->proto().SerializeAsString());
     }

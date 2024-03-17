@@ -23,10 +23,12 @@ extern "C" {
     }
 
     int sizeof_Shape() {
+        std::cout << "sizeof_Shape ..." << std::endl;
         return sizeof(xla::Shape);
     }
 
     void set_array_Shape(Shape* arr, int idx, Shape* shape) {
+        std::cout << "set_array_Shape ..." << std::endl;
         reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
     }
 }

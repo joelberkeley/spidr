@@ -28,7 +28,7 @@ jobs:
       working-directory: backend
       run: |
         git clone https://github.com/openxla/xla
-        bazel build --verbose_failures --experimental_repo_remote_exec //:c_xla
+        bazel build --experimental_repo_remote_exec //:c_xla
       env:
         BAZEL_CXXOPTS: -std=c++17
     - name: Save Bazel cache

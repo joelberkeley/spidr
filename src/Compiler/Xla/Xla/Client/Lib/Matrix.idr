@@ -15,10 +15,12 @@ limitations under the License.
 --}
 module Compiler.Xla.Xla.Client.Lib.Matrix
 
-import Compiler.Xla.Prim.Xla.Client.Lib.Matrix
 import Compiler.Xla.Xla.Client.XlaBuilder
 import Compiler.Xla.Xla.XlaData
 import Compiler.Xla.Util
+
+%foreign (libxla "IdentityMatrix")
+prim__identityMatrix : GCAnyPtr -> Int -> Int -> Int -> PrimIO AnyPtr
 
 export
 identityMatrix : HasIO io => Primitive dtype => XlaBuilder -> Nat -> Nat -> io XlaOp
@@ -27,12 +29,18 @@ identityMatrix (MkXlaBuilder builder) m n = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "GetMatrixDiagonal")
+prim__getMatrixDiagonal : GCAnyPtr -> PrimIO AnyPtr
+
 export
 getMatrixDiagonal : HasIO io => XlaOp -> io XlaOp
 getMatrixDiagonal (MkXlaOp x) = do
   opPtr <- primIO $ prim__getMatrixDiagonal x
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
+
+%foreign (libxla "Triangle")
+prim__triangle : GCAnyPtr -> Int -> PrimIO AnyPtr
 
 export
 triangle : HasIO io => XlaOp -> Bool -> io XlaOp

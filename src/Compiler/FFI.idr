@@ -13,16 +13,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.Prim.Xla.Client.Lib.Arithmetic
+module Compiler.Xla.Prim.Util
 
-import System.FFI
+import public System.FFI
 
-import Compiler.Xla.Prim.Util
-
-export
-%foreign (libxla "ArgMax")
-prim__argMax : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
+public export
+libxla : String -> String
+libxla fname = "C:" ++ fname ++ ",libc_xla"
 
 export
-%foreign (libxla "ArgMin")
-prim__argMin : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
+%foreign (libxla "isnull")
+prim__isNullPtr : AnyPtr -> Int
+
+export
+%foreign (libxla "sizeof_int")
+sizeofInt : Int
+
+export
+%foreign (libxla "sizeof_ptr")
+sizeofPtr : Int
+
+export
+%foreign (libxla "index")
+prim__index : Int -> AnyPtr -> AnyPtr
+
+export
+%foreign (libxla "set_array_int")
+prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
