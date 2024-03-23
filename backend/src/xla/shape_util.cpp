@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <iostream>
-
 #include "xla/shape.h"
 #include "xla/shape_util.h"
 
@@ -38,7 +36,6 @@ extern "C" {
     }
 
     Shape* MakeTupleShape(Shape* shapes, int shapes_len) {
-        std::cout << "MakeTupleShape ..." << std::endl;
         auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
         auto shapes_span = absl::Span<xla::Shape>(shapes_, shapes_len);
 
