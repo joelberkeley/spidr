@@ -28,7 +28,7 @@ limitations under the License.
 
 extern "C" {
   PJRT_Error_Destroy_Args* PJRT_Error_Destroy_Args_new(PJRT_Error* error) {
-    std::cout << "PJRT_Error_Destroy_Args_new ..." << std::endl;
+    // std::cout << "PJRT_Error_Destroy_Args_new ..." << std::endl;
     return new PJRT_Error_Destroy_Args{
       .struct_size = PJRT_Error_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
