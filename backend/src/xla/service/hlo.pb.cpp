@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <cstring>
+#include <iostream>
 
 #include "hlo.pb.h"
 
@@ -28,6 +29,7 @@ const char* c_string_copy(std::string str) {
 
 extern "C" {
     const char* SerializeAsString(HloModuleProto* s) {
+        std::cout << "SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::HloModuleProto*>(s);
         return c_string_copy(s_->SerializeAsString());
     }

@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <iostream>
+
 #include "xla/client/xla_computation.h"
 
 #include "../xla_data.pb.h"
@@ -37,6 +39,7 @@ extern "C" {
 
     // until I work out how to handle memory of HloModuleProto
     const char* XlaComputation_SerializeAsString(XlaComputation* s) {
+        std::cout << "XlaComputation_SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
         return c_string_copy(s_->proto().SerializeAsString());
     }

@@ -236,15 +236,11 @@ toString f = do
 export covering
 execute : Fn 0 -> Xla.Shape -> ErrIO Literal
 execute f shape = do
-  putStrLn "execute ..."
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   let foo = do
-    putStrLn "... getPjrtApi"
     api <- getPjrtApi  -- need a gpu version
-    putStrLn "... pjrtClientCreate"
     client <- pjrtClientCreate api
-    putStrLn "... serializeAsString"
     code <- serializeAsString computation
     program <- mkPjrtProgram code
     compileOptions <- mkCompileOptions
