@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <iostream>
-
 #include "xla/client/xla_computation.h"
 
 #include "pjrt_executable.h"
@@ -22,7 +20,6 @@ limitations under the License.
 
 extern "C" {
   CompileOptions* CompileOptions_new() {
-    std::cout << "CompileOptions_new ..." << std::endl;
     auto build_options = new xla::ExecutableBuildOptions;
     build_options->set_device_ordinal(0);
     auto device_assignment = new xla::DeviceAssignment(1, 1);
@@ -39,7 +36,6 @@ extern "C" {
   }
 
   const char* CompileOptions_SerializeAsString(CompileOptions* s) {
-    std::cout << "CompileOptions_SerializeAsString ..." << std::endl;
     auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
     return c_string_copy(s_->ToProto()->SerializeAsString());
   }
