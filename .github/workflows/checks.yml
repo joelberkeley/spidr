@@ -39,7 +39,7 @@ jobs:
       run: |
         git clone https://github.com/openxla/xla
         # maybe --logging [4, 5 or 6]
-        bazel build --logging 6 --verbose_failures --experimental_repo_remote_exec //:c_xla
+        bazel build --logging 4 --sandbox_debug --verbose_failures --experimental_repo_remote_exec //:c_xla
       env:
         BAZEL_CXXOPTS: -std=c++17
 #    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
