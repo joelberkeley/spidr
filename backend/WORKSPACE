@@ -2,8 +2,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "xla",
-    strip_prefix = "xla-c95205516554a53d0c1c20399c94b9ad456abb4f",
-    url = "https://github.com/openxla/xla/archive/c95205516554a53d0c1c20399c94b9ad456abb4f.tar.gz",
+    strip_prefix = "xla-4a268b783a448e462c2c1a0f8750fb808ad0ed22",
+    url = "https://github.com/openxla/xla/archive/4a268b783a448e462c2c1a0f8750fb808ad0ed22.tar.gz",
 )
 
 load("@xla//:workspace4.bzl", "xla_workspace4")
