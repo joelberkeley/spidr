@@ -29,11 +29,11 @@ jobs:
 #      with:
 #        path: ~/.cache/bazel
 #        key: xla-${{ runner.os }}
-#    - name: Fetch Bazel cache
-#      uses: actions/cache/restore@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: xla-${{ runner.os }}
+    - name: Fetch Bazel cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
     - name: Build XLA static Linux CPU
       working-directory: backend
       run: |
@@ -42,11 +42,11 @@ jobs:
         bazel build --sandbox_debug --verbose_failures --experimental_repo_remote_exec //:c_xla
       env:
         BAZEL_CXXOPTS: -std=c++17
-#    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
-#      uses: actions/cache/save@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: xla-${{ runner.os }}
+    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
     - name: Upload XLA
       uses: actions/upload-artifact@v4
       with:
