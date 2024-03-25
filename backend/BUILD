@@ -1,6 +1,6 @@
 cc_library(
     name = "c_xla",
-    srcs = [
+    deps = [
         "//src/xla:xla",
         "//src/xla/client:client",
         "//src/xla/client/lib:lib",
