@@ -14,7 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 extern "C" {
-    int sizeof_int();
+    int isnull(void* ptr);
 
+    int sizeof_int();
+    int sizeof_ptr();
+
+    size_t size(char*);
+    void* index(int idx, void** ptr);
     void set_array_int(int* arr, int idx, int value);
 }

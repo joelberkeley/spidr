@@ -19,29 +19,78 @@ env:
   PACK_DIR: /root/.pack
 
 jobs:
-  test-unit:
+  xla-linux-cpu:
+    runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
+    steps:
+    - uses: actions/checkout@v4
+#    - name: Mount bazel cache
+#      uses: actions/cache@v4
+#      with:
+#        path: ~/.cache/bazel
+#        key: xla-${{ runner.os }}
+#    - name: Fetch Bazel cache
+#      uses: actions/cache/restore@v4
+#      with:
+#        path: ~/.cache/bazel
+#        key: xla-${{ runner.os }}
+    - name: Build XLA static Linux CPU
+      working-directory: backend
+      run: |
+        git clone https://github.com/openxla/xla
+        (cd xla; ./configure.py --backend=CPU)
+        # maybe --logging [4, 5 or 6]
+        bazel build --sandbox_debug --verbose_failures --experimental_repo_remote_exec //:c_xla
+      env:
+        BAZEL_CXXOPTS: -std=c++17
+    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
+    - name: Upload XLA
+      uses: actions/upload-artifact@v4
+      with:
+        name: libc_xla.so
+        path: backend/bazel-bin/libc_xla.so
+        if-no-files-found: error
+  build-tests:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
-    - name: Build backend
-      working-directory: backend
-      run: |
-        ./install_bazel.sh
-        ./build.sh cpu
+    - uses: actions/checkout@v4
     - name: Build tests
       run: |
         pack switch HEAD
         pack --no-prompt build test.ipkg
+        tar cfz test.tar.gz -C build/exec .
+    - name: Upload tests
+      uses: actions/upload-artifact@v4
+      with:
+        path: test.tar.gz
+        if-no-files-found: error
+  test-unit:
+    needs:
+      - xla-linux-cpu
+      - build-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        sudo apt install chezscheme
     - name: Run tests
-      run: pack run test.ipkg
-      env:
-        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
+      run: |
+        tar xfz test.tar.gz . && rm test.tar.gz
+        ./test
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check README
       run: |
         pack switch HEAD
@@ -50,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check tutorials
       run: |
         pack switch HEAD

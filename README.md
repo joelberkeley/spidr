@@ -57,7 +57,7 @@ This is a high-priority feature but is not yet implemented. spidr can generate n
 
 ### Acknowledgements
 
-I'd like to thank the Idris community for their frequent guidance and Idris itself, the Numerical Elixir team for their XLA binaries, Secondmind colleagues for discussions around machine learning design, friends and family for their support, Google for XLA, and Github for hosting.
+I'd like to thank the Idris community for their frequent guidance and Idris itself, the Numerical Elixir team for their early binaries, Secondmind colleagues for discussions around machine learning design, friends and family for their support, Google for XLA, and Github for hosting.
 
 ### Contact
 

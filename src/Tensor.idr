@@ -31,11 +31,18 @@ import Decidable.Equality
 
 import Compiler.Eval
 import Compiler.Expr
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
 import Compiler.LiteralRW
 import Literal
 import public Primitive
 import public Types
 import public Util
+
+0 XlaShape : Type
+XlaShape = Xla.Shape
+
+%hide Xla.Shape
 
 ----------------------------- core definitions ----------------------------
 
@@ -117,7 +124,10 @@ export partial
 eval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval $ MkGraph x =
   let (env, MkTensor root) = runState empty x
-   in try $ execute (MkFn [] root env) >>= read {dtype} []
+   in try $ do
+        shape <- mkShape shape {dtype}
+        lit <- execute (MkFn [] root env) shape
+        read {dtype} [] lit
 
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
@@ -153,9 +163,16 @@ namespace TensorList
   eval $ MkGraph xs =
     let (env, xs) = runState empty xs
         (env, root) = runState env (addNode $ Tuple $ nodes xs)
-     in try $ execute (MkFn [] root env) >>= readAll xs 0
+     in try $ do
+          shape <- mkTupleShape !(buildShapes xs)
+          lit <- execute (MkFn [] root env) shape
+          readAll xs 0 lit
 
     where
+
+    buildShapes : HasIO io => TensorList s t -> io $ List XlaShape
+    buildShapes [] = pure []
+    buildShapes (MkTensor {shape, dtype} _ :: ts) = [| mkShape shape {dtype} :: buildShapes ts |]
 
     nodes : TensorList s t -> List Nat
     nodes [] = []

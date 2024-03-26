@@ -24,23 +24,20 @@ import Data.List.Elem
 
 import Compiler.Expr
 import Compiler.LiteralRW
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Constants
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Math
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.Matrix
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.Lib.PRNG
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaBuilder
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.XlaComputation
-import Compiler.Xla.TensorFlow.Compiler.Xla.Literal
-import Compiler.Xla.TensorFlow.Compiler.Xla.Shape
-import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
-import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import Compiler.Xla.TensorFlow.Compiler.Xla.Service.PlatformUtil
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.ClientLibrary
-import Compiler.Xla.TensorFlow.Compiler.Xla.Client.LocalClient
-import Compiler.Xla.TensorFlow.Core.CommonRuntime.GPU.GPUInit
-import Compiler.Xla.TensorFlow.Core.Platform.Status
-import Compiler.Xla.TensorFlow.StreamExecutor.Platform
+import Compiler.Xla.Client.Lib.Arithmetic
+import Compiler.Xla.Client.Lib.Constants
+import Compiler.Xla.Client.Lib.Math
+import Compiler.Xla.Client.Lib.Matrix
+import Compiler.Xla.Client.Lib.PRNG
+import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.PJRT.C.PJRT_C_API
+import Compiler.Xla.PJRT.C.PJRT_C_API_CPU
+import Compiler.Xla.PJRT.PjrtExecutable
+import Compiler.Xla.Literal
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
+import Compiler.Xla.XlaData
 
 import Literal
 import Primitive
@@ -50,11 +47,13 @@ import Util
 export
 data Err = OutOfBounds Nat Nat
          | ValueNotFound Nat
+         | PjrtErr PjrtError
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value requested but not found at index \{show idx}"
+  show _ = "PjrtErr"
 
 public export 0
 ErrIO : Type -> Type
@@ -126,7 +125,8 @@ interpret xlaBuilder (MkFn params root env) = do
   interpretE (Broadcast {dtype} from to x) =
     if elem 0 to && from /= to
     then do
-      literal <- allocLiteral {dtype} to
+      shape <- mkShape {dtype} to
+      literal <- allocLiteral shape
       constantLiteral xlaBuilder literal
     else
      let broadcastDims = Prelude.map (+ length to `minus` length from) $ range $ length from
@@ -234,11 +234,19 @@ toString f = do
   pure $ opToString xlaBuilder root
 
 export covering
-execute : Fn 0 -> ErrIO Literal
-execute f = do
+execute : Fn 0 -> Xla.Shape -> ErrIO Literal
+execute f shape = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  gpuStatus <- validateGPUMachineManager
-  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
-  client <- getOrCreateLocalClient platform
-  executeAndTransfer client computation
+  let foo = do
+    api <- getPjrtApi  -- need a gpu version
+    client <- pjrtClientCreate api
+    code <- serializeAsString computation
+    program <- mkPjrtProgram code
+    compileOptions <- mkCompileOptions
+    loadedExec <- pjrtClientCompile api client program !(serializeAsString compileOptions)
+    buffer <- pjrtLoadedExecutableExecute api loadedExec
+    literal <- allocLiteral shape
+    pjrtBufferToHostBuffer api buffer literal
+    pure literal
+  bimapEitherT PjrtErr id foo

@@ -15,9 +15,10 @@ limitations under the License.
 --}
 module Compiler.LiteralRW
 
-import Compiler.Xla.TensorFlow.Compiler.Xla.XlaData
-import public Compiler.Xla.TensorFlow.Compiler.Xla.Literal
-import Compiler.Xla.TensorFlow.Compiler.Xla.ShapeUtil
+import Compiler.Xla.XlaData
+import public Compiler.Xla.Literal
+import Compiler.Xla.Shape
+import Compiler.Xla.ShapeUtil
 import Literal
 import Util
 
@@ -53,7 +54,8 @@ write : HasIO io =>
         Literal shape a ->
         io Literal
 write idxs xs = liftIO $ do
-  literal <- allocLiteral {dtype} shape
+  shape <- mkShape {dtype} shape
+  literal <- allocLiteral shape
   shapeIndex <- allocShapeIndex
   traverse_ (pushBack shapeIndex) idxs
   sequence_ [| (\idxs => set {dtype} literal idxs shapeIndex) indexed xs |]
