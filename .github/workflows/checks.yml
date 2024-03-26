@@ -38,6 +38,7 @@ jobs:
       working-directory: backend
       run: |
         git clone https://github.com/openxla/xla
+        (cd xla; ./configure.py --backend=CPU)
         # maybe --logging [4, 5 or 6]
         bazel build --sandbox_debug --verbose_failures --experimental_repo_remote_exec //:c_xla
       env:
