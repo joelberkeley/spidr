@@ -40,7 +40,7 @@ jobs:
         git clone https://github.com/openxla/xla
         (cd xla; ./configure.py --backend=CPU)
         # maybe --logging [4, 5 or 6]
-        bazel build --sandbox_debug --verbose_failures --experimental_repo_remote_exec //:c_xla
+        cd xla; bazel build --verbose_failures --experimental_repo_remote_exec //xla/pjrt/c:pjrt_c_api_cpu
       env:
         BAZEL_CXXOPTS: -std=c++17
     - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
