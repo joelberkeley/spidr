@@ -26,11 +26,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build XLA static Linux CPU
       working-directory: backend
-      run: |
-        git clone https://github.com/openxla/xla
-        bazel build --verbose_failures --experimental_repo_remote_exec //:c_xla
-      env:
-        BAZEL_CXXOPTS: -std=c++17
+      run: ./build.sh
     - name: Save Bazel cache
       uses: actions/cache/save@v4
       with:
