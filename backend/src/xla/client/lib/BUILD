@@ -2,13 +2,12 @@ cc_library(
     name = "lib",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]) + [
+    srcs = glob(["*.cpp"]),
+    hdrs = glob(["*.h"]),
+    deps = [
         "@xla//xla/client/lib:math",
         "@xla//xla/client/lib:matrix",
         "@xla//xla/client/lib:prng",
-    ],
-    hdrs = glob(["*.h"]),
-    deps = [
         "//src/xla:xla",
         "//src/xla/client:client",
     ],
