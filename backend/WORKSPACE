@@ -1,9 +1,6 @@
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-local_repository(
-  name = "xla",
-  path = "xla",
-)
+# this must be a local repository not http archive
+# so we can run ./configure.py before invoking bazel
+local_repository(name = "xla", path = "xla")
 
 load("@xla//:workspace4.bzl", "xla_workspace4")
 xla_workspace4()

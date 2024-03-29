@@ -29,11 +29,11 @@ jobs:
 #      with:
 #        path: ~/.cache/bazel
 #        key: xla-${{ runner.os }}
-#    - name: Fetch Bazel cache
-#      uses: actions/cache/restore@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: xla-${{ runner.os }}
+    - name: Fetch Bazel cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
     - name: Build XLA static Linux CPU
       working-directory: backend
       run: ./build.sh
