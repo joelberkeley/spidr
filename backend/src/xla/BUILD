@@ -5,8 +5,10 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@com_google_absl//absl/types:span",
         "@xla//xla:literal",
+        "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/base:log_severity",
     ],
     visibility = ["//visibility:public"],
 )
