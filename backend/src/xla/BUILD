@@ -5,6 +5,7 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
+        "@com_google_absl//absl/types:span",
         "@xla//xla:literal",
     ],
     visibility = ["//visibility:public"],
