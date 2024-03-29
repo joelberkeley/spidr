@@ -2,10 +2,9 @@ cc_library(
     name = "xla",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]),
-    hdrs = glob(["*.h"]),
-    deps = [
+    srcs = glob(["*.cpp"]) + [
         "@xla//xla:literal",
     ],
+    hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
 )

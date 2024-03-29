@@ -2,10 +2,9 @@ cc_library(
     name = "service",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]),
-    hdrs = glob(["*.h"]),
-    deps = [
+    srcs = glob(["*.cpp"]) + [
         "@xla//xla/service:platform_util",
     ],
+    hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
 )
