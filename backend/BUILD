@@ -1,5 +1,6 @@
-cc_library(
+cc_binary(
     name = "c_xla",
+    linkshared = True,
     srcs = [
         "//src/xla:xla",
         "//src/xla/client:client",
