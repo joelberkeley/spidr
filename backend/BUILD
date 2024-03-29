@@ -1,6 +1,6 @@
-cc_library(
+cc_binary(  # see https://stackoverflow.com/a/51689102/5986907
     name = "c_xla",
-    alwayslink = True,
+    linkshared = True,
     srcs = [
         "//src/xla:xla",
         "//src/xla/client:client",

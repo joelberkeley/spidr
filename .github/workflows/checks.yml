@@ -37,6 +37,7 @@ jobs:
     - name: Build XLA static Linux CPU
       working-directory: backend
       run: |
+        ./install.sh
         ./build.sh
         ls -R bazel-bin/
     - name: Upload XLA

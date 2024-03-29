@@ -26,7 +26,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build XLA static Linux CPU
       working-directory: backend
-      run: ./build.sh
+      run: |
+        ./install.sh
+        ./build.sh
     - name: Free disk space
       uses: jlumbroso/free-disk-space@main
     - name: Save Bazel cache
