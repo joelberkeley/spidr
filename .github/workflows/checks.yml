@@ -36,7 +36,9 @@ jobs:
         key: xla-${{ runner.os }}
     - name: Build XLA static Linux CPU
       working-directory: backend
-      run: ./build.sh
+      run: |
+        ./build.sh
+        ls -R bazel-bin/
     - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
       uses: actions/cache/save@v4
       with:
