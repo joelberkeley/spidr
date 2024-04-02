@@ -2,7 +2,7 @@ cc_library(
     name = "client",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]),
+    srcs = glob(["*.cpp"]) + ["@com_google_absl//absl/types:span"],
     hdrs = glob(["*.h"]),
     deps = [
         "@com_google_absl//absl/types:span",
