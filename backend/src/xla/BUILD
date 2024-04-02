@@ -2,8 +2,8 @@ cc_library(
     name = "xla",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]) + ["@com_google_absl//absl/types:span"],
-    hdrs = glob(["*.h"]),
+    srcs = glob(["*.cpp"]),
+    hdrs = glob(["*.h"]) + ["@com_google_absl//absl/types:span"],
     deps = [
         "@xla//xla:literal",
         "@com_google_absl//absl/types:span",
