@@ -3,11 +3,9 @@ cc_library(
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
-    hdrs = glob(["*.h"]) + ["@com_google_absl//absl/types:span"],
+    hdrs = glob(["*.h"]),
     deps = [
         "@com_google_absl//absl/types:span",
-        "@com_google_absl//absl/types:optional",
-        "@com_google_absl//absl/base:log_severity",
         "@xla//xla/client:client_library",
         "@xla//xla/client:executable_build_options",
         "@xla//xla/service:computation_placer",
