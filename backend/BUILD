@@ -10,6 +10,7 @@
 cc_binary(
     name = "c_xla",
     linkshared = True,
+    linkstatic = True,
     srcs = [
         "//src/xla:xla",
         "//src/xla/client:client",
