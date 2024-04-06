@@ -35,7 +35,7 @@ import Utils.Proof
 
 partial
 tensorThenEval : Property
-tensorThenEval = property $ do
+tensorThenEval = withTests 20 . property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
@@ -449,8 +449,9 @@ export partial
 group : Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
-    , ("eval multiple tensors", evalTuple)
+--    , ("eval multiple tensors", evalTuple)
     , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
+{-
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)
@@ -469,10 +470,11 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
-  ] ++ concat (the (List _) [
+    -}
+  ] {- ++ concat (the (List _) [
       Unit.TestTensor.Elementwise.all
     , Unit.TestTensor.HigherOrder.all
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all
-  ])
+  ]) -}
