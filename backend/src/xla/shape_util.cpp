@@ -56,6 +56,8 @@ extern "C" {
             (xla::PrimitiveType) primitive_type,
             absl::Span<const int64_t>(shape64, rank)
         );
+        std::cout << "MakeShape ..." << std::endl;
+        std::cout << "... xla_shape " << xla_shape << std::endl;
         return reinterpret_cast<Shape*>(xla_shape);
     }
 }
