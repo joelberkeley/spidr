@@ -136,7 +136,7 @@ extern "C" {
   }
 
   PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
-    PJRT_Client* client, PJRT_Program* program, char* compile_options
+    PJRT_Client* client, PJRT_Program* program, char* compile_options, size_t compile_options_size
   ) {
     std::cout << "PJRT_Client_Compile_Args_new ..." << std::endl;
     return new PJRT_Client_Compile_Args{
@@ -145,9 +145,7 @@ extern "C" {
       .client = client,
       .program = program,
       .compile_options = compile_options,
-      // strlen won't work here if ->SerializeAsString() doesn't terminate the string.
-      // in that case, pass the length too.
-      .compile_options_size = strlen(compile_options),
+      .compile_options_size = compile_options_size,
     };
   }
 

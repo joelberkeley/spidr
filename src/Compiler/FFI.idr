@@ -22,6 +22,31 @@ public export
 libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla"
 
+public export
+data CppString = MkCppString GCAnyPtr
+
+%foreign (libxla "String_delete")
+prim__stringDelete : AnyPtr -> PrimIO ()
+
+namespace CppString
+  export
+  delete : HasIO io => AnyPtr -> io ()
+  delete = primIO . prim__stringDelete
+
+%foreign (libxla "String_c_str")
+prim__stringCStr : GCAnyPtr -> PrimIO String
+
+export
+cstr : HasIO io => CppString -> io String
+cstr (MkCppString str) = primIO $ prim__stringCStr str
+
+%foreign (libxla "String_size")
+prim__stringSize : GCAnyPtr -> Int
+
+export
+size : CppString -> Int
+size (MkCppString str) = prim__stringSize str
+
 export
 %foreign (libxla "sizeof_int")
 sizeofInt : Int

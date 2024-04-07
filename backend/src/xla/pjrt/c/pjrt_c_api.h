@@ -36,7 +36,7 @@ extern "C" {
 
   PJRT_Program* PJRT_Program_new(char* code);
   PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
-    PJRT_Client* client, PJRT_Program* program, char* compile_options
+    PJRT_Client* client, PJRT_Program* program, char* compile_options, size_t compile_options_size
   );
   PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args);
   // alternatively the similar function PJRT_Compile ... what's the difference?

@@ -71,9 +71,10 @@ namespace Xla
 %foreign (libxla "DotDimensionNumbers_delete")
 prim__dotDimensionNumbersDelete : AnyPtr -> PrimIO ()
 
-export
-delete : HasIO io => AnyPtr -> io ()
-delete = primIO . prim__dotDimensionNumbersDelete
+namespace DotDimensionNumbers
+  export
+  delete : HasIO io => AnyPtr -> io ()
+  delete = primIO . prim__dotDimensionNumbersDelete
 
 %foreign (libxla "DotDimensionNumbers_new")
 prim__dotDimensionNumbersNew : PrimIO AnyPtr
@@ -82,7 +83,7 @@ export
 allocDotDimensionNumbers : HasIO io => io DotDimensionNumbers
 allocDotDimensionNumbers = do
   ptr <- primIO prim__dotDimensionNumbersNew
-  ptr <- onCollectAny ptr delete
+  ptr <- onCollectAny ptr DotDimensionNumbers.delete
   pure (MkDotDimensionNumbers ptr)
 
 %foreign (libxla "DotDimensionNumbers_add_lhs_contracting_dimensions")

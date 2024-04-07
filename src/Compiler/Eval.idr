@@ -23,6 +23,7 @@ import Data.List
 import Data.List.Elem
 
 import Compiler.Expr
+import Compiler.FFI
 import Compiler.LiteralRW
 import Compiler.Xla.Client.Lib.Arithmetic
 import Compiler.Xla.Client.Lib.Constants
@@ -244,7 +245,8 @@ execute f shape = do
     code <- serializeAsString computation
     program <- mkPjrtProgram code
     compileOptions <- mkCompileOptions
-    loadedExec <- pjrtClientCompile api client program !(serializeAsString compileOptions)
+    compileOptionsStr <- serializeAsString compileOptions
+    loadedExec <- pjrtClientCompile api client program !(cstr compileOptionsStr) (size compileOptionsStr)
     buffer <- pjrtLoadedExecutableExecute api loadedExec
     literal <- allocLiteral shape
     pjrtBufferToHostBuffer api buffer literal

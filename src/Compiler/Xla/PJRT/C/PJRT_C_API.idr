@@ -68,17 +68,13 @@ public export 0
 ErrIO : Type -> Type -> Type
 ErrIO e a = EitherT e IO a
 
-public export 0
-PjrtErrIO : Type -> Type
-PjrtErrIO = ErrIO PjrtError
-
 %foreign (libxla "PJRT_Error_Destroy_Args_new")
 prim__mkPjrtErrorDestroyArgs : AnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "pjrt_error_destroy")
 prim__pjrtErrorDestroy : AnyPtr -> AnyPtr -> PrimIO ()
 
-destroyPjrtError : AnyPtr -> AnyPtr -> IO ()
+destroyPjrtError : HasIO io => AnyPtr -> AnyPtr -> io ()
 destroyPjrtError api err = do
   destroyArgs <- primIO $ prim__mkPjrtErrorDestroyArgs err
   primIO $ prim__pjrtErrorDestroy api destroyArgs
@@ -93,7 +89,7 @@ prim__pjrtErrorMessageArgsMessage : AnyPtr -> PrimIO String
 %foreign (libxla "pjrt_error_message")
 prim__pjrtErrorMessage : AnyPtr -> AnyPtr -> PrimIO ()
 
-pjrtErrorMessage : AnyPtr -> AnyPtr -> IO String
+pjrtErrorMessage : HasIO io => AnyPtr -> AnyPtr -> io String
 pjrtErrorMessage api err = do
   args <- primIO $ prim__mkPjrtErrorMessageArgs err
   primIO $ prim__pjrtErrorMessage api args
@@ -110,8 +106,8 @@ prim__mkPjrtErrorGetCodeArgsCode : AnyPtr -> Int
 %foreign (libxla "pjrt_error_getcode")
 prim__pjrtErrorGetCode : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
-pjrtErrorGetCodeFromCInt : Int -> PjrtErrorCode
-pjrtErrorGetCodeFromCInt = \case
+pjrtErrorCodeFromCInt : Int -> PjrtErrorCode
+pjrtErrorCodeFromCInt = \case
   1  => PJRT_Error_Code_CANCELLED
   2  => PJRT_Error_Code_UNKNOWN
   3  => PJRT_Error_Code_INVALID_ARGUMENT
@@ -153,13 +149,13 @@ prim__pjrtClientDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 -- warnDestroyFailure api err =
 
 -- add address of target pointer?
-handleErrOnDestroy : AnyPtr -> AnyPtr -> String -> IO ()
+handleErrOnDestroy : HasIO io => AnyPtr -> AnyPtr -> String -> io ()
 handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   msg <- pjrtErrorMessage api err
   args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
   getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
   if (isNullPtr getCodeErr) then do
-      let code = prim__mkPjrtErrorGetCodeArgsCode args
+      let code = pjrtErrorCodeFromCInt $ prim__mkPjrtErrorGetCodeArgsCode args
       printLn "WARN: Failed to destroy \{target} with error code \{show code}; message: \{msg}"
     else do
       printLn "WARN: Failed to fetch error code"
@@ -170,16 +166,16 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 
 try : AnyPtr -> AnyPtr -> a -> ErrIO PjrtError a
 try api err onOk = if (isNullPtr err) then right onOk else do
-  msg <- lift $ pjrtErrorMessage api err
+  msg <- pjrtErrorMessage api err
   args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
   getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
-  code <- lift $ if (isNullPtr getCodeErr) then pure Nothing else do
+  code <- if (isNullPtr getCodeErr) then pure Nothing else do
     let code = prim__mkPjrtErrorGetCodeArgsCode args
     destroyPjrtError api getCodeErr
     pure $ Just code
   free args
-  lift $ destroyPjrtError api err
-  left $ MkPjrtError msg $ map pjrtErrorGetCodeFromCInt code
+  destroyPjrtError api err
+  left $ MkPjrtError msg $ map pjrtErrorCodeFromCInt code
 
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
@@ -216,7 +212,7 @@ mkPjrtProgram code = do
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
-prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> String -> PrimIO AnyPtr
+prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> String -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
@@ -239,10 +235,11 @@ pjrtClientCompile :
   PjrtClient ->
   PjrtProgram ->
   String ->
+  Int ->
   ErrIO PjrtError PjrtLoadedExecutable
-pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) compileOptions = do
+pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) compileOptions compileOptionsSize = do
   putStrLn "pjrtClientCompile ..."
-  args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions
+  args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
   err <- primIO $ prim__pjrtClientCompile api args
   let executable = prim__pjrtClientCompileArgsExecutable args
   free args

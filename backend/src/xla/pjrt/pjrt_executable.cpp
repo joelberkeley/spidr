@@ -18,7 +18,13 @@ limitations under the License.
 #include "xla/client/xla_computation.h"
 
 #include "pjrt_executable.h"
-#include "../service/hlo.pb.h"
+
+//char* c_string_copy(std::string str) {
+//    auto len = str.length();
+//    auto res = (char *) malloc(len);
+//    strncpy(res, str.c_str(), len);
+//    return res;
+//}
 
 extern "C" {
   CompileOptions* CompileOptions_new() {
@@ -38,9 +44,12 @@ extern "C" {
     return reinterpret_cast<CompileOptions*>(options);
   }
 
-  const char* CompileOptions_SerializeAsString(CompileOptions* s) {
+  String* CompileOptions_SerializeAsString(CompileOptions* s) {
     std::cout << "CompileOptions_SerializeAsString ..." << std::endl;
     auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
-    return c_string_copy(s_->ToProto()->SerializeAsString());
+    auto res = s_->ToProto()->SerializeAsString();
+    std::cout << "... serialized result: " << std::endl;
+    std::cout << res << std::endl;
+    return new std::string(res);
   }
 }

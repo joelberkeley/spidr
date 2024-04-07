@@ -32,9 +32,11 @@ mkCompileOptions = do
   pure (MkCompileOptions options)
 
 %foreign (libxla "CompileOptions_SerializeAsString")
-prim__compileOptionsSerializeAsString : GCAnyPtr -> PrimIO String
+prim__compileOptionsSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 
 export
-serializeAsString : HasIO io => CompileOptions -> io String
-serializeAsString (MkCompileOptions options) =
-  primIO $ prim__compileOptionsSerializeAsString options
+serializeAsString : HasIO io => CompileOptions -> io CppString
+serializeAsString (MkCompileOptions options) = do
+  str <- primIO $ prim__compileOptionsSerializeAsString options
+  str <- onCollectAny str CppString.delete
+  pure (MkCppString str)
