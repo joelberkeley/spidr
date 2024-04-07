@@ -16,15 +16,10 @@ limitations under the License.
 extern "C" {
     int isnull(void* ptr);
 
-    struct String;
-    void String_delete(String* s);
-    char* String_c_str(String* s);
-    size_t String_size(String* s);
-
-    struct CString {
-        size_t size;
-        char* contents;
-    };
+    struct string;
+    void string_delete(string* s);
+    char* string_c_str(string* s);
+    size_t string_size(string* s);
 
     int sizeof_int();
     int sizeof_ptr();

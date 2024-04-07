@@ -13,11 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "../../ffi.h"
+
 #include "xla/pjrt/pjrt_executable.h"
 
 extern "C" {
   struct CompileOptions;
 
   CompileOptions* CompileOptions_new();
-  const char* CompileOptions_SerializeAsString(CompileOptions* s);
+  String* CompileOptions_SerializeAsString(CompileOptions* s);
 }

@@ -8,6 +8,7 @@ cc_library(
         "@xla//xla/client:xla_computation",
         "@xla//xla/pjrt:pjrt_executable",
         "//src/xla/service:service",
+        "//src:src",
     ],
     visibility = ["//visibility:public"],
 )

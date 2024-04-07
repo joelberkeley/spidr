@@ -13,6 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <cstdlib>
+#include <cstddef>
+#include <string>
+#include <cstring>
+
+#include "ffi.h"
+
 extern "C" {
     void* deref(void** ptr) {
         return *ptr;
@@ -22,20 +29,20 @@ extern "C" {
         return ptr == nullptr;
     }
 
-    void String_delete(String* s) {
+    void string_delete(string* s) {
         delete reinterpret_cast<std::string*>(s);
     }
 
-    char* String_c_str(String* s) {
+    char* string_c_str(string* s) {
         auto str = reinterpret_cast<std::string*>(s);
-        auto len = str.length();
+        auto len = str->length();
         auto res = (char *) malloc(len);
-        strncpy(res, str.c_str(), len);
+        strncpy(res, str->c_str(), len);
         return res;
     }
 
-    size_t String_size(String* s) {
-        return reinterpret_cast<std::string*>(s).size();
+    size_t string_size(string* s) {
+        return reinterpret_cast<std::string*>(s)->size();
     }
 
     int sizeof_int() {

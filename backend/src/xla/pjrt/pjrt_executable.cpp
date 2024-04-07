@@ -50,6 +50,6 @@ extern "C" {
     auto res = s_->ToProto()->SerializeAsString();
     std::cout << "... serialized result: " << std::endl;
     std::cout << res << std::endl;
-    return new std::string(res);
+    return reinterpret_cast<String*>(new std::string(res));
   }
 }
