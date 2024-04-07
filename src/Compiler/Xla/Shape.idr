@@ -42,6 +42,9 @@ data ShapeArray = MkShapeArray GCAnyPtr
 export
 mkShapeArray : HasIO io => List Shape -> io ShapeArray
 mkShapeArray shapes = do
+  -- is it possible we're gc-ing the shapes after putting them in the array but before
+  -- using them to create the tuple shape? what about moving this to mkTupleShape and manually
+  -- freeing the shapes?
   arr <- malloc (cast (length shapes) * sizeOfShape)
   traverse_ (\(idx, MkShape shape) =>
     primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate (fromList shapes))
