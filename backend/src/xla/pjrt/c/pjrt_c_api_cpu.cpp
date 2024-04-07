@@ -20,7 +20,8 @@ limitations under the License.
 #include "pjrt_c_api_cpu.h"
 
 extern "C" {
-  // how to avoid underscore?
+  // how to avoid underscore? ideally we should just be able to call
+  // directly into the XLA version and not need this module (or header)
   const PJRT_Api* GetPjrtApi_() {
     std::cout << "GetPjrtApi_ ..." << std::endl;
     return GetPjrtApi();

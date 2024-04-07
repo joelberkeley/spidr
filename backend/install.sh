@@ -1,3 +1,8 @@
+if [ -d xla ]; then
+  echo "Directory xla already exists, aborting"
+  exit 1;
+fi
+
 mkdir xla
 cd xla || exit
 git init

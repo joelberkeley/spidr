@@ -2,8 +2,8 @@ C_XLA_VERSION=$(cat backend/VERSION)
 
 install_intructions() {
   cat <<- EOF
-    sudo curl -s -L https://github.com/joelberkeley/spidr/releases/download/c-xla-v$C_XLA_VERSION/c_xla-x86_64-linux-$1.so /usr/local/lib/libc_xla.so
-    echo "/usr/local/lib/c_xla/" | sudo tee -a /etc/ld.so.conf.d/c_xla.conf
+    sudo curl -s -L https://github.com/joelberkeley/spidr/releases/download/xla-v$C_XLA_VERSION/xla-x86_64-linux-$1.so /usr/local/lib/spidr/libxla.so
+    echo "/usr/local/lib/spidr/" | sudo tee -a /etc/ld.so.conf.d/spidr.conf
     sudo ldconfig
 EOF
 }
@@ -19,8 +19,8 @@ $(install_intructions cuda111)
 
 When you uninstall spidr, you may wish to remove installed XLA artifacts
 
-    /etc/ld.so.conf.d/c_xla.conf
-    /usr/local/lib/c_xla/
+    /etc/ld.so.conf.d/spidr.conf
+    /usr/local/lib/spidr/
 
 and update shared library links with
 
