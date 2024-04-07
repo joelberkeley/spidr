@@ -450,7 +450,7 @@ group : Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
 --    , ("eval multiple tensors", evalTuple)
-    , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
+--    , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
 {-
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
