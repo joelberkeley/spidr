@@ -53,7 +53,7 @@ export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value requested but not found at index \{show idx}"
-  show _ = "PjrtErr"
+  show (PjrtErr err)= show err
 
 public export 0
 ErrIO : Type -> Type

@@ -3,6 +3,7 @@ version = 0.0.6
 
 opts = "--total"
 sourcedir = "src"
+depends = elab-util
 modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,

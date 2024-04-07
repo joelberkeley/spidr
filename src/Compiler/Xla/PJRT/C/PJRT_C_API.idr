@@ -17,8 +17,13 @@ module Compiler.Xla.PJRT.C.PJRT_C_API
 
 import Control.Monad.Either
 
+import Language.Reflection
+import Derive.Prelude
+
 import Compiler.FFI
 import Compiler.Xla.Literal
+
+%language ElabReflection
 
 -- keep the API as close to the PJRT api as possible except:
 -- * don't expose _Args, so we don't need to handle null ptrs. I really doubt we'd
@@ -28,14 +33,40 @@ import Compiler.Xla.Literal
 -- we can hide GCAnyPtr/AnyPtr in a more type-safe Idris API
 
 public export
-data PjrtApi = MkPjrtApi AnyPtr  -- this is just a struct, should I `free` it? do i own it?
+data PjrtApi = MkPjrtApi AnyPtr
+
+public export
+data PjrtErrorCode =
+    PJRT_Error_Code_CANCELLED
+  | PJRT_Error_Code_UNKNOWN
+  | PJRT_Error_Code_INVALID_ARGUMENT
+  | PJRT_Error_Code_DEADLINE_EXCEEDED
+  | PJRT_Error_Code_NOT_FOUND
+  | PJRT_Error_Code_ALREADY_EXISTS
+  | PJRT_Error_Code_PERMISSION_DENIED
+  | PJRT_Error_Code_RESOURCE_EXHAUSTED
+  | PJRT_Error_Code_FAILED_PRECONDITION
+  | PJRT_Error_Code_ABORTED
+  | PJRT_Error_Code_OUT_OF_RANGE
+  | PJRT_Error_Code_UNIMPLEMENTED
+  | PJRT_Error_Code_INTERNAL
+  | PJRT_Error_Code_UNAVAILABLE
+  | PJRT_Error_Code_DATA_LOSS
+  | PJRT_Error_Code_UNAUTHENTICATED
+
+%runElab derive "PjrtErrorCode" [Show]
+
+public export
+record PjrtError where
+  constructor MkPjrtError
+  message : String
+  code : Maybe PjrtErrorCode
+
+%runElab derive "PjrtError" [Show]
 
 public export 0
 ErrIO : Type -> Type -> Type
 ErrIO e a = EitherT e IO a
-
-export
-data PjrtError = MkPjrtError GCAnyPtr
 
 public export 0
 PjrtErrIO : Type -> Type
@@ -62,8 +93,13 @@ prim__pjrtErrorMessageArgsMessage : AnyPtr -> PrimIO String
 %foreign (libxla "pjrt_error_message")
 prim__pjrtErrorMessage : AnyPtr -> AnyPtr -> PrimIO ()
 
-export
-pjrtErrorMessage : HasIO io => PjrtError -> io ()
+pjrtErrorMessage : AnyPtr -> AnyPtr -> IO String
+pjrtErrorMessage api err = do
+  args <- primIO $ prim__mkPjrtErrorMessageArgs err
+  primIO $ prim__pjrtErrorMessage api args
+  msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
+  free args
+  pure msg
 
 %foreign (libxla "PJRT_Error_GetCode_Args_new")
 prim__mkPjrtErrorGetCodeArgs : AnyPtr -> PrimIO AnyPtr
@@ -74,30 +110,8 @@ prim__mkPjrtErrorGetCodeArgsCode : AnyPtr -> Int
 %foreign (libxla "pjrt_error_getcode")
 prim__pjrtErrorGetCode : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
--- i'm going to keep the Idris API as close as possible to the C API, and convert the
--- errors further up the stack
-{-
-public export
-data PjrtErrorCode =
-    PJRT_Error_Code_CANCELLED
-  | PJRT_Error_Code_UNKNOWN
-  | PJRT_Error_Code_INVALID_ARGUMENT
-  | PJRT_Error_Code_DEADLINE_EXCEEDED
-  | PJRT_Error_Code_NOT_FOUND
-  | PJRT_Error_Code_ALREADY_EXISTS
-  | PJRT_Error_Code_PERMISSION_DENIED
-  | PJRT_Error_Code_RESOURCE_EXHAUSTED
-  | PJRT_Error_Code_FAILED_PRECONDITION
-  | PJRT_Error_Code_ABORTED
-  | PJRT_Error_Code_OUT_OF_RANGE
-  | PJRT_Error_Code_UNIMPLEMENTED
-  | PJRT_Error_Code_INTERNAL
-  | PJRT_Error_Code_UNAVAILABLE
-  | PJRT_Error_Code_DATA_LOSS
-  | PJRT_Error_Code_UNAUTHENTICATED
-
-fromCInt : Int64 -> PjrtErrorCode
-fromCInt = \case
+pjrtErrorGetCodeFromCInt : Int -> PjrtErrorCode
+pjrtErrorGetCodeFromCInt = \case
   1  => PJRT_Error_Code_CANCELLED
   2  => PJRT_Error_Code_UNKNOWN
   3  => PJRT_Error_Code_INVALID_ARGUMENT
@@ -116,10 +130,6 @@ fromCInt = \case
   16 => PJRT_Error_Code_UNAUTHENTICATED
   n  => assert_total $ idris_crash
     "Unexpected PJRT_Error_Code value received through FFI from XLA: \{show n}"
-
-public export
-data PjrtError = MkPjrtError String PjrtErrorCode
--}
 
 export
 data PjrtClient = MkPjrtClient GCAnyPtr
@@ -145,11 +155,7 @@ prim__pjrtClientDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 -- add address of target pointer?
 handleErrOnDestroy : AnyPtr -> AnyPtr -> String -> IO ()
 handleErrOnDestroy api err target = unless (isNullPtr err) $ do
-  args <- primIO $ prim__mkPjrtErrorMessageArgs err
-  primIO $ prim__pjrtErrorMessage api args
-  msg <- primIO $ prim__pjrtErrorMessageArgsMessage args
-  free args
-
+  msg <- pjrtErrorMessage api err
   args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
   getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
   if (isNullPtr getCodeErr) then do
@@ -164,8 +170,16 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 
 try : AnyPtr -> AnyPtr -> a -> ErrIO PjrtError a
 try api err onOk = if (isNullPtr err) then right onOk else do
-  err <- onCollectAny err (destroyPjrtError api)
-  left $ MkPjrtError err
+  msg <- lift $ pjrtErrorMessage api err
+  args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
+  getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
+  code <- lift $ if (isNullPtr getCodeErr) then pure Nothing else do
+    let code = prim__mkPjrtErrorGetCodeArgsCode args
+    destroyPjrtError api getCodeErr
+    pure $ Just code
+  free args
+  lift $ destroyPjrtError api err
+  left $ MkPjrtError msg $ map pjrtErrorGetCodeFromCInt code
 
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
