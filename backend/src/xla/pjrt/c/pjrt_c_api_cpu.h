@@ -16,5 +16,5 @@ limitations under the License.
 #include "xla/pjrt/c/pjrt_c_api.h"
 
 extern "C" {
-  const PJRT_Api* GetPjrtApi();
+  const PJRT_Api* GetPjrtApi_();
 }

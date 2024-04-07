@@ -20,7 +20,7 @@ import Compiler.Xla.PJRT.C.PJRT_C_API
 
 -- we're going to need to alias this C function so we can differentiate between
 -- versions of GetPjrtApi for various devices
-%foreign (libxla "GetPjrtApi")
+%foreign (libxla "GetPjrtApi_")
 prim__getPjrtApi : PrimIO AnyPtr
 
 export

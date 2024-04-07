@@ -20,8 +20,9 @@ limitations under the License.
 #include "pjrt_c_api_cpu.h"
 
 extern "C" {
-  const PJRT_Api* GetPjrtApi() {
-    std::cout << "GetPjrtApi ..." << std::endl;
+  // how to avoid underscore?
+  const PJRT_Api* GetPjrtApi_() {
+    std::cout << "GetPjrtApi_ ..." << std::endl;
     return GetPjrtApi();
   }
 }
