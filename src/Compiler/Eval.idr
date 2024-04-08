@@ -244,8 +244,7 @@ execute f shape = do
     client <- pjrtClientCreate api
     code <- serializeAsString computation
     program <- mkPjrtProgram code
-    compileOptions <- mkCompileOptions
-    compileOptionsStr <- serializeAsString compileOptions
+    compileOptionsStr <- serializeAsString !mkCompileOptions
     loadedExec <- pjrtClientCompile api client program !(cstr compileOptionsStr) (size compileOptionsStr)
     buffer <- pjrtLoadedExecutableExecute api loadedExec
     literal <- allocLiteral shape
