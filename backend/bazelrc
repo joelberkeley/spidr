@@ -1,0 +1,2 @@
+build --nobuild_runfile_links
+build --nolegacy_external_runfiles
