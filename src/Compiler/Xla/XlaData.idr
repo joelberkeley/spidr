@@ -68,10 +68,10 @@ namespace Xla
   data DotDimensionNumbers : Type where
     MkDotDimensionNumbers : GCAnyPtr -> DotDimensionNumbers
 
-%foreign (libxla "DotDimensionNumbers_delete")
-prim__dotDimensionNumbersDelete : AnyPtr -> PrimIO ()
-
 namespace DotDimensionNumbers
+  %foreign (libxla "DotDimensionNumbers_delete")
+  prim__dotDimensionNumbersDelete : AnyPtr -> PrimIO ()
+
   export
   delete : HasIO io => AnyPtr -> io ()
   delete = primIO . prim__dotDimensionNumbersDelete

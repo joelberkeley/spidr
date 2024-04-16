@@ -50,14 +50,6 @@ size : CppString -> Int
 size (MkCppString str) = prim__stringSize str
 
 export
-%foreign (libxla "sizeof_int")
-sizeofInt : Int
-
-export
-%foreign (libxla "sizeof_ptr")
-sizeofPtr : Int
-
-export
 %foreign (libxla "index")
 prim__index : Int -> AnyPtr -> AnyPtr
 
@@ -85,6 +77,9 @@ public export
 data IntArray : Type where
   MkIntArray : GCPtr Int -> IntArray
 
+%foreign (libxla "sizeof_int")
+sizeofInt : Int
+
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
 
@@ -96,6 +91,10 @@ mkIntArray xs = do
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
   ptr <- onCollect ptr (free . prim__forgetPtr)
   pure (MkIntArray ptr)
+
+export
+%foreign (libxla "sizeof_ptr")
+sizeofPtr : Int
 
 export
 %foreign (libxla "set_array_ptr")

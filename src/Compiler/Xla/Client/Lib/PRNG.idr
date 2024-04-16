@@ -33,7 +33,7 @@ record RngOutput where
   state : XlaOp
 
 PrimRngOutput : Type
-PrimRngOutput = Struct "RngOutput" [("value", AnyPtr), ("state", AnyPtr)]
+PrimRngOutput = Struct "PrimRngOutput" [("value", AnyPtr), ("state", AnyPtr)]
 
 %foreign (libxla "delete_RngOutput")
 prim__delete : PrimRngOutput -> PrimIO ()

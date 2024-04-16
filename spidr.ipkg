@@ -23,10 +23,10 @@ modules =
   Compiler.Xla.ShapeUtil,
   Compiler.Xla.XlaData,
   Compiler.Xla.Status,
-  Compiler.FFI,
 
   Compiler.Eval,
   Compiler.Expr,
+  Compiler.FFI,
   Compiler.LiteralRW,
 
   Constants,
