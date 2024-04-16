@@ -18,7 +18,6 @@ module Compiler.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic
 import System.FFI
 
 import Compiler.FFI
-
 import Compiler.TensorFlow.Compiler.Xla.Client.XlaBuilder
 import Compiler.TensorFlow.Compiler.Xla.XlaData
 
