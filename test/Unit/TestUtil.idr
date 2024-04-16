@@ -56,21 +56,21 @@ namespace List
   uniqueEmpty = Refl
 
   multiIndex : HList [
-        multiIndex {inBounds = []} [] [] = []
-      , multiIndex [] [0] = []
-      , multiIndex [0] [1] = [1]
-      , multiIndex [] [2, 3] = []
-      , multiIndex [0] [2, 3] = [2]
-      , multiIndex [1] [2, 3] = [3]
-      , multiIndex [0, 0] [2, 3] = [2, 2]
-      , multiIndex [0, 1] [2, 3] = [2, 3]
-      , multiIndex [1, 0] [2, 3] = [3, 2]
-      , multiIndex [1, 1] [2, 3] = [3, 3]
-      , multiIndex [] [3, 4, 5] = []
-      , multiIndex [0] [3, 4, 5] = [3]
-      , multiIndex [1] [3, 4, 5] = [4]
-      , multiIndex [2] [3, 4, 5] = [5]
-      , multiIndex [1, 2, 0] [3, 4, 5] = [4, 5, 3]
+        multiIndex {inBounds = []} [] (the (List Nat) []) = the (List Nat) []
+      , multiIndex [] [the Nat 0] = the (List Nat) []
+      , multiIndex [0] [the Nat 1] = the (List Nat) [1]
+      , multiIndex [] [the Nat 2, 3] = the (List Nat) []
+      , multiIndex [0] [the Nat 2, 3] = the (List Nat) [2]
+      , multiIndex [1] [the Nat 2, 3] = the (List Nat) [3]
+      , multiIndex [0, 0] [the Nat 2, 3] = the (List Nat) [2, 2]
+      , multiIndex [0, 1] [the Nat 2, 3] = the (List Nat) [2, 3]
+      , multiIndex [1, 0] [the Nat 2, 3] = the (List Nat) [3, 2]
+      , multiIndex [1, 1] [the Nat 2, 3] = the (List Nat) [3, 3]
+      , multiIndex [] [the Nat 3, 4, 5] = the (List Nat) []
+      , multiIndex [0] [the Nat 3, 4, 5] = the (List Nat) [3]
+      , multiIndex [1] [the Nat 3, 4, 5] = the (List Nat) [4]
+      , multiIndex [2] [the Nat 3, 4, 5] = the (List Nat) [5]
+      , multiIndex [1, 2, 0] [the Nat 3, 4, 5] = the (List Nat) [4, 5, 3]
     ]
   multiIndex = %search
 
@@ -101,7 +101,7 @@ namespace List
         inBoundsDelete {i = Z}   (InLater _)  (LTESucc LTEZero) = InFirst
         inBoundsDelete {i = S k} (InLater ib) (LTESucc lt)      = InLater (inBoundsDelete ib lt)
 
-        inj : Not (Prelude.S m = S n) -> Not (m = n)
+        inj : Not (Prelude.S m = Prelude.S n) -> Not (m = n)
         inj ne refl = absurd $ ne $ cong S refl
 
         notEqLteIsLt : {i, j : Nat} -> Not (i = j) -> LTE i j -> LTE (S i) j
