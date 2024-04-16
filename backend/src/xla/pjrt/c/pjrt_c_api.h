@@ -34,7 +34,7 @@ extern "C" {
   PJRT_Client_Destroy_Args* PJRT_Client_Destroy_Args_new(PJRT_Client* client);
   PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args);
 
-  PJRT_Program* PJRT_Program_new(char* code);
+  PJRT_Program* PJRT_Program_new(char* code, size_t code_size);
   PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
     PJRT_Client* client, PJRT_Program* program, char* compile_options, size_t compile_options_size
   );

@@ -122,14 +122,14 @@ extern "C" {
     return api->PJRT_Client_Create(args);
   }
 
-  PJRT_Program* PJRT_Program_new(char* code) {
+  PJRT_Program* PJRT_Program_new(char* code, size_t code_size) {
     std::cout << "PJRT_Program_new ..." << std::endl;
     auto format = pjrt::kHloFormat;
     return new PJRT_Program{
       .struct_size = PJRT_Program_STRUCT_SIZE,
       .extension_start = nullptr,
       .code = code,
-      .code_size = strlen(code),
+      .code_size = code_size,
       .format = format.data(),
       .format_size = format.length(),
     };
@@ -139,6 +139,9 @@ extern "C" {
     PJRT_Client* client, PJRT_Program* program, char* compile_options, size_t compile_options_size
   ) {
     std::cout << "PJRT_Client_Compile_Args_new ..." << std::endl;
+//    std::cout << "... code" << std::endl;
+//    fwrite(program->code, sizeof(char), program->code_size, stdout);
+//    std::cout << std::endl;
     return new PJRT_Client_Compile_Args{
       .struct_size = PJRT_Client_Compile_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -156,6 +159,10 @@ extern "C" {
 
   PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
     std::cout << "pjrt_client_compile ..." << std::endl;
+//    std::cout << "... compile_options_size " << args->compile_options_size << std::endl;
+//    std::cout << "... compile_options" << std::endl;
+//    fwrite(args->compile_options, sizeof(char), args->compile_options_size, stdout);
+//    std::cout << std::endl;
     return api->PJRT_Client_Compile(args);
   }
 

@@ -18,19 +18,11 @@ limitations under the License.
 
 #include "hlo.pb.h"
 
-const char* c_string_copy(std::string str) {
-    char *res = NULL;
-    auto len = str.length();
-    res = (char *) malloc(len + 1);
-    strncpy(res, str.c_str(), len);
-    res[len] = '\0';
-    return res;
-}
-
 extern "C" {
-    const char* SerializeAsString(HloModuleProto* s) {
+    string* SerializeAsString(HloModuleProto* s) {
         std::cout << "SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::HloModuleProto*>(s);
-        return c_string_copy(s_->SerializeAsString());
+        auto serialized = s_->SerializeAsString();
+        return reinterpret_cast<string*>(new std::string(serialized));
     }
 }

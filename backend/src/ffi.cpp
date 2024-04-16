@@ -17,6 +17,7 @@ limitations under the License.
 #include <cstddef>
 #include <string>
 #include <cstring>
+#include <iostream>
 
 #include "ffi.h"
 
@@ -34,10 +35,17 @@ extern "C" {
     }
 
     char* string_c_str(string* s) {
+//        std::cout << "string_c_str ..." << std::endl;
         auto str = reinterpret_cast<std::string*>(s);
+//        std::cout << "... s" << std::endl;
+//        std::cout << *str << std::endl;
+//        std::cout << "... s length: " << str->length() << std::endl;
         auto len = str->length();
         auto res = (char *) malloc(len);
-        strncpy(res, str->c_str(), len);
+        std::copy(str->begin(), str->end(), res);
+//        std::cout << "... res" << std::endl;
+//        fwrite(res, sizeof(char), len, stdout);
+//        std::cout << std::endl;
         return res;
     }
 
@@ -58,6 +66,10 @@ extern "C" {
     }
 
     void set_array_int(int* arr, int idx, int value) {
+        arr[idx] = value;
+    }
+
+    void set_array_ptr(void** arr, int idx, void* value) {
         arr[idx] = value;
     }
 }

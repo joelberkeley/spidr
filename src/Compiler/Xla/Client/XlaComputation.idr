@@ -48,9 +48,11 @@ prim__hloModuleProtoSerializeAsString : AnyPtr -> PrimIO String
 
 export
 %foreign (libxla "XlaComputation_SerializeAsString")
-prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO String
+prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 
 export
-serializeAsString : HasIO io => XlaComputation -> io String
-serializeAsString (MkXlaComputation computation) =
-  primIO $ prim__xlaComputationSerializeAsString computation
+serializeAsString : HasIO io => XlaComputation -> io CppString
+serializeAsString (MkXlaComputation computation) = do
+  str <- primIO $ prim__xlaComputationSerializeAsString computation
+  str <- onCollectAny str CppString.delete
+  pure (MkCppString str)

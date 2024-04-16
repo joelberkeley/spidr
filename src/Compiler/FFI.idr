@@ -34,11 +34,13 @@ namespace CppString
   delete = primIO . prim__stringDelete
 
 %foreign (libxla "string_c_str")
-prim__stringCStr : GCAnyPtr -> PrimIO String
+prim__stringCStr : GCAnyPtr -> PrimIO $ Ptr Char
 
 export
-cstr : HasIO io => CppString -> io String
-cstr (MkCppString str) = primIO $ prim__stringCStr str
+cstr : HasIO io => CppString -> io $ GCPtr Char
+cstr (MkCppString str) = do
+  cstr <- primIO $ prim__stringCStr str
+  onCollect cstr (free . prim__forgetPtr)
 
 %foreign (libxla "string_size")
 prim__stringSize : GCAnyPtr -> Int
@@ -94,3 +96,7 @@ mkIntArray xs = do
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
   ptr <- onCollect ptr (free . prim__forgetPtr)
   pure (MkIntArray ptr)
+
+export
+%foreign (libxla "set_array_ptr")
+prim__setArrayPtr : AnyPtr -> Int -> AnyPtr -> PrimIO ()

@@ -18,6 +18,7 @@ limitations under the License.
 #include "xla/client/xla_computation.h"
 
 #include "../xla_data.pb.h"
+#include "../../ffi.h"
 #include "xla_computation.h"
 
 extern "C" {
@@ -38,9 +39,13 @@ extern "C" {
 //    }
 
     // until I work out how to handle memory of HloModuleProto
-    const char* XlaComputation_SerializeAsString(XlaComputation* s) {
+    string* XlaComputation_SerializeAsString(XlaComputation* s) {
         std::cout << "XlaComputation_SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
-        return c_string_copy(s_->proto().SerializeAsString());
+        auto serialized = s_->proto().SerializeAsString();
+//        std::cout << "... serialized" << std::endl;
+//        fwrite(serialized.c_str(), sizeof(char), serialized.length(), stdout);
+//        std::cout << std::endl;
+        return reinterpret_cast<string*>(new std::string(serialized));
     }
 }

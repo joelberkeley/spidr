@@ -41,9 +41,9 @@ extern "C" {
       .env_option_overrides = {},
       .target_config = std::nullopt,
     };
-    xla::CompileOptions::FromProto(*(options->ToProto()));
-    std::cout << "... serialized options " << std::endl;
-    std::cout << options->ToProto()->SerializeAsString() << std::endl;
+//    xla::CompileOptions::FromProto(*(options->ToProto()));
+//    std::cout << "... serialized options " << std::endl;
+//    std::cout << options->ToProto()->SerializeAsString() << std::endl;
     return reinterpret_cast<CompileOptions*>(options);
   }
 
@@ -51,8 +51,8 @@ extern "C" {
     std::cout << "CompileOptions_SerializeAsString ..." << std::endl;
     auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
     auto res = s_->ToProto()->SerializeAsString();
-    std::cout << "... serialized result: " << std::endl;
-    std::cout << res << std::endl;
+//    std::cout << "... serialized result: " << std::endl;
+//    std::cout << res << std::endl;
     return reinterpret_cast<string*>(new std::string(res));
   }
 }

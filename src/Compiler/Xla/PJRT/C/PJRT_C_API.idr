@@ -202,17 +202,17 @@ export
 data PjrtProgram = MkPjrtProgram GCAnyPtr
 
 %foreign (libxla "PJRT_Program_new")
-prim__mkPjrtProgram : String -> PrimIO AnyPtr
+prim__mkPjrtProgram : GCPtr Char -> Int -> PrimIO AnyPtr
 
 export
-mkPjrtProgram : HasIO io => String -> io PjrtProgram
-mkPjrtProgram code = do
-  ptr <- primIO $ prim__mkPjrtProgram code
+mkPjrtProgram : HasIO io => GCPtr Char -> Int -> io PjrtProgram
+mkPjrtProgram code codeSize = do
+  ptr <- primIO $ prim__mkPjrtProgram code codeSize
   ptr <- onCollectAny ptr free
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
-prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> String -> Int -> PrimIO AnyPtr
+prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> GCPtr Char -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
@@ -234,27 +234,32 @@ pjrtClientCompile :
   PjrtApi ->
   PjrtClient ->
   PjrtProgram ->
-  String ->
+  GCPtr Char ->
   Int ->
   ErrIO PjrtError PjrtLoadedExecutable
-pjrtClientCompile (MkPjrtApi api) (MkPjrtClient client) (MkPjrtProgram program) compileOptions compileOptionsSize = do
-  putStrLn "pjrtClientCompile ..."
-  args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
-  err <- primIO $ prim__pjrtClientCompile api args
-  let executable = prim__pjrtClientCompileArgsExecutable args
-  free args
-  try api err =<< do
-    executable <- onCollectAny executable destroyExecutable
-    pure $ MkPjrtLoadedExecutable executable
-
-  where
-
-  destroyExecutable : AnyPtr -> IO ()
-  destroyExecutable executable = do
-    args <- primIO $ prim__mkPjrtLoadedExecutableDestroyArgs executable
-    err <- primIO $ prim__pjrtLoadedExecutableDestroy api args
+pjrtClientCompile
+  (MkPjrtApi api)
+  (MkPjrtClient client)
+  (MkPjrtProgram program)
+  compileOptions
+  compileOptionsSize = do
+    putStrLn "pjrtClientCompile ..."
+    args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
+    err <- primIO $ prim__pjrtClientCompile api args
+    let executable = prim__pjrtClientCompileArgsExecutable args
     free args
-    handleErrOnDestroy api err "PJRT_LoadedExecutable"
+    try api err =<< do
+      executable <- onCollectAny executable destroyExecutable
+      pure $ MkPjrtLoadedExecutable executable
+
+    where
+
+    destroyExecutable : AnyPtr -> IO ()
+    destroyExecutable executable = do
+      args <- primIO $ prim__mkPjrtLoadedExecutableDestroyArgs executable
+      err <- primIO $ prim__pjrtLoadedExecutableDestroy api args
+      free args
+      handleErrOnDestroy api err "PJRT_LoadedExecutable"
 
 %foreign (libxla "PJRT_ExecuteOptions_new")
 prim__mkPjrtExecuteOptions : PrimIO AnyPtr
@@ -274,6 +279,7 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   putStrLn "pjrtLoadedExecutableExecute ..."
   outputListsInner <- malloc sizeofPtr
   outputLists <- malloc sizeofPtr
+  primIO $ prim__setArrayPtr outputLists 0 outputListsInner
   options <- primIO prim__mkPjrtExecuteOptions
   args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists
   err <- primIO $ prim__pjrtLoadedExecutableExecute api args

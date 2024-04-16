@@ -16,11 +16,10 @@ limitations under the License.
 #include <string>
 
 #include "xla/service/hlo.pb.h"
-
-const char* c_string_copy(std::string str);
+#include "../../ffi.h"
 
 extern "C" {
     struct HloModuleProto;
 
-    const char* SerializeAsString(HloModuleProto* s);
+    string* SerializeAsString(HloModuleProto* s);
 }

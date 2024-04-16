@@ -27,4 +27,5 @@ extern "C" {
     size_t size(char*);
     void* index(int idx, void** ptr);
     void set_array_int(int* arr, int idx, int value);
+    void set_array_ptr(void** arr, int idx, void* value);
 }
