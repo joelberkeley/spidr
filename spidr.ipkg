@@ -9,8 +9,8 @@ modules =
 
   Compiler.Eval,
   Compiler.Expr,
-  Compiler.LiteralRW,
   Compiler.FFI,
+  Compiler.LiteralRW,
 
   Compiler.TensorFlow.Compiler.Xla.Client.Lib.Arithmetic,
   Compiler.TensorFlow.Compiler.Xla.Client.Lib.Constants,
