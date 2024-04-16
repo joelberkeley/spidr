@@ -24,10 +24,6 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla_extension"
 
 export
-%foreign (libxla "sizeof_int")
-sizeofInt : Int
-
-export
 cIntToBool : Int -> Bool
 cIntToBool 0 = False
 cIntToBool 1 = True
@@ -43,6 +39,9 @@ boolToCInt False = 0
 public export
 data IntArray : Type where
   MkIntArray : GCPtr Int -> IntArray
+
+%foreign (libxla "sizeof_int")
+sizeofInt : Int
 
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
