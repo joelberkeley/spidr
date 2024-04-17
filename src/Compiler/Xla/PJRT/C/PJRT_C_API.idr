@@ -220,11 +220,11 @@ prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
 %foreign (libxla "pjrt_client_compile")
 prim__pjrtClientCompile : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
-%foreign (libxla "pjrt_loadedexecutable_destroy")
-prim__pjrtLoadedExecutableDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
-
 %foreign (libxla "PJRT_LoadedExecutable_Destroy_Args_new")
 prim__mkPjrtLoadedExecutableDestroyArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_loadedexecutable_destroy")
+prim__pjrtLoadedExecutableDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 export
 data PjrtLoadedExecutable = MkPjrtLoadedExecutable GCAnyPtr
@@ -270,8 +270,14 @@ prim__mkPjrtLoadedExecutableExecuteArgs : GCAnyPtr -> AnyPtr -> AnyPtr -> PrimIO
 %foreign (libxla "pjrt_loadedexecutable_execute")
 prim__pjrtLoadedExecutableExecute : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "PJRT_Buffer_Destroy_Args_new")
+prim__mkPjrtBufferDestroyArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_buffer_destroy")
+prim__pjrtBufferDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
 export
-data PjrtBuffer = MkPjrtBuffer AnyPtr  -- will be GCAnyPtr once completed
+data PjrtBuffer = MkPjrtBuffer GCAnyPtr
 
 export
 pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
@@ -288,10 +294,21 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   free outputLists
   free options
   free args
-  try api err $ MkPjrtBuffer buffer  -- todo gc with PJRT_Buffer_Destroy
+  try api err =<< do
+    buffer <- onCollectAny buffer destroyBuffer
+    pure $ MkPjrtBuffer buffer
+
+    where
+
+    destroyBuffer : AnyPtr -> IO ()
+    destroyBuffer buffer = do
+      args <- primIO $ prim__mkPjrtBufferDestroyArgs buffer
+      err <- primIO $ prim__pjrtBufferDestroy api args
+      free args
+      handleErrOnDestroy api err "PJRT_Buffer"
 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")
-prim__mkPjrtBufferToHostBufferArgs : AnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr
+prim__mkPjrtBufferToHostBufferArgs : GCAnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "pjrt_buffer_tohostbuffer")
 prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr

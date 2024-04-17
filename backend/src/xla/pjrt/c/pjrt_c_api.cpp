@@ -233,6 +233,20 @@ extern "C" {
     return api->PJRT_LoadedExecutable_Execute(args);
   }
 
+  PJRT_Buffer_Destroy_Args* PJRT_Buffer_Destroy_Args_new(PJRT_Buffer* buffer) {
+    std::cout << "PJRT_Buffer_Destroy_Args_new ..." << std::endl;
+    return new PJRT_Buffer_Destroy_Args{
+      .struct_size = PJRT_Buffer_Destroy_Args_STRUCT_SIZE,
+      .extension_start = nullptr,
+      .buffer = buffer,
+    };
+  }
+
+  PJRT_Error* pjrt_buffer_destroy(PJRT_Api* api, PJRT_Buffer_Destroy_Args* args) {
+    std::cout << "pjrt_buffer_destroy ..." << std::endl;
+    return api->PJRT_Buffer_Destroy(args);
+  }
+
   PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(
     PJRT_Buffer* src, void* dst, size_t dst_size
   ) {

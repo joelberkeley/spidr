@@ -59,6 +59,9 @@ extern "C" {
     PJRT_Api* api, PJRT_LoadedExecutable_Execute_Args* args
   );
 
+  PJRT_Buffer_Destroy_Args* PJRT_Buffer_Destroy_Args_new(PJRT_Buffer* buffer);
+  PJRT_Error* pjrt_buffer_destroy(PJRT_Api* api, PJRT_Buffer_Destroy_Args* args);
+
   PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(
     PJRT_Buffer* src, void* dst, size_t dst_size
   );
