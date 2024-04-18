@@ -34,18 +34,18 @@ extern "C" {
         delete reinterpret_cast<std::string*>(s);
     }
 
-    char* string_c_str(string* s) {
-//        // std::cout << "string_c_str ..." << std::endl;
+    char* string_data(string* s) {
+        std::cout << "string_c_str ..." << std::endl;
         auto str = reinterpret_cast<std::string*>(s);
-//        // std::cout << "... s" << std::endl;
-//        // std::cout << *str << std::endl;
-//        // std::cout << "... s length: " << str->length() << std::endl;
+        std::cout << "... s" << std::endl;
+        std::cout << *str << std::endl;
+        std::cout << "... s length: " << str->length() << std::endl;
         auto len = str->length();
         auto res = (char *) malloc(len);
-        std::copy(str->begin(), str->end(), res);
-//        // std::cout << "... res" << std::endl;
-//        fwrite(res, sizeof(char), len, stdout);
-//        // std::cout << std::endl;
+        std::memcpy(res, str->data(), len * sizeof(char));
+        std::cout << "... res" << std::endl;
+        fwrite(res, sizeof(char), len, stdout);
+        std::cout << std::endl;
         return res;
     }
 

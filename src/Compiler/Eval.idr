@@ -243,10 +243,10 @@ execute f shape = do
     api <- getPjrtApi  -- need a gpu version
     client <- pjrtClientCreate api
     code <- serializeAsString computation
-    program <- mkPjrtProgram !(cstr code) (size code)
+    program <- mkPjrtProgram !(data' code) (size code)
     compileOptionsStr <- serializeAsString !mkCompileOptions
     loadedExec <- pjrtClientCompile
-      api client program !(cstr compileOptionsStr) (size compileOptionsStr)
+      api client program !(data' compileOptionsStr) (size compileOptionsStr)
     buffer <- pjrtLoadedExecutableExecute api loadedExec
     literal <- allocLiteral shape
     -- is this pure?

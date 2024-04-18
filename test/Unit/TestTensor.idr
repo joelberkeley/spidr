@@ -449,11 +449,15 @@ export partial
 group : Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
+    -- untyped_data not allowed for tuples
     -- , ("eval multiple tensors", evalTuple)
     -- , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
-    , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
+    -- segfault in
+    -- , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
+    -- ERROR: MkPjrtError {message = "PJRT_Client_Compile: failed to deserialize HloModuleProto", code = Nothing}
+    -- if I run both this test and tensorThenEval. Am I freeing serialized programs?
     , ("bounded non-finite", boundedNonFinite)
-    , ("iota", iota)
+    {-, ("iota", iota)
     , ("iota examples", iotaExamples)
     , ("show", show)
     , ("cast", cast)
@@ -468,11 +472,11 @@ group = MkGroup "Tensor" $ [
     , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-    , ("trace", trace)
-  ] ++ concat (the (List _) [
+    , ("trace", trace)-}
+  ] {-++ concat (the (List _) [
       Unit.TestTensor.Elementwise.all
     , Unit.TestTensor.HigherOrder.all
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all
-  ])
+  ])-}

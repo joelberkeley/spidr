@@ -158,7 +158,7 @@ prim__pjrtEventAwait : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 export
 pjrtEventAwait : PjrtApi -> PjrtEvent -> ErrIO PjrtError ()
 pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
-  -- putStrLn "pjrtEventAwait ..."
+  putStrLn "pjrtEventAwait ..."
   args <- primIO $ prim__mkPjrtEventAwaitArgs event
   err <- primIO $ prim__pjrtEventAwait api args
   free args
@@ -200,7 +200,7 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
-  -- putStrLn "pjrtClientCreate ..."
+  putStrLn "pjrtClientCreate ..."
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
   let client = prim__pjrtClientCreateArgsClient args
@@ -263,7 +263,7 @@ pjrtClientCompile
   (MkPjrtProgram program)
   compileOptions
   compileOptionsSize = do
-    -- putStrLn "pjrtClientCompile ..."
+    putStrLn "pjrtClientCompile ..."
     args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
     err <- primIO $ prim__pjrtClientCompile api args
     let executable = prim__pjrtClientCompileArgsExecutable args
@@ -302,7 +302,7 @@ data PjrtBuffer = MkPjrtBuffer GCAnyPtr
 export
 pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
-  -- putStrLn "pjrtLoadedExecutableExecute ..."
+  putStrLn "pjrtLoadedExecutableExecute ..."
   outputListsInner <- malloc sizeofPtr
   outputLists <- malloc sizeofPtr
   primIO $ prim__setArrayPtr outputLists 0 outputListsInner
@@ -331,7 +331,7 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
 prim__mkPjrtBufferToHostBufferArgs : GCAnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_event")
-prim__mkPjrtBufferToHostBufferArgsEvent : AnyPtr -> AnyPtr
+prim__pjrtBufferToHostBufferArgsEvent : AnyPtr -> AnyPtr
 
 %foreign (libxla "pjrt_buffer_tohostbuffer")
 prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr
@@ -339,12 +339,12 @@ prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 export
 pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError PjrtEvent
 pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
-  -- putStrLn "pjrtBufferToHostBuffer ..."
+  putStrLn "pjrtBufferToHostBuffer ..."
   let untypedData = prim__literalUntypedData literal
       sizeBytes = prim__literalSizeBytes literal
   args <- primIO $ prim__mkPjrtBufferToHostBufferArgs buffer untypedData sizeBytes
   err <- primIO $ prim__pjrtBufferToHostBuffer api args
-  let event = prim__mkPjrtBufferToHostBufferArgsEvent args
+  let event = prim__pjrtBufferToHostBufferArgsEvent args
   free args
   try api err =<< do
     event <- onCollectAny event destroyEvent

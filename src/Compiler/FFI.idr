@@ -33,13 +33,13 @@ namespace CppString
   delete : HasIO io => AnyPtr -> io ()
   delete = primIO . prim__stringDelete
 
-%foreign (libxla "string_c_str")
-prim__stringCStr : GCAnyPtr -> PrimIO $ Ptr Char
+%foreign (libxla "string_data")
+prim__stringData : GCAnyPtr -> PrimIO $ Ptr Char
 
 export
-cstr : HasIO io => CppString -> io $ GCPtr Char
-cstr (MkCppString str) = do
-  cstr <- primIO $ prim__stringCStr str
+data' : HasIO io => CppString -> io $ GCPtr Char
+data' (MkCppString str) = do
+  cstr <- primIO $ prim__stringData str
   onCollect cstr (free . prim__forgetPtr)
 
 %foreign (libxla "string_size")

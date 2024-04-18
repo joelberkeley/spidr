@@ -18,7 +18,7 @@ extern "C" {
 
     struct string;
     void string_delete(string* s);
-    char* string_c_str(string* s);
+    char* string_data(string* s);
     size_t string_size(string* s);
 
     int sizeof_int();

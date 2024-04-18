@@ -24,12 +24,12 @@ limitations under the License.
 extern "C" {
     // technically for LiteralBase. Do we care?
     void* Literal_untyped_data(Literal* s) {
-        // std::cout << "Literal_untyped_data ..." << std::endl;
+//        std::cout << "Literal_untyped_data ..." << std::endl;
         return reinterpret_cast<xla::Literal*>(s)->untyped_data();
     }
 
     int64_t Literal_size_bytes(Literal* s) {
-        // std::cout << "Literal_size_bytes ..." << std::endl;
+//        std::cout << "Literal_size_bytes ..." << std::endl;
         return reinterpret_cast<xla::Literal*>(s)->size_bytes();
     }
 
