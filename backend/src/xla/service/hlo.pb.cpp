@@ -20,7 +20,7 @@ limitations under the License.
 
 extern "C" {
     string* SerializeAsString(HloModuleProto* s) {
-        std::cout << "SerializeAsString ..." << std::endl;
+        // std::cout << "SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::HloModuleProto*>(s);
         auto serialized = s_->SerializeAsString();
         return reinterpret_cast<string*>(new std::string(serialized));

@@ -58,7 +58,7 @@ pushFront : HasIO io => ShapeIndex -> Nat -> io ()
 pushFront (MkShapeIndex shapeIndex) value =
   primIO $ prim__shapeIndexPushFront shapeIndex (cast value)
 
-%foreign (libxla "")  -- no C function!
+%foreign (libxla "ByteSizeOfElements")
 prim__byteSizeOfElements : GCAnyPtr -> Bits64
 
 export

@@ -239,7 +239,7 @@ execute : Fn 0 -> Xla.Shape -> ErrIO Literal
 execute f shape = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  let foo = do
+  let literal = do
     api <- getPjrtApi  -- need a gpu version
     client <- pjrtClientCreate api
     code <- serializeAsString computation
@@ -249,6 +249,11 @@ execute f shape = do
       api client program !(cstr compileOptionsStr) (size compileOptionsStr)
     buffer <- pjrtLoadedExecutableExecute api loadedExec
     literal <- allocLiteral shape
-    pjrtBufferToHostBuffer api buffer literal
+    -- is this pure?
+    -- note we can probably avoid the difficulties around async
+    -- by awaiting the event in pjrtBufferToHostBuffer, thus
+    -- making that function synchronous
+    event <- pjrtBufferToHostBuffer api buffer literal
+    pjrtEventAwait api event
     pure literal
-  bimapEitherT PjrtErr id foo
+  bimapEitherT PjrtErr id literal

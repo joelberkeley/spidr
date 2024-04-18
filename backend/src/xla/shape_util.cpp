@@ -37,8 +37,12 @@ extern "C" {
         reinterpret_cast<xla::ShapeIndex&>(shape_index).push_front(value);
     }
 
+    int ByteSizeOfElements(Shape& shape) {
+        auto shape_ = reinterpret_cast<xla::Shape&>(shape);
+        return xla::ShapeUtil::ByteSizeOfElements(shape_);
+    }
+
     Shape* MakeTupleShape(Shape* shapes, int shapes_len) {
-        std::cout << "MakeTupleShape ..." << std::endl;
         auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
         auto shapes_span = absl::Span<xla::Shape>(shapes_, shapes_len);
 
@@ -48,7 +52,6 @@ extern "C" {
     }
 
     Shape* MakeShape(int primitive_type, int* shape, int rank) {
-        std::cout << "MakeShape ..." << std::endl;
         int64_t shape64[rank];
         std::copy(shape, shape + rank, shape64);
 
@@ -57,7 +60,6 @@ extern "C" {
             (xla::PrimitiveType) primitive_type,
             absl::Span<const int64_t>(shape64, rank)
         );
-//        std::cout << "... xla_shape " << xla_shape << std::endl;
         return reinterpret_cast<Shape*>(xla_shape);
     }
 }

@@ -25,6 +25,8 @@ extern "C" {
     void ShapeIndex_push_back(ShapeIndex& shape_index, int value);
     void ShapeIndex_push_front(ShapeIndex& shape_index, int value);
 
+    int ByteSizeOfElements(Shape& shape);
+
     Shape* MakeTupleShape(Shape* shapes, int shapes_len);
     Shape* MakeShape(int primitive_type, int* shape, int rank);
 }

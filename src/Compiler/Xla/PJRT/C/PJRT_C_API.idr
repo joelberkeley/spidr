@@ -127,6 +127,43 @@ pjrtErrorCodeFromCInt = \case
   n  => assert_total $ idris_crash
     "Unexpected PJRT_Error_Code value received through FFI from XLA: \{show n}"
 
+try : AnyPtr -> AnyPtr -> a -> ErrIO PjrtError a
+try api err onOk = if (isNullPtr err) then right onOk else do
+  msg <- pjrtErrorMessage api err
+  args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
+  getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
+  code <- if (isNullPtr getCodeErr) then pure Nothing else do
+    let code = prim__mkPjrtErrorGetCodeArgsCode args
+    destroyPjrtError api getCodeErr
+    pure $ Just code
+  free args
+  destroyPjrtError api err
+  left $ MkPjrtError msg $ map pjrtErrorCodeFromCInt code
+
+export
+data PjrtEvent = MkPjrtEvent GCAnyPtr
+
+%foreign (libxla "PJRT_Event_Destroy_Args_new")
+prim__mkPjrtEventDestroyArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_event_destroy")
+prim__pjrtEventDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Event_Await_Args_new")
+prim__mkPjrtEventAwaitArgs : GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_event_await")
+prim__pjrtEventAwait : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+export
+pjrtEventAwait : PjrtApi -> PjrtEvent -> ErrIO PjrtError ()
+pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
+  -- putStrLn "pjrtEventAwait ..."
+  args <- primIO $ prim__mkPjrtEventAwaitArgs event
+  err <- primIO $ prim__pjrtEventAwait api args
+  free args
+  try api err ()
+
 export
 data PjrtClient = MkPjrtClient GCAnyPtr
 
@@ -142,13 +179,9 @@ prim__pjrtClientCreate : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 %foreign (libxla "PJRT_Client_Destroy_Args_new")
 prim__mkPjrtClientDestroyArgs : AnyPtr -> PrimIO AnyPtr
 
-%foreign (libxla "PJRT_Client_Destroy")
+%foreign (libxla "pjrt_client_destroy")
 prim__pjrtClientDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
--- warnDestroyFailure : PjrtApi -> IO GCAnyPtr -> IO ()
--- warnDestroyFailure api err =
-
--- add address of target pointer?
 handleErrOnDestroy : HasIO io => AnyPtr -> AnyPtr -> String -> io ()
 handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   msg <- pjrtErrorMessage api err
@@ -164,28 +197,15 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   free args
   destroyPjrtError api err
 
-try : AnyPtr -> AnyPtr -> a -> ErrIO PjrtError a
-try api err onOk = if (isNullPtr err) then right onOk else do
-  msg <- pjrtErrorMessage api err
-  args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
-  getCodeErr <- primIO $ prim__pjrtErrorGetCode api args
-  code <- if (isNullPtr getCodeErr) then pure Nothing else do
-    let code = prim__mkPjrtErrorGetCodeArgsCode args
-    destroyPjrtError api getCodeErr
-    pure $ Just code
-  free args
-  destroyPjrtError api err
-  left $ MkPjrtError msg $ map pjrtErrorCodeFromCInt code
-
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
-  putStrLn "pjrtClientCreate ..."
+  -- putStrLn "pjrtClientCreate ..."
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
+  let client = prim__pjrtClientCreateArgsClient args
+  free args
   try api err =<< do
-    let client = prim__pjrtClientCreateArgsClient args
-    free args
     client <- onCollectAny client destroyClient
     pure $ MkPjrtClient client
 
@@ -243,7 +263,7 @@ pjrtClientCompile
   (MkPjrtProgram program)
   compileOptions
   compileOptionsSize = do
-    putStrLn "pjrtClientCompile ..."
+    -- putStrLn "pjrtClientCompile ..."
     args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
     err <- primIO $ prim__pjrtClientCompile api args
     let executable = prim__pjrtClientCompileArgsExecutable args
@@ -282,7 +302,7 @@ data PjrtBuffer = MkPjrtBuffer GCAnyPtr
 export
 pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
-  putStrLn "pjrtLoadedExecutableExecute ..."
+  -- putStrLn "pjrtLoadedExecutableExecute ..."
   outputListsInner <- malloc sizeofPtr
   outputLists <- malloc sizeofPtr
   primIO $ prim__setArrayPtr outputLists 0 outputListsInner
@@ -310,16 +330,31 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")
 prim__mkPjrtBufferToHostBufferArgs : GCAnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr
 
+%foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_event")
+prim__mkPjrtBufferToHostBufferArgsEvent : AnyPtr -> AnyPtr
+
 %foreign (libxla "pjrt_buffer_tohostbuffer")
 prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 export
-pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError ()
+pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError PjrtEvent
 pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
-  putStrLn "pjrtBufferToHostBuffer ..."
+  -- putStrLn "pjrtBufferToHostBuffer ..."
   let untypedData = prim__literalUntypedData literal
       sizeBytes = prim__literalSizeBytes literal
   args <- primIO $ prim__mkPjrtBufferToHostBufferArgs buffer untypedData sizeBytes
   err <- primIO $ prim__pjrtBufferToHostBuffer api args
+  let event = prim__mkPjrtBufferToHostBufferArgsEvent args
   free args
-  try api err ()
+  try api err =<< do
+    event <- onCollectAny event destroyEvent
+    pure $ MkPjrtEvent event
+
+    where
+
+    destroyEvent : AnyPtr -> IO ()
+    destroyEvent event = do
+      args <- primIO $ prim__mkPjrtEventDestroyArgs event
+      err <- primIO $ prim__pjrtEventDestroy api args
+      free args
+      handleErrOnDestroy api err "PJRT_Event"
