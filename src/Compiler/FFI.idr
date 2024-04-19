@@ -36,17 +36,16 @@ namespace CppString
 %foreign (libxla "string_data")
 prim__stringData : GCAnyPtr -> PrimIO $ Ptr Char
 
+||| It is up to the caller to free the returned char array.
 export
-data' : HasIO io => CppString -> io $ GCPtr Char
-data' (MkCppString str) = do
-  cstr <- primIO $ prim__stringData str
-  onCollect cstr (free . prim__forgetPtr)
+data' : HasIO io => CppString -> io $ Ptr Char
+data' (MkCppString str) = primIO $ prim__stringData str
 
 %foreign (libxla "string_size")
-prim__stringSize : GCAnyPtr -> Int
+prim__stringSize : GCAnyPtr -> Bits64
 
 export
-size : CppString -> Int
+size : CppString -> Bits64
 size (MkCppString str) = prim__stringSize str
 
 export

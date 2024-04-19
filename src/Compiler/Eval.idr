@@ -243,10 +243,12 @@ execute f shape = do
     api <- getPjrtApi  -- need a gpu version
     client <- pjrtClientCreate api
     code <- serializeAsString computation
-    program <- mkPjrtProgram !(data' code) (size code)
+    codeCharArray <- data' code
+    program <- mkPjrtProgram codeCharArray (size code)
     compileOptionsStr <- serializeAsString !mkCompileOptions
+    compileOptionsCharArray <- data' compileOptionsStr
     loadedExec <- pjrtClientCompile
-      api client program !(data' compileOptionsStr) (size compileOptionsStr)
+      api client program compileOptionsCharArray (size compileOptionsStr)
     buffer <- pjrtLoadedExecutableExecute api loadedExec
     literal <- allocLiteral shape
     -- is this pure?
@@ -255,5 +257,10 @@ execute f shape = do
     -- making that function synchronous
     event <- pjrtBufferToHostBuffer api buffer literal
     pjrtEventAwait api event
+    free $ prim__forgetPtr compileOptionsCharArray
+    free $ prim__forgetPtr codeCharArray
+    pjrtBufferDestroy api buffer
+    pjrtLoadedExecutableDestroy api loadedExec
+    pjrtClientDestroy api client
     pure literal
   bimapEitherT PjrtErr id literal

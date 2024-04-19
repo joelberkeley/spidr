@@ -35,17 +35,17 @@ extern "C" {
     }
 
     char* string_data(string* s) {
-        std::cout << "string_c_str ..." << std::endl;
+//        std::cout << "string_c_str ..." << std::endl;
         auto str = reinterpret_cast<std::string*>(s);
-        std::cout << "... s" << std::endl;
-        std::cout << *str << std::endl;
-        std::cout << "... s length: " << str->length() << std::endl;
-        auto len = str->length();
+//        std::cout << "... s" << std::endl;
+//        std::cout << *str << std::endl;
+//        std::cout << "... s length: " << str->length() << std::endl;
+        auto len = str->size();
         auto res = (char *) malloc(len);
         std::memcpy(res, str->data(), len * sizeof(char));
-        std::cout << "... res" << std::endl;
-        fwrite(res, sizeof(char), len, stdout);
-        std::cout << std::endl;
+//        std::cout << "... res" << std::endl;
+//        fwrite(res, sizeof(char), len, stdout);
+//        std::cout << std::endl;
         return res;
     }
 
