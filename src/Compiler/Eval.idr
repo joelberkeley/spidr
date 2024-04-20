@@ -245,25 +245,25 @@ execute f shape = do
     code <- serializeAsString computation
     codeCharArray <- data' code
     program <- mkPjrtProgram codeCharArray (size code)
+    delete code
     compileOptionsStr <- serializeAsString !mkCompileOptions
     compileOptionsCharArray <- data' compileOptionsStr
     loadedExec <- pjrtClientCompile
       api client program compileOptionsCharArray (size compileOptionsStr)
+    delete compileOptionsStr
+    free $ prim__forgetPtr codeCharArray
+    free $ prim__forgetPtr compileOptionsCharArray
     buffer <- pjrtLoadedExecutableExecute api loadedExec
+    pjrtLoadedExecutableDestroy api loadedExec
     literal <- allocLiteral shape
     -- is this pure?
     -- note we can probably avoid the difficulties around async
     -- by awaiting the event in pjrtBufferToHostBuffer, thus
     -- making that function synchronous
     event <- pjrtBufferToHostBuffer api buffer literal
+    pjrtClientDestroy api client
     pjrtEventAwait api event
     -- free program?
-    delete code
-    delete compileOptionsStr
-    free $ prim__forgetPtr compileOptionsCharArray
-    free $ prim__forgetPtr codeCharArray
     pjrtEventDestroy api event
     pjrtBufferDestroy api buffer
-    pjrtLoadedExecutableDestroy api loadedExec
-    pjrtClientDestroy api client
     pure literal

@@ -158,7 +158,6 @@ prim__pjrtEventAwait : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 export
 pjrtEventAwait : PjrtApi -> PjrtEvent -> ErrIO PjrtError ()
 pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
-  -- putStrLn "pjrtEventAwait ..."
   args <- primIO $ prim__mkPjrtEventAwaitArgs event
   err <- primIO $ prim__pjrtEventAwait api args
   free args
@@ -208,7 +207,6 @@ pjrtClientDestroy (MkPjrtApi api) (MkPjrtClient client) = do
 export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
-  -- putStrLn "pjrtClientCreate ..."
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
   let client = prim__pjrtClientCreateArgsClient args
@@ -216,7 +214,7 @@ pjrtClientCreate (MkPjrtApi api) = do
   try api err $ MkPjrtClient client
 
 export
-data PjrtProgram = MkPjrtProgram AnyPtr
+data PjrtProgram = MkPjrtProgram GCAnyPtr
 
 %foreign (libxla "PJRT_Program_new")
 prim__mkPjrtProgram : Ptr Char -> Bits64 -> PrimIO AnyPtr
@@ -225,10 +223,11 @@ export
 mkPjrtProgram : HasIO io => Ptr Char -> Bits64 -> io PjrtProgram
 mkPjrtProgram code codeSize = do
   ptr <- primIO $ prim__mkPjrtProgram code codeSize
+  ptr <- onCollectAny ptr free
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
-prim__mkPjrtClientCompileArgs : AnyPtr -> AnyPtr -> Ptr Char -> Bits64 -> PrimIO AnyPtr
+prim__mkPjrtClientCompileArgs : AnyPtr -> GCAnyPtr -> Ptr Char -> Bits64 -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
@@ -268,7 +267,6 @@ pjrtClientCompile
   (MkPjrtProgram program)
   compileOptions
   compileOptionsSize = do
-    -- putStrLn "pjrtClientCompile ..."
     args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
     err <- primIO $ prim__pjrtClientCompile api args
     let executable = prim__pjrtClientCompileArgsExecutable args
@@ -305,7 +303,6 @@ pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
 export
 pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
-  -- putStrLn "pjrtLoadedExecutableExecute ..."
   outputListsInner <- malloc sizeofPtr
   outputLists <- malloc sizeofPtr
   primIO $ prim__setArrayPtr outputLists 0 outputListsInner
@@ -340,7 +337,6 @@ pjrtEventDestroy (MkPjrtApi api) (MkPjrtEvent event) = do
 export
 pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError PjrtEvent
 pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
-  -- putStrLn "pjrtBufferToHostBuffer ..."
   let untypedData = prim__literalUntypedData literal
       sizeBytes = prim__literalSizeBytes literal
   args <- primIO $ prim__mkPjrtBufferToHostBufferArgs buffer untypedData sizeBytes
