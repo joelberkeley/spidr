@@ -239,7 +239,7 @@ execute : Fn 0 -> Xla.Shape -> ErrIO Literal
 execute f shape = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  let literal = do
+  bimapEitherT PjrtErr id $ do
     api <- getPjrtApi  -- need a gpu version
     client <- pjrtClientCreate api
     code <- serializeAsString computation
@@ -257,10 +257,13 @@ execute f shape = do
     -- making that function synchronous
     event <- pjrtBufferToHostBuffer api buffer literal
     pjrtEventAwait api event
+    -- free program?
+    delete code
+    delete compileOptionsStr
     free $ prim__forgetPtr compileOptionsCharArray
     free $ prim__forgetPtr codeCharArray
+    pjrtEventDestroy api event
     pjrtBufferDestroy api buffer
     pjrtLoadedExecutableDestroy api loadedExec
     pjrtClientDestroy api client
     pure literal
-  bimapEitherT PjrtErr id literal

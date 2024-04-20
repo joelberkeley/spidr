@@ -29,10 +29,6 @@ namespace Xla
 %foreign (libxla "Literal_delete")
 prim__delete : AnyPtr -> PrimIO ()
 
-export
-delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
-
 %foreign (libxla "Literal_new")
 prim__allocLiteral : GCAnyPtr -> PrimIO AnyPtr
 
@@ -40,7 +36,7 @@ export
 allocLiteral : HasIO io => Xla.Shape -> io Literal
 allocLiteral (MkShape shape) = do
   litPtr <- primIO $ prim__allocLiteral shape
-  litPtr <- onCollectAny litPtr Literal.delete
+  litPtr <- onCollectAny litPtr (primIO . prim__delete)
   pure (MkLiteral litPtr)
 
 export

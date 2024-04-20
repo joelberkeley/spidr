@@ -54,5 +54,4 @@ export
 serializeAsString : HasIO io => XlaComputation -> io CppString
 serializeAsString (MkXlaComputation computation) = do
   str <- primIO $ prim__xlaComputationSerializeAsString computation
-  str <- onCollectAny str CppString.delete
   pure (MkCppString str)

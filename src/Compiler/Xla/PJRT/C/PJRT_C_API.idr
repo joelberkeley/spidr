@@ -216,7 +216,7 @@ pjrtClientCreate (MkPjrtApi api) = do
   try api err $ MkPjrtClient client
 
 export
-data PjrtProgram = MkPjrtProgram GCAnyPtr
+data PjrtProgram = MkPjrtProgram AnyPtr
 
 %foreign (libxla "PJRT_Program_new")
 prim__mkPjrtProgram : Ptr Char -> Bits64 -> PrimIO AnyPtr
@@ -225,11 +225,10 @@ export
 mkPjrtProgram : HasIO io => Ptr Char -> Bits64 -> io PjrtProgram
 mkPjrtProgram code codeSize = do
   ptr <- primIO $ prim__mkPjrtProgram code codeSize
-  ptr <- onCollectAny ptr free
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
-prim__mkPjrtClientCompileArgs : AnyPtr -> GCAnyPtr -> Ptr Char -> Bits64 -> PrimIO AnyPtr
+prim__mkPjrtClientCompileArgs : AnyPtr -> AnyPtr -> Ptr Char -> Bits64 -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr

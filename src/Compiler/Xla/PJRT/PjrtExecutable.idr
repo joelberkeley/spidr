@@ -38,5 +38,4 @@ export
 serializeAsString : HasIO io => CompileOptions -> io CppString
 serializeAsString (MkCompileOptions options) = do
   str <- primIO $ prim__compileOptionsSerializeAsString options
-  str <- onCollectAny str CppString.delete
   pure (MkCppString str)

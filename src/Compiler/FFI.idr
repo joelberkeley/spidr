@@ -23,18 +23,18 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla"
 
 public export
-data CppString = MkCppString GCAnyPtr
-
-%foreign (libxla "string_delete")
-prim__stringDelete : AnyPtr -> PrimIO ()
+data CppString = MkCppString AnyPtr
 
 namespace CppString
+  %foreign (libxla "string_delete")
+  prim__stringDelete : AnyPtr -> PrimIO ()
+
   export
-  delete : HasIO io => AnyPtr -> io ()
-  delete = primIO . prim__stringDelete
+  delete : HasIO io => CppString -> io ()
+  delete (MkCppString str) = primIO $ prim__stringDelete str
 
 %foreign (libxla "string_data")
-prim__stringData : GCAnyPtr -> PrimIO $ Ptr Char
+prim__stringData : AnyPtr -> PrimIO $ Ptr Char
 
 ||| It is up to the caller to free the returned char array.
 export
@@ -42,7 +42,7 @@ data' : HasIO io => CppString -> io $ Ptr Char
 data' (MkCppString str) = primIO $ prim__stringData str
 
 %foreign (libxla "string_size")
-prim__stringSize : GCAnyPtr -> Bits64
+prim__stringSize : AnyPtr -> Bits64
 
 export
 size : CppString -> Bits64
