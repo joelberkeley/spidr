@@ -61,7 +61,9 @@ extern "C" {
         return sizeof(void*);
     }
 
-    void* index(int idx, void** ptr) {
+    // index() is a deprecated POSIX function that was silently
+    // interfering with that name
+    void* idx(int idx, void** ptr) {
         return ptr[idx];
     }
 

@@ -19,6 +19,7 @@ import Data.Nat
 import Data.Vect
 import System
 
+import Device
 import Literal
 import Tensor
 
@@ -27,7 +28,7 @@ import Utils.Comparison
 import Utils.Cases
 
 partial
-reshape : Property
+reshape : Device => Property
 reshape = fixedProperty $ do
   (do reshape !3) ===# tensor {dtype=S32} [3]
 
@@ -46,7 +47,7 @@ reshape = fixedProperty $ do
   (do reshape !x) ===# flattened
 
 partial
-expand : Property
+expand : Device => Property
 expand = fixedProperty $ do
   (do expand 0 !3) ===# tensor {dtype=S32} [3]
 
@@ -55,7 +56,7 @@ expand = fixedProperty $ do
   (do expand 1 !x) ===# withExtraDim
 
 partial
-broadcast : Property
+broadcast : Device => Property
 broadcast = fixedProperty $ do
   (do broadcast {to=[]} {dtype=S32} !7) ===# 7
   (do broadcast {to=[1]} {dtype=S32} !7) ===# tensor [7]
@@ -105,7 +106,7 @@ broadcast = fixedProperty $ do
   (do broadcast {to=[2, 2, 5, 3]} !x) ===# expected
 
 partial
-triangle : Property
+triangle : Device => Property
 triangle = fixedProperty $ do
   let x = tensor {dtype=S32} []
   (do triangle Upper !x) ===# tensor []
@@ -124,7 +125,7 @@ triangle = fixedProperty $ do
   (do triangle Lower !x) ===# tensor [[1, 0, 0], [4, 5, 0], [7, 8, 9]]
 
 partial
-diag : Property
+diag : Device => Property
 diag = fixedProperty $ do
   let x = tensor {dtype=S32} []
   (do diag !x) ===# tensor []
@@ -136,7 +137,7 @@ diag = fixedProperty $ do
   (do diag !x) ===# tensor [1, 4]
 
 partial
-concat : Property
+concat : Device => Property
 concat = fixedProperty $ do
   let vector = tensor {dtype=S32} [3, 4, 5]
 
@@ -220,7 +221,7 @@ broadcastableCannotStackDimensionGtOne (Match Same) impossible
 broadcastableCannotStackDimensionGtOne (Nest Same) impossible
 
 partial
-squeeze : Property
+squeeze : Device => Property
 squeeze = fixedProperty $ do
   let x = tensor {dtype=S32} [[3]]
   (do squeeze !x) ===# 3
@@ -238,7 +239,7 @@ squeezableCannotRemoveNonOnes : Squeezable [1, 2] [] -> Void
 squeezableCannotRemoveNonOnes (Nest _) impossible
 
 partial
-(.T) : Property
+(.T) : Device => Property
 (.T) = fixedProperty $ do
   (do (tensor {dtype=S32} []).T) ===# tensor []
   (do (tensor {dtype=S32} [[3]]).T) ===# tensor [[3]]
@@ -248,7 +249,7 @@ partial
   x.T ===# expected
 
 partial
-transpose : Property
+transpose : Device => Property
 transpose = fixedProperty $ do
   let x = tensor {dtype=S32} [[0, 1], [2, 3]]
   (do transpose [0, 1] !x) ===# x
@@ -287,7 +288,7 @@ transpose = fixedProperty $ do
   (do slice [at 2, at 4, at 0, at 1] !(transpose [2, 3, 1, 0] !x)) ===# (do slice [at 1, at 0, at 2, at 4] !x)
 
 partial
-reverse : Property
+reverse : Device => Property
 reverse = fixedProperty $ do
   let x = tensor {shape=[0]} {dtype=S32} []
   (do reverse [0] !x) ===# x
@@ -315,7 +316,7 @@ reverse = fixedProperty $ do
   ]
 
 export partial
-all : List (PropertyName, Property)
+all : Device => List (PropertyName, Property)
 all = [
       ("reshape", reshape)
     , ("concat", concat)

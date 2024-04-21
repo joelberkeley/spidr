@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Unit.Model.TestKernel
 
+import Device
 import Literal
 import Tensor
 import Model.Kernel
@@ -23,7 +24,7 @@ import Utils.Comparison
 import Utils.Cases
 
 partial
-rbfMatchesTFP : Property
+rbfMatchesTFP : Device => Property
 rbfMatchesTFP = fixedProperty $ do
   let lengthScale = tensor 0.4
       x = tensor [[-1.2], [-0.5], [0.3], [1.2]]
@@ -42,7 +43,7 @@ rbfMatchesTFP = fixedProperty $ do
   (do rbf !lengthScale !x !x') ===# expected
 
 export partial
-group : Group
+group : Device => Group
 group = MkGroup "Kernel" $ [
     ("rbf matches tfp", rbfMatchesTFP)
   ]

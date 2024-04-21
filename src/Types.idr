@@ -16,6 +16,7 @@ limitations under the License.
 ||| This module contains common library types.
 module Types
 
+import Control.Monad.Either
 import public Data.Nat
 import public Data.Vect
 
@@ -55,3 +56,7 @@ export
 [Finite] Bounded Double where
   min = -1.7976931348623157e308
   max = 1.7976931348623157e308
+
+public export 0
+ErrIO : Type -> Type -> Type
+ErrIO e a = EitherT e IO a

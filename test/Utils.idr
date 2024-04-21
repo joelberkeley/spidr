@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Utils
 
+import Device
 import Literal
 import Tensor
 
@@ -28,5 +29,5 @@ isNan : Double -> Bool
 isNan x = x /= x
 
 export partial
-unsafeEval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
-unsafeEval = unsafePerformIO . eval
+unsafeEval : Device => PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
+unsafeEval @{device} = unsafePerformIO . eval device

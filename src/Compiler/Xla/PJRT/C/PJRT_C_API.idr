@@ -16,12 +16,12 @@ limitations under the License.
 module Compiler.Xla.PJRT.C.PJRT_C_API
 
 import Control.Monad.Either
-
 import Language.Reflection
 import Derive.Prelude
 
 import Compiler.FFI
 import Compiler.Xla.Literal
+import Types
 
 %language ElabReflection
 
@@ -63,10 +63,6 @@ record PjrtError where
   code : Maybe PjrtErrorCode
 
 %runElab derive "PjrtError" [Show]
-
-public export 0
-ErrIO : Type -> Type -> Type
-ErrIO e a = EitherT e IO a
 
 %foreign (libxla "PJRT_Error_Destroy_Args_new")
 prim__mkPjrtErrorDestroyArgs : AnyPtr -> PrimIO AnyPtr
@@ -164,7 +160,7 @@ pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
   try api err ()
 
 export
-data PjrtClient = MkPjrtClient AnyPtr
+data PjrtClient = MkPjrtClient GCAnyPtr
 
 %foreign (libxla "PJRT_Client_Create_Args_new")
 prim__mkPjrtClientCreateArgs : PrimIO AnyPtr
@@ -197,21 +193,24 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   destroyPjrtError api err
 
 export
-pjrtClientDestroy : HasIO io => PjrtApi -> PjrtClient -> io ()
-pjrtClientDestroy (MkPjrtApi api) (MkPjrtClient client) = do
-  args <- primIO $ prim__mkPjrtClientDestroyArgs client
-  err <- primIO $ prim__pjrtClientDestroy api args
-  free args
-  handleErrOnDestroy api err "PJRT_Client"
-
-export
 pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
   let client = prim__pjrtClientCreateArgsClient args
   free args
-  try api err $ MkPjrtClient client
+  try api err =<< do
+    client <- onCollectAny client (const $ pure ()) --destroy
+    pure $ MkPjrtClient client
+
+    where
+
+    destroy : AnyPtr -> IO ()
+    destroy client = do
+      args <- primIO $ prim__mkPjrtClientDestroyArgs client
+      err <- primIO $ prim__pjrtClientDestroy api args
+      free args
+      handleErrOnDestroy api err "PJRT_Client"
 
 export
 data PjrtProgram = MkPjrtProgram GCAnyPtr
@@ -219,15 +218,16 @@ data PjrtProgram = MkPjrtProgram GCAnyPtr
 %foreign (libxla "PJRT_Program_new")
 prim__mkPjrtProgram : Ptr Char -> Bits64 -> PrimIO AnyPtr
 
+||| The CharArray must live as long as the PjrtProgram.
 export
-mkPjrtProgram : HasIO io => Ptr Char -> Bits64 -> io PjrtProgram
-mkPjrtProgram code codeSize = do
+mkPjrtProgram : HasIO io => CharArray -> io PjrtProgram
+mkPjrtProgram (MkCharArray code codeSize) = do
   ptr <- primIO $ prim__mkPjrtProgram code codeSize
-  ptr <- onCollectAny ptr free
+  ptr <- onCollectAny ptr (const $ pure ())
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")
-prim__mkPjrtClientCompileArgs : AnyPtr -> GCAnyPtr -> Ptr Char -> Bits64 -> PrimIO AnyPtr
+prim__mkPjrtClientCompileArgs : GCAnyPtr -> GCAnyPtr -> Ptr Char -> Bits64 -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Compile_Args_executable")
 prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
@@ -252,22 +252,20 @@ pjrtLoadedExecutableDestroy (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   free args
   handleErrOnDestroy api err "PJRT_LoadedExecutable"
 
-||| It is up to the caller to free the `PjrtLoadedExecutable`.
+||| It is up to the caller to free the PjrtLoadedExecutable.
 export
 pjrtClientCompile :
   PjrtApi ->
   PjrtClient ->
   PjrtProgram ->
-  Ptr Char ->
-  Bits64 ->
+  CharArray ->
   ErrIO PjrtError PjrtLoadedExecutable
 pjrtClientCompile
   (MkPjrtApi api)
   (MkPjrtClient client)
   (MkPjrtProgram program)
-  compileOptions
-  compileOptionsSize = do
-    args <- primIO $ prim__mkPjrtClientCompileArgs client program compileOptions compileOptionsSize
+  (MkCharArray options optionsSize) = do
+    args <- primIO $ prim__mkPjrtClientCompileArgs client program options optionsSize
     err <- primIO $ prim__pjrtClientCompile api args
     let executable = prim__pjrtClientCompileArgsExecutable args
     free args
@@ -310,10 +308,10 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists
   err <- primIO $ prim__pjrtLoadedExecutableExecute api args
   let buffer = prim__index 0 outputListsInner
-  free outputListsInner
-  free outputLists
-  free options
   free args
+  free outputLists
+  free outputListsInner
+  free options
   try api err $ MkPjrtBuffer buffer
 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")

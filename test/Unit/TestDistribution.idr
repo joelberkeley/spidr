@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Unit.TestDistribution
 
+import Device
 import Literal
 import Tensor
 import Distribution
@@ -23,7 +24,7 @@ import Utils.Comparison
 import Utils.Cases
 
 partial
-gaussianUnivariatePDF : Property
+gaussianUnivariatePDF : Device => Property
 gaussianUnivariatePDF = property $ do
   let doubles = literal [] doubles
   [mean, cov, x] <- forAll (np [doubles, doubles, doubles])
@@ -37,7 +38,7 @@ gaussianUnivariatePDF = property $ do
     univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
 
 partial
-gaussianMultivariatePDF : Property
+gaussianMultivariatePDF : Device => Property
 gaussianMultivariatePDF = fixedProperty $ do
   let mean = tensor [[-0.2], [0.3]]
       cov = tensor [[[1.2], [0.5]], [[0.5], [0.7]]]
@@ -45,7 +46,7 @@ gaussianMultivariatePDF = fixedProperty $ do
   (do pdf (MkGaussian !mean !cov) !x) ===# 0.016427375
 
 partial
-gaussianCDF : Property
+gaussianCDF : Device => Property
 gaussianCDF = fixedProperty $ do
   let gaussian = (do pure $ MkGaussian !(tensor [[0.5]]) !(tensor [[[1.44]]]))
 
@@ -55,7 +56,7 @@ gaussianCDF = fixedProperty $ do
   (do cdf !gaussian !(tensor [[1.5]])) ===# 0.7976716
 
 export partial
-group : Group
+group : Device => Group
 group = MkGroup "Distribution" $ [
       ("Gaussian univariate pdf", gaussianUnivariatePDF)
     , ("Gaussian multivariate pdf", gaussianMultivariatePDF)

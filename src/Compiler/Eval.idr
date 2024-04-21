@@ -39,11 +39,11 @@ import Compiler.Xla.Literal
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
 import Compiler.Xla.XlaData
-
 import Literal
 import Primitive
 import Types
 import Util
+import Device
 
 export
 data Err = OutOfBounds Nat Nat
@@ -234,36 +234,30 @@ toString f = do
   root <- interpret xlaBuilder f
   pure $ opToString xlaBuilder root
 
+||| It is up to the caller to free the Literal.
 export covering
-execute : Fn 0 -> Xla.Shape -> ErrIO Literal
-execute f shape = do
+execute : Device -> Fn 0 -> Xla.Shape -> ErrIO Literal
+execute (MkDevice api client) f shape = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   bimapEitherT PjrtErr id $ do
-    api <- getPjrtApi  -- need a gpu version
-    client <- pjrtClientCreate api
     code <- serializeAsString computation
-    codeCharArray <- data' code
-    program <- mkPjrtProgram codeCharArray (size code)
-    delete code
-    compileOptionsStr <- serializeAsString !mkCompileOptions
-    compileOptionsCharArray <- data' compileOptionsStr
-    loadedExec <- pjrtClientCompile
-      api client program compileOptionsCharArray (size compileOptionsStr)
-    delete compileOptionsStr
-    free $ prim__forgetPtr codeCharArray
-    free $ prim__forgetPtr compileOptionsCharArray
+    compileOptions <- serializeAsString !mkCompileOptions
+    loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
+    free code
+    free compileOptions
+
     buffer <- pjrtLoadedExecutableExecute api loadedExec
     pjrtLoadedExecutableDestroy api loadedExec
+
     literal <- allocLiteral shape
     -- is this pure?
     -- note we can probably avoid the difficulties around async
     -- by awaiting the event in pjrtBufferToHostBuffer, thus
     -- making that function synchronous
     event <- pjrtBufferToHostBuffer api buffer literal
-    pjrtClientDestroy api client
     pjrtEventAwait api event
-    -- free program?
     pjrtEventDestroy api event
     pjrtBufferDestroy api buffer
+
     pure literal

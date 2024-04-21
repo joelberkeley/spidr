@@ -132,6 +132,16 @@ extern "C" {
     };
   }
 
+  PJRT_Client* PJRT_Client_Create_Args_client(PJRT_Client_Create_Args* args) {
+    // std::cout << "PJRT_Client_Create_Args_client ..." << std::endl;
+    return args->client;
+  }
+
+  PJRT_Error* pjrt_client_create(PJRT_Api* api, PJRT_Client_Create_Args* args) {
+    // std::cout << "pjrt_client_create ..." << std::endl;
+    return api->PJRT_Client_Create(args);
+  }
+
   PJRT_Client_Destroy_Args* PJRT_Client_Destroy_Args_new(PJRT_Client* client) {
     // std::cout << "PJRT_Client_Destroy_Args_new ..." << std::endl;
     return new PJRT_Client_Destroy_Args{
@@ -144,16 +154,6 @@ extern "C" {
   PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args) {
     // std::cout << "pjrt_client_destroy ..." << std::endl;
     return api->PJRT_Client_Destroy(args);
-  }
-
-  PJRT_Client* PJRT_Client_Create_Args_client(PJRT_Client_Create_Args* args) {
-    // std::cout << "PJRT_Client_Create_Args_client ..." << std::endl;
-    return args->client;
-  }
-
-  PJRT_Error* pjrt_client_create(PJRT_Api* api, PJRT_Client_Create_Args* args) {
-    // std::cout << "pjrt_client_create ..." << std::endl;
-    return api->PJRT_Client_Create(args);
   }
 
   PJRT_Program* PJRT_Program_new(char* code, size_t code_size) {

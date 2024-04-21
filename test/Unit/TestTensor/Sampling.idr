@@ -17,6 +17,7 @@ module Unit.TestTensor.Sampling
 
 import System
 
+import Device
 import Literal
 import Tensor
 
@@ -47,7 +48,7 @@ Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
 
 partial
-uniform : Property
+uniform : Device => Property
 uniform = withTests 20 . property $ do
   bound <- forAll (literal [5] finiteDoubles)
   bound' <- forAll (literal [5] finiteDoubles)
@@ -70,7 +71,7 @@ uniform = withTests 20 . property $ do
   diff (unsafeEval ksTest) (<) 0.015
 
 partial
-uniformForNonFiniteBounds : Property
+uniformForNonFiniteBounds : Device => Property
 uniformForNonFiniteBounds = property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
@@ -85,7 +86,7 @@ uniformForNonFiniteBounds = property $ do
   samples ===# tensor [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
 
 partial
-uniformForFiniteEqualBounds : Property
+uniformForFiniteEqualBounds : Device => Property
 uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
@@ -96,14 +97,14 @@ uniformForFiniteEqualBounds = withTests 20 . property $ do
   samples ===# bound
 
 partial
-uniformSeedIsUpdated : Property
-uniformSeedIsUpdated = withTests 20 . property $ do
+uniformSeedIsUpdated : Device => Property
+uniformSeedIsUpdated @{device} = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval $ do
+  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval device $ do
         bound <- tensor bound
         bound' <- tensor bound'
         key <- tensor key
@@ -119,14 +120,14 @@ uniformSeedIsUpdated = withTests 20 . property $ do
   diff sample' (/=) sample
 
 partial
-uniformIsReproducible : Property
-uniformIsReproducible = withTests 20 . property $ do
+uniformIsReproducible : Device => Property
+uniformIsReproducible @{device} = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafePerformIO $ eval $ do
+  let [sample, sample'] = unsafePerformIO $ eval device $ do
         bound <- tensor bound
         bound' <- tensor bound'
         key <- tensor key
@@ -140,7 +141,7 @@ uniformIsReproducible = withTests 20 . property $ do
   sample ==~ sample'
 
 partial
-normal : Property
+normal : Device => Property
 normal = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
@@ -159,12 +160,12 @@ normal = withTests 20 . property $ do
   diff (unsafeEval ksTest) (<) 0.02
 
 partial
-normalSeedIsUpdated : Property
-normalSeedIsUpdated = withTests 20 . property $ do
+normalSeedIsUpdated : Device => Property
+normalSeedIsUpdated @{device} = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval $ do
+  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval device $ do
         key <- tensor key
         seed <- tensor seed
         let rng = normal key {shape=[10]}
@@ -177,12 +178,12 @@ normalSeedIsUpdated = withTests 20 . property $ do
   diff sample' (/=) sample
 
 partial
-normalIsReproducible : Property
-normalIsReproducible = withTests 20 . property $ do
+normalIsReproducible : Device => Property
+normalIsReproducible @{device} = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafePerformIO $ eval $ do
+  let [sample, sample'] = unsafePerformIO $ eval device $ do
         key <- tensor key
         seed <- tensor seed
 
@@ -194,7 +195,7 @@ normalIsReproducible = withTests 20 . property $ do
   sample ==~ sample'
 
 export partial
-all : List (PropertyName, Property)
+all : Device => List (PropertyName, Property)
 all = [
       ("uniform", uniform)
     , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)

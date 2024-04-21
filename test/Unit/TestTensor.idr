@@ -25,6 +25,7 @@ import Data.Nat
 import Data.Vect
 import System
 
+import Device
 import Literal
 import Tensor
 
@@ -34,28 +35,28 @@ import Utils.Cases
 import Utils.Proof
 
 partial
-tensorThenEval : Property
-tensorThenEval = withTests 20 . property $ do
+tensorThenEval : Device => Property
+tensorThenEval @{device} = withTests 20 . property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  x ==~ unsafePerformIO (eval (tensor {dtype=F64} x))
+  x ==~ unsafePerformIO (eval device (tensor {dtype=F64} x))
 
   x <- forAll (literal shape int32s)
-  x === unsafePerformIO (eval (tensor {dtype=S32} x))
+  x === unsafePerformIO (eval device (tensor {dtype=S32} x))
 
   x <- forAll (literal shape nats)
-  x === unsafePerformIO (eval (tensor {dtype=U32} x))
+  x === unsafePerformIO (eval device (tensor {dtype=U32} x))
 
   x <- forAll (literal shape nats)
-  x === unsafePerformIO (eval (tensor {dtype=U64} x))
+  x === unsafePerformIO (eval device (tensor {dtype=U64} x))
 
   x <- forAll (literal shape bool)
-  x === unsafePerformIO (eval (tensor {dtype=PRED} x))
+  x === unsafePerformIO (eval device (tensor {dtype=PRED} x))
 
 partial
-evalTuple : Property
-evalTuple = property $ do
+evalTuple : Device => Property
+evalTuple @{device} = property $ do
   s0 <- forAll shapes
   s1 <- forAll shapes
   s2 <- forAll shapes
@@ -68,26 +69,26 @@ evalTuple = property $ do
       y1 = tensor {dtype = S32} x1
       y2 = tensor {dtype = U64} x2
 
-  let [] = unsafePerformIO $ eval (pure [])
+  let [] = unsafePerformIO $ eval device (pure [])
 
-  let [x0'] = unsafePerformIO $ eval (do pure [!y0])
+  let [x0'] = unsafePerformIO $ eval device (do pure [!y0])
 
   x0' ==~ x0
 
-  let [x0', x1'] = unsafePerformIO $ eval (do pure [!y0, !y1])
+  let [x0', x1'] = unsafePerformIO $ eval device (do pure [!y0, !y1])
 
   x0' ==~ x0
   x1' === x1
 
-  let [x0', x1', x2'] = unsafePerformIO $ eval (do pure [!y0, !y1, !y2])
+  let [x0', x1', x2'] = unsafePerformIO $ eval device (do pure [!y0, !y1, !y2])
 
   x0' ==~ x0
   x1' === x1
   x2' === x2
 
 partial
-evalTupleNonTrivial : Property
-evalTupleNonTrivial = property $ do
+evalTupleNonTrivial : Device => Property
+evalTupleNonTrivial @{device} = property $ do
   let xs = do y0 <- tensor [1.0, -2.0, 0.4]
               y1 <- tensor 3.0
               u <- exp y0
@@ -95,13 +96,13 @@ evalTupleNonTrivial = property $ do
               w <- slice [0.to 2] u
               pure [v, w]
 
-      [v, w] = unsafePerformIO $ eval xs
+      [v, w] = unsafePerformIO $ eval device xs
 
   v ==~ Scalar (exp (-2.0) + 3.0)
   w ==~ [| exp [1.0, -2.0] |]
 
 partial
-canConvertAtXlaNumericBounds : Property
+canConvertAtXlaNumericBounds : Device => Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
       f64max : Literal [] Double = max @{Finite}
@@ -140,7 +141,7 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
   unsafeEval (tensor u64max == max') === True
 
 partial
-boundedNonFinite : Property
+boundedNonFinite : Device => Property
 boundedNonFinite = fixedProperty $ do
   let min' : Graph $ Tensor [] S32 = Types.min @{NonFinite}
       max' : Graph $ Tensor [] S32 = Types.max @{NonFinite}
@@ -163,7 +164,7 @@ boundedNonFinite = fixedProperty $ do
   unsafeEval {dtype=F64} (Types.max @{NonFinite}) === inf
 
 partial
-iota : Property
+iota : Device => Property
 iota = property $ do
   init <- forAll shapes
   mid <- forAll dims
@@ -193,7 +194,7 @@ iota = property $ do
   actual ===# (do castDtype !rangeFull)
 
 partial
-iotaExamples : Property
+iotaExamples : Device => Property
 iotaExamples = fixedProperty $ do
   iota 0 ===# tensor {dtype = S32} [0, 1, 2, 3]
   iota 1 ===# tensor {dtype = S32} [[0], [0], [0], [0]]
@@ -215,7 +216,7 @@ iotaExamples = fixedProperty $ do
                                     [2.0, 2.0, 2.0, 2.0, 2.0]]
 
 partial
-show : Property
+show : Device => Property
 show = fixedProperty $ do
   let x : Graph $ Tensor [] S32 = 1
   show x === "constant, shape=[], metadata={:0}"
@@ -232,7 +233,7 @@ show = fixedProperty $ do
   show x === "constant, shape=[3], metadata={:0}"
 
 partial
-cast : Property
+cast : Device => Property
 cast = property $ do
   shape <- forAll shapes
 
@@ -249,7 +250,7 @@ cast = property $ do
   x ===# tensor (map (cast {to=Double}) lit)
 
 partial
-identity : Property
+identity : Device => Property
 identity = fixedProperty $ do
   identity ===# tensor {dtype=S32} []
   identity ===# tensor {dtype=S32} [[1]]
@@ -265,7 +266,7 @@ identity = fixedProperty $ do
 
 namespace Vector
   export partial
-  (@@) : Property
+  (@@) : Device => Property
   (@@) = fixedProperty $ do
     let l = tensor {dtype=S32} [-2, 0, 1]
         r = tensor {dtype=S32} [3, 1, 2]
@@ -273,7 +274,7 @@ namespace Vector
 
 namespace Matrix
   export partial
-  (@@) : Property
+  (@@) : Device => Property
   (@@) = fixedProperty $ do
     let l = tensor {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
         r = tensor {dtype=S32} [3, 3, -1]
@@ -284,7 +285,7 @@ namespace Matrix
     l @@ r ===# tensor [[ -7,  -2], [  8, -11]]
 
 partial
-dotGeneral : Property
+dotGeneral : Device => Property
 dotGeneral = fixedProperty $ do
   (do dotGeneral [] [] [] [] !2 !3) ===# tensor {dtype = S32} 6
 
@@ -341,7 +342,7 @@ dotGeneral = fixedProperty $ do
   (do dotGeneral [0] [0] [2] [1] !l !r) ===# expected
 
 partial
-argmin : Property
+argmin : Device => Property
 argmin = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
@@ -349,7 +350,7 @@ argmin = property $ do
   (do slice [at !(argmin !xs)] !xs) ===# (do reduce [0] @{Min} !xs)
 
 partial
-argmax : Property
+argmax : Device => Property
 argmax = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
@@ -357,7 +358,7 @@ argmax = property $ do
   (do slice [at !(argmax !xs)] !xs) ===# (do reduce [0] @{Max} !xs)
 
 partial
-select : Property
+select : Device => Property
 select = fixedProperty $ do
   let onTrue = tensor {dtype=S32} 1
       onFalse = tensor 0
@@ -371,14 +372,14 @@ select = fixedProperty $ do
   (do select !pred !onTrue !onFalse) ===# expected
 
 partial
-erf : Property
+erf : Device => Property
 erf = fixedProperty $ do
   let x = tensor [-1.5, -0.5, 0.5, 1.5]
       expected = tensor [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
   (do erf !x) ===# expected
 
 partial
-cholesky : Property
+cholesky : Device => Property
 cholesky = fixedProperty $ do
   let x = tensor [[1.0, 0.0], [2.0, 0.0]]
       expected = tensor [[nan, 0], [nan, nan]]
@@ -398,7 +399,7 @@ cholesky = fixedProperty $ do
   (do cholesky !x) ===# expected
 
 partial
-triangularSolveResultAndInverse : Property
+triangularSolveResultAndInverse : Device => Property
 triangularSolveResultAndInverse = fixedProperty $ do
   let a = tensor [
               [0.8578532 , 0.0       , 0.0       ],
@@ -429,7 +430,7 @@ triangularSolveResultAndInverse = fixedProperty $ do
   a.T @@ actual ===# b
 
 partial
-triangularSolveIgnoresOppositeElems : Property
+triangularSolveIgnoresOppositeElems : Device => Property
 triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = tensor [[1.0, 2.0], [3.0, 4.0]]
       aLower = tensor [[1.0, 0.0], [3.0, 4.0]]
@@ -440,13 +441,13 @@ triangularSolveIgnoresOppositeElems = fixedProperty $ do
   a \| b ===# aUpper \| b
 
 partial
-trace : Property
+trace : Device => Property
 trace = fixedProperty $ do
   let x = tensor {dtype=S32} [[-1, 5], [1, 4]]
   (do trace !x) ===# 3
 
 export partial
-group : Group
+group : Device => Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
     -- untyped_data not allowed for tuples

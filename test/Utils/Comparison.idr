@@ -19,6 +19,7 @@ import public Data.SOP
 import Data.Bounded
 import public Hedgehog
 
+import Device
 import Literal
 import Tensor
 
@@ -56,26 +57,26 @@ infix 1 ===#
 
 namespace PRED
   export partial
-  (===#) : Monad m => {shape : _} -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace S32
   export partial
-  (===#) : Monad m => {shape : _} -> Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace U32
   export partial
-  (===#) : Monad m => {shape : _} -> Graph (Tensor shape U32) -> Graph (Tensor shape U32) -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape U32) -> Graph (Tensor shape U32) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace U64
   export partial
-  (===#) : Monad m => {shape : _} -> Graph (Tensor shape U64) -> Graph (Tensor shape U64) -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape U64) -> Graph (Tensor shape U64) -> TestT m ()
   x ===# y = unsafeEval x === unsafeEval y
 
 namespace F64
   export partial
-  (===#) : Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
+  (===#) : Device => Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
            Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> TestT m ()
   x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)

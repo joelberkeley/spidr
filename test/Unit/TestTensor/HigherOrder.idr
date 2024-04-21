@@ -17,6 +17,7 @@ module Unit.TestTensor.HigherOrder
 
 import System
 
+import Device
 import Literal
 import Tensor
 
@@ -25,7 +26,7 @@ import Utils.Comparison
 import Utils.Cases
 
 partial
-mapResult : Property
+mapResult : Device => Property
 mapResult = property $ do
   shape <- forAll shapes
 
@@ -39,14 +40,14 @@ mapResult = property $ do
   map (+ 1) x === unsafeEval (do map (\x => pure x + 1) !x')
 
 partial
-mapNonTrivial : Property
+mapNonTrivial : Device => Property
 mapNonTrivial = fixedProperty $ do
   (do map {a=S32} (\x => pure x + pure x) !1) ===# 2
   (do map {a=S32} (\_ => 2) !1) ===# 2
   (do map {a=S32} (map (\x => pure x + 1)) !1) ===# 2
 
 partial
-map2Result : Property
+map2Result : Device => Property
 map2Result = fixedProperty $ do
   shape <- forAll shapes
 
@@ -64,13 +65,13 @@ map2Result = fixedProperty $ do
   [| x + y |] ==~ unsafeEval (do map2 (\x, y => pure x + pure y) !x' !y')
 
 partial
-map2ResultWithReusedFnArgs : Property
+map2ResultWithReusedFnArgs : Device => Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
   let x : Graph (Tensor [] S32) = 6
   (do map2 (\x, y => pure x + pure x + pure y + pure y) !1 !2) ===# x
 
 partial
-reduce : Property
+reduce : Device => Property
 reduce = fixedProperty $ do
   let x = tensor {dtype=S32} [[1, 2, 3], [-1, -2, -3]]
   (do reduce @{Sum} [1] !x) ===# tensor [6, -6]
@@ -97,7 +98,7 @@ reduce = fixedProperty $ do
   (do reduce @{All} [1] !x) ===# tensor [False, False]
 
 partial
-sort : Property
+sort : Device => Property
 sort = withTests 20 . property $ do
   d <- forAll dims
   dd <- forAll dims
@@ -152,7 +153,7 @@ sort = withTests 20 . property $ do
   reflex = reflexive {ty=Nat}
 
 partial
-sortWithEmptyAxis : Property
+sortWithEmptyAxis : Device => Property
 sortWithEmptyAxis = fixedProperty $ do
   let x = tensor {shape=[0, 2, 3]} {dtype=S32} []
   (do sort (<) 0 !x) ===# x
@@ -167,7 +168,7 @@ sortWithEmptyAxis = fixedProperty $ do
   (do sort (<) 1 !x) ===# x
 
 partial
-sortWithRepeatedElements : Property
+sortWithRepeatedElements : Device => Property
 sortWithRepeatedElements = fixedProperty $ do
   let x = tensor {dtype=S32} [1, 3, 4, 3, 2]
   (do sort (<) 0 !x) ===# tensor [1, 2, 3, 3, 4]
@@ -177,7 +178,7 @@ sortWithRepeatedElements = fixedProperty $ do
   (do sort (<) 1 !x) ===# tensor [[1, 4, 4], [2, 3, 5]]
 
 partial
-condResultTrivialUsage : Property
+condResultTrivialUsage : Device => Property
 condResultTrivialUsage = fixedProperty $ do
   let x = tensor {dtype=S32} 0
   (do cond !(tensor True) (\x => pure x + 1) !x (\x => pure x - 1) !x) ===# 1
@@ -194,7 +195,7 @@ condResultTrivialUsage = fixedProperty $ do
   (do cond !(tensor False) (\x => tensor 5 * pure x) !x diag !y) ===# tensor [6, 9]
 
 partial
-condResultWithReusedArgs : Property
+condResultWithReusedArgs : Device => Property
 condResultWithReusedArgs = fixedProperty $ do
   let x = tensor {dtype=S32} 1
       y = tensor {dtype=S32} 3
@@ -206,7 +207,7 @@ condResultWithReusedArgs = fixedProperty $ do
   (do cond !(tensor False) (f (+)) !x (f (*)) !y) ===# 9
 
 export partial
-all : List (PropertyName, Property)
+all : Device => List (PropertyName, Property)
 all = [
       ("map", mapResult)
     , ("map with non-trivial function", mapNonTrivial)

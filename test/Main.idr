@@ -15,21 +15,33 @@ limitations under the License.
 --}
 module Main
 
+import Control.Monad.Either
+import System
+
 import Data.SOP
 import Hedgehog
 
+import Device
+import Types
+
 import TestUtils
 import Utils.TestComparison
-
 import Unit.Model.TestKernel
 import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
+-- bad import
+import Compiler.Xla.PJRT.C.PJRT_C_API
+
 partial
 main : IO ()
-main = test [
+main = do
+  Right device <- runEitherT cpu
+    | Left err => die $ show err
+
+  test [
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.TestUtil.group

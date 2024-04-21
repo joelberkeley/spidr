@@ -23,33 +23,26 @@ libxla : String -> String
 libxla fname = "C:" ++ fname ++ ",libc_xla"
 
 public export
-data CppString = MkCppString AnyPtr
+data CharArray = MkCharArray (Ptr Char) Bits64
 
-namespace CppString
-  %foreign (libxla "string_delete")
-  prim__stringDelete : AnyPtr -> PrimIO ()
+export
+free : HasIO io => CharArray -> io ()
+free (MkCharArray arr _) = free $ prim__forgetPtr arr
 
-  export
-  delete : HasIO io => CppString -> io ()
-  delete (MkCppString str) = primIO $ prim__stringDelete str
+export
+%foreign (libxla "string_delete")
+prim__stringDelete : AnyPtr -> PrimIO ()
 
+export
 %foreign (libxla "string_data")
 prim__stringData : AnyPtr -> PrimIO $ Ptr Char
 
-||| It is up to the caller to free the returned char array.
 export
-data' : HasIO io => CppString -> io $ Ptr Char
-data' (MkCppString str) = primIO $ prim__stringData str
-
 %foreign (libxla "string_size")
 prim__stringSize : AnyPtr -> Bits64
 
 export
-size : CppString -> Bits64
-size (MkCppString str) = prim__stringSize str
-
-export
-%foreign (libxla "index")
+%foreign (libxla "idx")
 prim__index : Int -> AnyPtr -> AnyPtr
 
 export
@@ -88,7 +81,7 @@ mkIntArray xs = do
   ptr <- malloc (cast (length xs) * sizeofInt)
   let ptr = prim__castPtr ptr
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
-  ptr <- onCollect ptr (free . prim__forgetPtr)
+  ptr <- onCollect ptr (const $ pure ()) -- (free . prim__forgetPtr)
   pure (MkIntArray ptr)
 
 export
