@@ -19,11 +19,27 @@ env:
   PACK_DIR: /root/.pack
 
 jobs:
-  xla-linux-cpu:
+  pjrt:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
+    - name: Build PJRT + XLA binary
+      working-directory: spidr/backend
+      run: |
+        ./install.sh  # assumes --backend=CPU, which doesn't seem right
+        ./build.sh
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: libc_xla.so
+        path: backend/bazel-bin/libc_xla.so
+        if-no-files-found: error
+  pjrt-plugin-xla-cpu:
+    runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
+    steps:
+      - uses: actions/checkout@v4
 #    - name: Mount bazel cache
 #      uses: actions/cache@v4
 #      with:
@@ -34,25 +50,57 @@ jobs:
 #      with:
 #        path: ~/.cache/bazel
 #        key: xla-${{ runner.os }}
-    - name: Build XLA static Linux CPU
-      working-directory: backend
-      run: |
-        ./install.sh
-        ./build.sh
-    - name: Upload XLA
-      uses: actions/upload-artifact@v4
-      with:
-        name: libc_xla.so
-        path: backend/bazel-bin/libc_xla.so
-        if-no-files-found: error
-    - name: Free disk space  # needed to save bazel cache
-      working-directory: backend
-      run: ./cleanup.sh
-    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
-      uses: actions/cache/save@v4
-      with:
-        path: ~/.cache/bazel
-        key: xla-${{ runner.os }}
+      - name: Build XLA CPU PJRT plugin
+        run: |
+          git init
+          git remote add origin https://github.com/openxla/xla
+          git fetch origin "$(cat ../XLA_REVISION)"
+          git reset --hard FETCH_HEAD
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_c_api_cpu_plugin.so
+          path: bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so
+          if-no-files-found: error
+      - name: Free disk space  # needed to save bazel cache
+        run: |
+          df -H
+
+          dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20
+
+          sudo apt-get purge -y \
+              libnvinfer8 \
+              libnvinfer-dev \
+              libcudnn8 \
+              libcudnn8-dev \
+              libcublas-12-3 \
+              libcublas-dev-12-3 \
+              libcusparse-12-3 \
+              libcusparse-dev-12-3 \
+              libcusolver-12-3 \
+              libcusolver-dev-12-3
+          sudo apt-get autoremove -y
+          sudo apt-get autoclean
+
+          df -H
+      - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/bazel
+          key: pjrt-plugin-xla-cpu-${{ runner.os }}
+  pjrt-plugin-xla-cuda:
+    runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
+    steps:
+      - uses: actions/checkout@v4
+        # doesn't need checkout as we're only building an XLA target
+        #
+        # install nvidia docker, and add --runtime=nvidia --gpus all to the docker run command
+        # maybe install nvidia drivers on host
+        #
+        # but how to do this in github?
+        # note we're using elixir-nx builds atm so they've done the GPU builds
+        # which is why we haven't needed to think about this
   build-tests:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
@@ -70,7 +118,8 @@ jobs:
         if-no-files-found: error
   test-unit:
     needs:
-      - xla-linux-cpu
+      - pjrt
+      - pjrt-plugin-xla-cpu
       - build-tests
     runs-on: ubuntu-latest
     steps:

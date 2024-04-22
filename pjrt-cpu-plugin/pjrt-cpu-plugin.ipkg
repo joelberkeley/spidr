@@ -1,0 +1,12 @@
+package pjrt-cpu-plugin
+version = 0.0.1
+
+sourcedir = "src"
+depends = spidr
+modules = PjrtCpuPlugin
+
+brief = "XLA PJRT CPU plugin."
+readme = "README.md"
+license = "Apache License, Version 2.0"
+
+postbuild = "./postbuild.sh"

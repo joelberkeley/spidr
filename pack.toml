@@ -1,4 +1,14 @@
 [custom.all.spidr]
 type = "local"
 path = ""
-ipkg = "spidr.ipkg"
+ipkg = "spidr/spidr.ipkg"
+
+[custom.all.pjrt-cpu-plugin]
+type = "local"
+path = ""
+ipkg = "pjrt-cpu-plugin/pjrt-cpu-plugin.ipkg"
+
+[custom.all.pjrt-gpu-plugin]
+type = "local"
+path = ""
+ipkg = "pjrt-gpu-plugin/pjrt-gpu-plugin.ipkg"

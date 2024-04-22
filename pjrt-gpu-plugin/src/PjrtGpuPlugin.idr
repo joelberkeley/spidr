@@ -1,4 +1,4 @@
-/*
+{--
 Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "xla/pjrt/c/pjrt_c_api.h"
+--}
+module PjrtGpuPlugin
 
-extern "C" {
-  const PJRT_Api* GetPjrtApi_();
-}
+import System.FFI
+
+import Compiler.Xla.PJRT.C.PJRT_C_API
+
+%foreign "C:GetPjrtApi,pjrt_c_api_gpu_plugin"
+prim__getPjrtApi : PrimIO AnyPtr
+
+export
+getPjrtApi : HasIO io => io PjrtApi
+getPjrtApi = MkPjrtApi <$> primIO prim__getPjrtApi

@@ -16,7 +16,6 @@ modules =
   Compiler.Xla.Client.XlaBuilder,
   Compiler.Xla.Client.XlaComputation,
   Compiler.Xla.PJRT.C.PJRT_C_API,
-  Compiler.Xla.PJRT.C.PJRT_C_API_CPU,
   Compiler.Xla.PJRT.PjrtExecutable,
   Compiler.Xla.Literal,
   Compiler.Xla.Shape,

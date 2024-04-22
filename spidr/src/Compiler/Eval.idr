@@ -33,7 +33,6 @@ import Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.PJRT.C.PJRT_C_API
-import Compiler.Xla.PJRT.C.PJRT_C_API_CPU
 import Compiler.Xla.PJRT.PjrtExecutable
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape
@@ -256,6 +255,7 @@ execute (MkDevice api client) f shape = do
     -- by awaiting the event in pjrtBufferToHostBuffer, thus
     -- making that function synchronous
     event <- pjrtBufferToHostBuffer api buffer literal
+    -- is awaiting slowing everything down? what can i do about that?
     pjrtEventAwait api event
     pjrtEventDestroy api event
     pjrtBufferDestroy api buffer

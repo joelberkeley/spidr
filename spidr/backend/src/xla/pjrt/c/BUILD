@@ -5,7 +5,7 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/pjrt/c:pjrt_c_api_cpu",
+        "@xla//xla/pjrt/c:pjrt_c_api_helpers",
         "//src/xla:xla",
         "//src/xla/pjrt:pjrt",
     ],

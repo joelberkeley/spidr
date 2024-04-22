@@ -32,13 +32,15 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
+import PjrtCpuPlugin
+import PjrtGpuPlugin
 -- bad import
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
 partial
 main : IO ()
 main = do
-  Right device <- runEitherT cpu
+  Right device <- runEitherT $ do device !PjrtGpuPlugin.getPjrtApi
     | Left err => die $ show err
 
   test [

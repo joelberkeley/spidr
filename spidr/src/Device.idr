@@ -18,20 +18,14 @@ module Device
 import Control.Monad.Either
 
 import Compiler.Xla.PJRT.C.PJRT_C_API
-import Compiler.Xla.PJRT.C.PJRT_C_API_CPU
 
 import Types
 
--- it's possible a device will have different clients. atm
--- i'm going to say they're the same thing, and all clients
--- are configured the same. We can separate them when we
--- know why we'd do that
 public export
 data Device = MkDevice PjrtApi PjrtClient
 
 export
-cpu : ErrIO PjrtError Device
-cpu = do
-  api <- getPjrtApi
+device : PjrtApi -> ErrIO PjrtError Device
+device api = do
   client <- pjrtClientCreate api
-  pure (MkDevice api client) 
+  pure (MkDevice api client)

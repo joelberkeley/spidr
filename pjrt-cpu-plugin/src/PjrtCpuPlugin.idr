@@ -13,14 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Compiler.Xla.PJRT.C.PJRT_C_API_CPU
+module PjrtCpuPlugin
 
-import Compiler.FFI
+import System.FFI
+
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
--- we're going to need to alias this C function so we can differentiate between
--- versions of GetPjrtApi for various devices
-%foreign (libxla "GetPjrtApi_")
+%foreign "C:GetPjrtApi,pjrt_c_api_cpu_plugin"
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
