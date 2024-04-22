@@ -57,7 +57,7 @@ jobs:
           git remote add origin https://github.com/openxla/xla
           git fetch origin "$(cat ../XLA_REVISION)"
           git reset --hard FETCH_HEAD
-          BAZEL_CXXOPTS=-std=c++17 bazel build --verbose_failures //:xla/pjrt/c/pjrt_c_api_cpu_plugin.so
+          BAZEL_CXXOPTS=-std=c++17 bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
