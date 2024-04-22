@@ -33,7 +33,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: libc_xla.so
-        path: backend/bazel-bin/libc_xla.so
+        path: spidr/backend/bazel-bin/libc_xla.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
@@ -117,7 +117,8 @@ jobs:
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        path: test.tar.gz
+        name: test.tar.gz
+        path: test/test.tar.gz
         if-no-files-found: error
   test-unit:
     needs:
