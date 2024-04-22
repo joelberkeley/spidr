@@ -51,15 +51,17 @@ jobs:
 #        key: xla-${{ runner.os }}
       - name: Build XLA CPU PJRT plugin
         run: |
+          cd xla
           git init
           git remote add origin https://github.com/openxla/xla
           git fetch origin "$(cat ../XLA_REVISION)"
           git reset --hard FETCH_HEAD
+          BAZEL_CXXOPTS=-std=c++17 bazel build --verbose_failures //:xla/pjrt/c/pjrt_c_api_cpu_plugin.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: pjrt_c_api_cpu_plugin.so
-          path: bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so
+          path: xla/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so
           if-no-files-found: error
       - name: Free disk space  # needed to save bazel cache
         run: |
