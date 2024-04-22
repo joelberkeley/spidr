@@ -40,7 +40,7 @@ import Compiler.Xla.PJRT.C.PJRT_C_API
 partial
 main : IO ()
 main = do
-  Right device <- runEitherT $ do device !PjrtGpuPlugin.getPjrtApi
+  Right device <- runEitherT $ do device !PjrtCpuPlugin.getPjrtApi
     | Left err => die $ show err
 
   test [

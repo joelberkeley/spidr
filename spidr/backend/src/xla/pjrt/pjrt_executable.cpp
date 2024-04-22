@@ -28,13 +28,9 @@ limitations under the License.
 
 extern "C" {
   CompileOptions* CompileOptions_new() {
-//    // std::cout << "CompileOptions_new ..." << std::endl;
     // std::cout << "CompileOptions_new ..." << std::endl;
     auto build_options = new xla::ExecutableBuildOptions;
     build_options->set_device_ordinal(0);
-    auto device_assignment = new xla::DeviceAssignment(1, 1);
-    (*device_assignment)(0, 0) = 0;
-    build_options->set_device_assignment(*device_assignment);
 
     auto options = new xla::CompileOptions{
       .argument_layouts = std::nullopt,
@@ -42,9 +38,6 @@ extern "C" {
       .env_option_overrides = {},
       .target_config = std::nullopt,
     };
-//    xla::CompileOptions::FromProto(*(options->ToProto()));
-//    // std::cout << "... serialized options " << std::endl;
-//    // std::cout << options->ToProto()->SerializeAsString() << std::endl;
     return reinterpret_cast<CompileOptions*>(options);
   }
 

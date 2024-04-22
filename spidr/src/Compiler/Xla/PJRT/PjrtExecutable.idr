@@ -27,8 +27,8 @@ export
 mkCompileOptions : HasIO io => io CompileOptions
 mkCompileOptions = do
   options <- primIO prim__mkCompileOptions
-  -- is `free` sufficient? does CompileOptions own any of its members?
-  options <- onCollectAny options (const $ pure ())
+  -- is `free` sufficient?
+  options <- onCollectAny options free
   pure (MkCompileOptions options)
 
 %foreign (libxla "CompileOptions_SerializeAsString")
