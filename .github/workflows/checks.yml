@@ -109,7 +109,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build tests
-      working-directory: spidr
+      working-directory: test
       run: |
         pack switch HEAD
         pack --no-prompt build test.ipkg
