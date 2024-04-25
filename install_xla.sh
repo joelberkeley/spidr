@@ -10,6 +10,6 @@ mkdir xla
 cd xla
 git init
 git remote add origin https://github.com/openxla/xla
-git fetch --depth 1 origin
-git checkout FETCH_HEAD $COMMIT_SHA
+git fetch --depth 1 origin $COMMIT_SHA
+git checkout FETCH_HEAD
 cd -
