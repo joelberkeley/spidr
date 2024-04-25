@@ -25,9 +25,10 @@ libxla fname = "C:" ++ fname ++ ",libc_xla"
 public export
 data CharArray = MkCharArray (Ptr Char) Bits64
 
-export
-free : HasIO io => CharArray -> io ()
-free (MkCharArray arr _) = free $ prim__forgetPtr arr
+namespace CharArray
+  export
+  free : HasIO io => CharArray -> io ()
+  free (MkCharArray arr _) = free $ prim__forgetPtr arr
 
 export
 %foreign (libxla "string_delete")
@@ -81,7 +82,7 @@ mkIntArray xs = do
   ptr <- malloc (cast (length xs) * sizeofInt)
   let ptr = prim__castPtr ptr
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
-  ptr <- onCollect ptr (const $ pure ()) -- (free . prim__forgetPtr)
+  ptr <- onCollect ptr (free . prim__forgetPtr)
   pure (MkIntArray ptr)
 
 export

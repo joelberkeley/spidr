@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 
 // remove these when we've pulled out build config
@@ -24,7 +25,6 @@ limitations under the License.
 #include "xla/service/computation_placer.h"
 
 #include "../pjrt_executable.h"
-#include "pjrt_c_api.h"
 
 extern "C" {
   // ---------------------------------- Errors -----------------------------------
@@ -117,13 +117,97 @@ extern "C" {
 
   // ---------------------------------- Client -----------------------------------
 
-  PJRT_Client_Create_Args* PJRT_Client_Create_Args_new() {
-    // std::cout << "PJRT_Client_Create_Args_new ..." << std::endl;
-    return new PJRT_Client_Create_Args{
+  size_t sizeof_PJRT_NamedValue() {
+    return sizeof(PJRT_NamedValue);
+  }
+
+  PJRT_NamedValue* shift_by_PJRT_NamedValue(PJRT_NamedValue* addr, size_t idx) {
+    return addr + idx;
+  }
+
+  void PJRT_NamedValue_string(
+    PJRT_NamedValue* addr, char* name, size_t name_size, char* string_value, size_t value_size
+  ) {
+    *addr = PJRT_NamedValue {
+      .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+      .extension_start = nullptr,
+      .name = name,
+      .name_size = name_size,
+      .type = PJRT_NamedValue_Type::PJRT_NamedValue_kString,
+      .string_value = string_value,
+      .value_size = value_size,
+    };
+  }
+
+  void PJRT_NamedValue_int64(
+    PJRT_NamedValue* addr, char* name, size_t name_size, int64_t int64_value
+  ) {
+    *addr = PJRT_NamedValue {
+      .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+      .extension_start = nullptr,
+      .name = name,
+      .name_size = name_size,
+      .type = PJRT_NamedValue_Type::PJRT_NamedValue_kInt64,
+      .int64_value = int64_value,
+      .value_size = 1,
+    };
+  }
+
+  void set_array_int64_t(int64_t* arr, size_t idx, int64_t value) {
+    arr[idx] = value;
+  }
+
+  void PJRT_NamedValue_int64_array(
+    PJRT_NamedValue* addr, char* name, size_t name_size, int64_t* int64_array_value, size_t value_size
+  ) {
+    *addr = PJRT_NamedValue {
+      .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+      .extension_start = nullptr,
+      .name = name,
+      .name_size = name_size,
+      .type = PJRT_NamedValue_Type::PJRT_NamedValue_kInt64List,
+      .int64_array_value = int64_array_value,
+      .value_size = value_size,
+    };
+  }
+
+  void PJRT_NamedValue_float(
+    PJRT_NamedValue* addr, char* name, size_t name_size, double float_value
+  ) {
+    *addr = PJRT_NamedValue {
+      .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+      .extension_start = nullptr,
+      .name = name,
+      .name_size = name_size,
+      .type = PJRT_NamedValue_Type::PJRT_NamedValue_kFloat,
+      .float_value = (float) float_value,
+      .value_size = 1,
+    };
+  }
+
+  void PJRT_NamedValue_bool(
+    PJRT_NamedValue* addr, char* name, size_t name_size, int bool_value
+  ) {
+    *addr = PJRT_NamedValue {
+      .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+      .extension_start = nullptr,
+      .name = name,
+      .name_size = name_size,
+      .type = PJRT_NamedValue_Type::PJRT_NamedValue_kBool,
+      .bool_value = (bool) bool_value,
+      .value_size = 1,
+    };
+  }
+
+  PJRT_Client_Create_Args* PJRT_Client_Create_Args_new(
+    PJRT_NamedValue* create_options, size_t num_options
+  ) {
+//    std::cout << "PJRT_Client_Create_Args_new ..." << std::endl;
+    return new PJRT_Client_Create_Args {
       .struct_size = PJRT_Client_Create_Args_STRUCT_SIZE,
       .extension_start = nullptr,
-      .create_options = nullptr,
-      .num_options = 0,
+      .create_options = create_options,
+      .num_options = num_options,
       .kv_get_callback = nullptr,
       .kv_get_user_arg = nullptr,
       .kv_put_callback = nullptr,
@@ -144,7 +228,7 @@ extern "C" {
 
   PJRT_Client_Destroy_Args* PJRT_Client_Destroy_Args_new(PJRT_Client* client) {
     // std::cout << "PJRT_Client_Destroy_Args_new ..." << std::endl;
-    return new PJRT_Client_Destroy_Args{
+    return new PJRT_Client_Destroy_Args {
       .struct_size = PJRT_Client_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
       .client = client,

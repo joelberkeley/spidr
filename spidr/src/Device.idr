@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Device
 
+import public Data.SortedMap
 import Control.Monad.Either
 
 import Compiler.Xla.PJRT.C.PJRT_C_API
@@ -25,7 +26,5 @@ public export
 data Device = MkDevice PjrtApi PjrtClient
 
 export
-device : PjrtApi -> ErrIO PjrtError Device
-device api = do
-  client <- pjrtClientCreate api
-  pure (MkDevice api client)
+device : PjrtApi -> SortedMap String PjrtValue -> ErrIO PjrtError Device
+device api clientCreateOptions = MkDevice api <$> pjrtClientCreate api clientCreateOptions

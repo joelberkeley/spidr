@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module PjrtGpuPlugin
 
+import Data.SortedMap
 import System.FFI
 
 import Compiler.Xla.PJRT.C.PJRT_C_API
@@ -25,3 +26,12 @@ prim__getPjrtApi : PrimIO AnyPtr
 export
 getPjrtApi : HasIO io => io PjrtApi
 getPjrtApi = MkPjrtApi <$> primIO prim__getPjrtApi
+
+export
+createOptions : SortedMap String PjrtValue
+createOptions = fromList [
+      -- is my cuda version too new for xla?
+      ("platform_name", PjrtString "cuda")
+    , ("allocator", PjrtString "default")
+    , ("visible_devices", PjrtInt64Array [0])
+  ]

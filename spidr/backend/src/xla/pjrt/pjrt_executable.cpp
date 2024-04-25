@@ -29,6 +29,8 @@ limitations under the License.
 extern "C" {
   CompileOptions* CompileOptions_new() {
     // std::cout << "CompileOptions_new ..." << std::endl;
+
+    // new function to create ExecutableBuildOptions needed
     auto build_options = new xla::ExecutableBuildOptions;
     build_options->set_device_ordinal(0);
 

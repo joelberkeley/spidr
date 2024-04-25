@@ -16,12 +16,14 @@ limitations under the License.
 module Compiler.Xla.PJRT.C.PJRT_C_API
 
 import Control.Monad.Either
-import Language.Reflection
+import Data.SortedMap
 import Derive.Prelude
+import Language.Reflection
 
 import Compiler.FFI
 import Compiler.Xla.Literal
 import Types
+import Util
 
 %language ElabReflection
 
@@ -163,7 +165,7 @@ export
 data PjrtClient = MkPjrtClient GCAnyPtr
 
 %foreign (libxla "PJRT_Client_Create_Args_new")
-prim__mkPjrtClientCreateArgs : PrimIO AnyPtr
+prim__mkPjrtClientCreateArgs : AnyPtr -> Bits64 -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Create_Args_client")
 prim__pjrtClientCreateArgsClient : AnyPtr -> AnyPtr
@@ -192,15 +194,72 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   free args
   destroyPjrtError api err
 
+public export
+data PjrtValue =
+    PjrtString String
+  | PjrtInt64 Int64
+  | PjrtInt64Array (List Int64)
+  | PjrtFloat Double
+  | PjrtBool Bool
+
+%foreign (libxla "PJRT_NamedValue_string")
+prim__pjrtNamedValue_String : AnyPtr -> String -> Bits64 -> String -> Bits64 -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_int64")
+prim__pjrtNamedValue_Int64 : AnyPtr -> String -> Bits64 -> Int64 -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_int64_array")
+prim__pjrtNamedValue_Int64Array : AnyPtr -> String -> Bits64 -> Ptr Int64 -> Bits64 -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_float")
+prim__pjrtNamedValue_Float : AnyPtr -> String -> Bits64 -> Double -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_bool")
+prim__pjrtNamedValue_Bool : AnyPtr -> String -> Bits64 -> Int -> PrimIO ()
+
+%foreign (libxla "set_array_int64_t")
+prim__setInt64 : Ptr Int64 -> Bits64 -> Int64 -> PrimIO ()
+
+pjrtNamedValue : HasIO io => AnyPtr -> String -> PjrtValue -> io ()
+pjrtNamedValue addr name (PjrtString string) = primIO $ prim__pjrtNamedValue_String addr name (cast $ length name) string (cast $ length string)
+pjrtNamedValue addr name (PjrtInt64 int64) = primIO $ prim__pjrtNamedValue_Int64 addr name (cast $ length name) int64
+pjrtNamedValue addr name (PjrtInt64Array int64s) = do
+  let sizeof_int64_t = 8
+  -- arr needs freeing
+  arr <- prim__castPtr <$> malloc (cast (length int64s) * sizeof_int64_t)
+  traverse_ (\(idx, x) => primIO $ prim__setInt64 arr (cast idx) x) (enumerate int64s)
+  primIO $ prim__pjrtNamedValue_Int64Array addr name (cast $ length name) arr (cast $ length int64s)
+pjrtNamedValue addr name (PjrtFloat double) = primIO $ prim__pjrtNamedValue_Float addr name (cast $ length name) double
+pjrtNamedValue addr name (PjrtBool bool) = primIO $ prim__pjrtNamedValue_Bool addr name (cast $ length name) (boolToCInt bool)
+
+%foreign (libxla "sizeof_PJRT_NamedValue")
+prim__sizeofPjrtNamedValue : Bits64
+
+%foreign (libxla "shift_by_PJRT_NamedValue")
+prim__shift_by_PJRT_NamedValue : AnyPtr -> Bits64 -> AnyPtr
+
 export
-pjrtClientCreate : PjrtApi -> ErrIO PjrtError PjrtClient
-pjrtClientCreate (MkPjrtApi api) = do
-  args <- primIO prim__mkPjrtClientCreateArgs
+pjrtClientCreate : PjrtApi -> SortedMap String PjrtValue -> ErrIO PjrtError PjrtClient
+pjrtClientCreate (MkPjrtApi api) createOptions = do
+  let createOptions = toList createOptions
+      numOptions = List.length createOptions
+
+  createOptionsArr <- malloc (cast numOptions * cast prim__sizeofPjrtNamedValue)
+
+  let setOpt : (Nat, String, PjrtValue) -> IO ()
+      setOpt (idx, name, value) =
+        let addr = prim__shift_by_PJRT_NamedValue createOptionsArr (cast idx)
+         in pjrtNamedValue addr name value
+
+  traverse_ (liftIO . setOpt) (enumerate createOptions)
+  args <- primIO $ prim__mkPjrtClientCreateArgs createOptionsArr (cast numOptions)
   err <- primIO $ prim__pjrtClientCreate api args
+  -- free int64 array
+  free createOptionsArr
   let client = prim__pjrtClientCreateArgsClient args
   free args
   try api err =<< do
-    client <- onCollectAny client (const $ pure ()) --destroy
+    client <- onCollectAny client destroy
     pure $ MkPjrtClient client
 
     where
@@ -223,7 +282,7 @@ export
 mkPjrtProgram : HasIO io => CharArray -> io PjrtProgram
 mkPjrtProgram (MkCharArray code codeSize) = do
   ptr <- primIO $ prim__mkPjrtProgram code codeSize
-  ptr <- onCollectAny ptr (const $ pure ())
+  ptr <- onCollectAny ptr free
   pure (MkPjrtProgram ptr)
 
 %foreign (libxla "PJRT_Client_Compile_Args_new")

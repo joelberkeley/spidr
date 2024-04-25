@@ -33,14 +33,14 @@ import Unit.TestLiteral
 import Unit.TestUtil
 
 import PjrtCpuPlugin
-import PjrtGpuPlugin
+--import PjrtGpuPlugin
 -- bad import
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
 partial
 main : IO ()
 main = do
-  Right device <- runEitherT $ do device !PjrtCpuPlugin.getPjrtApi
+  Right device <- runEitherT $ do device !getPjrtApi createOptions
     | Left err => die $ show err
 
   test [
