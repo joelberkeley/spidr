@@ -1,16 +1,3 @@
-# Copyright 2021 Joel Berkeley
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 on:
   pull_request:
     branches: master
@@ -27,8 +14,9 @@ jobs:
     - name: Build PJRT + XLA binary
       working-directory: spidr/backend
       run: |
-        ./install.sh  # assumes --backend=CPU, which doesn't seem right
-        ./build.sh
+        bash ../../install_xla.sh
+        (cd xla; ./configure --backend=CPU)
+        bazel build //c_xla
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -49,60 +37,59 @@ jobs:
 #      with:
 #        path: ~/.cache/bazel
 #        key: xla-${{ runner.os }}
-      - name: Build XLA CPU PJRT plugin
-        run: |
-          mkdir xla
-          cd xla
-          git init
-          git remote add origin https://github.com/openxla/xla
-          git fetch origin "$(cat ../XLA_REVISION)"
-          git reset --hard FETCH_HEAD
-          BAZEL_CXXOPTS=-std=c++17 bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
-      - name: Upload binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: pjrt_c_api_cpu_plugin.so
-          path: xla/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so
-          if-no-files-found: error
-      - name: Free disk space  # needed to save bazel cache
-        run: |
-          df -H
+    - name: Build XLA CPU PJRT plugin
+      run: |
+        ./install_xla.sh
+        cd xla
+        bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+        mv bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so ../pjrt_plugin_xla_cpu.so
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        path: pjrt_plugin_xla_cpu.so
+        if-no-files-found: error
+    - name: Free disk space  # needed to save bazel cache
+      run: |
+        df -H
 
-          dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20
+        dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20
 
-          sudo apt-get purge -y \
-              libnvinfer8 \
-              libnvinfer-dev \
-              libcudnn8 \
-              libcudnn8-dev \
-              libcublas-12-3 \
-              libcublas-dev-12-3 \
-              libcusparse-12-3 \
-              libcusparse-dev-12-3 \
-              libcusolver-12-3 \
-              libcusolver-dev-12-3
-          sudo apt-get autoremove -y
-          sudo apt-get autoclean
+        sudo apt-get purge -y \
+            libnvinfer8 \
+            libnvinfer-dev \
+            libcudnn8 \
+            libcudnn8-dev \
+            libcublas-12-3 \
+            libcublas-dev-12-3 \
+            libcusparse-12-3 \
+            libcusparse-dev-12-3 \
+            libcusolver-12-3 \
+            libcusolver-dev-12-3
+        sudo apt-get autoremove -y
+        sudo apt-get autoclean
 
-          df -H
-      - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/bazel
-          key: pjrt-plugin-xla-cpu-${{ runner.os }}
+        df -H
+    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/bazel
+        key: pjrt-plugin-xla-cpu-${{ runner.os }}
   pjrt-plugin-xla-cuda:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
     steps:
-      - uses: actions/checkout@v4
-        # doesn't need checkout as we're only building an XLA target
-        #
-        # install nvidia docker, and add --runtime=nvidia --gpus all to the docker run command
-        # maybe install nvidia drivers on host
-        #
-        # but how to do this in github?
-        # note we're using elixir-nx builds atm so they've done the GPU builds
-        # which is why we haven't needed to think about this
+    - uses: actions/checkout@v4
+      # doesn't need checkout as we're only building an XLA target
+      #
+      # install nvidia docker, and add --runtime=nvidia --gpus all to the docker run command
+      # maybe install nvidia drivers on host
+      #
+      # but how to do this in github?
+      #
+      # note that we don't need a gpu to compile the cuda binary, only to run it
+      #
+      # note we're using elixir-nx builds atm so they've done the GPU builds
+      # which is why we haven't needed to think about this
   build-tests:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack

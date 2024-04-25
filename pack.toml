@@ -3,12 +3,12 @@ type = "local"
 path = ""
 ipkg = "spidr/spidr.ipkg"
 
-[custom.all.pjrt-cpu-plugin]
+[custom.all.pjrt-plugin-xla-cpu]
 type = "local"
 path = ""
-ipkg = "pjrt-cpu-plugin/pjrt-cpu-plugin.ipkg"
+ipkg = "pjrt-plugins/xla-cpu/pjrt-plugin-xla-cpu.ipkg"
 
-[custom.all.pjrt-gpu-plugin]
+[custom.all.pjrt-plugin-xla-cuda]
 type = "local"
 path = ""
-ipkg = "pjrt-gpu-plugin/pjrt-gpu-plugin.ipkg"
+ipkg = "pjrt-plugins/xla-cuda/pjrt-plugin-xla-cuda.ipkg"

@@ -32,8 +32,8 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-import PjrtCpuPlugin
---import PjrtGpuPlugin
+import PjrtPluginXlaCpu
+--import PjrtPluginXlaGpu
 -- bad import
 import Compiler.Xla.PJRT.C.PJRT_C_API
 

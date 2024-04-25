@@ -2,8 +2,8 @@ package test
 
 depends =
   spidr,
-  pjrt-cpu-plugin,
-  pjrt-gpu-plugin,
+  pjrt-plugin-xla-cpu,
+  pjrt-plugin-xla-cuda,
   hedgehog,
   sop
 

@@ -1,11 +1,11 @@
-package pjrt-gpu-plugin
+package pjrt-plugin-xla-cuda
 version = 0.0.1
 
 sourcedir = "src"
 depends = spidr
-modules = PjrtGpuPlugin
+modules = PjrtPluginXlaCuda
 
-brief = "XLA PJRT GPU plugin."
+brief = "XLA PJRT plugin for CUDA-enabled GPUs."
 readme = "README.md"
 license = "Apache License, Version 2.0"
 

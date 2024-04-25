@@ -1,11 +1,11 @@
-package pjrt-cpu-plugin
+package pjrt-plugin-xla-cpu
 version = 0.0.1
 
 sourcedir = "src"
 depends = spidr
-modules = PjrtCpuPlugin
+modules = PjrtPluginXlaCpu
 
-brief = "XLA PJRT CPU plugin."
+brief = "XLA PJRT plugin for CPU."
 readme = "README.md"
 license = "Apache License, Version 2.0"
 
