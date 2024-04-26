@@ -11,6 +11,11 @@ jobs:
     container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
+    - name: Fetch Bazel cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel
+        key: pjrt-${{ runner.os }}
     - name: Build PJRT + XLA binary
       working-directory: spidr/backend
       run: |
@@ -23,6 +28,14 @@ jobs:
         name: libc_xla.so
         path: spidr/backend/bazel-bin/libc_xla.so
         if-no-files-found: error
+    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/bazel
+        key: pjrt-${{ runner.os }}
+  # i think that building the plugins separately as shared libs solves the slow build problem
+  # because the plugins will be updated rarely. In addition, we may be able to cache
+  # the pjrt build above which could reduce the build to just a few minutes
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
