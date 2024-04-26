@@ -20,7 +20,7 @@ import System.FFI
 
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
-%foreign "C:GetPjrtApi,pjrt_c_api_cpu_plugin"
+%foreign "C:GetPjrtApi,pjrt_plugin_xla_cpu"
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
