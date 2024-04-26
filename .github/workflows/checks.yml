@@ -34,22 +34,12 @@ jobs:
         path: ~/.cache/bazel
         key: pjrt-${{ runner.os }}
   # i think that building the plugins separately as shared libs solves the slow build problem
-  # because the plugins will be updated rarely. In addition, we may be able to cache
-  # the pjrt build above which could reduce the build to just a few minutes
+  # because the plugins will be updated rarely and we can use previous builds when the version
+  # is unchanged
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
     steps:
-#    - name: Mount bazel cache
-#      uses: actions/cache@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: xla-${{ runner.os }}
-    - name: Fetch Bazel cache
-      uses: actions/cache/restore@v4
-      with:
-        path: ~/.cache/bazel
-        key: xla-${{ runner.os }}
     - uses: actions/checkout@v4
     - name: Build XLA CPU PJRT plugin
       run: |
@@ -63,32 +53,6 @@ jobs:
       with:
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
-    - name: Free disk space  # needed to save bazel cache
-      run: |
-        df -H
-
-        dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20
-
-        sudo apt-get purge -y \
-            libnvinfer8 \
-            libnvinfer-dev \
-            libcudnn8 \
-            libcudnn8-dev \
-            libcublas-12-3 \
-            libcublas-dev-12-3 \
-            libcusparse-12-3 \
-            libcusparse-dev-12-3 \
-            libcusolver-12-3 \
-            libcusolver-dev-12-3
-        sudo apt-get autoremove -y
-        sudo apt-get autoclean
-
-        df -H
-    - name: Save Bazel cache  # temporary until we merge bazel-cache workflow
-      uses: actions/cache/save@v4
-      with:
-        path: ~/.cache/bazel
-        key: pjrt-plugin-xla-cpu-${{ runner.os }}
   pjrt-plugin-xla-cuda:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9

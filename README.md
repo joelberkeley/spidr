@@ -12,7 +12,7 @@ Install [pack](https://github.com/stefan-hoeck/idris2-pack), then run
 ```
 pack install spidr
 ```
-and follow the on-screen instructions.
+and follow the on-screen instructions. Next, install a PJRT plugin ...
 
 ### Motivation
 
@@ -47,9 +47,13 @@ append x y = concat 0 x y
 ```
 As a bonus, spidr programs are reproducible. Any one graph will always produce the same result when run on the same hardware.
 
-#### Optimized compilation for hardware accelerators
+#### Execute on hardware accelerators
 
-spidr programs can be run on any accelerator, and with any compiler, for which there's a PJRT plugin.This provides tremendous performance benefits, such as XLA's operator fusion. There are CPU and CUDA plugins for XLA. You can also build your own custom plugins with minimal code, including for ROCM, embedded, mobile, and machine learning accelerators.
+spidr programs can be run on any accelerator for which there's a PJRT plugin. CPU and CUDA plugins are available out of the box. You can also create and use your own custom plugins with minimal code, see [the guide](pjrt-plugins/README.md) for instructions. Plugins exist for ROCM GPUs, embedded and mobile devices, machine learning accelerators, and more.
+
+#### Optimize graph compilation
+
+Just as for accelerators, spidr programs can be compiled by any compiler for which there's a PJRT plugin. This can provide significant performance benefits. For example, the out of the box plugins use the XLA compiler, which implements [CSE and operator fusion](https://openxla.org/xla/architecture).
 
 #### Graph generation
 
