@@ -45,11 +45,11 @@ jobs:
 #      with:
 #        path: ~/.cache/bazel
 #        key: xla-${{ runner.os }}
-#    - name: Fetch Bazel cache
-#      uses: actions/cache/restore@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: xla-${{ runner.os }}
+    - name: Fetch Bazel cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel
+        key: xla-${{ runner.os }}
     - uses: actions/checkout@v4
     - name: Build XLA CPU PJRT plugin
       run: |
