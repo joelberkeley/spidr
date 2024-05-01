@@ -31,6 +31,9 @@ export
 createOptions : SortedMap String PjrtValue
 createOptions = fromList [
       -- is my cuda version too new for xla?
+      --
+      -- is the problem that when i try to ./configure.py --backend=CUDA I get an error?
+      -- seems very worth checking
       ("platform_name", PjrtString "cuda")
     , ("allocator", PjrtString "default")
     , ("visible_devices", PjrtInt64Array [0])

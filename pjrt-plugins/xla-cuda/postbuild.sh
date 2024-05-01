@@ -1,4 +1,5 @@
-XLA_COMMIT_SHA=$(cat ../../spidr/backend/XLA_COMMIT_SHA)
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+XLA_COMMIT_SHA=$(cat "$SCRIPT_DIR"/../../XLA_COMMIT_SHA)
 
 echo "
 PJRT XLA CUDA plugin Idris API installed. Now install the plugin binary with

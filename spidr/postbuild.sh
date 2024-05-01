@@ -1,4 +1,5 @@
-C_XLA_VERSION=$(cat backend/VERSION)
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+C_XLA_VERSION=$(cat SCRIPT_DIR/backend/VERSION)
 
 echo "
 spidr Idris API installed. Now install the PJRT interface with
