@@ -87,7 +87,7 @@ jobs:
         name: test.tar.gz
         path: test/test.tar.gz
         if-no-files-found: error
-  test-unit:
+  test-unit-xla-cpu:
     needs:
       - pjrt
       - pjrt-plugin-xla-cpu
@@ -105,6 +105,23 @@ jobs:
       run: |
         tar xfz test.tar.gz . && rm test.tar.gz
         ./test
+  test-unit-xla-cuda:
+    needs:
+      - pjrt
+      - pjrt-plugin-xla-cuda
+      - build-tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        sudo apt install chezscheme
+    - name: Run tests
+      run: |
+        exit 1
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
