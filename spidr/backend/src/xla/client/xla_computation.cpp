@@ -26,26 +26,9 @@ extern "C" {
         delete reinterpret_cast<xla::XlaComputation*>(s);
     }
 
-//    const HloModuleProto& XlaComputation_proto(XlaComputation* s) {
-//        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
-//        // am i handling the memory correctly here?
-//        return reinterpret_cast<const HloModuleProto&>(s_->proto());
-//    }
-//
-//    // not the right place for it, but I can't find the right place
-//    char* HloModuleProto_SerializeAsString(HloModuleProto* s) {
-//        // where can I import this method SerializeAsString from?
-//        return c_string_copy(s->SerializeAsString());
-//    }
-
-    // until I work out how to handle memory of HloModuleProto
     string* XlaComputation_SerializeAsString(XlaComputation* s) {
-//        // std::cout << "XlaComputation_SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
         auto serialized = s_->proto().SerializeAsString();
-//        // std::cout << "... serialized" << std::endl;
-//        fwrite(serialized.c_str(), sizeof(char), serialized.length(), stdout);
-//        // std::cout << std::endl;
         return reinterpret_cast<string*>(new std::string(serialized));
     }
 }

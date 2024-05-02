@@ -3,6 +3,11 @@ type = "local"
 path = ""
 ipkg = "spidr/spidr.ipkg"
 
+[custom.all.runner]
+type = "local"
+path = ""
+ipkg = "test/runner.ipkg"
+
 [custom.all.pjrt-plugin-xla-cpu]
 type = "local"
 path = ""

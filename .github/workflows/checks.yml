@@ -70,7 +70,7 @@ jobs:
       with:
         path: pjrt_plugin_xla_cuda.so
         if-no-files-found: error
-  build-tests:
+  build-tests-xla-cpu:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
@@ -79,7 +79,24 @@ jobs:
       working-directory: test
       run: |
         pack switch HEAD
-        pack --no-prompt build test.ipkg
+        pack --no-prompt build test/xla-cpu/xla-cpu.ipkg
+        tar cfz test.tar.gz -C build/exec .
+    - name: Upload tests
+      uses: actions/upload-artifact@v4
+      with:
+        name: test.tar.gz
+        path: test/test.tar.gz
+        if-no-files-found: error
+  build-tests-xla-cuda:
+    runs-on: ubuntu-latest
+    container: ghcr.io/stefan-hoeck/idris2-pack
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build tests
+      working-directory: test
+      run: |
+        pack switch HEAD
+        pack --no-prompt build test/xla-cuda/xla-cuda.ipkg
         tar cfz test.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
@@ -122,7 +139,8 @@ jobs:
         sudo apt install chezscheme
     - name: Run tests
       run: |
-        exit 1
+        tar xfz test.tar.gz . && rm test.tar.gz
+        ./test
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack

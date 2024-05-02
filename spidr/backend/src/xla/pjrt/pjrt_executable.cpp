@@ -13,24 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <iostream>
+#include <string>
 
 #include "xla/client/xla_computation.h"
+#include "xla/pjrt/pjrt_executable.h"
 
-#include "pjrt_executable.h"
-
-//char* c_string_copy(std::string str) {
-//    auto len = str.length();
-//    auto res = (char *) malloc(len);
-//    strncpy(res, str.c_str(), len);
-//    return res;
-//}
+#include "../../ffi.h"
 
 extern "C" {
-  CompileOptions* CompileOptions_new() {
-    // std::cout << "CompileOptions_new ..." << std::endl;
+  struct CompileOptions;
 
-    // new function to create ExecutableBuildOptions needed
+  CompileOptions* CompileOptions_new() {
     auto build_options = new xla::ExecutableBuildOptions;
     build_options->set_device_ordinal(0);
 
@@ -44,12 +37,8 @@ extern "C" {
   }
 
   string* CompileOptions_SerializeAsString(CompileOptions* s) {
-    // std::cout << "CompileOptions_SerializeAsString ..." << std::endl;
-//    // std::cout << "CompileOptions_SerializeAsString ..." << std::endl;
     auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
     auto res = s_->ToProto()->SerializeAsString();
-//    // std::cout << "... serialized result: " << std::endl;
-//    // std::cout << res << std::endl;
     return reinterpret_cast<string*>(new std::string(res));
   }
 }

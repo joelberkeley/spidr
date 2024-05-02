@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <iostream>
-
 #include "xla/shape.h"
 
 #include "shape.h"
@@ -25,13 +23,10 @@ extern "C" {
     }
 
     int sizeof_Shape() {
-//        // std::cout << "sizeof_Shape ..." << std::endl;
         return sizeof(xla::Shape);
     }
 
     void set_array_Shape(Shape* arr, int idx, Shape* shape) {
-//        // std::cout << "set_array_Shape ..." << std::endl;
-//        // std::cout << "... shape " << shape << std::endl;
         reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
     }
 }

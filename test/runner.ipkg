@@ -1,16 +1,11 @@
-package test
+package runner
 
 depends =
   spidr,
-  pjrt-plugin-xla-cpu,
-  pjrt-plugin-xla-cuda,
   hedgehog,
   sop
 
-sourcedir = "test"
-
-executable = test
-main = Main
+sourcedir = "runner"
 
 modules =
   Unit.Model.TestKernel,
@@ -31,6 +26,6 @@ modules =
   Utils.Proof,
   Utils.TestComparison,
 
-  Main,
+  TestRunner,
   TestUtils,
   Utils

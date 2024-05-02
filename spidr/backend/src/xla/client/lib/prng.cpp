@@ -17,7 +17,6 @@ limitations under the License.
 
 #include "../../shape.h"
 #include "../xla_builder.h"
-#include "prng.h"
 
 xla::BitGeneratorTy BitGenerator(int bit_generator) {
     xla::BitGeneratorTy bit_generator_;
@@ -37,6 +36,15 @@ xla::BitGeneratorTy BitGenerator(int bit_generator) {
 }
 
 extern "C" {
+    struct RngOutput {
+        XlaOp* value;
+        XlaOp* state;
+    };
+
+    void delete_RngOutput(RngOutput* rngOutput) {
+        free(rngOutput);
+    }
+
     RngOutput* UniformFloatingPointDistribution(
         XlaOp& key,
         XlaOp& initial_state,

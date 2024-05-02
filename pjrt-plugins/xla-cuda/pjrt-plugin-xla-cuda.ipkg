@@ -1,7 +1,6 @@
 package pjrt-plugin-xla-cuda
 version = 0.0.1
 
-sourcedir = "src"
 depends = spidr
 modules = PjrtPluginXlaCuda
 

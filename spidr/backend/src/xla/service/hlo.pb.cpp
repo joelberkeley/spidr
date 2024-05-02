@@ -13,14 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <cstring>
-#include <iostream>
+#include <string>
+
+#include "xla/service/hlo.pb.h"
 
 #include "hlo.pb.h"
+#include "../../ffi.h"
 
 extern "C" {
+    // used if we pull out SerializeAsString from XlaComputation_SerializeAsString
     string* SerializeAsString(HloModuleProto* s) {
-        // std::cout << "SerializeAsString ..." << std::endl;
         auto s_ = reinterpret_cast<xla::HloModuleProto*>(s);
         auto serialized = s_->SerializeAsString();
         return reinterpret_cast<string*>(new std::string(serialized));

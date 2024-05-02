@@ -14,18 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 extern "C" {
-    int isnull(void* ptr);
-
     struct string;
-    void string_delete(string* s);
-    char* string_data(string* s);
-    size_t string_size(string* s);
-
-    int sizeof_int();
-    int sizeof_ptr();
-
-    size_t size(char*);
-    void* index(int idx, void** ptr);
-    void set_array_int(int* arr, int idx, int value);
-    void set_array_ptr(void** arr, int idx, void* value);
 }

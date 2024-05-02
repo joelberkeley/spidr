@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <iostream>
-
 #include "xla/literal.h"
 
 #include "literal.h"
@@ -22,14 +20,11 @@ limitations under the License.
 #include "shape_util.h"
 
 extern "C" {
-    // technically for LiteralBase. Do we care?
     void* Literal_untyped_data(Literal* s) {
-        // std::cout << "Literal_untyped_data ..." << std::endl;
         return reinterpret_cast<xla::Literal*>(s)->untyped_data();
     }
 
     int64_t Literal_size_bytes(Literal* s) {
-        // std::cout << "Literal_size_bytes ..." << std::endl;
         return reinterpret_cast<xla::Literal*>(s)->size_bytes();
     }
 
@@ -40,7 +35,6 @@ extern "C" {
     }
 
     void Literal_delete(Literal* lit) {
-        // std::cout << "Literal_delete ..." << std::endl;
         delete reinterpret_cast<xla::Literal*>(lit);
     }
 }

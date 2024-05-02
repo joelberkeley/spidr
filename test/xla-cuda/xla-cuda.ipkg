@@ -1,0 +1,9 @@
+package xla-cuda
+
+depends =
+  pjrt-plugin-xla-cuda,
+  runner
+
+executable = test
+main = XlaCuda
+modules = XlaCuda

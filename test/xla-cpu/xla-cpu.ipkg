@@ -1,0 +1,9 @@
+package xla-cpu
+
+depends =
+  pjrt-plugin-xla-cpu,
+  runner
+
+executable = test
+main = XlaCpu
+modules = XlaCpu

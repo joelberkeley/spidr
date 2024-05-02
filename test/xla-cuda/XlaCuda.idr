@@ -1,5 +1,5 @@
-/*
-Copyright 2022 Joel Berkeley
+{--
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,10 +12,15 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "../xla_builder.h"
+--}
+module XlaCuda
 
-extern "C" {
-    XlaOp* ArgMax(XlaOp& input, int output_type, int axis);
-    XlaOp* ArgMin(XlaOp& input, int output_type, int axis);
-}
+import TestRunner
+import PjrtPluginXlaCuda
+
+-- bad import
+import Compiler.Xla.PJRT.C.PJRT_C_API
+
+partial
+main : IO ()
+main = run !getPjrtApi createOptions

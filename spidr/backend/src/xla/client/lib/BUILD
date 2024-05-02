@@ -8,8 +8,8 @@ cc_library(
         "@xla//xla/client/lib:math",
         "@xla//xla/client/lib:matrix",
         "@xla//xla/client/lib:prng",
-        "//src/xla:xla",
-        "//src/xla/client:client",
+        "//src/xla",
+        "//src/xla/client",
     ],
     visibility = ["//visibility:public"],
 )

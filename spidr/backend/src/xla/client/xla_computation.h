@@ -13,15 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// we have included this as it appears to be the source of HloModuleProto, but
-// can't find it, so we'll rely on a transitive BUILD target
-#include "../service/hlo.pb.h"
-#include "../../ffi.h"
-
 extern "C" {
     struct XlaComputation;
-
-    // void XlaComputation_delete(XlaComputation* s);
-    // const HloModuleProto& XlaComputation_proto(XlaComputation* s);
-    string* XlaComputation_SerializeAsString(XlaComputation* s);
 }

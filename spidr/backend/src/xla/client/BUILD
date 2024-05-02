@@ -12,9 +12,9 @@ cc_library(
         "@xla//xla/service:computation_placer",
         "@xla//xla/client:global_data",
         "@xla//xla/client:xla_builder",
-        "//src:src",
-        "//src/xla:xla",
-        "//src/xla/service:service",
+        "//src",
+        "//src/xla",
+        "//src/xla/service",
     ],
     visibility = ["//visibility:public"],
 )

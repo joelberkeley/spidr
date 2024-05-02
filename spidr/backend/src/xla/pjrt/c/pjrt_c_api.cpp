@@ -15,7 +15,7 @@ limitations under the License.
 */
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
+//#include <iostream>
 
 // remove these when we've pulled out build config
 #include "xla/pjrt/c/pjrt_c_api.h"
@@ -23,8 +23,6 @@ limitations under the License.
 #include "xla/pjrt/pjrt_client.h"
 #include "xla/client/executable_build_options.h"
 #include "xla/service/computation_placer.h"
-
-#include "../pjrt_executable.h"
 
 extern "C" {
   // ---------------------------------- Errors -----------------------------------

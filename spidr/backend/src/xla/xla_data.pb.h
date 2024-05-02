@@ -13,28 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "xla/xla_data.pb.h"
-
 extern "C" {
     struct DotDimensionNumbers;
-
-    DotDimensionNumbers* DotDimensionNumbers_new();
-
-    void DotDimensionNumbers_delete(DotDimensionNumbers* dimension_numbers);
-
-    void DotDimensionNumbers_add_lhs_contracting_dimensions(
-        DotDimensionNumbers& dimension_numbers, int dim
-    );
-
-    void DotDimensionNumbers_add_rhs_contracting_dimensions(
-        DotDimensionNumbers& dimension_numbers, int dim
-    );
-
-    void DotDimensionNumbers_add_lhs_batch_dimensions(
-        DotDimensionNumbers& dimension_numbers, int dim
-    );
-
-    void DotDimensionNumbers_add_rhs_batch_dimensions(
-        DotDimensionNumbers& dimension_numbers, int dim
-    );
 }

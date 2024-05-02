@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Main
+module TestRunner
 
 import Control.Monad.Either
 import System
@@ -32,15 +32,13 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-import PjrtPluginXlaCpu
---import PjrtPluginXlaCuda
 -- bad import
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
-partial
-main : IO ()
-main = do
-  Right device <- runEitherT $ do device !getPjrtApi createOptions
+export partial
+run : PjrtApi -> SortedMap String PjrtValue -> IO ()
+run api createOptions = do
+  Right device <- runEitherT $ do device api createOptions
     | Left err => die $ show err
 
   test [

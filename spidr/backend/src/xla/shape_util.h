@@ -13,20 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <stdint.h>
-
-#include "shape.h"
-
 extern "C" {
     struct ShapeIndex;
-
-    ShapeIndex* ShapeIndex_new();
-    void ShapeIndex_delete(ShapeIndex* s);
-    void ShapeIndex_push_back(ShapeIndex& shape_index, int value);
-    void ShapeIndex_push_front(ShapeIndex& shape_index, int value);
-
-    int ByteSizeOfElements(Shape& shape);
-
-    Shape* MakeTupleShape(Shape* shapes, int shapes_len);
-    Shape* MakeShape(int primitive_type, int* shape, int rank);
 }
