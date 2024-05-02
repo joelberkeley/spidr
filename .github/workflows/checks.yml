@@ -76,7 +76,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build tests
-      working-directory: test
       run: |
         pack switch HEAD
         pack --no-prompt build test/xla-cpu/xla-cpu.ipkg
@@ -85,7 +84,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: test.tar.gz
-        path: test/test.tar.gz
         if-no-files-found: error
   build-tests-xla-cuda:
     runs-on: ubuntu-latest
@@ -93,7 +91,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build tests
-      working-directory: test
       run: |
         pack switch HEAD
         pack --no-prompt build test/xla-cuda/xla-cuda.ipkg
@@ -102,7 +99,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: test.tar.gz
-        path: test/test.tar.gz
         if-no-files-found: error
   test-xla-cpu:
     needs:
