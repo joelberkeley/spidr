@@ -87,7 +87,7 @@ jobs:
         name: test.tar.gz
         path: test/test.tar.gz
         if-no-files-found: error
-  test-unit-xla-cpu:
+  test-xla-cpu:
     needs:
       - pjrt
       - pjrt-plugin-xla-cpu
@@ -105,12 +105,12 @@ jobs:
       run: |
         tar xfz test.tar.gz . && rm test.tar.gz
         ./test
-  test-unit-xla-cuda:
+  test-xla-cuda:
     needs:
       - pjrt
       - pjrt-plugin-xla-cuda
       - build-tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # needs a CUDA runner
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -118,6 +118,7 @@ jobs:
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
+        # install appropriate cuda and cudnn versions
         sudo apt install chezscheme
     - name: Run tests
       run: |
