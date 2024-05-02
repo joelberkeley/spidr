@@ -55,20 +55,21 @@ jobs:
         if-no-files-found: error
   pjrt-plugin-xla-cuda:
     runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9
+    container: tensorflow/build:latest-python3.9  # note this implies specific versions of CUDA and cuDNN
     steps:
     - uses: actions/checkout@v4
-      # doesn't need checkout as we're only building an XLA target
-      #
-      # install nvidia docker, and add --runtime=nvidia --gpus all to the docker run command
-      # maybe install nvidia drivers on host
-      #
-      # but how to do this in github?
-      #
-      # note that we don't need a gpu to compile the cuda binary, only to run it
-      #
-      # note we're using elixir-nx builds atm so they've done the GPU builds
-      # which is why we haven't needed to think about this
+    - name: Build XLA CUDA PJRT plugin
+      run: |
+        ./install_xla.sh
+        cd xla
+        # note we're not using ./configure.py, see https://github.com/openxla/xla/issues/12017
+        bazel build --config release_gpu_linux //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
+        mv bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so ../pjrt_plugin_xla_cuda.so
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        path: pjrt_plugin_xla_cuda.so
+        if-no-files-found: error
   build-tests:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
