@@ -91,7 +91,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tests-xla-cpu.tar.gz
-        path: test/xla-cuda/tests-xla-cpu.tar.gz
+        path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cuda:
     runs-on: ubuntu-latest
