@@ -2,9 +2,6 @@ on:
   pull_request:
     branches: master
 
-env:
-  PACK_DIR: /root/.pack
-
 jobs:
   pjrt:
     runs-on: ubuntu-latest
@@ -33,9 +30,6 @@ jobs:
       with:
         path: ~/.cache/bazel
         key: pjrt-${{ runner.os }}
-  # i think that building the plugins separately as shared libs solves the slow build problem
-  # because the plugins will be updated rarely and we can use previous builds when the version
-  # is unchanged
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
@@ -45,15 +39,15 @@ jobs:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
       run: >-
-        if [[ -z $(git diff HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
-          ./install_xla.sh
-          cd xla
-          ./configure.py --backend=CPU
-          bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
-          mv bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so ../pjrt_plugin_xla_cpu.so
-        else
-          exit 0  # fetch latest build
-        fi
+#        if [[ -z $(git diff HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
+        ./install_xla.sh
+        cd xla
+        ./configure.py --backend=CPU
+        bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+        mv bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so ../pjrt_plugin_xla_cpu.so
+#        else
+#          exit 0  # fetch latest build
+#        fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -61,7 +55,7 @@ jobs:
         if-no-files-found: error
   pjrt-plugin-xla-cuda:
     runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9  # note this implies specific versions of CUDA and cuDNN
+    container: tensorflow/build:latest-python3.11  # note this implies specific versions of CUDA and cuDNN
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CUDA PJRT plugin
@@ -128,7 +122,7 @@ jobs:
       run: |
         tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
 
-        # hack to make dev faster
+        # hack to make dev faster, will eventually live up in build step
         sudo apt install -y wget
         wget https://github.com/joelberkeley/xla-build/releases/download/spidr-cache1/pjrt_plugin_xla_cpu.so
 
