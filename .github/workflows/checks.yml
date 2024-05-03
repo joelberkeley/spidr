@@ -129,7 +129,7 @@ jobs:
         tar xfz test.tar.gz . && rm test.tar.gz
 
         # hack to make dev faster
-        apt install -y wget
+        sudo apt install -y wget
         wget https://github.com/joelberkeley/xla-build/releases/download/untagged-e840031b436d376aaff4/pjrt_plugin_xla_cpu.so
 
         ./test
