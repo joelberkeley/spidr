@@ -130,7 +130,7 @@ jobs:
 
         # hack to make dev faster
         sudo apt install -y wget
-        wget https://github.com/joelberkeley/xla-build/releases/download/untagged-e840031b436d376aaff4/pjrt_plugin_xla_cpu.so
+        wget https://github.com/joelberkeley/xla-build/releases/download/spidr-cache1/pjrt_plugin_xla_cpu.so
 
         ./test
   test-xla-cuda:
