@@ -39,15 +39,15 @@ jobs:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
       run: >-
-#        if [[ -z $(git diff HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
+        # if [[ -z $(git diff HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
         ./install_xla.sh
         cd xla
         ./configure.py --backend=CPU
         bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
         mv bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so ../pjrt_plugin_xla_cpu.so
-#        else
-#          exit 0  # fetch latest build
-#        fi
+        # else
+        #   exit 0  # fetch latest build
+        # fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
