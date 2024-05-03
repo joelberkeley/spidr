@@ -86,12 +86,12 @@ jobs:
       run: |
         pack switch HEAD
         pack --no-prompt build xla-cpu.ipkg
-        tar cfz test.tar.gz -C build/exec .
+        tar cfz tests-xla-cpu.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cpu
-        path: test/xla-cpu/test.tar.gz
+        name: tests-xla-cpu.tar.gz
+        path: test/xla-cuda/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cuda:
     runs-on: ubuntu-latest
@@ -103,12 +103,12 @@ jobs:
       run: |
         pack switch HEAD
         pack --no-prompt build xla-cuda.ipkg
-        tar cfz test.tar.gz -C build/exec .
+        tar cfz tests-xla-cuda.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cuda
-        path: test/xla-cuda/test.tar.gz
+        name: tests-xla-cuda.tar.gz
+        path: test/xla-cuda/tests-xla-cuda.tar.gz
         if-no-files-found: error
   test-xla-cpu:
     needs:
@@ -126,7 +126,7 @@ jobs:
         sudo apt install chezscheme
     - name: Run tests
       run: |
-        tar xfz test.tar.gz . && rm test.tar.gz
+        tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
 
         # hack to make dev faster
         sudo apt install -y wget
@@ -150,7 +150,7 @@ jobs:
         sudo apt install chezscheme
     - name: Run tests
       run: |
-        tar xfz test.tar.gz . && rm test.tar.gz
+        tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
         ./test
   readme:
     runs-on: ubuntu-latest
