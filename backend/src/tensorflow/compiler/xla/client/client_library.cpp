@@ -17,7 +17,6 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/local_client.h"
 
 #include "../../../stream_executor/platform.h"
-#include "client_library.h"
 
 extern "C" {
     LocalClient* ClientLibrary_GetOrCreateLocalClient(
