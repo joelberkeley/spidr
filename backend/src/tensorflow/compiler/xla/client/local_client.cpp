@@ -17,7 +17,9 @@ limitations under the License.
 #include "tensorflow/compiler/xla/client/local_client.h"
 
 #include "../literal.h"
+#include "global_data.h"
 #include "local_client.h"
+#include "xla_computation.h"
 
 extern "C" {
     GlobalData* LocalClient_TransferToServer(LocalClient& client, Literal& literal) {

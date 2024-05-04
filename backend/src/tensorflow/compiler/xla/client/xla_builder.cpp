@@ -24,6 +24,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/xla_data.pb.h"
 
 #include "../literal.h"
+#include "../shape.h"
 #include "../xla_data.pb.h"
 #include "xla_builder.h"
 #include "xla_computation.h"

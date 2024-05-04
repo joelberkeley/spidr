@@ -13,19 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "../literal.h"
-#include "global_data.h"
-#include "xla_computation.h"
-
 extern "C" {
     struct LocalClient;
-
-    GlobalData* LocalClient_TransferToServer(LocalClient& client, Literal& literal);
-
-    Literal* LocalClient_ExecuteAndTransfer(
-        LocalClient& client,
-        XlaComputation& computation,
-        GlobalData** arguments,
-        int arguments_len
-    );
 }
