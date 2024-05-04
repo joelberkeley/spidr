@@ -17,7 +17,6 @@ limitations under the License.
 
 #include "../../shape.h"
 #include "../xla_builder.h"
-#include "prng.h"
 
 xla::BitGeneratorTy BitGenerator(int bit_generator) {
     struct RngOutput {
