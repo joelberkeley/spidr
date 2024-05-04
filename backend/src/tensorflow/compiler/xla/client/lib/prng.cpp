@@ -20,6 +20,15 @@ limitations under the License.
 #include "prng.h"
 
 xla::BitGeneratorTy BitGenerator(int bit_generator) {
+    struct RngOutput {
+        XlaOp* value;
+        XlaOp* state;
+    };
+
+    void delete_RngOutput(RngOutput* rngOutput) {
+        free(rngOutput);
+    }
+
     xla::BitGeneratorTy bit_generator_;
 
     switch (bit_generator) {

@@ -15,6 +15,4 @@ limitations under the License.
 */
 extern "C" {
     struct XlaComputation;
-
-    void XlaComputation_delete(XlaComputation* s);
 }
