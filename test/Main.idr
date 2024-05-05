@@ -34,6 +34,9 @@ import System
 partial
 main : IO ()
 main = do
+  -- we need to check this works for
+  -- cpu binary with cpu and gpu handles
+  -- gpu binary with cpu and gpu handles, and with and without access to gpu (use docker without --gpus all for that)
   Just gpu <- runMaybeT cuda | Nothing => die "no gpu"
   test [
       Utils.TestComparison.group
