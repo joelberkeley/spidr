@@ -40,7 +40,7 @@ namespace MultiSlice
   sliceFirstDim n from size shape x = Refl
 
   export
-  slice : Property
+  slice : Device => Property
   slice = fixedProperty $ do
     slice {shape=[3, 4]} [0.to 3, 0.to 0] === [3, 0]
     slice {shape=[3, 4]} [0.to 3, 0.to 1] === [3, 1]
@@ -51,7 +51,7 @@ namespace MultiSlice
     slice {shape=[3, 4]} [at 1, at 2] === Prelude.Nil
 
 partial
-sliceStaticIndex : Property
+sliceStaticIndex : Device => Property
 sliceStaticIndex = fixedProperty $ do
   let x = tensor {dtype=S32} [3, 4, 5]
   (do slice [at 0] !x) ===# tensor 3
@@ -64,7 +64,7 @@ sliceStaticIndex = fixedProperty $ do
   (do slice [at idx] !x) ===# tensor 5
 
 partial
-sliceStaticSlice : Property
+sliceStaticSlice : Device => Property
 sliceStaticSlice = fixedProperty $ do
   let x = tensor {dtype=S32} [3, 4, 5]
   (do slice [0.to 0] !x) ===# tensor []
@@ -78,7 +78,7 @@ sliceStaticSlice = fixedProperty $ do
   (do slice [2.to 3] !x) ===# tensor [5]
 
 partial
-sliceStaticMixed : Property
+sliceStaticMixed : Device => Property
 sliceStaticMixed = fixedProperty $ do
   let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [0.to 1] !x) ===# tensor [[3, 4, 5]]
@@ -101,7 +101,7 @@ u64 : Nat -> Graph $ Tensor [] U64
 u64 = tensor . Scalar
 
 partial
-sliceDynamicIndex : Property
+sliceDynamicIndex : Device => Property
 sliceDynamicIndex = fixedProperty $ do
   let x = tensor {dtype=S32} [3, 4, 5]
   (do slice [at (!(u64 0))] !x) ===# tensor 3
@@ -117,7 +117,7 @@ sliceDynamicIndex = fixedProperty $ do
   (do slice [at (!(u64 4))] !x) ===# tensor [6, 7, 8]
 
 partial
-sliceDynamicSlice : Property
+sliceDynamicSlice : Device => Property
 sliceDynamicSlice = fixedProperty $ do
   let x = tensor {dtype=S32} [3, 4, 5]
   (do slice [(!(u64 0)).size 0] !x) ===# tensor []
@@ -146,7 +146,7 @@ sliceDynamicSlice = fixedProperty $ do
   (do slice [(!(u64 4)).size 1] !x) ===# tensor [[6, 7, 8]]
 
 partial
-sliceMixed : Property
+sliceMixed : Device => Property
 sliceMixed = fixedProperty $ do
   let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [all, (!(u64 2)).size 0] !x) ===# tensor [[], []]
@@ -188,7 +188,7 @@ index {inDim = (LTESucc _)} 0 (y :: _) = y
 index {inDim = (LTESucc _)} (S k) (_ :: xs) = index k xs
 
 partial
-sliceForVariableIndex : Property
+sliceForVariableIndex : Device => Property
 sliceForVariableIndex = property $ do
   idx <- forAll dims
   rem <- forAll dims
@@ -203,7 +203,7 @@ sliceForVariableIndex = property $ do
   inDim {idx = (S k)} = LTESucc inDim
 
 export partial
-all : List (PropertyName, Property)
+all : Device => List (PropertyName, Property)
 all = [
       ("MultiSlice.slice", MultiSlice.slice)
     , ("slice for static index", sliceStaticIndex)

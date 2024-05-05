@@ -24,14 +24,14 @@ import Utils.Comparison
 
 namespace Vect
   export
-  range : Property
+  range : Device => Property
   range = fixedProperty $ do
     Vect.range 0 === []
     Vect.range 1 === [0]
     Vect.range 3 === [0, 1, 2]
 
   export
-  enumerate : Property
+  enumerate : Device => Property
   enumerate = fixedProperty $ do
     Vect.enumerate {a=()} [] === []
     Vect.enumerate [5] === [(0, 5)]
@@ -39,14 +39,14 @@ namespace Vect
 
 namespace List
   export
-  range : Property
+  range : Device => Property
   range = fixedProperty $ do
     List.range 0 === []
     List.range 1 === [0]
     List.range 3 === [0, 1, 2]
 
   export
-  enumerate : Property
+  enumerate : Device => Property
   enumerate = fixedProperty $ do
     List.enumerate {a=()} [] === []
     List.enumerate [5] === [(0, 5)]
@@ -74,7 +74,7 @@ namespace List
     ]
   multiIndex = %search
 
-  deleteAt : Property
+  deleteAt : Device => Property
   deleteAt = property $ do
     ys <- forAll $ list (constant 0 10) (nat (constant 0 100))
     y <- forAll $ nat (constant 0 100)
@@ -154,7 +154,7 @@ namespace List
   decreasingNotLT x (SCons (S x) ok _) = succNotLT x ok
 
 export
-group : Group
+group : Device => Group
 group = MkGroup "Util" $ [
       ("Vect.range", Vect.range)
     , ("Vect.enumerate", Vect.enumerate)

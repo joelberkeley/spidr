@@ -15,6 +15,11 @@ limitations under the License.
 --}
 module Device
 
+import Control.Monad.Maybe
+
+import Compiler.TensorFlow.Compiler.Xla.Service.PlatformUtil
+import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
+import Compiler.TensorFlow.Core.Platform.Status
 import Compiler.TensorFlow.StreamExecutor.Platform
 
 public export
@@ -22,8 +27,8 @@ data Device = MkDevice Platform
 
 export
 gpu : MaybeT IO Device
-gpu = MkDevice <&> toMaybeT (ok !validateGPUMachineManager) gpuMachineManager
+gpu = MkDevice <$> toMaybeT (ok !validateGPUMachineManager) gpuMachineManager
 
 export
 cpu : IO Device
-cpu = MkDevice <&> getPlatform "Host"
+cpu = MkDevice <$> getPlatform "Host"

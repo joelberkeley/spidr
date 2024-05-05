@@ -61,16 +61,16 @@ insufficientlyEqCases =
       (-inf, nan)
   ] in cases ++ map (\(x, y) => (y, x)) cases
 
-isSufficientlyEq : Property
+isSufficientlyEq : Device => Property
 isSufficientlyEq = fixedProperty $ do
   traverse_ (\(x, y) => diff x sufficientlyEq y) sufficientlyEqCases
 
-isNotSufficientlyEq : Property
+isNotSufficientlyEq : Device => Property
 isNotSufficientlyEq = fixedProperty $ do
   traverse_ (\(x, y) => diff x (not .: sufficientlyEq) y) insufficientlyEqCases
 
 export
-group : Group
+group : Device => Group
 group = MkGroup "Test comparison utilities" [
       ("sufficientlyEq", isSufficientlyEq)
     , ("not sufficientlyEq", isNotSufficientlyEq)

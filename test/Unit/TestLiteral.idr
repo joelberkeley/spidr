@@ -20,20 +20,20 @@ import Literal
 import Utils.Comparison
 import Utils.Cases
 
-map : Property
+map : Device => Property
 map = fixedProperty $ do
   map (+ 1) (Scalar 2) === Scalar 3
   (map (+ 1) $ the (Literal [0] _) []) === []
   (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === [[1, 2, 3], [4, 5, 6]]
 
-pure : Property
+pure : Device => Property
 pure = fixedProperty $ do
   the (Literal [] Nat) (pure 0) === Scalar 0
   the (Literal [0] Nat) (pure 0) === []
   the (Literal [0, 2] Nat) (pure 0) === []
   the (Literal [2, 3] Nat) (pure 0) === [[0, 0, 0], [0, 0, 0]]
 
-(<*>) : Property
+(<*>) : Device => Property
 (<*>) = fixedProperty $ do
   (Scalar (+ 1) <*> Scalar 2) === Scalar 3
   (Scalar (+) <*> Scalar 1 <*> Scalar 2) === Scalar 3
@@ -43,7 +43,7 @@ pure = fixedProperty $ do
   ([Scalar (+ 1), Scalar (+ 1)] <*> [0, 1]) === [1, 2]
   ([Scalar (+), Scalar (+)] <*> [0, 1] <*> [2, 3]) === [2, 4]
 
-foldr : Property
+foldr : Device => Property
 foldr = fixedProperty $ do
   let xs : Literal [0] String = []
   foldr (++) "!" xs === "!"
@@ -57,7 +57,7 @@ foldr = fixedProperty $ do
   let xs = [[Scalar "a", Scalar "b"], [Scalar "c", Scalar "d"]]
   foldr String.(++) "!" xs === "abcd!"
 
-all : Property
+all : Device => Property
 all = fixedProperty $ do
   all True === True
   all False === False
@@ -66,7 +66,7 @@ all = fixedProperty $ do
   all [True, False] === False
   all [False, False] === False
 
-show : Property
+show : Device => Property
 show = fixedProperty $ do
   show (Scalar $ the Int 1) === "1"
   show (Scalar $ the Double 1.2) === "1.2"
@@ -87,7 +87,7 @@ show = fixedProperty $ do
   let xs : Literal [3, 2, 2] Nat = [[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]
   show xs === "[[[0, 1],\n  [2, 3]],\n [[4, 5],\n  [6, 7]],\n [[8, 9],\n  [10, 11]]]"
 
-cast : Property
+cast : Device => Property
 cast = fixedProperty $ do
   let lit : Literal [] Nat = Scalar 1
       arr : Array [] Nat = 1
@@ -114,7 +114,7 @@ scalarZeroVectNotSucc1 : All IsSucc [Scalar 1, Scalar 0] -> Void
 scalarZeroVectNotSucc1 (_ :: x :: _) = scalarZeroNotSucc x
 
 export
-group : Group
+group : Device => Group
 group = MkGroup "Literal" $ [
       ("map", map)
     , ("pure", pure)

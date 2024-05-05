@@ -18,9 +18,10 @@ module Main
 import Data.SOP
 import Hedgehog
 
+import Device
+
 import TestUtils
 import Utils.TestComparison
-
 import Unit.Model.TestKernel
 import Unit.TestDistribution
 import Unit.TestTensor
@@ -29,7 +30,9 @@ import Unit.TestUtil
 
 partial
 main : IO ()
-main = test [
+main = do
+  device <- cpu
+  test [
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.TestUtil.group

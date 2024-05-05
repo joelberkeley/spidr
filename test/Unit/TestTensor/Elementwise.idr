@@ -27,6 +27,7 @@ import Utils.Cases
 namespace S32
   export partial
   testElementwiseUnary :
+    Device =>
     (Int32 -> Int32) ->
     (forall shape . Tensor shape S32 -> Graph $ Tensor shape S32) ->
     Property
@@ -39,6 +40,7 @@ namespace S32
 namespace F64
   export partial
   testElementwiseUnary :
+    Device =>
     (Double -> Double) ->
     (forall shape . Tensor shape F64 -> Graph $ Tensor shape F64) ->
     Property
@@ -51,6 +53,7 @@ namespace F64
 namespace PRED
   export partial
   testElementwiseUnary :
+    Device =>
     (Bool -> Bool) ->
     (forall shape . Tensor shape PRED -> Graph $ Tensor shape PRED) ->
     Property
@@ -63,6 +66,7 @@ namespace PRED
 namespace S32
   export partial
   testElementwiseBinary :
+    Device =>
     (Int32 -> Int32 -> Int32) ->
     (forall shape . Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> Graph (Tensor shape S32)) ->
     Property
@@ -75,21 +79,21 @@ namespace S32
     [| fInt x y |] === unsafeEval (fTensor x' y')
 
 partial
-div : Property
+div : Device => Property
 div = fixedProperty $ do
   (do div !(tensor {shape = [0]} []) []) ===# tensor []
   (do div !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [9, 4, 3, 2, 1]
   (do div !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [1, 0, 0]
 
 partial
-rem : Property
+rem : Device => Property
 rem = fixedProperty $ do
   (do rem !(tensor {shape = [0]} []) []) ===# tensor []
   (do rem !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [0, 1, 0, 1, 4]
   (do rem !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [0, 1, 1]
 
 partial
-divAndRemReconstructOriginal : Property
+divAndRemReconstructOriginal : Device => Property
 divAndRemReconstructOriginal = property $ do
   [x, y] <- forAll (np [nats, nats])
   numer <- forAll (literal [2] nats)
@@ -102,6 +106,7 @@ divAndRemReconstructOriginal = property $ do
 namespace F64
   export partial
   testElementwiseBinary :
+    Device =>
     (Double -> Double -> Double) ->
     (forall shape . Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)) ->
     Property
@@ -116,6 +121,7 @@ namespace F64
 namespace PRED
   export partial
   testElementwiseBinary :
+    Device =>
     (Bool -> Bool -> Bool) ->
     (forall shape . Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)) ->
     Property
@@ -128,7 +134,7 @@ namespace PRED
     [| fBool x y |] === unsafeEval (fTensor x' y')
 
 partial
-scalarMultiplication : Property
+scalarMultiplication : Device => Property
 scalarMultiplication = property $ do
   shape <- forAll shapes
   case shape of
@@ -140,7 +146,7 @@ scalarMultiplication = property $ do
       map (scalar *) lit ==~ unsafeEval (scalar' * lit')
 
 partial
-scalarDivision : Property
+scalarDivision : Device => Property
 scalarDivision = property $ do
   shape <- forAll shapes
   case shape of
@@ -154,6 +160,7 @@ scalarDivision = property $ do
 namespace S32
   export partial
   testElementwiseComparator :
+    Device =>
     (Int32 -> Int32 -> Bool) ->
     (forall shape . Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> Graph (Tensor shape PRED)) ->
     Property
@@ -168,6 +175,7 @@ namespace S32
 namespace F64
   export partial
   testElementwiseComparator :
+    Device =>
     (Double -> Double -> Bool) ->
     (forall shape . Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape PRED)) ->
     Property
@@ -182,13 +190,14 @@ namespace F64
 namespace PRED
   export partial
   testElementwiseComparator :
+    Device =>
     (Bool -> Bool -> Bool) ->
     (forall shape . Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)) ->
     Property
   testElementwiseComparator = testElementwiseBinary
 
 partial
-neutralIsNeutralForSum : Property
+neutralIsNeutralForSum : Device => Property
 neutralIsNeutralForSum = property $ do
   shape <- forAll shapes
 
@@ -207,7 +216,7 @@ neutralIsNeutralForSum = property $ do
   unsafeEval left === x
 
 partial
-neutralIsNeutralForProd : Property
+neutralIsNeutralForProd : Device => Property
 neutralIsNeutralForProd = property $ do
   shape <- forAll shapes
 
@@ -226,7 +235,7 @@ neutralIsNeutralForProd = property $ do
   unsafeEval left === x
 
 partial
-neutralIsNeutralForAny : Property
+neutralIsNeutralForAny : Device => Property
 neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
@@ -237,7 +246,7 @@ neutralIsNeutralForAny = property $ do
   unsafeEval left === x
 
 partial
-neutralIsNeutralForAll : Property
+neutralIsNeutralForAll : Device => Property
 neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
@@ -248,7 +257,7 @@ neutralIsNeutralForAll = property $ do
   unsafeEval left === x
 
 partial
-neutralIsNeutralForMin : Property
+neutralIsNeutralForMin : Device => Property
 neutralIsNeutralForMin = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
@@ -259,7 +268,7 @@ neutralIsNeutralForMin = property $ do
   unsafeEval left ==~ x
 
 partial
-neutralIsNeutralForMax : Property
+neutralIsNeutralForMax : Device => Property
 neutralIsNeutralForMax = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
@@ -297,7 +306,7 @@ atanh : Double -> Double
 atanh x = log ((1 + x) / (1 - x)) / 2
 
 export partial
-all : List (PropertyName, Property)
+all : Device => List (PropertyName, Property)
 all = [
       ("negate S32", S32.testElementwiseUnary negate (Tensor.negate . pure))
     , ("negate F64", F64.testElementwiseUnary negate (Tensor.negate . pure))

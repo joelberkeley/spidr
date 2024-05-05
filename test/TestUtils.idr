@@ -15,21 +15,23 @@ limitations under the License.
 --}
 module TestUtils
 
+import Device
+
 import Utils
 import Utils.Cases
 import Utils.Comparison
 
-isNanFalseForNumeric : Property
+isNanFalseForNumeric : Device => Property
 isNanFalseForNumeric = property $ do
   x <- forAll doublesWithoutNan
   assert $ not $ isNan x
 
-isNanTrueForNan : Property
+isNanTrueForNan : Device => Property
 isNanTrueForNan = fixedProperty $ do
   assert (isNan nan)
 
 export
-group : Group
+group : Device => Group
 group = MkGroup "Test utilities" [
       ("isNan is False for numbers", isNanFalseForNumeric)
     , ("isNan is True for nan", isNanTrueForNan)

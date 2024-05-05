@@ -17,6 +17,7 @@ module Utils
 
 import Literal
 import Tensor
+import Device
 
 export
 [Finite] Bounded (Literal [] Double) where
@@ -28,5 +29,10 @@ isNan : Double -> Bool
 isNan x = x /= x
 
 export partial
-unsafeEval : PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
-unsafeEval = unsafePerformIO . eval
+unsafeEval : Device => PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
+unsafeEval @{device} = unsafePerformIO . eval device
+
+namespace TensorList
+  export partial
+  unsafeEval : Device => Graph (TensorList shapes tys) -> All2 Literal shapes tys
+  unsafeEval @{device} = unsafePerformIO . eval device

@@ -32,6 +32,7 @@ import Decidable.Equality
 import Compiler.Eval
 import Compiler.Expr
 import Compiler.LiteralRW
+import Device
 import Literal
 import public Primitive
 import public Types
@@ -112,8 +113,8 @@ try x = runEitherT x <&> \case
 ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
 |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
 export partial
-eval : Device => PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-eval @{MkDevice platform} $ MkGraph x =
+eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
+eval (MkDevice platform) (MkGraph x) =
   let (env, MkTensor root) = runState empty x
    in try $ execute platform (MkFn [] root env) >>= read {dtype} []
 
@@ -145,8 +146,8 @@ namespace TensorList
   ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
   |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
-  eval : Device => Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
-  eval @{MkDevice platform} $ MkGraph xs =
+  eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+  eval (MkDevice platform) (MkGraph xs) =
     let (env, xs) = runState empty xs
         (env, root) = runState env (addNode $ Tuple $ nodes xs)
      in try $ execute platform (MkFn [] root env) >>= readAll xs 0
