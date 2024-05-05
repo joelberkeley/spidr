@@ -234,11 +234,9 @@ toString f = do
   pure $ opToString xlaBuilder root
 
 export covering
-execute : Fn 0 -> ErrIO Literal
-execute f = do
+execute : Platform -> Fn 0 -> ErrIO Literal
+execute platform f = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
-  gpuStatus <- validateGPUMachineManager
-  platform <- if ok gpuStatus then gpuMachineManager else getPlatform "Host"
   client <- getOrCreateLocalClient platform
   executeAndTransfer client computation
