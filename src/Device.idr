@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| A tensor graph is executed in a physical device. This module provides handles for devices.
 module Device
 
 import Control.Monad.Maybe
@@ -22,13 +23,16 @@ import Compiler.TensorFlow.Core.CommonRuntime.GPU.GPUInit
 import Compiler.TensorFlow.Core.Platform.Status
 import Compiler.TensorFlow.StreamExecutor.Platform
 
+||| A handle to a physical device, used to execute a computational graph.
 public export
 data Device = MkDevice Platform
 
+||| A handle to a CUDA-enabled GPU, if such a device is found.
 export
-gpu : MaybeT IO Device
-gpu = MkDevice <$> toMaybeT (ok !validateGPUMachineManager) gpuMachineManager
+cuda : MaybeT IO Device
+cuda = MkDevice <$> if (ok !validateGPUMachineManager) then gpuMachineManager else nothing
 
+||| A handle to the host CPU.
 export
 cpu : IO Device
 cpu = MkDevice <$> getPlatform "Host"

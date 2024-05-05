@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Main
 
+import Control.Monad.Maybe
 import Data.SOP
 import Hedgehog
 
@@ -28,10 +29,12 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
+import System
+
 partial
 main : IO ()
 main = do
-  device <- cpu
+  Just gpu <- runMaybeT cuda | Nothing => die "no gpu"
   test [
       Utils.TestComparison.group
     , TestUtils.group
