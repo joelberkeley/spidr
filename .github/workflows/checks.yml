@@ -38,7 +38,7 @@ jobs:
       with:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
-      working_directory: pjrt-plugins/xla-cpu
+      working-directory: pjrt-plugins/xla-cpu
       run: >-
         # if [[ $(git diff --exit-code HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
         ./build.sh
@@ -56,7 +56,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CUDA PJRT plugin
-      working_directory: pjrt-plugins/xla-cuda
+      working-directory: pjrt-plugins/xla-cuda
       run: ./build.sh
     - name: Upload binary
       uses: actions/upload-artifact@v4
