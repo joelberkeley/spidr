@@ -8,15 +8,11 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-Install [pack](https://github.com/stefan-hoeck/idris2-pack), then run
-```
-pack install spidr
-```
-and follow the on-screen instructions. Next, install a PJRT plugin. Either install the CPU plugin with
+To install spidr, simply install a PJRT plugin. Either install the CPU plugin with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
-or see the [plugin documentation](pjrt-plugins/README.md) for more options, including support for CUDA-enabled GPUs.
+or see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin, and custom plugin builds.
 
 ### Motivation
 
