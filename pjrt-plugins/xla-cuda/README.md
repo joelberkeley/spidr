@@ -1,5 +1,7 @@
 # XLA PJRT plugin for CUDA-enabled GPUs
 
+This is the PJRT plugin for CUDA-enabled GPUs. It uses the XLA compiler.
+
 ## Install
 
 This plugin requires Linux, a CUDA-enabled GPU, and a number of Nvidia packages.

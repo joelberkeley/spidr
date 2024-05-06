@@ -12,7 +12,7 @@ To install spidr, install a PJRT plugin. Either install the CPU plugin with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
-or see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin, and custom plugin builds.
+or see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
 ### Motivation
 

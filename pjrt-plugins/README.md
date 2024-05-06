@@ -1,6 +1,6 @@
 # PJRT Plugins
 
-A PJRT plugin provides the compiler and hardware device support required to execute spidr graphs. We provide plugins for [CPUs](xla-cpu/README.md) and [CUDA-enabled GPUs](xla-cuda/README.md). You can also use third-party plugins, or make your own.
+A PJRT plugin provides the compiler and hardware device support required to execute spidr graphs. We provide plugins for [CPU](xla-cpu/README.md) and [CUDA-enabled GPUs](xla-cuda/README.md). You can also use third-party plugins, or make your own.
 
 ## How to integrate your own plugin
 
