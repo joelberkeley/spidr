@@ -26,16 +26,9 @@ import Types
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cuda"
 prim__getPjrtApi : PrimIO AnyPtr
 
-clientCreateOptions : SortedMap String PjrtValue
-clientCreateOptions = fromList [
-      ("platform_name", PjrtString "cuda")
-    , ("allocator", PjrtString "default")
-    , ("visible_devices", PjrtInt64Array [0])
-  ]
-
 export
 device : EitherT PjrtError IO Device
 device = do
   api <- MkPjrtApi <$> primIO prim__getPjrtApi
-  client <- pjrtClientCreate api clientCreateOptions
+  client <- pjrtClientCreate api empty
   pure $ MkDevice api client
