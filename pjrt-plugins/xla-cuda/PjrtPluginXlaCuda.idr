@@ -23,18 +23,16 @@ import Compiler.Xla.PJRT.C.PJRT_C_API
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cuda"
 prim__getPjrtApi : PrimIO AnyPtr
 
-export
-getPjrtApi : HasIO io => io PjrtApi
-getPjrtApi = MkPjrtApi <$> primIO prim__getPjrtApi
-
-export
-createOptions : SortedMap String PjrtValue
-createOptions = fromList [
-      -- is my cuda version too new for xla?
-      --
-      -- is the problem that when i try to ./configure.py --backend=CUDA I get an error?
-      -- seems very worth checking
+clientCreateOptions : SortedMap String PjrtValue
+clientCreateOptions = fromList [
       ("platform_name", PjrtString "cuda")
     , ("allocator", PjrtString "default")
     , ("visible_devices", PjrtInt64Array [0])
   ]
+
+export
+device : EitherT PjrtError IO Device
+device = do
+  api <- MkPjrtApi <$> primIO prim__getPjrtApi
+  client <- pjrtClientCreate api clientCreateOptions
+  pure $ MkDevice api client

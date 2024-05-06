@@ -15,23 +15,9 @@ limitations under the License.
 --}
 module Device
 
-import public Data.SortedMap
-import Control.Monad.Either
-
 -- bad import?
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
-import Types
-
+||| A PJRT "device". These are required to run spidr graphs, and are provided by your plugin.
 public export
 data Device = MkDevice PjrtApi PjrtClient
-
-||| Create a PJRT "device". These are required to run spidr graphs, and are provided by your Idris
-||| PJRT plugin.
-|||
-||| @api The core API for the PJRT plugin. This is an Idris reference to a C `PJRT_Api`.
-||| @clientCreateOptions Configurations options to a create a C `PJRT_Client`. These are passed as
-|||   `.create_options` in the `PJRT_Client_Create_Args` struct.
-export
-device : (api : PjrtApi) -> (clientCreateOptions : SortedMap String PjrtValue) -> ErrIO PjrtError Device
-device api clientCreateOptions = MkDevice api <$> pjrtClientCreate api clientCreateOptions

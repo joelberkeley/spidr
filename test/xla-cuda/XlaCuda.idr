@@ -18,9 +18,6 @@ module XlaCuda
 import TestRunner
 import PjrtPluginXlaCuda
 
--- bad import
-import Compiler.Xla.PJRT.C.PJRT_C_API
-
 partial
 main : IO ()
-main = run !getPjrtApi createOptions
+main = run device

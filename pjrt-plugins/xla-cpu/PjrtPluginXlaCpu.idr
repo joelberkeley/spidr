@@ -24,9 +24,8 @@ import Compiler.Xla.PJRT.C.PJRT_C_API
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
-getPjrtApi : HasIO io => io PjrtApi
-getPjrtApi = MkPjrtApi <$> primIO prim__getPjrtApi
-
-export
-createOptions : SortedMap String PjrtValue
-createOptions = empty
+device : EitherT PjrtError IO Device
+device = do
+  api <- MkPjrtApi <$> primIO prim__getPjrtApi
+  client <- pjrtClientCreate api empty
+  pure $ MkDevice api client
