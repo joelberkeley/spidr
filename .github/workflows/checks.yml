@@ -39,7 +39,7 @@ jobs:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
       working-directory: pjrt-plugins/xla-cpu
-      run: >-
+      run: |
         # if [[ $(git diff --exit-code HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
         ./build.sh
         # else
