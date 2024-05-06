@@ -20,7 +20,7 @@ docker run -it                          \
     nvcr.io/nvidia/tensorrt:23.11-py3   \
     bash
 ```
-Note the image version `23.11`. Next, in the Docker container, install `pack` (the container uses Ubuntu), and the plugin with
+Note the image version `23.11`. Next, in the Docker container, install `pack` (the container uses Ubuntu). Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```
