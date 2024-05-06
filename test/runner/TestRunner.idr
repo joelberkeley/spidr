@@ -21,6 +21,7 @@ import System
 import Data.SOP
 import Hedgehog
 
+import Compiler.Xla.PJRT.C.PJRT_C_API
 import Device
 import Types
 
@@ -31,8 +32,6 @@ import Unit.TestDistribution
 import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
-
-import Compiler.Xla.PJRT.C.PJRT_C_API
 
 export partial
 run : EitherT PjrtError IO Device -> IO ()
