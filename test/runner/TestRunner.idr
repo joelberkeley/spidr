@@ -32,8 +32,10 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
+import Compiler.Xla.PJRT.C.PJRT_C_API
+
 export partial
-run : EitherT Err IO Device -> IO ()
+run : EitherT PjrtError IO Device -> IO ()
 run device = do
   Right device <- runEitherT device | Left err => die $ show err
 
