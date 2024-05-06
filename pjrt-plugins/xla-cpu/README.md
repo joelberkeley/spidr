@@ -1,5 +1,8 @@
-# XLA PJRT plugin for CPUs
+# XLA PJRT plugin for CPU
 
-## Dependencies
+## Install
 
-This plugin requires no additional dependencies on Ubuntu 22.04. We have not tested it on other platforms.
+On Ubuntu 22.04, run
+```
+pack install pjrt-plugin-xla-cpu
+```

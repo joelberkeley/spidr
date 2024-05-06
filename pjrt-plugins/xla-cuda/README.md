@@ -1,20 +1,35 @@
 # XLA PJRT plugin for CUDA-enabled GPUs
 
-## Dependencies
+## Install
 
-This plugin requires Linux, a CUDA-enabled GPU, and a number of Nvidia packages. First, you will need Nvidia GPU drivers. The remaining packages can be installed in two different ways. We recommend an Nvidia Docker container as installing Nvidia packages on your system can become very complicated indeed.
+This plugin requires Linux, a CUDA-enabled GPU, and a number of Nvidia packages.
 
-### Install with Nvidia Docker
+First, install Nvidia GPU drivers. The remaining packages can be installed in two different ways: with Docker, which is reliable but cumbersome; or without Docker, where installing Nvidia packages can prove very tricky indeed. We recommend using Docker.
 
-To install with Nvidia Docker, first install [Docker](https://www.docker.com/), then the [Nvidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Finally run your spidr programs in an Nvidia TensorRT Docker container with e.g.
+### Nvidia depedencies with Docker
+
+To install with Nvidia Docker, first install [Docker](https://www.docker.com/), then the [Nvidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Next, run your Nvidia TensorRT Docker container with e.g.
 ```
-$ docker run --rm -v $(pwd):/spidr -w /spidr nvcr.io/nvidia/tensorrt:23.11-py3
+docker run -it                          \
+    --gpus all                          \
+    --name spidr                        \
+    -v $(pwd):/spidr                    \
+    -w /spidr                           \
+    nvcr.io/nvidia/tensorrt:23.11-py3   \
+    bash
 ```
-Note the image version `23.11`.
+Note the image version `23.11`. Finally, install `pack` (the container uses Ubuntu), and run your spidr program.
 
-### Install without Docker
+### Nvidia depedencies without Docker
 
 To install without Docker, first install CUDA toolkit 12.3. Then install the cuDNN and TensorRT packages. We have successfully installed these last two with the following command on Ubuntu 22.04
 ```
-$ apt-get install libcudnn8 libnvinfer8 libnvinfer-plugin8
+apt-get install libcudnn8 libnvinfer8 libnvinfer-plugin8
+```
+
+### Install the plugin
+
+Install the plugin with
+```
+pack install pjrt-plugin-xla-cuda
 ```

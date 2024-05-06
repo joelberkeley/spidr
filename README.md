@@ -2,7 +2,7 @@
 
 _Accelerated machine learning with dependent types_
 
-spidr is in early development. The core linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
+spidr is in early development. The linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
 
 See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials) for extended discussions of spidr's architecture. The tutorials are [literate files](https://idris2.readthedocs.io/en/latest/reference/literate.html) and can be executed like any other source file.
 
@@ -12,7 +12,11 @@ Install [pack](https://github.com/stefan-hoeck/idris2-pack), then run
 ```
 pack install spidr
 ```
-and follow the on-screen instructions. Next, install a PJRT plugin ...
+and follow the on-screen instructions. Next, install a PJRT plugin. Either install the CPU plugin with
+```
+pack install pjrt-plugin-xla-cpu
+```
+or see the [plugin documentation](pjrt-plugins/README.md) for more options, including support for CUDA-enabled GPUs.
 
 ### Motivation
 
