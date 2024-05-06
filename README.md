@@ -8,7 +8,7 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-To install spidr, install a PJRT plugin. You will need a PJRT plugin to run spidr, and. Either install the CPU plugin with
+To install spidr, install a PJRT plugin. Either install the CPU plugin with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
