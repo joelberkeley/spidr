@@ -8,7 +8,7 @@ This plugin requires Linux, a CUDA-enabled GPU, and a number of Nvidia packages.
 
 First, install Nvidia GPU drivers. The remaining packages can be installed in two different ways: with Docker, which is reliable but cumbersome; or without Docker, where installing Nvidia packages can prove very tricky indeed. We recommend using Docker.
 
-### Nvidia depedencies with Docker
+### Install with Docker
 
 To install with Nvidia Docker, first install [Docker](https://www.docker.com/), then the [Nvidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Next, run your Nvidia TensorRT Docker container with e.g.
 ```
@@ -20,18 +20,18 @@ docker run -it                          \
     nvcr.io/nvidia/tensorrt:23.11-py3   \
     bash
 ```
-Note the image version `23.11`. Finally, install `pack` (the container uses Ubuntu), and run your spidr program.
+Note the image version `23.11`. Next, in the Docker container, install `pack` (the container uses Ubuntu), and the plugin with
+```
+pack install pjrt-plugin-xla-cuda
+```
 
-### Nvidia depedencies without Docker
+### Install without Docker
 
 To install without Docker, first install CUDA toolkit 12.3. Then install the cuDNN and TensorRT packages. We have successfully installed these last two with the following command on Ubuntu 22.04
 ```
 apt-get install libcudnn8 libnvinfer8 libnvinfer-plugin8
 ```
-
-### Install the plugin
-
-Install the plugin with
+Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```
