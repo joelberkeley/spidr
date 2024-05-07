@@ -100,7 +100,7 @@ jobs:
   test-xla-cpu:
     needs:
       - pjrt
-#      - pjrt-plugin-xla-cpu
+      - pjrt-plugin-xla-cpu
       - build-tests-xla-cpu
     runs-on: ubuntu-latest
     steps:
