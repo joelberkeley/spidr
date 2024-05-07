@@ -16,7 +16,6 @@ limitations under the License.
 ||| This module contains common library types.
 module Types
 
-import Control.Monad.Either
 import public Data.Nat
 import public Data.Vect
 
