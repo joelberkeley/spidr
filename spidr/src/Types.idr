@@ -56,7 +56,3 @@ export
 [Finite] Bounded Double where
   min = -1.7976931348623157e308
   max = 1.7976931348623157e308
-
-public export 0
-ErrIO : Type -> Type -> Type
-ErrIO e a = EitherT e IO a

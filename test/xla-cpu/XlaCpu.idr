@@ -15,6 +15,8 @@ limitations under the License.
 --}
 module XlaCpu
 
+import Compiler.Xla.PJRT.C.PJRT_C_API
+
 import TestRunner
 import PjrtPluginXlaCpu
 

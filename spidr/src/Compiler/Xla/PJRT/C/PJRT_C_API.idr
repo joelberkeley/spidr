@@ -125,7 +125,11 @@ pjrtErrorCodeFromCInt = \case
   n  => assert_total $ idris_crash
     "Unexpected PJRT_Error_Code value received through FFI from XLA: \{show n}"
 
-try : AnyPtr -> AnyPtr -> a -> ErrIO PjrtError a
+public export 0
+PjrtFFI : Type -> Type
+PjrtFFI = EitherT PjrtError IO
+
+try : AnyPtr -> AnyPtr -> a -> PjrtFFI a
 try api err onOk = if (isNullPtr err) then right onOk else do
   msg <- pjrtErrorMessage api err
   args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
@@ -154,7 +158,7 @@ prim__mkPjrtEventAwaitArgs : AnyPtr -> PrimIO AnyPtr
 prim__pjrtEventAwait : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 export
-pjrtEventAwait : PjrtApi -> PjrtEvent -> ErrIO PjrtError ()
+pjrtEventAwait : PjrtApi -> PjrtEvent -> PjrtFFI ()
 pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
   args <- primIO $ prim__mkPjrtEventAwaitArgs event
   err <- primIO $ prim__pjrtEventAwait api args
@@ -239,7 +243,7 @@ prim__sizeofPjrtNamedValue : Bits64
 prim__shift_by_PJRT_NamedValue : AnyPtr -> Bits64 -> AnyPtr
 
 export
-pjrtClientCreate : PjrtApi -> SortedMap String PjrtValue -> ErrIO PjrtError PjrtClient
+pjrtClientCreate : PjrtApi -> SortedMap String PjrtValue -> PjrtFFI PjrtClient
 pjrtClientCreate (MkPjrtApi api) createOptions = do
   let createOptions = toList createOptions
       numOptions = List.length createOptions
@@ -304,7 +308,7 @@ export
 data PjrtLoadedExecutable = MkPjrtLoadedExecutable AnyPtr
 
 export
-pjrtLoadedExecutableDestroy : HasIO io => PjrtApi -> PjrtLoadedExecutable -> io () -- note this could now be ErrIO PjrtError ()
+pjrtLoadedExecutableDestroy : HasIO io => PjrtApi -> PjrtLoadedExecutable -> io () -- note this could now be PjrtFFI ()
 pjrtLoadedExecutableDestroy (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
   args <- primIO $ prim__mkPjrtLoadedExecutableDestroyArgs executable
   err <- primIO $ prim__pjrtLoadedExecutableDestroy api args
@@ -318,7 +322,7 @@ pjrtClientCompile :
   PjrtClient ->
   PjrtProgram ->
   CharArray ->
-  ErrIO PjrtError PjrtLoadedExecutable
+  PjrtFFI PjrtLoadedExecutable
 pjrtClientCompile
   (MkPjrtApi api)
   (MkPjrtClient client)
@@ -358,7 +362,7 @@ pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
 
 ||| It is up to the caller to free the `PjrtBuffer`.
 export
-pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> ErrIO PjrtError PjrtBuffer
+pjrtLoadedExecutableExecute : PjrtApi -> PjrtLoadedExecutable -> PjrtFFI PjrtBuffer
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
   outputListsInner <- malloc sizeofPtr
   outputLists <- malloc sizeofPtr
@@ -392,7 +396,7 @@ pjrtEventDestroy (MkPjrtApi api) (MkPjrtEvent event) = do
 
 ||| It is up to the caller to free the `PjrtEvent`.
 export
-pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> ErrIO PjrtError PjrtEvent
+pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> PjrtFFI PjrtEvent
 pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
   let untypedData = prim__literalUntypedData literal
       sizeBytes = prim__literalSizeBytes literal

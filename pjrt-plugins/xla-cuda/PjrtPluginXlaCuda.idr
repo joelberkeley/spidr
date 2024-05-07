@@ -21,13 +21,12 @@ import System.FFI
 
 import Device
 import Compiler.Xla.PJRT.C.PJRT_C_API
-import Types
 
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cuda"
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
-device : EitherT PjrtError IO Device
+device : PjrtFFI Device
 device = do
   api <- MkPjrtApi <$> primIO prim__getPjrtApi
   client <- pjrtClientCreate api empty
