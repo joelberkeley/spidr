@@ -12,7 +12,7 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: ~/.cache/bazel
-        key: pjrt-${{ runner.os }}
+        key: xla-bazel-cache-${{ runner.os }}
     - name: Build PJRT + XLA binary
       working-directory: spidr/backend
       run: |
@@ -29,7 +29,7 @@ jobs:
       uses: actions/cache/save@v4
       with:
         path: ~/.cache/bazel
-        key: pjrt-${{ runner.os }}
+        key: xla-bazel-cache-${{ runner.os }}
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
