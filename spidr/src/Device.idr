@@ -18,5 +18,6 @@ module Device
 import Compiler.Xla.PJRT.C.PJRT_C_API
 
 ||| A PJRT "device". These are required to run spidr graphs, and are provided by your plugin.
+||| You won't need to construct one yourself unless you're writing a plugin.
 public export
 data Device = MkDevice PjrtApi PjrtClient

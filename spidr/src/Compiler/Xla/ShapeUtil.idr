@@ -58,24 +58,6 @@ pushFront : HasIO io => ShapeIndex -> Nat -> io ()
 pushFront (MkShapeIndex shapeIndex) value =
   primIO $ prim__shapeIndexPushFront shapeIndex (cast value)
 
-%foreign (libxla "ByteSizeOfElements")
-prim__byteSizeOfElements : GCAnyPtr -> Bits64
-
-export
-byteSizeOfElements : Xla.Shape -> Bits64
-byteSizeOfElements (MkShape shape) = prim__byteSizeOfElements shape
-
-%foreign (libxla "MakeTupleShape")
-prim__makeTupleShape : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
-
-export
-mkTupleShape : HasIO io => List Xla.Shape -> io Xla.Shape
-mkTupleShape shapes = do
-  MkShapeArray shapeArray <- mkShapeArray shapes
-  shape <- primIO $ prim__makeTupleShape shapeArray (cast $ length shapes)
-  shape <- onCollectAny shape Shape.delete
-  pure (MkShape shape)
-
 %foreign (libxla "MakeShape")
 prim__mkShape : Int -> GCPtr Int -> Int -> PrimIO AnyPtr
 
