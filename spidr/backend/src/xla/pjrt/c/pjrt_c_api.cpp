@@ -15,7 +15,6 @@ limitations under the License.
 */
 #include <cstddef>
 #include <cstdlib>
-//#include <iostream>
 
 // remove these when we've pulled out build config
 #include "xla/pjrt/c/pjrt_c_api.h"
@@ -28,7 +27,6 @@ extern "C" {
   // ---------------------------------- Errors -----------------------------------
 
   PJRT_Error_Destroy_Args* PJRT_Error_Destroy_Args_new(PJRT_Error* error) {
-    // std::cout << "PJRT_Error_Destroy_Args_new ..." << std::endl;
     return new PJRT_Error_Destroy_Args{
       .struct_size = PJRT_Error_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -37,12 +35,10 @@ extern "C" {
   }
 
   void pjrt_error_destroy(PJRT_Api* api, PJRT_Error_Destroy_Args* args) {
-    // std::cout << "pjrt_error_destroy ..." << std::endl;
     api->PJRT_Error_Destroy(args);
   }
 
   PJRT_Error_Message_Args* PJRT_Error_Message_Args_new(PJRT_Error* error) {
-    // std::cout << "PJRT_Error_Message_Args_new ..." << std::endl;
     return new PJRT_Error_Message_Args{
       .struct_size = PJRT_Error_Message_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -51,7 +47,6 @@ extern "C" {
   }
 
   char* PJRT_Error_Message_Args_message(PJRT_Error_Message_Args* args) {
-    // std::cout << "PJRT_Error_Message_Args_message ..." << std::endl;
     auto len = args->message_size;
     auto res = (char*) malloc(len + 1);
     strncpy(res, args->message, len);
@@ -60,12 +55,10 @@ extern "C" {
   }
 
   void pjrt_error_message(PJRT_Api* api, PJRT_Error_Message_Args* args) {
-    // std::cout << "pjrt_error_message ..." << std::endl;
     api->PJRT_Error_Message(args);
   }
 
   PJRT_Error_GetCode_Args* PJRT_Error_GetCode_Args_new(PJRT_Error* error) {
-    // std::cout << "PJRT_Error_GetCode_Args_new ..." << std::endl;
     return new PJRT_Error_GetCode_Args{
       .struct_size = PJRT_Error_GetCode_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -74,19 +67,16 @@ extern "C" {
   }
 
   int PJRT_Error_GetCode_Args_code(PJRT_Error_GetCode_Args* args) {
-    // std::cout << "PJRT_Error_GetCode_Args_code ..." << std::endl;
     return (int) args->code;
   }
 
   PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args) {
-    // std::cout << "pjrt_error_getcode ..." << std::endl;
     return api->PJRT_Error_GetCode(args);
   }
 
   // ---------------------------------- Events -----------------------------------
 
   PJRT_Event_Destroy_Args* PJRT_Event_Destroy_Args_new(PJRT_Event* event) {
-    // std::cout << "PJRT_Event_Destroy_Args_new ..." << std::endl;
     return new PJRT_Event_Destroy_Args{
       .struct_size = PJRT_Event_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -95,12 +85,10 @@ extern "C" {
   }
 
   void pjrt_event_destroy(PJRT_Api* api, PJRT_Event_Destroy_Args* args) {
-    // std::cout << "pjrt_event_destroy ..." << std::endl;
     api->PJRT_Event_Destroy(args);
   }
 
   PJRT_Event_Await_Args* PJRT_Event_Await_Args_new(PJRT_Event* event) {
-    // std::cout << "PJRT_Event_Await_Args_new ..." << std::endl;
     return new PJRT_Event_Await_Args{
       .struct_size = PJRT_Event_Await_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -109,7 +97,6 @@ extern "C" {
   }
 
   void pjrt_event_await(PJRT_Api* api, PJRT_Event_Await_Args* args) {
-    // std::cout << "pjrt_event_await ..." << std::endl;
     api->PJRT_Event_Await(args);
   }
 
@@ -200,7 +187,6 @@ extern "C" {
   PJRT_Client_Create_Args* PJRT_Client_Create_Args_new(
     PJRT_NamedValue* create_options, size_t num_options
   ) {
-//    std::cout << "PJRT_Client_Create_Args_new ..." << std::endl;
     return new PJRT_Client_Create_Args {
       .struct_size = PJRT_Client_Create_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -215,17 +201,14 @@ extern "C" {
   }
 
   PJRT_Client* PJRT_Client_Create_Args_client(PJRT_Client_Create_Args* args) {
-    // std::cout << "PJRT_Client_Create_Args_client ..." << std::endl;
     return args->client;
   }
 
   PJRT_Error* pjrt_client_create(PJRT_Api* api, PJRT_Client_Create_Args* args) {
-    // std::cout << "pjrt_client_create ..." << std::endl;
     return api->PJRT_Client_Create(args);
   }
 
   PJRT_Client_Destroy_Args* PJRT_Client_Destroy_Args_new(PJRT_Client* client) {
-    // std::cout << "PJRT_Client_Destroy_Args_new ..." << std::endl;
     return new PJRT_Client_Destroy_Args {
       .struct_size = PJRT_Client_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -234,12 +217,10 @@ extern "C" {
   }
 
   PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args) {
-    // std::cout << "pjrt_client_destroy ..." << std::endl;
     return api->PJRT_Client_Destroy(args);
   }
 
   PJRT_Program* PJRT_Program_new(char* code, size_t code_size) {
-    // std::cout << "PJRT_Program_new ..." << std::endl;
     auto format = pjrt::kHloFormat;
     return new PJRT_Program{
       .struct_size = PJRT_Program_STRUCT_SIZE,
@@ -254,7 +235,6 @@ extern "C" {
   PJRT_Client_Compile_Args* PJRT_Client_Compile_Args_new(
     PJRT_Client* client, PJRT_Program* program, char* compile_options, size_t compile_options_size
   ) {
-    // std::cout << "PJRT_Client_Compile_Args_new ..." << std::endl;
     return new PJRT_Client_Compile_Args{
       .struct_size = PJRT_Client_Compile_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -266,19 +246,16 @@ extern "C" {
   }
 
   PJRT_LoadedExecutable* PJRT_Client_Compile_Args_executable(PJRT_Client_Compile_Args* args) {
-    // std::cout << "PJRT_Client_Compile_Args_executable ..." << std::endl;
     return args->executable;
   }
 
   PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
-    // std::cout << "pjrt_client_compile ..." << std::endl;
     return api->PJRT_Client_Compile(args);
   }
 
   PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
     PJRT_LoadedExecutable* executable
   ) {
-    // std::cout << "PJRT_LoadedExecutable_Destroy_Args_new ..." << std::endl;
     return new PJRT_LoadedExecutable_Destroy_Args{
       .struct_size = PJRT_LoadedExecutable_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -289,12 +266,10 @@ extern "C" {
   PJRT_Error* pjrt_loadedexecutable_destroy(
     PJRT_Api* api, PJRT_LoadedExecutable_Destroy_Args* args
   ) {
-    // std::cout << "pjrt_loadedexecutable_destroy ..." << std::endl;
     return api->PJRT_LoadedExecutable_Destroy(args);
   }
 
   PJRT_ExecuteOptions* PJRT_ExecuteOptions_new() {
-    // std::cout << "PJRT_ExecuteOptions_new ..." << std::endl;
     return new PJRT_ExecuteOptions{
       .struct_size = PJRT_ExecuteOptions_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -313,7 +288,6 @@ extern "C" {
     PJRT_ExecuteOptions* options,
     PJRT_Buffer*** output_lists
   ) {
-    // std::cout << "PJRT_LoadedExecutable_Execute_Args_new ..." << std::endl;
     return new PJRT_LoadedExecutable_Execute_Args{
       .struct_size = PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -331,19 +305,16 @@ extern "C" {
   PJRT_Buffer** const* PJRT_LoadedExecutable_Execute_Args_output_lists(
     PJRT_LoadedExecutable_Execute_Args* args
   ) {
-    // std::cout << "PJRT_LoadedExecutable_Execute_Args_output_lists ..." << std::endl;
     return args->output_lists;
   }
 
   PJRT_Error* pjrt_loadedexecutable_execute(
     PJRT_Api* api, PJRT_LoadedExecutable_Execute_Args* args
   ) {
-    // std::cout << "pjrt_loadedexecutable_execute ..." << std::endl;
     return api->PJRT_LoadedExecutable_Execute(args);
   }
 
   PJRT_Buffer_Destroy_Args* PJRT_Buffer_Destroy_Args_new(PJRT_Buffer* buffer) {
-    // std::cout << "PJRT_Buffer_Destroy_Args_new ..." << std::endl;
     return new PJRT_Buffer_Destroy_Args{
       .struct_size = PJRT_Buffer_Destroy_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -352,14 +323,12 @@ extern "C" {
   }
 
   PJRT_Error* pjrt_buffer_destroy(PJRT_Api* api, PJRT_Buffer_Destroy_Args* args) {
-    // std::cout << "pjrt_buffer_destroy ..." << std::endl;
     return api->PJRT_Buffer_Destroy(args);
   }
 
   PJRT_Buffer_ToHostBuffer_Args* PJRT_Buffer_ToHostBuffer_Args_new(
     PJRT_Buffer* src, void* dst, size_t dst_size
   ) {
-    // std::cout << "PJRT_Buffer_ToHostBuffer_Args_new ..." << std::endl;
     return new PJRT_Buffer_ToHostBuffer_Args{
       .struct_size = PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE,
       .extension_start = nullptr,
@@ -372,12 +341,10 @@ extern "C" {
   }
 
   PJRT_Event* PJRT_Buffer_ToHostBuffer_Args_event(PJRT_Buffer_ToHostBuffer_Args* args) {
-    // std::cout << "PJRT_Buffer_ToHostBuffer_Args_event ..." << std::endl;
     return args->event;
   }
 
   PJRT_Error* pjrt_buffer_tohostbuffer(PJRT_Api* api, PJRT_Buffer_ToHostBuffer_Args* args) {
-    // std::cout << "pjrt_buffer_tohostbuffer ..." << std::endl;
     return api->PJRT_Buffer_ToHostBuffer(args);
   }
 }
