@@ -450,9 +450,8 @@ export partial
 group : Device => Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
-    -- untyped_data not allowed for tuples
-    -- , ("eval multiple tensors", evalTuple)
-    -- , ("eval multiple tensors for non-trivial graph", evalTupleNonTrivial)
+    , ("eval multiple tensors (tuple)", evalTuple)
+    , ("eval multiple tensors (tuple) for non-trivial graph", evalTupleNonTrivial)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)

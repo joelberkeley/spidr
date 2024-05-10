@@ -200,9 +200,9 @@ all = [
       ("uniform", uniform)
     , ("uniform for infinite and NaN bounds", uniformForNonFiniteBounds)
     , ("uniform is not NaN for finite equal bounds", uniformForFiniteEqualBounds)
-    -- uses tuple , ("uniform updates seed", uniformSeedIsUpdated)
-    -- uses tuple , ("uniform produces same samples for same seed", uniformIsReproducible)
+    , ("uniform updates seed", uniformSeedIsUpdated)
+    , ("uniform produces same samples for same seed", uniformIsReproducible)
     , ("normal", normal)
-    -- uses tuple , ("normal updates seed", normalSeedIsUpdated)
-    -- uses tuple , ("normal produces same samples for same seed", normalIsReproducible)
+    , ("normal updates seed", normalSeedIsUpdated)
+    , ("normal produces same samples for same seed", normalIsReproducible)
   ]

@@ -235,8 +235,8 @@ toString f = do
 
 ||| It is up to the caller to free the Literal.
 export covering
-execute : Device -> Fn 0 -> Xla.Shape -> ErrIO Literal
-execute (MkDevice api client) f shape = do
+execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
+execute (MkDevice api client) f shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile xlaBuilder f
   bimapEitherT PjrtErr id $ do
@@ -246,18 +246,20 @@ execute (MkDevice api client) f shape = do
     free code
     free compileOptions
 
-    buffer <- pjrtLoadedExecutableExecute api loadedExec
+    buffers <- pjrtLoadedExecutableExecute api loadedExec outputs
     pjrtLoadedExecutableDestroy api loadedExec
 
-    literal <- allocLiteral shape
-    -- is this pure?
-    -- note we can probably avoid the difficulties around async
-    -- by awaiting the event in pjrtBufferToHostBuffer, thus
-    -- making that function synchronous
-    event <- pjrtBufferToHostBuffer api buffer literal
-    -- is awaiting slowing everything down? what can i do about that?
-    pjrtEventAwait api event
-    pjrtEventDestroy api event
-    pjrtBufferDestroy api buffer
+    -- this is a silly way of writing this, can simplify somehow
+    for (zip buffers shapes) $ \(buffer, shape) => do
+      literal <- allocLiteral shape
+      -- is this pure?
+      -- note we can probably avoid the difficulties around async
+      -- by awaiting the event in pjrtBufferToHostBuffer, thus
+      -- making that function synchronous
+      event <- pjrtBufferToHostBuffer api buffer literal
+      -- is awaiting slowing everything down? what can i do about that?
+      pjrtEventAwait api event
+      pjrtEventDestroy api event
+      pjrtBufferDestroy api buffer
 
-    pure literal
+      pure literal

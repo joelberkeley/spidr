@@ -125,7 +125,7 @@ eval device (MkGraph x) =
   let (env, MkTensor root) = runState empty x
    in try $ do
         shape <- mkShape shape {dtype}
-        lit <- execute device (MkFn [] root env) shape
+        [lit] <- execute device (MkFn [] root env) [shape]
         read {dtype} [] lit
 
 namespace TensorList
@@ -156,18 +156,18 @@ namespace TensorList
   ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
   |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
-  eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+  eval : Device -> {shapes : _} -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
   eval device (MkGraph xs) =
     let (env, xs) = runState empty xs
         (env, root) = runState env (addNode $ Tuple $ nodes xs)
      in try $ do
-          shape <- mkTupleShape !(buildShapes xs)
-          lit <- execute device (MkFn [] root env) shape
-          readAll xs 0 lit
+          shapes <- buildShapes xs
+          lits <- execute device (MkFn [] root env) shapes
+          readAll xs lits
 
     where
 
-    buildShapes : HasIO io => TensorList s t -> io $ List XlaShape
+    buildShapes : HasIO io => TensorList s t -> io $ Vect (length s) XlaShape
     buildShapes [] = pure []
     buildShapes (MkTensor {shape, dtype} _ :: ts) = [| mkShape shape {dtype} :: buildShapes ts |]
 
@@ -175,9 +175,9 @@ namespace TensorList
     nodes [] = []
     nodes (MkTensor x :: xs) = x :: nodes xs
 
-    readAll : HasIO io => TensorList s t -> Nat -> Literal -> io $ All2 Literal s t
-    readAll [] _ _ = pure []
-    readAll (MkTensor {dtype} _ :: ts) n lit = [| read {dtype} [n] lit :: readAll ts (S n) lit |]
+    readAll : HasIO io => TensorList s t -> Vect (length s) Literal -> io $ All2 Literal s t
+    readAll [] _ = pure []
+    readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
 ||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
 ||| operations.
