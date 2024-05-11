@@ -16,7 +16,6 @@ limitations under the License.
 #include <cstddef>
 #include <cstdlib>
 
-// remove these when we've pulled out build config
 #include "xla/pjrt/c/pjrt_c_api.h"
 #include "xla/pjrt/c/pjrt_c_api_helpers.h"
 
