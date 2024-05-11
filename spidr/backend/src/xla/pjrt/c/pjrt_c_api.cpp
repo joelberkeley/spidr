@@ -19,9 +19,6 @@ limitations under the License.
 // remove these when we've pulled out build config
 #include "xla/pjrt/c/pjrt_c_api.h"
 #include "xla/pjrt/c/pjrt_c_api_helpers.h"
-#include "xla/pjrt/pjrt_client.h"
-#include "xla/client/executable_build_options.h"
-#include "xla/service/computation_placer.h"
 
 extern "C" {
   // ---------------------------------- Errors -----------------------------------
