@@ -45,6 +45,9 @@ jobs:
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
+
+        git log
+
         if [ "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           ./pjrt-plugins/xla-cpu/build.sh
         else
