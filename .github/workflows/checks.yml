@@ -49,8 +49,7 @@ jobs:
           ./pjrt-plugins/xla-cpu/build.sh
         else
           . ./dev.sh
-          version=xla_short_version
-          wget "https://github.com/joelberkeley/spidr/releases/download/xla-$version/pjrt_plugin_xla_cpu.so"
+          wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
         fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
