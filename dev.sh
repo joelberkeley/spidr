@@ -2,6 +2,7 @@ xla_short_version () {
   # https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
   # > Generally, eight to ten characters are more
   # > than enough to be unique within a project.
+  ls
   rev=$(cat XLA_VERSION)
   echo ${rev%%"${rev##??????????}"}
 }
@@ -17,6 +18,7 @@ install_xla () {
     exit 1;
   fi
 
+  ls
   rev=$(cat XLA_VERSION)
   (
     cd $1
