@@ -2,7 +2,7 @@ on:
   pull_request:
     branches: master
     paths:
-      - 'spidr/backend/XLA_COMMIT_SHA'
+      - 'spidr/backend/XLA_VERSION'
 
 jobs:
   backend-version:

@@ -40,28 +40,21 @@ jobs:
     - name: Build XLA CPU PJRT plugin
       working-directory: pjrt-plugins/xla-cpu
       run: |
-        # if [[ $(git diff --exit-code HEAD~1 XLA_COMMIT_SHA) ]]; then  # is this enough? what if anything else changes?
-        ./build.sh
-        # else
-        #   exit 0  # fetch latest build
-        # fi
+        # is this check enough?
+        # what if we rename the plugin?
+        # what if the idris code changes?
+        # anything else?
+        if [[ $(git diff --exit-code HEAD~1 XLA_VERSION) ]]; then
+          ./build.sh
+        else
+          sha=$(cat XLA_VERSION)
+          sha_short=$(git rev-parse --short $sha)
+          wget https://github.com/joelberkeley/spidr/releases/download/xla-$sha_short/pjrt_plugin_xla_cpu.so
+        fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         path: pjrt-plugins/xla-cpu/pjrt_plugin_xla_cpu.so
-        if-no-files-found: error
-  pjrt-plugin-xla-cuda:
-    runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9  # note this implies specific versions of CUDA and cuDNN
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build XLA CUDA PJRT plugin
-      working-directory: pjrt-plugins/xla-cuda
-      run: ./build.sh
-    - name: Upload binary
-      uses: actions/upload-artifact@v4
-      with:
-        path: pjrt-plugins/xla-cuda/pjrt_plugin_xla_cuda.so
         if-no-files-found: error
   build-tests-xla-cpu:
     runs-on: ubuntu-latest
@@ -79,23 +72,6 @@ jobs:
       with:
         name: tests-xla-cpu.tar.gz
         path: test/xla-cpu/tests-xla-cpu.tar.gz
-        if-no-files-found: error
-  build-tests-xla-cuda:
-    runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build tests
-      working-directory: test/xla-cuda
-      run: |
-        pack switch HEAD
-        pack --no-prompt build xla-cuda.ipkg
-        tar cfz tests-xla-cuda.tar.gz -C build/exec .
-    - name: Upload tests
-      uses: actions/upload-artifact@v4
-      with:
-        name: tests-xla-cuda.tar.gz
-        path: test/xla-cuda/tests-xla-cuda.tar.gz
         if-no-files-found: error
   test-xla-cpu:
     needs:
@@ -119,25 +95,6 @@ jobs:
         sudo apt install -y wget
         wget https://github.com/joelberkeley/xla-build/releases/download/spidr-cache1/pjrt_plugin_xla_cpu.so
 
-        ./test
-  test-xla-cuda:
-    needs:
-      - pjrt
-      - pjrt-plugin-xla-cuda
-      - build-tests-xla-cuda
-    runs-on: nvcr.io/nvidia/tensorrt:23.11-py3  # needs a CUDA runner
-    steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        merge-multiple: true
-    - name: Install runtime dependencies
-      run: |
-        # install appropriate cuda and cudnn versions
-        sudo apt install chezscheme
-    - name: Run tests
-      run: |
-        tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
         ./test
   readme:
     runs-on: ubuntu-latest

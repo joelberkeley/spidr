@@ -3,13 +3,13 @@ if [ -d xla ]; then
   exit 1;
 fi
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-COMMIT_SHA="$(cat $SCRIPT_DIR/XLA_COMMIT_SHA)"
+script_dir="$(dirname "$(readlink -f "$0")")"
+sha="$(cat $script_dir/XLA_VERSION)"
 
 mkdir xla
 cd xla
 git init
 git remote add origin https://github.com/openxla/xla
-git fetch --depth 1 origin $COMMIT_SHA
+git fetch --depth 1 origin $sha
 git checkout FETCH_HEAD
 cd -
