@@ -38,7 +38,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 2
+        fetch-depth: 0
     - name: Build XLA CPU PJRT plugin
       run: |
         # is this check enough?
