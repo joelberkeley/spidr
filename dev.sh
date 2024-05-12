@@ -1,19 +1,18 @@
-sha_short {
+xla_short_version {
   # https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
   # > Generally, eight to ten characters are more
   # > than enough to be unique within a project.
-  sha="$1"
+  sha=$(cat XLA_VERSION)
   echo "${sha:0:10}"
 }
 
 install_xla {
-  dir=$(mktemp -d)
+  rev=$(cat XLA_VERSION)
   (
-    cd dir
+    cd $1
     git init
     git remote add origin https://github.com/openxla/xla
-    git fetch --depth 1 origin $1
+    git fetch --depth 1 origin
     git checkout FETCH_HEAD
   )
-  echo $dir
 }
