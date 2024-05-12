@@ -38,25 +38,22 @@ jobs:
       with:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
-      working-directory: pjrt-plugins/xla-cpu
       run: |
         # is this check enough?
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
         if [ "$(git diff --exit-code HEAD~1 XLA_VERSION)" ]; then
-          ./build.sh
+          ./pjrt-plugins/xla-cpu/build.sh
         else
-          # see
-          # https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
-          # > Generally, eight to ten characters are more
-          # > than enough to be unique within a project.
-          wget https://github.com/joelberkeley/spidr/releases/download/xla-$(cat XLA_VERSION)/pjrt_plugin_xla_cpu.so
+          source dev.sh
+          sha=sha_short $(cat XLA_VERSION)
+          wget https://github.com/joelberkeley/spidr/releases/download/xla-$sha/pjrt_plugin_xla_cpu.so
         fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        path: pjrt-plugins/xla-cpu/pjrt_plugin_xla_cpu.so
+        path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   build-tests-xla-cpu:
     runs-on: ubuntu-latest
