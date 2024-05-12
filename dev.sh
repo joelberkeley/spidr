@@ -3,7 +3,7 @@ xla_short_version () {
   # > Generally, eight to ten characters are more
   # > than enough to be unique within a project.
   sha=$(cat XLA_VERSION)
-  echo "${sha:0:10}"
+  echo ${sha%%"${sha##??????????}"}
 }
 
 install_xla () {
