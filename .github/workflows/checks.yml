@@ -16,9 +16,9 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         . ./dev.sh
+        install_xla spidr/backend/xla
         cd spidr/backend
         mkdir xla
-        install_xla xla
         (cd xla; ./configure.py --backend=CPU)
         bazel build //:c_xla
     - name: Upload binary
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
