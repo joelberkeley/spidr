@@ -15,6 +15,7 @@ jobs:
         key: xla-bazel-cache-${{ runner.os }}
     - name: Build PJRT + XLA binary
       run: |
+        ls
         . ./dev.sh
         cd spidr/backend
         mkdir xla
