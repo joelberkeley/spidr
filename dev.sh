@@ -7,6 +7,14 @@ xla_short_version () {
 }
 
 install_xla () {
+  if [ -z $1 ]; then
+    echo "Directory required as argument, aborting."
+  fi
+
+  if [ -d $1 ]; then
+    echo "Directory already exists at path $1, aborting."
+  fi
+
   rev=$(cat XLA_VERSION)
   (
     cd $1
