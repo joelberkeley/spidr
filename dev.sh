@@ -9,19 +9,20 @@ xla_short_version () {
 install_xla () {
   if [ -z $1 ]; then
     echo "Directory required as argument, aborting."
+    exit 1;
   fi
 
-  if [ -d $1 ]; then
-    echo "Directory already exists at path $1, aborting."
+  if [ $(ls -A $1) ]; then
+    echo "Directory at path $1 is not empty, refusing to install XLA to this directory."
+    exit 1;
   fi
 
   rev=$(cat XLA_VERSION)
-  mkdir $1
   (
     cd $1
     git init
     git remote add origin https://github.com/openxla/xla
-    git fetch --depth 1 origin
+    git fetch --depth 1 origin $rev
     git checkout FETCH_HEAD
   )
 }
