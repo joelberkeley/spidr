@@ -15,7 +15,7 @@ jobs:
         key: xla-bazel-cache-${{ runner.os }}
     - name: Build PJRT + XLA binary
       run: |
-        source dev.sh
+        . ./dev.sh
         cd spidr/backend
         mkdir xla
         install_xla xla
@@ -48,7 +48,7 @@ jobs:
         if [ "$(git diff --exit-code HEAD~1 XLA_VERSION)" ]; then
           ./pjrt-plugins/xla-cpu/build.sh
         else
-          source dev.sh
+          . ./dev.sh
           wget https://github.com/joelberkeley/spidr/releases/download/xla-$xla_short_version/pjrt_plugin_xla_cpu.so
         fi
     - name: Upload binary
