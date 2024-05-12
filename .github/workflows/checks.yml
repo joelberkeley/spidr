@@ -18,7 +18,6 @@ jobs:
         . ./dev.sh
         install_xla spidr/backend/xla
         cd spidr/backend
-        mkdir xla
         (cd xla; ./configure.py --backend=CPU)
         bazel build //:c_xla
     - name: Upload binary
