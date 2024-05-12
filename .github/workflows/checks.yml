@@ -45,6 +45,9 @@ jobs:
         # what if the idris code changes?
         # anything else?
 
+        # seeing error
+        # error: Could not access 'HEAD^'
+        # in github
         if [ "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           ./pjrt-plugins/xla-cpu/build.sh
         else
@@ -90,11 +93,6 @@ jobs:
     - name: Run tests
       run: |
         tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
-
-        # hack for reasonable build times, will eventually live up in build step
-        sudo apt install -y wget
-        wget https://github.com/joelberkeley/xla-build/releases/download/spidr-cache1/pjrt_plugin_xla_cpu.so
-
         ./test
   readme:
     runs-on: ubuntu-latest
