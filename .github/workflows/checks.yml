@@ -5,6 +5,7 @@ on:
 jobs:
   diff:
     runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
     steps:
       - uses: actions/checkout@v4
         with:
