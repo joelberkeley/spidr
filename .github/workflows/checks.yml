@@ -31,13 +31,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 2
+        fetch-depth: 3
     - name: Build XLA CPU PJRT plugin
       run: |
         # is this check enough?
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
+        git checkout HEAD^
+
         git show
         git rev-parse HEAD
         git rev-parse HEAD^
@@ -61,9 +63,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 3
       - name: Build XLA CUDA PJRT plugin
-        run: |          
+        run: |
+          git checkout HEAD^
+
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
