@@ -31,14 +31,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 3
+        ref: ${{ github.event.pull_request.head }}
+        fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
       run: |
         # is this check enough?
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
-        git checkout HEAD^
 
         git show
         git rev-parse HEAD
@@ -63,7 +63,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          ref: ${{ github.event.pull_request.head }}
+          fetch-depth: 2
       - name: Build XLA CUDA PJRT plugin
         run: |
           git checkout HEAD^
