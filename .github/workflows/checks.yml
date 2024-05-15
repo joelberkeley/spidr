@@ -31,7 +31,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
       run: |
@@ -57,7 +56,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
       - name: Build XLA CUDA PJRT plugin
         run: |
