@@ -59,8 +59,6 @@ jobs:
           fetch-depth: 2
       - name: Build XLA CUDA PJRT plugin
         run: |
-          git checkout HEAD^
-
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
