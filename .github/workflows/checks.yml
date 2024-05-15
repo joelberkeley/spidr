@@ -39,12 +39,6 @@ jobs:
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
-
-        git show
-        git rev-parse HEAD
-        git rev-parse HEAD^
-        git diff HEAD^ XLA_VERSION
-        
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
