@@ -3,17 +3,8 @@ on:
     branches: master
 
 jobs:
-  diff:
-    runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      - run: git diff --exit-code HEAD^
   pjrt:
     runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
     - name: Fetch Bazel cache
@@ -22,7 +13,7 @@ jobs:
         path: ~/.cache/bazel
         key: xla-bazel-cache-${{ runner.os }}
     - name: Build PJRT + XLA binary
-      run: ./spidr/backend/build.sh
+      run: docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "spidr/backend/build.sh"
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -36,13 +27,23 @@ jobs:
         key: xla-bazel-cache-${{ runner.os }}
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 2
     - name: Build XLA CPU PJRT plugin
-      run: ./pjrt-plugins/xla-cpu/build.sh
+      run: |
+        # is this check enough?
+        # what if we rename the plugin?
+        # what if the idris code changes?
+        # anything else?
+
+        if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
+          exit 0
+        fi
+
+        docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -51,13 +52,19 @@ jobs:
         if-no-files-found: error
   pjrt-plugin-xla-cuda:
     runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9  # note this implies specific versions of CUDA and cuDNN
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Build XLA CUDA PJRT plugin
-        run: ./pjrt-plugins/xla-cuda/build.sh
+        run: |
+          if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
+            exit 0
+          fi
+
+          # note this implies specific versions of CUDA and cuDNN
+          docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
