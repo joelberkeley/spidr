@@ -5,6 +5,7 @@ on:
 jobs:
   pjrt:
     runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
     - name: Fetch Bazel cache
@@ -13,7 +14,7 @@ jobs:
         path: ~/.cache/bazel
         key: xla-bazel-cache-${{ runner.os }}
     - name: Build PJRT + XLA binary
-      run: docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "spidr/backend/build.sh"
+      run: spidr/backend/build.sh
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -37,13 +38,12 @@ jobs:
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
-
         if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
           wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
-          exit 0
+        else
+          docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
-
-        docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -59,12 +59,12 @@ jobs:
       - name: Build XLA CUDA PJRT plugin
         run: |
           if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
             wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
-            exit 0
+          else
+            # note this implies specific versions of CUDA and cuDNN
+            docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
-
-          # note this implies specific versions of CUDA and cuDNN
-          docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
