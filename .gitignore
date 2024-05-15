@@ -5,6 +5,7 @@
 
 build/
 out/
+bazel
 bazel-*
 bazelisk
 xla/
