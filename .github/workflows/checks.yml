@@ -14,7 +14,7 @@ jobs:
         path: ~/.cache/bazel
         key: xla-bazel-cache-${{ runner.os }}
     - name: Build PJRT + XLA binary
-      run: spidr/backend/build.sh
+      run: ./spidr/backend/build.sh
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -38,7 +38,7 @@ jobs:
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
-        if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+        if [ -z "$(git diff --exit-code HEAD~1 XLA_VERSION)" ]; then
           . ./dev.sh
           wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
         else
@@ -59,7 +59,7 @@ jobs:
           fetch-depth: 2
       - name: Build XLA CUDA PJRT plugin
         run: |
-          if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          if [ -z "$(git diff --exit-code HEAD~1 XLA_VERSION)" ]; then
             . ./dev.sh
             wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
           else
