@@ -42,6 +42,7 @@ jobs:
           . ./dev.sh
           wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
         else
+          exit 1
           docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
     - name: Upload binary
@@ -62,6 +63,7 @@ jobs:
             . ./dev.sh
             wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
           else
+            exit 1
             # note this implies specific versions of CUDA and cuDNN
             docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
