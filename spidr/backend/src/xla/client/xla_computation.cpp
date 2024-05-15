@@ -15,7 +15,6 @@ limitations under the License.
 */
 #include "xla/client/xla_computation.h"
 
-#include "../xla_data.pb.h"
 #include "../../ffi.h"
 #include "xla_computation.h"
 

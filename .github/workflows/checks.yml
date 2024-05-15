@@ -15,7 +15,7 @@ jobs:
         key: bazel-cache-xla-${{ runner.os }}
     - name: Build PJRT + XLA binary
       run: |
-        XDG_CACHE_HOME=~/.cache ./spidr/backend/build.sh
+        ./spidr/backend/build.sh
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
