@@ -38,12 +38,12 @@ jobs:
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
-#        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-        . ./dev.sh
-        wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
-#        else
-#          docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
-#        fi
+        # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
+          wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
+        # else
+        #   docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
+        # fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
