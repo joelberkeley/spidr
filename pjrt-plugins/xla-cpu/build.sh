@@ -1,6 +1,12 @@
 set -e
 
-source dev.sh
+. ./dev.sh
+
+if [ -z "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+  wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
+  exit 0;
+fi
+
 xla_dir=$(mktemp -d)
 install_xla $xla_dir
 (
