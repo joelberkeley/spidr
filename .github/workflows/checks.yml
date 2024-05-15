@@ -61,7 +61,8 @@ jobs:
           fetch-depth: 2
       - name: Build XLA CUDA PJRT plugin
         run: |
-          git diff HEAD^ XLA_VERSION
+          git rev-parse HEAD
+          git rev-parse HEAD^
           
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
