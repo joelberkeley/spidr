@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - run: git diff HEAD^
+      - run: git diff --exit-code HEAD^
   pjrt:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
@@ -25,6 +25,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
+        name: libc_xla.so
         path: libc_xla.so
         if-no-files-found: error
     - name: Save Bazel cache
@@ -44,6 +45,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
+        name: pjrt_plugin_xla_cpu.so
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cuda:
@@ -58,6 +60,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
+          name: pjrt_plugin_xla_cuda.so
           path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu:
