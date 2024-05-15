@@ -2,10 +2,11 @@ set -e
 
 . ./dev.sh
 
+mkdir spidr/backend/xla
+install_xla spidr/backend/xla
+
 (
   cd spidr/backend
-  mkdir xla
-  install_xla xla
   bazel build //:c_xla
   rm -rf xla
 )

@@ -3,6 +3,13 @@ on:
     branches: master
 
 jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - run: git diff HEAD^
   pjrt:
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
