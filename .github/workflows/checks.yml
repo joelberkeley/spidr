@@ -141,7 +141,7 @@ jobs:
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
-        sudo apt install chezscheme
+        apt install chezscheme
     - name: Run tests
       run: |
         tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
