@@ -132,7 +132,8 @@ jobs:
       - pjrt
       - pjrt-plugin-xla-cuda
       - build-tests-xla-cuda
-    runs-on: nvcr.io/nvidia/tensorrt:23.11-py3  # needs a CUDA runner
+    runs-on: ubuntu-latest  # needs a CUDA runner
+    container: nvcr.io/nvidia/tensorrt:23.11-py3
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
