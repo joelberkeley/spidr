@@ -8,11 +8,11 @@ jobs:
     container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
-#    - name: Fetch Bazel cache
-#      uses: actions/cache/restore@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: bazel-cache-xla-${{ runner.os }}
+    - name: Fetch Bazel cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel
+        key: bazel-cache-xla-${{ runner.os }}
     - name: Build PJRT + XLA binary
       run: |
         ./spidr/backend/build.sh
@@ -22,11 +22,11 @@ jobs:
         name: libc_xla.so
         path: libc_xla.so
         if-no-files-found: error
-#    - name: Save Bazel cache
-#      uses: actions/cache/save@v4
-#      with:
-#        path: ~/.cache/bazel
-#        key: bazel-cache-xla-${{ runner.os }}
+    - name: Save Bazel cache
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/bazel
+        key: bazel-cache-xla-${{ runner.os }}
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
     steps:
