@@ -1,7 +1,7 @@
-set -e
+#!/bin/bash -e
 
-here="$(dirname "$(readlink -f "$0")")"
-cd $here/../..
+here=$(dirname "$(readlink -f "$0")")
+cd "$here/../.."
 
 . ./dev.sh
 

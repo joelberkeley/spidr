@@ -1,4 +1,6 @@
-here="$(dirname "$(readlink -f "$0")")"
-c_xla_version=$(cat "$here/backend/VERSION")
+#!/bin/sh -e
 
-curl -sLO "https://github.com/joelberkeley/spidr/releases/download/c-xla-$(c_xla_version)/libc_xla.so"
+script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
+c_xla_version=$(cat "$script_dir/backend/VERSION")
+
+curl -sLO "https://github.com/joelberkeley/spidr/releases/download/c-xla-$c_xla_version/libc_xla.so"
