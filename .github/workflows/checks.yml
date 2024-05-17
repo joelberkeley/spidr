@@ -160,6 +160,9 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get install curl
     - name: Type-check README
       run: |
         pack switch HEAD
@@ -169,6 +172,9 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        sudo apt-get install curl
     - name: Type-check tutorials
       run: |
         pack switch HEAD

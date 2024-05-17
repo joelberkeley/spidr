@@ -5,8 +5,6 @@ depends =
   hedgehog,
   sop
 
-sourcedir = "runner"
-
 modules =
   Unit.Model.TestKernel,
 
