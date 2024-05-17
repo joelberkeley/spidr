@@ -8,11 +8,13 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-To install spidr, install a PJRT plugin. Either install the CPU plugin with
+spidr is packaged in two parts: the core library _spidr_ which includes all the definitions such as `Tensor`, and PJRT plugins which allow you to run spidr graphs on hardware such as CPU or GPU. The plugins depend on the core library, so you only need to install a plugin. You can either install the CPU plugin, with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
-or see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
+or if you want to use other hardware, see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
+
+We have only built and tested plugins for Ubuntu Linux 22.04. They might work for other Linux distributions, we don't know. We're keen to support you in using spidr on your OS of choice, so do [reach out](#contact) if you're on an unsupported platform and would like assistance.
 
 ### Motivation
 
