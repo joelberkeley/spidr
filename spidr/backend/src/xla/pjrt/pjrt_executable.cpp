@@ -15,21 +15,21 @@ limitations under the License.
 */
 #include <string>
 
-#include "xla/client/xla_computation.h"
 #include "xla/pjrt/pjrt_executable.h"
 
+#include "../client/executable_build_options.h"
 #include "../../ffi.h"
 
 extern "C" {
   struct CompileOptions;
 
-  CompileOptions* CompileOptions_new() {
-    auto build_options = new xla::ExecutableBuildOptions;
-    build_options->set_device_ordinal(0);
-
+  CompileOptions* CompileOptions_new(ExecutableBuildOptions* executable_build_options) {
+    auto executable_build_options_ = reinterpret_cast<xla::ExecutableBuildOptions*>(
+      executable_build_options
+    );
     auto options = new xla::CompileOptions{
       .argument_layouts = std::nullopt,
-      .executable_build_options = *build_options,
+      .executable_build_options = *executable_build_options_,
       .env_option_overrides = {},
       .target_config = std::nullopt,
     };

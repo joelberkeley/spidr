@@ -15,19 +15,20 @@ limitations under the License.
 --}
 module Compiler.Xla.PJRT.PjrtExecutable
 
+import Compiler.Xla.Client.ExecutableBuildOptions
+
 import Compiler.FFI
 
 export
 data CompileOptions = MkCompileOptions GCAnyPtr
 
 %foreign (libxla "CompileOptions_new")
-prim__mkCompileOptions : PrimIO AnyPtr
+prim__mkCompileOptions : AnyPtr -> PrimIO AnyPtr
 
 export
-mkCompileOptions : HasIO io => io CompileOptions
-mkCompileOptions = do
-  options <- primIO prim__mkCompileOptions
-  -- is `free` sufficient?
+mkCompileOptions : HasIO io => ExecutableBuildOptions -> io CompileOptions
+mkCompileOptions (MkExecutableBuildOptions executableBuildOptions) = do
+  options <- primIO $ prim__mkCompileOptions executableBuildOptions
   options <- onCollectAny options free
   pure (MkCompileOptions options)
 

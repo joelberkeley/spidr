@@ -30,6 +30,7 @@ import Compiler.Xla.Client.Lib.Constants
 import Compiler.Xla.Client.Lib.Math
 import Compiler.Xla.Client.Lib.Matrix
 import Compiler.Xla.Client.Lib.PRNG
+import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.Client.XlaBuilder
 import Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.PJRT.C.PJRT_C_API
@@ -241,10 +242,12 @@ execute (MkDevice api client) f shapes = do
   computation <- compile xlaBuilder f
   bimapEitherT PjrtErr id $ do
     code <- serializeAsString computation
-    compileOptions <- serializeAsString !mkCompileOptions
+    executableBuildOptions <- mkExecutableBuildOptions
+    compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
     loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
     free code
     free compileOptions
+    delete executableBuildOptions
 
     buffers <- pjrtLoadedExecutableExecute api loadedExec outputs
     pjrtLoadedExecutableDestroy api loadedExec

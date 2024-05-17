@@ -14,6 +14,7 @@ modules =
   Compiler.Xla.Client.Lib.Matrix,
   Compiler.Xla.Client.Lib.PRNG,
   Compiler.Xla.Client.XlaBuilder,
+  Compiler.Xla.Client.ExecutableBuildOptions,
   Compiler.Xla.Client.XlaComputation,
   Compiler.Xla.PJRT.C.PJRT_C_API,
   Compiler.Xla.PJRT.PjrtExecutable,
