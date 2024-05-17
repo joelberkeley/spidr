@@ -8,4 +8,4 @@ brief = "XLA PJRT plugin for CPU."
 readme = "README.md"
 license = "Apache License, Version 2.0"
 
-postbuild = "./postbuild.sh"
+postinstall = "./postinstall.sh"

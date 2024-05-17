@@ -40,8 +40,7 @@ jobs:
         # what if the idris code changes?
         # anything else?
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          . ./dev.sh
-          wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cpu.so"
+          ./pjrt-plugins/xla-cpu/postinstall.sh
         # else
         #   docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
         # fi
@@ -60,8 +59,7 @@ jobs:
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
           # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-            . ./dev.sh
-            wget "https://github.com/joelberkeley/spidr/releases/download/xla-$(xla_short_version)/pjrt_plugin_xla_cuda.so"
+            ./pjrt-plugins/xla-cuda/postinstall.sh
           # else
           #   # free up space not used if running in Docker, see
           #   # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
