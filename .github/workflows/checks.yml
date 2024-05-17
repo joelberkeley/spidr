@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install shellcheck
-        run: apt-get install shellcheck
+        run: sudo apt-get install shellcheck
       - name: Run shellcheck
         shell: bash
         run: |
