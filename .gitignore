@@ -8,6 +8,5 @@ out/
 bazel
 bazel-*
 bazelisk
-xla/
 *.so
 *.tar.gz
