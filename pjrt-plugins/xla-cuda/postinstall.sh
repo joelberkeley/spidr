@@ -1,6 +1,6 @@
-script_dir="$(dirname "$(readlink -f "$0")")"
+here="$(dirname "$(readlink -f "$0")")"
 cwd=$pwd
-cd $script_dir
+cd $here
 cd ../..
 . ./dev.sh
 cd $cwd

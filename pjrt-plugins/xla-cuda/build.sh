@@ -1,5 +1,8 @@
 set -e
 
+here="$(dirname "$(readlink -f "$0")")"
+cd $here/../..
+
 . ./dev.sh
 
 xla_dir=$(mktemp -d)
