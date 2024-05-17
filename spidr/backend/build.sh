@@ -1,7 +1,7 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
-here=$(dirname "$(readlink -f "$0")")
-cd "$here/../.."
+script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
+cd "$script_dir/../.."
 
 . ./dev.sh
 
