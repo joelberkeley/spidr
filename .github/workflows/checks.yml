@@ -2,9 +2,6 @@ on:
   pull_request:
     branches: master
 
-env:
-  SPIDR_MANUAL_INSTALL: 1
-
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
@@ -98,6 +95,8 @@ jobs:
         pack switch HEAD
         pack --no-prompt build xla-cpu.ipkg
         tar cfz tests-xla-cpu.tar.gz -C build/exec .
+      env:
+        SPIDR_MANUAL_INSTALL: 1
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
@@ -115,6 +114,8 @@ jobs:
         pack switch HEAD
         pack --no-prompt build xla-cuda.ipkg
         tar cfz tests-xla-cuda.tar.gz -C build/exec .
+      env:
+        SPIDR_MANUAL_INSTALL: 1
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
