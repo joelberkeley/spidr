@@ -6,7 +6,7 @@ cd "$script_dir"/../..
 rev=$(cat XLA_VERSION)
 cd - > /dev/null 2>&1
 
-bin_uri="https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cuda.so"
+bin_uri="https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cpu.so"
 
 if [ "$SPIDR_MANUAL_INSTALL" = 0 ] || [ -z "$SPIDR_MANUAL_INSTALL" ]; then
   curl -sLO "$bin_uri"
