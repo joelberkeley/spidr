@@ -164,22 +164,20 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt-get install curl
     - name: Type-check README
       run: |
         pack switch HEAD
         pack --no-prompt typecheck readme.ipkg
+      env:
+        SPIDR_MANUAL_INSTALL: 1
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt-get install curl
     - name: Type-check tutorials
       run: |
         pack switch HEAD
         res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
+      env:
+        SPIDR_MANUAL_INSTALL: 1
