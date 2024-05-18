@@ -7,7 +7,7 @@ cd "$script_dir/../.."
 rev="$(cat XLA_VERSION)"
 
 mkdir spidr/backend/xla
-install_xla $(short_revision rev) spidr/backend/xla
+install_xla "$(short_revision $rev)" spidr/backend/xla
 
 (
   cd spidr/backend
