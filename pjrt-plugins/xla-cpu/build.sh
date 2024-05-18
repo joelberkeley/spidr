@@ -7,7 +7,7 @@ cd "$script_dir/../.."
 rev="$(cat XLA_VERSION)"
 
 xla_dir=$(mktemp -d)
-install_xla "$(short_revision $rev)" "$xla_dir"
+install_xla "$(short_revision "$rev")" "$xla_dir"
 (
   cd "$xla_dir"
   ./configure.py --backend=CPU
