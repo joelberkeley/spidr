@@ -4,9 +4,10 @@ script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
 
 . ./dev.sh
+rev="$(cat XLA_VERSION)"
 
 xla_dir=$(mktemp -d)
-install_xla "$xla_dir"
+install_xla $(short_revision rev) "$xla_dir"
 (
   cd "$xla_dir"
   # note we're not using `./configure.py --backend=CUDA` as it requires a GPU, but the build

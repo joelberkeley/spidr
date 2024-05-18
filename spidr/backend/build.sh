@@ -4,9 +4,10 @@ script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
 
 . ./dev.sh
+rev="$(cat XLA_VERSION)"
 
 mkdir spidr/backend/xla
-install_xla spidr/backend/xla
+install_xla $(short_revision rev) spidr/backend/xla
 
 (
   cd spidr/backend
