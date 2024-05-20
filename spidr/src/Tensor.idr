@@ -142,12 +142,12 @@ namespace TensorList
   ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
   ||| shapes and element types. For example,
   ||| ```
-  ||| main : IO ()
-  ||| main = do [x, y] <- eval $ do x <- tensor {dtype = F64} [1.2, 3.4]
-  |||                               y <- reduce @{Sum} [0] x
-  |||                               pure [x, y]
-  |||           printLn x
-  |||           printLn y
+  ||| main : Device -> IO ()
+  ||| main device = do [x, y] <- eval device $ do x <- tensor {dtype = F64} [1.2, 3.4]
+  |||                                             y <- reduce @{Sum} [0] x
+  |||                                             pure [x, y]
+  |||                  printLn x
+  |||                  printLn y
   ||| ```
   ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
   ||| compiles the graph just once.
@@ -156,16 +156,21 @@ namespace TensorList
   ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
   |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
-  eval : Device -> {shapes : _} -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+  eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
   eval device (MkGraph xs) =
     let (env, xs) = runState empty xs
         (env, root) = runState env (addNode $ Tuple $ nodes xs)
      in try $ do
-          shapes <- buildShapes xs
-          lits <- execute device (MkFn [] root env) shapes
-          readAll xs lits
+          xlaShapes <- buildShapes xs
+          let (outputs ** eq) = lengthC xs
+          lits <- execute device (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
+          readAll xs $ rewrite sym eq in lits
 
     where
+
+    lengthC : TensorList s t -> (n ** n === length s)
+    lengthC [] = (0 ** Refl)
+    lengthC (_ :: xs) = let (n ** eq) = lengthC xs in (S n ** cong S eq)
 
     buildShapes : HasIO io => TensorList s t -> io $ Vect (length s) XlaShape
     buildShapes [] = pure []

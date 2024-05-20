@@ -253,7 +253,6 @@ execute (MkDevice api client) f shapes = do
     buffers <- pjrtLoadedExecutableExecute api loadedExec outputs
     pjrtLoadedExecutableDestroy api loadedExec
 
-    -- this is a silly way of writing this, can simplify somehow
     for (zip buffers shapes) $ \(buffer, shape) => do
       literal <- allocLiteral shape
       -- is this pure?
@@ -261,7 +260,6 @@ execute (MkDevice api client) f shapes = do
       -- by awaiting the event in pjrtBufferToHostBuffer, thus
       -- making that function synchronous
       event <- pjrtBufferToHostBuffer api buffer literal
-      -- is awaiting slowing everything down? what can i do about that?
       pjrtEventAwait api event
       pjrtEventDestroy api event
       pjrtBufferDestroy api buffer
