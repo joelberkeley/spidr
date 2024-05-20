@@ -20,7 +20,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        draft: true  # remove when done
         tag_name: c-xla-v${{ env.C_XLA_VERSION }}
         release_name: C XLA release ${{ env.C_XLA_VERSION }}
         body: "C XLA release ${{ env.C_XLA_VERSION }}"

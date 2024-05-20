@@ -31,3 +31,8 @@ isNan x = x /= x
 export partial
 unsafeEval : Device => PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
 unsafeEval @{device} = unsafePerformIO . eval device
+
+namespace TensorList
+  export partial
+  unsafeEval : Device => Graph (TensorList shapes tys) -> All2 Literal shapes tys
+  unsafeEval @{device} = unsafePerformIO . eval device

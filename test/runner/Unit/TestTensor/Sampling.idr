@@ -104,7 +104,7 @@ uniformSeedIsUpdated @{device} = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval device $ do
+  let [seed, seed', seed'', sample, sample'] = unsafeEval $ do
         bound <- tensor bound
         bound' <- tensor bound'
         key <- tensor key
@@ -127,7 +127,7 @@ uniformIsReproducible @{device} = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafePerformIO $ eval device $ do
+  let [sample, sample'] = unsafeEval $ do
         bound <- tensor bound
         bound' <- tensor bound'
         key <- tensor key
@@ -165,7 +165,7 @@ normalSeedIsUpdated @{device} = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [seed, seed', seed'', sample, sample'] = unsafePerformIO $ eval device $ do
+  let [seed, seed', seed'', sample, sample'] = unsafeEval $ do
         key <- tensor key
         seed <- tensor seed
         let rng = normal key {shape=[10]}
@@ -183,7 +183,7 @@ normalIsReproducible @{device} = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let [sample, sample'] = unsafePerformIO $ eval device $ do
+  let [sample, sample'] = unsafeEval $ do
         key <- tensor key
         seed <- tensor seed
 
