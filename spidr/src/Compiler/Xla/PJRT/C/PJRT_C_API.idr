@@ -27,11 +27,14 @@ import Util
 
 %language ElabReflection
 
+||| For use by plugin developers.
+|||
 ||| A minimal wrapper round a C `PJRT_Api` struct pointer. The memory should be owned by the
 ||| code producing the pointer.
 public export
 data PjrtApi = MkPjrtApi AnyPtr
 
+||| The cause of a `PjrtError`.
 public export
 data PjrtErrorCode =
     PJRT_Error_Code_CANCELLED
@@ -53,10 +56,15 @@ data PjrtErrorCode =
 
 %runElab derive "PjrtErrorCode" [Show]
 
+||| Indicates an error in the PJRT C layer, either due to internal errors or user error.
 public export
 record PjrtError where
   constructor MkPjrtError
+
+  ||| The error message.
   message : String
+
+  ||| The error cause code, if one exists.
   code : Maybe PjrtErrorCode
 
 %runElab derive "PjrtError" [Show]
@@ -120,6 +128,7 @@ pjrtErrorCodeFromCInt = \case
   n  => assert_total $ idris_crash
     "Unexpected PJRT_Error_Code value received through FFI from XLA: \{show n}"
 
+||| A `PjrtFFI a` produces an `a` or an error from the PJRT layer.
 public export 0
 PjrtFFI : Type -> Type
 PjrtFFI = EitherT PjrtError IO
@@ -137,6 +146,7 @@ try api err onOk = if (isNullPtr err) then right onOk else do
   destroyPjrtError api err
   left $ MkPjrtError msg $ map pjrtErrorCodeFromCInt code
 
+||| For internal spidr use only.
 export
 data PjrtEvent = MkPjrtEvent AnyPtr
 
@@ -152,6 +162,7 @@ prim__mkPjrtEventAwaitArgs : AnyPtr -> PrimIO AnyPtr
 %foreign (libxla "pjrt_event_await")
 prim__pjrtEventAwait : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+||| For internal spidr use only.
 export
 pjrtEventAwait : PjrtApi -> PjrtEvent -> PjrtFFI ()
 pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
@@ -160,6 +171,9 @@ pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
   free args
   try api err ()
 
+||| For use by plugin developers.
+|||
+||| A minimal wrapper round a pointer to a C `PJRT_Client`. See `pjrtClientCreate`.
 export
 data PjrtClient = MkPjrtClient GCAnyPtr
 
@@ -193,6 +207,9 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
   free args
   destroyPjrtError api err
 
+||| For use by plugin developers.
+|||
+||| Types supported by named configuration arguments.
 public export
 data PjrtValue =
     PjrtString String
@@ -237,8 +254,14 @@ prim__sizeofPjrtNamedValue : Bits64
 %foreign (libxla "shift_by_PJRT_NamedValue")
 prim__shift_by_PJRT_NamedValue : AnyPtr -> Bits64 -> AnyPtr
 
+||| For use by plugin developers.
+|||
+||| Creates a `PjrtClient` for a specified configuration.
+|||
+||| @createOptions Configuration to create this client. The required and allowed named values
+|||   depends on the plugin used.
 export
-pjrtClientCreate : PjrtApi -> SortedMap String PjrtValue -> PjrtFFI PjrtClient
+pjrtClientCreate : PjrtApi -> (createOptions : SortedMap String PjrtValue) -> PjrtFFI PjrtClient
 pjrtClientCreate (MkPjrtApi api) createOptions = do
   let createOptions = toList createOptions
       numOptions = List.length createOptions
@@ -270,12 +293,15 @@ pjrtClientCreate (MkPjrtApi api) createOptions = do
       free args
       handleErrOnDestroy api err "PJRT_Client"
 
+||| For internal spidr use only.
 export
 data PjrtProgram = MkPjrtProgram GCAnyPtr
 
 %foreign (libxla "PJRT_Program_new")
 prim__mkPjrtProgram : Ptr Char -> Bits64 -> PrimIO AnyPtr
 
+||| For internal spidr use only.
+|||
 ||| The CharArray must live as long as the PjrtProgram.
 export
 mkPjrtProgram : HasIO io => CharArray -> io PjrtProgram
@@ -299,9 +325,11 @@ prim__mkPjrtLoadedExecutableDestroyArgs : AnyPtr -> PrimIO AnyPtr
 %foreign (libxla "pjrt_loadedexecutable_destroy")
 prim__pjrtLoadedExecutableDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+||| For internal spidr use only.
 export
 data PjrtLoadedExecutable = MkPjrtLoadedExecutable AnyPtr
 
+||| For internal spidr use only.
 export
 pjrtLoadedExecutableDestroy : HasIO io => PjrtApi -> PjrtLoadedExecutable -> io () -- note this could now be PjrtFFI ()
 pjrtLoadedExecutableDestroy (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
@@ -310,6 +338,8 @@ pjrtLoadedExecutableDestroy (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   free args
   handleErrOnDestroy api err "PJRT_LoadedExecutable"
 
+||| For internal spidr use only.
+|||
 ||| It is up to the caller to free the PjrtLoadedExecutable.
 export
 pjrtClientCompile :
@@ -344,9 +374,11 @@ prim__mkPjrtBufferDestroyArgs : AnyPtr -> PrimIO AnyPtr
 %foreign (libxla "pjrt_buffer_destroy")
 prim__pjrtBufferDestroy : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+||| For internal spidr use only.
 export
 data PjrtBuffer = MkPjrtBuffer AnyPtr
 
+||| For internal spidr use only.
 export
 pjrtBufferDestroy : HasIO io => PjrtApi -> PjrtBuffer -> io () -- note this could now be ErrIO PjrtError ()
 pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
@@ -355,6 +387,8 @@ pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
   free args
   handleErrOnDestroy api err "PJRT_Buffer"
 
+||| For internal spidr use only.
+|||
 ||| It is up to the caller to free the `PjrtBuffer`s.
 export
 pjrtLoadedExecutableExecute :
@@ -382,6 +416,7 @@ prim__pjrtBufferToHostBufferArgsEvent : AnyPtr -> AnyPtr
 %foreign (libxla "pjrt_buffer_tohostbuffer")
 prim__pjrtBufferToHostBuffer : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+||| For internal spidr use only.
 export
 pjrtEventDestroy : HasIO io => PjrtApi -> PjrtEvent -> io ()
 pjrtEventDestroy (MkPjrtApi api) (MkPjrtEvent event) = do
@@ -390,6 +425,8 @@ pjrtEventDestroy (MkPjrtApi api) (MkPjrtEvent event) = do
   free args
   handleErrOnDestroy api err "PJRT_Event"
 
+||| For internal spidr use only.
+|||
 ||| It is up to the caller to free the `PjrtEvent`.
 export
 pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> PjrtFFI PjrtEvent
