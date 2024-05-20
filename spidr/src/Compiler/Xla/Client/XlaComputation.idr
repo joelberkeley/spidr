@@ -29,24 +29,6 @@ export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
-{-
-until I work out how to handle memory of an HloModuleProto
-
-export
-data HloModuleProto = MkHloModuleProto GCAnyPtr
-
-export
-proto : XlaComputation -> HloModuleProto
-proto (MkXlaComputation computation) = do
-
-  pure $ MkHloModuleProto proto
-
--- doesn't belong here, see cpp
-export
-%foreign (libxla "HloModuleProto_SerializeAsString")
-prim__hloModuleProtoSerializeAsString : AnyPtr -> PrimIO String
--}
-
 export
 %foreign (libxla "XlaComputation_SerializeAsString")
 prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr

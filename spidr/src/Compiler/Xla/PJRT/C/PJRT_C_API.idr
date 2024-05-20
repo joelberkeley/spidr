@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
+||| For internal spidr use, and use by plugin developers.
+|||
+||| The Idris API for PJRT.
 module Compiler.Xla.PJRT.C.PJRT_C_API
 
 import Control.Monad.Either
