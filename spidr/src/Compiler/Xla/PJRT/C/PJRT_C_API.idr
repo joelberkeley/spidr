@@ -27,13 +27,8 @@ import Util
 
 %language ElabReflection
 
--- keep the API as close to the PJRT api as possible except:
--- * don't expose _Args, so we don't need to handle null ptrs. I really doubt we'd
---   ever need to expose them
--- use pointers for two reasons:
--- we can use onCollectAny to GC our data!
--- we can hide GCAnyPtr/AnyPtr in a more type-safe Idris API
-
+||| A minimal wrapper round a C `PJRT_Api` struct pointer. The memory should be owned by the
+||| code producing the pointer.
 public export
 data PjrtApi = MkPjrtApi AnyPtr
 

@@ -6,11 +6,11 @@ This is the PJRT plugin for CUDA-enabled GPUs. It uses the XLA compiler.
 
 This plugin requires Linux, a CUDA-enabled GPU, and a number of Nvidia packages.
 
-First, install Nvidia GPU drivers. The remaining packages can be installed in two different ways: with Docker, which is reliable but cumbersome; or without Docker, where installing Nvidia packages can prove very tricky indeed. We recommend using Docker.
+First, install Nvidia GPU drivers. The remaining packages can be installed in two different ways: with Docker, which is reliable but cumbersome; or without Docker, where installing Nvidia packages can prove tricky indeed. We recommend using Docker.
 
 ### Install with Docker
 
-To install with Nvidia Docker, first install [Docker](https://www.docker.com/), then the [Nvidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Next, run your Nvidia TensorRT Docker container with e.g.
+To install with Nvidia Docker, first install [Docker](https://www.docker.com/), then the [Nvidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Next, run the Nvidia TensorRT Docker container with e.g.
 ```
 docker run -it                          \
     --gpus all                          \
@@ -20,7 +20,7 @@ docker run -it                          \
     nvcr.io/nvidia/tensorrt:23.11-py3   \
     bash
 ```
-Note the image version `23.11`. Next, in the Docker container, install `pack` (the container uses Ubuntu). Finally, install the plugin with
+The image version `23.11` is important. Next, in the Docker container, install `pack` (the container uses Ubuntu). Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```

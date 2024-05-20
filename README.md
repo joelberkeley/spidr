@@ -12,7 +12,7 @@ spidr comes in two parts: the core library to write computations, and PJRT plugi
 ```
 pack install pjrt-plugin-xla-cpu
 ```
-or, see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
+or read the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
 We have built and tested spidr on Ubuntu Linux 22.04. If you're on another platform and spidr doesn't work for you, [get in touch](#contact). We're keen to support your daily driver.
 
