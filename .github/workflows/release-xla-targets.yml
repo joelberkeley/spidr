@@ -16,7 +16,7 @@ jobs:
       run: |
         . ./dev.sh
         xla_rev="$(cat XLA_VERSION)"
-        echo "XLA_REV=$(short_revision xla_rev)" >> $GITHUB_ENV
+        echo "XLA_REV=$(short_revision $xla_rev)" >> $GITHUB_ENV
     - name: Create C XLA release
       id: create-release
       uses: actions/create-release@v1
