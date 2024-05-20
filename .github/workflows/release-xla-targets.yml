@@ -1,0 +1,62 @@
+on:
+  workflow_dispatch:
+  pull_request:  # revert to push when done
+    branches: master
+    paths:
+      - XLA_VERSION
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Read XLA version
+      run: echo "XLA_REV=$(cat XLA_VERSION)" >> $GITHUB_ENV
+    - name: Create C XLA release
+      id: create-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        draft: true  # remove when done
+        tag_name: xla-${{ env.XLA_REV }}
+        release_name: XLA revision ${{ env.XLA_REV }}
+        body: "XLA revision ${{ env.XLA_REV }}"
+  pjrt-plugin-xla-cpu:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build XLA CPU plugin
+      run: |
+        rm -rf /opt/hostedtoolcache
+        docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
+    - name: Publish XLA CPU plugin
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: pjrt_plugin_xla_cpu.so
+        asset_name: pjrt_plugin_xla_cpu.so
+        asset_content_type: application/x-sharedlib
+  pjrt-plugin-xla-cuda:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build XLA CUDA plugin
+      run: |
+        rm -rf /opt/hostedtoolcache
+        docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
+    - name: Publish XLA CUDA plugin
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: pjrt_plugin_xla_cuda.so
+        asset_name: pjrt_plugin_xla_cuda.so
+        asset_content_type: application/x-sharedlib
