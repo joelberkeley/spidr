@@ -27,16 +27,16 @@ jobs:
   c-xla:
     needs: create-release
     runs-on: ubuntu-latest
+    container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
     - name: Build C XLA lib
-      working-directory: spidr/backend
-      run: ./build.sh
+      run: ./spidr/backend/build.sh
     - name: Publish C XLA lib
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: spidr/backend/bazel_bin/libc_xla.so
+        asset_path: libc_xla.so
         asset_name: libc_xla.so
