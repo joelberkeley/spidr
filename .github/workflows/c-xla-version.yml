@@ -13,4 +13,4 @@ jobs:
       with:
         fetch-depth: 2
     - name: Check backend version is updated
-      run: if [[ -z $(git diff HEAD^ spidr/backend/VERSION) ]]; then exit 1; fi
+      run: $(git diff --exit-code HEAD^ spidr/backend/VERSION) && exit 1

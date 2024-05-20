@@ -1,7 +1,7 @@
 on:
   workflow_dispatch:
-  push:
-    branches: xla-build
+  pull_request:  # revert to push when done
+    branches: master
     paths:
       - 'spidr/backend/VERSION'
 
