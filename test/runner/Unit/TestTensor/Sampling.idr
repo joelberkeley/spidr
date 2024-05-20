@@ -98,7 +98,7 @@ uniformForFiniteEqualBounds = withTests 20 . property $ do
 
 partial
 uniformSeedIsUpdated : Device => Property
-uniformSeedIsUpdated @{device} = withTests 20 . property $ do
+uniformSeedIsUpdated = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   key <- forAll (literal [] nats)
@@ -121,7 +121,7 @@ uniformSeedIsUpdated @{device} = withTests 20 . property $ do
 
 partial
 uniformIsReproducible : Device => Property
-uniformIsReproducible @{device} = withTests 20 . property $ do
+uniformIsReproducible = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
   bound' <- forAll (literal [10] doubles)
   key <- forAll (literal [] nats)
@@ -161,7 +161,7 @@ normal = withTests 20 . property $ do
 
 partial
 normalSeedIsUpdated : Device => Property
-normalSeedIsUpdated @{device} = withTests 20 . property $ do
+normalSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
@@ -179,7 +179,7 @@ normalSeedIsUpdated @{device} = withTests 20 . property $ do
 
 partial
 normalIsReproducible : Device => Property
-normalIsReproducible @{device} = withTests 20 . property $ do
+normalIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
