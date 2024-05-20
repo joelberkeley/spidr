@@ -53,6 +53,7 @@ jobs:
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           ./pjrt-plugins/xla-cpu/postinstall.sh
         # else
+        #   rm -rf /opt/hostedtoolcache
         #   docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
         # fi
     - name: Upload binary

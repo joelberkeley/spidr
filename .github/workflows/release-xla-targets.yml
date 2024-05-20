@@ -1,9 +1,9 @@
 on:
   workflow_dispatch:
-  pull_request:  # revert to push when done
+  push:
     branches: master
     paths:
-      - XLA_VERSION
+      - 'XLA_VERSION'
 
 jobs:
   create-release:
