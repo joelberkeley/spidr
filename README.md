@@ -8,17 +8,17 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-spidr comes two parts: the core library with all the definitions, and PJRT plugins which execute spidr graphs on your hardware of choice. The plugins depend on the core library, so you only need to install a plugin. You can either install the CPU plugin, with
+spidr comes in two parts: the core library to write computations, and PJRT plugins to run them. The plugins depend on the core library, so you only need to install a plugin. You can either install the CPU plugin, with 
 ```
 pack install pjrt-plugin-xla-cpu
 ```
-or see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
+or, see the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
-We have built and tested our plugins on Ubuntu Linux 22.04. We're keen to support you in using spidr on your OS of choice, so do [reach out](#contact) if you're on an unsupported platform and would like assistance.
+We have built and tested spidr on Ubuntu Linux 22.04. If you're on another platform and spidr doesn't work for you, [get in touch](#contact). We're keen to support your daily driver.
 
 ### Motivation
 
-We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies, and use OpenXLA's [PJRT](https://openxla.org/) as our backend.
+We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies. OpenXLA's [PJRT](https://openxla.org/) provides straightforward compatibility with many such devices and compilers.
 
 ### What can spidr do?
 
@@ -51,11 +51,11 @@ As a bonus, spidr programs are reproducible. Any one graph will always produce t
 
 #### Execute on hardware accelerators
 
-spidr programs can be run on any accelerator for which there's a PJRT plugin. CPU and CUDA plugins are available out of the box. You can also create and use your own custom plugins with minimal code, see [the guide](pjrt-plugins/README.md) for instructions. Plugins exist for ROCM GPUs, embedded and mobile devices, machine learning accelerators, and more.
+You can run spidr programs on any hardware for which there's a PJRT plugin. CPU and CUDA plugins are available out of the box. You can also create your own plugins with minimal code, see [the guide](pjrt-plugins/README.md) for instructions. The tooling required to build a plugin exist for ROCm-enabled GPUs, specialised machine learning accelerators, and more.
 
 #### Optimize graph compilation
 
-Just as for accelerators, spidr programs can be compiled by any compiler for which there's a PJRT plugin. This can provide significant performance benefits. For example, the out of the box plugins use the XLA compiler, which implements [CSE and operator fusion](https://openxla.org/xla/architecture).
+Each PJRT plugin contains a graph compiler, and there are multiple such compilers to choose from. The plugins we provide out of the box use the XLA compiler, which offers substantial performance benefits through e.g. [CSE and operator fusion](https://openxla.org/xla/architecture).
 
 #### Graph generation
 
