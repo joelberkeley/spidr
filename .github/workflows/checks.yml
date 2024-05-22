@@ -16,28 +16,28 @@ jobs:
           shellcheck **/*.sh
   pjrt:
     runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4
-    - name: Fetch Bazel cache
-      uses: actions/cache/restore@v4
       with:
-        path: ~/.cache/bazel
-        key: bazel-cache-xla-${{ runner.os }}
+        fetch-depth: 2
     - name: Build PJRT + XLA binary
       run: |
-        ./spidr/backend/build.sh
+        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+          ./spidr/backend/build.sh
+        else
+          rm -rf /opt/hostedtoolcache
+          docker run                            \
+            -v $(pwd):/spidr                    \
+            -w /spidr                           \
+            tensorflow/build:latest-python3.9   \
+            sh -c "spidr/backend/build.sh"
+        fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         name: libc_xla.so
         path: libc_xla.so
         if-no-files-found: error
-    - name: Save Bazel cache
-      uses: actions/cache/save@v4
-      with:
-        path: ~/.cache/bazel
-        key: bazel-cache-xla-${{ runner.os }}
   pjrt-plugin-xla-cpu:
     runs-on: ubuntu-latest
     steps:
@@ -54,7 +54,11 @@ jobs:
           ./pjrt-plugins/xla-cpu/postinstall.sh
         # else
         #   rm -rf /opt/hostedtoolcache
-        #   docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
+        #   docker run                                \
+        #     -v $(pwd):/spidr                        \
+        #     -w /spidr                               \
+        #     tensorflow/build:latest-python3.9       \
+        #     sh -c "pjrt-plugins/xla-cpu/build.sh"
         # fi
     - name: Upload binary
       uses: actions/upload-artifact@v4
@@ -77,7 +81,11 @@ jobs:
           #   # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
           #   rm -rf /opt/hostedtoolcache
           #   # note this implies specific versions of CUDA and cuDNN
-          #   docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
+          #   docker run                                \
+          #     -v $(pwd):/spidr                        \
+          #     -w /spidr                               \
+          #     tensorflow/build:latest-python3.9       \
+          #     sh -c "pjrt-plugins/xla-cuda/build.sh"
           # fi
       - name: Upload binary
         uses: actions/upload-artifact@v4
