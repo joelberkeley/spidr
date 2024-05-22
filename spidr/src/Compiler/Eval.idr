@@ -235,7 +235,7 @@ toString f = do
   root <- interpret xlaBuilder f
   pure $ opToString xlaBuilder root
 
-||| It is up to the caller to free the Literal.
+||| It is up to the caller to free the `Literal`s.
 export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f shapes = do

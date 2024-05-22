@@ -239,17 +239,24 @@ prim__pjrtNamedValue_Bool : AnyPtr -> String -> Bits64 -> Int -> PrimIO ()
 %foreign (libxla "set_array_int64_t")
 prim__setInt64 : Ptr Int64 -> Bits64 -> Int64 -> PrimIO ()
 
+-- the memory management here is a pain. I reckon we delete this since we don't need it yet,
+-- and try to add it later
 pjrtNamedValue : HasIO io => AnyPtr -> String -> PjrtValue -> io ()
-pjrtNamedValue addr name (PjrtString string) = primIO $ prim__pjrtNamedValue_String addr name (cast $ length name) string (cast $ length string)
-pjrtNamedValue addr name (PjrtInt64 int64) = primIO $ prim__pjrtNamedValue_Int64 addr name (cast $ length name) int64
+pjrtNamedValue addr name (PjrtString string) =
+  -- this string can be gc'ed by idris before it's used in C
+  primIO $ prim__pjrtNamedValue_String addr name (cast $ length name) string (cast $ length string)
+pjrtNamedValue addr name (PjrtInt64 int64) =
+  primIO $ prim__pjrtNamedValue_Int64 addr name (cast $ length name) int64
 pjrtNamedValue addr name (PjrtInt64Array int64s) = do
   let sizeof_int64_t = 8
-  -- arr needs freeing
   arr <- prim__castPtr <$> malloc (cast (length int64s) * sizeof_int64_t)
   traverse_ (\(idx, x) => primIO $ prim__setInt64 arr (cast idx) x) (enumerate int64s)
+  -- free arr
   primIO $ prim__pjrtNamedValue_Int64Array addr name (cast $ length name) arr (cast $ length int64s)
-pjrtNamedValue addr name (PjrtFloat double) = primIO $ prim__pjrtNamedValue_Float addr name (cast $ length name) double
-pjrtNamedValue addr name (PjrtBool bool) = primIO $ prim__pjrtNamedValue_Bool addr name (cast $ length name) (boolToCInt bool)
+pjrtNamedValue addr name (PjrtFloat double) =
+  primIO $ prim__pjrtNamedValue_Float addr name (cast $ length name) double
+pjrtNamedValue addr name (PjrtBool bool) =
+  primIO $ prim__pjrtNamedValue_Bool addr name (cast $ length name) (boolToCInt bool)
 
 %foreign (libxla "sizeof_PJRT_NamedValue")
 prim__sizeofPjrtNamedValue : Bits64
@@ -279,7 +286,6 @@ pjrtClientCreate (MkPjrtApi api) createOptions = do
   traverse_ (liftIO . setOpt) (enumerate createOptions)
   args <- primIO $ prim__mkPjrtClientCreateArgs createOptionsArr (cast numOptions)
   err <- primIO $ prim__pjrtClientCreate api args
-  -- free int64 array
   free createOptionsArr
   let client = prim__pjrtClientCreateArgsClient args
   free args
@@ -305,7 +311,7 @@ prim__mkPjrtProgram : Ptr Char -> Bits64 -> PrimIO AnyPtr
 
 ||| For internal spidr use only.
 |||
-||| The CharArray must live as long as the PjrtProgram.
+||| The `CharArray` must live as long as the `PjrtProgram`.
 export
 mkPjrtProgram : HasIO io => CharArray -> io PjrtProgram
 mkPjrtProgram (MkCharArray code codeSize) = do
@@ -334,7 +340,7 @@ data PjrtLoadedExecutable = MkPjrtLoadedExecutable AnyPtr
 
 ||| For internal spidr use only.
 export
-pjrtLoadedExecutableDestroy : HasIO io => PjrtApi -> PjrtLoadedExecutable -> io () -- note this could now be PjrtFFI ()
+pjrtLoadedExecutableDestroy : HasIO io => PjrtApi -> PjrtLoadedExecutable -> io ()
 pjrtLoadedExecutableDestroy (MkPjrtApi api) (MkPjrtLoadedExecutable executable) = do
   args <- primIO $ prim__mkPjrtLoadedExecutableDestroyArgs executable
   err <- primIO $ prim__pjrtLoadedExecutableDestroy api args
@@ -343,7 +349,7 @@ pjrtLoadedExecutableDestroy (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
 
 ||| For internal spidr use only.
 |||
-||| It is up to the caller to free the PjrtLoadedExecutable.
+||| It is up to the caller to free the `PjrtLoadedExecutable`.
 export
 pjrtClientCompile :
   PjrtApi ->
@@ -383,7 +389,7 @@ data PjrtBuffer = MkPjrtBuffer AnyPtr
 
 ||| For internal spidr use only.
 export
-pjrtBufferDestroy : HasIO io => PjrtApi -> PjrtBuffer -> io () -- note this could now be ErrIO PjrtError ()
+pjrtBufferDestroy : HasIO io => PjrtApi -> PjrtBuffer -> io ()
 pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
   args <- primIO $ prim__mkPjrtBufferDestroyArgs buffer
   err <- primIO $ prim__pjrtBufferDestroy api args
@@ -408,7 +414,7 @@ pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) 
   let buffers = map (\o => MkPjrtBuffer $ prim__index (cast o) outputListsInner) (range outputs)
   free outputLists
   free outputListsInner
-  try api err $ buffers
+  try api err buffers
 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")
 prim__mkPjrtBufferToHostBufferArgs : AnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr

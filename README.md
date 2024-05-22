@@ -8,17 +8,17 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-spidr comes in two parts: the core library to write computations, and PJRT plugins to run them. The plugins depend on the core library, so you only need to install a plugin. You can either install the CPU plugin, with 
+To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. The installers require `curl` to download artefacts. You can install the CPU plugin, with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
 or read the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
-We have built and tested spidr on Ubuntu Linux 22.04. If you're on another platform and spidr doesn't work for you, [get in touch](#contact). We're keen to support your daily driver.
+We have built and tested spidr on Ubuntu Linux 22.04. If you're on another platform and spidr doesn't work for you, [get in touch](#contact).
 
 ### Motivation
 
-We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies. OpenXLA's [PJRT](https://openxla.org/) provides straightforward compatibility with many such devices and compilers.
+We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies. We use OpenXLA's [PJRT](https://openxla.org/) as it provides straightforward support for many devices and compilers.
 
 ### What can spidr do?
 

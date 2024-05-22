@@ -113,12 +113,9 @@ try x = runEitherT x <&> \case
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.
 |||
-||| **Note:**
-||| * Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on different
-|||   tensors, even if they are in the same computation, will be treated entirely independently.
-|||   To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
-||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
-|||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
+||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
+||| different tensors, even if they are in the same computation, will be treated independently.
+||| To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
 export partial
 eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
 eval device (MkGraph x) =
@@ -151,10 +148,6 @@ namespace TensorList
   ||| ```
   ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
   ||| compiles the graph just once.
-  |||
-  ||| **Note:**
-  ||| * `eval` performs logging. You can disable this by adjusting the TensorFlow logging level
-  |||    with e.g. `export TF_CPP_MIN_LOG_LEVEL=3`.
   export partial
   eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
   eval device (MkGraph xs) =

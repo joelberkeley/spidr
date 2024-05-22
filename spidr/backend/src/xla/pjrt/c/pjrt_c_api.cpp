@@ -20,8 +20,6 @@ limitations under the License.
 #include "xla/pjrt/c/pjrt_c_api_helpers.h"
 
 extern "C" {
-  // ---------------------------------- Errors -----------------------------------
-
   PJRT_Error_Destroy_Args* PJRT_Error_Destroy_Args_new(PJRT_Error* error) {
     return new PJRT_Error_Destroy_Args{
       .struct_size = PJRT_Error_Destroy_Args_STRUCT_SIZE,
@@ -70,8 +68,6 @@ extern "C" {
     return api->PJRT_Error_GetCode(args);
   }
 
-  // ---------------------------------- Events -----------------------------------
-
   PJRT_Event_Destroy_Args* PJRT_Event_Destroy_Args_new(PJRT_Event* event) {
     return new PJRT_Event_Destroy_Args{
       .struct_size = PJRT_Event_Destroy_Args_STRUCT_SIZE,
@@ -95,8 +91,6 @@ extern "C" {
   void pjrt_event_await(PJRT_Api* api, PJRT_Event_Await_Args* args) {
     api->PJRT_Event_Await(args);
   }
-
-  // ---------------------------------- Client -----------------------------------
 
   size_t sizeof_PJRT_NamedValue() {
     return sizeof(PJRT_NamedValue);

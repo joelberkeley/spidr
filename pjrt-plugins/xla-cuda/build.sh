@@ -2,9 +2,8 @@
 
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
-
 . ./dev.sh
-rev="$(cat XLA_VERSION)"
+rev=$(cat XLA_VERSION)
 
 xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
