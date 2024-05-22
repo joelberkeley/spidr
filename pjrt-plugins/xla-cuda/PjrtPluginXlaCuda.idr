@@ -16,7 +16,6 @@ limitations under the License.
 module PjrtPluginXlaCuda
 
 import Control.Monad.Either
-import Data.SortedMap
 import System.FFI
 
 import Device
@@ -29,5 +28,4 @@ export
 device : PjrtFFI Device
 device = do
   api <- MkPjrtApi <$> primIO prim__getPjrtApi
-  client <- pjrtClientCreate api
-  pure $ MkDevice api client
+  MkDevice api <$> pjrtClientCreate api

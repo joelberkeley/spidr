@@ -19,7 +19,6 @@ limitations under the License.
 module Compiler.Xla.PJRT.C.PJRT_C_API
 
 import Control.Monad.Either
-import Data.SortedMap
 import Derive.Prelude
 import Language.Reflection
 
