@@ -23,15 +23,18 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          ./spidr/backend/build.sh
-        else
-          rm -rf /opt/hostedtoolcache
-          docker run                            \
-            -v $(pwd):/spidr                    \
-            -w /spidr                           \
-            tensorflow/build:latest-python3.9   \
-            sh -c "spidr/backend/build.sh"
+          ./spidr/backend/postinstall.sh
+          exit 0
         fi
+
+        # free up space not used if running in Docker, see
+        # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
+        rm -rf /opt/hostedtoolcache
+        docker run                            \
+          -v $(pwd):/spidr                    \
+          -w /spidr                           \
+          tensorflow/build:latest-python3.9   \
+          sh -c "spidr/backend/build.sh"
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -51,15 +54,16 @@ jobs:
         # what if the idris code changes?
         # anything else?
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          ./pjrt-plugins/xla-cpu/postinstall.sh
-        # else
-        #   rm -rf /opt/hostedtoolcache
-        #   docker run                                \
-        #     -v $(pwd):/spidr                        \
-        #     -w /spidr                               \
-        #     tensorflow/build:latest-python3.9       \
-        #     sh -c "pjrt-plugins/xla-cpu/build.sh"
+        ./pjrt-plugins/xla-cpu/postinstall.sh
+        exit 0
         # fi
+
+        rm -rf /opt/hostedtoolcache
+        docker run                                \
+          -v $(pwd):/spidr                        \
+          -w /spidr                               \
+          tensorflow/build:latest-python3.9       \
+          sh -c "pjrt-plugins/xla-cpu/build.sh"
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -75,18 +79,17 @@ jobs:
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
           # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-            ./pjrt-plugins/xla-cuda/postinstall.sh
-          # else
-          #   # free up space not used if running in Docker, see
-          #   # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
-          #   rm -rf /opt/hostedtoolcache
-          #   # note this implies specific versions of CUDA and cuDNN
-          #   docker run                                \
-          #     -v $(pwd):/spidr                        \
-          #     -w /spidr                               \
-          #     tensorflow/build:latest-python3.9       \
-          #     sh -c "pjrt-plugins/xla-cuda/build.sh"
+          ./pjrt-plugins/xla-cuda/postinstall.sh
+          exit 0
           # fi
+
+          rm -rf /opt/hostedtoolcache
+          # note this implies specific versions of CUDA and cuDNN
+          docker run                                \
+            -v $(pwd):/spidr                        \
+            -w /spidr                               \
+            tensorflow/build:latest-python3.9       \
+            sh -c "pjrt-plugins/xla-cuda/build.sh"
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
