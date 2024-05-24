@@ -23,10 +23,7 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          docker run                                        \
-            -v $(pwd):/spidr -w /spidr                      \
-            ghcr.io/stefan-hoeck/idris2-pack                \
-            sh -c "apt update && apt install -y curl && ./pjrt-plugins/xla-cpu/postinstall.sh"
+          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/c-xla-$(cat spidr/backend/XLA_VERSION)/libc_xla.so"
         fi
 
         # free up space not used if running in Docker, see
@@ -57,10 +54,9 @@ jobs:
         # what if the idris code changes?
         # anything else?
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-        docker run                                        \
-          -v $(pwd):/spidr -w /spidr                      \
-          ghcr.io/stefan-hoeck/idris2-pack                \
-          sh -c "apt update && apt install -y curl && ./pjrt-plugins/xla-cpu/postinstall.sh"
+        . ./dev.sh
+        rev=$(cat XLA_VERSION)
+        curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu.so"
         exit 0
         # fi
 
@@ -82,16 +78,14 @@ jobs:
           fetch-depth: 2
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
-          rm -rf /opt/hostedtoolcache
-
           # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          docker run                                        \
-            -v $(pwd):/spidr -w /spidr                      \
-            ghcr.io/stefan-hoeck/idris2-pack                \
-            sh -c "apt update && apt install -y curl && ./pjrt-plugins/xla-cuda/postinstall.sh"
+          . ./dev.sh
+          rev=$(cat XLA_VERSION)
+          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda.so"
           exit 0
           # fi
 
+          rm -rf /opt/hostedtoolcache
           # note this implies specific versions of CUDA and cuDNN
           docker run                                \
             -v $(pwd):/spidr -w /spidr              \
@@ -111,11 +105,10 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         pack --no-prompt build xla-cpu.ipkg
         tar cfz tests-xla-cpu.tar.gz -C build/exec .
-      env:
-        SPIDR_MANUAL_INSTALL: 1
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
@@ -130,11 +123,10 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cuda
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         pack --no-prompt build xla-cuda.ipkg
         tar cfz tests-xla-cuda.tar.gz -C build/exec .
-      env:
-        SPIDR_MANUAL_INSTALL: 1
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
@@ -185,10 +177,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Type-check README
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         pack --no-prompt typecheck readme.ipkg
-      env:
-        SPIDR_MANUAL_INSTALL: 1
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
@@ -196,7 +187,6 @@ jobs:
     - uses: actions/checkout@v4
     - name: Type-check tutorials
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
-      env:
-        SPIDR_MANUAL_INSTALL: 1
