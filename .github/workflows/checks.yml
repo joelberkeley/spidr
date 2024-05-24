@@ -26,7 +26,7 @@ jobs:
           docker run                                        \
             -v $(pwd):/spidr -w /spidr                      \
             ghcr.io/stefan-hoeck/idris2-pack                \
-            sh -c "./pjrt-plugins/xla-cpu/postinstall.sh"
+            sh -c "apt update && apt install curl && ./pjrt-plugins/xla-cpu/postinstall.sh"
         fi
 
         # free up space not used if running in Docker, see
@@ -60,7 +60,7 @@ jobs:
         docker run                                        \
           -v $(pwd):/spidr -w /spidr                      \
           ghcr.io/stefan-hoeck/idris2-pack                \
-          sh -c "./pjrt-plugins/xla-cpu/postinstall.sh"
+          sh -c "apt update && apt install curl && ./pjrt-plugins/xla-cpu/postinstall.sh"
         exit 0
         # fi
 
@@ -88,7 +88,7 @@ jobs:
           docker run                                        \
             -v $(pwd):/spidr -w /spidr                      \
             ghcr.io/stefan-hoeck/idris2-pack                \
-            sh -c "./pjrt-plugins/xla-cuda/postinstall.sh"
+            sh -c "apt update && apt install curl && ./pjrt-plugins/xla-cuda/postinstall.sh"
           exit 0
           # fi
 
