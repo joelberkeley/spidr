@@ -49,16 +49,21 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
+        rm -rf /opt/hostedtoolcache
+
         # is this check enough?
         # what if we rename the plugin?
         # what if the idris code changes?
         # anything else?
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-        ./pjrt-plugins/xla-cpu/postinstall.sh
+        docker run                                        \
+          -v $(pwd):/spidr                                \
+          -w /spidr                                       \
+          ghcr.io/stefan-hoeck/idris2-pack                \
+          sh -c "./pjrt-plugins/xla-cpu/postinstall.sh"   \
         exit 0
         # fi
 
-        rm -rf /opt/hostedtoolcache
         docker run                                \
           -v $(pwd):/spidr                        \
           -w /spidr                               \
@@ -78,12 +83,17 @@ jobs:
           fetch-depth: 2
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
+          rm -rf /opt/hostedtoolcache
+
           # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          ./pjrt-plugins/xla-cuda/postinstall.sh
+          docker run                                        \
+            -v $(pwd):/spidr                                \
+            -w /spidr                                       \
+            ghcr.io/stefan-hoeck/idris2-pack                \
+            sh -c "./pjrt-plugins/xla-cuda/postinstall.sh"  \
           exit 0
           # fi
 
-          rm -rf /opt/hostedtoolcache
           # note this implies specific versions of CUDA and cuDNN
           docker run                                \
             -v $(pwd):/spidr                        \
