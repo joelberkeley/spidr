@@ -18,7 +18,7 @@ limitations under the License.
 ||| The Idris API for PJRT.
 module Compiler.Xla.PJRT.C.PJRT_C_API
 
-import Control.Monad.Either
+import public Control.Monad.Either
 import Derive.Prelude
 import Language.Reflection
 

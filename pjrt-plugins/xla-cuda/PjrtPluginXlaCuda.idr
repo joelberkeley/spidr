@@ -15,11 +15,9 @@ limitations under the License.
 --}
 module PjrtPluginXlaCuda
 
-import Control.Monad.Either
 import System.FFI
 
 import Device
-import Compiler.Xla.PJRT.C.PJRT_C_API
 
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cuda"
 prim__getPjrtApi : PrimIO AnyPtr
