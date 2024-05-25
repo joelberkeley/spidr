@@ -26,12 +26,12 @@ jobs:
         tag_name: xla-${{ env.XLA_REV }}
         release_name: XLA revision ${{ env.XLA_REV }}
         body: "XLA revision ${{ env.XLA_REV }}"
-  pjrt-plugin-xla-cpu:
+  pjrt-plugin-xla-cpu-linux:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build XLA CPU plugin
+    - name: Build XLA CPU plugin for Linux
       run: |
         rm -rf /opt/hostedtoolcache
         docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cpu/build.sh"
@@ -41,15 +41,15 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: pjrt_plugin_xla_cpu.so
-        asset_name: pjrt_plugin_xla_cpu.so
+        asset_path: pjrt_plugin_xla_cpu-linux.so
+        asset_name: pjrt_plugin_xla_cpu-linux.so
         asset_content_type: application/x-sharedlib
-  pjrt-plugin-xla-cuda:
+  pjrt-plugin-xla-cuda-linux:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build XLA CUDA plugin
+    - name: Build XLA CUDA plugin for Linux
       run: |
         rm -rf /opt/hostedtoolcache
         docker run -v $(pwd):/spidr -w /spidr tensorflow/build:latest-python3.9 sh -c "pjrt-plugins/xla-cuda/build.sh"
@@ -59,6 +59,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: pjrt_plugin_xla_cuda.so
-        asset_name: pjrt_plugin_xla_cuda.so
+        asset_path: pjrt_plugin_xla_cuda-linux.so
+        asset_name: pjrt_plugin_xla_cuda-linux.so
         asset_content_type: application/x-sharedlib
