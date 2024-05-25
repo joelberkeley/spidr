@@ -10,7 +10,7 @@ install_xla "$rev" spidr/backend/xla
 
 (
   cd spidr/backend
-  bazel build //:xla
+  bazel build //:c_xla
   rm -rf xla
 )
 mv spidr/backend/bazel-bin/libc_xla.so libxla-linux.so
