@@ -23,7 +23,7 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/XLA_VERSION)/libxla-linux.so" libxla.so
+          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/XLA_VERSION)/libxla-linux.so" -o libxla.so
         fi
 
         # free up space not used if running in Docker, see
@@ -56,7 +56,7 @@ jobs:
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
         . ./dev.sh
         rev=$(cat XLA_VERSION)
-        curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so" pjrt_plugin_xla_cpu.so
+        curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so" -o pjrt_plugin_xla_cpu.so
         exit 0
         # fi
 
@@ -81,7 +81,7 @@ jobs:
           # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so" pjrt_plugin_xla_cuda.so
+          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so" -o pjrt_plugin_xla_cuda.so
           exit 0
           # fi
 
