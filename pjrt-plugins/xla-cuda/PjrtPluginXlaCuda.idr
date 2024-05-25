@@ -17,7 +17,7 @@ module PjrtPluginXlaCuda
 
 import System.FFI
 
-import Device
+import public Device
 
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cuda"
 prim__getPjrtApi : PrimIO AnyPtr

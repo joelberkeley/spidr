@@ -17,7 +17,7 @@ module PjrtPluginXlaCpu
 
 import System.FFI
 
-import Device
+import public Device
 
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cpu"
 prim__getPjrtApi : PrimIO AnyPtr

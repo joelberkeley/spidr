@@ -15,8 +15,6 @@ limitations under the License.
 --}
 module XlaCuda
 
-import Compiler.Xla.PJRT.C.PJRT_C_API
-
 import TestRunner
 import PjrtPluginXlaCuda
 

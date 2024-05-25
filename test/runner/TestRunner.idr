@@ -21,7 +21,6 @@ import System
 import Data.SOP
 import Hedgehog
 
-import Compiler.Xla.PJRT.C.PJRT_C_API
 import Device
 import Types
 
