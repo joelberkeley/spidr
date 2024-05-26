@@ -23,7 +23,7 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -sL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/XLA_VERSION)/libxla-linux.so" -o libxla.so
+          curl -sL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
           exit 0
         fi
 
@@ -34,13 +34,12 @@ jobs:
           -v $(pwd):/spidr -w /spidr          \
           tensorflow/build:latest-python3.9   \
           sh -c "spidr/backend/build.sh"
-
-        mv libxla-linux.so libxla.so
+        mv libc_xla-linux.so libc_xla.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libxla.so
-        path: libxla.so
+        name: libc_xla.so
+        path: libc_xla.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-linux:
     runs-on: ubuntu-latest
@@ -67,7 +66,6 @@ jobs:
           -v $(pwd):/spidr -w /spidr              \
           tensorflow/build:latest-python3.9       \
           sh -c "pjrt-plugins/xla-cpu/build.sh"
-
         mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
@@ -96,7 +94,6 @@ jobs:
             -v $(pwd):/spidr -w /spidr              \
             tensorflow/build:latest-python3.9       \
             sh -c "pjrt-plugins/xla-cuda/build.sh"
-
           mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
