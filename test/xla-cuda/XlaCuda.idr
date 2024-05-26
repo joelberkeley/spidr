@@ -15,9 +15,11 @@ limitations under the License.
 --}
 module XlaCuda
 
+import System
+
 import TestRunner
 import PjrtPluginXlaCuda
 
 partial
 main : IO ()
-main = run !(orDie device)
+main = eitherT (die . show) run device

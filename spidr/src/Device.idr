@@ -15,7 +15,7 @@ limitations under the License.
 --}
 module Device
 
-import Compiler.Xla.PJRT.C.PJRT_C_API
+import Compiler.Xla.PJRT.C.PjrtCApi
 import public Types
 
 ||| A PJRT "device". These are required to run spidr graphs, and are provided by your plugin.

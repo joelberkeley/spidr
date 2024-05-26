@@ -44,9 +44,3 @@ run device = do
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group
   ]
-
-export
-orDie : Show e => EitherT e IO a -> IO a
-orDie ea = do
-  Right a <- runEitherT ea | Left e => die $ show e
-  pure a

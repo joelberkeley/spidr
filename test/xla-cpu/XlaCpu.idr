@@ -15,9 +15,11 @@ limitations under the License.
 --}
 module XlaCpu
 
+import System
+
 import TestRunner
 import PjrtPluginXlaCpu
 
 partial
 main : IO ()
-main = run !(orDie device)
+main = eitherT (die . show) run device

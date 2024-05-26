@@ -16,7 +16,7 @@ limitations under the License.
 ||| For internal spidr use, and use by plugin developers.
 |||
 ||| The Idris API for PJRT.
-module Compiler.Xla.PJRT.C.PJRT_C_API
+module Compiler.Xla.PJRT.C.PjrtCApi
 
 import public Control.Monad.Either
 import Derive.Prelude

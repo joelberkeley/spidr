@@ -105,10 +105,8 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 partial
-try : Show e => Monad m => EitherT e m a -> m a
-try x = runEitherT x <&> \case
-  Right x => x
-  Left err => idris_crash (show err)
+try : Show e => EitherT e IO a -> IO a
+try = eitherT (idris_crash . show) pure
 
 ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
 ||| computational graph.

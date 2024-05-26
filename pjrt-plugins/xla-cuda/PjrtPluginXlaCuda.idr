@@ -17,7 +17,7 @@ module PjrtPluginXlaCuda
 
 import System.FFI
 
-import public Compiler.Xla.PJRT.C.PJRT_C_API
+import public Compiler.Xla.PJRT.C.PjrtCApi
 import public Device
 
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cuda"
