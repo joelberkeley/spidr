@@ -23,17 +23,17 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         # if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-        curl -sL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
-        exit 0
-        # fi
-
+        curl -sLO "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
+        # else
         # free up space not used if running in Docker, see
         # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
-        rm -rf /opt/hostedtoolcache
-        docker run                            \
-          -v $(pwd):/spidr -w /spidr          \
-          tensorflow/build:latest-python3.9   \
-          sh -c "spidr/backend/build.sh"
+        # rm -rf /opt/hostedtoolcache
+        # docker run                            \
+        #   -v $(pwd):/spidr -w /spidr          \
+        #   tensorflow/build:latest-python3.9   \
+        #   sh -c "spidr/backend/build.sh"
+        # fi
+
         mv libc_xla-linux.so libc_xla.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
@@ -49,8 +49,6 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        rm -rf /opt/hostedtoolcache
-
         # is this check enough?
         # what if we rename the plugin?
         # what if the idris code changes?
@@ -58,14 +56,15 @@ jobs:
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
         . ./dev.sh
         rev=$(cat XLA_VERSION)
-        curl -sL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so" -o pjrt_plugin_xla_cpu.so
-        exit 0
-        # fi
-
+        curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
+        # else
+        rm -rf /opt/hostedtoolcache
         docker run                                \
           -v $(pwd):/spidr -w /spidr              \
           tensorflow/build:latest-python3.9       \
           sh -c "pjrt-plugins/xla-cpu/build.sh"
+        # fi
+
         mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
@@ -84,16 +83,15 @@ jobs:
           # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -sL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so" -o pjrt_plugin_xla_cuda.so
-          exit 0
+          curl -sLO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
           # fi
+          # rm -rf /opt/hostedtoolcache
+          # # note this implies specific versions of CUDA and cuDNN
+          # docker run                                \
+          #   -v $(pwd):/spidr -w /spidr              \
+          #   tensorflow/build:latest-python3.9       \
+          #   sh -c "pjrt-plugins/xla-cuda/build.sh"
 
-          rm -rf /opt/hostedtoolcache
-          # note this implies specific versions of CUDA and cuDNN
-          docker run                                \
-            -v $(pwd):/spidr -w /spidr              \
-            tensorflow/build:latest-python3.9       \
-            sh -c "pjrt-plugins/xla-cuda/build.sh"
           mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
