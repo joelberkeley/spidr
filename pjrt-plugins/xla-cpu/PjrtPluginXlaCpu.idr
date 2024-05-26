@@ -17,7 +17,7 @@ module PjrtPluginXlaCpu
 
 import System.FFI
 
-import Compiler.Xla.PJRT.C.PJRT_C_API
+import public Compiler.Xla.PJRT.C.PJRT_C_API
 import public Device
 
 %foreign "C:GetPjrtApi,pjrt_plugin_xla_cpu"
