@@ -85,13 +85,16 @@ uniformForNonFiniteBounds = property $ do
 
   samples ===# tensor [-inf, inf, nan, -inf, nan, nan, inf, nan, nan]
 
+minNormal : Literal [] Double
+minNormal = 2.23e-308  -- see https://en.wikipedia.org/wiki/IEEE_754
+
 partial
 uniformForFiniteEqualBounds : Device => Property
 uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
   seed <- forAll (literal [1] nats)
 
-  let bound = tensor [min @{Finite}, -1.0, -1.0e-307, 0.0, 1.0e-307, 1.0, max @{Finite}]
+  let bound = tensor [min @{Finite}, -1.0, -minNormal, 0.0, minNormal, 1.0, max @{Finite}]
       samples = do evalStateT !(tensor seed) !(uniform !(tensor key) !bound !bound)
 
   samples ===# bound
