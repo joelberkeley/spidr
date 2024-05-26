@@ -21,7 +21,7 @@ import Util
 
 public export
 libxla : String -> String
-libxla fname = "C:" ++ fname ++ ",libxla"
+libxla fname = "C:" ++ fname ++ ",libc_xla"
 
 public export
 data CharArray = MkCharArray (Ptr Char) Bits64
