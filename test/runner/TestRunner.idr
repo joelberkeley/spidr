@@ -15,14 +15,10 @@ limitations under the License.
 --}
 module TestRunner
 
-import Control.Monad.Either
-import System
-
 import Data.SOP
 import Hedgehog
 
 import Device
-import Types
 
 import TestUtils
 import Utils.TestComparison
