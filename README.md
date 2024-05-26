@@ -8,17 +8,17 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. The installers require `curl` to download artefacts. You can install the CPU plugin, with
+We have built and tested spidr on Ubuntu Linux 22.04 but expect it will work on most Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact). Installers require `curl`.
+
+To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
 or read the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
-We have built and tested spidr on Ubuntu Linux 22.04. If you're on another platform and spidr doesn't work for you, [get in touch](#contact).
-
 ### Motivation
 
-We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies. We use OpenXLA's [PJRT](https://openxla.org/) as it provides straightforward support for many devices and compilers.
+We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies, and use [OpenXLA](https://openxla.org/)'s PJRT.
 
 ### What can spidr do?
 
@@ -51,15 +51,15 @@ As a bonus, spidr programs are reproducible. Any one graph will always produce t
 
 #### Execute on hardware accelerators
 
-You can run spidr programs on any hardware for which there's a PJRT plugin. CPU and CUDA plugins are available out of the box. You can also create your own plugins with minimal code, see [the guide](pjrt-plugins/README.md) for instructions. The tooling required to build a plugin exist for ROCm-enabled GPUs, specialised machine learning accelerators, and more.
+You can run spidr programs on any hardware for which there's a PJRT plugin. CPU and CUDA plugins are provided out of the box. You can also create your own plugins with minimal code, see [the guide](pjrt-plugins/README.md) for instructions. The libraries required to build a plugin exist for ROCm-enabled GPUs, specialised machine learning accelerators, and more.
 
 #### Optimize graph compilation
 
-Each PJRT plugin contains a graph compiler, and there are multiple such compilers to choose from. The plugins we provide out of the box use the XLA compiler, which offers substantial performance benefits through e.g. [CSE and operator fusion](https://openxla.org/xla/architecture).
+Each PJRT plugin contains a graph compiler, and there are several compilers available. The plugins we provide out of the box use the XLA compiler, which offers substantial performance benefits via e.g. [CSE and operator fusion](https://openxla.org/xla/architecture).
 
 #### Graph generation
 
-This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html#jax.vmap) and [`grad`](https://jax.readthedocs.io/en/latest/debugging/checkify_guide.html#grad).
+This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation, like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html#jax.vmap) and [`grad`](https://jax.readthedocs.io/en/latest/debugging/checkify_guide.html#grad).
 
 ### Acknowledgements
 
