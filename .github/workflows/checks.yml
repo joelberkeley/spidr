@@ -22,10 +22,10 @@ jobs:
         fetch-depth: 2
     - name: Build PJRT + XLA binary
       run: |
-        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -sL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
-          exit 0
-        fi
+        # if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+        curl -sL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
+        exit 0
+        # fi
 
         # free up space not used if running in Docker, see
         # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
