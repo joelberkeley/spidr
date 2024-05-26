@@ -21,24 +21,24 @@ limitations under the License.
 #include "../../ffi.h"
 
 extern "C" {
-  struct CompileOptions;
+    struct CompileOptions;
 
-  CompileOptions* CompileOptions_new(ExecutableBuildOptions* executable_build_options) {
-    auto executable_build_options_ = reinterpret_cast<xla::ExecutableBuildOptions*>(
-      executable_build_options
-    );
-    auto options = new xla::CompileOptions{
-      .argument_layouts = std::nullopt,
-      .executable_build_options = *executable_build_options_,
-      .env_option_overrides = {},
-      .target_config = std::nullopt,
-    };
-    return reinterpret_cast<CompileOptions*>(options);
-  }
+    CompileOptions* CompileOptions_new(ExecutableBuildOptions* executable_build_options) {
+        auto executable_build_options_ = reinterpret_cast<xla::ExecutableBuildOptions*>(
+            executable_build_options
+        );
+        auto options = new xla::CompileOptions{
+            .argument_layouts = std::nullopt,
+            .executable_build_options = *executable_build_options_,
+            .env_option_overrides = {},
+            .target_config = std::nullopt,
+        };
+        return reinterpret_cast<CompileOptions*>(options);
+    }
 
-  string* CompileOptions_SerializeAsString(CompileOptions* s) {
-    auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
-    auto res = s_->ToProto()->SerializeAsString();
-    return reinterpret_cast<string*>(new std::string(res));
-  }
+    string* CompileOptions_SerializeAsString(CompileOptions* s) {
+        auto s_ = reinterpret_cast<xla::CompileOptions*>(s);
+        auto res = s_->ToProto()->SerializeAsString();
+        return reinterpret_cast<string*>(new std::string(res));
+    }
 }
