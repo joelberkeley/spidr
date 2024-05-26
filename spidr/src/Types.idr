@@ -40,10 +40,6 @@ Array : (0 shape : Shape) -> (0 dtype : Type) -> Type
 Array [] dtype = dtype
 Array (d :: ds) dtype = Vect d (Array ds dtype)
 
-public export 0
-NameMe : Type -> Type
-NameMe a = HasIO io => Show e => EitherT io e a
-
 ||| A type `a` satisfying `Bounded a` has a minimum and a maximum value.
 public export
 interface Bounded a where

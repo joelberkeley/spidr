@@ -69,7 +69,13 @@ record PjrtError where
   ||| The error cause code, if one exists.
   code : Maybe PjrtErrorCode
 
-%runElab derive "PjrtError" [Show]
+export
+Show PjrtError where
+  show e =
+    let code = case e.code of
+          Nothing => "not found"
+          Just c => show c
+     in "PjrtError \{show e.message} (code \{code})"
 
 %foreign (libxla "PJRT_Error_Destroy_Args_new")
 prim__mkPjrtErrorDestroyArgs : AnyPtr -> PrimIO AnyPtr
@@ -130,12 +136,12 @@ pjrtErrorCodeFromCInt = \case
   n  => assert_total $ idris_crash
     "Unexpected PJRT_Error_Code value received through FFI from XLA: \{show n}"
 
-||| A `PjrtFFI a` produces an `a` or an error from the PJRT layer.
+||| A `Pjrt a` produces an `a` or an error from the PJRT layer.
 public export 0
-PjrtFFI : Type -> Type
-PjrtFFI = EitherT PjrtError IO
+Pjrt : Type -> Type
+Pjrt = EitherT PjrtError IO
 
-try : AnyPtr -> AnyPtr -> a -> PjrtFFI a
+try : AnyPtr -> AnyPtr -> a -> Pjrt a
 try api err onOk = if (isNullPtr err) then right onOk else do
   msg <- pjrtErrorMessage api err
   args <- primIO $ prim__mkPjrtErrorGetCodeArgs err
@@ -166,7 +172,7 @@ prim__pjrtEventAwait : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 ||| For internal spidr use only.
 export
-pjrtEventAwait : PjrtApi -> PjrtEvent -> PjrtFFI ()
+pjrtEventAwait : PjrtApi -> PjrtEvent -> Pjrt ()
 pjrtEventAwait (MkPjrtApi api) (MkPjrtEvent event) = do
   args <- primIO $ prim__mkPjrtEventAwaitArgs event
   err <- primIO $ prim__pjrtEventAwait api args
@@ -211,7 +217,7 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 |||
 ||| Create a `PjrtClient`.
 export
-pjrtClientCreate : PjrtApi -> PjrtFFI PjrtClient
+pjrtClientCreate : PjrtApi -> Pjrt PjrtClient
 pjrtClientCreate (MkPjrtApi api) = do
   args <- primIO prim__mkPjrtClientCreateArgs
   err <- primIO $ prim__pjrtClientCreate api args
@@ -284,7 +290,7 @@ pjrtClientCompile :
   PjrtClient ->
   PjrtProgram ->
   CharArray ->
-  PjrtFFI PjrtLoadedExecutable
+  Pjrt PjrtLoadedExecutable
 pjrtClientCompile
   (MkPjrtApi api)
   (MkPjrtClient client)
@@ -329,7 +335,7 @@ pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
 ||| It is up to the caller to free the `PjrtBuffer`s.
 export
 pjrtLoadedExecutableExecute :
-  PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> PjrtFFI (Vect outputs PjrtBuffer)
+  PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> Pjrt (Vect outputs PjrtBuffer)
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs = do
   outputListsInner <- malloc (cast outputs * sizeofPtr)
   outputLists <- malloc sizeofPtr
@@ -366,7 +372,7 @@ pjrtEventDestroy (MkPjrtApi api) (MkPjrtEvent event) = do
 |||
 ||| It is up to the caller to free the `PjrtEvent`.
 export
-pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> PjrtFFI PjrtEvent
+pjrtBufferToHostBuffer : PjrtApi -> PjrtBuffer -> Literal -> Pjrt PjrtEvent
 pjrtBufferToHostBuffer (MkPjrtApi api) (MkPjrtBuffer buffer) (MkLiteral literal) = do
   let untypedData = prim__literalUntypedData literal
       sizeBytes = prim__literalSizeBytes literal
