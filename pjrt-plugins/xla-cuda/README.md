@@ -20,14 +20,14 @@ docker run -it                          \
     nvcr.io/nvidia/tensorrt:23.11-py3   \
     bash
 ```
-The image version `23.11` is important. Next, in the Docker container, install `pack` (the container uses Ubuntu). Finally, install the plugin with
+The image version `23.11` is important. Next, in the Docker container, install `pack` and prerequisites (the container uses Ubuntu). Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```
 
 ### Install without Docker
 
-To install without Docker, first install CUDA toolkit 12.3. Then install the cuDNN and TensorRT packages. We have successfully installed these last two with the following command on Ubuntu 22.04
+To install without Docker, first install CUDA toolkit 12.3. Then install the cuDNN and TensorRT packages. We have successfully installed these last two, on Ubuntu 22.04, with
 ```
 apt-get install libcudnn8 libnvinfer8 libnvinfer-plugin8
 ```
