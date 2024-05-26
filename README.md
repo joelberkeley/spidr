@@ -8,9 +8,9 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-We have tested spidr on Ubuntu Linux 22.04. It may work on other Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact). Installation requires `curl`.
+We have tested spidr on Ubuntu Linux 22.04. It may work on other Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact).
 
-To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin with
+Installation requires `curl`. To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
