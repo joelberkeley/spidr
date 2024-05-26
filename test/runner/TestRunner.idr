@@ -33,7 +33,7 @@ import Unit.TestLiteral
 import Unit.TestUtil
 
 export partial
-run : EitherT PjrtError IO Device -> IO ()
+run : NameMe Device -> IO ()
 run device = do
   Right device <- runEitherT device | Left err => die $ show err
 

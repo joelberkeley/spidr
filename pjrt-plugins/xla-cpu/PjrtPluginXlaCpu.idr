@@ -24,7 +24,7 @@ import public Device
 prim__getPjrtApi : PrimIO AnyPtr
 
 export
-device : PjrtFFI Device
+device : NameMe Device
 device = do
   api <- MkPjrtApi <$> primIO prim__getPjrtApi
   MkDevice api <$> pjrtClientCreate api
