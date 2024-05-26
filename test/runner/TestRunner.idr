@@ -33,10 +33,8 @@ import Unit.TestLiteral
 import Unit.TestUtil
 
 export partial
-run : Pjrt Device -> IO ()
+run : Device -> IO ()
 run device = do
-  Right device <- runEitherT device | Left err => die $ show err
-
   test [
       Utils.TestComparison.group
     , TestUtils.group
@@ -46,3 +44,9 @@ run device = do
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group
   ]
+
+export
+orDie : Show e => EitherT e IO a -> IO a
+orDie ea = do
+  Right a <- runEitherT ea | Left e => die $ show e
+  pure a

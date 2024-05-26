@@ -20,4 +20,4 @@ import PjrtPluginXlaCuda
 
 partial
 main : IO ()
-main = run device
+main = run !(orDie device)
