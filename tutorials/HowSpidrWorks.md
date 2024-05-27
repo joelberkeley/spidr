@@ -70,7 +70,7 @@ Another option, a natural representation for a directed acyclic graph such as ou
 ```
 spidr uses a list, or stack, of ops.
 
-> *__DETAIL__* Instead of replacing the `Expr` arguments to `Expr` data constructors, such as `Add` and `Mul`, with `Nat` labels, we can introduce a constructor `Var Nat` to refer to labelled nodes. This would allow us to only label a node if we plan on reusing it.
+> *__DETAIL__* Instead of replacing the `Expr` arguments to `Expr` data constructors, such as `Add` and `Mul`, with `Nat` labels, we can introduce a constructor `Var Nat` to refer to labelled nodes. This would allow us to only label a node if we plan on reusing it. We don't currently offer this in spidr.
 
 > *__DETAIL__* Due to limitations in our current handling of scoping in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
 
