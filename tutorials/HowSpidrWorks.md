@@ -25,6 +25,8 @@ spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a s
 
 spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: build the stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
 
+!!!! what about executing the stablehlo, which is runtime work?
+
 > *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. The XLA and StableHLO APIs are almost identical.
 
 ## The Idris tensor graph
@@ -43,13 +45,13 @@ Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. We solve this by labelling each `Expr` node that appears in our computational graph. These labels are essentially pointers. spidr could ask the user to provide these labels, but opts to generate them itself.
  `Expr` nodes can refer to other nodes via the label, rather than the value itself, and they could do this in one a number of ways. We'll show a couple. In each of these cases, our labels are `Nat`.
 
-One options is to bake the labelling into the data type itself, like
+The first option is to bake the labelling into the data type itself, like
 ```idris
 data ExprL =
     Lit Int
   | Add Nat Nat
   | Mul Nat Nat
-  | Let Nat Nat Nat
+  | Let Nat Expr Expr
 ```
 Notice how the arguments to the data constructors `Add` and `Mul` are now labels of other nodes, rather than `Expr` values themselves. Our earlier example becomes
 ```idris
