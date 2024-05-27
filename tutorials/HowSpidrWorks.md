@@ -53,9 +53,9 @@ data ExprL =
   | Mul Nat Nat
   | Let Nat Expr Expr
 ```
-Notice how the arguments to the data constructors `Add` and `Mul` are now labels of other nodes, rather than `Expr` values themselves. Our earlier example becomes
+Notice how the arguments to `Add` and `Mul` are now labels, rather than `Expr` values themselves. Our earlier example becomes
 ```idris
-Let 0 (Lit 7)
+Let 0 (Lit 7)           -- label `Lit 7` as 0 in what follows
   $ Let 1 (Lit 9)
     $ Let 2 (Add 0 1)   -- 0 and 1 point to `Lit 7` and `Lit 9`
       $ Mul 2 2         -- each 2 points to `Add 0 1`
