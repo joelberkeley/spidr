@@ -13,26 +13,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-# Tensor algebra to a runtime program
+# How spidr works
 
-In this tutorial, we explain how spidr runs the tensor algebra you write in Idris.
+In this tutorial, we explain how spidr runs the tensor code you write in Idris.
 
-(move this further down?)
-## Compiling and executing the Idris graph
+## StableHLO: the tensor graph representation
 
-We run the graphs built in spidr with XLA. XLA is a machine learning compiler that consumes StableHLO programs. StableHLO is a versioned set of operations for machine learning programs, based on [MHLO](https://github.com/tensorflow/mlir-hlo). MHLO itself is a dialect of [MLIR](https://mlir.llvm.org/), which in turn is a sub-project of [LLVM](https://llvm.org/).
+spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a versioned set of operations for machine learning programs, based on [MHLO](https://github.com/tensorflow/mlir-hlo). StableHLO uses [MLIR](https://mlir.llvm.org/) bytecode as a serialization format; MLIR is a sub-project of [LLVM](https://llvm.org/).
 
-spidr represents graphs as a topologically-sorted stack of `Expr` values, each of which corresponds almost one-to-one with a StableHLO operation. Thus, converting to StableHLO programs is largely trivial, and is just a case of calling through a foreign function interface to the appropriate API. At the moment, we do this in a roundabout way, by calling first into XLA's C++ opset, then converting to a StableHLO program. However, we intend to translate directly when we have time to migrate.
+spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: to build this stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
 
-StableHLO and XLA are part of the (OpenXLA)[https://openxla.org/] project.
+> *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. This detail is not too important as the XLA and StableHLO APIs are almost identical.
 
-Popular machine learning frameworks such as JAX, TensorFlow and PyTorch, offer similar compilation routes. 
+## Building the Idris tensor graph
 
-## The Idris tensor graph
+We must label nodes in our computational graph, so that we can reuse them. Else, we will suffer potentially disastrous performance consequences as we recalculate even large parts of the graph, or waste cycles eliminating common expressions. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter. This requires a notion of state, to ensure labels are not ambiguous.
 
-### Efficiently reusing tensors, and working with `Graph`
+Since a graph takes a natural representation as a topologically-sorted list, we can use the indices of this list as our labels, and simply prepend the appropriate `Expr` to this list each time we perform a tensor operation. Our graph can thus simply be a `List Expr`. It might help to visualise this. The mathematical expression z &times; z where z = 1 + 2 is then written as
+```
+[ Lit 1
+, Lit 2
+, Add 0 1  -- 0 and 1 point to `Lit 1` and `Lit 2`
+, Mul 2 2  -- both 2s points to `Add 0 1` 
+]
+```
 
-spidr explicitly caches tensors so they can be efficiently be reused. We achieved this with _observable sharing_. In this section we discuss what our implementation means for spidr's tensor API.
+> *__DETAIL__* Due to limitations in our current handling of scoping in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
+
+Now, Idris is a purely functional language, which means effects, including state, are explicit. When we build the graph, this state is captured in the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
+
+There is both a performance and an ergonomic cost to explicit state, which we discuss in the . This concludes how we construct spidr's internal representation of the tensor graph. Next, we'll take a look at the implication of explicit state for the tensor API, before moving on 
+
+### The cost of explicit state: boilerplate and monads
 
 Caching ensures that the computation you write will be the computation sent to the graph compiler. Unfortunately this comes with downsides. First, there is extra boilerplate. Most tensor operations accept `Tensor shape dtype` and output `Graph (Tensor shape dtype)`, so when you compose operations, you'll need to handle the `Graph` effect. For example, what might be `abs (max x y)` in another library can be `abs !(max !x !y)` in spidr. One notable exception to this is infix operators, which accept `Graph (Tensor shape dtype)` values. This is to avoid unreadable algebra: you won't need to write `!(!x * !y) + !z`. However, it does mean you will need to wrap any `Tensor shape dtype` values in `pure` to pass it to an infix operator. Let's see an example:
 <!-- idris

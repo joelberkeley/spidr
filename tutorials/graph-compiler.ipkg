@@ -1,7 +1,0 @@
-package graph-compiler
-
-main = GraphCompiler
-
-depends = spidr
-
-opts = "--total"

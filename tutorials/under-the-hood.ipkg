@@ -1,7 +1,0 @@
-package under-the-hood
-
-main = UnderTheHood
-
-depends = spidr
-
-opts = "--total"

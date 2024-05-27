@@ -1,0 +1,7 @@
+package how-spidr-works
+
+main = HowSpidrWorks
+
+depends = spidr
+
+opts = "--total"
