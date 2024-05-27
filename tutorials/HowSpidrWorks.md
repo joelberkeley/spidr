@@ -21,13 +21,26 @@ In this tutorial, we explain how spidr runs the tensor code you write in Idris.
 
 spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a versioned set of operations for machine learning programs, based on [MHLO](https://github.com/tensorflow/mlir-hlo). StableHLO uses [MLIR](https://mlir.llvm.org/) bytecode as a serialization format; MLIR is a sub-project of [LLVM](https://llvm.org/).
 
-spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: to build this stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
+spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: build the stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
 
 > *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. The XLA and StableHLO APIs are almost identical.
 
-## Building the Idris tensor graph
+## The Idris tensor graph
 
-We must label nodes in our computational graph, so that we can reuse them. Else, we will suffer potentially disastrous performance consequences as we recalculate even large parts of the graph, or waste cycles eliminating common expressions. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter. This requires a notion of state, to ensure labels are not ambiguous.
+Each node in our graph encodes a single tensor operation. For example, a very simple numeric system could be captured by the type
+```idris
+data Expr =
+    Lit Int
+  | Add Expr Expr
+  | Mul Expr Expr
+````
+This structure works, but quickly becomes extremely wasteful, as we can see when we write out the expression z &times; z where z = 1 + 2:
+```idris
+Mul (Add (Lit 1) (Lit 2)) (Add (Lit 1) (Lit 2))
+```
+Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is not admissible.
+
+We solve this by labelling each `Expr` node that appears in  our computational graph. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter.
 
 Since a graph takes a natural representation as a topologically-sorted list, we can use the indices of this list as our labels, and simply prepend the appropriate `Expr` to this list each time we perform a tensor operation. Our graph can thus simply be a `List Expr`. It might help to visualise this. The mathematical expression z &times; z where z = 1 + 2 would be written
 ```
@@ -40,9 +53,15 @@ Since a graph takes a natural representation as a topologically-sorted list, we 
 
 > *__DETAIL__* Due to limitations in our current handling of scoping in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
 
-Now, Idris is a purely functional language, which means effects, including state, are explicit. When we build the graph, this state is captured in the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
+ Appending to this list on each operation requires a notion of state, to ensure labels are not ambiguous. Idris is a purely functional language, which means effects, including state, are explicit. When we build the graph, this state is captured in the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
 
-There is both a performance and an ergonomic cost to explicit state, which we discuss in the . This concludes how we construct spidr's internal representation of the tensor graph. Next, we'll take a look at the implication of explicit state for the tensor API, before moving on 
+There is both a performance and an ergonomic cost to explicit state, which we discuss in the section ....
+
+Now we know how spidr constructs the graph, let's look at how it consumes it.
+
+## Interpreting the graph
+
+...
 
 ### The cost of explicit state: boilerplate and monads
 
