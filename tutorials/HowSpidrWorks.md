@@ -60,7 +60,7 @@ Let 0 (Lit 7)           -- label `Lit 7` as 0 in what follows
     $ Let 2 (Add 0 1)   -- 0 and 1 point to `Lit 7` and `Lit 9`
       $ Mul 2 2         -- each 2 points to `Add 0 1`
 ```
-Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted `List Expr`. In this setup we implicitly use the list indices as our labels, and append the appropriate `Expr` to this list each time we perform a tensor operation. Our earlier example then becomes
+Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted list: `List Expr`. In this setup we implicitly use the list indices as our labels, and append the appropriate `Expr` to this list for each tensor operation. Our earlier example becomes
 ```
 [ Lit 1
 , Lit 2
