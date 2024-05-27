@@ -38,9 +38,7 @@ This structure works, but quickly becomes extremely wasteful, as we can see when
 ```idris
 Mul (Add (Lit 1) (Lit 2)) (Add (Lit 1) (Lit 2))
 ```
-Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is not admissible.
-
-We solve this by labelling each `Expr` node that appears in  our computational graph. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter.
+Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is not admissible. We solve this by labelling each `Expr` node that appears in  our computational graph. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter.
 
 Since a graph takes a natural representation as a topologically-sorted list, we can use the indices of this list as our labels, and simply prepend the appropriate `Expr` to this list each time we perform a tensor operation. Our graph can thus simply be a `List Expr`. It might help to visualise this. The mathematical expression z &times; z where z = 1 + 2 would be written
 ```
@@ -55,7 +53,7 @@ Since a graph takes a natural representation as a topologically-sorted list, we 
 
  Appending to this list on each operation requires a notion of state, to ensure labels are not ambiguous. Idris is a purely functional language, which means effects, including state, are explicit. When we build the graph, this state is captured in the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
 
-There is both a performance and an ergonomic cost to explicit state, which we discuss in the section ....
+Explicit state introduces a tradeoff between performance and ergonomics. We discuss in the section ....
 
 Now we know how spidr constructs the graph, let's look at how it consumes it.
 
