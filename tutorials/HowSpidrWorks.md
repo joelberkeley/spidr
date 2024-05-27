@@ -19,7 +19,9 @@ In this tutorial, we explain how spidr runs the tensor code you write in Idris.
 
 ## StableHLO: the tensor graph representation
 
-spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a versioned set of operations for machine learning programs, based on [MHLO](https://github.com/tensorflow/mlir-hlo). StableHLO uses [MLIR](https://mlir.llvm.org/) bytecode as a serialization format; MLIR is a sub-project of [LLVM](https://llvm.org/).
+spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a set of operations for machine learning programs with strong compatibility guarantees.
+
+> *__DETAIL__* StableHLO is based on [MHLO](https://github.com/tensorflow/mlir-hlo), and uses [MLIR](https://mlir.llvm.org/) bytecode as a serialization format; MLIR is a sub-project of [LLVM](https://llvm.org/).
 
 spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: build the stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
 
@@ -27,31 +29,52 @@ spidr represents each graph as a topologically-sorted stack of `Expr` values, ea
 
 ## The Idris tensor graph
 
-Each node in our graph encodes a single tensor operation. For example, a very simple numeric system could be captured by the type
+Each node in our graph encodes a single tensor operation. Let's look at a very simple graph representation and iterate on that towards what we use in spidr. We can represent literals, addition and multiplication by the type
 ```idris
 data Expr =
     Lit Int
   | Add Expr Expr
   | Mul Expr Expr
 ````
-This structure works, but quickly becomes extremely wasteful, as we can see when we write out the expression z &times; z where z = 1 + 2:
+This works, but quickly becomes extremely wasteful, as we can see when we write out the expression z &times; z where z = 7 + 9:
 ```idris
-Mul (Add (Lit 1) (Lit 2)) (Add (Lit 1) (Lit 2))
+Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 ```
-Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is not admissible. We solve this by labelling each `Expr` node that appears in  our computational graph. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter.
+Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. We solve this by labelling each `Expr` node that appears in our computational graph. These labels are essentially pointers. spidr could ask the user to provide these labels, but opts to generate them itself.
+ `Expr` nodes can refer to other nodes via the label, rather than the value itself, and they could do this in one a number of ways. We'll show a couple. In each of these cases, our labels are `Nat`.
 
-Since a graph takes a natural representation as a topologically-sorted list, we can use the indices of this list as our labels, and simply prepend the appropriate `Expr` to this list each time we perform a tensor operation. Our graph can thus simply be a `List Expr`. It might help to visualise this. The mathematical expression z &times; z where z = 1 + 2 would be written
+One options is to bake the labelling into the data type itself, like
+```idris
+data ExprL =
+    Lit Int
+  | Add Nat Nat
+  | Mul Nat Nat
+  | Let Nat Nat Nat
+```
+Notice how the arguments to the data constructors `Add` and `Mul` are now labels of other nodes, rather than `Expr` values themselves. Our earlier example becomes
+```idris
+Let 0 (Lit 7)
+  $ Let 1 (Lit 9)
+    $ Let 2 (Add 0 1)   -- 0 and 1 point to `Lit 7` and `Lit 9`
+      $ Mul 2 2         -- each 2 points to `Add 0 1`
+```
+Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted `List Expr`. In this setup we implicitly use the list indices as our labels, and append the appropriate `Expr` to this list each time we perform a tensor operation. Our earlier example then becomes
 ```
 [ Lit 1
 , Lit 2
-, Add 0 1  -- 0 and 1 point to `Lit 1` and `Lit 2`
-, Mul 2 2  -- both 2s points to `Add 0 1` 
+, Add 0 1
+, Mul 2 2 
 ]
 ```
+spidr uses a list, or stack, of ops.
+
+> *__DETAIL__* Instead of replacing the `Expr` arguments to `Expr` data constructors with `Nat` labels, we can introduce a constructor `Var Nat` to refer to labelled nodes. This would allow us to either label a node and reuse it, or not label it and just use it once.
 
 > *__DETAIL__* Due to limitations in our current handling of scoping in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
 
- Appending to this list on each operation requires a notion of state, to ensure labels are not ambiguous. Idris is a purely functional language, which means effects, including state, are explicit. When we build the graph, this state is captured in the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
+!!!!!!!!!!! In this para, how to explain why `Graph` is over `List Expr` not just `Nat`.
+
+ In either of these approaches, we need a notion of state to unambiguously label nodes. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
 
 Explicit state introduces a tradeoff between performance and ergonomics. We discuss in the section ....
 
