@@ -19,15 +19,15 @@ In this tutorial, we explain how spidr runs the tensor code you write in Idris.
 
 ## StableHLO: the tensor graph representation
 
-spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a set of operations for machine learning programs with strong compatibility guarantees.
+spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a set of operations for machine learning programs offering portability with several compilers and version compatibility guarantees.
 
-> *__DETAIL__* StableHLO is based on [MHLO](https://github.com/tensorflow/mlir-hlo), and uses [MLIR](https://mlir.llvm.org/) bytecode as a serialization format; MLIR is a sub-project of [LLVM](https://llvm.org/).
+> *__DETAIL__* StableHLO is implemented as an [MLIR](https://mlir.llvm.org/) dialect, and is based on another (deprecated) dialect MLIR-HLO. Such dialects are typically "lowered" down to a dialect compiled by the [LLVM](https://llvm.org/) compiler. However, no compilers currently do this for StableHLO. XLA, for example, simply converts StableHLO to HLO, its own internal graph representation, which is not an MLIR dialect.
 
-spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: build the stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
+spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is three-fold: build the stack; interpret it as a StableHLO program; compile and execute the StableHLO. We'll take you through each of these steps in turn.
 
 !!!! what about executing the stablehlo, which is runtime work?
 
-> *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. The XLA and StableHLO APIs are almost identical.
+> *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. The XLA and StableHLO APIs are very similar.
 
 ## The Idris tensor graph
 
@@ -45,34 +45,41 @@ Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. We solve this by labelling each `Expr` node that appears in our computational graph. These labels are essentially pointers. spidr could ask the user to provide these labels, but opts to generate them itself.
  `Expr` nodes can refer to other nodes via the label, rather than the value itself, and they could do this in one a number of ways. We'll show a couple. In each of these cases, our labels are `Nat`.
 
-The first option is to bake the labelling into the data type itself, like
+The first option is to bake the labelling into the data type itself, as
 ```idris
-data ExprL =
+data Expr =
     Lit Int
   | Add Nat Nat
   | Mul Nat Nat
   | Let Nat Expr Expr
 ```
-Notice how the arguments to `Add` and `Mul` are now labels, rather than `Expr` values themselves. Our earlier example becomes
+Notice how the arguments to `Add` and `Mul` are now labels, rather than `Expr` values. Our earlier example becomes
 ```idris
 Let 0 (Lit 7)           -- label `Lit 7` as 0 in what follows
   $ Let 1 (Lit 9)
     $ Let 2 (Add 0 1)   -- 0 and 1 point to `Lit 7` and `Lit 9`
       $ Mul 2 2         -- each 2 points to `Add 0 1`
 ```
-Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted list: `List Expr`. In this setup we implicitly use the list indices as our labels, and append the appropriate `Expr` to this list for each tensor operation. Our earlier example becomes
+Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted list, `List Expr` for
+```idris
+data Expr =
+    Lit Int
+  | Add Nat Nat
+  | Mul Nat Nat
 ```
-[ Lit 1
-, Lit 2
+In this setup we implicitly use the list indices as our labels, and for each tensor operation, append the appropriate `Expr` to this list. Our earlier example becomes
+```
+[ Lit 7
+, Lit 9
 , Add 0 1
 , Mul 2 2 
 ]
 ```
-spidr uses a list, or stack, of ops.
+spidr uses this second approach of a list, or stack, of `Expr`s.
 
 > *__DETAIL__* Instead of replacing the `Expr` arguments to `Expr` data constructors, such as `Add` and `Mul`, with `Nat` labels, we can introduce a constructor `Var Nat` to refer to labelled nodes. This would allow us to only label a node if we plan on reusing it. We don't currently offer this in spidr.
 
-> *__DETAIL__* Due to limitations in our current handling of scoping in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
+> *__DETAIL__* Due to limitations in our current handling of scopes in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
 
 !!!!!!!!!!! In this para, how to explain why `Graph` is over `List Expr` not just `Nat`.
 
