@@ -23,13 +23,13 @@ spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a v
 
 spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is two-fold: to build this stack, then interpret it with FFI calls to the StableHLO API. We'll take you through each of these steps in turn.
 
-> *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. This detail is not too important as the XLA and StableHLO APIs are almost identical.
+> *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. The XLA and StableHLO APIs are almost identical.
 
 ## Building the Idris tensor graph
 
 We must label nodes in our computational graph, so that we can reuse them. Else, we will suffer potentially disastrous performance consequences as we recalculate even large parts of the graph, or waste cycles eliminating common expressions. spidr could ask the user to provide these labels, or it could generate them itself. We do the latter. This requires a notion of state, to ensure labels are not ambiguous.
 
-Since a graph takes a natural representation as a topologically-sorted list, we can use the indices of this list as our labels, and simply prepend the appropriate `Expr` to this list each time we perform a tensor operation. Our graph can thus simply be a `List Expr`. It might help to visualise this. The mathematical expression z &times; z where z = 1 + 2 is then written as
+Since a graph takes a natural representation as a topologically-sorted list, we can use the indices of this list as our labels, and simply prepend the appropriate `Expr` to this list each time we perform a tensor operation. Our graph can thus simply be a `List Expr`. It might help to visualise this. The mathematical expression z &times; z where z = 1 + 2 would be written
 ```
 [ Lit 1
 , Lit 2
