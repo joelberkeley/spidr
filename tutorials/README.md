@@ -4,7 +4,7 @@ A collection of tutorials on the structure of spidr. Each tutorial is a [literat
 
 > *__DETAIL__* Boxes like this contains additional detail. You won't need to read them to follow the wider text.
 
+* [Dependently-Typed Tensors](DependentlyTypedTensors.md)
 * [Nuisances in the tensor API](Nuisances.md)
 * [How spidr Works](HowSpidrWorks.md)
-* [Dependently-Typed Tensors](DependentlyTypedTensors.md)
-* [Bayesian Optimization](BayesianOptimizationDesign.md)
+* [Design of a Bayesian optimization library](BayesianOptimizationDesign.md)
