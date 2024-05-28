@@ -19,22 +19,20 @@ In this tutorial, we explain how spidr runs the tensor code you write in Idris.
 
 ## StableHLO: the tensor graph representation
 
-spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a set of operations for machine learning programs offering portability with several compilers and version compatibility guarantees.
+spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a set of operations for machine learning programs offering portability with several compilers, along with version compatibility guarantees.
 
-> *__DETAIL__* StableHLO is implemented as an [MLIR](https://mlir.llvm.org/) dialect, and is based on another (deprecated) dialect MLIR-HLO. Such dialects are typically "lowered" down to a dialect compiled by the [LLVM](https://llvm.org/) compiler. However, no compilers currently do this for StableHLO. XLA, for example, simply converts StableHLO to HLO, its own internal graph representation, which is not an MLIR dialect.
+> *__DETAIL__* StableHLO is implemented as an [MLIR](https://mlir.llvm.org/) dialect, and is based on another (deprecated) dialect MLIR-HLO. Such dialects are typically "lowered" down to another dialect compiled by the [LLVM](https://llvm.org/) compiler. However, no compilers currently take this route for StableHLO. XLA, for example, simply converts StableHLO to HLO, its own internal graph representation, which is not an MLIR dialect.
 
-spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a StableHLO operation. The primary runtime work of spidr is three-fold: build the stack; interpret it as a StableHLO program; compile and execute the StableHLO. We'll take you through each of these steps in turn.
+spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a XLA tensor operation. Most of these ops are also present in the StableHLO specification. spidr uses the XLA API to build an HLO program. The primary runtime work of spidr is three-fold: build the stack; interpret it as an HLO program; compile and execute the HLO. We'll take you through each of these steps in turn.
 
 !!!! what about executing the stablehlo, which is runtime work?
 
-> *__DETAIL__* spidr currently builds XLA rather than StableHLO programs, then converts these into HLO. In future, we will build StableHLO directly. The XLA and StableHLO APIs are very similar.
-
-## The Idris tensor graph
+## Building the tensor graph in Idris
 
 Each node in our graph encodes a single tensor operation. Let's look at a very simple graph representation and iterate on that towards what we use in spidr. We can represent literals, addition and multiplication by the type
 ```idris
-data Expr =
-    Lit Int
+data Expr
+  = Lit Int
   | Add Expr Expr
   | Mul Expr Expr
 ````
@@ -47,8 +45,8 @@ Not only do we store z twice, but we lose the information that it's the same cal
 
 The first option is to bake the labelling into the data type itself, as
 ```idris
-data Expr =
-    Lit Int
+data Expr
+  = Lit Int
   | Add Nat Nat
   | Mul Nat Nat
   | Let Nat Expr Expr
@@ -62,8 +60,8 @@ Let 0 (Lit 7)           -- label `Lit 7` as 0 in what follows
 ```
 Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted list, `List Expr` for
 ```idris
-data Expr =
-    Lit Int
+data Expr
+  = Lit Int
   | Add Nat Nat
   | Mul Nat Nat
 ```
@@ -87,9 +85,17 @@ spidr uses this second approach of a list, or stack, of `Expr`s.
 
 Explicit state introduces a tradeoff between performance and ergonomics. We discuss in the section ....
 
+### Graph manipulation
+
+...
+
 Now we know how spidr constructs the graph, let's look at how it consumes it.
 
-## Interpreting the graph
+## Interpreting the graph with XLA
+
+spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward, and involves creating a fixed-length `IOArray` cache of pointers to C++ XLA `XlaOp`s, then iterating over the stack, creating an `XlaOp` for each `Expr`. Unlike a `List`, the `IOArray` provides O(1) access to previously-created `XlaOp`s for when we need to fetch by label. The process requires heavy use of the Idris C FFI and makes use of a thin custom C wrapper round the XLA C++ API.
+
+## Compiling and executing the graph with PJRT
 
 ...
 
