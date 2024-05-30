@@ -89,15 +89,10 @@ Now we know how spidr constructs the graph, let's look at how it consumes it.
 
 spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, and for each `Expr`, add a C++ `XlaOp` pointer to a fixed-length `IOArray` array. Unlike a `List`, the `IOArray` provides O(1) access to previously-created `XlaOp`s so we can cheaply access to previously-created `XlaOp`s by label. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
 
-In future, we plan instead to build a StableHLO rather than XLA HLO program. We'd create a StableHLO `tensor` for each `Expr` instead of an `XlaOp`.
+In future, we plan instead to build a StableHLO rather than XLA HLO programs. In that case, for each `Expr`, we'll create a StableHLO `tensor` instead of an `XlaOp`.
 
 ## Compiling and executing the graph with PJRT
 
-The OpenXLA project provides [_PJRT_](https://openxla.org/xla/pjrt_integration), an abstract interface for _plugins_ that compile and execute StableHLO (or HLO) programs for a specific hardware device. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run these programs. Plugins include
+The OpenXLA project provides [_PJRT_](https://openxla.org/xla/pjrt_integration), an abstract interface for _plugins_ that compile and execute StableHLO (or HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/), and devices CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run programs.
 
-* XLA compiler for CPU
-* XLA compiler for CUDA-enabled GPU
-* XLA compiler for TPU
-* IREE compiler for CPU
-
-The process in spidr is fairly straightforward for simple setups such as spidr's, and like the previous step, mostly involves C FFI calls.
+The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls.
