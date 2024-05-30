@@ -81,20 +81,23 @@ spidr uses this second approach of a list, or stack, of `Expr`s.
 
 !!!!!!!!!!! In this para, how to explain why `Graph` is over `List Expr` not just `Nat`.
 
- In either of these approaches, we need a notion of state to unambiguously label nodes. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph.
-
-Explicit state introduces a tradeoff between performance and ergonomics. We discuss this in the tutorial [Nuisances in the tensor API](Nuisances.md).
-
-### Graph manipulation
-
-...
+ In either of these approaches, we need a notion of state to unambiguously label nodes. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph. Explicit state introduces a tradeoff between performance and ergonomics. We discuss this in the tutorial [Nuisances in the tensor API](Nuisances.md).
 
 Now we know how spidr constructs the graph, let's look at how it consumes it.
 
 ## Interpreting the graph with XLA
 
-spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward, and involves creating a fixed-length `IOArray` cache of pointers to C++ XLA `XlaOp`s, then iterating over the stack, creating an `XlaOp` for each `Expr`. Unlike a `List`, the `IOArray` provides O(1) access to previously-created `XlaOp`s for when we need to fetch by label. The process requires heavy use of the Idris C FFI and makes use of a thin custom C wrapper round the XLA C++ API.
+spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, and for each `Expr`, add a C++ `XlaOp` pointer to a fixed-length `IOArray` array. Unlike a `List`, the `IOArray` provides O(1) access to previously-created `XlaOp`s so we can cheaply access to previously-created `XlaOp`s by label. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
+
+In future, we plan instead to build a StableHLO rather than XLA HLO program. We'd create a StableHLO `tensor` for each `Expr` instead of an `XlaOp`.
 
 ## Compiling and executing the graph with PJRT
 
-...
+The OpenXLA project provides [_PJRT_](https://openxla.org/xla/pjrt_integration), an abstract interface for _plugins_ that compile and execute StableHLO (or HLO) programs for a specific hardware device. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run these programs. Plugins include
+
+* XLA compiler for CPU
+* XLA compiler for CUDA-enabled GPU
+* XLA compiler for TPU
+* IREE compiler for CPU
+
+The process in spidr is fairly straightforward for simple setups such as spidr's, and like the previous step, mostly involves C FFI calls.
