@@ -25,8 +25,6 @@ spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a s
 
 spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with a XLA tensor operation. Most of these ops are also present in the StableHLO specification. spidr uses the XLA API to build an HLO program. The primary runtime work of spidr is three-fold: build the stack; interpret it as an HLO program; compile and execute the HLO. We'll take you through each of these steps in turn.
 
-!!!! what about executing the stablehlo, which is runtime work?
-
 ## Building the tensor graph in Idris
 
 Each node in our graph encodes a single tensor operation. Let's look at a very simple graph representation and iterate on that towards what we use in spidr. We can represent literals, addition and multiplication by the type
