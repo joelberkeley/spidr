@@ -93,6 +93,6 @@ In future, we plan instead to build a StableHLO rather than XLA HLO programs. In
 
 ## Compiling and executing the graph with PJRT
 
-The OpenXLA project provides [_PJRT_](https://openxla.org/xla/pjrt_integration), an abstract interface for _plugins_ that compile and execute StableHLO (or HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/), and devices CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run programs.
+The OpenXLA project provides [_PJRT_](https://openxla.org/xla/pjrt_integration), an abstract interface, written in C, for _plugins_ that compile and execute StableHLO (or HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/), and devices CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run programs.
 
 The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls.
