@@ -64,7 +64,7 @@ data Expr
   | Mul Nat Nat
 ```
 In this setup we implicitly use the list indices as our labels, and for each tensor operation, append the appropriate `Expr` to this list. Our earlier example becomes
-```
+```idris
 [ Lit 7
 , Lit 9
 , Add 0 1

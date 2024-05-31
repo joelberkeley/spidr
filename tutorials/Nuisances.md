@@ -15,6 +15,8 @@ limitations under the License.
 -->
 # Nuisances in the Tensor API
 
+_This tutorial can be executed as a source file._
+
 ## Efficiently reusing tensors, and working with `Graph`
 
 spidr explicitly caches tensors so they can be efficiently be reused. We achieved this with _observable sharing_. Here we discuss what our implementation means for spidr's tensor API.

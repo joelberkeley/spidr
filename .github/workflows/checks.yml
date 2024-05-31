@@ -49,10 +49,6 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        # is this check enough?
-        # what if we rename the plugin?
-        # what if the idris code changes?
-        # anything else?
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
@@ -192,4 +188,6 @@ jobs:
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
-        res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
+        pack --no-prompt typecheck tutorials/bayesian-optimization-design.ikpg
+        pack --no-prompt typecheck tutorials/dependently-typed-tensors.ipkg
+        pack --no-prompt typecheck tutorials/nuisances.ipkg
