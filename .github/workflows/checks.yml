@@ -25,8 +25,8 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
           curl -LO "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
         else
-          free up space not used if running in Docker, see
-          https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
+          # free up space not used if running in Docker, see
+          # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
           rm -rf /opt/hostedtoolcache
           docker run \
             -v $(pwd):/spidr -w /spidr \
