@@ -13,17 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-# Nuisance in the tensor API
+# Nuisance in the Tensor API
 
-## Explicit state
+## Efficiently reusing tensors, and working with `Graph`
 
-### Performance
-
-...
-
-### Boilerplate
-
-spidr explicitly caches tensors so they can be efficiently be reused. We achieved this with _observable sharing_. In this section we discuss what our implementation means for spidr's tensor API.
+spidr explicitly caches tensors so they can be efficiently be reused. We achieved this with _observable sharing_. Here we discuss what our implementation means for spidr's tensor API.
 
 Caching ensures that the computation you write will be the computation sent to the graph compiler. Unfortunately this comes with downsides. First, there is extra boilerplate. Most tensor operations accept `Tensor shape dtype` and output `Graph (Tensor shape dtype)`, so when you compose operations, you'll need to handle the `Graph` effect. For example, what might be `abs (max x y)` in another library can be `abs !(max !x !y)` in spidr. One notable exception to this is infix operators, which accept `Graph (Tensor shape dtype)` values. This is to avoid unreadable algebra: you won't need to write `!(!x * !y) + !z`. However, it does mean you will need to wrap any `Tensor shape dtype` values in `pure` to pass it to an infix operator. Let's see an example:
 <!-- idris
