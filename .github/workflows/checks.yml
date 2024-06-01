@@ -188,6 +188,4 @@ jobs:
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
-        pack --no-prompt typecheck tutorials/bayesian-optimization-design.ipkg
-        pack --no-prompt typecheck tutorials/dependently-typed-tensors.ipkg
-        pack --no-prompt typecheck tutorials/nuisances.ipkg
+        res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)

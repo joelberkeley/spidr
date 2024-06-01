@@ -15,8 +15,6 @@ limitations under the License.
 -->
 # Design: Bayesian optimization
 
-_This tutorial can be executed as a source file._
-
 In this tutorial, we look at the design of spidr's Bayesian optimization functionality - functionality that uses historic data to optimize a black-box objective function.
 
 ## A Bayesian optimization refresher

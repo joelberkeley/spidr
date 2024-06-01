@@ -15,7 +15,7 @@ limitations under the License.
 -->
 # How spidr works
 
-In this tutorial, we explain how spidr runs the tensor code you write in Idris.
+In this tutorial, we explain how spidr runs the tensor code you write in Idris. This file is not executable.
 
 ## StableHLO: the tensor graph representation
 

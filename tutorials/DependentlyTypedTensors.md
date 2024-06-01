@@ -15,8 +15,6 @@ limitations under the License.
 -->
 # Dependently-Typed Tensors
 
-_This tutorial can be executed as a source file._
-
 In this tutorial, we look at how spidr uses dependent types to provide a well-defined tensor API.
 
 ## What are dependent types?
