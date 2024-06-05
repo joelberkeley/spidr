@@ -18,7 +18,7 @@ We have tested spidr on Ubuntu Linux 22.04. It may work on other Linux distribut
 
 ### Motivation
 
-We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to build on existing compiler and hardware accelerator technologies, and use [OpenXLA](https://openxla.org/)'s PJRT.
+We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to use [OpenXLA](https://openxla.org/)'s PJRT, an abstract interface for machine learning compilers for hardware accelerators.
 
 ### What can spidr do?
 
@@ -55,7 +55,7 @@ You can run spidr programs on any hardware for which there's a PJRT plugin. CPU 
 
 #### Optimize graph compilation
 
-Each PJRT plugin contains a graph compiler, and there are several compilers available. The plugins we provide out of the box use the XLA compiler, which offers substantial performance benefits via e.g. [CSE and operator fusion](https://openxla.org/xla/architecture).
+Each PJRT plugin contains a graph compiler, and there are several compilers available. The plugins we provide out of the box use [XLA](https://github.com/openxla/xla), which offers substantial performance benefits via e.g. [CSE and operator fusion](https://openxla.org/xla/architecture).
 
 #### Graph generation
 
