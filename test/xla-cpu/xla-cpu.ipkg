@@ -6,4 +6,3 @@ depends =
 
 executable = test
 main = XlaCpu
-modules = XlaCpu
