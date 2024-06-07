@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-# How spidr works
+# How spidr Works
 
 In this tutorial, we explain how spidr runs the tensor code you write in Idris. This file is not executable.
 

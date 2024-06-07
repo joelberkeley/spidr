@@ -1,10 +1,10 @@
 # Tutorials
 
-A collection of tutorials on the structure of spidr. Each tutorial is a [literate file](https://idris2.readthedocs.io/en/latest/reference/literate.html), and can be executed as a source file unless indicated otherwise. In these tutorials we use quote boxes, like this
+A collection of tutorials on the structure of spidr. Expect where indicated, each tutorial is a [literate file](https://idris2.readthedocs.io/en/latest/reference/literate.html), and can be executed as a source file. In these tutorials we use quote boxes, like this
 
-> *__DETAIL__* Boxes like this contains additional detail. You can skip them and still follow the rest of the tutorial.
+> *__DETAIL__* Boxes like this provide additional detail that might be of interest, but isn't needed to follow the rest of the text. You can skip them if you like.
 
 * [Dependently-Typed Tensors](DependentlyTypedTensors.md)
-* [Nuisances in the tensor API](Nuisances.md)
+* [Nuisances in the Tensor API](Nuisances.md)
 * [How spidr Works](HowSpidrWorks.md)
-* [Design of a Bayesian optimization library](BayesianOptimizationDesign.md)
+* [Design of a Bayesian Optimization Library](BayesianOptimizationDesign.md)
