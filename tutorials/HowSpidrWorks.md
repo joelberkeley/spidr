@@ -15,7 +15,9 @@ limitations under the License.
 -->
 # How spidr Works
 
-In this tutorial, we explain how spidr runs the tensor code you write in Idris. This file is not executable.
+In this tutorial, we explain how spidr runs the tensor code you write in Idris.
+
+_This file is not executable._
 
 ## StableHLO: the tensor graph representation
 
@@ -88,6 +90,6 @@ In future, we plan instead to build StableHLO rather than XLA HLO programs. In t
 
 ## Compiling and executing the graph with PJRT
 
-The OpenXLA project provides [PJRT](https://openxla.org/xla/pjrt_integration), an abstract interface written in C, for _plugins_ that compile and execute StableHLO (and in some cases HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/). Devices include CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run programs.
+The OpenXLA project provides [PJRT](https://openxla.org/xla/pjrt_integration), an abstract interface written in C, for _plugins_ that compile and execute StableHLO (and in some cases HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/). Devices include CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend that produces StableHLO programs can use any PJRT plugin to run these programs.
 
-The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls. Plugins are typically distributed as a shared library.
+The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls. A plugins is typically distributed as a shared library.
