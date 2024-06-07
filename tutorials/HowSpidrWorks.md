@@ -92,4 +92,4 @@ In future, we plan instead to build StableHLO rather than XLA HLO programs. In t
 
 The OpenXLA project provides [PJRT](https://openxla.org/xla/pjrt_integration), an abstract interface written in C, for _plugins_ that compile and execute StableHLO (and in some cases HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/). Devices include CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend that produces StableHLO programs can use any PJRT plugin to run these programs.
 
-The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls. A plugins is typically distributed as a shared library.
+The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls. Plugins are typically distributed as shared libraries.
