@@ -27,7 +27,7 @@ spidr represents each graph as a topologically-sorted stack of `Expr` values, ea
 
 ## Building the tensor graph in Idris
 
-Each node in our graph encodes a single tensor operation. Let's look at a very simple graph representation and iterate on that towards what we use in spidr. We can represent literals, addition and multiplication by the type
+Each node in our graph encodes a single tensor operation. Let's look at a toy graph representation and iterate on that towards what we use in spidr. We can represent literals, addition and multiplication by the type
 ```idris
 data Expr
   = Lit Int
@@ -38,8 +38,7 @@ This works, but quickly becomes extremely wasteful, as we can see when we write 
 ```idris
 Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 ```
-Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. We solve this by labelling each `Expr` node that appears in our computational graph. These labels are essentially pointers. spidr could ask the user to provide these labels, but opts to generate them itself.
- `Expr` nodes can refer to other nodes via the label, rather than the value itself, and they could do this in one a number of ways. We'll show a couple. In each of these cases, our labels are `Nat`.
+Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. We solve this by labelling each `Expr` node that appears in our computational graph. spidr could ask the user to provide these labels, but opts to generate them itself. `Expr` nodes can refer to other nodes via the label, rather than the value itself, and they could do this in one of a number of ways. We'll show a couple. In each of these cases, our labels are `Nat`.
 
 The first option is to bake the labelling into the data type itself, as
 ```idris
@@ -75,20 +74,20 @@ spidr uses this second approach of a list, or stack, of `Expr`s.
 
 > *__DETAIL__* Instead of replacing the `Expr` arguments to `Expr` data constructors, such as `Add` and `Mul`, with `Nat` labels, we could introduce a constructor `Var Nat` to refer to labelled nodes. This would allow us to only label a node if we plan on reusing it. We don't currently offer this in spidr.
 
-> *__DETAIL__* Due to limitations in our current handling of scopes in spidr, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node.
+> *__DETAIL__* Due to limitations spidr's handling of scope, node labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is a label for the `Expr` node. The list is still topologically sorted.
 
- In either of these approaches, we need a notion of state to unambiguously label nodes. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computation graph. Explicit state introduces a tradeoff between performance and ergonomics. We discuss this in the tutorial [Nuisances in the tensor API](Nuisances.md).
+ In either of these approaches, we need a notion of state to unambiguously label nodes. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of adding nodes to a computational graph. Explicit state introduces a tradeoff between performance and ergonomics. We discuss this in the tutorial [Nuisances in the tensor API](Nuisances.md).
 
 Now we know how spidr constructs the graph, let's look at how it consumes it.
 
 ## Interpreting the graph with XLA
 
-spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, and for each `Expr`, add a C++ `XlaOp` pointer to a fixed-length `IOArray` array. Unlike a `List`, the `IOArray` provides O(1) access to previously-created `XlaOp`s so we can cheaply access to previously-created `XlaOp`s by label. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
+spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, and for each `Expr`, add a C++ `XlaOp` pointer to a fixed-length `IOArray` array. Unlike a `List`, the `IOArray` provides constant-time access, so we can cheaply access previously-created `XlaOp`s by label. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
 
 In future, we plan instead to build StableHLO rather than XLA HLO programs. In that case, for each `Expr`, we'll create StableHLO `tensor`s instead of `XlaOp`s.
 
 ## Compiling and executing the graph with PJRT
 
-The OpenXLA project provides [PJRT](https://openxla.org/xla/pjrt_integration), an abstract interface written in C, for _plugins_ that compile and execute StableHLO (or HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/). Devices include CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run programs.
+The OpenXLA project provides [PJRT](https://openxla.org/xla/pjrt_integration), an abstract interface written in C, for _plugins_ that compile and execute StableHLO (and in some cases HLO) programs for a specific hardware device. Compilers include XLA and [IREE](https://iree.dev/). Devices include CPU, GPU (CUDA, ROCm, Intel), and TPU. A machine learning frontend, such as spidr, that produces StableHLO (or HLO) programs, can use any PJRT plugin to run programs.
 
 The setup in spidr is fairly straightforward, and like the previous step, mostly involves C FFI calls. Plugins are typically distributed as a shared library.
