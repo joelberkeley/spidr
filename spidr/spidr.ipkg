@@ -1,0 +1,53 @@
+package spidr
+version = 0.0.6
+
+opts = "--total"
+sourcedir = "src"
+depends = elab-util
+modules =
+  BayesianOptimization,
+  BayesianOptimization.Acquisition,
+
+  Compiler.Xla.Client.Lib.Arithmetic,
+  Compiler.Xla.Client.Lib.Constants,
+  Compiler.Xla.Client.Lib.Math,
+  Compiler.Xla.Client.Lib.Matrix,
+  Compiler.Xla.Client.Lib.PRNG,
+  Compiler.Xla.Client.XlaBuilder,
+  Compiler.Xla.Client.ExecutableBuildOptions,
+  Compiler.Xla.Client.XlaComputation,
+  Compiler.Xla.PJRT.C.PjrtCApi,
+  Compiler.Xla.PJRT.PjrtExecutable,
+  Compiler.Xla.Literal,
+  Compiler.Xla.Shape,
+  Compiler.Xla.ShapeUtil,
+  Compiler.Xla.XlaData,
+  Compiler.Xla.Status,
+
+  Compiler.Eval,
+  Compiler.Expr,
+  Compiler.FFI,
+  Compiler.LiteralRW,
+
+  Constants,
+  Data,
+  Device,
+  Distribution,
+  Literal,
+
+  Model,
+  Model.GaussianProcess,
+  Model.Kernel,
+  Model.MeanFunction,
+
+  Optimize,
+  Primitive,
+  Tensor,
+  Types,
+  Util
+
+brief = "Hardware-accelerated machine learning with dependent types."
+readme = "README.md"
+license = "Apache License, Version 2.0"
+
+postinstall = "./postinstall.sh"

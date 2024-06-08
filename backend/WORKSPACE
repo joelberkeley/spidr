@@ -1,5 +1,0 @@
-new_local_repository(
-    name = "xla_extension",
-    path = "xla_extension",
-    build_file = "xla_extension.BUILD",
-)
