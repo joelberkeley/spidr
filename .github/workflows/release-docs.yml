@@ -14,6 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         pack --no-prompt --with-docs install spidr
         mv spidr/build/docs .
