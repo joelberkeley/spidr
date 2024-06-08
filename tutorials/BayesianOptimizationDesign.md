@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-# Design: Bayesian optimization
+# Design of a Bayesian Optimization Library
 
 In this tutorial, we look at the design of spidr's Bayesian optimization functionality - functionality that uses historic data to optimize a black-box objective function.
 

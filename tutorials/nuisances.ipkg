@@ -1,6 +1,6 @@
-package readme
+package nuisances
 
-main = README
+main = Nuisances
 
 depends = spidr
 
