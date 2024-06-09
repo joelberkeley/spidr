@@ -252,16 +252,16 @@ namespace Squeezable
 ||| Remove dimensions of length one from a `Tensor` such that it has the desired shape. For example:
 |||
 ||| ```
-||| x : Graph $ Tensor [2, 1, 3, 1] S32
+||| x : Tensor [2, 1, 3, 1] S32
 ||| x = tensor [[[[4], [5], [6]]],
 |||             [[[7], [8], [9]]]]
 |||
-||| y : Graph $ Tensor [2, 1, 3] S32
-||| y = squeeze !x
+||| y : Tensor [2, 1, 3] S32
+||| y = squeeze x
 ||| ```
 ||| is
 ||| ```
-||| y : Graph $ Tensor [2, 1, 3] S32
+||| y : Tensor [2, 1, 3] S32
 ||| y = tensor [[[4, 5, 6]],
 |||             [[7, 8, 9]]]
 ||| ```
@@ -507,7 +507,7 @@ data Triangle = Upper | Lower
 ||| ```
 ||| `triangle Lower x` is
 ||| ```
-||| x : Graph $ Tensor [3, 3] S32
+||| x : Tensor [3, 3] S32
 ||| x = tensor [[1, 0, 0],
 |||             [4, 5, 0],
 |||             [7, 8, 9]]

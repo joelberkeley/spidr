@@ -30,21 +30,21 @@ import Literal
 import Tensor
 -->
 ```idris
-x : Graph $ Tensor [3] S32
+x : Tensor [3] S32
 x = tensor [1, 2, 3]
 
-y : Graph $ Tensor [3] S32
+y : Tensor [3] S32
 y = x + tensor [0, 1, 2]
 ```
 but this won't
 ```idris
 failing "elaboration"
-  z : Graph $ Tensor [3] S32
+  z : Tensor [3] S32
   z = x + tensor [0, 1]
 ```
 because you can't add a vector of length two to a vector of length three. Shape manipulation extends beyond comparing literal dimension sizes to arbitrary symbolic manipulation
 ```idris
-append : Tensor [m, p] F64 -> Tensor [n, p] F64 -> Graph $ Tensor [m + n, p] F64
+append : Tensor [m, p] F64 -> Tensor [n, p] F64 -> Tensor [m + n, p] F64
 append x y = concat 0 x y
 ```
 As a bonus, spidr programs are reproducible. Any one graph will always produce the same result when run on the same hardware.

@@ -18,5 +18,5 @@ module Constants
 import Tensor
 
 export
-pi : Graph $ Tensor [] F64
+pi : Tensor [] F64
 pi = fromDouble pi

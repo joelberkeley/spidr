@@ -30,4 +30,4 @@ MeanFunction features = {sm : _} -> Tensor (sm :: features) F64 -> Graph $ Tenso
 ||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
-zero _ = fill 0
+zero _ = pure $ fill 0
