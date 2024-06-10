@@ -74,11 +74,7 @@ export
 Monad Graph where
   (MkGraph x) >>= f = MkGraph $ x >>= (\a => let MkGraph b = f a in b)
 
-unwrap : Graph (Tensor s a) -> State Env Expr
-unwrap (MkGraph s) = do
-  MkTensor x <- s
-  pure x
-
+||| Mark a tensor so it can be efficiently reused.
 export
 share : Tensor shape dtype -> Graph $ Tensor shape dtype
 share (MkTensor x) = MkGraph $ do
@@ -123,6 +119,11 @@ eval device (MkGraph x) =
         shape <- mkShape shape {dtype}
         [lit] <- execute device (MkFn [] root env) [shape]
         read {dtype} [] lit
+
+namespace Bar
+  export partial
+  eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
+  eval device x = eval device (pure x)
 
 namespace TensorList
   ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
@@ -175,6 +176,11 @@ namespace TensorList
     readAll : HasIO io => TensorList s t -> Vect (length s) Literal -> io $ All2 Literal s t
     readAll [] _ = pure []
     readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
+
+namespace Foo
+  export partial
+  eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
+  eval device xs = eval device (pure xs)
 
 ||| A string representation of a `Tensor` in a `Graph`, detailing all operations.
 |||
@@ -731,10 +737,12 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 export
 map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Graph $ Tensor [] b) ->
-      Tensor shape a -> Graph $ Tensor shape b
-map f $ MkTensor {shape = _} x = do
-  g <- MkGraph $ addFn [MkShapeAndType [] a] (\x => unwrap $ f (MkTensor x))
-  pure $ MkTensor $ Map g [x] (range $ length shape)
+      Tensor shape a -> Tensor shape b
+map f $ MkTensor {shape = _} x =
+  let MkGraph app = f (MkTensor $ Arg 0)
+      (env, MkTensor res) = runState empty app
+      g = MkFn [MkShapeAndType [] a] res env
+   in MkTensor $ Map g [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -748,17 +756,20 @@ export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
   (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
-  Tensor shape a -> Tensor shape b -> Graph $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = do
-  g <- MkGraph $ addFn [MkShapeAndType [] a, MkShapeAndType [] b]
-                       (\x, x' => unwrap $ f (MkTensor x) (MkTensor x'))
-  pure $ MkTensor $ Map g [x, x'] (range $ length shape)
+  Tensor shape a -> Tensor shape b -> Tensor shape c
+map2 f (MkTensor {shape = _} x) (MkTensor x') =
+  let MkGraph app = f (MkTensor $ Arg 0) (MkTensor $ Arg 1)
+      (env, MkTensor res) = runState empty app
+      g = MkFn [MkShapeAndType [] a, MkShapeAndType [] b] res env
+   in MkTensor $ Map g [x, x'] (range $ length shape)
 
+public export
 interface SemigroupT (m : Type -> Type) a where
   (<+>) : a -> a -> m a
 
+public export
 interface SemigroupT m a => MonoidT m a where
-  neutral : m a  --  or a?
+  neutral : a
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
@@ -768,24 +779,22 @@ interface SemigroupT m a => MonoidT m a where
 ||| @axis The axis along which to reduce elements.
 export
 reduce :
-  (reducer : MonoidT Graph (Tensor [] dtype)) =>
+  (reducer : MonoidT Graph (Tensor [] dtype)) =>  -- MonoidT is ridiculous
   Primitive dtype =>
   (axes : List Nat) ->
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
-  Graph $ Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x = do
+  Tensor (deleteAt axes shape) dtype
+reduce axes $ MkTensor x =
   let semigroupT : MonoidT Graph a -> SemigroupT Graph a
       semigroupT _ = %search
 
-      g : Expr -> Expr -> State Env Expr
-      g x x' = unwrap $ (<+>) @{semigroupT reducer} (MkTensor x) (MkTensor x')
-
-  g <- MkGraph $ addFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] g
-
-  MkTensor neutral' <- neutral @{reducer}
-  pure $ MkTensor $ Reduce g neutral' axes x
+      MkGraph app := (<+>) @{semigroupT reducer} (MkTensor $ Arg 0) (MkTensor $ Arg 1)
+      (env, MkTensor res) = runState empty app
+      g = MkFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] res env
+      MkTensor neutral' = neutral @{reducer}
+   in MkTensor $ Reduce g neutral' axes x
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -800,17 +809,15 @@ reduce axes $ MkTensor x = do
 export
 sort :
   Primitive dtype =>
-  (Tensor [] dtype -> Tensor [] dtype -> Graph $ Tensor [] PRED) ->
+  (Tensor [] dtype -> Tensor [] dtype -> Tensor [] PRED) ->
   (dimension : Nat) ->
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
-  Graph $ Tensor shape dtype
-sort comp dimension $ MkTensor x = do
-  let f : Expr -> Expr -> State Env Expr
-      f x x' = unwrap $ comp (MkTensor x) (MkTensor x')
-
-  comparator <- MkGraph $ addFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] f
-  pure $ MkTensor $ Sort comparator dimension False [x]
+  Tensor shape dtype
+sort comp dimension $ MkTensor x =
+  let MkTensor res = comp (MkTensor $ Arg 0) (MkTensor $ Arg 1)
+      comparator = MkFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] res empty
+   in MkTensor $ Sort comparator dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -905,7 +912,7 @@ namespace SemigroupT
 namespace MonoidT
   export
   [All] {shape : _} -> MonoidT Graph (Tensor shape PRED) using Tensor.SemigroupT.All where
-    neutral = pure $ fill True
+    neutral = fill True
 
 ||| Element-wise boolean or. For example,
 ||| `tensor [True, True, False, False] || tensor [True, False, True, False]` is
@@ -922,7 +929,7 @@ namespace SemigroupT
 namespace MonoidT
   export
   [Any] {shape : _} -> MonoidT Graph (Tensor shape PRED) using Tensor.SemigroupT.Any where
-    neutral = pure $ fill False
+    neutral = fill False
 
 unary : UnaryOp -> Tensor s a -> Tensor s a'
 unary op $ MkTensor x = MkTensor $ UnaryElementwise op x
@@ -986,11 +993,17 @@ cond :
   Tensor [] PRED ->
   (onTrue : Tensor ts tt -> Graph $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
-  Graph $ Tensor shape dtype
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
-  onTrue <- MkGraph $ addFn [MkShapeAndType ts tt] (\x => unwrap $ onTrue $ MkTensor x)
-  onFalse <- MkGraph $ addFn [MkShapeAndType fs ft] (\x => unwrap $ onFalse $ MkTensor x)
-  pure $ MkTensor $ Cond pred onTrue true onFalse false
+  Tensor shape dtype
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
+  let MkGraph appT = onTrue (MkTensor $ Arg 0)
+      (env, MkTensor res) = runState empty appT
+      onTrue = MkFn [MkShapeAndType ts tt] res env
+
+      MkGraph appF = onFalse (MkTensor $ Arg 0)
+      (env, MkTensor res) = runState empty appF
+      onFalse = MkFn [MkShapeAndType fs ft] res env
+
+   in MkTensor $ Cond pred onTrue true onFalse false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -1104,7 +1117,7 @@ namespace MonoidT
         PrimitiveRW dtype a =>
         Primitive.Num dtype =>
     MonoidT Graph (Tensor shape dtype) using SemigroupT.Sum where
-      neutral = pure $ fill 0
+      neutral = fill 0
 
 ||| Element-wise negation. For example, `- tensor [1, -2]` is `tensor [-1, 2]`.
 export
@@ -1146,7 +1159,7 @@ namespace MonoidT
          PrimitiveRW dtype a =>
          Primitive.Num dtype =>
     MonoidT Graph (Tensor shape dtype) using SemigroupT.Prod where
-      neutral = pure $ fill 1
+      neutral = fill 1
 
 ||| Element-wise floating point division. For example, `tensor [2, 3] / tensor [4, 5]` is
 ||| `tensor [0.5, 0.6]`.
@@ -1342,7 +1355,7 @@ namespace MonoidT
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
     MonoidT Graph (Tensor shape dtype) using SemigroupT.Min where
-      neutral = pure $ fill (1.0 / 0.0)
+      neutral = fill (1.0 / 0.0)
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max (tensor [-3, -1, 3]) (tensor [-1, 0, 1])` is `tensor [-1, 0, 3]`.
@@ -1366,13 +1379,13 @@ namespace MonoidT
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
     MonoidT Graph (Tensor shape dtype) using SemigroupT.Max where
-      neutral = pure $ fill (- 1.0 / 0.0)
+      neutral = fill (- 1.0 / 0.0)
 
 highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Graph $ Tensor [S n] dtype
 highlightNan minimize x with (x)
   _ | (MkTensor {shape = _} _) = do
     x <- share x
-    cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
+    pure $ cond (reduce @{All} [0] (x == x)) pure x extremizeNan x
 
     where
 
@@ -1460,12 +1473,12 @@ namespace Vector
   a \| b = let (MkTensor {shape = [_]} _) = b in squeeze (a \| expand 1 b)
 
 ||| Sum the elements along the diagonal of the input. For example,
-||| `trace !(tensor [[-1, 5], [1, 4]])` is `3`.
+||| `trace (tensor [[-1, 5], [1, 4]])` is `3`.
 export
 trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
-        Graph $ Tensor [] dtype
+        Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] $ x * identity
 

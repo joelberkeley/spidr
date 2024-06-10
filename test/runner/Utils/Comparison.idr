@@ -80,3 +80,30 @@ namespace F64
   (===#) : Device => Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
            Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> TestT m ()
   x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)
+
+namespace Foo
+  namespace PRED
+    export partial
+    (===#) : Device => Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
+    x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
+
+  namespace S32
+    export partial
+    (===#) : Device => Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+    x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
+
+  namespace U32
+    export partial
+    (===#) : Device => Monad m => {shape : _} -> Tensor shape U32 -> Tensor shape U32 -> TestT m ()
+    x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
+
+  namespace U64
+    export partial
+    (===#) : Device => Monad m => {shape : _} -> Tensor shape U64 -> Tensor shape U64 -> TestT m ()
+    x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
+
+  namespace F64
+    export partial
+    (===#) : Device => Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
+             Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+    x ===# y = (==~) {tol} (unsafeEval $ pure x) (unsafeEval $ pure y)

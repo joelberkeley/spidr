@@ -83,7 +83,7 @@ ClosedFormDistribution [1] Gaussian where
     tri <- share $ cholCov |\ squeeze (x - mean)
     let exponent = - tri @@ tri / 2.0
         covSqrtDet = reduce @{Prod} [0] (diag cholCov)
-        denominator = (fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * !covSqrtDet
+        denominator = (fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
     pure (exp exponent / denominator)
 
   cdf (MkGaussian {d=S _} _ _) _ = ?multivariateGaussianCDF

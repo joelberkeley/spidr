@@ -65,7 +65,7 @@ logMarginalLikelihood :
 logMarginalLikelihood (MkGP _ kernel) noise (x, y) = do
   l <- share $ cholesky (!(kernel x x) + noise * identity)
   let alpha = l.T \| (l |\ y)
-  pure $ - y @@ alpha / 2.0 - !(trace (log l)) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
+  pure $ - y @@ alpha / 2.0 - trace (log l) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following

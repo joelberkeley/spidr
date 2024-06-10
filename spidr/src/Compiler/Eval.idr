@@ -54,7 +54,7 @@ data Err = OutOfBounds Nat Nat
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
-  show (ValueNotFound idx) = "Value requested but not found at index \{show idx}"
+  show (ValueNotFound idx) = "Value not found at index \{show idx}"
   show (PjrtErr err)= show err
 
 public export 0
@@ -72,9 +72,9 @@ compile xlaBuilder f = do
 
 interpret xlaBuilder (MkFn params root env) = do
   let (max, exprs) = toList env
-  runReaderT !(newArray $ cast max) $ do
+  runReaderT !(newArray $ cast $ max + length params) $ do
     traverse_ interpretParameter (enumerate params)
-    traverse_ (\(i, expr) => do set i !(interpretE expr)) exprs
+    traverse_ (\(i, expr) => do set (i + length params) !(interpretE expr)) exprs
     interpretE root
 
   where
@@ -89,20 +89,24 @@ interpret xlaBuilder (MkFn params root env) = do
       | False => lift $ left $ OutOfBounds idx (cast $ max cache)
     pure ()
 
-  interpretParameter : (Nat, Nat, ShapeAndType) -> Builder ()
-  interpretParameter (posInFnParams, posInGraph, MkShapeAndType shape dtype) = do
+  get : Nat -> Builder XlaOp
+  get idx = do
+    cache <- ask
+    Just xlaOp <- lift $ readArray cache (cast idx)
+      | _ => lift $ left $ let max = cast (max cache)
+                            in if idx >= max then OutOfBounds idx max else ValueNotFound idx
+    pure xlaOp
+
+  interpretParameter : (Nat, ShapeAndType) -> Builder ()
+  interpretParameter (position, MkShapeAndType shape dtype) = do
     xlaShape <- mkShape {dtype} shape
-    param <- parameter xlaBuilder posInFnParams xlaShape (show posInFnParams)
-    set posInGraph param
+    param <- parameter xlaBuilder position xlaShape (show position)
+    set position param
 
   interpretE : Expr -> Builder XlaOp
   interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
-  interpretE (Var x) = do
-    cache <- ask
-    Just xlaOp <- lift $ readArray cache (cast x)
-      | _ => lift $ left $ let max = cast (max cache)
-                            in if x >= max then OutOfBounds x max else ValueNotFound x
-    pure xlaOp
+  interpretE (Var x) = get (x + length params)
+  interpretE (Arg x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
