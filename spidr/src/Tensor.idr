@@ -1373,11 +1373,11 @@ highlightNan minimize x with (x)
     where
 
     extremizeNan : {n : _} -> Tensor [S n] dtype -> Graph $ Tensor [S n] dtype
-    extremizeNan x = pure $
+    extremizeNan x = do
+      x <- share x
       let min' = broadcast $ Types.min @{NonFinite}
           max' = broadcast $ Types.max @{NonFinite}
-          -- no need to share x here as we already share parameters in HOFs
-       in select (if minimize then x == x else x /= x) max' min'
+      pure $ select (if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin !(tensor [-1, 3, -2, -2, 3])` is `tensor 2`. If the vector contains NaN values,
@@ -1386,7 +1386,7 @@ export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmin x = do
   MkTensor x <- highlightNan True x
-  pure $ MkTensor $ Argmin {out=U64} 0 x
+  pure $ MkTensor $ Argmin {out = U64} 0 x
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax !(tensor [-1, 3, -2, -2, 3])` is `tensor 1`. If the vector contains NaN values,
@@ -1395,7 +1395,7 @@ export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmax x = do
   MkTensor x <- highlightNan False x
-  pure $ MkTensor $ Argmax {out=U64} 0 x
+  pure $ MkTensor $ Argmax {out = U64} 0 x
 
 ---------------------------- other ----------------------------------
 

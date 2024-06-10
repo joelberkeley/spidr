@@ -342,22 +342,20 @@ dotGeneral = fixedProperty $ do
 
 partial
 argmin : Device => Property
-{-
 argmin = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = tensor xs
-  (do xs <- share xs; slice [at !(argmin xs)] xs) ===# pure (reduce [0] @{Min} xs)
--}
+  (do slice [at !(argmin xs)] xs) ===# pure (reduce [0] @{Min} xs)
+
 partial
 argmax : Device => Property
-{-
 argmax = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = tensor xs
-  (do xs <- share xs; slice [at !(argmax xs)] xs) ===# pure (reduce [0] @{Max} xs)
--}
+  (do slice [at !(argmax xs)] xs) ===# pure (reduce [0] @{Max} xs)
+
 partial
 select : Device => Property
 select = fixedProperty $ do
@@ -462,8 +460,8 @@ group = MkGroup "Tensor" $ [
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
     , ("dotGeneral", dotGeneral)
-    -- , ("argmin", argmin)
-    -- , ("argmax", argmax)
+    , ("argmin", argmin)
+    , ("argmax", argmax)
     , ("select", select)
     , ("erf", erf)
     , ("cholesky", cholesky)
