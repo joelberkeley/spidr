@@ -150,7 +150,7 @@ normal = withTests 20 . property $ do
   seed <- forAll (literal [1] nats)
 
   let normalCdf : {shape : _} -> Tensor shape F64 -> Tensor shape F64
-      normalCdf x = fill 1.0 + erf (x / (sqrt $ fill 2.0)) / fill 2.0
+      normalCdf x = (fill 1.0 + erf (x / (sqrt $ fill 2.0))) / fill 2.0
 
       key := tensor key
       seed = tensor seed
