@@ -241,10 +241,10 @@ neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = tensor {dtype = PRED} x
-      right = (<+>) @{Any} x' (neutral @{MonoidT.Any})
-      left = (<+>) @{Any} (neutral @{MonoidT.Any}) x'
-  Utils.unsafeEval right === x
-  Utils.unsafeEval left === x
+      right = (<+>) @{Any} x' (neutral @{Monoid.Any})
+      left = (<+>) @{Any} (neutral @{Monoid.Any}) x'
+  unsafeEval right === x
+  unsafeEval left === x
 
 partial
 neutralIsNeutralForAll : Device => Property
@@ -252,10 +252,10 @@ neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
   let x' = tensor {dtype = PRED} x
-      right = (<+>) @{All} x' (neutral @{MonoidT.All})
-      left = (<+>) @{All} (neutral @{MonoidT.All}) x'
-  Utils.unsafeEval right === x
-  Utils.unsafeEval left === x
+      right = (<+>) @{All} x' (neutral @{Monoid.All})
+      left = (<+>) @{All} (neutral @{Monoid.All}) x'
+  unsafeEval right === x
+  unsafeEval left === x
 
 partial
 neutralIsNeutralForMin : Device => Property
@@ -343,12 +343,10 @@ all = [
     , ("(*) S32", S32.testElementwiseBinary (*) (*))
     , ("(/)", F64.testElementwiseBinary (/) (/))
     -- , ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
-    {-
     , ("min S32", S32.testElementwiseBinary min min)
     , ("max S32", S32.testElementwiseBinary max max)
     , ("min F64", F64.testElementwiseBinary min' min)
     , ("max F64", F64.testElementwiseBinary max' max)
-    -}
     , ("(&&)", PRED.testElementwiseBinary and (&&))
     , ("(||)", PRED.testElementwiseBinary or (||))
 
