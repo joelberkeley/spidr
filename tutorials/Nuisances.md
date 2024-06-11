@@ -37,4 +37,4 @@ We detail the inner workings of `share` in [How spidr Works](HowSpidrWorks.md).
 
 There are downsides to `share`. First, it's a distraction. We can usually rely on the compiler to reuse expressions efficiently. In `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. But perhaps more importantly, it's possible to forget to use it, and incur a significant performance hit. We are investigating if it is possible to use linear types to catch unintentional tensor reuse at compile time, in an ergonomic way.
 
-### Tips to remember to `share`
+The take home message is this: take care not to use any tensor more than once unless you know it has been `share`d.
