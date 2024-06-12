@@ -75,8 +75,8 @@ namespace S32
     shape <- forAll shapes
     let int32s = literal shape int32s
     [x, y] <- forAll (np [int32s, int32s])
-    let x' = tensor {dtype=S32} x
-        y' = tensor {dtype=S32} y
+    let x' = tensor {dtype = S32} x
+        y' = tensor {dtype = S32} y
     [| fInt x y |] === unsafeEval (fTensor x' y')
 
 partial
@@ -115,8 +115,8 @@ namespace F64
     shape <- forAll shapes
     let doubles = literal shape doubles
     [x, y] <- forAll (np [doubles, doubles])
-    let x' = tensor {dtype=F64} x
-        y' = tensor {dtype=F64} y
+    let x' = tensor {dtype = F64} x
+        y' = tensor {dtype = F64} y
     [| fDouble x y |] ==~ unsafeEval (fTensor x' y')
 
 namespace PRED
@@ -130,8 +130,8 @@ namespace PRED
     shape <- forAll shapes
     let bools = literal shape bool
     [x, y] <- forAll (np [bools, bools])
-    let x' = tensor {dtype=PRED} x
-        y' = tensor {dtype=PRED} y
+    let x' = tensor {dtype = PRED} x
+        y' = tensor {dtype = PRED} y
     [| fBool x y |] === unsafeEval (fTensor x' y')
 
 partial
@@ -142,8 +142,8 @@ scalarMultiplication = property $ do
     [] => success
     (d :: ds) => do
       [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
-      let lit' = tensor {dtype=F64} lit
-          scalar' = tensor {dtype=F64} (Scalar scalar)
+      let lit' = tensor {dtype = F64} lit
+          scalar' = tensor {dtype = F64} (Scalar scalar)
       map (scalar *) lit ==~ unsafeEval (scalar' * lit')
 
 partial
@@ -154,8 +154,8 @@ scalarDivision = property $ do
     [] => success
     (d :: ds) => do
       [lit, scalar] <- forAll (np [literal (d :: ds) doubles, doubles])
-      let lit' = tensor {dtype=F64} lit
-          scalar' = tensor {dtype=F64} (Scalar scalar)
+      let lit' = tensor {dtype = F64} lit
+          scalar' = tensor {dtype = F64} (Scalar scalar)
       map (/ scalar) lit ==~ unsafeEval (lit' / scalar')
 
 namespace S32
@@ -169,8 +169,8 @@ namespace S32
     shape <- forAll shapes
     let int32s = literal shape int32s
     [x, y] <- forAll (np [int32s, int32s])
-    let x' = tensor {dtype=S32} x
-        y' = tensor {dtype=S32} y
+    let x' = tensor {dtype = S32} x
+        y' = tensor {dtype = S32} y
     [| fInt x y |] === unsafeEval (fTensor x' y')
 
 namespace F64
@@ -184,8 +184,8 @@ namespace F64
     shape <- forAll shapes
     let doubles = literal shape doubles
     [x, y] <- forAll (np [doubles, doubles])
-    let x' = tensor {dtype=F64} x
-        y' = tensor {dtype=F64} y
+    let x' = tensor {dtype = F64} x
+        y' = tensor {dtype = F64} y
     [| fDouble x y |] === unsafeEval (fTensor x' y')
 
 namespace PRED
@@ -203,14 +203,14 @@ neutralIsNeutralForSum = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  let x' = tensor {dtype=F64} x
+  let x' = tensor {dtype = F64} x
       right = (<+>) @{Sum} x' (neutral @{Sum})
       left = (<+>) @{Sum} (neutral @{Sum}) x'
   unsafeEval right ==~ x
   unsafeEval left ==~ x
 
   x <- forAll (literal shape int32s)
-  let x' = tensor {dtype=S32} x
+  let x' = tensor {dtype = S32} x
       right = (<+>) @{Sum} x' (neutral @{Sum})
       left = (<+>) @{Sum} (neutral @{Sum}) x'
   unsafeEval right === x
@@ -222,14 +222,14 @@ neutralIsNeutralForProd = property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  let x' = tensor {dtype=F64} x
+  let x' = tensor {dtype = F64} x
       right = (<+>) @{Prod} x' (neutral @{Prod})
       left = (<+>) @{Prod} (neutral @{Prod}) x'
   unsafeEval right ==~ x
   unsafeEval left ==~ x
 
   x <- forAll (literal shape int32s)
-  let x' = tensor {dtype=S32} x
+  let x' = tensor {dtype = S32} x
       right = (<+>) @{Prod} x' (neutral @{Prod})
       left = (<+>) @{Prod} (neutral @{Prod}) x'
   unsafeEval right === x
@@ -240,7 +240,7 @@ neutralIsNeutralForAny : Device => Property
 neutralIsNeutralForAny = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
-  let x' = tensor {dtype=PRED} x
+  let x' = tensor {dtype = PRED} x
       right = (<+>) @{Any} x' (neutral @{Monoid.Any})
       left = (<+>) @{Any} (neutral @{Monoid.Any}) x'
   unsafeEval right === x
@@ -251,7 +251,7 @@ neutralIsNeutralForAll : Device => Property
 neutralIsNeutralForAll = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape bool)
-  let x' = tensor {dtype=PRED} x
+  let x' = tensor {dtype = PRED} x
       right = (<+>) @{All} x' (neutral @{Monoid.All})
       left = (<+>) @{All} (neutral @{Monoid.All}) x'
   unsafeEval right === x
@@ -262,7 +262,7 @@ neutralIsNeutralForMin : Device => Property
 neutralIsNeutralForMin = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
-  let x' = tensor {dtype=F64} x
+  let x' = tensor {dtype = F64} x
       right = (<+>) @{Min} x' (neutral @{Min})
       left = (<+>) @{Min} (neutral @{Min}) x'
   unsafeEval right ==~ x
@@ -273,7 +273,7 @@ neutralIsNeutralForMax : Device => Property
 neutralIsNeutralForMax = property $ do
   shape <- forAll shapes
   x <- forAll (literal shape doublesWithoutNan)
-  let x' = tensor {dtype=F64} x
+  let x' = tensor {dtype = F64} x
       right = (<+>) @{Max} x' (neutral @{Max})
       left = (<+>) @{Max} (neutral @{Max}) x'
   unsafeEval right ==~ x

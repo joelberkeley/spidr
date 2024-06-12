@@ -87,7 +87,7 @@ optimizer f =
    in broadcast !(gs $ \x => do f !(broadcast x))
 
 newPoint : Graph $ Tensor [1, 2] F64
-newPoint = optimizer $ \x => squeeze =<< mean {event=[1]} !(marginalise @{Latent} !model x)
+newPoint = optimizer $ \x => squeeze =<< mean {event = [1]} !(marginalise @{Latent} !model x)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualise this:
@@ -125,7 +125,7 @@ In the above example, we constructed the acquisition function from our model, th
 
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
-modelMean model x = squeeze =<< mean {event=[1]} !(marginalise model x)
+modelMean model x = squeeze =<< mean {event = [1]} !(marginalise model x)
 
 newPoint' : Graph $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
