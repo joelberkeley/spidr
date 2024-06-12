@@ -28,8 +28,8 @@ share : Tensor shape dtype -> Graph $ Tensor shape dtype
 ```
 which binds an expression to a name in the tensor graph. You can efficiently reuse a tensor created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
-y : Graph $ Tensor [2] F64
-y = do
+y' : Graph $ Tensor [2] F64
+y' = do
   x <- share $ tensor [1.0, 2.0]
   pure $ x + x 
 ```
