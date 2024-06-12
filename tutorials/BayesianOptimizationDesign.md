@@ -83,7 +83,7 @@ optimizer f =
    in broadcast <$> (gs $ f . broadcast)
 
 newPoint : Graph $ Tensor [1, 2] F64
-newPoint = optimizer $ \x => squeeze <$> mean {event=[1]} !(marginalise @{Latent} !model x)
+newPoint = optimizer $ \x => squeeze <$> mean {event = [1]} !(marginalise @{Latent} !model x)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be to evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualize this:
@@ -120,7 +120,7 @@ In this case, our acquisition function is built from the model and data (it is e
 In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the environment when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `env -> Acquisition batch feat`. We want to be able to treat the data and model as an environment, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, named `Reader`. A `Reader env a` is just a thin wrapper round an `env -> a`. Having chosen `Reader` as our abstraction, we want to apply an `Optimizer` to an `Reader env (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Reader env` implements this interface. Let's see this in action:
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
-modelMean model x = squeeze <$> mean {event=[1]} !(marginalise model x)
+modelMean model x = squeeze <$> mean {event = [1]} !(marginalise model x)
 
 newPoint' : Graph $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})

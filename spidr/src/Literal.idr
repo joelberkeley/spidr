@@ -38,7 +38,7 @@ data Literal : Shape -> Type -> Type where
 
 export
 fromInteger : Integer -> Literal [] Int32
-fromInteger = Scalar . cast {to=Int32}
+fromInteger = Scalar . cast {to = Int32}
 
 export
 fromDouble : Double -> Literal [] Double
@@ -181,8 +181,8 @@ export
     showWithIndent : {shape : _} -> String -> Literal shape a -> String
     showWithIndent _ (Scalar x) = show x
     showWithIndent _ [] = "[]"
-    showWithIndent {shape=[S _]} _ x = show (toList x)
-    showWithIndent {shape=(S d :: dd :: ddd)} indent (x :: xs) =
+    showWithIndent {shape = [S _]} _ x = show (toList x)
+    showWithIndent {shape = (S d :: dd :: ddd)} indent (x :: xs) =
       let indent = " " ++ indent
           first = showWithIndent indent x
           rest = foldMap (\e => ",\n" ++ indent ++ showWithIndent indent e) (toVect xs)

@@ -127,4 +127,4 @@ fit optimizer (MkDataset x y) (MkConjugateGPR {p} mkPrior gpParams noise) = do
     where
     %hint
     reflexive : {n : _} -> LTE n n
-    reflexive = Relation.reflexive {ty=Nat}
+    reflexive = Relation.reflexive {ty = Nat}

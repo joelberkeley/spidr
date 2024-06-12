@@ -202,15 +202,15 @@ export
   min = MkTensor $ MinFiniteValue {dtype}
   max = MkTensor $ MaxFiniteValue {dtype}
 
-||| Cast the element type. For example, `castDtype (tensor {dtype=S32} [1, -2])` is
-||| `tensor {dtype=F64} [1.0, -2.0]`.
+||| Cast the element type. For example, `castDtype (tensor {dtype = S32} [1, -2])` is
+||| `tensor {dtype = F64} [1.0, -2.0]`.
 export
 castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
 castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
 ----------------------------- structural operations ----------------------------
 
-||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (tensor [3, 4])` is
+||| Reshape a `Tensor`. For example, `reshape {to = [2, 1]} (tensor [3, 4])` is
 ||| `tensor [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape :
@@ -323,7 +323,7 @@ public export
 ||| Slice across all indices along an axis. See `slice` for details.
 public export
 all : {d : _} -> SliceOrIndex d
-all = Slice 0 @{%search} @{reflexive {ty=Nat}} d
+all = Slice 0 @{%search} @{reflexive {ty = Nat}} d
 
 ||| A `MultiSlice shape` is a valid multi-dimensional slice into a tensor with shape `shape`.
 ||| See `slice` for details.
@@ -338,10 +338,10 @@ namespace MultiSlice
   public export
   slice : {shape : _} -> MultiSlice shape -> Shape
   slice {shape} [] = shape
-  slice {shape=(_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
-  slice {shape=(_ :: _)} (Index _ :: xs) = slice xs
-  slice {shape=(_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
-  slice {shape=(_ :: _)} (DynamicIndex _ :: xs) = slice xs
+  slice {shape = (_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
+  slice {shape = (_ :: _)} (Index _ :: xs) = slice xs
+  slice {shape = (_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
+  slice {shape = (_ :: _)} (DynamicIndex _ :: xs) = slice xs
 
 ||| Slice or index `Tensor` axes. Each axis can be sliced or indexed, and this can be done with
 ||| either static (`Nat`) or dynamic (scalar `U64`) indices.
@@ -459,7 +459,7 @@ slice at $ MkTensor x = MkTensor
       stop f {d} _ = f d
 
       size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      size _ (Slice {size=size'} _ _) = size'
+      size _ (Slice {size = size'} _ _) = size'
       size _ (Index _) = 1
       size _ (DynamicSlice _ size') = size'
       size _ (DynamicIndex _) = 1
@@ -690,7 +690,7 @@ broadcast $ MkTensor {shape = _} x = MkTensor $ Broadcast {dtype} from to x
 ||| ```
 export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
-fill x = broadcast {shapesOK=scalarToAnyOk shape} (tensor (Scalar x))
+fill x = broadcast {shapesOK = scalarToAnyOk shape} (tensor (Scalar x))
 
 ||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
@@ -1135,8 +1135,8 @@ namespace Scalarwise
   export
   (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
   l * r =
-    let MkTensor {shape=_ :: _} _ = r
-     in broadcast {shapesOK=scalarToAnyOk (d :: ds)} l * r
+    let MkTensor {shape = _ :: _} _ = r
+     in broadcast {shapesOK = scalarToAnyOk (d :: ds)} l * r
 
 namespace Semigroup
   export
@@ -1170,7 +1170,7 @@ namespace Scalarwise
         Tensor (d :: ds) dtype
   l / r =
     let MkTensor {shape = _ :: _} _ = l
-     in l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} r
+     in l / broadcast {shapesOK = scalarToAnyOk (d :: ds)} r
 
 ||| Element-wise division of natural numbers. For example,
 ||| `div (tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [4, 2]`.
@@ -1463,7 +1463,7 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         Tensor [S n, S n] dtype ->
         Tensor [] dtype
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] $ x * identity
+  _ | MkTensor {shape = [_, _]} _ = reduce @{Sum} [0, 1] $ x * identity
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.

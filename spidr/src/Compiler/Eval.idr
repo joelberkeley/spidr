@@ -195,8 +195,8 @@ interpret xlaBuilder (MkFn params root env) = do
       Asinh      => asinh
       Acosh      => acosh
       Atanh      => atanh
-  interpretE (Argmin {out} axis x) = argMin {outputType=out} !(interpretE x) axis
-  interpretE (Argmax {out} axis x) = argMax {outputType=out} !(interpretE x) axis
+  interpretE (Argmin {out} axis x) = argMin {outputType = out} !(interpretE x) axis
+  interpretE (Argmax {out} axis x) = argMax {outputType = out} !(interpretE x) axis
   interpretE (Select pred true false) =
     select !(interpretE pred) !(interpretE true) !(interpretE false)
   interpretE (Cond pred fTrue true fFalse false) = do
@@ -223,11 +223,11 @@ interpret xlaBuilder (MkFn params root env) = do
       ThreeFry
       !(interpretE minval)
       !(interpretE maxval)
-      !(mkShape {dtype=F64} shape)
+      !(mkShape {dtype = F64} shape)
     tuple xlaBuilder [value rngOutput, state rngOutput]
   interpretE (NormalFloatingPoint key initialState shape) = do
     rngOutput <- normalFloatingPointDistribution
-      !(interpretE key) !(interpretE initialState) ThreeFry !(mkShape {dtype=F64} shape)
+      !(interpretE key) !(interpretE initialState) ThreeFry !(mkShape {dtype = F64} shape)
     tuple xlaBuilder [value rngOutput, state rngOutput]
 
 export covering

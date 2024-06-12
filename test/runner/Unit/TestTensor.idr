@@ -238,15 +238,15 @@ cast = property $ do
 
   lit <- forAll (literal shape nats)
   let x : Tensor shape F64 = castDtype $ tensor {dtype = U32} lit
-  x ===# tensor (map (cast {to=Double}) lit)
+  x ===# tensor (map (cast {to = Double}) lit)
 
   lit <- forAll (literal shape nats)
   let x : Tensor shape F64 = castDtype $ tensor {dtype = U64} lit
-  x ===# tensor (map (cast {to=Double}) lit)
+  x ===# tensor (map (cast {to = Double}) lit)
 
   lit <- forAll (literal shape int32s)
   let x : Tensor shape F64 = castDtype $ tensor {dtype = S32} lit
-  x ===# tensor (map (cast {to=Double}) lit)
+  x ===# tensor (map (cast {to = Double}) lit)
 
 partial
 identity : Device => Property
@@ -346,7 +346,7 @@ argmin = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = tensor xs
-  (do slice [at !(argmin xs)] xs) ===# pure (reduce [0] @{Min} xs)
+  (do pure $ slice [at !(argmin xs)] xs) ===# pure (reduce [0] @{Min} xs)
 
 partial
 argmax : Device => Property
@@ -354,7 +354,7 @@ argmax = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = tensor xs
-  (do slice [at !(argmax xs)] xs) ===# pure (reduce [0] @{Max} xs)
+  (do pure $ slice [at !(argmax xs)] xs) ===# pure (reduce [0] @{Max} xs)
 
 partial
 select : Device => Property

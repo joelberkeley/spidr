@@ -62,7 +62,7 @@ expectedImprovement :
   Acquisition 1 features
 expectedImprovement model best at = do
   marginal <- marginalise model at
-  let best' = broadcast {to=[_, 1]} best
+  let best' = broadcast {to = [_, 1]} best
   pdf <- pdf marginal best'
   cdf <- cdf marginal best'
   let mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
