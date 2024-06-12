@@ -1,9 +1,6 @@
 on:
   pull_request:
     branches: master
-    paths:
-      - 'spidr/backend/**'
-      - 'XLA_VERSION'
 
 jobs:
   backend-version:
@@ -12,5 +9,8 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 2
-    - name: Check backend version is updated
-      run: sh -c "! git diff --exit-code HEAD^ spidr/backend/VERSION"
+    - name: Check backend version is updated when necessary
+      run: sh -c "
+        (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ spidr/backend/**) || \
+          ! git diff --quiet HEAD^ spidr/backend/VERSION
+        "
