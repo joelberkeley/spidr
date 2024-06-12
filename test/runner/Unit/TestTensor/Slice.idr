@@ -30,31 +30,31 @@ namespace MultiSlice
     (n, idx : Nat) ->
     (shape : Shape) ->
     LT idx n ->
-    MultiSlice.slice {shape=n :: shape} [at idx] === shape
+    MultiSlice.slice {shape = n :: shape} [at idx] === shape
   indexFirstDim n idx shape x = Refl
 
   sliceFirstDim :
     (n, from, size : Nat) ->
     (shape : Shape) ->
     LTE (from + size) n ->
-    MultiSlice.slice {shape=n :: shape} [from.to {size} (from + size)] === (size :: shape)
+    MultiSlice.slice {shape = n :: shape} [from.to {size} (from + size)] === (size :: shape)
   sliceFirstDim n from size shape x = Refl
 
   export
   slice : Device => Property
   slice = fixedProperty $ do
-    slice {shape=[3, 4]} [0.to 3, 0.to 0] === [3, 0]
-    slice {shape=[3, 4]} [0.to 3, 0.to 1] === [3, 1]
-    slice {shape=[3, 4]} [0.to 3, 0.to 4] === [3, 4]
+    slice {shape = [3, 4]} [0.to 3, 0.to 0] === [3, 0]
+    slice {shape = [3, 4]} [0.to 3, 0.to 1] === [3, 1]
+    slice {shape = [3, 4]} [0.to 3, 0.to 4] === [3, 4]
 
-    slice {shape=[3, 4]} [at 1, 0.to 3] === [3]
-    slice {shape=[3, 4]} [0.to 2, at 2] === [2]
-    slice {shape=[3, 4]} [at 1, at 2] === Prelude.Nil
+    slice {shape = [3, 4]} [at 1, 0.to 3] === [3]
+    slice {shape = [3, 4]} [0.to 2, at 2] === [2]
+    slice {shape = [3, 4]} [at 1, at 2] === Prelude.Nil
 
 partial
 sliceStaticIndex : Device => Property
 sliceStaticIndex = fixedProperty $ do
-  let x = tensor {dtype=S32} [3, 4, 5]
+  let x = tensor {dtype = S32} [3, 4, 5]
   (do slice [at 0] !x) ===# tensor 3
   (do slice [at 1] !x) ===# tensor 4
   (do slice [at 2] !x) ===# tensor 5
@@ -67,7 +67,7 @@ sliceStaticIndex = fixedProperty $ do
 partial
 sliceStaticSlice : Device => Property
 sliceStaticSlice = fixedProperty $ do
-  let x = tensor {dtype=S32} [3, 4, 5]
+  let x = tensor {dtype = S32} [3, 4, 5]
   (do slice [0.to 0] !x) ===# tensor []
   (do slice [0.to 1] !x) ===# tensor [3]
   (do slice [0.to 2] !x) ===# tensor [3, 4]
@@ -81,7 +81,7 @@ sliceStaticSlice = fixedProperty $ do
 partial
 sliceStaticMixed : Device => Property
 sliceStaticMixed = fixedProperty $ do
-  let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [0.to 1] !x) ===# tensor [[3, 4, 5]]
   (do slice [1.to 1] !x) ===# tensor []
   (do slice [all, 2.to 2] !x) ===# tensor [[], []]
@@ -104,14 +104,14 @@ u64 = tensor . Scalar
 partial
 sliceDynamicIndex : Device => Property
 sliceDynamicIndex = fixedProperty $ do
-  let x = tensor {dtype=S32} [3, 4, 5]
+  let x = tensor {dtype = S32} [3, 4, 5]
   (do slice [at (!(u64 0))] !x) ===# tensor 3
   (do slice [at (!(u64 1))] !x) ===# tensor 4
   (do slice [at (!(u64 2))] !x) ===# tensor 5
   (do slice [at (!(u64 3))] !x) ===# tensor 5
   (do slice [at (!(u64 5))] !x) ===# tensor 5
 
-  let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [at (!(u64 0))] !x) ===# tensor [3, 4, 5]
   (do slice [at (!(u64 1))] !x) ===# tensor [6, 7, 8]
   (do slice [at (!(u64 2))] !x) ===# tensor [6, 7, 8]
@@ -120,7 +120,7 @@ sliceDynamicIndex = fixedProperty $ do
 partial
 sliceDynamicSlice : Device => Property
 sliceDynamicSlice = fixedProperty $ do
-  let x = tensor {dtype=S32} [3, 4, 5]
+  let x = tensor {dtype = S32} [3, 4, 5]
   (do slice [(!(u64 0)).size 0] !x) ===# tensor []
   (do slice [(!(u64 0)).size 1] !x) ===# tensor [3]
   (do slice [(!(u64 0)).size 2] !x) ===# tensor [3, 4]
@@ -138,7 +138,7 @@ sliceDynamicSlice = fixedProperty $ do
   (do slice [(!(u64 5)).size 1] !x) ===# tensor [5]
   (do slice [(!(u64 5)).size 3] !x) ===# tensor [3, 4, 5]
 
-  let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [(!(u64 0)).size 1] !x) ===# tensor [[3, 4, 5]]
   (do slice [(!(u64 1)).size 0] !x) ===# tensor []
   (do slice [(!(u64 2)).size 0] !x) ===# tensor []
@@ -149,7 +149,7 @@ sliceDynamicSlice = fixedProperty $ do
 partial
 sliceMixed : Device => Property
 sliceMixed = fixedProperty $ do
-  let x = tensor {dtype=S32} [[3, 4, 5], [6, 7, 8]]
+  let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
   (do slice [all, (!(u64 2)).size 0] !x) ===# tensor [[], []]
   (do slice [all, (!(u64 1)).size 2] !x) ===# tensor [[4, 5], [7, 8]]
   (do slice [all, (!(u64 3)).size 0] !x) ===# tensor [[], []]
@@ -178,10 +178,10 @@ sliceMixed = fixedProperty $ do
   (do slice [(!(u64 4)).size 1, at 2] !x) ===# tensor [8]
 
   let x : Array [60] Int32 = fromList [0..59]
-      x = (do reshape {to=[2, 5, 3, 2]} !(tensor {shape=[60]} {dtype=S32} $ cast x))
+      x = (do reshape {to = [2, 5, 3, 2]} !(tensor {shape = [60]} {dtype = S32} $ cast x))
 
-  let idx = tensor {dtype=U64} 0
-      start = tensor {dtype=U64} 1
+  let idx = tensor {dtype = U64} 0
+      start = tensor {dtype = U64} 1
   (do slice [at 1, 2.to 5, (!start).size 2, at !idx] !x) ===# tensor [[44, 46], [50, 52], [56, 58]]
 
 index : (idx : Nat) -> {auto 0 inDim : LT idx n} -> Literal [n] a -> Literal [] a
@@ -194,7 +194,7 @@ sliceForVariableIndex = property $ do
   idx <- forAll dims
   rem <- forAll dims
   lit <- forAll (literal [idx + S rem] nats)
-  let x = tensor {dtype=U32} lit
+  let x = tensor {dtype = U32} lit
   index @{inDim} idx lit === unsafeEval (do slice [at @{inDim} idx] !x)
 
   where

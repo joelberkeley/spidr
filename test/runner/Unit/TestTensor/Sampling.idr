@@ -38,9 +38,9 @@ iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
 
-  let indices : Graph $ Tensor [n] F64 = castDtype !(tensor {dtype=U64} (range n))
-      sampleSize : Graph $ Tensor [] F64 = castDtype !(tensor {dtype=U64} (Scalar n))
-  samplesFlat <- reshape {sizesEqual=sym (product1 n)} {to=[n]} !(cdf samples)
+  let indices : Graph $ Tensor [n] F64 = castDtype !(tensor {dtype = U64} (range n))
+      sampleSize : Graph $ Tensor [] F64 = castDtype !(tensor {dtype = U64} (Scalar n))
+  samplesFlat <- reshape {sizesEqual = sym (product1 n)} {to = [n]} !(cdf samples)
   deviationFromCDF <- the (Graph $ Tensor [n] F64) $ indices / sampleSize - sort (<) 0 samplesFlat
   reduce @{Max} [0] !(abs deviationFromCDF)
 
@@ -113,7 +113,7 @@ uniformSeedIsUpdated = withTests 20 . property $ do
         key <- tensor key
         seed <- tensor seed
 
-        rng <- uniform key {shape=[10]} !(broadcast bound) !(broadcast bound')
+        rng <- uniform key {shape = [10]} !(broadcast bound) !(broadcast bound')
         (seed', sample) <- runStateT seed rng
         (seed'', sample') <- runStateT seed' rng
         pure [seed, seed', seed'', sample, sample']
@@ -136,7 +136,7 @@ uniformIsReproducible = withTests 20 . property $ do
         key <- tensor key
         seed <- tensor seed
 
-        rng <- uniform {shape=[10]} key !(broadcast bound) !(broadcast bound')
+        rng <- uniform {shape = [10]} key !(broadcast bound) !(broadcast bound')
         sample <- evalStateT seed rng
         sample' <- evalStateT seed rng
         pure [sample, sample']
@@ -171,7 +171,7 @@ normalSeedIsUpdated = withTests 20 . property $ do
   let [seed, seed', seed'', sample, sample'] = unsafeEval $ do
         key <- tensor key
         seed <- tensor seed
-        let rng = normal key {shape=[10]}
+        let rng = normal key {shape = [10]}
         (seed', sample) <- runStateT seed rng
         (seed'', sample') <- runStateT seed' rng
         pure [seed, seed', seed'', sample, sample']
@@ -190,7 +190,7 @@ normalIsReproducible = withTests 20 . property $ do
         key <- tensor key
         seed <- tensor seed
 
-        let rng = normal {shape=[10]} key
+        let rng = normal {shape = [10]} key
         sample <- evalStateT seed rng
         sample' <- evalStateT seed rng
         pure [sample, sample']

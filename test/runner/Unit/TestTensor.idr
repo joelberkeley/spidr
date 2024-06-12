@@ -40,19 +40,19 @@ tensorThenEval @{device} = withTests 20 . property $ do
   shape <- forAll shapes
 
   x <- forAll (literal shape doubles)
-  x ==~ unsafePerformIO (eval device (tensor {dtype=F64} x))
+  x ==~ unsafePerformIO (eval device (tensor {dtype = F64} x))
 
   x <- forAll (literal shape int32s)
-  x === unsafePerformIO (eval device (tensor {dtype=S32} x))
+  x === unsafePerformIO (eval device (tensor {dtype = S32} x))
 
   x <- forAll (literal shape nats)
-  x === unsafePerformIO (eval device (tensor {dtype=U32} x))
+  x === unsafePerformIO (eval device (tensor {dtype = U32} x))
 
   x <- forAll (literal shape nats)
-  x === unsafePerformIO (eval device (tensor {dtype=U64} x))
+  x === unsafePerformIO (eval device (tensor {dtype = U64} x))
 
   x <- forAll (literal shape bool)
-  x === unsafePerformIO (eval device (tensor {dtype=PRED} x))
+  x === unsafePerformIO (eval device (tensor {dtype = PRED} x))
 
 partial
 evalTuple : Device => Property
@@ -160,8 +160,8 @@ boundedNonFinite = fixedProperty $ do
 
   Types.min @{NonFinite} ===# tensor (-inf)
   Types.max @{NonFinite} ===# tensor inf
-  unsafeEval {dtype=F64} (Types.min @{NonFinite}) === -inf
-  unsafeEval {dtype=F64} (Types.max @{NonFinite}) === inf
+  unsafeEval {dtype = F64} (Types.min @{NonFinite}) === -inf
+  unsafeEval {dtype = F64} (Types.max @{NonFinite}) === inf
 
 partial
 iota : Device => Property
@@ -229,7 +229,7 @@ show = fixedProperty $ do
       constant, shape=[], metadata={:0}
     """
 
-  let x = tensor {dtype=F64} [1.3, 2.0, -0.4]
+  let x = tensor {dtype = F64} [1.3, 2.0, -0.4]
   show x === "constant, shape=[3], metadata={:0}"
 
 partial
@@ -238,29 +238,29 @@ cast = property $ do
   shape <- forAll shapes
 
   lit <- forAll (literal shape nats)
-  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype=U32} lit))
-  x ===# tensor (map (cast {to=Double}) lit)
+  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype = U32} lit))
+  x ===# tensor (map (cast {to = Double}) lit)
 
   lit <- forAll (literal shape nats)
-  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype=U64} lit))
-  x ===# tensor (map (cast {to=Double}) lit)
+  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype = U64} lit))
+  x ===# tensor (map (cast {to = Double}) lit)
 
   lit <- forAll (literal shape int32s)
-  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype=S32} lit))
-  x ===# tensor (map (cast {to=Double}) lit)
+  let x : Graph $ Tensor shape F64 = (do castDtype !(tensor {dtype = S32} lit))
+  x ===# tensor (map (cast {to = Double}) lit)
 
 partial
 identity : Device => Property
 identity = fixedProperty $ do
-  identity ===# tensor {dtype=S32} []
-  identity ===# tensor {dtype=S32} [[1]]
-  identity ===# tensor {dtype=S32} [[1, 0], [0, 1]]
-  identity ===# tensor {dtype=S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+  identity ===# tensor {dtype = S32} []
+  identity ===# tensor {dtype = S32} [[1]]
+  identity ===# tensor {dtype = S32} [[1, 0], [0, 1]]
+  identity ===# tensor {dtype = S32} [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
-  identity ===# tensor {dtype=F64} []
-  identity ===# tensor {dtype=F64} [[1.0]]
-  identity ===# tensor {dtype=F64} [[1.0, 0.0], [0.0, 1.0]]
-  identity ===# tensor {dtype=F64} [
+  identity ===# tensor {dtype = F64} []
+  identity ===# tensor {dtype = F64} [[1.0]]
+  identity ===# tensor {dtype = F64} [[1.0, 0.0], [0.0, 1.0]]
+  identity ===# tensor {dtype = F64} [
       [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]
     ]
 
@@ -268,20 +268,20 @@ namespace Vector
   export partial
   (@@) : Device => Property
   (@@) = fixedProperty $ do
-    let l = tensor {dtype=S32} [-2, 0, 1]
-        r = tensor {dtype=S32} [3, 1, 2]
+    let l = tensor {dtype = S32} [-2, 0, 1]
+        r = tensor {dtype = S32} [3, 1, 2]
     l @@ r ===# -4
 
 namespace Matrix
   export partial
   (@@) : Device => Property
   (@@) = fixedProperty $ do
-    let l = tensor {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
-        r = tensor {dtype=S32} [3, 3, -1]
+    let l = tensor {dtype = S32} [[-2, 0, 1], [1, 3, 4]]
+        r = tensor {dtype = S32} [3, 3, -1]
     l @@ r ===# tensor [-7, 8]
 
-    let l = tensor {dtype=S32} [[-2, 0, 1], [1, 3, 4]]
-        r = tensor {dtype=S32} [[3, -1], [3, 2], [-1, -4]]
+    let l = tensor {dtype = S32} [[-2, 0, 1], [1, 3, 4]]
+        r = tensor {dtype = S32} [[3, -1], [3, 2], [-1, -4]]
     l @@ r ===# tensor [[ -7,  -2], [  8, -11]]
 
 partial
@@ -360,13 +360,13 @@ argmax = property $ do
 partial
 select : Device => Property
 select = fixedProperty $ do
-  let onTrue = tensor {dtype=S32} 1
+  let onTrue = tensor {dtype = S32} 1
       onFalse = tensor 0
   (do select !(tensor True) !onTrue !onFalse) ===# onTrue
   (do select !(tensor False) !onTrue !onFalse) ===# onFalse
 
   let pred = tensor [[False, True, True], [True, False, False]]
-      onTrue = tensor {dtype=S32} [[0, 1, 2], [3, 4, 5]]
+      onTrue = tensor {dtype = S32} [[0, 1, 2], [3, 4, 5]]
       onFalse = tensor [[6, 7, 8], [9, 10, 11]]
       expected = tensor [[6, 1, 2], [3, 10, 11]]
   (do select !pred !onTrue !onFalse) ===# expected
@@ -443,7 +443,7 @@ triangularSolveIgnoresOppositeElems = fixedProperty $ do
 partial
 trace : Device => Property
 trace = fixedProperty $ do
-  let x = tensor {dtype=S32} [[-1, 5], [1, 4]]
+  let x = tensor {dtype = S32} [[-1, 5], [1, 4]]
   (do trace !x) ===# 3
 
 export partial

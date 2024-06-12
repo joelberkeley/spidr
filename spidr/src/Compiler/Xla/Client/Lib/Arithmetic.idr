@@ -26,7 +26,7 @@ prim__argMax : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 export
 argMax : (HasIO io, Primitive outputType) => XlaOp -> Nat -> io XlaOp
 argMax (MkXlaOp input) axis = do
-  opPtr <- primIO $ prim__argMax input (xlaIdentifier {dtype=outputType}) (cast axis)
+  opPtr <- primIO $ prim__argMax input (xlaIdentifier {dtype = outputType}) (cast axis)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
@@ -36,6 +36,6 @@ prim__argMin : GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 export
 argMin : (HasIO io, Primitive outputType) => XlaOp -> Nat -> io XlaOp
 argMin (MkXlaOp input) axis = do
-  opPtr <- primIO $ prim__argMin input (xlaIdentifier {dtype=outputType}) (cast axis)
+  opPtr <- primIO $ prim__argMin input (xlaIdentifier {dtype = outputType}) (cast axis)
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
