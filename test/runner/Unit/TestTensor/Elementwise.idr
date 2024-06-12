@@ -309,8 +309,8 @@ atanh x = log ((1 + x) / (1 - x)) / 2
 export partial
 all : Device => List (PropertyName, Property)
 all = [
-      ("negate S32", S32.testElementwiseUnary negate (Tensor.negate))
-    , ("negate F64", F64.testElementwiseUnary negate (Tensor.negate))
+      ("negate S32", S32.testElementwiseUnary negate negate)
+    , ("negate F64", F64.testElementwiseUnary negate negate)
     , ("recip", F64.testElementwiseUnary recip recip)
     , ("abs S32", S32.testElementwiseUnary abs abs)
     , ("abs F64", F64.testElementwiseUnary abs abs)
