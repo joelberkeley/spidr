@@ -33,7 +33,7 @@ namespace Vect
   export
   enumerate : Property
   enumerate = fixedProperty $ do
-    Vect.enumerate {a=()} [] === []
+    Vect.enumerate {a = ()} [] === []
     Vect.enumerate [5] === [(0, 5)]
     Vect.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
@@ -48,7 +48,7 @@ namespace List
   export
   enumerate : Property
   enumerate = fixedProperty $ do
-    List.enumerate {a=()} [] === []
+    List.enumerate {a = ()} [] === []
     List.enumerate [5] === [(0, 5)]
     List.enumerate [5, 7, 9] === [(0, 5), (1, 7), (2, 9)]
 
@@ -141,7 +141,7 @@ namespace List
   repeatedDispersedNotLT (SCons y yltx (SCons x xlty SOne)) = ltNotReflexive x y xlty yltx
 
   increasingLT : (x : Nat) -> Sorted LT [x, S x, S (S x)]
-  increasingLT x = SCons x (reflexive {ty=Nat}) (SCons (S x) (reflexive {ty=Nat}) SOne)
+  increasingLT x = SCons x (reflexive {ty = Nat}) (SCons (S x) (reflexive {ty = Nat}) SOne)
 
   succNotLT : (x : Nat) -> LT (S x) x -> Void
   succNotLT 0 LTEZero impossible

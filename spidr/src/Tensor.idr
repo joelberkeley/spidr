@@ -196,15 +196,15 @@ export
   min = addTensor $ MinFiniteValue {dtype}
   max = addTensor $ MaxFiniteValue {dtype}
 
-||| Cast the element type. For example, `castDtype (tensor {dtype=S32} [1, -2])` is
-||| `tensor {dtype=F64} [1.0, -2.0]`.
+||| Cast the element type. For example, `castDtype (tensor {dtype = S32} [1, -2])` is
+||| `tensor {dtype = F64} [1.0, -2.0]`.
 export
 castDtype : Primitive.Integral a => Tensor shape a -> Graph $ Tensor shape F64
 castDtype $ MkTensor x = addTensor $ ConvertElementType {dtype = F64} x
 
 ----------------------------- structural operations ----------------------------
 
-||| Reshape a `Tensor`. For example, `reshape {to=[2, 1]} (tensor [3, 4])` is
+||| Reshape a `Tensor`. For example, `reshape {to = [2, 1]} (tensor [3, 4])` is
 ||| `tensor [[3], [4]]`. The output can have a different rank to the input.
 export
 reshape :
@@ -317,7 +317,7 @@ public export
 ||| Slice across all indices along an axis. See `slice` for details.
 public export
 all : {d : _} -> SliceOrIndex d
-all = Slice 0 @{%search} @{reflexive {ty=Nat}} d
+all = Slice 0 @{%search} @{reflexive {ty = Nat}} d
 
 ||| A `MultiSlice shape` is a valid multi-dimensionsal slice into a tensor with shape `shape`.
 ||| See `slice` for details.
@@ -332,10 +332,10 @@ namespace MultiSlice
   public export
   slice : {shape : _} -> MultiSlice shape -> Shape
   slice {shape} [] = shape
-  slice {shape=(_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
-  slice {shape=(_ :: _)} (Index _ :: xs) = slice xs
-  slice {shape=(_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
-  slice {shape=(_ :: _)} (DynamicIndex _ :: xs) = slice xs
+  slice {shape = (_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
+  slice {shape = (_ :: _)} (Index _ :: xs) = slice xs
+  slice {shape = (_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
+  slice {shape = (_ :: _)} (DynamicIndex _ :: xs) = slice xs
 
 ||| Slice or index `Tensor` axes. Each axis can be sliced or indexed, and this can be done with
 ||| either static (`Nat`) or dynamic (scalar `U64`) indices.
@@ -453,7 +453,7 @@ slice at $ MkTensor x = do
       stop f {d} _ = f d
 
       size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      size _ (Slice {size=size'} _ _) = size'
+      size _ (Slice {size = size'} _ _) = size'
       size _ (Index _) = 1
       size _ (DynamicSlice _ size') = size'
       size _ (DynamicIndex _) = 1
@@ -694,7 +694,7 @@ broadcast $ MkTensor {shape = _} x = addTensor $ Broadcast {dtype} from to x
 ||| ```
 export
 fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Graph $ Tensor shape dtype
-fill x = broadcast {shapesOK=scalarToAnyOk shape} !(tensor (Scalar x))
+fill x = broadcast {shapesOK = scalarToAnyOk shape} !(tensor (Scalar x))
 
 ||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
@@ -1189,8 +1189,8 @@ namespace Scalarwise
         Graph (Tensor (d :: ds) dtype) ->
         Graph (Tensor (d :: ds) dtype)
   l * r = do
-    MkTensor {shape=_ :: _} _ <- r
-    broadcast {shapesOK=scalarToAnyOk (d :: ds)} !l * r
+    MkTensor {shape = _ :: _} _ <- r
+    broadcast {shapesOK = scalarToAnyOk (d :: ds)} !l * r
 
 namespace Semigroup
   export
@@ -1227,7 +1227,7 @@ namespace Scalarwise
         Graph (Tensor (d :: ds) dtype)
   l / r = do
     MkTensor {shape = _ :: _} _ <- l
-    l / broadcast {shapesOK=scalarToAnyOk (d :: ds)} !r
+    l / broadcast {shapesOK = scalarToAnyOk (d :: ds)} !r
 
 ||| Element-wise division of natural numbers. For example,
 ||| `div !(tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [4, 2]`.
@@ -1449,7 +1449,7 @@ export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmin x = do
   MkTensor x <- highlightNan True x
-  addTensor $ Argmin {out=U64} 0 x
+  addTensor $ Argmin {out = U64} 0 x
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax !(tensor [-1, 3, -2, -2, 3])` is `tensor 1`. If the vector contains NaN values,
@@ -1458,7 +1458,7 @@ export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmax x = do
   MkTensor x <- highlightNan False x
-  addTensor $ Argmax {out=U64} 0 x
+  addTensor $ Argmax {out = U64} 0 x
 
 ---------------------------- other ----------------------------------
 
@@ -1525,7 +1525,7 @@ namespace Vector
   export
   (\|) : Graph (Tensor [m, m] F64) -> Graph (Tensor [m] F64) -> Graph (Tensor [m] F64)
   a \| b = do
-    MkTensor {shape=[_]} i <- b
+    MkTensor {shape = [_]} i <- b
     squeeze !(a \| expand 1 (MkTensor {shape = [m]} i))
 
 ||| Sum the elements along the diagonal of the input. For example,
@@ -1536,7 +1536,7 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         Tensor [S n, S n] dtype ->
         Graph (Tensor [] dtype)
 trace x with (x)
-  _ | MkTensor {shape=[_, _]} _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
+  _ | MkTensor {shape = [_, _]} _ = reduce @{Sum} [0, 1] !(Tensor.(*) (pure x) identity)
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
