@@ -325,7 +325,7 @@ public export
 all : {d : _} -> SliceOrIndex d
 all = Slice 0 @{%search} @{reflexive {ty=Nat}} d
 
-||| A `MultiSlice shape` is a valid multi-dimensionsal slice into a tensor with shape `shape`.
+||| A `MultiSlice shape` is a valid multi-dimensional slice into a tensor with shape `shape`.
 ||| See `slice` for details.
 public export
 data MultiSlice : Shape -> Type where
@@ -404,7 +404,7 @@ namespace MultiSlice
 ||| **Mixed static, dynamic, slicing and indexing**
 |||
 ||| Each axis can only be sliced or indexed, and must use only static or dynamic indices. However,
-||| across axes, we can mix these four arbitrarily. For example, with `slice [2.to 4, at 1] !x` to
+||| across axes, we can mix these four arbitrarily. For example, with `slice [2.to 4, at 1] x` to
 ||| get
 ||| ```
 ||| x : Tensor [2] S32
@@ -1380,7 +1380,7 @@ highlightNan minimize x with (x)
       pure $ select (if minimize then x == x else x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
-||| `argmin !(tensor [-1, 3, -2, -2, 3])` is `tensor 2`. If the vector contains NaN values,
+||| `argmin (tensor [-1, 3, -2, -2, 3])` produces `tensor 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
@@ -1389,7 +1389,7 @@ argmin x = do
   pure $ MkTensor $ Argmin {out = U64} 0 x
 
 ||| The first index of the maximum value in a vector. For example,
-||| `argmax !(tensor [-1, 3, -2, -2, 3])` is `tensor 1`. If the vector contains NaN values,
+||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
 export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
@@ -1478,7 +1478,7 @@ inf = fromDouble (1.0 / 0.0)
 ||| between `bound` and `bound'`.
 |||
 ||| `bound` and `bound'` need not be ordered, and samples will be generated, elementwise, in
-||| [min !bound !bound', max !bound !bound'). The exception is where the bounds are equal, in which
+||| [min bound bound', max bound bound'). The exception is where the bounds are equal, in which
 ||| case: if the bounds are finite, samples are generated at the common bound, else samples are NaN.
 |||
 ||| The generated samples are a deterministic function of the input key and state, but may vary
@@ -1488,9 +1488,9 @@ inf = fromDouble (1.0 / 0.0)
 ||| ```
 ||| x : Graph $ Tensor [3] F64
 ||| x = do key <- tensor (Scalar 2)
-|||        rng <- uniform key !(fill 0.0) !(fill 1.0)
+|||        rng <- uniform key (fill 0.0) (fill 1.0)
 |||        initialState <- tensor [Scalar 0]
-|||        evalStateT initialState (do lift $ pure !rng * pure !rng)
+|||        evalStateT initialState [| rng * rng |]
 ||| ```
 |||
 ||| @key Determines the stream of generated samples.
@@ -1531,7 +1531,7 @@ uniform (MkTensor key) bound bound' = do
 ||| x = do key <- tensor (Scalar 2)
 |||        let rng = normal key
 |||        initialState <- tensor [Scalar 0]
-|||        evalStateT initialState (do lift $ pure !rng * pure !rng)
+|||        evalStateT initialState [| rng * rng |]
 ||| ```
 |||
 ||| @key Determines the stream of generated samples.
