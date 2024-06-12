@@ -18,12 +18,16 @@ limitations under the License.
 ## Efficiently reusing tensors with `share`
 
 Tensor calculations are not automatically reused in spidr. For example, in
+<!-- idris
+import Literal
+import Tensor
+-->
 ```idris
 y : Tensor [] S32
 y = let x = 1 + 2 in x + x
 ```
 spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations like this one, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the function
-```idris
+```
 share : Tensor shape dtype -> Graph $ Tensor shape dtype
 ```
 which binds an expression to a name in the tensor graph. You can efficiently reuse a tensor created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
