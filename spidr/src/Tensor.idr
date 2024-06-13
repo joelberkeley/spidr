@@ -47,9 +47,7 @@ XlaShape = Xla.Shape
 
 ----------------------------- core definitions ----------------------------
 
-||| A symbolic scalar or array. Construct a `Tensor` with the function `tensor`.
-|||
-||| This is a node in the computational graph.
+||| A scalar or array. Construct a `Tensor` with the function `tensor`.
 |||
 ||| @shape The `Tensor` shape.
 ||| @dtype The element type.
@@ -122,84 +120,86 @@ partial
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (idris_crash . show) pure
 
-||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
-||| computational graph.
-|||
-||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
-||| different tensors, even if they are in the same computation, will be treated independently.
-||| To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
-export partial
-eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-eval device (MkGraph x) =
-  let (env, MkTensor root) = runState empty x
-   in try $ do
-        shape <- mkShape shape {dtype}
-        [lit] <- execute device (MkFn [] root env) [shape]
-        read {dtype} [] lit
-
-namespace Bar
+namespace Graph
+  ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
+  ||| computational graph.
+  |||
+  ||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
+  ||| different tensors, even if they are in the same computation, will be treated independently.
+  ||| To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
   export partial
-  eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
-  eval device x = eval device (pure x)
+  eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
+  eval device (MkGraph x) =
+    let (env, MkTensor root) = runState empty x
+     in try $ do
+          shape <- mkShape shape {dtype}
+          [lit] <- execute device (MkFn [] root env) [shape]
+          read {dtype} [] lit
+
+||| A convenience wrapper for `Graph.eval`, for use with a bare `Tensor`.
+export partial
+eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
+eval device x = eval device (pure x)
 
 namespace TensorList
-  ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
-  ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
-  public export
-  data TensorList : List Shape -> List Type -> Type where
-    Nil : TensorList [] []
-    (::) : PrimitiveRW dtype ty =>
-           Tensor shape dtype ->
-           TensorList shapes tys ->
-           TensorList (shape :: shapes) (ty :: tys)
+  namespace Graph
+    ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
+    ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
+    public export
+    data TensorList : List Shape -> List Type -> Type where
+      Nil : TensorList [] []
+      (::) : PrimitiveRW dtype ty =>
+             Tensor shape dtype ->
+             TensorList shapes tys ->
+             TensorList (shape :: shapes) (ty :: tys)
 
-  ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
-  ||| shapes and element types. For example,
-  ||| ```
-  ||| main : Device -> IO ()
-  ||| main device = do [x, y] <- eval device $ do x <- tensor {dtype = F64} [1.2, 3.4]
-  |||                                             y <- reduce @{Sum} [0] x
-  |||                                             pure [x, y]
-  |||                  printLn x
-  |||                  printLn y
-  ||| ```
-  ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
-  ||| compiles the graph just once.
-  export partial
-  eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
-  eval device (MkGraph xs) =
-    let (env, xs) = runState empty xs
-        root = Tuple $ nodes xs
-     in try $ do
-          xlaShapes <- buildShapes xs
-          let (outputs ** eq) = lengthC xs
-          lits <- execute device (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
-          readAll xs $ rewrite sym eq in lits
+    ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
+    ||| shapes and element types. For example,
+    ||| ```
+    ||| main : Device -> IO ()
+    ||| main device = do [x, y] <- eval device $ do x <- tensor {dtype = F64} [1.2, 3.4]
+    |||                                             y <- reduce @{Sum} [0] x
+    |||                                             pure [x, y]
+    |||                  printLn x
+    |||                  printLn y
+    ||| ```
+    ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
+    ||| compiles the graph just once.
+    export partial
+    eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+    eval device (MkGraph xs) =
+      let (env, xs) = runState empty xs
+          root = Tuple $ nodes xs
+       in try $ do
+            xlaShapes <- buildShapes xs
+            let (outputs ** eq) = lengthC xs
+            lits <- execute device (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
+            readAll xs $ rewrite sym eq in lits
 
-    where
+      where
 
-    lengthC : TensorList s t -> (n ** n === length s)
-    lengthC [] = (0 ** Refl)
-    lengthC (_ :: xs) = let (n ** eq) = lengthC xs in (S n ** cong S eq)
+      lengthC : TensorList s t -> (n ** n === length s)
+      lengthC [] = (0 ** Refl)
+      lengthC (_ :: xs) = let (n ** eq) = lengthC xs in (S n ** cong S eq)
 
-    buildShapes : HasIO io => TensorList s t -> io $ Vect (length s) XlaShape
-    buildShapes [] = pure []
-    buildShapes (MkTensor {shape, dtype} _ :: ts) = [| mkShape shape {dtype} :: buildShapes ts |]
+      buildShapes : HasIO io => TensorList s t -> io $ Vect (length s) XlaShape
+      buildShapes [] = pure []
+      buildShapes (MkTensor {shape, dtype} _ :: ts) = [| mkShape shape {dtype} :: buildShapes ts |]
 
-    nodes : TensorList s t -> List Expr
-    nodes [] = []
-    nodes (MkTensor x :: xs) = x :: nodes xs
+      nodes : TensorList s t -> List Expr
+      nodes [] = []
+      nodes (MkTensor x :: xs) = x :: nodes xs
 
-    readAll : HasIO io => TensorList s t -> Vect (length s) Literal -> io $ All2 Literal s t
-    readAll [] _ = pure []
-    readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
+      readAll : HasIO io => TensorList s t -> Vect (length s) Literal -> io $ All2 Literal s t
+      readAll [] _ = pure []
+      readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
-namespace Foo
+  ||| A convenience wrapper for `TensorList.Graph.eval`, for use with a bare `TensorList`.
   export partial
   eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
   eval device xs = eval device (pure xs)
 
-||| A string representation of a `Tensor` in a `Graph`, detailing all operations.
+||| A string representation of a tensor graph, detailing all operations.
 |||
 ||| Useful for debugging.
 export partial

@@ -28,21 +28,21 @@ export
 isNan : Double -> Bool
 isNan x = x /= x
 
-export partial
-unsafeEval : Device => PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
-unsafeEval @{device} = unsafePerformIO . eval device
-
-namespace Foo
+namespace Graph
   export partial
-  unsafeEval : Device => PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
-  unsafeEval @{device} x = unsafePerformIO $ eval device (pure x)
-
-namespace TensorList
-  export partial
-  unsafeEval : Device => Graph (TensorList shapes tys) -> All2 Literal shapes tys
+  unsafeEval : Device => PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> Literal shape ty
   unsafeEval @{device} = unsafePerformIO . eval device
 
-namespace Bar
+export partial
+unsafeEval : Device => PrimitiveRW dtype ty => Tensor shape dtype -> Literal shape ty
+unsafeEval @{device} x = unsafePerformIO $ eval device (pure x)
+
+namespace TensorList
+  namespace Graph
+    export partial
+    unsafeEval : Device => Graph (TensorList shapes tys) -> All2 Literal shapes tys
+    unsafeEval @{device} = unsafePerformIO . eval device
+
   export partial
   unsafeEval : Device => TensorList shapes tys -> All2 Literal shapes tys
   unsafeEval @{device} xs = unsafePerformIO $ eval device (pure xs)
