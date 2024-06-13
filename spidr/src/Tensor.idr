@@ -74,7 +74,24 @@ export
 Monad Graph where
   (MkGraph x) >>= f = MkGraph $ x >>= (\a => let MkGraph b = f a in b)
 
-||| Mark a tensor so it can be efficiently reused.
+||| Mark a tensor to be efficiently reused. See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md)
+||| for details.
+|||
+||| For example, in
+||| ```
+||| expensive : Tensor [1000000] F64
+||| expensive = reduce @{Sum} [0] $ fill 1.0
+|||
+||| good : Graph $ Tensor [] F64
+||| good = do
+|||   x <- share expensive
+|||   pure $ x + x
+|||
+||| bad : Tensor [] F64
+||| bad = expensive + expensive
+||| ```
+||| `expensive` is calculated once in `good`, since `share` marks it for sharing, but twice in
+||| `bad`.
 export
 share : Tensor shape dtype -> Graph $ Tensor shape dtype
 share (MkTensor x) = MkGraph $ do
