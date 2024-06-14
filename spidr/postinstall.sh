@@ -9,5 +9,5 @@ if [ "$os" != "Linux" ]; then
   exit 0;
 fi;
 
-curl -sL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$xla_ext_version/libc_xla-linux.so" \
+curl -sL --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$xla_ext_version/libc_xla-linux.so" \
   -o libc_xla.so --create-dirs --output-dir "$(idris2 --libdir)/spidr-0.0.6/lib"

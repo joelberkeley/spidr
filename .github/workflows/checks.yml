@@ -23,7 +23,7 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -LO "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
         else
           # free up space not used if running in Docker, see
           # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
@@ -52,7 +52,7 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -LO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
         else
           rm -rf /opt/hostedtoolcache
           docker run \
@@ -79,7 +79,7 @@ jobs:
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             rev=$(cat XLA_VERSION)
-            curl -LO "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
           else
             rm -rf /opt/hostedtoolcache
             # note this implies specific versions of CUDA and cuDNN
