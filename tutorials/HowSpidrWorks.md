@@ -40,16 +40,16 @@ This works, but quickly becomes extremely wasteful, as we can see when we write 
 ```idris
 Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 ```
-Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. To solve this, we sometimes bind `Expr` nodes to names, and refer to these nodes by their name instead of their value. spidr could ask the user to provide these names, but opts to generate them itself. We could implement this in one of a number of ways. We'll show a few. In each of these cases, our names are `Nat`.
+Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. To solve this, we can label `Expr` nodes, and refer to these labelled nodes by label instead of value. spidr could ask the user to provide these labels, but opts to generate them itself. We could implement this in one of a number of ways. We'll show a few. In each of these cases, our labels are `Nat`.
 
-We'll need some way to refer to other nodes by name. We could replace constructor arguments with `Nat`, like
+We'll need some way to refer to other nodes by label. We could replace constructor arguments with `Nat`, like
 ```idris
 data Expr
   = Lit Int
   | Add Nat Nat
   | Mul Nat Nat
 ```
-but then there would no way to refer to nodes by value. As we'll see in [Nuisances in the tensor API](Nuisances.md), generating names has a performance and ergonomic cost, so we'd rather keep its use to a minimum. Instead, we can add a constructor `Var` to our `Expr` as
+but then there would no way to refer to nodes by value, and we explain in [Nuisances in the tensor API](Nuisances.md), labelling expressions has both a performance and ergonomic cost, so we want to keep it to a minimum. Instead, we can add a constructor `Var` to our `Expr` as
 ```idris
 data Expr
   = Lit Int
@@ -57,9 +57,7 @@ data Expr
   | Mul Expr Expr
   | Var Nat
 ```
-whose sole purpose is to refer to other nodes by name.
-
-Next, we'll need some way to name our nodes. The first option is to bake the names into `Expr` itself, with a `Let` constructor
+whose sole purpose is to reference other nodes by label. We'll also need a way to label nodes. The first option is to bake the labels into `Expr` itself, with a constructor `Let`:
 ```idris
 data Expr
   = Lit Int
@@ -68,18 +66,20 @@ data Expr
   | Var Nat
   | Let Nat Expr Expr
 ```
-Our earlier example becomes
+where earlier example becomes
 ```idris
 Let 0 (Add (Lit 7) (Lit 9))  -- name `7 + 9` as `0`
   $ Mul (Var 0) (Var 0)      -- each `Var 0` points to `7 + 9`
 ```
-Another option, a natural representation for a directed acyclic graph such as our computational graph, is a topologically-sorted list, `List Expr`. In this setup we implicitly use the list indices as our names, and for each tensor operation, append the appropriate `Expr` to this list. Our earlier example becomes
+Another option, a natural representation for a directed acyclic graph such as our computational graph, is to supplement an expression with a topologically-sorted list, `List Expr`, of all the nodes . In this setup, we implicitly use the list indices as our labels, and to label an `Expr`, we append it `Expr` to the list. Our earlier example becomes the expressions
 ```idris
-[ Add (Lit 7) (Lit 9)
-, Mul (Var 0) (Var 0)
-]
+Mul (Var 0) (Var 0)
 ```
-spidr uses this second approach of a list, or stack, of `Expr`s.
+along with the labelled nodes
+```idris
+[Add (Lit 7) (Lit 9)]
+```
+spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
 
 > *__DETAIL__* Due to limitations spidr's handling of scope, node names are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the name for the `Expr` node. The list is still topologically sorted.
 
