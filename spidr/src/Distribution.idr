@@ -71,6 +71,10 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
                Gaussian event (S d)
 
 export
+Shareable (Gaussian event dim) where
+  share (MkGaussian mean cov) = pure $ MkGaussian !(share mean) !(share cov)
+
+export
 Distribution Gaussian where
   mean (MkGaussian mean' _) = pure mean'
   cov (MkGaussian _ cov') = pure cov'

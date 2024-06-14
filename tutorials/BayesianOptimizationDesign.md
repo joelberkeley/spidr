@@ -63,17 +63,19 @@ import Optimize
 import Tensor
 -->
 ```idris
-historicalData : Graph $ Dataset [2] [1]
-historicalData = let features = share $ tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]]
-                     targets = share $ tensor [[1.2], [-0.5], [0.7]]
-                  in [| MkDataset features targets |]
+historicalData : Dataset [2] [1]
+historicalData = MkDataset {
+    features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9]],
+    targets = tensor [[1.2], [-0.5], [0.7]]
+  }
 ```
 and model that data
 ```idris
-model : Graph $ ConjugateGPRegression [2]
-model = let mkGP = \len => pure $ MkGP zero (matern52 1.0 (squeeze len))
-            model = MkConjugateGPR mkGP (tensor [0.5]) 0.2
-         in fit lbfgs !historicalData model
+model : Dataset [2] [1] -> Graph $ ConjugateGPRegression [2]
+model dataset =
+  let mkGP = \len => pure $ MkGP zero (matern52 1.0 $ squeeze len)
+      model = MkConjugateGPR mkGP (tensor [0.5]) 0.2
+   in fit lbfgs dataset model
 ```
 then optimize over the marginal mean
 ```idris
@@ -83,7 +85,8 @@ optimizer f =
    in broadcast <$> (gs $ f . broadcast)
 
 newPoint : Graph $ Tensor [1, 2] F64
-newPoint = optimizer $ \x => squeeze <$> mean {event = [1]} !(marginalise @{Latent} !model x)
+newPoint = optimizer $ \x => squeeze <$>
+  mean {event = [1]} !(marginalise @{Latent} !(model historicalData) x)
 ```
 
 This is a particularly simple example of the standard approach of defining an _acquisition function_ over the input space which quantifies how useful it would be to evaluate the objective at a set of points, then finding the points that optimize this acquisition function. We can visualize this:
@@ -125,7 +128,7 @@ modelMean model x = squeeze <$> mean {event = [1]} !(marginalise model x)
 newPoint' : Graph $ Tensor [1, 2] F64
 newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
                 point = map optimizer acquisition
-             in runReader !model point
+             in runReader !(model historicalData) point
 ```
 
 ## Combining empirical values with `Applicative`
@@ -179,15 +182,17 @@ The `Reader env a` type has proven flexible in allowing us to construct an acqui
 
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data:
 ```idris
-failureData : Graph $ Dataset [2] [1]
-failureData = let features = share $ tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]]
-                  targets = share $ tensor [[0.0], [0.0], [0.0], [1.0]]
-               in [| MkDataset features targets |]
+failureData : Dataset [2] [1]
+failureData = MkDataset {
+    features = tensor [[0.3, 0.4], [0.5, 0.2], [0.3, 0.9], [0.7, 0.1]],
+    targets = tensor [[0.0], [0.0], [0.0], [1.0]]
+  }
 
-failureModel : Graph $ ConjugateGPRegression [2]
-failureModel = let mkGP = \len => pure $ MkGP zero (rbf $ squeeze len)
-                   model = MkConjugateGPR mkGP (tensor [0.2]) 0.1
-                in fit lbfgs !failureData model
+failureModel : Dataset [2] [1] -> Graph $ ConjugateGPRegression [2]
+failureModel dataset
+  = let mkGP = \len => pure $ MkGP zero (rbf $ squeeze len)
+        model = MkConjugateGPR mkGP (tensor [0.2]) 0.1
+     in fit lbfgs dataset model
 ```
 We'll gather all the data and models in a `record`:
 ```idris
@@ -199,11 +204,13 @@ record Labelled o f where
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to extract the respective data and model. Putting it all together, here's our empirical point:
 ```idris
 newPoint'' : Graph $ Tensor [1, 2] F64
-newPoint'' = let eci = objective >$< expectedConstrainedImprovement @{Latent} 0.5
-                 pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
-                 acquisition = map optimizer (eci <*> pof)
-                 dataAndModel = Label (MkDataModel !model !historicalData) (MkDataModel !failureModel !failureData)
-              in runReader dataAndModel acquisition
+newPoint'' = do
+  let eci = objective >$< expectedConstrainedImprovement @{Latent} 0.5
+      pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
+      acquisition = map optimizer (eci <*> pof)
+  (hist, fail) <- share (historicalData, failureData)
+  let dataAndModel = Label (MkDataModel !(model hist) hist) (MkDataModel !(failureModel fail) fail)
+  runReader dataAndModel acquisition
 ```
 
 ## Iterative Bayesian optimization with infinite data types
@@ -223,7 +230,7 @@ We can repeat this process indefinitely to produce an infinite stream of values
 ```idris
 covering
 steps : Graph $ GraphStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
-steps = iterate step' (MkDataModel !model !historicalData)
+steps = share historicalData >>= \hist => iterate step' (MkDataModel !(model hist) hist)
 ```
 We can now iterate over this stream, choosing to stop according to a variety of stopping conditions, such as a number of repetitions
 ```idris

@@ -72,29 +72,37 @@ export
 Monad Graph where
   (MkGraph x) >>= f = MkGraph $ x >>= (\a => let MkGraph b = f a in b)
 
-||| Mark a tensor to be efficiently reused. See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md)
-||| for details.
-|||
-||| For example, in
-||| ```
-||| expensive : Tensor [1000000] F64
-||| expensive = reduce @{Sum} [0] $ fill 1.0
-|||
-||| good : Graph $ Tensor [] F64
-||| good = do
-|||   x <- share expensive
-|||   pure $ x + x
-|||
-||| bad : Tensor [] F64
-||| bad = expensive + expensive
-||| ```
-||| `expensive` is calculated once in `good`, since `share` marks it for sharing, but twice in
-||| `bad`.
+public export
+interface Shareable a where
+  ||| Mark an expression to be efficiently reused. See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md)
+  ||| for details.
+  |||
+  ||| For example, in
+  ||| ```
+  ||| expensive : Tensor [1000000] F64
+  ||| expensive = reduce @{Sum} [0] $ fill 1.0
+  |||
+  ||| good : Graph $ Tensor [] F64
+  ||| good = do
+  |||   x <- share expensive
+  |||   pure $ x + x
+  |||
+  ||| bad : Tensor [] F64
+  ||| bad = expensive + expensive
+  ||| ```
+  ||| `expensive` is calculated once in `good`, since `share` marks it for sharing, but twice in
+  ||| `bad`.
+  share : a -> Graph a
+
 export
-share : Tensor shape dtype -> Graph $ Tensor shape dtype
-share (MkTensor x) = MkGraph $ do
-  x <- addNode x
-  pure $ MkTensor x
+Shareable (Tensor shape dtype) where
+  share (MkTensor x) = MkGraph $ do
+    x <- addNode x
+    pure $ MkTensor x
+
+export
+(Shareable a, Shareable b) => Shareable (a, b) where
+  share (a, b) = [| (share a, share b) |]
 
 ||| Construct a `Tensor` from `Literal` data. For example
 ||| ```
@@ -1520,8 +1528,8 @@ uniform :
   (bound, bound' : Tensor shape F64) ->
   Graph $ Rand $ Tensor shape F64
 uniform (MkTensor key) bound bound' = do
-  minval@(MkTensor iMinval) <- share $ min bound bound'
-  maxval@(MkTensor iMaxval) <- share $ max bound bound'
+  minval@(MkTensor iMinval) <- share $ Tensor.min bound bound'
+  maxval@(MkTensor iMaxval) <- share $ Tensor.max bound bound'
   let inf = broadcast inf
   pure $ ST $ \(MkTensor state) => do
     MkTensor x <- share $ MkTensor {shape, dtype = F64}

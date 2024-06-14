@@ -61,10 +61,11 @@ expectedImprovement :
   (best : Tensor [] F64) ->
   Acquisition 1 features
 expectedImprovement model best at = do
-  marginal <- marginalise model at
+  best <- share best
+  marginal <- share =<< marginalise model at
   let best' = broadcast {to = [_, 1]} best
-  pdf <- pdf marginal best'
-  cdf <- cdf marginal best'
+  pdf <- share =<< pdf marginal best'
+  cdf <- share =<< cdf marginal best'
   let mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
       variance = squeeze !(variance {event = [1]} marginal)
   pure $ (best - mean) * cdf + variance * pdf
@@ -102,7 +103,7 @@ negativeLowerConfidenceBound :
   ProbabilisticModel features [1] Gaussian modelType =>
   Reader (DataModel modelType) $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
-  marginal <- marginalise env.model at
+  marginal <- share =<< marginalise env.model at
   pure $ squeeze $
     !(mean {event = [1]} marginal) - fromDouble beta * !(variance {event = [1]} marginal)
 
