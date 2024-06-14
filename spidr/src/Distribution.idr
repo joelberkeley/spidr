@@ -38,7 +38,7 @@ interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) whe
 ||| The variance of a single random variable.
 export
 variance : {event : _} -> Distribution dist => dist event 1 -> Graph $ Tensor (1 :: event) F64
-variance dist = squeeze {from = (1 :: 1 :: event)} =<< cov dist
+variance dist = squeeze {from = (1 :: 1 :: event)} <$> cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
@@ -71,6 +71,10 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
                Gaussian event (S d)
 
 export
+Shareable (Gaussian event dim) where
+  share (MkGaussian mean cov) = pure $ MkGaussian !(share mean) !(share cov)
+
+export
 Distribution Gaussian where
   mean (MkGaussian mean' _) = pure mean'
   cov (MkGaussian _ cov') = pure cov'
@@ -79,13 +83,13 @@ Distribution Gaussian where
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
-    cholCov <- cholesky =<< squeeze {to = [S d, S d]} cov
-    tri <- pure cholCov |\ squeeze !(pure x - pure mean)
-    let exponent = - pure tri @@ pure tri / 2.0
-        covSqrtDet = reduce @{Prod} [0] !(diag cholCov)
-        denominator = (fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
-    (exp !exponent) / denominator
+    cholCov <- share $ cholesky $ squeeze {to = [S d, S d]} cov
+    tri <- share $ cholCov |\ squeeze (x - mean)
+    let exponent = - tri @@ tri / 2.0
+        covSqrtDet = reduce @{Prod} [0] (diag cholCov)
+        denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
+    pure (exp exponent / denominator)
 
-  cdf (MkGaussian {d = S _} _ _) _ = ?multivariate_cdf
+  cdf (MkGaussian {d = S _} _ _) _ = ?multivariateGaussianCDF
   cdf (MkGaussian {d = 0} mean cov) x =
-    (1.0 + erf !(squeeze !(pure x - pure mean) / (sqrt !(squeeze cov * 2.0)))) / 2.0
+    pure $ (1.0 + erf (squeeze (x - mean) / (sqrt (squeeze cov * 2.0)))) / 2.0

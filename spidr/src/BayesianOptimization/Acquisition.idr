@@ -61,13 +61,14 @@ expectedImprovement :
   (best : Tensor [] F64) ->
   Acquisition 1 features
 expectedImprovement model best at = do
-  marginal <- marginalise model at
-  best' <- broadcast {to = [_, 1]} best
-  let pdf = pdf marginal best'
-      cdf = cdf marginal best'
-      mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
+  best <- share best
+  marginal <- share =<< marginalise model at
+  let best' = broadcast {to = [_, 1]} best
+  pdf <- share =<< pdf marginal best'
+  cdf <- share =<< cdf marginal best'
+  let mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
       variance = squeeze !(variance {event = [1]} marginal)
-  (pure best - mean) * cdf + variance * pdf
+  pure $ (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
@@ -76,7 +77,8 @@ expectedImprovementByModel :
   ProbabilisticModel features [1] Gaussian modelType =>
   Reader (DataModel modelType) $ Acquisition 1 features
 expectedImprovementByModel = asks $ \env, at => do
-  best <- squeeze =<< reduce @{Min} [0] !(mean {event = [1]} !(marginalise env.model env.dataset.features))
+  marginal <- marginalise env.model env.dataset.features
+  let best = squeeze $ reduce @{Min} [0] !(mean {event = [1]} marginal)
   expectedImprovement env.model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a
@@ -88,7 +90,7 @@ probabilityOfFeasibility :
   ProbabilisticModel features [1] dist modelType =>
   Reader (DataModel modelType) $ Acquisition 1 features
 probabilityOfFeasibility limit =
-  asks $ \env, at => do cdf !(marginalise env.model at) !(broadcast {to = [_, 1]} limit)
+  asks $ \env, at => do cdf !(marginalise env.model at) (broadcast {to = [_, 1]} limit)
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -101,8 +103,9 @@ negativeLowerConfidenceBound :
   ProbabilisticModel features [1] Gaussian modelType =>
   Reader (DataModel modelType) $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
-  marginal <- marginalise env.model at
-  squeeze =<< mean {event = [1]} marginal - fromDouble beta * variance {event = [1]} marginal
+  marginal <- share =<< marginalise env.model at
+  pure $ squeeze $
+    !(mean {event = [1]} marginal) - fromDouble beta * !(variance {event = [1]} marginal)
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The

@@ -60,5 +60,5 @@ step : (objective : forall n . Tensor (n :: features) F64 -> Graph $ Tensor (n :
        Graph $ DataModel {probabilisticModel} model
 step objective train tactic env = do
   newPoint <- runReader env tactic
-  dataset <- concat env.dataset $ MkDataset newPoint !(objective newPoint)
-  pure (MkDataModel !(train dataset env.model) dataset)
+  dataset <- share $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
+  pure $ MkDataModel !(train dataset env.model) dataset
