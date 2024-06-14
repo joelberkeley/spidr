@@ -70,11 +70,11 @@ compile xlaBuilder f = do
   root <- interpret xlaBuilder f
   build xlaBuilder root
 
-interpret xlaBuilder (MkFn params root env) = do
+interpret xlaBuilder (MkFn {arity} params root env) = do
   let (max, exprs) = toList env
-  runReaderT !(newArray $ cast $ max + length params) $ do
+  runReaderT !(newArray $ cast $ max + arity) $ do
     traverse_ interpretParameter (enumerate params)
-    traverse_ (\(i, expr) => do set (i + length params) !(interpretE expr)) exprs
+    traverse_ (\(i, expr) => do set (i + arity) !(interpretE expr)) exprs
     interpretE root
 
   where
@@ -105,7 +105,7 @@ interpret xlaBuilder (MkFn params root env) = do
 
   interpretE : Expr -> Builder XlaOp
   interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
-  interpretE (Var x) = get (x + length params)
+  interpretE (Var x) = get (x + arity)
   interpretE (Arg x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx

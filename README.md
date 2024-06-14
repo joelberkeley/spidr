@@ -2,7 +2,7 @@
 
 _Accelerated machine learning with dependent types_
 
-spidr is in early development. The linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
+spidr is a research project; expect reliability, but breaking changes. We are currently missing automatic differentiation and gradient-based optimizers.
 
 See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials/README.md) for extended discussions of spidr's architecture.
 
