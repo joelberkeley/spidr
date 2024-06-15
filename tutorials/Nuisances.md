@@ -31,7 +31,7 @@ spidr will interpret each `x` as a different expression, and create two copies o
 interface Shareable a where
   share : a -> Graph a
 ```
-`share` labels all tensor expressions in an `a`, in the tensor graph. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
+`share` labels all tensor expressions contained within the `a`. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
 y' : Graph $ Tensor [2] F64
 y' = do

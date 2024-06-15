@@ -25,7 +25,7 @@ spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a s
 
 > *__DETAIL__* StableHLO is implemented as an [MLIR](https://mlir.llvm.org/) dialect, and is based on another (deprecated) dialect MLIR-HLO. Such dialects are typically "lowered" down to another dialect compiled by the [LLVM](https://llvm.org/) compiler. However, not all compilers take this route for StableHLO. XLA, for example, converts StableHLO to HLO, its own internal graph representation, which is not an MLIR dialect.
 
-spidr represents each graph as a topologically-sorted stack of `Expr` values, each of which corresponds (almost) one-to-one with an XLA tensor operation. Most of these ops are also present in the StableHLO specification. spidr uses the XLA API to build an HLO program. The primary runtime work of spidr is three-fold: build the stack; interpret it as an HLO program; compile and execute the HLO. We'll take you through each of these steps in turn.
+spidr represents every computation as directed acyclic graph of `Expr` values, each of which corresponds (almost) one-to-one with an XLA tensor operation. Most of these ops are also present in the StableHLO specification. spidr uses the XLA API to build an HLO program. The primary runtime work of spidr is three-fold: build the graph of `Expr`s; interpret it as an HLO program; compile and execute the HLO. We'll take you through each of these steps in turn.
 
 ## Building the tensor graph in Idris
 
@@ -86,6 +86,8 @@ spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
 > *__DETAIL__* Due to limitations spidr's handling of scope, labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the `Expr` label. The list remains topologically sorted.
 
 In either of these approaches, we need to keep track of generated labels, so we don't reuse them (for the list, this means keeping track of the list). Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of labelling nodes in our computational graph. This explicit state introduces the tradeoff between performance and ergonomics we mentioned earlier.
+
+Finally, a `Tensor` is simply a container for an `Expr`, a runtime-available `Shape`, and an erased element type.
 
 Now we know how spidr constructs the graph, let's look at how it consumes it.
 
