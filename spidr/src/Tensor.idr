@@ -55,7 +55,7 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Expr -> {shape : _} -> Tensor shape dtype
 
-||| The effect of binding values to names in a computational graph.
+||| The effect of labelling nodes in a computational graph.
 export
 data Graph a = MkGraph (State Env a)
 
@@ -90,7 +90,7 @@ interface Shareable a where
   ||| `expensive` is calculated once in `good`, since `share` marks it for sharing, but twice in
   ||| `bad`.
   |||
-  ||| Types that implement this interface should `share` all of its components it deems worth
+  ||| Types that implement this interface should `share` constituent components it deems worth
   ||| sharing. For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
@@ -98,6 +98,7 @@ interface Shareable a where
 
 export
 Shareable (Tensor shape dtype) where
+  share x@(MkTensor (Var _)) = pure x
   share (MkTensor x) = MkGraph $ do
     x <- addNode x
     pure $ MkTensor x
@@ -1514,9 +1515,9 @@ inf = fromDouble (1.0 / 0.0)
 ||| Example usage, multiplying two uniform samples
 ||| ```
 ||| x : Graph $ Tensor [3] F64
-||| x = do key <- tensor (Scalar 2)
+||| x = do let key = tensor (Scalar 2)
+|||            initialState = tensor [Scalar 0]
 |||        rng <- uniform key (fill 0.0) (fill 1.0)
-|||        initialState <- tensor [Scalar 0]
 |||        evalStateT initialState [| rng * rng |]
 ||| ```
 |||
@@ -1555,10 +1556,10 @@ uniform (MkTensor key) bound bound' = do
 ||| Example usage, multiplying two normal samples
 ||| ```
 ||| x : Graph $ Tensor [3] F64
-||| x = do key <- tensor (Scalar 2)
-|||        let rng = normal key
-|||        initialState <- tensor [Scalar 0]
-|||        evalStateT initialState [| rng * rng |]
+||| x = let key = tensor (Scalar 2)
+|||         rng = normal key
+|||         initialState = tensor [Scalar 0]
+|||      in evalStateT initialState [| rng * rng |]
 ||| ```
 |||
 ||| @key Determines the stream of generated samples.

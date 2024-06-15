@@ -72,7 +72,7 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
 
 export
 Shareable (Gaussian event dim) where
-  share (MkGaussian mean cov) = pure $ MkGaussian !(share mean) !(share cov)
+  share (MkGaussian mean cov) = [| MkGaussian (share mean) (share cov) |]
 
 export
 Distribution Gaussian where
