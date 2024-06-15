@@ -74,13 +74,10 @@ Monad Graph where
 
 public export
 interface Shareable a where
-  ||| Mark an expression to be efficiently reused. See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md)
-  ||| for details.
-  |||
-  ||| For example, in
+  ||| Mark an expression to be efficiently reused. For example, in
   ||| ```
-  ||| expensive : Tensor [1000000] F64
-  ||| expensive = reduce @{Sum} [0] $ fill 1.0
+  ||| expensive : Tensor [] F64
+  ||| expensive = reduce @{Sum} [0] $ fill {shape = [9999999]} 1.0
   |||
   ||| good : Graph $ Tensor [] F64
   ||| good = do
@@ -92,6 +89,11 @@ interface Shareable a where
   ||| ```
   ||| `expensive` is calculated once in `good`, since `share` marks it for sharing, but twice in
   ||| `bad`.
+  |||
+  ||| Types that implement this interface should `share` all of its components it deems worth
+  ||| sharing. For example, see the implementation for tuples.
+  |||
+  ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
   share : a -> Graph a
 
 export
