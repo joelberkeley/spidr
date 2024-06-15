@@ -229,7 +229,19 @@ show = fixedProperty $ do
   let x : Graph _ = pure (tensor {dtype = F64} [1.3, 2.0, -0.4])
   show x === "constant, shape=[3], metadata={:0}"
 
-  -- add test cases for non-trivial graphs
+  let x : Graph (Tensor [] S32) = do
+        y <- share $ 1 + 2
+        pure (y + y)
+  show x ===
+    """
+    add, shape=[], metadata={:0}
+      add, shape=[], metadata={:0}
+        constant, shape=[], metadata={:0}
+        constant, shape=[], metadata={:0}
+      add, shape=[], metadata={:0}
+        constant, shape=[], metadata={:0}
+        constant, shape=[], metadata={:0}
+    """
 
 partial
 cast : Device => Property
