@@ -32,10 +32,10 @@ import Util
 %language ElabReflection
 
 public export
-data ShapeAndType : Type where
-  MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
+data Parameter : Type where
+  MkParameter : Shape -> (0 dtype : Type) -> Primitive dtype => Parameter
 
-%runElab derive "ShapeAndType" [Show]
+%runElab derive "Parameter" [Show]
 
 public export
 data Expr : Type where
@@ -69,7 +69,7 @@ data Fn : Nat -> Type where
   ||| @result The position of the function result in the graph.
   ||| @env The function graph. Includes only nodes in this scope, not outer or inner scope.
   MkFn : {arity : _} ->
-         (params : Vect arity (Nat, ShapeAndType)) ->
+         (params : Vect arity (Nat, Parameter)) ->
          (result : Nat) ->
          (env : Env) ->
          Fn arity
@@ -134,52 +134,63 @@ data Expr : Type where
 
 Show Expr
 
-export
-Show Env where
-  show e = assert_total $ show $ snd $ toList e
+showExpr : Nat -> Expr -> String
 
-Show (Fn arity) where
-  show (MkFn params result env) = "MkFn \{show params} \{show result} \{show env}"
+showEnv : Nat -> Env -> String
+showEnv indent (MkEnv max env) = joinBy "\n" $ assert_total $ map fmt (reverse env)
 
-export
-Show Expr where
-  show (FromLiteral {shape, dtype} x) = "FromLiteral \{show shape} \{show $ xlaIdentifier {dtype}}"
-  show (Arg k) = "Arg \{show k}"
-  show (Tuple ks) = "Tuple \{show ks}"
-  show (GetTupleElement k j) = "GetTupleElement \{show k} \{show j}"
-  show (MinValue {dtype}) = "MinValue {dtype = \{show $ xlaIdentifier {dtype}}}"
-  show (MaxValue {dtype}) = "MaxValue {dtype = \{show $ xlaIdentifier {dtype}}}"
-  show (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{show $ xlaIdentifier {dtype}}}"
-  show (MaxFiniteValue {dtype}) = "MaxFiniteValue {dtype = \{show $ xlaIdentifier {dtype}}}"
-  show (Iota ks k) = "Iota \{show ks} \{show k}"
-  show (ConvertElementType k) = "ConvertElementType \{show k}"
-  show (Reshape ks js k) = "Reshape \{show ks} \{show js} \{show k}"
-  show (Slice ks js is k) = "Slice \{show ks} \{show js} \{show is} \{show k}"
-  show (DynamicSlice ks js k) = "Slice \{show ks} \{show js} \{show k}"
-  show (Concat k j i) = "Concat \{show k} \{show j} \{show i}"
-  show (Diag k) = "Diag \{show k}"
-  show (Triangle lower k) = "Triangle {lower = \{show lower}} \{show k}"
-  show (Transpose ks k) = "Transpose \{show ks} \{show k}"
-  show (Identity k) = "Identity \{show k}"
-  show (Broadcast ks js k) = "Broadcast \{show ks} \{show js} \{show k}"
-  show (Map f args ks) = "Map \{show f} \{show args} \{show ks}"
-  show (Reduce x k ks j) = "Reduce \{show x} \{show k} \{show ks} \{show j}"
-  show (Sort x k y ks) = "Sort \{show x} \{show k} \{show y} \{show ks}"
-  show (Reverse ks k) = "Reverse \{show ks} \{show k}"
-  show (BinaryElementwise x k j) = "\{show x} \{show k} \{show j}"
-  show (UnaryElementwise x k) = "\{show x} \{show k}"
-  show (Argmin k j) = "Argmin \{show k} \{show j}"
-  show (Argmax k j) = "Argmax \{show k} \{show j}"
-  show (Select k j i) = "Select \{show k} \{show j} \{show i}"
-  show (Cond k x j y i) = "Cond \{show k} \{show x} \{show j} \{show y} \{show i}"
-  show (Dot k j) = "Dot \{show k} \{show j}"
-  show (DotGeneral lBatch lContract rBatch rContract k j) =
-    "DotGeneral \{show lBatch} \{show lContract} \{show rBatch} \{show rContract} \{show k} \{show j}"
-  show (Cholesky k) = "Cholesky \{show k}"
-  show (TriangularSolve k j x) = "TriangularSolve \{show k} \{show j} \{show x}"
-  show (UniformFloatingPoint k j i k1 ks) =
-    "UniformFloatingPoint \{show k} \{show j} \{show i} \{show k1} \{show ks}"
-  show (NormalFloatingPoint k j ks) = "NormalFloatingPoint \{show k} \{show j} \{show ks}"
+  where
+
+  fmt : (Nat, Expr) -> String
+  fmt (n, x) =
+    let sep = replicate (4 + length (show max) `minus` length (show n)) ' '
+     in "\{replicate indent ' '}\{show n}\{sep}\{showExpr indent x}"
+
+showFn : Nat -> Fn arity -> String
+showFn indent (MkFn params result env) =
+  "MkFn {parameters = \{show params}} {root = \{show result}} {env =\n\{showEnv (indent + 4) env}\n\{replicate (indent + 2) ' '}}"
+
+showExpr _      (FromLiteral {shape, dtype} x) = "FromLiteral \{show shape} \{show $ xlaIdentifier {dtype}}"
+showExpr _      (Arg k) = "Arg \{show k}"
+showExpr _      (Tuple ks) = "Tuple \{show ks}"
+showExpr _      (GetTupleElement k j) = "GetTupleElement \{show k} \{show j}"
+showExpr _      (MinValue {dtype}) = "MinValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+showExpr _      (MaxValue {dtype}) = "MaxValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+showExpr _      (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+showExpr _      (MaxFiniteValue {dtype}) = "MaxFiniteValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+showExpr _      (Iota ks k) = "Iota \{show ks} \{show k}"
+showExpr _      (ConvertElementType k) = "ConvertElementType \{show k}"
+showExpr _      (Reshape ks js k) = "Reshape \{show ks} \{show js} \{show k}"
+showExpr _      (Slice ks js is k) = "Slice \{show ks} \{show js} \{show is} \{show k}"
+showExpr _      (DynamicSlice ks js k) = "Slice \{show ks} \{show js} \{show k}"
+showExpr _      (Concat k j i) = "Concat \{show k} \{show j} \{show i}"
+showExpr _      (Diag k) = "Diag \{show k}"
+showExpr _      (Triangle lower k) = "Triangle {lower = \{show lower}} \{show k}"
+showExpr _      (Transpose ks k) = "Transpose \{show ks} \{show k}"
+showExpr _      (Identity k) = "Identity \{show k}"
+showExpr _      (Broadcast ks js k) = "Broadcast \{show ks} \{show js} \{show k}"
+showExpr indent (Map f args ks) = "Map {f = \{showFn indent f}} \{show args} \{show ks}"
+showExpr indent (Reduce op neutral axes x) =
+  "Reduce {op = \{showFn indent op}} {identity = \{show neutral}} {axes = \{show axes}} \{show x}"
+showExpr indent (Sort f k y ks) = "Sort \{showFn indent f} \{show k} \{show y} \{show ks}"
+showExpr _      (Reverse ks k) = "Reverse \{show ks} \{show k}"
+showExpr _      (BinaryElementwise x k j) = "\{show x} \{show k} \{show j}"
+showExpr _      (UnaryElementwise x k) = "\{show x} \{show k}"
+showExpr _      (Argmin k j) = "Argmin \{show k} \{show j}"
+showExpr _      (Argmax k j) = "Argmax \{show k} \{show j}"
+showExpr _      (Select k j i) = "Select \{show k} \{show j} \{show i}"
+showExpr indent (Cond p ft t ff f) =
+  "Cond \{show p} \{showFn indent ft} \{show t} \{showFn indent ff} \{show f}"
+showExpr _      (Dot k j) = "Dot \{show k} \{show j}"
+showExpr _      (DotGeneral lBatch lContract rBatch rContract k j) =
+  "DotGeneral \{show lBatch} \{show lContract} \{show rBatch} \{show rContract} \{show k} \{show j}"
+showExpr _      (Cholesky k) = "Cholesky \{show k}"
+showExpr _      (TriangularSolve k j x) = "TriangularSolve \{show k} \{show j} \{show x}"
+showExpr _      (UniformFloatingPoint k j i k1 ks) =
+  "UniformFloatingPoint \{show k} \{show j} \{show i} \{show k1} \{show ks}"
+showExpr _      (NormalFloatingPoint k j ks) = "NormalFloatingPoint \{show k} \{show j} \{show ks}"
+
+export Show (Fn arity) where show = showFn 0
 
 public export 0
 FnExpr : Nat -> Type
@@ -191,7 +202,7 @@ applyN f [] = f
 applyN f (x :: xs) = applyN (f x) xs
 
 export
-addFn : {arity : _} -> Vect arity ShapeAndType -> FnExpr arity -> State Env (Fn arity)
+addFn : {arity : _} -> Vect arity Parameter -> FnExpr arity -> State Env (Fn arity)
 addFn params f = do
   MkEnv next env <- get
   let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next []) $ do
@@ -202,7 +213,7 @@ addFn params f = do
   pure (MkFn params result subEnv)
 
   where
-  addArg : ShapeAndType -> State Env Nat
+  addArg : Parameter -> State Env Nat
   addArg st = do
     MkEnv next env <- get
     put (MkEnv (S next) ((next, Arg next) :: env))

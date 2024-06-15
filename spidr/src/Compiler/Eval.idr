@@ -98,8 +98,8 @@ interpret xlaBuilder (MkFn params root env) = do
                             in if idx >= max then OutOfBounds idx max else ValueNotFound idx
     pure xlaOp
 
-  interpretParameter : (Nat, Nat, ShapeAndType) -> Builder ()
-  interpretParameter (posInFnParams, posInGraph, MkShapeAndType shape dtype) = do
+  interpretParameter : (Nat, Nat, Parameter) -> Builder ()
+  interpretParameter (posInFnParams, posInGraph, MkParameter shape dtype) = do
     xlaShape <- mkShape {dtype} shape
     param <- parameter xlaBuilder posInFnParams xlaShape (show posInFnParams)
     set posInGraph param
