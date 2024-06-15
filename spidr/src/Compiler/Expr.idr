@@ -17,8 +17,11 @@ limitations under the License.
 module Compiler.Expr
 
 import Decidable.Equality
-
 import Control.Monad.State
+
+import Derive.Prelude
+import Language.Reflection
+
 import Compiler.LiteralRW
 import Compiler.Xla.XlaData
 import Literal
@@ -26,9 +29,13 @@ import Primitive
 import Types
 import Util
 
+%language ElabReflection
+
 public export
 data ShapeAndType : Type where
   MkShapeAndType : Shape -> (0 dtype : Type) -> Primitive dtype => ShapeAndType
+
+%runElab derive "ShapeAndType" [Show]
 
 public export
 data Expr : Type where
@@ -69,49 +76,17 @@ data Fn : Nat -> Type where
 
 public export
 data BinaryOp =
-    Eq
-  | Ne
-  | Add
-  | Sub
-  | Mul
-  | Div
-  | Rem
-  | Pow
-  | Lt
-  | Gt
-  | Le
-  | Ge
-  | And
-  | Or
-  | Min
-  | Max
+  Eq | Ne | Lt | Gt | Le | Ge | And | Or | Add | Sub | Mul | Div | Rem | Pow | Min | Max
+
+%runElab derive "BinaryOp" [Show]
 
 public export
 data UnaryOp =
     Not
-  | Neg
-  | Reciprocal
-  | Ceil
-  | Floor
-  | Abs
-  | Log
-  | Exp
-  | Logistic
-  | Erf
-  | Square
-  | Sqrt
-  | Sin
-  | Cos
-  | Tan
-  | Asin
-  | Acos
-  | Atan
-  | Sinh
-  | Cosh
-  | Tanh
-  | Asinh
-  | Acosh
-  | Atanh
+  | Neg | Reciprocal | Ceil | Floor | Abs | Log | Exp | Logistic | Erf | Square | Sqrt
+  | Sin | Cos | Tan | Asin | Acos | Atan | Sinh | Cosh | Tanh | Asinh | Acosh | Atanh
+
+%runElab derive "UnaryOp" [Show]
 
 public export
 data Expr : Type where
@@ -156,6 +131,55 @@ data Expr : Type where
   TriangularSolve : Nat -> Nat -> Bool -> Expr
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+
+Show Expr
+
+export
+Show Env where
+  show e = assert_total $ show $ snd $ toList e
+
+Show (Fn arity) where
+  show (MkFn params result env) = "MkFn \{show params} \{show result} \{show env}"
+
+export
+Show Expr where
+  show (FromLiteral {shape, dtype} x) = "FromLiteral \{show shape} \{show $ xlaIdentifier {dtype}}"
+  show (Arg k) = "Arg \{show k}"
+  show (Tuple ks) = "Tuple \{show ks}"
+  show (GetTupleElement k j) = "GetTupleElement \{show k} \{show j}"
+  show (MinValue {dtype}) = "MinValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+  show (MaxValue {dtype}) = "MaxValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+  show (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+  show (MaxFiniteValue {dtype}) = "MaxFiniteValue {dtype = \{show $ xlaIdentifier {dtype}}}"
+  show (Iota ks k) = "Iota \{show ks} \{show k}"
+  show (ConvertElementType k) = "ConvertElementType \{show k}"
+  show (Reshape ks js k) = "Reshape \{show ks} \{show js} \{show k}"
+  show (Slice ks js is k) = "Slice \{show ks} \{show js} \{show is} \{show k}"
+  show (DynamicSlice ks js k) = "Slice \{show ks} \{show js} \{show k}"
+  show (Concat k j i) = "Concat \{show k} \{show j} \{show i}"
+  show (Diag k) = "Diag \{show k}"
+  show (Triangle lower k) = "Triangle {lower = \{show lower}} \{show k}"
+  show (Transpose ks k) = "Transpose \{show ks} \{show k}"
+  show (Identity k) = "Identity \{show k}"
+  show (Broadcast ks js k) = "Broadcast \{show ks} \{show js} \{show k}"
+  show (Map f args ks) = "Map \{show f} \{show args} \{show ks}"
+  show (Reduce x k ks j) = "Reduce \{show x} \{show k} \{show ks} \{show j}"
+  show (Sort x k y ks) = "Sort \{show x} \{show k} \{show y} \{show ks}"
+  show (Reverse ks k) = "Reverse \{show ks} \{show k}"
+  show (BinaryElementwise x k j) = "\{show x} \{show k} \{show j}"
+  show (UnaryElementwise x k) = "\{show x} \{show k}"
+  show (Argmin k j) = "Argmin \{show k} \{show j}"
+  show (Argmax k j) = "Argmax \{show k} \{show j}"
+  show (Select k j i) = "Select \{show k} \{show j} \{show i}"
+  show (Cond k x j y i) = "Cond \{show k} \{show x} \{show j} \{show y} \{show i}"
+  show (Dot k j) = "Dot \{show k} \{show j}"
+  show (DotGeneral lBatch lContract rBatch rContract k j) =
+    "DotGeneral \{show lBatch} \{show lContract} \{show rBatch} \{show rContract} \{show k} \{show j}"
+  show (Cholesky k) = "Cholesky \{show k}"
+  show (TriangularSolve k j x) = "TriangularSolve \{show k} \{show j} \{show x}"
+  show (UniformFloatingPoint k j i k1 ks) =
+    "UniformFloatingPoint \{show k} \{show j} \{show i} \{show k1} \{show ks}"
+  show (NormalFloatingPoint k j ks) = "NormalFloatingPoint \{show k} \{show j} \{show ks}"
 
 public export 0
 FnExpr : Nat -> Type

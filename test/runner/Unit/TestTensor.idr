@@ -219,18 +219,21 @@ partial
 show : Device => Property
 show = fixedProperty $ do
   let x : Graph $ Tensor [] S32 = 1
-  show x === "constant, shape=[], metadata={:0}"
+  show @{Xla} x === "constant, shape=[], metadata={:0}"
+  show @{Idr} x === "Node 0 in [(0, FromLiteral [] 4)]"
 
   let x : Graph $ Tensor [] S32 = 1 + 2
-  show x ===
+  show @{Xla} x ===
     """
     add, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
       constant, shape=[], metadata={:0}
     """
+  show @{Idr} x === "Node 2 in [(0, FromLiteral [] 4), (1, FromLiteral [] 4), (2, Add 0 1)]"
 
   let x = tensor {dtype = F64} [1.3, 2.0, -0.4]
-  show x === "constant, shape=[3], metadata={:0}"
+  show @{Xla} x === "constant, shape=[3], metadata={:0}"
+  show @{Idr} x === "Node 0 in [(0, FromLiteral [3] 12)]"
 
 partial
 cast : Device => Property

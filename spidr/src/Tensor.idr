@@ -175,12 +175,18 @@ namespace TensorList
     readAll [] _ = pure []
     readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
-||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
-||| operations.
+||| A string representation of the computational graph, as represented in Idris. Useful for
+||| debugging.
 |||
-||| Useful for debugging.
+||| The string format and contents have no compatibility guarantees.
 export partial
-Show (Graph $ Tensor shape dtype) where
+[Idr] Show (Graph $ Tensor shape dtype) where
+  show $ MkGraph x = let (env, MkTensor root) = runState empty x
+                      in "Node \{show root} in \{show env}"
+
+||| A string representation of the computational graph, as represented in XLA. Useful for debugging.
+export partial
+[Xla] Show (Graph $ Tensor shape dtype) where
   show $ MkGraph x = let (env, MkTensor root) = runState empty x
                       in unsafePerformIO $ try $ toString (MkFn [] root env)
 
