@@ -42,14 +42,14 @@ Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 ```
 Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. To solve this, we can label `Expr` nodes, and refer to these labelled nodes by label instead of value. spidr could ask the user to provide these labels, but opts to generate them itself. We could implement this in one of a number of ways. We'll show a few. In each of these cases, our labels are `Nat`.
 
-We'll need some way to refer to other nodes by label. We could replace constructor arguments with `Nat`, like
+We'll start with how to refer to other nodes by label, and come back to how we'll actually label them shortly. We could replace constructor arguments with `Nat`, like
 ```idris
 data Expr
   = Lit Int
   | Add Nat Nat
   | Mul Nat Nat
 ```
-but then there would no way to refer to nodes by value, and we explain in [Nuisances in the tensor API](Nuisances.md), labelling expressions has both a performance and ergonomic cost, so we want to keep it to a minimum. Instead, we can add a constructor `Var` to our `Expr` as
+but then we'd _always_ need to refer to nodes by label, and as we explain in [Nuisances in the tensor API](Nuisances.md), labelling expressions introduces a tradeoff between performance and ergonomics. It would be better if we could either use nodes directly, _or_ by label. We can do this by adding a constructor `Var` to our `Expr`, as
 ```idris
 data Expr
   = Lit Int
@@ -57,7 +57,9 @@ data Expr
   | Mul Expr Expr
   | Var Nat
 ```
-whose sole purpose is to reference other nodes by label. We'll also need a way to label nodes. The first option is to bake the labels into `Expr` itself, with a constructor `Let`:
+The sole purpose of `Var` is to reference other nodes by label.
+
+Returning to how to label nodes, one option is to bake the labelling into `Expr` itself, via a new constructor `Let`:
 ```idris
 data Expr
   = Lit Int
@@ -66,30 +68,30 @@ data Expr
   | Var Nat
   | Let Nat Expr Expr
 ```
-where earlier example becomes
+Here, our earlier example becomes
 ```idris
 Let 0 (Add (Lit 7) (Lit 9))  -- name `7 + 9` as `0`
   $ Mul (Var 0) (Var 0)      -- each `Var 0` points to `7 + 9`
 ```
-Another option, a natural representation for a directed acyclic graph such as our computational graph, is to supplement an expression with a topologically-sorted list, `List Expr`, of all the nodes . In this setup, we implicitly use the list indices as our labels, and to label an `Expr`, we append it `Expr` to the list. Our earlier example becomes the expressions
+Another option, which makes use of a common representation for directed acyclic graphs such as our computational graph, is to supplement an expression with a topologically-sorted list, `List Expr`, of all the labelled nodes. Here, we implicitly use the list indices as our labels: to label an `Expr`, we simply append it to the list. Our earlier example becomes the expression
 ```idris
 Mul (Var 0) (Var 0)
 ```
-along with the labelled nodes
+along with the list
 ```idris
 [Add (Lit 7) (Lit 9)]
 ```
 spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
 
-> *__DETAIL__* Due to limitations spidr's handling of scope, node names are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the name for the `Expr` node. The list is still topologically sorted.
+> *__DETAIL__* Due to limitations spidr's handling of scope, labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the `Expr` label. The list remains topologically sorted.
 
-In either of these approaches, we need a notion of state to generate unique names. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of naming nodes in our computational graph. As mentioned above, explicit state introduces a tradeoff between performance and ergonomics. We discuss this in the tutorial [Nuisances in the tensor API](Nuisances.md).
+In either of these approaches, we need to keep track of generated labels, so we don't reuse them (for the list, this means keeping track of the list). Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of labelling nodes in our computational graph. This explicit state introduces the tradeoff between performance and ergonomics we mentioned earlier.
 
 Now we know how spidr constructs the graph, let's look at how it consumes it.
 
 ## Interpreting the graph with XLA
 
-spidr next converts the stack of tensor operations from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, and for each `Expr`, add a C++ `XlaOp` pointer to a fixed-length `IOArray` array. Unlike a `List`, the `IOArray` provides constant-time access, so we can cheaply access previously-created `XlaOp`s by name. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
+spidr next converts the graph from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, interpret each `Expr` as a C++ `XlaOp`, and add the `XlaOp` pointer to a fixed-length `IOArray` array. The remaining `Expr` not in the stack, we simply interpret as the complete expression defined in terms of `XlaOp`s in the array. Unlike a `List`, the `IOArray` provides constant-time access, so we can cheaply access previously-created `XlaOp`s by label. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
 
 In future, we plan instead to build StableHLO rather than XLA HLO programs. In that case, for each `Expr`, we'll create StableHLO `tensor`s instead of `XlaOp`s.
 
