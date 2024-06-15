@@ -31,7 +31,7 @@ spidr will interpret each `x` as a different expression, and create two copies o
 interface Shareable a where
   share : a -> Graph a
 ```
-which labels all tensor expressions in an `a`, in the tensor graph. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
+`share` labels all tensor expressions in an `a`, in the tensor graph. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
 y' : Graph $ Tensor [2] F64
 y' = do
@@ -39,6 +39,6 @@ y' = do
   pure $ x + x 
 ```
 
-> *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `share` might not make all that much difference. However, eliminating common subexpressions will itself use compute, and the compiler might not catch all of them, so we don't recommend relying on this.
+> *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `share` might not make all that much difference. However, eliminating these subexpressions will itself require compute, and the compiler might not catch all of them either, so we don't recommend relying on this.
 
-There are downsides to `share`. First, it's a distraction. We can usually rely on the compiler to reuse expressions efficiently: in `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. But more importantly, it's possible to forget to use it, and incur a significant performance penalty. We are investigating how to use linear types to catch unintentional tensor reuse at compile time.
+There are downsides to `share`. First, it's a distraction. We can usually rely on the compiler to reuse expressions efficiently: in `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. Of course we have the same situation in maths. Perhaps more importantly, though, is that it's possible to accidentally reuse an expression without sharing it, and thus incur a performance penalty. We are investigating how [linear types](https://www.type-driven.org.uk/edwinb/papers/idris2.pdf) might catch unintentional tensor reuse at compile time.
