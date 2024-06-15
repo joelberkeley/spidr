@@ -260,18 +260,18 @@ show = fixedProperty $ do
         9     FromLiteral [] 12
         16    Cond 7 MkFn {parameters = [(10, MkParameter [] _)]} {root = 14} {env =
             10    Arg 10
-            14    Map MkFn {parameters = [(11, MkParameter [] _)]} {root = 13} {env =
+            14    Map {f = MkFn {parameters = [(11, MkParameter [] _)]} {root = 13} {env =
                 11    Arg 11
                 12    FromLiteral [] 12
                 13    Add 11 12
-              } [10] []
+              }} [10] []
           } 8 MkFn {parameters = [(15, MkParameter [] _)]} {root = 15} {env =
             15    Arg 15
           } 9
         17    Add 6 16
       }
     """
-  x ===# 36.0  -- check calculation is actually working
+  x ===# 35.0  -- check calculation is actually working
 
 partial
 cast : Device => Property

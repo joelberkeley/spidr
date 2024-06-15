@@ -132,8 +132,6 @@ data Expr : Type where
   UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
   NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
 
-Show Expr
-
 showExpr : Nat -> Expr -> String
 
 showEnv : Nat -> Env -> String
