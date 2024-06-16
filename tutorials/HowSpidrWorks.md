@@ -72,7 +72,7 @@ In this setup we implicitly use the list indices as our labels, and for each ten
 , Mul 2 2 
 ]
 ```
-spidr uses this second approach of a list, or stack, of `Expr`s.
+spidr uses this second approach of a list, or stack, of `Expr`s. Experiment with `show` on your tensor graphs to see this in action.
 
 > *__DETAIL__* Instead of replacing the `Expr` arguments to `Expr` data constructors, such as `Add` and `Mul`, with `Nat` labels, we could introduce a constructor `Var Nat` to refer to labelled nodes. This would allow us to only label a node if we plan on reusing it. We don't currently offer this in spidr.
 

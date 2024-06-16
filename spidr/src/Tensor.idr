@@ -175,14 +175,12 @@ namespace TensorList
     readAll [] _ = pure []
     readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
-||| A string representation of the graph used to define a `Tensor`, detailing all enqueued XLA
-||| operations.
+||| A string representation of the Idris computational graph. Useful for debugging.
 |||
-||| Useful for debugging.
-export partial
+||| There are no guarantees whatsoever as to the string structure and contents.
+export
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor root) = runState empty x
-                      in unsafePerformIO $ try $ toString (MkFn [] root env)
+  show (MkGraph x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -745,7 +743,7 @@ map :
   Tensor shape a ->
   Graph $ Tensor shape b
 map f $ MkTensor {shape = _} x = do
-  g <- MkGraph $ addFn [MkShapeAndType [] a] (\x => unwrap $ f (MkTensor x))
+  g <- MkGraph $ addFn [MkParameter [] a] (\x => unwrap $ f (MkTensor x))
   addTensor $ Map g [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
@@ -765,7 +763,7 @@ map2 :
   Tensor shape b ->
   Graph $ Tensor shape c
 map2 f (MkTensor {shape = _} x) (MkTensor x') = do
-  g <- MkGraph $ addFn [MkShapeAndType [] a, MkShapeAndType [] b]
+  g <- MkGraph $ addFn [MkParameter [] a, MkParameter [] b]
                        (\x, x' => unwrap $ f (MkTensor x) (MkTensor x'))
   addTensor $ Map g [x, x'] (range $ length shape)
 
@@ -791,7 +789,7 @@ reduce axes $ MkTensor x = do
       g : Nat -> Nat -> State Env Nat
       g x x' = unwrap $ (<+>) @{semigroupT reducer} (pure $ MkTensor x) (pure $ MkTensor x')
 
-  g <- MkGraph $ addFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] g
+  g <- MkGraph $ addFn [MkParameter [] dtype, MkParameter [] dtype] g
 
   MkTensor neutral' <- neutral @{reducer}
   addTensor $ Reduce g neutral' axes x
@@ -818,7 +816,7 @@ sort comp dimension $ MkTensor x = do
   let f : Nat -> Nat -> State Env Nat
       f x x' = unwrap $ comp (pure $ MkTensor x) (pure $ MkTensor x')
 
-  comparator <- MkGraph $ addFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] f
+  comparator <- MkGraph $ addFn [MkParameter [] dtype, MkParameter [] dtype] f
   addTensor $ Sort comparator dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
@@ -1020,8 +1018,8 @@ cond :
   (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
   Graph $ Tensor shape dtype
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
-  onTrue <- MkGraph $ addFn [MkShapeAndType ts tt] (\x => unwrap $ onTrue $ MkTensor x)
-  onFalse <- MkGraph $ addFn [MkShapeAndType fs ft] (\x => unwrap $ onFalse $ MkTensor x)
+  onTrue <- MkGraph $ addFn [MkParameter ts tt] (\x => unwrap $ onTrue $ MkTensor x)
+  onFalse <- MkGraph $ addFn [MkParameter fs ft] (\x => unwrap $ onFalse $ MkTensor x)
   addTensor $ Cond pred onTrue true onFalse false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity

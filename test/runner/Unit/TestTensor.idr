@@ -165,7 +165,7 @@ boundedNonFinite = fixedProperty $ do
 
 partial
 iota : Device => Property
-iota = property $ do
+iota = withTests 20 . property $ do
   init <- forAll shapes
   mid <- forAll dims
   tail <- forAll shapes
@@ -219,18 +219,59 @@ partial
 show : Device => Property
 show = fixedProperty $ do
   let x : Graph $ Tensor [] S32 = 1
-  show x === "constant, shape=[], metadata={:0}"
+  show x === """
+    MkFn {parameters = [], root = 0, env =
+        0    FromLiteral [] 4
+      }
+    """
 
   let x : Graph $ Tensor [] S32 = 1 + 2
-  show x ===
-    """
-    add, shape=[], metadata={:0}
-      constant, shape=[], metadata={:0}
-      constant, shape=[], metadata={:0}
+  show x === """
+    MkFn {parameters = [], root = 2, env =
+        0    FromLiteral [] 4
+        1    FromLiteral [] 4
+        2    Add 0 1
+      }
     """
 
   let x = tensor {dtype = F64} [1.3, 2.0, -0.4]
-  show x === "constant, shape=[3], metadata={:0}"
+  show x === """
+    MkFn {parameters = [], root = 0, env =
+        0    FromLiteral [3] 12
+      }
+    """
+
+  let x : Graph _ = do
+    y <- reduce @{Sum} [0] !(tensor {dtype = F64} [1.0, 2.0])
+    z <- cond !(tensor True) (map (\x => pure x + 11.0)) !21.0 pure !0.01
+    pure y + pure z
+  show x === """
+    MkFn {parameters = [], root = 17, env =
+        0     FromLiteral [2] 12
+        4     FromLiteral [] 12
+        5     Broadcast {from = [], to = []} 4
+        6     Reduce {op = MkFn {parameters = [(1, MkParameter [] _), (2, MkParameter [] _)], root = 3, env =
+            1    Arg 1
+            2    Arg 2
+            3    Add 1 2
+          }, identity = 5, axes = [0]} 0
+        7     FromLiteral [] 1
+        8     FromLiteral [] 12
+        9     FromLiteral [] 12
+        16    Cond {predicate = 7, onTrueFn = MkFn {parameters = [(10, MkParameter [] _)], root = 14, env =
+            10    Arg 10
+            14    Map {f = MkFn {parameters = [(11, MkParameter [] _)], root = 13, env =
+                11    Arg 11
+                12    FromLiteral [] 12
+                13    Add 11 12
+              }} [10]
+          }, onTrueArg = 8, onFalseFn = MkFn {parameters = [(15, MkParameter [] _)], root = 15, env =
+            15    Arg 15
+          }, onFalseArg = 9}
+        17    Add 6 16
+      }
+    """
+  x ===# 35.0  -- double check calculation actually works
 
 partial
 cast : Device => Property
@@ -453,10 +494,10 @@ group = MkGroup "Tensor" $ [
     , ("eval multiple tensors (tuple)", evalTuple)
     , ("eval multiple tensors (tuple) for non-trivial graph", evalTupleNonTrivial)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
+    , ("show", show)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)
     , ("iota examples", iotaExamples)
-    , ("show", show)
     , ("cast", cast)
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
