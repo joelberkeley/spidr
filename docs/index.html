@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>spidr</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="index">
+<header>
+  <strong>Idris2Doc</strong> : spidr
+  <nav><a href="index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><h1>Package spidr - Namespaces</h1><ul class="names"><li><a class="code" href="docs/BayesianOptimization.html">BayesianOptimization</a></li><li><a class="code" href="docs/BayesianOptimization.Acquisition.html">BayesianOptimization.Acquisition</a></li><li><a class="code" href="docs/Compiler.Xla.Client.Lib.Arithmetic.html">Compiler.Xla.Client.Lib.Arithmetic</a></li><li><a class="code" href="docs/Compiler.Xla.Client.Lib.Constants.html">Compiler.Xla.Client.Lib.Constants</a></li><li><a class="code" href="docs/Compiler.Xla.Client.Lib.Math.html">Compiler.Xla.Client.Lib.Math</a></li><li><a class="code" href="docs/Compiler.Xla.Client.Lib.Matrix.html">Compiler.Xla.Client.Lib.Matrix</a></li><li><a class="code" href="docs/Compiler.Xla.Client.Lib.PRNG.html">Compiler.Xla.Client.Lib.PRNG</a></li><li><a class="code" href="docs/Compiler.Xla.Client.XlaBuilder.html">Compiler.Xla.Client.XlaBuilder</a></li><li><a class="code" href="docs/Compiler.Xla.Client.ExecutableBuildOptions.html">Compiler.Xla.Client.ExecutableBuildOptions</a></li><li><a class="code" href="docs/Compiler.Xla.Client.XlaComputation.html">Compiler.Xla.Client.XlaComputation</a></li><li><a class="code" href="docs/Compiler.Xla.PJRT.C.PjrtCApi.html">Compiler.Xla.PJRT.C.PjrtCApi</a></li><li><a class="code" href="docs/Compiler.Xla.PJRT.PjrtExecutable.html">Compiler.Xla.PJRT.PjrtExecutable</a></li><li><a class="code" href="docs/Compiler.Xla.Literal.html">Compiler.Xla.Literal</a></li><li><a class="code" href="docs/Compiler.Xla.Shape.html">Compiler.Xla.Shape</a></li><li><a class="code" href="docs/Compiler.Xla.ShapeUtil.html">Compiler.Xla.ShapeUtil</a></li><li><a class="code" href="docs/Compiler.Xla.XlaData.html">Compiler.Xla.XlaData</a></li><li><a class="code" href="docs/Compiler.Xla.Status.html">Compiler.Xla.Status</a></li><li><a class="code" href="docs/Compiler.Eval.html">Compiler.Eval</a></li><li><a class="code" href="docs/Compiler.Expr.html">Compiler.Expr</a></li><li><a class="code" href="docs/Compiler.FFI.html">Compiler.FFI</a></li><li><a class="code" href="docs/Compiler.LiteralRW.html">Compiler.LiteralRW</a></li><li><a class="code" href="docs/Constants.html">Constants</a></li><li><a class="code" href="docs/Data.html">Data</a></li><li><a class="code" href="docs/Device.html">Device</a></li><li><a class="code" href="docs/Distribution.html">Distribution</a></li><li><a class="code" href="docs/Literal.html">Literal</a></li><li><a class="code" href="docs/Model.html">Model</a></li><li><a class="code" href="docs/Model.GaussianProcess.html">Model.GaussianProcess</a></li><li><a class="code" href="docs/Model.Kernel.html">Model.Kernel</a></li><li><a class="code" href="docs/Model.MeanFunction.html">Model.MeanFunction</a></li><li><a class="code" href="docs/Optimize.html">Optimize</a></li><li><a class="code" href="docs/Primitive.html">Primitive</a></li><li><a class="code" href="docs/Tensor.html">Tensor</a></li><li><a class="code" href="docs/Types.html">Types</a></li><li><a class="code" href="docs/Util.html">Util</a></li></ul></div><footer>Produced by Idris 2 version 0.7.0-866354fef</footer></body></html>
