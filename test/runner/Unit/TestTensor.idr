@@ -249,7 +249,7 @@ show = fixedProperty $ do
     MkFn {parameters = [], root = 17, env =
         0     FromLiteral [2] 12
         4     FromLiteral [] 12
-        5     Broadcast {from = [], to = []}
+        5     Broadcast {from = [], to = []} 4
         6     Reduce {op = MkFn {parameters = [(1, MkParameter [] _), (2, MkParameter [] _)], root = 3, env =
             1    Arg 1
             2    Arg 2

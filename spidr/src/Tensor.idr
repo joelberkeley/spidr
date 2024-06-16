@@ -177,7 +177,7 @@ namespace TensorList
 
 ||| A string representation of the Idris computational graph. Useful for debugging.
 |||
-||| The string format and contents have no compatibility guarantees.
+||| There are no guarantees whatsoever as to the string structure and contents.
 export
 Show (Graph $ Tensor shape dtype) where
   show (MkGraph x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
