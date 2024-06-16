@@ -81,7 +81,7 @@ along with the list
 ```idris
 [Add (Lit 7) (Lit 9)]
 ```
-spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
+spidr uses this second approach of a supplementary list, or stack, of `Expr`s. Experiment with `show` on your tensor graphs to see this in action.
 
 > *__DETAIL__* Due to limitations spidr's handling of scope, labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the `Expr` label. The list remains topologically sorted.
 

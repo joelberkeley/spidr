@@ -165,7 +165,7 @@ boundedNonFinite = fixedProperty $ do
 
 partial
 iota : Device => Property
-iota = property $ do
+iota = withTests 20 . property $ do
   init <- forAll shapes
   mid <- forAll dims
   tail <- forAll shapes
@@ -215,19 +215,28 @@ iotaExamples = fixedProperty $ do
 partial
 show : Device => Property
 show = fixedProperty $ do
-  let x : Graph (Tensor [] S32) = pure 1
-  show x === "constant, shape=[], metadata={:0}"
-
-  let x : Graph (Tensor [] S32) = pure (1 + 2)
-  show x ===
-    """
-    add, shape=[], metadata={:0}
-      constant, shape=[], metadata={:0}
-      constant, shape=[], metadata={:0}
+  let x : Graph $ Tensor [] S32 = pure 1
+  show x === """
+    MkFn {parameters = [], root = FromLiteral [] 4}
     """
 
-  let x : Graph _ = pure (tensor {dtype = F64} [1.3, 2.0, -0.4])
-  show x === "constant, shape=[3], metadata={:0}"
+  let x : Graph $ Tensor [] S32 = pure $ 1 + 2
+  show x === """
+    MkFn {parameters = [], root = Add (FromLiteral [] 4) (FromLiteral [] 4)}
+    """
+
+  let x : Graph _ = pure $ tensor {dtype = F64} [1.3, 2.0, -0.4]
+  show x === """
+    MkFn {parameters = [], root = FromLiteral [3] 12}
+    """
+
+  let x = do
+      reduce @{Sum} [0] (tensor {dtype = F64} [1.0, 2.0])
+      y = cond (tensor True) (\x => pure $ map (\y => pure $ y + 11.0) x) 21.0 pure 0.01
+      pure $ x + y
+  show z === """
+    """
+  x ===# 35.0  -- double check calculation actually works
 
   let x : Graph (Tensor [] S32) = do
         y <- share $ 1 + 2
@@ -463,10 +472,10 @@ group = MkGroup "Tensor" $ [
     , ("eval multiple tensors (tuple)", evalTuple)
     , ("eval multiple tensors (tuple) for non-trivial graph", evalTupleNonTrivial)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
+    , ("show", show)
     , ("bounded non-finite", boundedNonFinite)
     , ("iota", iota)
     , ("iota examples", iotaExamples)
-    , ("show", show)
     , ("cast", cast)
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))

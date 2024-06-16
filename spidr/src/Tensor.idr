@@ -210,13 +210,12 @@ namespace TensorList
   eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
   eval device xs = eval device (pure xs)
 
-||| A string representation of a tensor graph, detailing all operations.
+||| A string representation of a tensor graph.
 |||
-||| Useful for debugging.
-export partial
+||| There are no guarantees whatsoever as to the string structure and contents.
+export
 Show (Graph $ Tensor shape dtype) where
-  show $ MkGraph x = let (env, MkTensor root) = runState empty x
-                      in unsafePerformIO $ try $ toString (MkFn [] root env)
+  show (MkGraph x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -769,7 +768,7 @@ map : (Primitive a, Primitive b) =>
 map f $ MkTensor {shape = _} x =
   let MkGraph app = f (MkTensor $ Arg 0)
       (env, MkTensor res) = runState empty app
-      g = MkFn [MkShapeAndType [] a] res env
+      g = MkFn [MkParameter [] a] res env
    in MkTensor $ Map g [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
@@ -788,7 +787,7 @@ map2 :
 map2 f (MkTensor {shape = _} x) (MkTensor x') =
   let MkGraph app = f (MkTensor $ Arg 0) (MkTensor $ Arg 1)
       (env, MkTensor res) = runState empty app
-      g = MkFn [MkShapeAndType [] a, MkShapeAndType [] b] res env
+      g = MkFn [MkParameter [] a, MkParameter [] b] res env
    in MkTensor $ Map g [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
@@ -811,7 +810,7 @@ reduce axes $ MkTensor x =
       semigroup _ = %search
 
       MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Arg 0) (MkTensor $ Arg 1)
-      g = MkFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] res empty
+      g = MkFn [MkParameter [] dtype, MkParameter [] dtype] res empty
       MkTensor neutral' = neutral @{reducer}
    in MkTensor $ Reduce g neutral' axes x
 
@@ -835,7 +834,7 @@ sort :
   Tensor shape dtype
 sort comp dimension $ MkTensor x =
   let MkTensor res = comp (MkTensor $ Arg 0) (MkTensor $ Arg 1)
-      comparator = MkFn [MkShapeAndType [] dtype, MkShapeAndType [] dtype] res empty
+      comparator = MkFn [MkParameter [] dtype, MkParameter [] dtype] res empty
    in MkTensor $ Sort comparator dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
@@ -1016,11 +1015,11 @@ cond :
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
   let MkGraph appT = onTrue (MkTensor $ Arg 0)
       (env, MkTensor res) = runState empty appT
-      onTrue = MkFn [MkShapeAndType ts tt] res env
+      onTrue = MkFn [MkParameter ts tt] res env
 
       MkGraph appF = onFalse (MkTensor $ Arg 0)
       (env, MkTensor res) = runState empty appF
-      onFalse = MkFn [MkShapeAndType fs ft] res env
+      onFalse = MkFn [MkParameter fs ft] res env
 
    in MkTensor $ Cond pred onTrue true onFalse false
 

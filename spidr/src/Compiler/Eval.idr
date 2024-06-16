@@ -97,8 +97,8 @@ interpret xlaBuilder (MkFn {arity} params root env) = do
                             in if idx >= max then OutOfBounds idx max else ValueNotFound idx
     pure xlaOp
 
-  interpretParameter : (Nat, ShapeAndType) -> Builder ()
-  interpretParameter (position, MkShapeAndType shape dtype) = do
+  interpretParameter : (Nat, Parameter) -> Builder ()
+  interpretParameter (position, MkParameter shape dtype) = do
     xlaShape <- mkShape {dtype} shape
     param <- parameter xlaBuilder position xlaShape (show position)
     set position param
