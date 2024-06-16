@@ -216,33 +216,37 @@ partial
 show : Device => Property
 show = fixedProperty $ do
   let x : Graph $ Tensor [] S32 = pure 1
-  show x === """
-    MkFn {parameters = [], root = FromLiteral [] 4}
-    """
+  show x === "[] => Lit [] 4"
 
   let x : Graph $ Tensor [] S32 = pure $ 1 + 2
-  show x === """
-    MkFn {parameters = [], root = Add (FromLiteral [] 4) (FromLiteral [] 4)}
-    """
+  show x === "[] => Add (Lit [] 4) (Lit [] 4)"
 
   let x : Graph _ = pure $ tensor {dtype = F64} [1.3, 2.0, -0.4]
-  show x === """
-    MkFn {parameters = [], root = FromLiteral [3] 12}
-    """
+  show x === "[] => Lit [3] 12"
 
   let x : Graph (Tensor [] S32) = do
         y <- share $ 1 + 2
         pure (y + y)
   show x ===
     """
-    MkFn {parameters = [], root = Add (Var 0) (Var 0), locals =
-        0    Add (FromLiteral [] 4) (FromLiteral [] 4)
-      }
+    [] => Add (Var 0) (Var 0), with vars
+        0    Add (Lit [] 4) (Lit [] 4)
+
     """
 
-  -- test nested HOFs, and more complex test cases with sharing
-  let x : Graph (Tensor [] S32) = ?y
+  let x : Graph (Tensor [] S32) = do
+    x <- share $ reduce @{Sum} [0] (tensor {dtype = S32} [0, 0])
+    let y = map (\w => do
+            z <- share $ the (Tensor [] S32) 0
+            pure $ map (\v => pure $ v + z) w
+          ) x
+    pure $ x + y
   show x === """
+    [] => Add (Var 0) (Map {f = [[] 4] => Map {f = [[] 4] => Add (Arg 0) (Var 0)} [Arg 0], with vars
+        0    Lit [] 4
+      } [Var 0]), with vars {
+        0    Reduce {op = [[] 4, [] 4] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
+      }
     """
 
 partial

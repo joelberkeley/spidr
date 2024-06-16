@@ -59,7 +59,7 @@ Each PJRT plugin contains a graph compiler, and there are several compilers avai
 
 #### Graph generation
 
-This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation, like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html#jax.vmap) and [`grad`](https://jax.readthedocs.io/en/latest/debugging/checkify_guide.html#grad).
+This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation, like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/automatic-vectorization.html) and [`grad`](https://jax.readthedocs.io/en/latest/automatic-differentiation.html).
 
 ### Acknowledgements
 

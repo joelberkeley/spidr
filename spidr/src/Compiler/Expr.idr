@@ -32,11 +32,15 @@ import Util
 
 %language ElabReflection
 
+Show a => Interpolation (List a) where
+  interpolate = show
+
 public export
 data Parameter : Type where
   MkParameter : Shape -> (0 dtype : Type) -> Primitive dtype => Parameter
 
-%runElab derive "Parameter" [Show]
+Show Parameter where
+  show (MkParameter shape dtype) = "\{shape} \{xlaIdentifier {dtype}}"
 
 public export
 data Expr : Type where
@@ -129,9 +133,6 @@ addNode expr = do
   put $ MkEnv (S next) ((next, expr) :: env)
   pure (Var next)
 
-Show a => Interpolation (List a) where
-  interpolate = show
-
 covering
 showExpr : Nat -> Expr -> String
 
@@ -149,14 +150,14 @@ showEnv indent (MkEnv max env) = joinBy "\n" $ assert_total $ map fmt (reverse e
 covering
 showFn : Nat -> Fn arity -> String
 showFn indent (MkFn params result env@(MkEnv _ env')) =
-  "MkFn {parameters = \{show params}, root = \{showExpr indent result}" ++
+  let init = "\{show params} => \{showExpr indent result}" in
   case env' of
-    [] => "}"
-    _  => ", locals =\n\{showEnv (indent + 4) env}\n\{replicate (indent + 2) ' '}}"
+    [] => init
+    _  => init ++ ", with vars\n\{showEnv (indent + 4) env}\n"
 
 export Show (Fn arity) where show = assert_total $ showFn 0
 
-showExpr indent (FromLiteral {shape, dtype} x) = "FromLiteral \{shape} \{xlaIdentifier {dtype}}"
+showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {dtype}}"
 showExpr indent (Var k) = "Var \{k}"
 showExpr indent (Arg k) = "Arg \{k}"
 showExpr indent (Tuple xs) = "Tuple \{map (showExpr indent) xs}"
@@ -185,10 +186,10 @@ showExpr indent (Broadcast from to x) =
   "Broadcast {from = \{from}, to = \{to}} (\{showExpr indent x})"
 showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{show $ map (showExpr indent) xs}"
 showExpr indent (Reduce op neutral axes x) =
-  "Reduce {op = \{showFn indent op}, identity = \{showExpr indent neutral}," ++
+  "Reduce {op = (\{showFn indent op}), identity = \{showExpr indent neutral}," ++
     " axes = \{axes}} (\{showExpr indent x})"
 showExpr indent (Sort f axis _ xs) =
-  "Sort {f = \{showFn indent f}, axis = \{axis}} \{map (showExpr indent) xs}"
+  "Sort {f = (\{showFn indent f}), axis = \{axis}} \{map (showExpr indent) xs}"
 showExpr indent (Reverse axes x) = "Reverse \{axes} (\{showExpr indent x})"
 showExpr indent (BinaryElementwise op x y) =
   "\{show op} (\{showExpr indent x}) (\{showExpr indent y})"
@@ -201,8 +202,8 @@ showExpr indent (Select p t f) =
   "Select {predicate = \{showExpr indent p}, onTrue = \{showExpr indent t}," ++
     " onFalse = \{showExpr indent f}}"
 showExpr indent (Cond p ft t ff f) =
-  "Cond {predicate = \{showExpr indent p}, onTrueFn = \{showFn indent ft}," ++
-    " onTrueArg = \{showExpr indent t}, onFalseFn = \{showFn indent ff}," ++
+  "Cond {predicate = \{showExpr indent p}, onTrueFn = (\{showFn indent ft})," ++
+    " onTrueArg = \{showExpr indent t}, onFalseFn = (\{showFn indent ff})," ++
     " onFalseArg = \{showExpr indent f}}"
 showExpr indent (Dot x y) = "Dot (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (DotGeneral lBatch lContract rBatch rContract x y) =
