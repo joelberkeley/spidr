@@ -247,24 +247,24 @@ show = fixedProperty $ do
     pure y + pure z
   show x === """
     MkFn {parameters = [], root = 17, env =
-        0     FromLiteral {shape = [2], dtype = 12}
-        4     FromLiteral {shape = [], dtype = 12}
+        0     FromLiteral [2] 12
+        4     FromLiteral [] 12
         5     Broadcast {from = [], to = []}
         6     Reduce {op = MkFn {parameters = [(1, MkParameter [] _), (2, MkParameter [] _)], root = 3, env =
             1    Arg 1
             2    Arg 2
             3    Add 1 2
           }, identity = 5, axes = [0]} 0
-        7     FromLiteral {shape = [], dtype = 1}
-        8     FromLiteral {shape = [], dtype = 12}
-        9     FromLiteral {shape = [], dtype = 12}
+        7     FromLiteral [] 1
+        8     FromLiteral [] 12
+        9     FromLiteral [] 12
         16    Cond {predicate = 7, onTrueFn = MkFn {parameters = [(10, MkParameter [] _)], root = 14, env =
             10    Arg 10
-            14    Map {f = MkFn {parameters = [(11, MkParameter [] _)]} {root = 13} {env =
+            14    Map {f = MkFn {parameters = [(11, MkParameter [] _)], root = 13, env =
                 11    Arg 11
-                12    FromLiteral {shape = [], dtype = 12}
+                12    FromLiteral [] 12
                 13    Add 11 12
-              }} [10] []
+              }} [10]
           }, onTrueArg = 8, onFalseFn = MkFn {parameters = [(15, MkParameter [] _)], root = 15, env =
             15    Arg 15
           }, onFalseArg = 9}

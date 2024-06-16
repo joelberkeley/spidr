@@ -178,7 +178,7 @@ showExpr _      (Identity {dtype} size) =
 showExpr _      (Broadcast from to x) = "Broadcast {from = \{from}, to = \{to}} \{x}"
 showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{show xs}"
 showExpr indent (Reduce op neutral axes x) =
-  "Reduce {op = \{showFn indent op}, identity = \{neutral}, {axes = \{axes}} \{x}"
+  "Reduce {op = \{showFn indent op}, identity = \{neutral}, axes = \{axes}} \{x}"
 showExpr indent (Sort f axis _ xs) = "Sort {f = \{showFn indent f}, axis = \{axis}} \{xs}"
 showExpr _      (Reverse axes x) = "Reverse \{axes} \{x}"
 showExpr _      (BinaryElementwise op x y) = "\{show op} \{x} \{y}"
@@ -188,7 +188,7 @@ showExpr _      (Argmax {out} x y) = "Argmax {outType = \{xlaIdentifier {dtype =
 showExpr _      (Select p t f) = "Select {predicate = \{p}, onTrue = \{t}, onFalse = \{f}}"
 showExpr indent (Cond p ft t ff f) =
   "Cond {predicate = \{p}, onTrueFn = \{showFn indent ft}, onTrueArg = \{show t}," ++
-    " onFalseFn = \{showFn indent ff}, onFalseArg = \{show f}"
+    " onFalseFn = \{showFn indent ff}, onFalseArg = \{show f}}"
 showExpr _      (Dot x y) = "Dot \{x} \{y}"
 showExpr _      (DotGeneral lBatch lContract rBatch rContract x y) =
   "DotGeneral {lBatch = \{lBatch}, lContract = \{lContract}," ++
