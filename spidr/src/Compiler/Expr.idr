@@ -160,7 +160,7 @@ showExpr indent (FromLiteral {shape, dtype} x) = "FromLiteral \{shape} \{xlaIden
 showExpr indent (Var k) = "Var \{k}"
 showExpr indent (Arg k) = "Arg \{k}"
 showExpr indent (Tuple xs) = "Tuple \{map (showExpr indent) xs}"
-showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} \{showExpr indent x}"
+showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
 showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MaxValue {dtype}) = "MaxValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{xlaIdentifier {dtype}}}"
@@ -168,34 +168,35 @@ showExpr indent (MaxFiniteValue {dtype}) = "MaxFiniteValue {dtype = \{xlaIdentif
 showExpr indent (Iota {dtype} shape axis) =
   "Iota {shape = \{show shape}, dtype = \{xlaIdentifier {dtype}}, axis = \{axis}}"
 showExpr indent (ConvertElementType {dtype} x) =
-  "ConvertElementType {dtype = \{xlaIdentifier {dtype}}} \{showExpr indent x}"
-showExpr indent (Reshape from to x) = "Reshape {from = \{from}, to = \{to}} \{showExpr indent x}"
+  "ConvertElementType {dtype = \{xlaIdentifier {dtype}}} (\{showExpr indent x})"
+showExpr indent (Reshape from to x) = "Reshape {from = \{from}, to = \{to}} (\{showExpr indent x})"
 showExpr indent (Slice starts stops strides x) =
-  "Slice {starts = \{starts}, stops = \{stops}, strides = \{strides}} \{showExpr indent x}"
+  "Slice {starts = \{starts}, stops = \{stops}, strides = \{strides}} (\{showExpr indent x})"
 showExpr indent (DynamicSlice starts sizes x) =
-  "DynamicSlice {starts = \{map (showExpr indent) starts}, sizes = \{sizes} \{showExpr indent x}"
+  "DynamicSlice {starts = \{map (showExpr indent) starts}, sizes = \{sizes} (\{showExpr indent x})"
 showExpr indent (Concat axis x y) =
-  "Concat {axis = \{axis}} \{showExpr indent x} \{showExpr indent y}"
-showExpr indent (Diag x) = "Diag \{showExpr indent x}"
-showExpr indent (Triangle lower x) = "Triangle {lower = \{show lower}} \{showExpr indent x}"
-showExpr indent (Transpose ordering x) = "Transpose {ordering = \{ordering}} \{showExpr indent x}"
+  "Concat {axis = \{axis}} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (Diag x) = "Diag (\{showExpr indent x})"
+showExpr indent (Triangle lower x) = "Triangle {lower = \{show lower}} (\{showExpr indent x})"
+showExpr indent (Transpose ordering x) = "Transpose {ordering = \{ordering}} (\{showExpr indent x})"
 showExpr indent (Identity {dtype} size) =
   "Identity {size = \{size}, dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (Broadcast from to x) =
-  "Broadcast {from = \{from}, to = \{to}} \{showExpr indent x}"
+  "Broadcast {from = \{from}, to = \{to}} (\{showExpr indent x})"
 showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{show $ map (showExpr indent) xs}"
 showExpr indent (Reduce op neutral axes x) =
   "Reduce {op = \{showFn indent op}, identity = \{showExpr indent neutral}," ++
-    " axes = \{axes}} \{showExpr indent x}"
+    " axes = \{axes}} (\{showExpr indent x})"
 showExpr indent (Sort f axis _ xs) =
   "Sort {f = \{showFn indent f}, axis = \{axis}} \{map (showExpr indent) xs}"
-showExpr indent (Reverse axes x) = "Reverse \{axes} \{showExpr indent x}"
-showExpr indent (BinaryElementwise op x y) = "\{show op} \{showExpr indent x} \{showExpr indent y}"
-showExpr indent (UnaryElementwise op x) = "\{show op} \{showExpr indent x}"
+showExpr indent (Reverse axes x) = "Reverse \{axes} (\{showExpr indent x})"
+showExpr indent (BinaryElementwise op x y) =
+  "\{show op} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (UnaryElementwise op x) = "\{show op} (\{showExpr indent x})"
 showExpr indent (Argmin {out} axis x) =
-  "Argmin {outType = \{xlaIdentifier {dtype = out}}} \{axis} \{showExpr indent x}"
+  "Argmin {outType = \{xlaIdentifier {dtype = out}}} \{axis} (\{showExpr indent x})"
 showExpr indent (Argmax {out} axis x) =
-  "Argmax {outType = \{xlaIdentifier {dtype = out}}} \{axis} \{showExpr indent x}"
+  "Argmax {outType = \{xlaIdentifier {dtype = out}}} \{axis} (\{showExpr indent x})"
 showExpr indent (Select p t f) =
   "Select {predicate = \{showExpr indent p}, onTrue = \{showExpr indent t}," ++
     " onFalse = \{showExpr indent f}}"
@@ -203,13 +204,13 @@ showExpr indent (Cond p ft t ff f) =
   "Cond {predicate = \{showExpr indent p}, onTrueFn = \{showFn indent ft}," ++
     " onTrueArg = \{showExpr indent t}, onFalseFn = \{showFn indent ff}," ++
     " onFalseArg = \{showExpr indent f}}"
-showExpr indent (Dot x y) = "Dot \{showExpr indent x} \{showExpr indent y}"
+showExpr indent (Dot x y) = "Dot (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (DotGeneral lBatch lContract rBatch rContract x y) =
   "DotGeneral {lBatch = \{lBatch}, lContract = \{lContract}," ++
-    " rBatch = \{rBatch}, rContract = \{rContract}} \{showExpr indent x} \{showExpr indent y}"
-showExpr indent (Cholesky x) = "Cholesky \{showExpr indent x}"
+    " rBatch = \{rBatch}, rContract = \{rContract}} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (Cholesky x) = "Cholesky (\{showExpr indent x})"
 showExpr indent (TriangularSolve x y isLower) =
-  "TriangularSolve {isLower = \{show isLower}} \{showExpr indent x} \{showExpr indent y}"
+  "TriangularSolve {isLower = \{show isLower}} (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (UniformFloatingPoint key initialState minval maxval shape) =
   "UniformFloatingPoint {key = \{showExpr indent key}," ++
     " initialState = \{showExpr indent initialState}," ++

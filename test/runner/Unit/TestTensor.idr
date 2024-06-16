@@ -230,26 +230,19 @@ show = fixedProperty $ do
     MkFn {parameters = [], root = FromLiteral [3] 12}
     """
 
-  let x = do
-      reduce @{Sum} [0] (tensor {dtype = F64} [1.0, 2.0])
-      y = cond (tensor True) (\x => pure $ map (\y => pure $ y + 11.0) x) 21.0 pure 0.01
-      pure $ x + y
-  show z === """
-    """
-  x ===# 35.0  -- double check calculation actually works
-
   let x : Graph (Tensor [] S32) = do
         y <- share $ 1 + 2
         pure (y + y)
   show x ===
     """
-    add, shape=[], metadata={:0}
-      add, shape=[], metadata={:0}
-        constant, shape=[], metadata={:0}
-        constant, shape=[], metadata={:0}
-      add, shape=[], metadata={:0}
-        constant, shape=[], metadata={:0}
-        constant, shape=[], metadata={:0}
+    MkFn {parameters = [], root = Add (Var 0) (Var 0), locals =
+        0    Add (FromLiteral [] 4) (FromLiteral [] 4)
+      }
+    """
+
+  -- test nested HOFs, and more complex test cases with sharing
+  let x : Graph (Tensor [] S32) = ?y
+  show x === """
     """
 
 partial
