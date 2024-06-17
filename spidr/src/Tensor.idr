@@ -756,43 +756,52 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```
-||| recip : Tensor [] F64 -> Tensor [] F64
-||| recip x = 1.0 / x
+||| recip : Tensor [] F64 -> Graph $ Tensor [] F64
+||| recip x = pure $ 1.0 / x
 ||| ```
 ||| can be lifted to an element-wise reciprocal function as `map recip (tensor [-2, 0.4])`,
-||| which is `tensor [-0.5, 2.5]`.
+||| which produces `tensor [-0.5, 2.5]`.
 export
 map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Graph $ Tensor [] b) ->
-      Tensor shape a -> Tensor shape b
-map f $ MkTensor {shape = _} x =
+      Tensor shape a -> Graph $ Tensor shape b
+map f $ MkTensor {shape = _} x = MkGraph $ do
   let MkGraph app = f (MkTensor $ Arg 0)
-      (env, MkTensor res) = runState empty app
+      (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [MkParameter [] a] res env
-   in MkTensor $ Map g [x] (range $ length shape)
+
+  updateFrom env
+  pure $ MkTensor $ Map g [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```
-||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Tensor [] F64
-||| addRecip x y = pure x + 1.0 / pure y
+||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Graph $ Tensor [] F64
+||| addRecip x y = pure $ x + 1.0 / y
 ||| ```
 ||| can be lifted to an element-wise function as
-||| `map2 addRecip (tensor [3.0, -3.0]) (tensor [-2.0, 0.4])`, which is `tensor [2.5, -0.5]`.
+||| `map2 addRecip (tensor [3.0, -3.0]) (tensor [-2.0, 0.4])`, which produces `tensor [2.5, -0.5]`.
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
   (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
-  Tensor shape a -> Tensor shape b -> Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') =
+  Tensor shape a -> Tensor shape b -> Graph $ Tensor shape c
+map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraph $ do
   let MkGraph app = f (MkTensor $ Arg 0) (MkTensor $ Arg 1)
-      (env, MkTensor res) = runState empty app
+      (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [MkParameter [] a, MkParameter [] b] res env
-   in MkTensor $ Map g [x, x'] (range $ length shape)
+
+  updateFrom env
+  pure $ MkTensor $ Map g [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
 ||| `tensor [3, 5, 7]` and `reduce @{Sum} 1 x` to `tensor [3, 12]`.
+|||
+||| **Note:** `Semigroup` doesn't use `Graph`, which limits the functions that can be used in
+||| `reduce`. However, the most commonly used semigroups don't need `Graph`, including `Sum`,
+||| `Prod`, `Min` and `Max`, so for ergonomics, we have opted to use `Monoid` as is. We can
+||| provide an overloaded variant if requested.
 |||
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
@@ -820,6 +829,10 @@ reduce axes $ MkTensor x =
 |||
 ||| **Note:** Sorting is not stable, meaning elements that compare equal according the ordering may
 ||| be sorted in a different order to the order they appear in the input.
+|||
+||| **Note:** `sort` is limited to use comparison function without `Graph`. However, since the most
+||| commonly-used functions, including (>), (<), (>=), and (<=), don't use `Graph`, we have opted to
+||| omit it for ergonomics. We can trivially provide an overloaded variant if requested.
 |||
 ||| For example, for `x = tensor [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 x` is
 ||| `tensor [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 x` is
@@ -996,8 +1009,8 @@ select (MkTensor p) (MkTensor t) (MkTensor f) = MkTensor $ Select p t f
 ||| y = tensor [[5, 6],
 |||             [7, 8]]
 ||| ```
-||| `cond (tensor True) (tensor 2 *) x diag y` is `tensor [4, -2]` and
-||| `cond (tensor False) (tensor 2 *) x diag y` to `tensor [5, 8]`.
+||| `cond (tensor True) (pure . tensor 2 *) x (pure . diag) y` produces `tensor [4, -2]` and
+||| `cond (tensor False) (pure . tensor 2 *) x (pure . diag) y` produces `tensor [5, 8]`.
 |||
 ||| While both functions will be called for the purposes of defining the computation, only one will
 ||| be evaluated with its specified argument. That is, this function short-circuits.
@@ -1011,17 +1024,18 @@ cond :
   Tensor [] PRED ->
   (onTrue : Tensor ts tt -> Graph $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
-  Tensor shape dtype
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) =
+  Graph $ Tensor shape dtype
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraph $ do
   let MkGraph appT = onTrue (MkTensor $ Arg 0)
-      (env, MkTensor res) = runState empty appT
+      (env, MkTensor res) = runState (emptyFrom !get) appT
       onTrue = MkFn [MkParameter ts tt] res env
 
       MkGraph appF = onFalse (MkTensor $ Arg 0)
-      (env, MkTensor res) = runState empty appF
+      (env, MkTensor res) = runState (emptyFrom env) appF
       onFalse = MkFn [MkParameter fs ft] res env
 
-   in MkTensor $ Cond pred onTrue true onFalse false
+  updateFrom env
+  pure $ MkTensor $ Cond pred onTrue true onFalse false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 infixl 9 @@
@@ -1395,7 +1409,7 @@ highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Graph $ Tens
 highlightNan minimize x with (x)
   _ | (MkTensor {shape = _} _) = do
     x <- share x
-    pure $ cond (reduce @{All} [0] (x == x)) pure x extremizeNan x
+    cond (reduce @{All} [0] (x == x)) pure x extremizeNan x
 
     where
 
@@ -1409,6 +1423,10 @@ highlightNan minimize x with (x)
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin (tensor [-1, 3, -2, -2, 3])` produces `tensor 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
+|||
+||| **Note:** `argmin` uses `Graph` to work around an inconsistency in the XLA compiler's handling
+||| of NaN. Specifically, we have modified `argmin` to return the first index of the value returned
+||| by `reduce @{Min}`.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmin x = do
@@ -1418,6 +1436,10 @@ argmin x = do
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
+|||
+||| **Note:** `argmax` uses `Graph` to work around an inconsistency in the XLA compiler's handling
+||| of NaN. Specifically, we have modified `argmax` to return the first index of the value returned
+||| by `reduce @{Max}`.
 export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmax x = do

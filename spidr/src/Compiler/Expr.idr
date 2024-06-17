@@ -56,6 +56,16 @@ empty : Env
 empty = MkEnv 0 []
 
 export
+emptyFrom : Env -> Env
+emptyFrom (MkEnv n _) = MkEnv n []
+
+export
+updateFrom : Env -> State Env ()
+updateFrom (MkEnv n _) = do
+  MkEnv _ xs <- get
+  put $ MkEnv n xs
+
+export
 toList : Env -> (Nat, List (Nat, Expr))
 toList (MkEnv n env) = (n, reverse env)
 
@@ -154,7 +164,7 @@ showEnv indent (MkEnv max env) = joinBy "\n" $ assert_total $ map fmt (reverse e
 covering
 showFn : Nat -> Fn arity -> String
 showFn indent (MkFn params result env@(MkEnv _ env')) =
-  let init = "\{show params} => \{showExpr indent result}" in
+  let init = "\{show params} => \{showExpr (indent + 2) result}" in
   case env' of
     [] => init
     _  => init ++ ", with vars {\n\{showEnv (indent + 4) env}\n\{replicate (indent + 2) ' '}}"

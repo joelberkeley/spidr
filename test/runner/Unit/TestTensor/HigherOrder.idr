@@ -33,18 +33,19 @@ mapResult = property $ do
   x <- forAll (literal shape doubles)
   let x' = tensor {dtype = F64} x
   map id x ==~ unsafeEval (map pure x')
-  map (1.0 /) x ==~ unsafeEval (map (pure . (1.0 /)) x')
+  map (1.0 /) x ==~ Graph.unsafeEval (map (pure . (1.0 /)) x')
 
   x <- forAll (literal shape int32s)
   let x' = tensor {dtype = S32} x
-  map (+ 1) x === unsafeEval (map (pure . (+ 1)) x')
+  map (+ 1) x === Graph.unsafeEval (map (pure . (+ 1)) x')
 
 partial
 mapNonTrivial : Device => Property
 mapNonTrivial = fixedProperty $ do
-  map {a = S32} (\x => pure $ x + x) 1 ===# 2
-  map {a = S32} (\_ => pure 2) 1 ===# 2
-  map {a = S32} (pure . map (\x => pure $ x + 1)) 1 ===# 2
+  let res : Graph (Tensor [] S32) = pure 2
+  map {a = S32} (\x => pure $ x + x) 1 ===# res
+  map {a = S32} (\_ => pure 2) 1 ===# res
+  map {a = S32} (map (\x => pure $ x + 1)) 1 ===# res
 
 partial
 map2Result : Device => Property
@@ -68,7 +69,7 @@ partial
 map2ResultWithReusedFnArgs : Device => Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
   let x : Tensor [] S32 = 6
-  map2 (\x, y => pure $ x + x + y + y) 1 2 ===# x
+  map2 (\x, y => pure $ x + x + y + y) 1 2 ===# pure x
 
 partial
 reduce : Device => Property
@@ -181,18 +182,19 @@ partial
 condResultTrivialUsage : Device => Property
 condResultTrivialUsage = fixedProperty $ do
   let x = tensor {dtype = S32} 0
-  cond (tensor True) (\x => pure $ x + 1) x (\x => pure $ x - 1) x ===# 1
+  cond (tensor True) (\x => pure $ x + 1) x (\x => pure $ x - 1) x ===# pure (the (Tensor [] S32) 1)
 
   let x = tensor {dtype = S32} 0
-  cond (tensor False) (\x => pure $ x + 1) x (\x => pure $ x - 1) x ===# -1
+  cond (tensor False) (\x => pure $ x + 1) x (\x => pure $ x - 1) x ===#
+    pure (the (Tensor [] S32) $ -1)
 
   let x = tensor {dtype = S32} [2, 3]
       y = tensor {dtype = S32} [[6, 7], [8, 9]]
-  cond (tensor True) (\x => pure $ tensor 5 * x) x (pure . diag) y ===# tensor [10, 15]
+  cond (tensor True) (\x => pure $ tensor 5 * x) x (pure . diag) y ===# pure (tensor [10, 15])
 
   let x = tensor {dtype = S32} [2, 3]
       y = tensor {dtype = S32} [[6, 7], [8, 9]]
-  cond (tensor False) (\x => pure $ tensor 5 * x) x (pure . diag) y ===# tensor [6, 9]
+  cond (tensor False) (\x => pure $ tensor 5 * x) x (pure . diag) y ===# pure (tensor [6, 9])
 
 partial
 condResultWithReusedArgs : Device => Property
@@ -203,8 +205,8 @@ condResultWithReusedArgs = fixedProperty $ do
       f : (a -> a -> a) -> a -> a
       f g x = g x x
 
-  cond (tensor True) (pure . f (+)) x (pure . f (*)) y ===# 2
-  cond (tensor False) (pure . f (+)) x (pure . f (*)) y ===# 9
+  cond (tensor True) (pure . f (+)) x (pure . f (*)) y ===# pure 2
+  cond (tensor False) (pure . f (+)) x (pure . f (*)) y ===# pure 9
 
 export partial
 all : Device => List (PropertyName, Property)
