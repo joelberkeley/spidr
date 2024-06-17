@@ -238,11 +238,16 @@ show = fixedProperty $ do
     x <- share $ reduce @{Sum} [0] (tensor {dtype = S32} [0, 0])
     let y = map (\w => do
             z <- share $ the (Tensor [] S32) 0
-            pure $ map (\v => pure $ v + z) w
+            pure $ map (\v => do
+                v <- share v
+                pure $ v + v + z
+              ) w + z
           ) x
     pure $ x + y
   show x === """
-    [] => Add (Var 0) (Map {f = [[] 4] => Map {f = [[] 4] => Add (Arg 0) (Var 0)} [Arg 0], with vars {
+    [] => Add (Var 0) (Map {f = [[] 4] => Map {f = [[] 4] => Add (Add (Var 0) (Var 0)) (Var 1), with vars {
+            1    Arg 0
+          }} [Arg 0], with vars {
         0    Lit [] 4
       }} [Var 0]), with vars {
         0    Reduce {op = [[] 4, [] 4] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
