@@ -137,6 +137,10 @@ covering
 showExpr : Nat -> Expr -> String
 
 covering
+showExprList : Nat -> List Expr -> String
+showExprList indent xs = "[" ++ joinBy ", " (toList $ map (showExpr indent) xs) ++ "]"
+
+covering
 showEnv : Nat -> Env -> String
 showEnv indent (MkEnv max env) = joinBy "\n" $ assert_total $ map fmt (reverse env)
 
@@ -160,7 +164,7 @@ export Show (Fn arity) where show = assert_total $ showFn 0
 showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {dtype}}"
 showExpr indent (Var k) = "Var \{k}"
 showExpr indent (Arg k) = "Arg \{k}"
-showExpr indent (Tuple xs) = "Tuple \{map (showExpr indent) xs}"
+showExpr indent (Tuple xs) = "Tuple \{showExprList indent xs}"
 showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
 showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MaxValue {dtype}) = "MaxValue {dtype = \{xlaIdentifier {dtype}}}"
@@ -174,7 +178,7 @@ showExpr indent (Reshape from to x) = "Reshape {from = \{from}, to = \{to}} (\{s
 showExpr indent (Slice starts stops strides x) =
   "Slice {starts = \{starts}, stops = \{stops}, strides = \{strides}} (\{showExpr indent x})"
 showExpr indent (DynamicSlice starts sizes x) =
-  "DynamicSlice {starts = \{map (showExpr indent) starts}, sizes = \{sizes} (\{showExpr indent x})"
+  "DynamicSlice {starts = \{showExprList indent starts}, sizes = \{sizes}} (\{showExpr indent x})"
 showExpr indent (Concat axis x y) =
   "Concat {axis = \{axis}} (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (Diag x) = "Diag (\{showExpr indent x})"
@@ -184,12 +188,12 @@ showExpr indent (Identity {dtype} size) =
   "Identity {size = \{size}, dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (Broadcast from to x) =
   "Broadcast {from = \{from}, to = \{to}} (\{showExpr indent x})"
-showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{show $ map (showExpr indent) xs}"
+showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{showExprList indent $ toList xs}"
 showExpr indent (Reduce op neutral axes x) =
-  "Reduce {op = (\{showFn indent op}), identity = \{showExpr indent neutral}," ++
+  "Reduce {op = \{showFn indent op}, identity = \{showExpr indent neutral}," ++
     " axes = \{axes}} (\{showExpr indent x})"
 showExpr indent (Sort f axis _ xs) =
-  "Sort {f = (\{showFn indent f}), axis = \{axis}} \{map (showExpr indent) xs}"
+  "Sort {f = \{showFn indent f}, axis = \{axis}} \{showExprList indent xs}"
 showExpr indent (Reverse axes x) = "Reverse \{axes} (\{showExpr indent x})"
 showExpr indent (BinaryElementwise op x y) =
   "\{show op} (\{showExpr indent x}) (\{showExpr indent y})"
@@ -202,8 +206,8 @@ showExpr indent (Select p t f) =
   "Select {predicate = \{showExpr indent p}, onTrue = \{showExpr indent t}," ++
     " onFalse = \{showExpr indent f}}"
 showExpr indent (Cond p ft t ff f) =
-  "Cond {predicate = \{showExpr indent p}, onTrueFn = (\{showFn indent ft})," ++
-    " onTrueArg = \{showExpr indent t}, onFalseFn = (\{showFn indent ff})," ++
+  "Cond {predicate = \{showExpr indent p}, onTrueFn = \{showFn indent ft}," ++
+    " onTrueArg = \{showExpr indent t}, onFalseFn = \{showFn indent ff}," ++
     " onFalseArg = \{showExpr indent f}}"
 showExpr indent (Dot x y) = "Dot (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (DotGeneral lBatch lContract rBatch rContract x y) =
