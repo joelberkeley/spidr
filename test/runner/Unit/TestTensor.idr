@@ -229,9 +229,9 @@ show = fixedProperty $ do
         pure (y + y)
   show x ===
     """
-    [] => Add (Var 0) (Var 0), with vars
+    [] => Add (Var 0) (Var 0), with vars {
         0    Add (Lit [] 4) (Lit [] 4)
-
+      }
     """
 
   let x : Graph (Tensor [] S32) = do
@@ -242,10 +242,11 @@ show = fixedProperty $ do
           ) x
     pure $ x + y
   show x === """
-    [] => Add (Var 0) (Map {f = [[] 4] => Map {f = [[] 4] => Add (Arg 0) (Var 0)} [Arg 0], with vars
+    [] => Add (Var 0) (Map {f = [[] 4] => Map {f = [[] 4] => Add (Arg 0) (Var 0)} [Arg 0], with vars {
         0    Lit [] 4
-      } [Var 0]), with vars
+      }} [Var 0]), with vars {
         0    Reduce {op = [[] 4, [] 4] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
+      }
     """
 
 partial

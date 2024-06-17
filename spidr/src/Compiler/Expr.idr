@@ -157,7 +157,7 @@ showFn indent (MkFn params result env@(MkEnv _ env')) =
   let init = "\{show params} => \{showExpr indent result}" in
   case env' of
     [] => init
-    _  => init ++ ", with vars\n\{showEnv (indent + 4) env}\n"
+    _  => init ++ ", with vars {\n\{showEnv (indent + 4) env}\n\{replicate (indent + 2) ' '}}"
 
 export Show (Fn arity) where show = assert_total $ showFn 0
 
