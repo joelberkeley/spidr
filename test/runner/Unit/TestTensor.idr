@@ -487,6 +487,16 @@ trace = fixedProperty $ do
   let x = tensor {dtype = S32} [[-1, 5], [1, 4]]
   (do trace !x) ===# 3
 
+partial
+nested : Device => Property
+nested = fixedProperty $ do
+  let f : Tensor [] S32 -> Graph $ Tensor [] S32
+      f x = do
+        y <- 0
+        map (\z => pure z + pure y) x
+
+  (do map f !0) ===# 0
+
 export partial
 group : Device => Group
 group = MkGroup "Tensor" $ [
@@ -511,6 +521,7 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
+    , ("nested", nested)
   ] ++ concat (the (List _) [
       Unit.TestTensor.Elementwise.all
     , Unit.TestTensor.HigherOrder.all
