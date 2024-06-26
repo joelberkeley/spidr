@@ -27,10 +27,10 @@ y : Tensor [] S32
 y = let x = 1 + 2 in x + x
 ```
 spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations like this one, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the interface
-```
-interface Shareable a where
-  share : a -> Graph a
-```
+> ```idris
+> interface Shareable a where
+>   share : a -> Graph a
+> ```
 `share` labels all tensor expressions contained within the `a`. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
 y' : Graph $ Tensor [2] F64
