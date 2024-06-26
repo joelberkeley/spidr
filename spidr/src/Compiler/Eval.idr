@@ -124,15 +124,15 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
      let broadcastDims = Prelude.map (+ length to `minus` length from) $ range $ length from
       in broadcastInDim !(interpretE x) to broadcastDims
   interpretE (Map f xs dims) = do
-    subBuilder <- createSubBuilder xlaBuilder "computation"
+    subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/map:op"
     computation <- compile subBuilder f
     map xlaBuilder (toList !(traverse interpretE xs)) computation dims
   interpretE (Reduce f neutral axes x) = do
-    subBuilder <- createSubBuilder xlaBuilder "monoid binary op"
+    subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/reduce:semigroup"
     computation <- compile subBuilder f
     reduce !(interpretE x) !(interpretE neutral) computation axes
   interpretE (Sort f axis isStable xs) = do
-    subBuilder <- createSubBuilder xlaBuilder "comparator"
+    subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/sort:compare"
     computation <- compile subBuilder f
     sort !(traverse interpretE xs) computation axis isStable
   interpretE (Reverse axes x) = rev !(interpretE x) axes
@@ -189,8 +189,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Select pred true false) =
     select !(interpretE pred) !(interpretE true) !(interpretE false)
   interpretE (Cond pred fTrue true fFalse false) = do
-    subBuilderT <- createSubBuilder xlaBuilder "truthy computation"
-    subBuilderF <- createSubBuilder xlaBuilder "falsy computation"
+    subBuilderT <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/cond:true"
+    subBuilderF <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/cond:false"
     compTrue <- compile subBuilderT fTrue
     compFalse <- compile subBuilderF fFalse
     conditional !(interpretE pred) !(interpretE true) compTrue !(interpretE false) compFalse
