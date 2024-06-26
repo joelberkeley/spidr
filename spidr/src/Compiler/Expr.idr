@@ -103,6 +103,7 @@ data UnaryOp =
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
+  -- these do the same thing, delete one?
   Var : Nat -> Expr
   Arg : Nat -> Expr
   Tuple : List Expr -> Expr
