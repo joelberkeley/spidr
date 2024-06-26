@@ -75,28 +75,28 @@ partial
 reduce : Device => Property
 reduce = fixedProperty $ do
   let x = tensor {dtype = S32} [[1, 2, 3], [-1, -2, -3]]
-  reduce @{Sum} [1] x ===# tensor [6, -6]
+  reduce @{Sum} [1] x ===# pure (tensor [6, -6])
 
   let x = tensor {dtype = S32} [[1, 2, 3], [-2, -3, -4]]
-  reduce @{Sum} [0, 1] x ===# tensor (-3)
+  reduce @{Sum} [0, 1] x ===# pure (tensor (-3))
 
   let x = tensor {dtype = S32} [[[1], [2], [3]], [[-2], [-3], [-4]]]
-  reduce @{Sum} [0, 1] x ===# tensor [-3]
+  reduce @{Sum} [0, 1] x ===# pure (tensor [-3])
 
   let x = tensor {dtype = S32} [[[1, 2, 3]], [[-2, -3, -4]]]
-  reduce @{Sum} [0, 2] x ===# tensor [-3]
+  reduce @{Sum} [0, 2] x ===# pure (tensor [-3])
 
   let x = tensor {dtype = S32} [[[1, 2, 3], [-2, -3, -4]]]
-  reduce @{Sum} [1, 2] x ===# tensor [-3]
+  reduce @{Sum} [1, 2] x ===# pure (tensor [-3])
 
   let x = tensor {dtype = S32} [[[1, 2, 3], [4, 5, 6]], [[-2, -3, -4], [-6, -7, -8]]]
-  reduce @{Sum} [0, 2] x ===# tensor [-3, -6]
+  reduce @{Sum} [0, 2] x ===# pure (tensor [-3, -6])
 
   let x = tensor {dtype = S32} [[1, 2, 3], [-1, -2, -3]]
-  reduce @{Sum} [0] x ===# tensor [0, 0, 0]
+  reduce @{Sum} [0] x ===# pure (tensor [0, 0, 0])
 
   let x = tensor {dtype = PRED} [[True, False, True], [True, False, False]]
-  reduce @{All} [1] x ===# tensor [False, False]
+  reduce @{All} [1] x ===# pure (tensor [False, False])
 
 partial
 sort : Device => Property
@@ -109,39 +109,39 @@ sort = withTests 20 . property $ do
   let x = tensor {dtype = S32} x
 
   let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+      init = slice [0.to d] <$> sorted
+      tail = slice [1.to (S d)] <$> sorted
   diff (unsafeEval init) (\x, y => all [| x <= y |]) (unsafeEval tail)
 
   x <- forAll (literal [S d, S dd] int32s)
   let x = tensor {dtype = S32} x
 
   let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+      init = slice [0.to d] <$> sorted
+      tail = slice [1.to (S d)] <$> sorted
   diff (unsafeEval init) (\x, y => all [| x <= y |]) (unsafeEval tail)
 
   let sorted = sort (<) 1 x
-      init = slice [all, 0.to dd] sorted
-      tail = slice [all, 1.to (S dd)] sorted
+      init = slice [all, 0.to dd] <$> sorted
+      tail = slice [all, 1.to (S dd)] <$> sorted
   diff (unsafeEval init) (\x, y => all [| x <= y |]) (unsafeEval tail)
 
   x <- forAll (literal [S d, S dd, S ddd] int32s)
   let x = tensor {dtype = S32} x
 
   let sorted = sort (<) 0 x
-      init = slice [0.to d] sorted
-      tail = slice [1.to (S d)] sorted
+      init = slice [0.to d] <$> sorted
+      tail = slice [1.to (S d)] <$> sorted
   diff (unsafeEval init) (\x, y => all [| x <= y |]) (unsafeEval tail)
 
   let sorted = sort (<) 1 x
-      init = slice [all, 0.to dd] sorted
-      tail = slice [all, 1.to (S dd)] sorted
+      init = slice [all, 0.to dd] <$> sorted
+      tail = slice [all, 1.to (S dd)] <$> sorted
   diff (unsafeEval init) (\x, y => all [| x <= y |]) (unsafeEval tail)
 
   let sorted = sort (<) 2 x
-      init = slice [all, all, 0.to ddd] sorted
-      tail = slice [all, all, 1.to (S ddd)] sorted
+      init = slice [all, all, 0.to ddd] <$> sorted
+      tail = slice [all, all, 1.to (S ddd)] <$> sorted
   diff (unsafeEval init) (\x, y => all [| x <= y |]) (unsafeEval tail)
 
   where
@@ -157,26 +157,26 @@ partial
 sortWithEmptyAxis : Device => Property
 sortWithEmptyAxis = fixedProperty $ do
   let x = tensor {shape = [0, 2, 3]} {dtype = S32} []
-  sort (<) 0 x ===# x
+  sort (<) 0 x ===# pure x
 
   let x = tensor {shape = [0, 2, 3]} {dtype = S32} []
-  sort (<) 1 x ===# x
+  sort (<) 1 x ===# pure x
 
   let x = tensor {shape = [2, 0, 3]} {dtype = S32} [[], []]
-  sort (<) 0 x ===# x
+  sort (<) 0 x ===# pure x
 
   let x = tensor {shape = [2, 0, 3]} {dtype = S32} [[], []]
-  sort (<) 1 x ===# x
+  sort (<) 1 x ===# pure x
 
 partial
 sortWithRepeatedElements : Device => Property
 sortWithRepeatedElements = fixedProperty $ do
   let x = tensor {dtype = S32} [1, 3, 4, 3, 2]
-  sort (<) 0 x ===# tensor [1, 2, 3, 3, 4]
+  sort (<) 0 x ===# pure (tensor [1, 2, 3, 3, 4])
 
   let x = tensor {dtype = S32} [[1, 4, 4], [3, 2, 5]]
-  sort (<) 0 x ===# tensor [[1, 2, 4], [3, 4, 5]]
-  sort (<) 1 x ===# tensor [[1, 4, 4], [2, 3, 5]]
+  sort (<) 0 x ===# pure (tensor [[1, 2, 4], [3, 4, 5]])
+  sort (<) 1 x ===# pure (tensor [[1, 4, 4], [2, 3, 5]])
 
 partial
 condResultTrivialUsage : Device => Property

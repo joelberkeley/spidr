@@ -86,8 +86,8 @@ ClosedFormDistribution [1] Gaussian where
     cholCov <- share $ cholesky $ squeeze {to = [S d, S d]} cov
     tri <- share $ cholCov |\ squeeze (x - mean)
     let exponent = - tri @@ tri / 2.0
-        covSqrtDet = reduce @{Prod} [0] (diag cholCov)
-        denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
+    covSqrtDet <- reduce @{Prod} [0] (diag cholCov)
+    let denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
     pure (exp exponent / denominator)
 
   cdf (MkGaussian {d = S _} _ _) _ = ?multivariateGaussianCDF

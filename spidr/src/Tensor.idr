@@ -72,6 +72,7 @@ export
 Monad Graph where
   (MkGraph x) >>= f = MkGraph $ x >>= (\a => let MkGraph b = f a in b)
 
+-- example no longer works as reduce produces Graph
 public export
 interface Shareable a where
   ||| Mark an expression to be efficiently reused. For example, in
@@ -766,9 +767,10 @@ map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Graph $ Tensor [] b) ->
       Tensor shape a -> Graph $ Tensor shape b
 map f $ MkTensor {shape = _} x = MkGraph $ do
-  let MkGraph app = f (MkTensor $ Arg 0)
+  addr <- reserve
+  let MkGraph app = f (MkTensor $ Arg addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [MkParameter [] a] res env
+      g = MkFn [(addr, MkParameter [] a)] res env
 
   updateFrom env
   pure $ MkTensor $ Map g [x] (range $ length shape)
@@ -787,9 +789,11 @@ map2 :
   (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
   Tensor shape a -> Tensor shape b -> Graph $ Tensor shape c
 map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraph $ do
-  let MkGraph app = f (MkTensor $ Arg 0) (MkTensor $ Arg 1)
+  addr0 <- reserve
+  addr1 <- reserve
+  let MkGraph app = f (MkTensor $ Arg addr0) (MkTensor $ Arg addr1)
       (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [MkParameter [] a, MkParameter [] b] res env
+      g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
 
   updateFrom env
   pure $ MkTensor $ Map g [x, x'] (range $ length shape)
@@ -813,15 +817,19 @@ reduce :
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
-  Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x =
+  Graph $ Tensor (deleteAt axes shape) dtype
+reduce axes $ MkTensor x = MkGraph $ do
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-      MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Arg 0) (MkTensor $ Arg 1)
-      g = MkFn [MkParameter [] dtype, MkParameter [] dtype] res empty
+  addr0 <- reserve
+  addr1 <- reserve
+
+  let MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Arg addr0) (MkTensor $ Arg addr1)
+      g = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
       MkTensor neutral' = neutral @{reducer}
-   in MkTensor $ Reduce g neutral' axes x
+
+  pure $ MkTensor $ Reduce g neutral' axes x
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -834,8 +842,8 @@ reduce axes $ MkTensor x =
 ||| commonly-used functions, including (>), (<), (>=), and (<=), don't use `Graph`, we have opted to
 ||| omit it for ergonomics. We can trivially provide an overloaded variant if requested.
 |||
-||| For example, for `x = tensor [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 x` is
-||| `tensor [[1, 2, 4], [3, 6, 5]]` and `sort (<) 1 x` is
+||| For example, for `x = tensor [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 x` produces
+||| `tensor [[1, 2, 4], [3, 6, 5]]`, while `sort (<) 1 x` produces
 ||| `tensor [[1, 4, 6], [2, 3, 5]]`.
 export
 sort :
@@ -844,11 +852,15 @@ sort :
   (dimension : Nat) ->
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
-  Tensor shape dtype
-sort comp dimension $ MkTensor x =
-  let MkTensor res = comp (MkTensor $ Arg 0) (MkTensor $ Arg 1)
-      comparator = MkFn [MkParameter [] dtype, MkParameter [] dtype] res empty
-   in MkTensor $ Sort comparator dimension False [x]
+  Graph $ Tensor shape dtype
+sort comp dimension $ MkTensor x = MkGraph $ do
+  addr0 <- reserve
+  addr1 <- reserve
+
+  let MkTensor res = comp (MkTensor $ Arg addr0) (MkTensor $ Arg addr1)
+      comparator = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
+
+  pure $ MkTensor $ Sort comparator dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -1026,19 +1038,23 @@ cond :
   (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
   Graph $ Tensor shape dtype
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraph $ do
-  let MkGraph appT = onTrue (MkTensor $ Arg 0)
-      (env, MkTensor res) = runState (emptyFrom !get) appT
-      onTrue = MkFn [MkParameter ts tt] res env
+  addr <- reserve
 
-      MkGraph appF = onFalse (MkTensor $ Arg 0)
-      (env, MkTensor res) = runState (emptyFrom env) appF
-      onFalse = MkFn [MkParameter fs ft] res env
+  let MkGraph app = onTrue (MkTensor $ Arg addr)
+      (env, MkTensor res) = runState (emptyFrom !get) app
+      onTrue = MkFn [(addr, MkParameter ts tt)] res env
+
+  addr <- reserve
+
+  let MkGraph app = onFalse (MkTensor $ Arg addr)
+      (env, MkTensor res) = runState (emptyFrom env) app
+      onFalse = MkFn [(addr, MkParameter fs ft)] res env
 
   updateFrom env
   pure $ MkTensor $ Cond pred onTrue true onFalse false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
-infixl 9 @@
+export infixl 9 @@
 
 namespace Vector
   ||| Vector dot product with a tensor of any rank. The vector dot product is with the first axis of
@@ -1239,7 +1255,7 @@ export
 recip : Tensor shape F64 -> Tensor shape F64
 recip = unary Reciprocal
 
-infixr 9 ^
+export infixr 9 ^
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
 ||| example, `tensor [2, 25, -9] ^ tensor [3, -0.5, 0.5]` is `tensor [8, 0.2, nan]`.
@@ -1409,7 +1425,7 @@ highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Graph $ Tens
 highlightNan minimize x with (x)
   _ | (MkTensor {shape = _} _) = do
     x <- share x
-    cond (reduce @{All} [0] (x == x)) pure x extremizeNan x
+    cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
 
     where
 
@@ -1456,7 +1472,7 @@ export
 cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
 cholesky $ MkTensor x = triangle Lower (MkTensor $ Cholesky x)
 
-infix 9 |\, \|
+export infix 9 |\, \|
 
 namespace Matrix
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is a lower-triangular matrix.
@@ -1505,12 +1521,12 @@ namespace Vector
   a \| b = let (MkTensor {shape = [_]} _) = b in squeeze (a \| expand 1 b)
 
 ||| Sum the elements along the diagonal of the input. For example,
-||| `trace (tensor [[-1, 5], [1, 4]])` is `3`.
+||| `trace (tensor [[-1, 5], [1, 4]])` produces `3`.
 export
 trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
-        Tensor [] dtype
+        Graph $ Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape = [_, _]} _ = reduce @{Sum} [0, 1] $ x * identity
 

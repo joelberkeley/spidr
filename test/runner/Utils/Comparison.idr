@@ -38,7 +38,7 @@ sufficientlyEq x y =
          avg = (x + y) / 2
       in abs (diff / avg) < tol  -- real
 
-infix 1 ==~
+export infix 1 ==~
 
 export covering
 (==~) :
@@ -53,7 +53,7 @@ export covering
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
   sufficientlyEq' x y = all [| sufficientlyEq {tol} x y |]
 
-infix 1 ===#
+export infix 6 ===#
 
 namespace Graph
   namespace PRED

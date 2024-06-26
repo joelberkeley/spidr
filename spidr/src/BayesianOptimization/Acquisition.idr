@@ -78,7 +78,7 @@ expectedImprovementByModel :
   Reader (DataModel modelType) $ Acquisition 1 features
 expectedImprovementByModel = asks $ \env, at => do
   marginal <- marginalise env.model env.dataset.features
-  let best = squeeze $ reduce @{Min} [0] !(mean {event = [1]} marginal)
+  let best = squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
   expectedImprovement env.model best at
 
 ||| Build an acquisition function that returns the probability that any given point will take a

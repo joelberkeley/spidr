@@ -33,16 +33,16 @@ product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tensor [] F64
-iidKolmogorovSmirnov samples cdf =
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Graph $ Tensor [] F64
+iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
 
       indices : Tensor [n] F64 := castDtype $ tensor {dtype = U64} (range n)
       sampleSize : Tensor [] F64 := castDtype $ tensor {dtype = U64} (Scalar n)
       samplesFlat = reshape {sizesEqual = sym (product1 n)} {to = [n]} $ cdf samples
-      deviationFromCDF : Tensor [n] F64 = indices / sampleSize - sort (<) 0 samplesFlat
-   in reduce @{Max} [0] (abs deviationFromCDF)
+      deviationFromCDF : Tensor [n] F64 = indices / sampleSize - !(sort (<) 0 samplesFlat)
+  reduce @{Max} [0] (abs deviationFromCDF)
 
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
@@ -66,7 +66,7 @@ uniform = withTests 20 . property $ do
     let uniformCdf : Tensor [2000, 5] F64 -> Tensor [2000, 5] F64
         uniformCdf x = (x - broadcast bound) / (broadcast $ bound' - bound)
 
-    pure $ iidKolmogorovSmirnov samples uniformCdf
+    iidKolmogorovSmirnov samples uniformCdf
 
   diff (unsafeEval ksTest) (<) 0.015
 
@@ -157,7 +157,7 @@ normal = withTests 20 . property $ do
 
       ksTest = do
         samples <- the (Graph $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
-        pure $ iidKolmogorovSmirnov samples normalCdf
+        iidKolmogorovSmirnov samples normalCdf
 
   diff (unsafeEval ksTest) (<) 0.02
 

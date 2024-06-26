@@ -66,8 +66,12 @@ updateFrom (MkEnv n _) = do
   put $ MkEnv n xs
 
 export
-toList : Env -> (Nat, List (Nat, Expr))
-toList (MkEnv n env) = (n, reverse env)
+toList : Env -> List (Nat, Expr)
+toList (MkEnv _ env) = reverse env
+
+export
+counter : Env -> Nat
+counter (MkEnv c _) = c
 
 public export
 data Fn : Nat -> Type where
@@ -77,7 +81,7 @@ data Fn : Nat -> Type where
   ||| @result The function result.
   ||| @env Bindings within the function. Includes only nodes in this scope, not outer or inner scope.
   MkFn : {arity : _} ->
-         (params : Vect arity Parameter) ->
+         (params : Vect arity (Nat, Parameter)) ->
          (result : Expr) ->
          (env : Env) ->
          Fn arity
@@ -142,6 +146,13 @@ addNode expr = do
   MkEnv next env <- get
   put $ MkEnv (S next) ((next, expr) :: env)
   pure (Var next)
+
+export
+reserve : State Env Nat
+reserve = do
+  MkEnv next env <- get
+  put $ MkEnv (S next) env
+  pure next
 
 covering
 showExpr : Nat -> Expr -> String
@@ -233,12 +244,3 @@ showExpr indent (UniformFloatingPoint key initialState minval maxval shape) =
 showExpr indent (NormalFloatingPoint key initialState shape) =
   "NormalFloatingPoint {key = \{showExpr indent key}," ++
     " initialState = \{showExpr indent initialState}, shape = \{shape}}"
-
-public export 0
-FnExpr : Nat -> Type
-FnExpr 0 = State Env Expr
-FnExpr (S k) = Expr -> FnExpr k
-
-applyN : FnExpr arity -> Vect arity Nat -> State Env Expr
-applyN f [] = f
-applyN f (x :: xs) = applyN (f $ Var x) xs

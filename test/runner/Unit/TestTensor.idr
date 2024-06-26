@@ -240,15 +240,15 @@ show = fixedProperty $ do
         map (\v => do v <- share v; pure $ v + v + z) (x + z)
 
       x : Graph (Tensor [] S32) := do
-        x <- share $ reduce @{Sum} [0] (tensor {dtype = S32} [1, 2])
+        x <- share =<< reduce @{Sum} [0] (tensor {dtype = S32} [1, 2])
         pure $ x + !(map f x)
   show x === """
-    [] => Add (Var 0) (Map {f = [[] 4] => Map {f = [[] 4] => Add (Add (Var 2) (Var 2)) (Var 1), with vars {
-            2    Arg 0
-          }} [Add (Arg 0) (Var 1)], with vars {
-          1    Lit [] 4
-        }} [Var 0]), with vars {
-        0    Reduce {op = [[] 4, [] 4] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
+    [] => Add (Var 2) (Map {f = [(3, [] 4)] => Map {f = [(5, [] 4)] => Add (Add (Var 6) (Var 6)) (Var 4), with vars {
+            6    Arg 5
+          }} [Add (Arg 3) (Var 4)], with vars {
+          4    Lit [] 4
+        }} [Var 2]), with vars {
+        2    Reduce {op = [(0, [] 4), (1, [] 4)] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
       }
     """
   x ===# pure 24
@@ -368,7 +368,7 @@ argmin = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = tensor xs
-  (do pure $ slice [at !(argmin xs)] xs) ===# pure (reduce [0] @{Min} xs)
+  (do pure $ slice [at !(argmin xs)] xs) ===# reduce [0] @{Min} xs
 
 partial
 argmax : Device => Property
@@ -376,7 +376,7 @@ argmax = property $ do
   d <- forAll dims
   xs <- forAll (literal [S d] doubles)
   let xs = tensor xs
-  (do pure $ slice [at !(argmax xs)] xs) ===# pure (reduce [0] @{Max} xs)
+  (do pure $ slice [at !(argmax xs)] xs) ===# reduce [0] @{Max} xs
 
 partial
 select : Device => Property
@@ -464,7 +464,7 @@ triangularSolveIgnoresOppositeElems = fixedProperty $ do
 partial
 trace : Device => Property
 trace = fixedProperty $
-  trace (tensor {dtype = S32} [[-1, 5], [1, 4]]) ===# 3
+  trace (tensor {dtype = S32} [[-1, 5], [1, 4]]) ===# pure 3
 
 export partial
 group : Device => Group

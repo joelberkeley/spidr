@@ -47,9 +47,10 @@ import Util
 import Device
 
 export
-data Err = OutOfBounds Nat Nat
-         | ValueNotFound Nat
-         | PjrtErr PjrtError
+data Err
+  = OutOfBounds Nat Nat
+  | ValueNotFound Nat
+  | PjrtErr PjrtError
 
 export
 Show Err where
@@ -62,50 +63,38 @@ ErrIO : Type -> Type
 ErrIO = EitherT Err IO
 
 covering
-interpret : XlaBuilder -> Fn arity -> ErrIO XlaOp
+interpret : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaOp
 
 covering
-compile : XlaBuilder -> Fn arity -> ErrIO XlaComputation
-compile xlaBuilder f = do
-  root <- interpret xlaBuilder f
-  build xlaBuilder root
+compile : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaComputation
+compile xlaBuilder f = build xlaBuilder =<< interpret xlaBuilder f
 
-interpret xlaBuilder (MkFn {arity} params root env) = do
-  let (max, exprs) = toList env
-  runReaderT !(newArray $ cast $ max + arity) $ do
-    traverse_ interpretParameter (enumerate params)
-    traverse_ (\(i, expr) => do set (i + arity) !(interpretE expr)) exprs
-    interpretE root
+interpret @{cache} xlaBuilder (MkFn params root env) = do
+  traverse_ interpretParameter (enumerate params)
+  traverse_ (\(i, expr) => do set i !(interpretE expr)) (toList env)
+  interpretE root
 
   where
 
-  0 Builder : Type -> Type
-  Builder = ReaderT (IOArray XlaOp) ErrIO
-
-  set : Nat -> XlaOp -> Builder ()
+  set : Nat -> XlaOp -> ErrIO ()
   set idx xlaOp = do
-    cache <- ask
-    True <- lift $ writeArray cache (cast idx) xlaOp
-      | False => lift $ left $ OutOfBounds idx (cast $ max cache)
-    pure ()
+    False <- writeArray cache (cast idx) xlaOp | True => right ()
+    left $ OutOfBounds idx (cast $ max cache)
 
-  get : Nat -> Builder XlaOp
+  get : Nat -> ErrIO XlaOp
   get idx = do
-    cache <- ask
-    Just xlaOp <- lift $ readArray cache (cast idx)
-      | _ => lift $ left $ let max = cast (max cache)
-                            in if idx >= max then OutOfBounds idx max else ValueNotFound idx
-    pure xlaOp
+    Nothing <- readArray cache (cast idx) | Just op => right op
+    left $ let max = cast (max cache) in if idx >= max then OutOfBounds idx max else ValueNotFound idx
 
-  interpretParameter : (Nat, Parameter) -> Builder ()
-  interpretParameter (position, MkParameter shape dtype) = do
+  interpretParameter : (Nat, Nat, Parameter) -> ErrIO ()
+  interpretParameter (fPos, graphPos, MkParameter shape dtype) = do
     xlaShape <- mkShape {dtype} shape
-    param <- parameter xlaBuilder position xlaShape (show position)
-    set position param
+    param <- parameter xlaBuilder fPos xlaShape (show fPos)
+    set graphPos param
 
-  interpretE : Expr -> Builder XlaOp
+  interpretE : Expr -> ErrIO XlaOp
   interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
-  interpretE (Var x) = get (x + arity)
+  interpretE (Var x) = get x
   interpretE (Arg x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
@@ -136,15 +125,15 @@ interpret xlaBuilder (MkFn {arity} params root env) = do
       in broadcastInDim !(interpretE x) to broadcastDims
   interpretE (Map f xs dims) = do
     subBuilder <- createSubBuilder xlaBuilder "computation"
-    computation <- lift $ compile subBuilder f
+    computation <- compile subBuilder f
     map xlaBuilder (toList !(traverse interpretE xs)) computation dims
   interpretE (Reduce f neutral axes x) = do
     subBuilder <- createSubBuilder xlaBuilder "monoid binary op"
-    computation <- lift $ compile subBuilder f
+    computation <- compile subBuilder f
     reduce !(interpretE x) !(interpretE neutral) computation axes
   interpretE (Sort f axis isStable xs) = do
     subBuilder <- createSubBuilder xlaBuilder "comparator"
-    computation <- lift $ compile subBuilder f
+    computation <- compile subBuilder f
     sort !(traverse interpretE xs) computation axis isStable
   interpretE (Reverse axes x) = rev !(interpretE x) axes
   interpretE (BinaryElementwise f x y) = toXla f !(interpretE x) !(interpretE y)
@@ -202,8 +191,8 @@ interpret xlaBuilder (MkFn {arity} params root env) = do
   interpretE (Cond pred fTrue true fFalse false) = do
     subBuilderT <- createSubBuilder xlaBuilder "truthy computation"
     subBuilderF <- createSubBuilder xlaBuilder "falsy computation"
-    compTrue <- lift $ compile subBuilderT fTrue
-    compFalse <- lift $ compile subBuilderF fFalse
+    compTrue <- compile subBuilderT fTrue
+    compFalse <- compile subBuilderF fFalse
     conditional !(interpretE pred) !(interpretE true) compTrue !(interpretE false) compFalse
   interpretE (Dot l r) = dot !(interpretE l) !(interpretE r)
   interpretE (DotGeneral lb rb lc rc l r) = do
@@ -230,19 +219,12 @@ interpret xlaBuilder (MkFn {arity} params root env) = do
       !(interpretE key) !(interpretE initialState) ThreeFry !(mkShape {dtype = F64} shape)
     tuple xlaBuilder [value rngOutput, state rngOutput]
 
-export covering
-toString : Fn 0 -> ErrIO String
-toString f = do
-  xlaBuilder <- mkXlaBuilder "toString"
-  root <- interpret xlaBuilder f
-  pure $ opToString xlaBuilder root
-
 ||| It is up to the caller to free the `Literal`s.
 export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
-execute (MkDevice api client) f shapes = do
+execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
-  computation <- compile xlaBuilder f
+  computation <- compile @{!(newArray $ cast $ counter env + 1)} xlaBuilder f  -- why is this + 1 here?
   bimapEitherT PjrtErr id $ do
     code <- serializeAsString computation
     executableBuildOptions <- mkExecutableBuildOptions
