@@ -99,6 +99,7 @@ interface Shareable a where
 
 export
 Shareable (Tensor shape dtype) where
+  share x@(MkTensor (Arg _)) = pure x  -- if we need this I think we still have a bug
   share x@(MkTensor (Var _)) = pure x
   share (MkTensor x) = MkGraph $ do
     x <- addNode x
