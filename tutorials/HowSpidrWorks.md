@@ -83,9 +83,11 @@ along with the list
 ```
 spidr uses this second approach of a supplementary list, or stack, of `Expr`s. Experiment with `show` on your tensor graphs to see this in action.
 
-> *__DETAIL__* Due to limitations spidr's handling of scope, labels are not contiguous and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the `Expr` label. The list remains topologically sorted.
+> *__DETAIL__* spidr's interpreter stores nodes across all program scopes in a single array. The interpreter needs to quickly recall these nodes by label, so labels are indices in this global namespace. However, we define scopes recursively in the high-level Idris graph, with local namespaces, as outlined above. As such, labels in local namespaces are not contiguous, and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the `Expr` label. The lists remain both individually, and collectively, topologically sorted.
 
 In either of these approaches, we need to keep track of generated labels, so we don't reuse them (for the list, this means keeping track of the list). Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of labelling nodes in our computational graph. This explicit state introduces the tradeoff between performance and ergonomics we mentioned earlier.
+
+We've not yet discussed how to represent higher-order functions, such as StableHLO's [`sort`](https://openxla.org/stablehlo/spec#sort) and [`reduce`](https://openxla.org/stablehlo/spec#reduce). These are StableHLO functions that take as arguments other StableHLO functions. These arguments form subgraphs that must be constructed before we can construct the complete StableHLO graph. To 
 
 Finally, a `Tensor` is simply a container for an `Expr`, a runtime-available `Shape`, and an erased element type.
 

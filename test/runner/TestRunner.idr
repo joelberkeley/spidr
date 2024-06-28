@@ -18,6 +18,7 @@ module TestRunner
 import Data.SOP
 import Hedgehog
 
+import Compiler.Xla.Client.XlaBuilder
 import Device
 
 import TestUtils
@@ -31,6 +32,7 @@ import Unit.TestUtil
 export partial
 run : Device -> IO ()
 run device = do
+  foo
   test [
       Utils.TestComparison.group
     , TestUtils.group
