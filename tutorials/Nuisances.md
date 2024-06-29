@@ -26,7 +26,7 @@ import Tensor
 y : Tensor [] S32
 y = let x = 1 + 2 in x + x
 ```
-spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations like this, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the interface
+spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the interface
 > ```idris
 > interface Shareable a where
 >   share : a -> Graph a
@@ -39,6 +39,6 @@ y' = do
   pure $ x + x 
 ```
 
-> *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `share` might not make all that much difference. However, eliminating these subexpressions will itself require compute, and the compiler might not catch all of them either, so we don't recommend relying on this.
+> *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `share` might not always make a difference. However, eliminating these subexpressions itself requires compute, and even then the compiler might not catch all of them, so we don't recommend relying on this.
 
-There are downsides to `share`. First, it's a distraction. Normally, we can rely on the compiler to reuse expressions by name bindings: in `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. Naturally, we have the same situation in maths. Perhaps more importantly, though, it's possible to accidentally reuse an expression without sharing it, and thus incur a performance penalty. We are investigating how [linearity](https://www.type-driven.org.uk/edwinb/papers/idris2.pdf) might catch unintentional tensor reuse at compile time.
+There are downsides to `share`. First, it's a distraction. Normally, we can rely on the compiler to reuse expressions by name bindings: in `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. Naturally, we have the same situation in symbolic maths. Perhaps more importantly, though, it's possible to accidentally reuse an expression without sharing it, and thus incur a performance penalty. We are investigating how [linearity](https://www.type-driven.org.uk/edwinb/papers/idris2.pdf) might catch unintentional tensor reuse at compile time.
