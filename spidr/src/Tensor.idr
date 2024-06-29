@@ -72,27 +72,21 @@ export
 Monad Graph where
   (MkGraph x) >>= f = MkGraph $ x >>= (\a => let MkGraph b = f a in b)
 
--- example no longer works as reduce produces Graph
 public export
 interface Shareable a where
   ||| Mark an expression to be efficiently reused. For example, in
   ||| ```
-  ||| expensive : Tensor [] F64
-  ||| expensive = reduce @{Sum} [0] $ fill {shape = [9999999]} 1.0
+  ||| bad : Tensor [9999999] F64
+  ||| bad = let x = fill {shape = [9999999]} 1.0 in x + x
   |||
-  ||| good : Graph $ Tensor [] F64
-  ||| good = do
-  |||   x <- share expensive
-  |||   pure $ x + x
-  |||
-  ||| bad : Tensor [] F64
-  ||| bad = expensive + expensive
+  ||| good : Graph $ Tensor [9999999] F64
+  ||| good = do x <- share $ fill {shape = [9999999]} 1.0
+  |||           pure (x + x)
   ||| ```
-  ||| `expensive` is calculated once in `good`, since `share` marks it for sharing, but twice in
-  ||| `bad`.
+  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, where `share` marks it for sharing.
   |||
-  ||| Types that implement this interface should `share` constituent components it deems worth
-  ||| sharing. For example, see the implementation for tuples.
+  ||| Types that implement this interface should `share` constituent components it deems worth sharing.
+  ||| For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
   share : a -> Graph a
