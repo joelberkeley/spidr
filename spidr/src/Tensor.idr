@@ -93,7 +93,6 @@ interface Shareable a where
 
 export
 Shareable (Tensor shape dtype) where
-  share x@(MkTensor (Arg _)) = pure x  -- if we need this I think we still have a bug
   share x@(MkTensor (Var _)) = pure x
   share (MkTensor x) = MkGraph $ do
     x <- addNode x
@@ -763,7 +762,7 @@ map : (Primitive a, Primitive b) =>
       Tensor shape a -> Graph $ Tensor shape b
 map f $ MkTensor {shape = _} x = MkGraph $ do
   addr <- reserve
-  let MkGraph app = f (MkTensor $ Arg addr)
+  let MkGraph app = f (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr, MkParameter [] a)] res env
 
@@ -786,7 +785,7 @@ map2 :
 map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraph $ do
   addr0 <- reserve
   addr1 <- reserve
-  let MkGraph app = f (MkTensor $ Arg addr0) (MkTensor $ Arg addr1)
+  let MkGraph app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
 
@@ -820,7 +819,7 @@ reduce axes $ MkTensor x = MkGraph $ do
   addr0 <- reserve
   addr1 <- reserve
 
-  let MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Arg addr0) (MkTensor $ Arg addr1)
+  let MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       g = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
       MkTensor neutral' = neutral @{reducer}
 
@@ -852,7 +851,7 @@ sort comp dimension $ MkTensor x = MkGraph $ do
   addr0 <- reserve
   addr1 <- reserve
 
-  let MkTensor res = comp (MkTensor $ Arg addr0) (MkTensor $ Arg addr1)
+  let MkTensor res = comp (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       comparator = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
 
   pure $ MkTensor $ Sort comparator dimension False [x]
@@ -1035,13 +1034,13 @@ cond :
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraph $ do
   addr <- reserve
 
-  let MkGraph app = onTrue (MkTensor $ Arg addr)
+  let MkGraph app = onTrue (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       onTrue = MkFn [(addr, MkParameter ts tt)] res env
 
   addr <- reserve
 
-  let MkGraph app = onFalse (MkTensor $ Arg addr)
+  let MkGraph app = onFalse (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom env) app
       onFalse = MkFn [(addr, MkParameter fs ft)] res env
 

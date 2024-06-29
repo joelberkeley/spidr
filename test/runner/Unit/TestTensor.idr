@@ -243,10 +243,10 @@ show = fixedProperty $ do
         x <- share =<< reduce @{Sum} [0] (tensor {dtype = S32} [1, 2])
         pure $ x + !(map f x)
   show x === """
-    [] => Add (Var 2) (Map {f = [(3, [] 4)] => Map {f = [(5, [] 4)] => Add (Add (Arg 5) (Arg 5)) (Var 4)} [Add (Arg 3) (Var 4)], with vars {
+    [] => Add (Var 2) (Map {f = [(3, [] 4)] => Map {f = [(5, [] 4)] => Add (Add (Var 5) (Var 5)) (Var 4)} [Add (Var 3) (Var 4)], with vars {
           4    Lit [] 4
         }} [Var 2]), with vars {
-        2    Reduce {op = [(0, [] 4), (1, [] 4)] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
+        2    Reduce {op = [(0, [] 4), (1, [] 4)] => Add (Var 0) (Var 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
       }
     """
   -- x ===# pure 24  -- bug in XLA? https://github.com/openxla/xla/issues/14299

@@ -103,9 +103,7 @@ data UnaryOp =
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
-  -- these do the same thing, delete one?
   Var : Nat -> Expr
-  Arg : Nat -> Expr
   Tuple : List Expr -> Expr
   GetTupleElement : (index : Nat) -> Expr -> Expr
   MinValue : Primitive dtype => Expr
@@ -185,7 +183,6 @@ export Show (Fn arity) where show = assert_total $ showFn 0
 
 showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {dtype}}"
 showExpr indent (Var k) = "Var \{k}"
-showExpr indent (Arg k) = "Arg \{k}"
 showExpr indent (Tuple xs) = "Tuple \{showExprList indent xs}"
 showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
 showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"

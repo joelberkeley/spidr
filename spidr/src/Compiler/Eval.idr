@@ -95,7 +95,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE : Expr -> ErrIO XlaOp
   interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
   interpretE (Var x) = get x
-  interpretE (Arg x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
