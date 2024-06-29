@@ -249,7 +249,7 @@ show = fixedProperty $ do
         2    Reduce {op = [(0, [] 4), (1, [] 4)] => Add (Arg 0) (Arg 1), identity = Broadcast {from = [], to = []} (Lit [] 4), axes = [0]} (Lit [2] 4)
       }
     """
-  -- x ===# pure 24
+  -- x ===# pure 24  -- bug in XLA? https://github.com/openxla/xla/issues/14299
 
 partial
 cast : Device => Property

@@ -460,20 +460,4 @@ extern "C" {
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
-
-    void foo () {
-        xla::XlaBuilder root("root");
-        auto zero = xla::ConstantR0(&root, 0);
-        absl::Span<const int64_t> xs = {0};
-        auto zeros = xla::ConstantR1(&root, xs);
-
-        auto add_builder = root.CreateSubBuilder("add");
-        auto u32 = xla::ShapeUtil::MakeScalarShape(xla::PrimitiveType::U32);
-        auto p0 = xla::Parameter(&*add_builder, 0, u32, "p0");
-        auto p1 = xla::Parameter(&*add_builder, 1, u32, "p1");
-        auto add = xla::Add(xla::Add(p0, p1), zero);
-
-        auto res = xla::Reduce(zeros, zero, add_builder->Build().value(), {0});
-        root.Build().value();
-    }
 }

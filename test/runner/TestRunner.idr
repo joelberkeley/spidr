@@ -18,7 +18,6 @@ module TestRunner
 import Data.SOP
 import Hedgehog
 
-import Compiler.Xla.Client.XlaBuilder
 import Device
 
 import TestUtils

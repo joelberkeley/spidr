@@ -631,11 +631,3 @@ conditional
       falseComputation
     opPtr <- onCollectAny opPtr XlaOp.delete
     pure (MkXlaOp opPtr)
-
-
-%foreign (libxla "foo")
-prim__foo : PrimIO ()
-
-export
-foo : IO ()
-foo = primIO prim__foo
