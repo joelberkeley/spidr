@@ -234,6 +234,20 @@ show = fixedProperty $ do
       }
     """
 
+  let x : Graph $ Tensor [] S32 = do
+        x <- share 0
+        map (\_ => pure x) x
+  show x === """
+    [] => Map {f = [(1, [] 4)] => Var 0} [Var 0], with vars {
+        0    Lit [] 4
+      }
+    """
+
+  let x : Graph $ Tensor [] S32 = map share 0
+  show x === """
+    [] => Map {f = [(0, [] 4)] => Var 0} [Lit [] 4]
+    """
+
   let f : Tensor [] S32 -> Graph $ Tensor [] S32
       f x = do
         z <- share $ the (Tensor [] S32) 5
