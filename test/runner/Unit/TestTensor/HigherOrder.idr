@@ -202,11 +202,17 @@ condResultWithReusedArgs = fixedProperty $ do
   let x = tensor {dtype = S32} 1
       y = tensor {dtype = S32} 3
 
-      f : (a -> a -> a) -> a -> a
-      f g x = g x x
+      f : (a -> a -> a) -> a -> Graph a
+      f g x = pure $ g x x
 
-  cond (tensor True) (pure . f (+)) x (pure . f (*)) y ===# pure 2
-  cond (tensor False) (pure . f (+)) x (pure . f (*)) y ===# pure 9
+  cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
+  cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
+
+  let f : Shareable a => (a -> a -> a) -> a -> Graph a
+      f g x = share x <&> \x => g x x
+
+  cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
+  cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
 export partial
 all : Device => List (PropertyName, Property)

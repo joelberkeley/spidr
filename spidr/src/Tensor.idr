@@ -1038,10 +1038,11 @@ cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraph $
       (env, MkTensor res) = runState (emptyFrom !get) app
       onTrue = MkFn [(addr, MkParameter ts tt)] res env
 
+  updateFrom env
   addr <- reserve
 
   let MkGraph app = onFalse (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom env) app
+      (env, MkTensor res) = runState (emptyFrom !get) app
       onFalse = MkFn [(addr, MkParameter fs ft)] res env
 
   updateFrom env

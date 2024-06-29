@@ -223,7 +223,7 @@ export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
-  computation <- compile @{!(newArray $ cast $ counter env + 1)} xlaBuilder f  -- why is this + 1 needed?
+  computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   bimapEitherT PjrtErr id $ do
     code <- serializeAsString computation
     executableBuildOptions <- mkExecutableBuildOptions
