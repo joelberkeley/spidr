@@ -83,7 +83,7 @@ interface Shareable a where
   ||| good = do x <- share $ fill {shape = [9999999]} 1.0
   |||           pure (x + x)
   ||| ```
-  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, where `share` marks it for sharing.
+  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `share` marks it for sharing.
   |||
   ||| Types that implement this interface should `share` constituent components it deems worth sharing.
   ||| For example, see the implementation for tuples.
@@ -93,7 +93,7 @@ interface Shareable a where
 
 export
 Shareable (Tensor shape dtype) where
-  share x@(MkTensor (Var _)) = pure x
+  share x@(MkTensor (Var _)) = pure x  -- not necessary, but saves space
   share (MkTensor x) = MkGraph $ do
     x <- addNode x
     pure $ MkTensor x
@@ -132,7 +132,7 @@ namespace Graph
   |||
   ||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
   ||| different tensors, even if they are in the same computation, will be treated independently.
-  ||| To efficiently evaluate multiple tensors at once, use `TensorList.eval`.
+  ||| To efficiently evaluate multiple tensors at once, use `TensorList.Graph.eval`.
   export partial
   eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
   eval device (MkGraph x) =
@@ -163,7 +163,7 @@ namespace TensorList
     ||| shapes and element types. For example,
     ||| ```
     ||| main : Device -> IO ()
-    ||| main device = do [x, y] <- eval device $ do x <- tensor {dtype = F64} [1.2, 3.4]
+    ||| main device = do [x, y] <- eval device $ do let x = tensor {dtype = F64} [1.2, 3.4]
     |||                                             y <- reduce @{Sum} [0] x
     |||                                             pure [x, y]
     |||                  printLn x
@@ -756,6 +756,9 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| ```
 ||| can be lifted to an element-wise reciprocal function as `map recip (tensor [-2, 0.4])`,
 ||| which produces `tensor [-0.5, 2.5]`.
+|||
+||| **Note:** Values shared in the same scope as `map` cannot then be used within the scalar
+||| function passed to `map`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Graph $ Tensor [] b) ->
@@ -777,6 +780,9 @@ map f $ MkTensor {shape = _} x = MkGraph $ do
 ||| ```
 ||| can be lifted to an element-wise function as
 ||| `map2 addRecip (tensor [3.0, -3.0]) (tensor [-2.0, 0.4])`, which produces `tensor [2.5, -0.5]`.
+|||
+||| **Note:** Values shared in the same scope as `map2` cannot then be used within the scalar
+||| function passed to `map2`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
@@ -800,6 +806,9 @@ map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraph $ do
 ||| `reduce`. However, the most commonly used semigroups don't need `Graph`, including `Sum`,
 ||| `Prod`, `Min` and `Max`, so for ergonomics, we have opted to use `Monoid` as is. We can
 ||| provide an overloaded variant if requested.
+|||
+||| **Note:** Values shared in the same scope as `reduce` cannot then be used within the binary
+||| function supplied by the `Monoid`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| @reducer How to reduce elements along the given `axis`.
 ||| @axis The axis along which to reduce elements.
@@ -835,6 +844,9 @@ reduce axes $ MkTensor x = MkGraph $ do
 ||| **Note:** `sort` is limited to use comparison function without `Graph`. However, since the most
 ||| commonly-used functions, including (>), (<), (>=), and (<=), don't use `Graph`, we have opted to
 ||| omit it for ergonomics. We can trivially provide an overloaded variant if requested.
+|||
+||| **Note:** Values shared in the same scope as `sort` cannot then be used within the scalar
+||| function passed to `sort`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| For example, for `x = tensor [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 x` produces
 ||| `tensor [[1, 2, 4], [3, 6, 5]]`, while `sort (<) 1 x` produces
@@ -1015,11 +1027,14 @@ select (MkTensor p) (MkTensor t) (MkTensor f) = MkTensor $ Select p t f
 ||| y = tensor [[5, 6],
 |||             [7, 8]]
 ||| ```
-||| `cond (tensor True) (pure . tensor 2 *) x (pure . diag) y` produces `tensor [4, -2]` and
-||| `cond (tensor False) (pure . tensor 2 *) x (pure . diag) y` produces `tensor [5, 8]`.
+||| `cond (tensor True) (pure . (tensor 2 *)) x (pure . diag) y` produces `tensor [4, -2]` and
+||| `cond (tensor False) (pure . (tensor 2 *)) x (pure . diag) y` produces `tensor [5, 8]`.
 |||
 ||| While both functions will be called for the purposes of defining the computation, only one will
 ||| be evaluated with its specified argument. That is, this function short-circuits.
+|||
+||| **Note:** Values shared in the same scope as `cond` cannot then be used in either function
+||| passed to `cond`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| @onTrue The function to execute if the predicate is truthy.
 ||| @onFalse The function to execute if the predicate is falsy.
@@ -1435,9 +1450,9 @@ highlightNan minimize x with (x)
 ||| `argmin (tensor [-1, 3, -2, -2, 3])` produces `tensor 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 |||
-||| **Note:** `argmin` uses `Graph` to work around an inconsistency in the XLA compiler's handling
-||| of NaN. Specifically, we have modified `argmin` to return the first index of the value returned
-||| by `reduce @{Min}`.
+||| **Note:** `argmin` uses `Graph` to work around what we believe to be an inconsistency in the XLA
+||| compiler's handling of NaN. Specifically, we have modified `argmin` to return the first index of
+||| the value returned by `reduce @{Min}`.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmin x = do
@@ -1448,9 +1463,9 @@ argmin x = do
 ||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
 |||
-||| **Note:** `argmax` uses `Graph` to work around an inconsistency in the XLA compiler's handling
-||| of NaN. Specifically, we have modified `argmax` to return the first index of the value returned
-||| by `reduce @{Max}`.
+||| **Note:** `argmax` uses `Graph` to work around what we believe to be an inconsistency in the XLA
+||| compiler's handling of NaN. Specifically, we have modified `argmax` to return the first index of
+||| the value returned by `reduce @{Max}`.
 export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
 argmax x = do
