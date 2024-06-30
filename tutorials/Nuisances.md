@@ -42,3 +42,37 @@ y' = do
 > *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `share` might not always make a difference. However, eliminating these subexpressions itself requires compute, and even then the compiler might not catch all of them, so we don't recommend relying on this.
 
 There are downsides to `share`. First, it's a distraction. Normally, we can rely on the compiler to reuse expressions by name bindings: in `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. Naturally, we have the same situation in symbolic maths. Perhaps more importantly, though, it's possible to accidentally reuse an expression without sharing it, and thus incur a performance penalty. We are investigating how [linearity](https://www.type-driven.org.uk/edwinb/papers/idris2.pdf) might catch unintentional tensor reuse at compile time.
+
+### Tips for using `share`
+
+* `share` binds values to the scope it is called in. This is important to consider when working with nested functions and currying. For example, the program
+  ```idris
+  add : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
+  add x y = x + y
+
+  xs : List (Tensor [] 32)
+  xs = let sum = 1 + 2
+           f = add sum
+        in replicate 1000 (f 1)
+  ```
+  will calculate `sum` 1000 times. The same problem is observed if we `share` `sum` within the call to `add`
+  ```idris
+  add : Tensor [] S32 -> Tensor [] S32 -> Graph $ Tensor [] S32
+  add x y = share x <&> \x => x + y
+
+  xs : List (Graph $ Tensor [] 32)
+  xs = let sum = 1 + 2
+           f = add sum
+        in replicate 1000 (f 1)
+  ```
+  as we can infer from the type of xs: we are repeating the effect of sharing `x`, but we should be doing it just once. The solution is to `share` `sum` outside the call to `f`.
+  ```idris
+  add : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
+  add x y = x + y
+
+  xs : Graph $ List (Tensor [] 32)
+  xs = do sum <- share (1 + 2)
+          f = add sum
+          replicate 1000 (f 1)
+  ```
+* Be aware that if a function on an interface does not return values wrapped in `Graph`, then implementations will not be able to efficiently `share` within the function. As such, it's generally speaking advisable to add `Graph` to interface function return types. The same applies to function aliases.

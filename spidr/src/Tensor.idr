@@ -102,7 +102,9 @@ interface Shareable a where
 
 export
 Shareable (Tensor shape dtype) where
-  share x@(MkTensor (Var _)) = pure x  -- not necessary, but saves space
+  -- not necessary, but saves space. Note this will mean you cannot re-bind a value to an inner
+  -- scope, but I can't see why that would be useful
+  share x@(MkTensor (Var _)) = pure x
   share (MkTensor x) = MkGraphT $ do
     x <- shareExpr x
     pure $ MkTensor x
