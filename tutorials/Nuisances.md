@@ -45,34 +45,34 @@ There are downsides to `share`. First, it's a distraction. Normally, we can rely
 
 ### Tips for using `share`
 
-* `share` binds values to the scope it is called in. This is important to consider when working with nested functions and currying. For example, the program
-  ```idris
-  add : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
-  add x y = x + y
+* `share` binds values to the scope it is called in. This is important to consider when working with nested functions and currying, particularly when you expect a partially-applied function to be called many times. For example, the program
+```idris
+add : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
+add x y = x + y
 
-  xs : List (Tensor [] 32)
-  xs = let sum = 1 + 2
-           f = add sum
-        in replicate 1000 (f 1)
-  ```
+xs : List (Tensor [] S32)
+xs = let sum = 1 + 2
+         f = add sum
+      in replicate 1000 (f 1)
+```
   will calculate `sum` 1000 times. The same problem is observed if we `share` `sum` within the call to `add`
-  ```idris
-  add : Tensor [] S32 -> Tensor [] S32 -> Graph $ Tensor [] S32
-  add x y = share x <&> \x => x + y
+```idris
+add' : Tensor [] S32 -> Tensor [] S32 -> Graph $ Tensor [] S32
+add' x y = share x <&> \x => x + y
 
-  xs : List (Graph $ Tensor [] 32)
-  xs = let sum = 1 + 2
-           f = add sum
-        in replicate 1000 (f 1)
-  ```
+xs' : List (Graph $ Tensor [] S32)
+xs' = let sum = 1 + 2
+          f = add' sum
+       in replicate 1000 (f 1)
+```
   as we can infer from the type of xs: we are repeating the effect of sharing `x`, but we should be doing it just once. The solution is to `share` `sum` outside the call to `f`.
-  ```idris
-  add : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
-  add x y = x + y
+```idris
+add'' : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
+add'' x y = x + y
 
-  xs : Graph $ List (Tensor [] 32)
-  xs = do sum <- share (1 + 2)
-          f = add sum
-          replicate 1000 (f 1)
-  ```
+xs'' : Graph $ List (Tensor [] S32)
+xs'' = do sum <- share (1 + 2)
+          let f = add'' sum
+          pure $ replicate 1000 (f 1)
+```
 * Be aware that if a function on an interface does not return values wrapped in `Graph`, then implementations will not be able to efficiently `share` within the function. As such, it's generally speaking advisable to add `Graph` to interface function return types. The same applies to function aliases.
