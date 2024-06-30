@@ -120,13 +120,13 @@ In this case, our acquisition function is built from the model and data (it is e
 
 ## Modifying empirical values with `Functor`
 
-In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the environment when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `env -> Acquisition batch feat`. We want to be able to treat the data and model as an environment, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, named `Reader`. A `Reader env a` is just a thin wrapper round an `env -> a`. Having chosen `Reader` as our abstraction, we want to apply an `Optimizer` to an `Reader env (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Reader env` implements this interface. Let's see this in action:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the environment when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `env -> Acquisition batch feat`. We want to be able to treat the data and model as an environment, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, named `ReaderT`. A `ReaderT env Graph a` is just a thin wrapper round an `env -> Graph a`. Having chosen `ReaderT` as our abstraction, we want to apply an `Optimizer` to a `ReaderT env Graph (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Reader env` implements this interface. Let's see this in action:
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model x = squeeze <$> mean {event = [1]} !(marginalise model x)
 
 newPoint' : Graph $ Tensor [1, 2] F64
-newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
+newPoint' = let acquisition = MkReaderT (pure . modelMean @{Latent})
                 point = map optimizer acquisition
              in runReader !(model historicalData) point
 ```
@@ -135,9 +135,9 @@ newPoint' = let acquisition = MkReaderT (Id . modelMean @{Latent})
 
 Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `Reader env` context. For example, we can apply the `a -> b` function in `f : Reader env (a -> b)` to the `a` value in `x : Reader env a` as `f <*> x` (which is a `Reader env b`), and we can do this before we actually have access to the environment. The second method, `pure`, creates a `Reader env a` from any `a`.
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `Reader` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `ReaderT env Graph` context. For example, we can apply the `a -> b` function in `f : ReaderT env Graph (a -> b)` to the `a` value in `x : ReaderT env Graph a` as `f <*> x` (which is a `ReaderT env Graph b`), and we can do this before we actually have access to the environment. The second method, `pure`, creates a `ReaderT env Graph a` from any `a`.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : Reader env (Acquisition batch feat)` and `oa : Reader env (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : ReaderT env Graph (Acquisition batch feat)` and `oa : ReaderT env Graph (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -178,7 +178,7 @@ The final point is then gathered from `map optimizer (oa <*> fa)`, and this conc
 
 ## Specify the environment with contravariant functors
 
-The `Reader env a` type has proven flexible in allowing us to construct an acquisition tactic. Let's now look at how to construct our environment. spidr provides a minimal `DataModel` record that wraps a `Dataset` and `ProbabilisticModel`, and uses this as a common environment for building aquisition functions. But sometimes we'll want to use a different structure, and without adding complexity to the the empiric values themselves. Recall that a `Reader env a` is equivalent to a `env -> a`, and that we can modify the `a` with a `Functor`. A `Functor` is really a _covariant functor_, and there's an "opposite" construct, called a _contravariant functor_ which has a similar effect on the function input. Idris has a `Contravariant` interface, but due to language limitations it's not suitable for `Reader`, so spidr provides a standalone function `(>$<)`, which fulfills the roles of `Contravariant`'s equivalent to `map`.
+The `ReaderT env Graph a` type has proven flexible in allowing us to construct an acquisition tactic. Let's now look at how to construct our environment. spidr provides a minimal `DataModel` record that wraps a `Dataset` and `ProbabilisticModel`, and uses this as a common environment for building aquisition functions. But sometimes we'll want to use a different structure, and without adding complexity to the empiric values themselves. Recall that a `ReaderT env Graph a` is equivalent to a `env -> Graph a`, and that we can modify the `a` with a `Functor`. A `Functor` is really a _covariant functor_, and there's an "opposite" construct, called a _contravariant functor_ which has a similar effect on the function input. Idris has a `Contravariant` interface, but due to language limitations it's not suitable for `ReaderT`, so spidr provides a standalone function `(>$<)`, which fulfills the roles of `Contravariant`'s equivalent to `map`.
 
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data:
 ```idris
@@ -207,10 +207,11 @@ newPoint'' : Graph $ Tensor [1, 2] F64
 newPoint'' = do
   let eci = objective >$< expectedConstrainedImprovement @{Latent} 0.5
       pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
-      acquisition = map optimizer (eci <*> pof)
+      acquisition = do lift $ optimizer !(eci <*> pof)
   (hist, fail) <- share (historicalData, failureData)
-  let dataAndModel = Label (MkDataModel !(model hist) hist) (MkDataModel !(failureModel fail) fail)
-  runReader dataAndModel acquisition
+  posterior <- the (Graph $ ConjugateGPRegression [2]) $ model hist
+  let dataAndModel = Label (MkDataModel posterior hist) (MkDataModel !(the (Graph $ ConjugateGPRegression [2]) $ failureModel fail) fail)
+  runReaderT dataAndModel acquisition
 ```
 
 ## Iterative Bayesian optimization with infinite data types
@@ -223,7 +224,7 @@ and then update the historic dataset with this new point and train the model the
 ```idris
 step' : DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2]) ->
         Graph $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
-step' = let tactic = map optimizer $ expectedImprovementByModel @{Latent}
+step' = let tactic = do lift $ optimizer !(expectedImprovementByModel @{Latent})
          in step @{Latent} objective (fit lbfgs) tactic
 ```
 We can repeat this process indefinitely to produce an infinite stream of values

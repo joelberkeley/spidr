@@ -55,10 +55,10 @@ export
 step : (objective : forall n . Tensor (n :: features) F64 -> Graph $ Tensor (n :: targets) F64) ->
        (probabilisticModel : ProbabilisticModel features targets marginal model) =>
        (train : Dataset features targets -> model -> Graph $ model) ->
-       (tactic : Reader (DataModel {probabilisticModel} model) (Graph $ Tensor (1 :: features) F64)) ->
+       (tactic : ReaderT (DataModel {probabilisticModel} model) Graph (Tensor (1 :: features) F64)) ->
        DataModel {probabilisticModel} model ->
        Graph $ DataModel {probabilisticModel} model
 step objective train tactic env = do
-  newPoint <- runReader env tactic
+  newPoint <- runReaderT env tactic
   dataset <- share $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
   pure $ MkDataModel !(train dataset env.model) dataset

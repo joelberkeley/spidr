@@ -75,11 +75,11 @@ expectedImprovement model best at = do
 export
 expectedImprovementByModel :
   ProbabilisticModel features [1] Gaussian modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 features
-expectedImprovementByModel = asks $ \env, at => do
+  ReaderT (DataModel modelType) Graph $ Acquisition 1 features
+expectedImprovementByModel = MkReaderT $ \env => do
   marginal <- marginalise env.model env.dataset.features
-  let best = squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
-  expectedImprovement env.model best at
+  best <- share $ squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
+  pure $ expectedImprovement env.model best
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
@@ -88,7 +88,7 @@ probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] dist =>
   ProbabilisticModel features [1] dist modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 features
+  ReaderT (DataModel modelType) Graph $ Acquisition 1 features
 probabilityOfFeasibility limit =
   asks $ \env, at => do cdf !(marginalise env.model at) (broadcast {to = [_, 1]} limit)
 
@@ -101,7 +101,7 @@ negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 features
+  ReaderT (DataModel modelType) Graph $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
   marginal <- share =<< marginalise env.model at
   pure $ squeeze $
@@ -117,4 +117,4 @@ export
 expectedConstrainedImprovement :
   (limit : Tensor [] F64) ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  Reader (DataModel modelType) (Acquisition 1 features -> Acquisition 1 features)
+  ReaderT (DataModel modelType) Graph (Acquisition 1 features -> Acquisition 1 features)

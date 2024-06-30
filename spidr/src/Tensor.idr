@@ -57,20 +57,29 @@ data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
 
 ||| The effect of labelling nodes in a computational graph.
 export
-data Graph a = MkGraph (State Env a)
+data GraphT : (Type -> Type) -> Type -> Type where
+  MkGraphT : StateT Env m a -> GraphT m a
+
+public export 0
+Graph : Type -> Type
+Graph = GraphT Identity
 
 export
-Functor Graph where
-  map f (MkGraph x) = MkGraph (map f x)
+Functor m => Functor (GraphT m) where
+  map f (MkGraphT x) = MkGraphT (map f x)
 
 export
-Applicative Graph where
-  pure x = MkGraph (pure x)
-  (MkGraph f) <*> (MkGraph x) = MkGraph (f <*> x)
+Monad m => Applicative (GraphT m) where
+  pure x = MkGraphT (pure x)
+  (MkGraphT f) <*> (MkGraphT x) = MkGraphT (f <*> x)
 
 export
-Monad Graph where
-  (MkGraph x) >>= f = MkGraph $ x >>= (\a => let MkGraph b = f a in b)
+Monad m => Monad (GraphT m) where
+  (MkGraphT x) >>= f = MkGraphT $ x >>= (\y => let MkGraphT z = f y in z)
+
+export
+MonadTrans GraphT where
+  lift = MkGraphT . lift
 
 public export
 interface Shareable a where
@@ -94,7 +103,7 @@ interface Shareable a where
 export
 Shareable (Tensor shape dtype) where
   share x@(MkTensor (Var _)) = pure x  -- not necessary, but saves space
-  share (MkTensor x) = MkGraph $ do
+  share (MkTensor x) = MkGraphT $ do
     x <- shareExpr x
     pure $ MkTensor x
 
@@ -135,7 +144,7 @@ namespace Graph
   ||| To efficiently evaluate multiple tensors at once, use `TensorList.Graph.eval`.
   export partial
   eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-  eval device (MkGraph x) =
+  eval device (MkGraphT x) =
     let (env, MkTensor root) = runState empty x
      in try $ do
           shape <- mkShape shape {dtype}
@@ -173,7 +182,7 @@ namespace TensorList
     ||| compiles the graph just once.
     export partial
     eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
-    eval device (MkGraph xs) =
+    eval device (MkGraphT xs) =
       let (env, xs) = runState empty xs
           root = Tuple $ nodes xs
        in try $ do
@@ -210,7 +219,7 @@ namespace TensorList
 ||| There are no guarantees whatsoever as to the string structure and contents.
 export
 Show (Graph $ Tensor shape dtype) where
-  show (MkGraph x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
+  show (MkGraphT x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -763,9 +772,9 @@ export
 map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Graph $ Tensor [] b) ->
       Tensor shape a -> Graph $ Tensor shape b
-map f $ MkTensor {shape = _} x = MkGraph $ do
+map f $ MkTensor {shape = _} x = MkGraphT $ do
   addr <- reserve
-  let MkGraph app = f (MkTensor $ Var addr)
+  let MkGraphT app = f (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr, MkParameter [] a)] res env
 
@@ -788,10 +797,10 @@ map2 :
   (Primitive a, Primitive b, Primitive c) =>
   (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
   Tensor shape a -> Tensor shape b -> Graph $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraph $ do
+map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraphT $ do
   addr0 <- reserve
   addr1 <- reserve
-  let MkGraph app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
+  let MkGraphT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
 
@@ -821,7 +830,7 @@ reduce :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Graph $ Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x = MkGraph $ do
+reduce axes $ MkTensor x = MkGraphT $ do
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
@@ -859,7 +868,7 @@ sort :
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Graph $ Tensor shape dtype
-sort comp dimension $ MkTensor x = MkGraph $ do
+sort comp dimension $ MkTensor x = MkGraphT $ do
   addr0 <- reserve
   addr1 <- reserve
 
@@ -1046,17 +1055,17 @@ cond :
   (onTrue : Tensor ts tt -> Graph $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
   Graph $ Tensor shape dtype
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraph $ do
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraphT $ do
   addr <- reserve
 
-  let MkGraph app = onTrue (MkTensor $ Var addr)
+  let MkGraphT app = onTrue (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       onTrue = MkFn [(addr, MkParameter ts tt)] res env
 
   updateCounterFrom env
   addr <- reserve
 
-  let MkGraph app = onFalse (MkTensor $ Var addr)
+  let MkGraphT app = onFalse (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       onFalse = MkFn [(addr, MkParameter fs ft)] res env
 
