@@ -95,7 +95,7 @@ export
 Shareable (Tensor shape dtype) where
   share x@(MkTensor (Var _)) = pure x  -- not necessary, but saves space
   share (MkTensor x) = MkGraph $ do
-    x <- addNode x
+    x <- shareExpr x
     pure $ MkTensor x
 
 export
@@ -769,7 +769,7 @@ map f $ MkTensor {shape = _} x = MkGraph $ do
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr, MkParameter [] a)] res env
 
-  updateFrom env
+  updateCounterFrom env
   pure $ MkTensor $ Map g [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
@@ -795,12 +795,12 @@ map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraph $ do
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
 
-  updateFrom env
+  updateCounterFrom env
   pure $ MkTensor $ Map g [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
-||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` is
-||| `tensor [3, 5, 7]` and `reduce @{Sum} 1 x` to `tensor [3, 12]`.
+||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
+||| `tensor [3, 5, 7]`, and `reduce @{Sum} 1 x` produces `tensor [3, 12]`.
 |||
 ||| **Note:** `Semigroup` doesn't use `Graph`, which limits the functions that can be used in
 ||| `reduce`. However, the most commonly used semigroups don't need `Graph`, including `Sum`,
@@ -1053,14 +1053,14 @@ cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraph $
       (env, MkTensor res) = runState (emptyFrom !get) app
       onTrue = MkFn [(addr, MkParameter ts tt)] res env
 
-  updateFrom env
+  updateCounterFrom env
   addr <- reserve
 
   let MkGraph app = onFalse (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       onFalse = MkFn [(addr, MkParameter fs ft)] res env
 
-  updateFrom env
+  updateCounterFrom env
   pure $ MkTensor $ Cond pred onTrue true onFalse false
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity

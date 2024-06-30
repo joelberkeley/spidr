@@ -60,8 +60,8 @@ emptyFrom : Env -> Env
 emptyFrom (MkEnv n _) = MkEnv n []
 
 export
-updateFrom : Env -> State Env ()
-updateFrom (MkEnv n _) = do
+updateCounterFrom : Env -> State Env ()
+updateCounterFrom (MkEnv n _) = do
   MkEnv _ xs <- get
   put $ MkEnv n xs
 
@@ -140,8 +140,8 @@ data Expr : Type where
   NormalFloatingPoint : (key, initialState : Expr) -> (shape : Shape) -> Expr
 
 export
-addNode : Expr -> State Env Expr
-addNode expr = do
+shareExpr : Expr -> State Env Expr
+shareExpr expr = do
   MkEnv next env <- get
   put $ MkEnv (S next) ((next, expr) :: env)
   pure (Var next)
