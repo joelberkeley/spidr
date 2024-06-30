@@ -209,8 +209,7 @@ newPoint'' = do
       pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
       acquisition = do lift $ optimizer !(eci <*> pof)
   (hist, fail) <- share (historicalData, failureData)
-  posterior <- the (Graph $ ConjugateGPRegression [2]) $ model hist
-  let dataAndModel = Label (MkDataModel posterior hist) (MkDataModel !(the (Graph $ ConjugateGPRegression [2]) $ failureModel fail) fail)
+  let dataAndModel = Label (MkDataModel !(model hist) hist) (MkDataModel !(failureModel fail) fail)
   runReaderT dataAndModel acquisition
 ```
 
