@@ -85,7 +85,7 @@ spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
 
 In either of these approaches, we need to keep track of generated labels, so we don't reuse them. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of labelling nodes in our computational graph. This explicit state introduces the tradeoff between performance and ergonomics we mentioned earlier.
 
-So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if), which themselves accept functions. These nested functions introduce their own scope, and form subgraphs that must be constructed before we can construct the complete StableHLO graph. Let's see how we might encode `if`. We'll first extend `Expr` to allow boolean types, for the predicate, then add an `If` constructor:
+So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if), which themselves accept functions. These nested functions introduce their own scope, and form sub-graphs that must be constructed before we can construct the complete StableHLO graph. Let's see how this looks by implementing `if`. We'll first extend `Expr` to allow boolean types for the predicate, then add an `If` constructor to represent the operation,
 ```idris
 data U = UInt | UBool
 
@@ -104,7 +104,7 @@ mutual
     | Mul Expr Expr
     | If Expr Function Function
 ```
-Here, we've introduced a `Function` type that captures the function parameter types, the nodes labelled in this local scope, and the function result. Let's write an `If` expression. Say we want to create the expression z &times; z where z = 5 if a predicate is true, and 1 + 2 if it's false. Also, that our predicate is false. Accompanied by an empty set `[]` of locals, this might look like
+Here, we've introduced a `Function` type that captures the function parameter types, the nodes labelled in this local scope, and the function result. What does this look like at usage site? Say we want to create the expression z &times; z where z = 5 if a predicate is true, and 1 + 2 if it's false. Also, say our predicate is false. Accompanied by an empty set `[]` of locals, this might look like
 ```idris
 If (LitB False)
    (F [] [Lit 5] (Mul (Var 0) (Var 0)))
