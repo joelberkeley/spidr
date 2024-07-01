@@ -107,7 +107,7 @@ If (LitB False)
    (F [] [Lit 5] (Mul (Var 0) (Var 0)))
    (F [] []      (Add (Lit 1) (Lit 2)))
 ```
-accompanied by an empty set `[]` of locals.
+accompanied by an empty set `[]` of locals in the scope of `If`.
 
 > *__DETAIL__* spidr's interpreter stores nodes across all program scopes in a single array. The interpreter needs to quickly recall these nodes by label when it lowers the graph, so we choose indices in this global array as our labels. In contrast, the high-level Idris graph defines scopes separately, using local namespaces as outlined above. Because of this, labels in all but one local namespace do not start at zero, and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the label. The lists remain both individually, and collectively, topologically sorted.
 
