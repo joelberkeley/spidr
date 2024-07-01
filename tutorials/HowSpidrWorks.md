@@ -87,6 +87,8 @@ In either of these approaches, we need to keep track of generated labels, so we 
 
 So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if). These functions themselves accept functions, which introduce their own scope, or sub-graphs, that must be constructed before we can construct the complete StableHLO graph. Let's see an example, by implementing `if`. We'll first need to add support for boolean types, for the predicate. Then add an `If` constructor to represent the operation, which uses a `Function` type that encapsulates the function parameter types, the nodes labelled in this local scope, and the function result
 ```idris
+data U = I Int | B Bool
+
 mutual
   record Function where
     constructor F
@@ -94,7 +96,7 @@ mutual
     result : Expr
 
   data Expr
-    = Lit (Either Int Bool)
+    = Lit U
     | Var Nat
     | Add Expr Expr
     | Mul Expr Expr
@@ -102,9 +104,9 @@ mutual
 ```
 Let's now see how we'd use it. Say we want to evaluate z &times; z where z = 5 if a predicate is true, and 1 + 2 if it's false. If indeed our predicate is false, this is
 ```idris
-If (LitB False)
-   (F [Lit 5] (Mul (Var 0) (Var 0)))
-   (F []      (Add (Lit 1) (Lit 2)))
+If (Lit $ B False)
+   (F [Lit $ I 5] (Mul (Var 0) (Var 0)))
+   (F []          (Add (Lit $ I 1) (Lit $ I 2)))
 ```
 accompanied by an empty set `[]` of locals in the scope of `If`.
 
