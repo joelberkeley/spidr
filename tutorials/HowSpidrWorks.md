@@ -85,7 +85,7 @@ spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
 
 In either of these approaches, we need to keep track of generated labels, so we don't reuse them. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of labelling nodes in our computational graph. This explicit state introduces the tradeoff between performance and ergonomics we mentioned earlier.
 
-So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if), which themselves accept functions. These nested functions introduce their own scope, and form sub-graphs that must be constructed before we can construct the complete StableHLO graph. Let's see how this looks by implementing `if`. We'll first extend `Expr` to allow boolean types for the predicate, then add an `If` constructor to represent the operation,
+So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if). These functions themselves accept functions, which introduce their own scope, or sub-graphs, that must be constructed before we can construct the complete StableHLO graph. Let's see an example, by implementing `if`. We'll first need to extend `Expr` to allow boolean types for the predicate. Then add an `If` constructor to represent the operation, which uses a `Function` type that encapsulates the function parameter types, the nodes labelled in this local scope, and the function result
 ```idris
 data U = UInt | UBool
 
@@ -104,12 +104,13 @@ mutual
     | Mul Expr Expr
     | If Expr Function Function
 ```
-Here, we've introduced a `Function` type that captures the function parameter types, the nodes labelled in this local scope, and the function result. What does this look like at usage site? Say we want to create the expression z &times; z where z = 5 if a predicate is true, and 1 + 2 if it's false. Also, say our predicate is false. Accompanied by an empty set `[]` of locals, this might look like
+Let's now see how we'd use it. Say we want to evaluate z &times; z where z = 5 if a predicate is true, and 1 + 2 if it's false. If indeed our predicate is false, this is
 ```idris
 If (LitB False)
    (F [] [Lit 5] (Mul (Var 0) (Var 0)))
    (F [] []      (Add (Lit 1) (Lit 2)))
 ```
+accompanied by an empty set `[]` of locals.
 
 > *__DETAIL__* spidr's interpreter stores nodes across all program scopes in a single array. The interpreter needs to quickly recall these nodes by label when it lowers the graph, so we choose indices in this global array as our labels. In contrast, the high-level Idris graph defines scopes separately, using local namespaces as outlined above. Because of this, labels in all but one local namespace do not start at zero, and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the label. The lists remain both individually, and collectively, topologically sorted.
 
