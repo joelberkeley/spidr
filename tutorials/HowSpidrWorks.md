@@ -90,7 +90,6 @@ So far, we've assumed a single scope. However, there are higher-order functions 
 mutual
   record Function where
     constructor F
-    0 params : List Type 
     locals : List Expr
     result : Expr
 
@@ -104,8 +103,8 @@ mutual
 Let's now see how we'd use it. Say we want to evaluate z &times; z where z = 5 if a predicate is true, and 1 + 2 if it's false. If indeed our predicate is false, this is
 ```idris
 If (LitB False)
-   (F [] [Lit 5] (Mul (Var 0) (Var 0)))
-   (F [] []      (Add (Lit 1) (Lit 2)))
+   (F [Lit 5] (Mul (Var 0) (Var 0)))
+   (F []      (Add (Lit 1) (Lit 2)))
 ```
 accompanied by an empty set `[]` of locals in the scope of `If`.
 
