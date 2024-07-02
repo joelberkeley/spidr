@@ -72,7 +72,7 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
 
 export
 Shareable (Gaussian event dim) where
-  share (MkGaussian mean cov) = [| MkGaussian (share mean) (share cov) |]
+  tag (MkGaussian mean cov) = [| MkGaussian (tag mean) (tag cov) |]
 
 export
 Distribution Gaussian where
@@ -83,8 +83,8 @@ Distribution Gaussian where
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
-    cholCov <- share $ cholesky $ squeeze {to = [S d, S d]} cov
-    tri <- share $ cholCov |\ squeeze (x - mean)
+    cholCov <- tag $ cholesky $ squeeze {to = [S d, S d]} cov
+    tri <- tag $ cholCov |\ squeeze (x - mean)
     let exponent = - tri @@ tri / 2.0
     covSqrtDet <- reduce @{Prod} [0] (diag cholCov)
     let denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet

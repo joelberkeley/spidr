@@ -45,7 +45,7 @@ posterior :
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
   Tag $ GaussianProcess features
 posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) = do
-  l <- share $ cholesky $ !(priorKernel xTrain xTrain) + noise * identity
+  l <- tag $ cholesky $ !(priorKernel xTrain xTrain) + noise * identity
   let alpha = l.T \| (l |\ yTrain)
 
       posteriorMeanf : MeanFunction features
@@ -63,7 +63,7 @@ logMarginalLikelihood :
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
   Tag $ Tensor [] F64
 logMarginalLikelihood (MkGP _ kernel) noise (x, y) = do
-  l <- share $ cholesky (!(kernel x x) + noise * identity)
+  l <- tag $ cholesky (!(kernel x x) + noise * identity)
   let alpha = l.T \| (l |\ y)
   pure $ - y @@ alpha / 2.0 - !(trace (log l)) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 

@@ -209,7 +209,7 @@ condResultWithReusedArgs = fixedProperty $ do
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
   let f : Shareable a => (a -> a -> a) -> a -> Tag a
-      f g x = share x <&> \x => g x x
+      f g x = tag x <&> \x => g x x
 
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9

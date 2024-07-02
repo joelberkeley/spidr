@@ -61,11 +61,11 @@ expectedImprovement :
   (best : Tensor [] F64) ->
   Acquisition 1 features
 expectedImprovement model best at = do
-  best <- share best
-  marginal <- share =<< marginalise model at
+  best <- tag best
+  marginal <- tag =<< marginalise model at
   let best' = broadcast {to = [_, 1]} best
-  pdf <- share =<< pdf marginal best'
-  cdf <- share =<< cdf marginal best'
+  pdf <- tag =<< pdf marginal best'
+  cdf <- tag =<< cdf marginal best'
   let mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
       variance = squeeze !(variance {event = [1]} marginal)
   pure $ (best - mean) * cdf + variance * pdf
@@ -78,7 +78,7 @@ expectedImprovementByModel :
   ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 expectedImprovementByModel = MkReaderT $ \env => do
   marginal <- marginalise env.model env.dataset.features
-  best <- share $ squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
+  best <- tag $ squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
   pure $ expectedImprovement env.model best
 
 ||| Build an acquisition function that returns the probability that any given point will take a
@@ -103,7 +103,7 @@ negativeLowerConfidenceBound :
   ProbabilisticModel features [1] Gaussian modelType =>
   ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
-  marginal <- share =<< marginalise env.model at
+  marginal <- tag =<< marginalise env.model at
   pure $ squeeze $
     !(mean {event = [1]} marginal) - fromDouble beta * !(variance {event = [1]} marginal)
 

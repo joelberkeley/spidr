@@ -73,6 +73,6 @@ export
 matern52 :
   (amplitude : Tensor [] F64) -> (length_scale : Tensor [] F64) -> {d : _} -> Kernel [S d]
 matern52 amp len x x' = do
-  d2 <- share $ 5.0 * !(scaledL2Norm len x x')
-  d <- share $ d2 ^ fill 0.5
+  d2 <- tag $ 5.0 * !(scaledL2Norm len x x')
+  d <- tag $ d2 ^ fill 0.5
   pure $ (amp ^ 2.0) * (d2 / 3.0 + d + fill 1.0) * exp (- d)

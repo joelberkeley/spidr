@@ -60,5 +60,5 @@ step : (objective : forall n . Tensor (n :: features) F64 -> Tag $ Tensor (n :: 
        Tag $ DataModel {probabilisticModel} model
 step objective train tactic env = do
   newPoint <- runReaderT env tactic
-  dataset <- share $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
+  dataset <- tag $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
   pure $ MkDataModel !(train dataset env.model) dataset

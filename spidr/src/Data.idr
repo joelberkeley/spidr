@@ -46,4 +46,4 @@ concat (MkDataset {s = s} x y) (MkDataset {s = s'} x' y') =
 
 export
 Shareable (Dataset f t) where
-  share (MkDataset f t) = [| MkDataset (share f) (share t) |]
+  tag (MkDataset f t) = [| MkDataset (tag f) (tag t) |]

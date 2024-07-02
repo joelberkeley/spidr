@@ -89,29 +89,29 @@ interface Shareable a where
   ||| bad = let x = fill {shape = [9999999]} 1.0 in x + x
   |||
   ||| good : Tag $ Tensor [9999999] F64
-  ||| good = do x <- share $ fill {shape = [9999999]} 1.0
+  ||| good = do x <- tag $ fill {shape = [9999999]} 1.0
   |||           pure (x + x)
   ||| ```
-  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `share` marks it for sharing.
+  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `tag` marks it for sharing.
   |||
-  ||| Types that implement this interface should `share` constituent components it deems worth sharing.
+  ||| Types that implement this interface should `tag` constituent components it deems worth sharing.
   ||| For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
-  share : a -> Tag a
+  tag : a -> Tag a
 
 export
 Shareable (Tensor shape dtype) where
   -- not necessary, but saves space. Note this will mean you cannot re-bind a value to an inner
   -- scope, but I can't see why that would be useful
-  share x@(MkTensor (Var _)) = pure x
-  share (MkTensor x) = MkTagT $ do
+  tag x@(MkTensor (Var _)) = pure x
+  tag (MkTensor x) = MkTagT $ do
     x <- shareExpr x
     pure $ MkTensor x
 
 export
 (Shareable a, Shareable b) => Shareable (a, b) where
-  share (a, b) = [| (share a, share b) |]
+  tag (a, b) = [| (tag a, tag b) |]
 
 ||| Construct a `Tensor` from `Literal` data. For example
 ||| ```
@@ -1445,14 +1445,14 @@ namespace Monoid
 highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Tag $ Tensor [S n] dtype
 highlightNan minimize x with (x)
   _ | (MkTensor {shape = _} _) = do
-    x <- share x
+    x <- tag x
     cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
 
     where
 
     extremizeNan : {n : _} -> Tensor [S n] dtype -> Tag $ Tensor [S n] dtype
     extremizeNan x = do
-      x <- share x
+      x <- tag x
       let min' = broadcast $ Types.min @{NonFinite}
           max' = broadcast $ Types.max @{NonFinite}
       pure $ select (if minimize then x == x else x /= x) max' min'
@@ -1589,11 +1589,11 @@ uniform :
   (bound, bound' : Tensor shape F64) ->
   Tag $ Rand $ Tensor shape F64
 uniform (MkTensor key) bound bound' = do
-  minval@(MkTensor iMinval) <- share $ Tensor.min bound bound'
-  maxval@(MkTensor iMaxval) <- share $ Tensor.max bound bound'
+  minval@(MkTensor iMinval) <- tag $ Tensor.min bound bound'
+  maxval@(MkTensor iMaxval) <- tag $ Tensor.max bound bound'
   let inf = broadcast inf
   pure $ ST $ \(MkTensor state) => do
-    MkTensor x <- share $ MkTensor {shape, dtype = F64}
+    MkTensor x <- tag $ MkTensor {shape, dtype = F64}
       $ UniformFloatingPoint key state iMinval iMaxval shape
     let state = MkTensor $ GetTupleElement 1 x
         value = MkTensor $ GetTupleElement 0 x
@@ -1625,7 +1625,7 @@ export
 normal : {shape : _} -> (key : Tensor [] U64) -> Rand $ Tensor shape F64
 normal $ MkTensor key =
   ST $ \(MkTensor state) => do
-    MkTensor x <- share $ MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape
+    MkTensor x <- tag $ MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape
     let state = MkTensor $ GetTupleElement 1 x
         value = MkTensor $ GetTupleElement 0 x
     pure (state, value)
