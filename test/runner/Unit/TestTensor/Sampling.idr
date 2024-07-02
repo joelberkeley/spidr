@@ -33,7 +33,7 @@ product1 x = rewrite plusZeroRightNeutral x in Refl
 
 partial
 iidKolmogorovSmirnov :
-  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Graph $ Tensor [] F64
+  {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tag $ Tensor [] F64
 iidKolmogorovSmirnov samples cdf = do
   let n : Nat
       n = product shape
@@ -156,7 +156,7 @@ normal = withTests 20 . property $ do
       seed = tensor seed
 
       ksTest = do
-        samples <- the (Graph $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
+        samples <- the (Tag $ Tensor [100, 100] F64) $ evalStateT seed (normal key)
         iidKolmogorovSmirnov samples normalCdf
 
   diff (unsafeEval ksTest) (<) 0.02

@@ -47,7 +47,7 @@ record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t mar
 ||| @features The shape of the feature domain.
 public export 0
 Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
-Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Graph $ Tensor [] F64
+Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tag $ Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -75,7 +75,7 @@ expectedImprovement model best at = do
 export
 expectedImprovementByModel :
   ProbabilisticModel features [1] Gaussian modelType =>
-  ReaderT (DataModel modelType) Graph $ Acquisition 1 features
+  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 expectedImprovementByModel = MkReaderT $ \env => do
   marginal <- marginalise env.model env.dataset.features
   best <- share $ squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
@@ -88,7 +88,7 @@ probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] dist =>
   ProbabilisticModel features [1] dist modelType =>
-  ReaderT (DataModel modelType) Graph $ Acquisition 1 features
+  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 probabilityOfFeasibility limit =
   asks $ \env, at => do cdf !(marginalise env.model at) (broadcast {to = [_, 1]} limit)
 
@@ -101,7 +101,7 @@ negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  ReaderT (DataModel modelType) Graph $ Acquisition 1 features
+  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
   marginal <- share =<< marginalise env.model at
   pure $ squeeze $
@@ -117,4 +117,4 @@ export
 expectedConstrainedImprovement :
   (limit : Tensor [] F64) ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  ReaderT (DataModel modelType) Graph (Acquisition 1 features -> Acquisition 1 features)
+  ReaderT (DataModel modelType) Tag (Acquisition 1 features -> Acquisition 1 features)

@@ -33,16 +33,16 @@ mapResult = property $ do
   x <- forAll (literal shape doubles)
   let x' = tensor {dtype = F64} x
   map id x ==~ unsafeEval (map pure x')
-  map (1.0 /) x ==~ Graph.unsafeEval (map (pure . (1.0 /)) x')
+  map (1.0 /) x ==~ Tag.unsafeEval (map (pure . (1.0 /)) x')
 
   x <- forAll (literal shape int32s)
   let x' = tensor {dtype = S32} x
-  map (+ 1) x === Graph.unsafeEval (map (pure . (+ 1)) x')
+  map (+ 1) x === Tag.unsafeEval (map (pure . (+ 1)) x')
 
 partial
 mapNonTrivial : Device => Property
 mapNonTrivial = fixedProperty $ do
-  let res : Graph (Tensor [] S32) = pure 2
+  let res : Tag (Tensor [] S32) = pure 2
   map {a = S32} (\x => pure $ x + x) 1 ===# res
   map {a = S32} (\_ => pure 2) 1 ===# res
   map {a = S32} (map (\x => pure $ x + 1)) 1 ===# res
@@ -202,13 +202,13 @@ condResultWithReusedArgs = fixedProperty $ do
   let x = tensor {dtype = S32} 1
       y = tensor {dtype = S32} 3
 
-      f : (a -> a -> a) -> a -> Graph a
+      f : (a -> a -> a) -> a -> Tag a
       f g x = pure $ g x x
 
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
-  let f : Shareable a => (a -> a -> a) -> a -> Graph a
+  let f : Shareable a => (a -> a -> a) -> a -> Tag a
       f g x = share x <&> \x => g x x
 
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2

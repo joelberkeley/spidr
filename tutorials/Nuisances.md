@@ -29,11 +29,11 @@ y = let x = 1 + 2 in x + x
 spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the interface
 > ```idris
 > interface Shareable a where
->   share : a -> Graph a
+>   share : a -> Tag a
 > ```
-`share` labels all tensor expressions contained within the `a`. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
+`share` tags all tensor expressions contained within the `a`. You can efficiently reuse a value created by `share` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
-y' : Graph $ Tensor [2] F64
+y' : Tag $ Tensor [2] F64
 y' = do
   x <- share $ tensor [1.0, 2.0]
   pure $ x + x 
@@ -59,17 +59,17 @@ bad = let sum = 1 + 2
 ```
 will calculate `sum` one thousand times. Perhaps counterintuitively, this is _not_ resolved if we share `sum` within the call to `add`
 ```idris
-addShared : Tensor [] S32 -> Tensor [] S32 -> Graph $ Tensor [] S32
+addShared : Tensor [] S32 -> Tensor [] S32 -> Tag $ Tensor [] S32
 addShared x y = share x <&> \x => x + y
 
-alsoBad : List (Graph $ Tensor [] S32)
+alsoBad : List (Tag $ Tensor [] S32)
 alsoBad = let sum = 1 + 2
               f = addShared sum
            in replicate 1000 (f 1)
 ```
 As we can infer from the type of xs, we are repeatedly sharing `sum`, whilst we mean to share it once. The solution is to share `sum` _outside_ the call to `f`.
 ```idris
-good : Graph $ List (Tensor [] S32)
+good : Tag $ List (Tensor [] S32)
 good = do sum <- share (1 + 2)
           let f = add sum
           pure $ replicate 1000 (f 1)

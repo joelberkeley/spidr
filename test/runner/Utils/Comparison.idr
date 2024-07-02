@@ -55,14 +55,14 @@ export covering
 
 export infix 6 ===#
 
-namespace Graph
+namespace Tag
   namespace PRED
     export partial
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Graph (Tensor shape PRED) ->
-             Graph (Tensor shape PRED) ->
+             Tag (Tensor shape PRED) ->
+             Tag (Tensor shape PRED) ->
              TestT m ()
     x ===# y = unsafeEval x === unsafeEval y
 
@@ -71,8 +71,8 @@ namespace Graph
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Graph (Tensor shape S32) ->
-             Graph (Tensor shape S32) ->
+             Tag (Tensor shape S32) ->
+             Tag (Tensor shape S32) ->
              TestT m ()
     x ===# y = unsafeEval x === unsafeEval y
 
@@ -81,8 +81,8 @@ namespace Graph
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Graph (Tensor shape U32) ->
-             Graph (Tensor shape U32) ->
+             Tag (Tensor shape U32) ->
+             Tag (Tensor shape U32) ->
              TestT m ()
     x ===# y = unsafeEval x === unsafeEval y
 
@@ -91,8 +91,8 @@ namespace Graph
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Graph (Tensor shape U64) ->
-             Graph (Tensor shape U64) ->
+             Tag (Tensor shape U64) ->
+             Tag (Tensor shape U64) ->
              TestT m ()
     x ===# y = unsafeEval x === unsafeEval y
 
@@ -102,8 +102,8 @@ namespace Graph
              Monad m =>
              {shape : _} ->
              {default floatingPointTolerance tol : Double} ->
-             Graph (Tensor shape F64) ->
-             Graph (Tensor shape F64) ->
+             Tag (Tensor shape F64) ->
+             Tag (Tensor shape F64) ->
              TestT m ()
     x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)
 

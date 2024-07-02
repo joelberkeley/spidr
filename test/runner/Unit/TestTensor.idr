@@ -215,16 +215,16 @@ iotaExamples = fixedProperty $ do
 partial
 show : Device => Property
 show = fixedProperty $ do
-  let x : Graph $ Tensor [] S32 = pure 1
+  let x : Tag $ Tensor [] S32 = pure 1
   show x === "[] => Lit [] 4"
 
-  let x : Graph $ Tensor [] S32 = pure $ 1 + 2
+  let x : Tag $ Tensor [] S32 = pure $ 1 + 2
   show x === "[] => Add (Lit [] 4) (Lit [] 4)"
 
-  let x : Graph _ = pure $ tensor {dtype = F64} [1.3, 2.0, -0.4]
+  let x : Tag _ = pure $ tensor {dtype = F64} [1.3, 2.0, -0.4]
   show x === "[] => Lit [3] 12"
 
-  let x : Graph (Tensor [] S32) = do
+  let x : Tag (Tensor [] S32) = do
         y <- share $ 1 + 2
         pure (y + y)
   show x ===
@@ -234,7 +234,7 @@ show = fixedProperty $ do
       }
     """
 
-  let x : Graph $ Tensor [] S32 = do
+  let x : Tag $ Tensor [] S32 = do
         x <- share 0
         map (\_ => pure x) x
   show x === """
@@ -243,17 +243,17 @@ show = fixedProperty $ do
       }
     """
 
-  let x : Graph $ Tensor [] S32 = map share 0
+  let x : Tag $ Tensor [] S32 = map share 0
   show x === """
     [] => Map {f = [(0, [] 4)] => Var 0} [Lit [] 4]
     """
 
-  let f : Tensor [] S32 -> Graph $ Tensor [] S32
+  let f : Tensor [] S32 -> Tag $ Tensor [] S32
       f x = do
         z <- share $ the (Tensor [] S32) 5
         map (\v => do v <- share v; pure $ v + v + z) (x + z)
 
-      x : Graph (Tensor [] S32) := do
+      x : Tag (Tensor [] S32) := do
         x <- share =<< reduce @{Sum} [0] (tensor {dtype = S32} [1, 2])
         pure $ x + !(map f x)
   show x === """

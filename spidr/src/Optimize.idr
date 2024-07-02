@@ -24,7 +24,7 @@ import Tensor
 ||| @domain The type of the domain over which to find the optimal value.
 public export 0
 Optimizer : (0 domain : Type) -> Type
-Optimizer a = (a -> Graph $ Tensor [] F64) -> Graph a
+Optimizer a = (a -> Tag $ Tensor [] F64) -> Tag a
 
 ||| Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search
 ||| approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.

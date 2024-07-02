@@ -30,14 +30,14 @@ import Constants
 public export
 interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
   ||| The mean of the distribution.
-  mean : dist event dim -> Graph $ Tensor (dim :: event) F64
+  mean : dist event dim -> Tag $ Tensor (dim :: event) F64
 
   ||| The covariance, or correlation, between sub-events.
-  cov : dist event dim -> Graph $ Tensor (dim :: dim :: event) F64
+  cov : dist event dim -> Tag $ Tensor (dim :: dim :: event) F64
 
 ||| The variance of a single random variable.
 export
-variance : {event : _} -> Distribution dist => dist event 1 -> Graph $ Tensor (1 :: event) F64
+variance : {event : _} -> Distribution dist => dist event 1 -> Tag $ Tensor (1 :: event) F64
 variance dist = squeeze {from = (1 :: 1 :: event)} <$> cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
@@ -52,11 +52,11 @@ interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| The probability density function of the distribution at the specified point.
-      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Graph $ Tensor [] F64
+      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tag $ Tensor [] F64
 
       ||| The cumulative distribution function of the distribution at the specified point (that is,
       ||| the probability the random variable takes a value less than or equal to the given point).
-      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Graph $ Tensor [] F64
+      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tag $ Tensor [] F64
 
 ||| A joint Gaussian distribution.
 |||

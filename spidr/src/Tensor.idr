@@ -18,8 +18,8 @@ limitations under the License.
 ||| types, so you can be sure that if your tensor code compiles, the shapes and types are
 ||| consistent.
 |||
-||| spidr achieves efficient reuse of tensor computations with `Graph`. See the tutorial
-||| _The Graph Compiler_ for a discussion of pitfalls to avoid when using `Graph`.
+||| spidr achieves efficient reuse of tensor computations with `Tag`. See the tutorial
+||| _Nuisances in the Tensor API_ for a discussion of pitfalls to avoid when using `Tag`.
 module Tensor
 
 import Control.Monad.Error.Either
@@ -55,31 +55,31 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Expr -> {shape : _} -> Tensor shape dtype
 
-||| The effect of labelling nodes in a computational graph.
+||| The effect of tagging nodes in a computational graph.
 export
-data GraphT : (Type -> Type) -> Type -> Type where
-  MkGraphT : StateT Env m a -> GraphT m a
+data TagT : (Type -> Type) -> Type -> Type where
+  MkTagT : StateT Env m a -> TagT m a
 
 public export 0
-Graph : Type -> Type
-Graph = GraphT Identity
+Tag : Type -> Type
+Tag = TagT Identity
 
 export
-Functor m => Functor (GraphT m) where
-  map f (MkGraphT x) = MkGraphT (map f x)
+Functor m => Functor (TagT m) where
+  map f (MkTagT x) = MkTagT (map f x)
 
 export
-Monad m => Applicative (GraphT m) where
-  pure x = MkGraphT (pure x)
-  (MkGraphT f) <*> (MkGraphT x) = MkGraphT (f <*> x)
+Monad m => Applicative (TagT m) where
+  pure x = MkTagT (pure x)
+  (MkTagT f) <*> (MkTagT x) = MkTagT (f <*> x)
 
 export
-Monad m => Monad (GraphT m) where
-  (MkGraphT x) >>= f = MkGraphT $ x >>= (\y => let MkGraphT z = f y in z)
+Monad m => Monad (TagT m) where
+  (MkTagT x) >>= f = MkTagT $ x >>= (\y => let MkTagT z = f y in z)
 
 export
-MonadTrans GraphT where
-  lift = MkGraphT . lift
+MonadTrans TagT where
+  lift = MkTagT . lift
 
 public export
 interface Shareable a where
@@ -88,7 +88,7 @@ interface Shareable a where
   ||| bad : Tensor [9999999] F64
   ||| bad = let x = fill {shape = [9999999]} 1.0 in x + x
   |||
-  ||| good : Graph $ Tensor [9999999] F64
+  ||| good : Tag $ Tensor [9999999] F64
   ||| good = do x <- share $ fill {shape = [9999999]} 1.0
   |||           pure (x + x)
   ||| ```
@@ -98,14 +98,14 @@ interface Shareable a where
   ||| For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
-  share : a -> Graph a
+  share : a -> Tag a
 
 export
 Shareable (Tensor shape dtype) where
   -- not necessary, but saves space. Note this will mean you cannot re-bind a value to an inner
   -- scope, but I can't see why that would be useful
   share x@(MkTensor (Var _)) = pure x
-  share (MkTensor x) = MkGraphT $ do
+  share (MkTensor x) = MkTagT $ do
     x <- shareExpr x
     pure $ MkTensor x
 
@@ -137,29 +137,29 @@ partial
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (idris_crash . show) pure
 
-namespace Graph
+namespace Tag
   ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
   ||| computational graph.
   |||
   ||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
   ||| different tensors, even if they are in the same computation, will be treated independently.
-  ||| To efficiently evaluate multiple tensors at once, use `TensorList.Graph.eval`.
+  ||| To efficiently evaluate multiple tensors at once, use `TensorList.Tag.eval`.
   export partial
-  eval : Device -> PrimitiveRW dtype ty => Graph (Tensor shape dtype) -> IO (Literal shape ty)
-  eval device (MkGraphT x) =
+  eval : Device -> PrimitiveRW dtype ty => Tag (Tensor shape dtype) -> IO (Literal shape ty)
+  eval device (MkTagT x) =
     let (env, MkTensor root) = runState empty x
      in try $ do
           shape <- mkShape shape {dtype}
           [lit] <- execute device (MkFn [] root env) [shape]
           read {dtype} [] lit
 
-||| A convenience wrapper for `Graph.eval`, for use with a bare `Tensor`.
+||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
 export partial
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
 
 namespace TensorList
-  namespace Graph
+  namespace Tag
     ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
     ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
     public export
@@ -183,8 +183,8 @@ namespace TensorList
     ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
     ||| compiles the graph just once.
     export partial
-    eval : Device -> Graph (TensorList shapes tys) -> IO (All2 Literal shapes tys)
-    eval device (MkGraphT xs) =
+    eval : Device -> Tag (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+    eval device (MkTagT xs) =
       let (env, xs) = runState empty xs
           root = Tuple $ nodes xs
        in try $ do
@@ -211,7 +211,7 @@ namespace TensorList
       readAll [] _ = pure []
       readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
-  ||| A convenience wrapper for `TensorList.Graph.eval`, for use with a bare `TensorList`.
+  ||| A convenience wrapper for `TensorList.Tag.eval`, for use with a bare `TensorList`.
   export partial
   eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
   eval device xs = eval device (pure xs)
@@ -220,8 +220,8 @@ namespace TensorList
 |||
 ||| There are no guarantees whatsoever as to the string structure and contents.
 export
-Show (Graph $ Tensor shape dtype) where
-  show (MkGraphT x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
+Show (Tag $ Tensor shape dtype) where
+  show (MkTagT x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -762,7 +762,7 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```
-||| recip : Tensor [] F64 -> Graph $ Tensor [] F64
+||| recip : Tensor [] F64 -> Tag $ Tensor [] F64
 ||| recip x = pure $ 1.0 / x
 ||| ```
 ||| can be lifted to an element-wise reciprocal function as `map recip (tensor [-2, 0.4])`,
@@ -772,11 +772,11 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| function passed to `map`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map : (Primitive a, Primitive b) =>
-      (Tensor [] a -> Graph $ Tensor [] b) ->
-      Tensor shape a -> Graph $ Tensor shape b
-map f $ MkTensor {shape = _} x = MkGraphT $ do
+      (Tensor [] a -> Tag $ Tensor [] b) ->
+      Tensor shape a -> Tag $ Tensor shape b
+map f $ MkTensor {shape = _} x = MkTagT $ do
   addr <- reserve
-  let MkGraphT app = f (MkTensor $ Var addr)
+  let MkTagT app = f (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr, MkParameter [] a)] res env
 
@@ -786,7 +786,7 @@ map f $ MkTensor {shape = _} x = MkGraphT $ do
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```
-||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Graph $ Tensor [] F64
+||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Tag $ Tensor [] F64
 ||| addRecip x y = pure $ x + 1.0 / y
 ||| ```
 ||| can be lifted to an element-wise function as
@@ -797,12 +797,12 @@ map f $ MkTensor {shape = _} x = MkGraphT $ do
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -> Tensor [] b -> Graph $ Tensor [] c) ->
-  Tensor shape a -> Tensor shape b -> Graph $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraphT $ do
+  (Tensor [] a -> Tensor [] b -> Tag $ Tensor [] c) ->
+  Tensor shape a -> Tensor shape b -> Tag $ Tensor shape c
+map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTagT $ do
   addr0 <- reserve
   addr1 <- reserve
-  let MkGraphT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
+  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       (env, MkTensor res) = runState (emptyFrom !get) app
       g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
 
@@ -813,8 +813,8 @@ map2 f (MkTensor {shape = _} x) (MkTensor x') = MkGraphT $ do
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
 ||| `tensor [3, 5, 7]`, and `reduce @{Sum} 1 x` produces `tensor [3, 12]`.
 |||
-||| **Note:** `Semigroup` doesn't use `Graph`, which limits the functions that can be used in
-||| `reduce`. However, the most commonly used semigroups don't need `Graph`, including `Sum`,
+||| **Note:** `Semigroup` doesn't use `Tag`, which limits the functions that can be used in
+||| `reduce`. However, the most commonly used semigroups don't need `Tag`, including `Sum`,
 ||| `Prod`, `Min` and `Max`, so for ergonomics, we have opted to use `Monoid` as is. We can
 ||| provide an overloaded variant if requested.
 |||
@@ -831,8 +831,8 @@ reduce :
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
-  Graph $ Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x = MkGraphT $ do
+  Tag $ Tensor (deleteAt axes shape) dtype
+reduce axes $ MkTensor x = MkTagT $ do
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
@@ -852,8 +852,8 @@ reduce axes $ MkTensor x = MkGraphT $ do
 ||| **Note:** Sorting is not stable, meaning elements that compare equal according the ordering may
 ||| be sorted in a different order to the order they appear in the input.
 |||
-||| **Note:** `sort` is limited to use comparison function without `Graph`. However, since the most
-||| commonly-used functions, including (>), (<), (>=), and (<=), don't use `Graph`, we have opted to
+||| **Note:** `sort` is limited to use comparison function without `Tag`. However, since the most
+||| commonly-used functions, including (>), (<), (>=), and (<=), don't use `Tag`, we have opted to
 ||| omit it for ergonomics. We can trivially provide an overloaded variant if requested.
 |||
 ||| **Note:** Values shared in the same scope as `sort` cannot then be used within the scalar
@@ -869,8 +869,8 @@ sort :
   (dimension : Nat) ->
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
-  Graph $ Tensor shape dtype
-sort comp dimension $ MkTensor x = MkGraphT $ do
+  Tag $ Tensor shape dtype
+sort comp dimension $ MkTensor x = MkTagT $ do
   addr0 <- reserve
   addr1 <- reserve
 
@@ -1054,20 +1054,20 @@ cond :
   (Primitive tt, Primitive ft, Primitive dtype) =>
   {shape, ts, fs : _} ->
   Tensor [] PRED ->
-  (onTrue : Tensor ts tt -> Graph $ Tensor shape dtype) -> Tensor ts tt ->
-  (onFalse : Tensor fs ft -> Graph $ Tensor shape dtype) -> Tensor fs ft ->
-  Graph $ Tensor shape dtype
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkGraphT $ do
+  (onTrue : Tensor ts tt -> Tag $ Tensor shape dtype) -> Tensor ts tt ->
+  (onFalse : Tensor fs ft -> Tag $ Tensor shape dtype) -> Tensor fs ft ->
+  Tag $ Tensor shape dtype
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTagT $ do
   addr <- reserve
 
-  let MkGraphT app = onTrue (MkTensor $ Var addr)
+  let MkTagT app = onTrue (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       onTrue = MkFn [(addr, MkParameter ts tt)] res env
 
   updateCounterFrom env
   addr <- reserve
 
-  let MkGraphT app = onFalse (MkTensor $ Var addr)
+  let MkTagT app = onFalse (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
       onFalse = MkFn [(addr, MkParameter fs ft)] res env
 
@@ -1442,7 +1442,7 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
 
-highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Graph $ Tensor [S n] dtype
+highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Tag $ Tensor [S n] dtype
 highlightNan minimize x with (x)
   _ | (MkTensor {shape = _} _) = do
     x <- share x
@@ -1450,7 +1450,7 @@ highlightNan minimize x with (x)
 
     where
 
-    extremizeNan : {n : _} -> Tensor [S n] dtype -> Graph $ Tensor [S n] dtype
+    extremizeNan : {n : _} -> Tensor [S n] dtype -> Tag $ Tensor [S n] dtype
     extremizeNan x = do
       x <- share x
       let min' = broadcast $ Types.min @{NonFinite}
@@ -1461,11 +1461,11 @@ highlightNan minimize x with (x)
 ||| `argmin (tensor [-1, 3, -2, -2, 3])` produces `tensor 2`. If the vector contains NaN values,
 ||| `argmin` returns the index of the first NaN.
 |||
-||| **Note:** `argmin` uses `Graph` to work around what we believe to be an inconsistency in the XLA
+||| **Note:** `argmin` uses `Tag` to work around what we believe to be an inconsistency in the XLA
 ||| compiler's handling of NaN. Specifically, we have modified `argmin` to return the first index of
 ||| the value returned by `reduce @{Min}`.
 export
-argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
+argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
 argmin x = do
   MkTensor x <- highlightNan True x
   pure $ MkTensor $ Argmin {out = U64} 0 x
@@ -1474,11 +1474,11 @@ argmin x = do
 ||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
 |||
-||| **Note:** `argmax` uses `Graph` to work around what we believe to be an inconsistency in the XLA
+||| **Note:** `argmax` uses `Tag` to work around what we believe to be an inconsistency in the XLA
 ||| compiler's handling of NaN. Specifically, we have modified `argmax` to return the first index of
 ||| the value returned by `reduce @{Max}`.
 export
-argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Graph $ Tensor [] U64
+argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
 argmax x = do
   MkTensor x <- highlightNan False x
   pure $ MkTensor $ Argmax {out = U64} 0 x
@@ -1547,7 +1547,7 @@ export
 trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
-        Graph $ Tensor [] dtype
+        Tag $ Tensor [] dtype
 trace x with (x)
   _ | MkTensor {shape = [_, _]} _ = reduce @{Sum} [0, 1] $ x * identity
 
@@ -1555,7 +1555,7 @@ trace x with (x)
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
-Rand = StateT (Tensor [1] U64) Graph
+Rand = StateT (Tensor [1] U64) Tag
 
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
@@ -1572,7 +1572,7 @@ inf = fromDouble (1.0 / 0.0)
 |||
 ||| Example usage, multiplying two uniform samples
 ||| ```
-||| x : Graph $ Tensor [3] F64
+||| x : Tag $ Tensor [3] F64
 ||| x = do let key = tensor (Scalar 2)
 |||            initialState = tensor [Scalar 0]
 |||        rng <- uniform key (fill 0.0) (fill 1.0)
@@ -1587,7 +1587,7 @@ uniform :
   {shape : _} ->
   (key : Tensor [] U64) ->
   (bound, bound' : Tensor shape F64) ->
-  Graph $ Rand $ Tensor shape F64
+  Tag $ Rand $ Tensor shape F64
 uniform (MkTensor key) bound bound' = do
   minval@(MkTensor iMinval) <- share $ Tensor.min bound bound'
   maxval@(MkTensor iMaxval) <- share $ Tensor.max bound bound'
@@ -1613,7 +1613,7 @@ uniform (MkTensor key) bound bound' = do
 |||
 ||| Example usage, multiplying two normal samples
 ||| ```
-||| x : Graph $ Tensor [3] F64
+||| x : Tag $ Tensor [3] F64
 ||| x = let key = tensor (Scalar 2)
 |||         rng = normal key
 |||         initialState = tensor [Scalar 0]

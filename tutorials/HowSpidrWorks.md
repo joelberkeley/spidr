@@ -40,16 +40,16 @@ This works, but quickly becomes extremely wasteful, as we can see when we write 
 ```idris
 Mul (Add (Lit 7) (Lit 9)) (Add (Lit 7) (Lit 9))
 ```
-Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. To solve this, we can label `Expr` nodes, and refer to these labelled nodes by label instead of value. spidr could ask the user to provide these labels, but opts to generate them itself. We could implement this in one of a number of ways, we'll show a few. In each of these cases, our labels are `Nat`.
+Not only do we store z twice, but we lose the information that it's the same calculation, so we either also compute it twice, or have to inspect the expression to eliminate common subexpressions. For graphs of any reasonable size, this is inadmissible. To solve this, we can tag `Expr` nodes, and refer to these tagged nodes by tag instead of value. spidr could ask the user to provide these tags, but opts to generate them itself. We could implement this in one of a number of ways, we'll show a few. In each of these cases, our tags are `Nat`.
 
-We'll start with how to refer to other nodes by label, and come back to how we'll actually label them shortly. One option is to replace constructor arguments with `Nat`, like
+We'll start with how to refer to other nodes by tag, and come back to how we'll actually tag them shortly. One option is to replace constructor arguments with `Nat`, like
 ```idris
 data Expr
   = Lit Int
   | Add Nat Nat
   | Mul Nat Nat
 ```
-but then we'd _always_ need to refer to nodes by label, and as we explain in [Nuisances in the tensor API](Nuisances.md), labelling expressions introduces a tradeoff between performance and ergonomics we'd rather avoid. It would be better if we could either use nodes directly, _or_ by label. We can do this by adding a constructor `Var` to our `Expr`, as
+but then we'd _always_ need to refer to nodes by tag, and as we explain in [Nuisances in the tensor API](Nuisances.md), tagging expressions introduces a tradeoff between performance and ergonomics we'd rather avoid. It would be better if we could either use nodes directly, _or_ by tag. We can do this by adding a constructor `Var` to our `Expr`, as
 ```idris
 data Expr
   = Lit Int
@@ -57,9 +57,9 @@ data Expr
   | Add Expr Expr
   | Mul Expr Expr
 ```
-whose sole purpose is to reference other nodes by label.
+whose sole purpose is to reference other nodes by tag.
 
-Let's now see how to label nodes. One option is to bake the labelling into `Expr` itself, via a new constructor `Let`:
+Let's now see how to tag nodes. One option is to bake the tagging into `Expr` itself, via a new constructor `Let`:
 ```idris
 data Expr
   = Lit Int
@@ -73,7 +73,7 @@ Here, our earlier example becomes
 Let 0 (Add (Lit 7) (Lit 9))  -- name `7 + 9` as `0`
   $ Mul (Var 0) (Var 0)      -- each `Var 0` points to `7 + 9`
 ```
-Another option, which makes use of a common representation for directed acyclic graphs such as our computational graph, is to supplement an expression with a topologically-sorted `List Expr`, of all the labelled nodes. Here, we implicitly use the list indices as our labels: to label an `Expr`, we simply append it to the list. Our earlier example becomes the expression
+Another option, which makes use of a common representation for directed acyclic graphs such as our computational graph, is to supplement an expression with a topologically-sorted `List Expr`, of all the tagged nodes. Here, we implicitly use the list indices as our tags: to tag an `Expr`, we simply append it to the list. Our earlier example becomes the expression
 ```idris
 Mul (Var 0) (Var 0)
 ```
@@ -83,9 +83,9 @@ along with the list
 ```
 spidr uses this second approach of a supplementary list, or stack, of `Expr`s.
 
-In either of these approaches, we need to keep track of generated labels, so we don't reuse them. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Graph` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Graph` is the _effect_ of labelling nodes in our computational graph. This explicit state introduces the tradeoff between performance and ergonomics we mentioned earlier.
+In either of these approaches, we need to keep track of generated tags, so we don't reuse them. Idris is a purely functional language, which means effects, including state, are explicit. In spidr, this state is expressed with the `Tag` type constructor, which is essentially a `State` over our topologically-sorted list. Put another way, `Tag` is the _effect_ of tagging nodes in our computational graph. This technique is called [_observable sharing_](https://www.cse.chalmers.se/~dave/papers/observable-sharing.pdf), and introduces the tradeoff between performance and ergonomics we mentioned earlier.
 
-So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if). These functions themselves accept functions, which introduce their own scope, or sub-graphs, that must be constructed before we can construct the complete StableHLO graph. Let's see an example, by implementing `if`. We'll first need to add support for boolean types, for the predicate. Then add an `If` constructor to represent the operation, which uses a `Function` type that encapsulates the nodes labelled in this local scope, and the function result
+So far, we've assumed a single scope. However, there are higher-order functions in StableHLO, such as [`sort`](https://openxla.org/stablehlo/spec#sort), [`reduce`](https://openxla.org/stablehlo/spec#reduce), and [`if`](https://openxla.org/stablehlo/spec#if). These functions themselves accept functions, which introduce their own scope, or sub-graphs, that must be constructed before we can construct the complete StableHLO graph. Let's see an example, by implementing `if`. We'll first need to add support for boolean types, for the predicate. Then add an `If` constructor to represent the operation, which uses a `Function` type that encapsulates the nodes tagged in this local scope, and the function result
 ```idris
 data U = I Int | B Bool
 
@@ -110,7 +110,7 @@ If (Lit $ B False)
 ```
 accompanied by an empty set `[]` of locals in the scope of `If`.
 
-> *__DETAIL__* spidr's interpreter stores nodes across all program scopes in a single array. The interpreter needs to quickly recall these nodes by label when it lowers the graph, so we choose indices in this global array as our labels. In contrast, the high-level Idris graph defines scopes separately, using local namespaces as outlined above. Because of this, labels in all but one local namespace do not start at zero, and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the label. The lists remain both individually, and collectively, topologically sorted.
+> *__DETAIL__* spidr's interpreter stores nodes across all program scopes in a single array. The interpreter needs to quickly recall these nodes by tag when it lowers the graph, so we choose indices in this global array as our tags. In contrast, the high-level Idris graph defines scopes separately, using local namespaces as outlined above. Because of this, tags in all but one local namespace do not start at zero, and cannot therefore be list indices. Instead, we use a `List (Nat, Expr)` where the `Nat` is the tag. The lists remain both individually, and collectively, topologically sorted.
 
 Finally, a `Tensor` is simply a wrapper round an `Expr`, a runtime-available `Shape`, and an erased element type. Experiment with `show` on your tensor graphs to see all this in action. Note that we have simplified a number of details, so the representation will look different from above.
 
@@ -118,7 +118,7 @@ Now we know how spidr constructs the graph, let's look at how it consumes it.
 
 ## Interpreting the graph with XLA
 
-spidr next converts the graph from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, interpret each `Expr` as a C++ `XlaOp`, and add the `XlaOp` pointer to a fixed-length `IOArray` array. The remaining `Expr` not in the stack, we simply interpret as the complete expression defined in terms of `XlaOp`s in the array. Unlike a `List`, the `IOArray` provides constant-time access, so we can cheaply access previously-created `XlaOp`s by label. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
+spidr next converts the graph from its own internal representation to HLO. The process is fairly straightforward. We iterate over the stack, interpret each `Expr` as a C++ `XlaOp`, and add the `XlaOp` pointer to a fixed-length `IOArray` array. The remaining `Expr` not in the stack, we simply interpret as the complete expression defined in terms of `XlaOp`s in the array. Unlike a `List`, the `IOArray` provides constant-time access, so we can cheaply access previously-created `XlaOp`s by tag. The process makes heavy use of the Idris C FFI and a thin custom C wrapper round the XLA C++ API.
 
 In future, we plan instead to build StableHLO rather than XLA HLO programs. In that case, for each `Expr`, we'll create a StableHLO `tensor` instead of an `XlaOp`.
 

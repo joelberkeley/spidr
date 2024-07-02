@@ -41,7 +41,7 @@ We can represent choosing candidate optima visually:
      +-------------+
 </pre>
 
-While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just call this representation our _environment_, and name it `env`. To find `n` new query points, we need a function `env -> Graph $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
+While we can trivially represent a number of new query points with a `Tensor`, we won't constrain ourselves to a particular representation for our data and models. We'll just call this representation our _environment_, and name it `env`. To find `n` new query points, we need a function `env -> Tag $ Tensor (n :: features) F64` (for continuous input space of features with shape `features`).
 
 How we produce the new points from the data and models depends on the problem at hand. We could simply do a grid search over the mean of the model's marginal distribution for a single optimal point, as follows. We define some toy data
 
@@ -71,7 +71,7 @@ historicalData = MkDataset {
 ```
 and model that data
 ```idris
-model : Dataset [2] [1] -> Graph $ ConjugateGPRegression [2]
+model : Dataset [2] [1] -> Tag $ ConjugateGPRegression [2]
 model dataset =
   let mkGP = \len => pure $ MkGP zero (matern52 1.0 $ squeeze len)
       model = MkConjugateGPR mkGP (tensor [0.5]) 0.2
@@ -84,7 +84,7 @@ optimizer f =
   let gs = gridSearch (tensor {a = Nat} [100, 100]) (tensor [0.0, 0.0]) (tensor [1.0, 1.0])
    in broadcast <$> (gs $ f . broadcast)
 
-newPoint : Graph $ Tensor [1, 2] F64
+newPoint : Tag $ Tensor [1, 2] F64
 newPoint = optimizer $ \x => squeeze <$>
   mean {event = [1]} !(marginalise @{Latent} !(model historicalData) x)
 ```
@@ -116,16 +116,16 @@ This is a particularly simple example of the standard approach of defining an _a
     +--------------+
 </pre>
 
-In this case, our acquisition function is built from the model and data (it is empirical). The optimizer is not empirical. Finally, the new points are empirical since they depend on the acquisition function. We can see from this simple setup that we want to be able to combine empirical objects and non-empirical objects to empirically find a new point. That is, we want to have a number of `env -> Graph a`: functions from data and models in a representation `env` to a number of `a` (the `Graph` simply allows us to efficiently reuse tensors when doing this), where the form of these functions depends on how we want to approach the problem at hand. We also want to be able to combine these `a` with non-empirical functionality.
+In this case, our acquisition function is built from the model and data (it is empirical). The optimizer is not empirical. Finally, the new points are empirical since they depend on the acquisition function. We can see from this simple setup that we want to be able to combine empirical objects and non-empirical objects to empirically find a new point. That is, we want to have a number of `env -> Tag a`: functions from data and models in a representation `env` to a number of `a` (the `Tag` simply allows us to efficiently reuse tensors when doing this), where the form of these functions depends on how we want to approach the problem at hand. We also want to be able to combine these `a` with non-empirical functionality.
 
 ## Modifying empirical values with `Functor`
 
-In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the environment when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `env -> Graph $ Acquisition batch feat`. We want to be able to treat the data and model as an environment, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, named `ReaderT`. A `ReaderT env Graph a` is just a thin wrapper round an `env -> Graph a`. Having chosen `ReaderT` as our abstraction, we want to apply an `Optimizer` to a `ReaderT env Graph (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Functor` is already implemented for `ReaderT env Graph`. Let's see this in action:
+In the above example, we constructed the acquisition function from our model, then optimized it, and in doing so, we assumed that we have access to the environment when we compose the acquisition function with the optimizer. This might not be the case: we may want to compose things before we get the data and model. For example, we may want to apply an `Optimizer` directly to an `env -> Tag $ Acquisition batch feat`. We want to be able to treat the data and model as an environment, and calculate and manipulate values in that environment. That's exactly what a _reader_ type does, and there's one in the Idris standard library, named `ReaderT`. A `ReaderT env Tag a` is just a thin wrapper round an `env -> Tag a`. Having chosen `ReaderT` as our abstraction, we want to apply an `Optimizer` to a `ReaderT env Tag (Acquisition batch feat)`. The function `map` from the `Functor` interface does just this, and `Functor` is already implemented for `ReaderT env Tag`. Let's see this in action:
 ```idris
 modelMean : ProbabilisticModel [2] [1] Gaussian m => m -> Acquisition 1 [2]
 modelMean model x = squeeze <$> mean {event = [1]} !(marginalise model x)
 
-newPoint' : Graph $ Tensor [1, 2] F64
+newPoint' : Tag $ Tensor [1, 2] F64
 newPoint' = let acquisition = asks {m = ReaderT _ _} $ modelMean @{Latent}
                 point = do lift $ optimizer !acquisition
              in runReaderT !(model historicalData) point
@@ -135,9 +135,9 @@ newPoint' = let acquisition = asks {m = ReaderT _ _} $ modelMean @{Latent}
 
 Let's now explore the problem of optimization with failure regions. We'll want to modify a measure `oa` of how optimal each point is likely to be (based on the objective value data), with a measure `fa` of how likely the point is to lie within a failure region (based on the failure region data). Both `oa` and `fa` are empirical values.
 
-Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `ReaderT` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `ReaderT env Graph` context. For example, we can apply the `a -> b` function in `f : ReaderT env Graph (a -> b)` to the `a` value in `x : ReaderT env Graph a` as `f <*> x` (which is a `ReaderT env Graph b`), and we can do this before we actually have access to the environment. The second method, `pure`, creates a `ReaderT env Graph a` from any `a`.
+Combining empirical values will be a common pattern in Bayesian optimization. The standard way to do this with `ReaderT` values is with the two methods of the `Applicative` interface. The first of these lifts function application to the `ReaderT env Tag` context. For example, we can apply the `a -> b` function in `f : ReaderT env Tag (a -> b)` to the `a` value in `x : ReaderT env Tag a` as `f <*> x` (which is a `ReaderT env Tag b`), and we can do this before we actually have access to the environment. The second method, `pure`, creates a `ReaderT env Tag a` from any `a`.
 
-There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : ReaderT env Graph (Acquisition batch feat)` and `oa : ReaderT env Graph (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
+There are a number of ways to implement the solution, but we'll choose a relatively simple one that demonstrates the approach, namely the case `fa : ReaderT env Tag (Acquisition batch feat)` and `oa : ReaderT env Tag (Acquisition batch feat -> Acquisition batch feat)`. We can visualise this:
 
 <pre>
 +---------------------------------------+
@@ -178,7 +178,7 @@ The final point is then gathered from `map optimizer (oa <*> fa)`, and this conc
 
 ## Specify the environment with contravariant functors
 
-The `ReaderT env Graph a` type has proven flexible in allowing us to construct an acquisition tactic. Let's now look at how to construct our environment. spidr provides a minimal `DataModel` record that wraps a `Dataset` and `ProbabilisticModel`, and uses this as a common environment for building aquisition functions. But sometimes we'll want to use a different structure, and without adding complexity to the empiric values themselves. Recall that a `ReaderT env Graph a` is equivalent to a `env -> Graph a`, and that we can modify the `a` with a `Functor`. A `Functor` is really a _covariant functor_, and there's an "opposite" construct, called a _contravariant functor_ which has a similar effect on the function input. Idris has a `Contravariant` interface, but due to language limitations it's not suitable for `ReaderT`, so spidr provides a standalone function `(>$<)`, which fulfills the roles of `Contravariant`'s equivalent to `map`.
+The `ReaderT env Tag a` type has proven flexible in allowing us to construct an acquisition tactic. Let's now look at how to construct our environment. spidr provides a minimal `DataModel` record that wraps a `Dataset` and `ProbabilisticModel`, and uses this as a common environment for building aquisition functions. But sometimes we'll want to use a different structure, and without adding complexity to the empiric values themselves. Recall that a `ReaderT env Tag a` is equivalent to a `env -> Tag a`, and that we can modify the `a` with a `Functor`. A `Functor` is really a _covariant functor_, and there's an "opposite" construct, called a _contravariant functor_ which has a similar effect on the function input. Idris has a `Contravariant` interface, but due to language limitations it's not suitable for `ReaderT`, so spidr provides a standalone function `(>$<)`, which fulfills the roles of `Contravariant`'s equivalent to `map`.
 
 With this new functionality at hand, we'll return to our objective with failure regions. We'll need some data on failure regions, and to model that data:
 ```idris
@@ -188,7 +188,7 @@ failureData = MkDataset {
     targets = tensor [[0.0], [0.0], [0.0], [1.0]]
   }
 
-failureModel : Dataset [2] [1] -> Graph $ ConjugateGPRegression [2]
+failureModel : Dataset [2] [1] -> Tag $ ConjugateGPRegression [2]
 failureModel dataset
   = let mkGP = \len => pure $ MkGP zero (rbf $ squeeze len)
         model = MkConjugateGPR mkGP (tensor [0.2]) 0.1
@@ -203,7 +203,7 @@ record Labelled o f where
 ```
 Idris generates two methods `objective` and `failure` from this `record`, which we'll use to extract the respective data and model. Putting it all together, here's our empirical point:
 ```idris
-newPoint'' : Graph $ Tensor [1, 2] F64
+newPoint'' : Tag $ Tensor [1, 2] F64
 newPoint'' = do
   let eci = objective >$< expectedConstrainedImprovement @{Latent} 0.5
       pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
@@ -217,25 +217,25 @@ newPoint'' = do
 
 Once we've chosen some new points, we'll typically evaluate the objective function, which will look something like
 ```idris
-objective : Tensor [n, 2] F64 -> Graph $ Tensor [n, 1] F64
+objective : Tensor [n, 2] F64 -> Tag $ Tensor [n, 1] F64
 ```
 and then update the historic dataset with this new point and train the model the new data. spidr provides, for simple Bayesian optimization setups, a function `step` which combines this all into a single step that we can reuse
 ```idris
 step' : DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2]) ->
-        Graph $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+        Tag $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
 step' = let tactic = do lift $ optimizer !(expectedImprovementByModel @{Latent})
          in step @{Latent} objective (fit lbfgs) tactic
 ```
 We can repeat this process indefinitely to produce an infinite stream of values
 ```idris
 covering
-steps : Graph $ GraphStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
+steps : Tag $ TagStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
 steps = share historicalData >>= \hist => iterate step' (MkDataModel !(model hist) hist)
 ```
 We can now iterate over this stream, choosing to stop according to a variety of stopping conditions, such as a number of repetitions
 ```idris
 covering
-firstFive : Graph $ Vect 5 (DataModel {probabilisticModel = Latent} $ ConjugateGPRegression [2])
+firstFive : Tag $ Vect 5 (DataModel {probabilisticModel = Latent} $ ConjugateGPRegression [2])
 firstFive = take 5 !steps
 ```
 or a more complex stopping condition such when a new point lies close to a known optimum.
