@@ -30,46 +30,46 @@ namespace S32
   testElementwiseUnary :
     Device =>
     (Int32 -> Int32) ->
-    (forall shape . Tensor shape S32 -> Graph $ Tensor shape S32) ->
+    (forall shape . Tensor shape S32 -> Tensor shape S32) ->
     Property
   testElementwiseUnary fInt fTensor = property $ do
     shape <- forAll shapes
     x <- forAll (literal shape int32s)
     let x' = tensor x
-    [| fInt x |] === unsafeEval (do fTensor !x')
+    [| fInt x |] === unsafeEval (fTensor x')
 
 namespace F64
   export partial
   testElementwiseUnary :
     Device =>
     (Double -> Double) ->
-    (forall shape . Tensor shape F64 -> Graph $ Tensor shape F64) ->
+    (forall shape . Tensor shape F64 -> Tensor shape F64) ->
     Property
   testElementwiseUnary fDouble fTensor = property $ do
     shape <- forAll shapes
     x <- forAll (literal shape doubles)
     let x' = tensor x
-    [| fDouble x |] ==~ unsafeEval (do fTensor !x')
+    [| fDouble x |] ==~ unsafeEval (fTensor x')
 
 namespace PRED
   export partial
   testElementwiseUnary :
     Device =>
     (Bool -> Bool) ->
-    (forall shape . Tensor shape PRED -> Graph $ Tensor shape PRED) ->
+    (forall shape . Tensor shape PRED -> Tensor shape PRED) ->
     Property
   testElementwiseUnary fBool fTensor = property $ do
     shape <- forAll shapes
     x <- forAll (literal shape bool)
     let x' = tensor x
-    [| fBool x |] === unsafeEval (do fTensor !x')
+    [| fBool x |] === unsafeEval (fTensor x')
 
 namespace S32
   export partial
   testElementwiseBinary :
     Device =>
     (Int32 -> Int32 -> Int32) ->
-    (forall shape . Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> Graph (Tensor shape S32)) ->
+    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape S32) ->
     Property
   testElementwiseBinary fInt fTensor = property $ do
     shape <- forAll shapes
@@ -82,16 +82,16 @@ namespace S32
 partial
 div : Device => Property
 div = fixedProperty $ do
-  (do div !(tensor {shape = [0]} []) []) ===# tensor []
-  (do div !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [9, 4, 3, 2, 1]
-  (do div !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [1, 0, 0]
+  div (tensor {shape = [0]} []) [] ===# tensor []
+  div (fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5] ===# tensor [9, 4, 3, 2, 1]
+  div (fill 1) [Scalar 1, Scalar 2, Scalar 3] ===# tensor [1, 0, 0]
 
 partial
 rem : Device => Property
 rem = fixedProperty $ do
-  (do rem !(tensor {shape = [0]} []) []) ===# tensor []
-  (do rem !(fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5]) ===# tensor [0, 1, 0, 1, 4]
-  (do rem !(fill 1) [Scalar 1, Scalar 2, Scalar 3]) ===# tensor [0, 1, 1]
+  rem (tensor {shape = [0]} []) [] ===# tensor []
+  rem (fill 9) [Scalar 1, Scalar 2, Scalar 3, Scalar 4, Scalar 5] ===# tensor [0, 1, 0, 1, 4]
+  rem (fill 1) [Scalar 1, Scalar 2, Scalar 3] ===# tensor [0, 1, 1]
 
 partial
 divAndRemReconstructOriginal : Device => Property
@@ -102,14 +102,14 @@ divAndRemReconstructOriginal = property $ do
       denom = [Scalar (S x), Scalar (S y)]
 
       numer := tensor numer
-  (do (tensor denom) * div !numer denom + rem !numer denom) ===# numer
+  tensor denom * div numer denom + rem numer denom ===# numer
 
 namespace F64
   export partial
   testElementwiseBinary :
     Device =>
     (Double -> Double -> Double) ->
-    (forall shape . Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape F64)) ->
+    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64) ->
     Property
   testElementwiseBinary fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -124,7 +124,7 @@ namespace PRED
   testElementwiseBinary :
     Device =>
     (Bool -> Bool -> Bool) ->
-    (forall shape . Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)) ->
+    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
     Property
   testElementwiseBinary fBool fTensor = property $ do
     shape <- forAll shapes
@@ -163,7 +163,7 @@ namespace S32
   testElementwiseComparator :
     Device =>
     (Int32 -> Int32 -> Bool) ->
-    (forall shape . Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> Graph (Tensor shape PRED)) ->
+    (forall shape . Tensor shape S32 -> Tensor shape S32 -> Tensor shape PRED) ->
     Property
   testElementwiseComparator fInt fTensor = property $ do
     shape <- forAll shapes
@@ -178,7 +178,7 @@ namespace F64
   testElementwiseComparator :
     Device =>
     (Double -> Double -> Bool) ->
-    (forall shape . Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> Graph (Tensor shape PRED)) ->
+    (forall shape . Tensor shape F64 -> Tensor shape F64 -> Tensor shape PRED) ->
     Property
   testElementwiseComparator fDouble fTensor = property $ do
     shape <- forAll shapes
@@ -193,7 +193,7 @@ namespace PRED
   testElementwiseComparator :
     Device =>
     (Bool -> Bool -> Bool) ->
-    (forall shape . Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED)) ->
+    (forall shape . Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED) ->
     Property
   testElementwiseComparator = testElementwiseBinary
 
@@ -309,8 +309,8 @@ atanh x = log ((1 + x) / (1 - x)) / 2
 export partial
 all : Device => List (PropertyName, Property)
 all = [
-      ("negate S32", S32.testElementwiseUnary negate (Tensor.negate . pure))
-    , ("negate F64", F64.testElementwiseUnary negate (Tensor.negate . pure))
+      ("negate S32", S32.testElementwiseUnary negate negate)
+    , ("negate F64", F64.testElementwiseUnary negate negate)
     , ("recip", F64.testElementwiseUnary recip recip)
     , ("abs S32", S32.testElementwiseUnary abs abs)
     , ("abs F64", F64.testElementwiseUnary abs abs)
@@ -343,10 +343,10 @@ all = [
     , ("(*) S32", S32.testElementwiseBinary (*) (*))
     , ("(/)", F64.testElementwiseBinary (/) (/))
     -- , ("pow", F64.testElementwiseBinary pow (^)),  bug in idris 0.5.1 for pow
-    , ("min S32", S32.testElementwiseBinary min (\x, y => min !x !y))
-    , ("max S32", S32.testElementwiseBinary max (\x, y => max !x !y))
-    , ("min F64", F64.testElementwiseBinary min' (\x, y => min !x !y))
-    , ("max F64", F64.testElementwiseBinary max' (\x, y => max !x !y))
+    , ("min S32", S32.testElementwiseBinary min min)
+    , ("max S32", S32.testElementwiseBinary max max)
+    , ("min F64", F64.testElementwiseBinary min' min)
+    , ("max F64", F64.testElementwiseBinary max' max)
     , ("(&&)", PRED.testElementwiseBinary and (&&))
     , ("(||)", PRED.testElementwiseBinary or (||))
 

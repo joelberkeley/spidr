@@ -32,4 +32,4 @@ interface Distribution marginal => ProbabilisticModel
     model | model
   where
     ||| Return the marginal distribution over the target domain at the specified feature values.
-    marginalise : model -> {n : _} -> Tensor (S n :: features) F64 -> Graph $ marginal targets (S n)
+    marginalise : model -> {n : _} -> Tensor (S n :: features) F64 -> Tag $ marginal targets (S n)

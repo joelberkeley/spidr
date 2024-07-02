@@ -38,7 +38,7 @@ sufficientlyEq x y =
          avg = (x + y) / 2
       in abs (diff / avg) < tol  -- real
 
-infix 1 ==~
+export infix 1 ==~
 
 export covering
 (==~) :
@@ -53,30 +53,82 @@ export covering
   sufficientlyEq' : {shape : _} -> Literal shape Double -> Literal shape Double -> Bool
   sufficientlyEq' x y = all [| sufficientlyEq {tol} x y |]
 
-infix 1 ===#
+export infix 6 ===#
+
+namespace Tag
+  namespace PRED
+    export partial
+    (===#) : Device =>
+             Monad m =>
+             {shape : _} ->
+             Tag (Tensor shape PRED) ->
+             Tag (Tensor shape PRED) ->
+             TestT m ()
+    x ===# y = unsafeEval x === unsafeEval y
+
+  namespace S32
+    export partial
+    (===#) : Device =>
+             Monad m =>
+             {shape : _} ->
+             Tag (Tensor shape S32) ->
+             Tag (Tensor shape S32) ->
+             TestT m ()
+    x ===# y = unsafeEval x === unsafeEval y
+
+  namespace U32
+    export partial
+    (===#) : Device =>
+             Monad m =>
+             {shape : _} ->
+             Tag (Tensor shape U32) ->
+             Tag (Tensor shape U32) ->
+             TestT m ()
+    x ===# y = unsafeEval x === unsafeEval y
+
+  namespace U64
+    export partial
+    (===#) : Device =>
+             Monad m =>
+             {shape : _} ->
+             Tag (Tensor shape U64) ->
+             Tag (Tensor shape U64) ->
+             TestT m ()
+    x ===# y = unsafeEval x === unsafeEval y
+
+  namespace F64
+    export partial
+    (===#) : Device =>
+             Monad m =>
+             {shape : _} ->
+             {default floatingPointTolerance tol : Double} ->
+             Tag (Tensor shape F64) ->
+             Tag (Tensor shape F64) ->
+             TestT m ()
+    x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)
 
 namespace PRED
   export partial
-  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape PRED) -> Graph (Tensor shape PRED) -> TestT m ()
-  x ===# y = unsafeEval x === unsafeEval y
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
+  x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace S32
   export partial
-  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape S32) -> Graph (Tensor shape S32) -> TestT m ()
-  x ===# y = unsafeEval x === unsafeEval y
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+  x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace U32
   export partial
-  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape U32) -> Graph (Tensor shape U32) -> TestT m ()
-  x ===# y = unsafeEval x === unsafeEval y
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape U32 -> Tensor shape U32 -> TestT m ()
+  x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace U64
   export partial
-  (===#) : Device => Monad m => {shape : _} -> Graph (Tensor shape U64) -> Graph (Tensor shape U64) -> TestT m ()
-  x ===# y = unsafeEval x === unsafeEval y
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape U64 -> Tensor shape U64 -> TestT m ()
+  x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace F64
   export partial
   (===#) : Device => Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
-           Graph (Tensor shape F64) -> Graph (Tensor shape F64) -> TestT m ()
-  x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)
+           Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+  x ===# y = (==~) {tol} (unsafeEval $ pure x) (unsafeEval $ pure y)

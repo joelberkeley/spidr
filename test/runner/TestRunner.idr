@@ -30,8 +30,7 @@ import Unit.TestUtil
 
 export partial
 run : Device -> IO ()
-run device = do
-  test [
+run device = test [
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.TestUtil.group
