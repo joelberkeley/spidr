@@ -4,7 +4,7 @@ _Accelerated machine learning with dependent types_
 
 spidr is a research project, expect breaking changes. We have yet to implement automatic differentiation and gradient-based optimizers.
 
-See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials/README.md) for extended discussion of spidr's architecture. In particular, make sure to read [_Nuisances in the Tensor API_](tutorials/Nuisances.md) before you begin writing programs.
+See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials/README.md) for extended discussion of spidr's architecture. In particular, make sure to read [_Nuisances in the Tensor API_](tutorials/Nuisances.md).
 
 ### Install
 
