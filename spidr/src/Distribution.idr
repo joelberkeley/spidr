@@ -71,7 +71,7 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
                Gaussian event (S d)
 
 export
-Shareable (Gaussian event dim) where
+Taggable (Gaussian event dim) where
   tag (MkGaussian mean cov) = [| MkGaussian (tag mean) (tag cov) |]
 
 export

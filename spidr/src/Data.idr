@@ -45,5 +45,5 @@ concat (MkDataset {s = s} x y) (MkDataset {s = s'} x' y') =
   MkDataset {s = s + S s'} (concat 0 x x') (concat 0 y y')
 
 export
-Shareable (Dataset f t) where
+Taggable (Dataset f t) where
   tag (MkDataset f t) = [| MkDataset (tag f) (tag t) |]

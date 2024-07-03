@@ -140,8 +140,8 @@ data Expr : Type where
   NormalFloatingPoint : (key, initialState : Expr) -> (shape : Shape) -> Expr
 
 export
-shareExpr : Expr -> State Env Expr
-shareExpr expr = do
+tag : Expr -> State Env Expr
+tag expr = do
   MkEnv next env <- get
   put $ MkEnv (S next) ((next, expr) :: env)
   pure (Var next)

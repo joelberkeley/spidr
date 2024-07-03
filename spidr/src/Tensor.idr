@@ -82,7 +82,7 @@ MonadTrans TagT where
   lift = MkTagT . lift
 
 public export
-interface Shareable a where
+interface Taggable a where
   ||| Mark an expression to be efficiently reused. For example, in
   ||| ```
   ||| bad : Tensor [9999999] F64
@@ -92,7 +92,8 @@ interface Shareable a where
   ||| good = do x <- tag $ fill {shape = [9999999]} 1.0
   |||           pure (x + x)
   ||| ```
-  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `tag` marks it for sharing.
+  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `tag` marks it for
+  ||| sharing.
   |||
   ||| Types that implement this interface should `tag` constituent components it deems worth sharing.
   ||| For example, see the implementation for tuples.
@@ -101,16 +102,14 @@ interface Shareable a where
   tag : a -> Tag a
 
 export
-Shareable (Tensor shape dtype) where
-  -- not necessary, but saves space. Note this will mean you cannot re-bind a value to an inner
-  -- scope, but I can't see why that would be useful
+Taggable (Tensor shape dtype) where
+  -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
+  -- to an inner scope, but I can't see why that would be useful
   tag x@(MkTensor (Var _)) = pure x
-  tag (MkTensor x) = MkTagT $ do
-    x <- shareExpr x
-    pure $ MkTensor x
+  tag (MkTensor x) = MkTagT $ do pure $ MkTensor !(tag x)
 
 export
-(Shareable a, Shareable b) => Shareable (a, b) where
+(Taggable a, Taggable b) => Taggable (a, b) where
   tag (a, b) = [| (tag a, tag b) |]
 
 ||| Construct a `Tensor` from `Literal` data. For example
@@ -768,7 +767,7 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| can be lifted to an element-wise reciprocal function as `map recip (tensor [-2, 0.4])`,
 ||| which produces `tensor [-0.5, 2.5]`.
 |||
-||| **Note:** Values shared in the same scope as `map` cannot then be used within the scalar
+||| **Note:** Values tagged in the same scope as `map` cannot then be used within the scalar
 ||| function passed to `map`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map : (Primitive a, Primitive b) =>
@@ -792,7 +791,7 @@ map f $ MkTensor {shape = _} x = MkTagT $ do
 ||| can be lifted to an element-wise function as
 ||| `map2 addRecip (tensor [3.0, -3.0]) (tensor [-2.0, 0.4])`, which produces `tensor [2.5, -0.5]`.
 |||
-||| **Note:** Values shared in the same scope as `map2` cannot then be used within the scalar
+||| **Note:** Values tagged in the same scope as `map2` cannot then be used within the scalar
 ||| function passed to `map2`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map2 :
@@ -818,7 +817,7 @@ map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTagT $ do
 ||| `Prod`, `Min` and `Max`, so for ergonomics, we have opted to use `Monoid` as is. We can
 ||| provide an overloaded variant if requested.
 |||
-||| **Note:** Values shared in the same scope as `reduce` cannot then be used within the binary
+||| **Note:** Values tagged in the same scope as `reduce` cannot then be used within the binary
 ||| function supplied by the `Monoid`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| @reducer How to reduce elements along the given `axis`.
@@ -856,7 +855,7 @@ reduce axes $ MkTensor x = MkTagT $ do
 ||| commonly-used functions, including (>), (<), (>=), and (<=), don't use `Tag`, we have opted to
 ||| omit it for ergonomics. We can trivially provide an overloaded variant if requested.
 |||
-||| **Note:** Values shared in the same scope as `sort` cannot then be used within the scalar
+||| **Note:** Values tagged in the same scope as `sort` cannot then be used within the scalar
 ||| function passed to `sort`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| For example, for `x = tensor [[1, 6, 4], [3, 2, 5]]`, `sort (<) 0 x` produces
@@ -1044,7 +1043,7 @@ select (MkTensor p) (MkTensor t) (MkTensor f) = MkTensor $ Select p t f
 ||| While both functions will be called for the purposes of defining the computation, only one will
 ||| be evaluated with its specified argument. That is, this function short-circuits.
 |||
-||| **Note:** Values shared in the same scope as `cond` cannot then be used in either function
+||| **Note:** Values tagged in the same scope as `cond` cannot then be used in either function
 ||| passed to `cond`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| @onTrue The function to execute if the predicate is truthy.
