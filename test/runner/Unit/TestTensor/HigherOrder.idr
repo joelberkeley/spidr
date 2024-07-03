@@ -47,6 +47,14 @@ mapNonTrivial = fixedProperty $ do
   map {a = S32} (\_ => pure 2) 1 ===# res
   map {a = S32} (map (\x => pure $ x + 1)) 1 ===# res
 
+  let x : Tag $ Tensor [] S32 = do
+      tag =<< Tensor.map (\y => do
+          Prelude.map (y +) $ tag =<< Tensor.map (
+              \u => do v <- tag (tensor 3); pure $ u * v
+            ) y
+        ) (tensor 7)
+  x ===# pure 28
+
 partial
 map2Result : Device => Property
 map2Result = fixedProperty $ do
