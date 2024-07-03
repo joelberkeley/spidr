@@ -30,15 +30,15 @@ import Constants
 public export
 interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
   ||| The mean of the distribution.
-  mean : dist event dim -> Graph $ Tensor (dim :: event) F64
+  mean : dist event dim -> Tag $ Tensor (dim :: event) F64
 
   ||| The covariance, or correlation, between sub-events.
-  cov : dist event dim -> Graph $ Tensor (dim :: dim :: event) F64
+  cov : dist event dim -> Tag $ Tensor (dim :: dim :: event) F64
 
 ||| The variance of a single random variable.
 export
-variance : {event : _} -> Distribution dist => dist event 1 -> Graph $ Tensor (1 :: event) F64
-variance dist = squeeze {from = (1 :: 1 :: event)} =<< cov dist
+variance : {event : _} -> Distribution dist => dist event 1 -> Tag $ Tensor (1 :: event) F64
+variance dist = squeeze {from = (1 :: 1 :: event)} <$> cov dist
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
@@ -52,11 +52,11 @@ interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| The probability density function of the distribution at the specified point.
-      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Graph $ Tensor [] F64
+      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tag $ Tensor [] F64
 
       ||| The cumulative distribution function of the distribution at the specified point (that is,
       ||| the probability the random variable takes a value less than or equal to the given point).
-      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Graph $ Tensor [] F64
+      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tag $ Tensor [] F64
 
 ||| A joint Gaussian distribution.
 |||
@@ -71,6 +71,10 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
                Gaussian event (S d)
 
 export
+Taggable (Gaussian event dim) where
+  tag (MkGaussian mean cov) = [| MkGaussian (tag mean) (tag cov) |]
+
+export
 Distribution Gaussian where
   mean (MkGaussian mean' _) = pure mean'
   cov (MkGaussian _ cov') = pure cov'
@@ -79,13 +83,13 @@ Distribution Gaussian where
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
-    cholCov <- cholesky =<< squeeze {to = [S d, S d]} cov
-    tri <- pure cholCov |\ squeeze !(pure x - pure mean)
-    let exponent = - pure tri @@ pure tri / 2.0
-        covSqrtDet = reduce @{Prod} [0] !(diag cholCov)
-        denominator = (fromDouble $ pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
-    (exp !exponent) / denominator
+    cholCov <- tag $ cholesky $ squeeze {to = [S d, S d]} cov
+    tri <- tag $ cholCov |\ squeeze (x - mean)
+    let exponent = - tri @@ tri / 2.0
+    covSqrtDet <- reduce @{Prod} [0] (diag cholCov)
+    let denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
+    pure (exp exponent / denominator)
 
-  cdf (MkGaussian {d = S _} _ _) _ = ?multivariate_cdf
+  cdf (MkGaussian {d = S _} _ _) _ = ?multivariateGaussianCDF
   cdf (MkGaussian {d = 0} mean cov) x =
-    (1.0 + erf !(squeeze !(pure x - pure mean) / (sqrt !(squeeze cov * 2.0)))) / 2.0
+    pure $ (1.0 + erf (squeeze (x - mean) / (sqrt (squeeze cov * 2.0)))) / 2.0

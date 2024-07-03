@@ -2,9 +2,9 @@
 
 _Accelerated machine learning with dependent types_
 
-spidr is in early development. The linear algebra API is largely complete, but we are missing automatic differentiation and gradient-based optimizers.
+spidr is a research project, expect breaking changes. We have yet to implement automatic differentiation and gradient-based optimizers.
 
-See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials/README.md) for extended discussions of spidr's architecture.
+See the [online reference](https://joelberkeley.github.io/spidr/) for API documentation, and the [tutorials](tutorials/README.md) for extended discussion of spidr's architecture. In particular, make sure to read [_Nuisances in the Tensor API_](tutorials/Nuisances.md).
 
 ### Install
 
@@ -30,21 +30,21 @@ import Literal
 import Tensor
 -->
 ```idris
-x : Graph $ Tensor [3] S32
+x : Tensor [3] S32
 x = tensor [1, 2, 3]
 
-y : Graph $ Tensor [3] S32
+y : Tensor [3] S32
 y = x + tensor [0, 1, 2]
 ```
 but this won't
 ```idris
 failing "elaboration"
-  z : Graph $ Tensor [3] S32
+  z : Tensor [3] S32
   z = x + tensor [0, 1]
 ```
 because you can't add a vector of length two to a vector of length three. Shape manipulation extends beyond comparing literal dimension sizes to arbitrary symbolic manipulation
 ```idris
-append : Tensor [m, p] F64 -> Tensor [n, p] F64 -> Graph $ Tensor [m + n, p] F64
+append : Tensor [m, p] F64 -> Tensor [n, p] F64 -> Tensor [m + n, p] F64
 append x y = concat 0 x y
 ```
 As a bonus, spidr programs are reproducible. Any one graph will always produce the same result when run on the same hardware.
@@ -59,7 +59,7 @@ Each PJRT plugin contains a graph compiler, and there are several compilers avai
 
 #### Graph generation
 
-This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation, like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html#jax.vmap) and [`grad`](https://jax.readthedocs.io/en/latest/debugging/checkify_guide.html#grad).
+This is a high-priority feature but is not yet implemented. spidr can generate new tensor graphs from existing ones. We plan to use this to implement vectorization and automatic differentiation, like JAX's [`vmap`](https://jax.readthedocs.io/en/latest/automatic-vectorization.html) and [`grad`](https://jax.readthedocs.io/en/latest/automatic-differentiation.html).
 
 ### Acknowledgements
 

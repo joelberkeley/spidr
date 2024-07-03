@@ -47,7 +47,7 @@ record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t mar
 ||| @features The shape of the feature domain.
 public export 0
 Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
-Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Graph $ Tensor [] F64
+Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tag $ Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -61,23 +61,25 @@ expectedImprovement :
   (best : Tensor [] F64) ->
   Acquisition 1 features
 expectedImprovement model best at = do
-  marginal <- marginalise model at
-  best' <- broadcast {to = [_, 1]} best
-  let pdf = pdf marginal best'
-      cdf = cdf marginal best'
-      mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
+  best <- tag best
+  marginal <- tag =<< marginalise model at
+  let best' = broadcast {to = [_, 1]} best
+  pdf <- tag =<< pdf marginal best'
+  cdf <- tag =<< cdf marginal best'
+  let mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
       variance = squeeze !(variance {event = [1]} marginal)
-  (pure best - mean) * cdf + variance * pdf
+  pure $ (best - mean) * cdf + variance * pdf
 
 ||| Build an acquisition function that returns the absolute improvement, expected by the model, in
 ||| the observation value at each point.
 export
 expectedImprovementByModel :
   ProbabilisticModel features [1] Gaussian modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 features
-expectedImprovementByModel = asks $ \env, at => do
-  best <- squeeze =<< reduce @{Min} [0] !(mean {event = [1]} !(marginalise env.model env.dataset.features))
-  expectedImprovement env.model best at
+  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
+expectedImprovementByModel = MkReaderT $ \env => do
+  marginal <- marginalise env.model env.dataset.features
+  best <- tag $ squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
+  pure $ expectedImprovement env.model best
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
@@ -86,9 +88,9 @@ probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] dist =>
   ProbabilisticModel features [1] dist modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 features
+  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 probabilityOfFeasibility limit =
-  asks $ \env, at => do cdf !(marginalise env.model at) !(broadcast {to = [_, 1]} limit)
+  asks $ \env, at => do cdf !(marginalise env.model at) (broadcast {to = [_, 1]} limit)
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -99,10 +101,11 @@ negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  Reader (DataModel modelType) $ Acquisition 1 features
+  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
 negativeLowerConfidenceBound beta = asks $ \env, at => do
-  marginal <- marginalise env.model at
-  squeeze =<< mean {event = [1]} marginal - fromDouble beta * variance {event = [1]} marginal
+  marginal <- tag =<< marginalise env.model at
+  pure $ squeeze $
+    !(mean {event = [1]} marginal) - fromDouble beta * !(variance {event = [1]} marginal)
 
 ||| Build the expected improvement acquisition function in the context of a constraint on the input
 ||| domain, where points that do not satisfy the constraint do not offer an improvement. The
@@ -114,4 +117,4 @@ export
 expectedConstrainedImprovement :
   (limit : Tensor [] F64) ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  Reader (DataModel modelType) (Acquisition 1 features -> Acquisition 1 features)
+  ReaderT (DataModel modelType) Tag (Acquisition 1 features -> Acquisition 1 features)

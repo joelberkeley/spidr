@@ -32,11 +32,15 @@ import Util
 
 %language ElabReflection
 
+Show a => Interpolation (List a) where
+  interpolate = show
+
 public export
 data Parameter : Type where
   MkParameter : Shape -> (0 dtype : Type) -> Primitive dtype => Parameter
 
-%runElab derive "Parameter" [Show]
+Show Parameter where
+  show (MkParameter shape dtype) = "\{shape} \{xlaIdentifier {dtype}}"
 
 public export
 data Expr : Type where
@@ -52,26 +56,33 @@ empty : Env
 empty = MkEnv 0 []
 
 export
-addNode : Expr -> State Env Nat
-addNode expr = do
-  MkEnv next env <- get
-  put $ MkEnv (S next) ((next, expr) :: env)
-  pure next
+emptyFrom : Env -> Env
+emptyFrom (MkEnv n _) = MkEnv n []
 
 export
-toList : Env -> (Nat, List (Nat, Expr))
-toList (MkEnv n env) = (n, reverse env)
+updateCounterFrom : Env -> State Env ()
+updateCounterFrom (MkEnv n _) = do
+  MkEnv _ xs <- get
+  put $ MkEnv n xs
+
+export
+toList : Env -> List (Nat, Expr)
+toList (MkEnv _ env) = reverse env
+
+export
+counter : Env -> Nat
+counter (MkEnv c _) = c
 
 public export
 data Fn : Nat -> Type where
 
   ||| @arity The function arity.
-  ||| @params The function parameter position in the graph, along with its shape and dtype.
-  ||| @result The position of the function result in the graph.
-  ||| @env The function graph. Includes only nodes in this scope, not outer or inner scope.
+  ||| @params The function parameter shapes and dtypes.
+  ||| @result The function result.
+  ||| @env Bindings within the function. Includes only nodes in this scope, not outer or inner scope.
   MkFn : {arity : _} ->
          (params : Vect arity (Nat, Parameter)) ->
-         (result : Nat) ->
+         (result : Expr) ->
          (env : Env) ->
          Fn arity
 
@@ -92,47 +103,64 @@ data UnaryOp =
 public export
 data Expr : Type where
   FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
-  Arg : Nat -> Expr
-  Tuple : List Nat -> Expr
-  GetTupleElement : (index : Nat) -> Nat -> Expr
+  Var : Nat -> Expr
+  Tuple : List Expr -> Expr
+  GetTupleElement : (index : Nat) -> Expr -> Expr
   MinValue : Primitive dtype => Expr
   MaxValue : Primitive dtype => Expr
   MinFiniteValue : Primitive dtype => Expr
   MaxFiniteValue : Primitive dtype => Expr
   Iota : Primitive dtype => (shape : Shape) -> (axis : Nat) -> Expr
-  ConvertElementType : Primitive dtype => Nat -> Expr
-  Reshape : (from, to : Shape) -> Nat -> Expr
-  Slice : (starts, stops, strides : List Nat) -> Nat -> Expr
-  DynamicSlice : (starts : List Nat) -> (sizes : List Nat) -> Nat -> Expr
-  Concat : (axis : Nat) -> Nat -> Nat -> Expr
-  Diag : Nat -> Expr
-  Triangle : (lower : Bool) -> Nat -> Expr
-  Transpose : (ordering : List Nat) -> Nat -> Expr
+  ConvertElementType : Primitive dtype => Expr -> Expr
+  Reshape : (from, to : Shape) -> Expr -> Expr
+  Slice : (starts, stops, strides : List Nat) -> Expr -> Expr
+  DynamicSlice : (starts : List Expr) -> (sizes : List Nat) -> Expr -> Expr
+  Concat : (axis : Nat) -> Expr -> Expr -> Expr
+  Diag : Expr -> Expr
+  Triangle : (lower : Bool) -> Expr -> Expr
+  Transpose : (ordering : List Nat) -> Expr -> Expr
   Identity : Primitive dtype => (size : Nat) -> Expr
-  Broadcast : Primitive dtype => (from, to : Shape) -> Nat -> Expr
-  Map : Fn arity -> Vect arity Nat -> Shape -> Expr
-  Reduce : Fn 2 -> (neutral : Nat) -> (axes : List Nat) -> Nat -> Expr
-  Sort : Fn 2 -> (axis : Nat) -> (isStable : Bool) -> List Nat -> Expr
-  Reverse : (axes : List Nat) -> Nat -> Expr
-  BinaryElementwise : BinaryOp -> Nat -> Nat -> Expr
-  UnaryElementwise : UnaryOp -> Nat -> Expr
-  Argmin : Primitive out => Nat -> Nat -> Expr
-  Argmax : Primitive out => Nat -> Nat -> Expr
-  Select : Nat -> Nat -> Nat -> Expr
-  Cond : (pred : Nat) -> (onTrue : Fn 1) -> (onTrueArg : Nat) ->
-         (onFalse : Fn 1) -> (onFalseArg : Nat) -> Expr
-  Dot : Nat -> Nat -> Expr
-  DotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) -> Nat -> Nat -> Expr
-  Cholesky : Nat -> Expr
-  TriangularSolve : Nat -> Nat -> (isLower : Bool) -> Expr
-  UniformFloatingPoint : Nat -> Nat -> Nat -> Nat -> Shape -> Expr
-  NormalFloatingPoint : Nat -> Nat -> Shape -> Expr
+  Broadcast : Primitive dtype => (from, to : Shape) -> Expr -> Expr
+  Map : Fn arity -> Vect arity Expr -> Shape -> Expr
+  Reduce : Fn 2 -> (neutral : Expr) -> (axes : List Nat) -> Expr -> Expr
+  Sort : Fn 2 -> (axis : Nat) -> (isStable : Bool) -> List Expr -> Expr
+  Reverse : (axes : List Nat) -> Expr -> Expr
+  BinaryElementwise : BinaryOp -> Expr -> Expr -> Expr
+  UnaryElementwise : UnaryOp -> Expr -> Expr
+  Argmin : Primitive out => (axis : Nat) -> Expr -> Expr
+  Argmax : Primitive out => (axis : Nat) -> Expr -> Expr
+  Select : (predicate, onTrue, onFalse : Expr) -> Expr
+  Cond : (pred : Expr) -> (onTrue : Fn 1) -> (onTrueArg : Expr) ->
+         (onFalse : Fn 1) -> (onFalseArg : Expr) -> Expr
+  Dot : Expr -> Expr -> Expr
+  DotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) -> Expr -> Expr -> Expr
+  Cholesky : Expr -> Expr
+  TriangularSolve : Expr -> Expr -> (isLower : Bool) -> Expr
+  UniformFloatingPoint : (key, initialState, minval, maxval : Expr) -> (shape : Shape) -> Expr
+  NormalFloatingPoint : (key, initialState : Expr) -> (shape : Shape) -> Expr
 
-Show a => Interpolation (List a) where
-  interpolate = show
+export
+tag : Expr -> State Env Expr
+tag expr = do
+  MkEnv next env <- get
+  put $ MkEnv (S next) ((next, expr) :: env)
+  pure (Var next)
 
+export
+reserve : State Env Nat
+reserve = do
+  MkEnv next env <- get
+  put $ MkEnv (S next) env
+  pure next
+
+covering
 showExpr : Nat -> Expr -> String
 
+covering
+showExprList : Nat -> List Expr -> String
+showExprList indent xs = "[" ++ joinBy ", " (toList $ map (showExpr indent) xs) ++ "]"
+
+covering
 showEnv : Nat -> Env -> String
 showEnv indent (MkEnv max env) = joinBy "\n" $ assert_total $ map fmt (reverse env)
 
@@ -143,88 +171,74 @@ showEnv indent (MkEnv max env) = joinBy "\n" $ assert_total $ map fmt (reverse e
     let sep = replicate (4 + length (show max) `minus` length (show n)) ' '
      in "\{replicate indent ' '}\{show n}\{sep}\{showExpr indent x}"
 
+covering
 showFn : Nat -> Fn arity -> String
-showFn indent (MkFn params result env) =
-  """
-  MkFn {parameters = \{show params}, root = \{show result}, env =
-  \{showEnv (indent + 4) env}
-  \{replicate (indent + 2) ' '}}
-  """
+showFn indent (MkFn params result env@(MkEnv _ env')) =
+  let init = "\{show params} => \{showExpr (indent + 2) result}" in
+  case env' of
+    [] => init
+    _  => init ++ ", with vars {\n\{showEnv (indent + 4) env}\n\{replicate (indent + 2) ' '}}"
 
-export Show (Fn arity) where show = showFn 0
+export Show (Fn arity) where show = assert_total $ showFn 0
 
-showExpr _      (FromLiteral {shape, dtype} x) = "FromLiteral \{shape} \{xlaIdentifier {dtype}}"
-showExpr _      (Arg k) = "Arg \{k}"
-showExpr _      (Tuple xs) = "Tuple \{xs}"
-showExpr _      (GetTupleElement k xs) = "GetTupleElement {index = \{k}} \{xs}"
-showExpr _      (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"
-showExpr _      (MaxValue {dtype}) = "MaxValue {dtype = \{xlaIdentifier {dtype}}}"
-showExpr _      (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{xlaIdentifier {dtype}}}"
-showExpr _      (MaxFiniteValue {dtype}) = "MaxFiniteValue {dtype = \{xlaIdentifier {dtype}}}"
-showExpr _      (Iota {dtype} shape axis) =
+showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {dtype}}"
+showExpr indent (Var k) = "Var \{k}"
+showExpr indent (Tuple xs) = "Tuple \{showExprList indent xs}"
+showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
+showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"
+showExpr indent (MaxValue {dtype}) = "MaxValue {dtype = \{xlaIdentifier {dtype}}}"
+showExpr indent (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{xlaIdentifier {dtype}}}"
+showExpr indent (MaxFiniteValue {dtype}) = "MaxFiniteValue {dtype = \{xlaIdentifier {dtype}}}"
+showExpr indent (Iota {dtype} shape axis) =
   "Iota {shape = \{show shape}, dtype = \{xlaIdentifier {dtype}}, axis = \{axis}}"
-showExpr _      (ConvertElementType {dtype} x) =
-  "ConvertElementType {dtype = \{xlaIdentifier {dtype}}} \{x}"
-showExpr _      (Reshape from to x) = "Reshape {from = \{from}, to = \{to}} \{x}"
-showExpr _      (Slice starts stops strides x) =
-  "Slice {starts = \{starts}, stops = \{stops}, strides = \{strides}} \{x}"
-showExpr _      (DynamicSlice starts sizes x) = "Slice {starts = \{starts}, sizes = \{sizes} \{x}"
-showExpr _      (Concat axis x y) = "Concat {axis = \{axis}} \{x} \{y}"
-showExpr _      (Diag x) = "Diag \{x}"
-showExpr _      (Triangle lower x) = "Triangle {lower = \{show lower}} \{x}"
-showExpr _      (Transpose ordering x) = "Transpose {ordering = \{ordering}} \{x}"
-showExpr _      (Identity {dtype} size) =
+showExpr indent (ConvertElementType {dtype} x) =
+  "ConvertElementType {dtype = \{xlaIdentifier {dtype}}} (\{showExpr indent x})"
+showExpr indent (Reshape from to x) = "Reshape {from = \{from}, to = \{to}} (\{showExpr indent x})"
+showExpr indent (Slice starts stops strides x) =
+  "Slice {starts = \{starts}, stops = \{stops}, strides = \{strides}} (\{showExpr indent x})"
+showExpr indent (DynamicSlice starts sizes x) =
+  "DynamicSlice {starts = \{showExprList indent starts}, sizes = \{sizes}} (\{showExpr indent x})"
+showExpr indent (Concat axis x y) =
+  "Concat {axis = \{axis}} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (Diag x) = "Diag (\{showExpr indent x})"
+showExpr indent (Triangle lower x) = "Triangle {lower = \{show lower}} (\{showExpr indent x})"
+showExpr indent (Transpose ordering x) = "Transpose {ordering = \{ordering}} (\{showExpr indent x})"
+showExpr indent (Identity {dtype} size) =
   "Identity {size = \{size}, dtype = \{xlaIdentifier {dtype}}}"
-showExpr _      (Broadcast from to x) = "Broadcast {from = \{from}, to = \{to}} \{x}"
-showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{show xs}"
+showExpr indent (Broadcast from to x) =
+  "Broadcast {from = \{from}, to = \{to}} (\{showExpr indent x})"
+showExpr indent (Map f xs _) = "Map {f = \{showFn indent f}} \{showExprList indent $ toList xs}"
 showExpr indent (Reduce op neutral axes x) =
-  "Reduce {op = \{showFn indent op}, identity = \{neutral}, axes = \{axes}} \{x}"
-showExpr indent (Sort f axis _ xs) = "Sort {f = \{showFn indent f}, axis = \{axis}} \{xs}"
-showExpr _      (Reverse axes x) = "Reverse \{axes} \{x}"
-showExpr _      (BinaryElementwise op x y) = "\{show op} \{x} \{y}"
-showExpr _      (UnaryElementwise op x) = "\{show op} \{x}"
-showExpr _      (Argmin {out} x y) = "Argmin {outType = \{xlaIdentifier {dtype = out}}} \{x} \{y}"
-showExpr _      (Argmax {out} x y) = "Argmax {outType = \{xlaIdentifier {dtype = out}}} \{x} \{y}"
-showExpr _      (Select p t f) = "Select {predicate = \{p}, onTrue = \{t}, onFalse = \{f}}"
+  "Reduce {op = \{showFn indent op}, identity = \{showExpr indent neutral}," ++
+    " axes = \{axes}} (\{showExpr indent x})"
+showExpr indent (Sort f axis _ xs) =
+  "Sort {f = \{showFn indent f}, axis = \{axis}} \{showExprList indent xs}"
+showExpr indent (Reverse axes x) = "Reverse \{axes} (\{showExpr indent x})"
+showExpr indent (BinaryElementwise op x y) =
+  "\{show op} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (UnaryElementwise op x) = "\{show op} (\{showExpr indent x})"
+showExpr indent (Argmin {out} axis x) =
+  "Argmin {outType = \{xlaIdentifier {dtype = out}}} \{axis} (\{showExpr indent x})"
+showExpr indent (Argmax {out} axis x) =
+  "Argmax {outType = \{xlaIdentifier {dtype = out}}} \{axis} (\{showExpr indent x})"
+showExpr indent (Select p t f) =
+  "Select {predicate = \{showExpr indent p}, onTrue = \{showExpr indent t}," ++
+    " onFalse = \{showExpr indent f}}"
 showExpr indent (Cond p ft t ff f) =
-  "Cond {predicate = \{p}, onTrueFn = \{showFn indent ft}, onTrueArg = \{show t}," ++
-    " onFalseFn = \{showFn indent ff}, onFalseArg = \{show f}}"
-showExpr _      (Dot x y) = "Dot \{x} \{y}"
-showExpr _      (DotGeneral lBatch lContract rBatch rContract x y) =
+  "Cond {predicate = \{showExpr indent p}, onTrueFn = \{showFn indent ft}," ++
+    " onTrueArg = \{showExpr indent t}, onFalseFn = \{showFn indent ff}," ++
+    " onFalseArg = \{showExpr indent f}}"
+showExpr indent (Dot x y) = "Dot (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (DotGeneral lBatch lContract rBatch rContract x y) =
   "DotGeneral {lBatch = \{lBatch}, lContract = \{lContract}," ++
-    " rBatch = \{rBatch}, rContract = \{rContract}} \{x} \{y}"
-showExpr _      (Cholesky x) = "Cholesky \{x}"
-showExpr _      (TriangularSolve x y isLower) =
-  "TriangularSolve {isLower = \{show isLower}} \{x} \{y}"
-showExpr _      (UniformFloatingPoint key initialState minval maxval shape) =
-  "UniformFloatingPoint {key = \{key}, initialState = \{initialState}," ++
-    " minval = \{minval}, maxval = \{maxval}, shape = \{shape}}"
-showExpr _      (NormalFloatingPoint key initialState shape) =
-  "NormalFloatingPoint {key = \{key}, initialState = \{initialState}, shape = \{shape}}"
-
-public export 0
-FnExpr : Nat -> Type
-FnExpr 0 = State Env Nat
-FnExpr (S k) = Nat -> FnExpr k
-
-applyN : FnExpr arity -> Vect arity Nat -> State Env Nat
-applyN f [] = f
-applyN f (x :: xs) = applyN (f x) xs
-
-export
-addFn : {arity : _} -> Vect arity Parameter -> FnExpr arity -> State Env (Fn arity)
-addFn params f = do
-  MkEnv next env <- get
-  let (subEnv@(MkEnv next _), params, result) = runState (MkEnv next []) $ do
-        xs <- traverse addArg params
-        result <- applyN f xs
-        pure (zip xs params, result)
-  put (MkEnv next env)
-  pure (MkFn params result subEnv)
-
-  where
-  addArg : Parameter -> State Env Nat
-  addArg st = do
-    MkEnv next env <- get
-    put (MkEnv (S next) ((next, Arg next) :: env))
-    pure next
+    " rBatch = \{rBatch}, rContract = \{rContract}} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (Cholesky x) = "Cholesky (\{showExpr indent x})"
+showExpr indent (TriangularSolve x y isLower) =
+  "TriangularSolve {isLower = \{show isLower}} (\{showExpr indent x}) (\{showExpr indent y})"
+showExpr indent (UniformFloatingPoint key initialState minval maxval shape) =
+  "UniformFloatingPoint {key = \{showExpr indent key}," ++
+    " initialState = \{showExpr indent initialState}," ++
+    " minval = \{showExpr indent minval}, maxval = \{showExpr indent maxval}, shape = \{shape}}"
+showExpr indent (NormalFloatingPoint key initialState shape) =
+  "NormalFloatingPoint {key = \{showExpr indent key}," ++
+    " initialState = \{showExpr indent initialState}, shape = \{shape}}"

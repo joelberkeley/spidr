@@ -59,6 +59,13 @@ mkXlaBuilder computationName = do
   ptr <- onCollectAny ptr XlaBuilder.delete
   pure (MkXlaBuilder ptr)
 
+%foreign (libxla "XlaBuilder_name")
+prim__XlaBuilder_name : GCAnyPtr -> PrimIO String
+
+export
+name : HasIO io => XlaBuilder -> io String
+name (MkXlaBuilder builderPtr) = primIO (prim__XlaBuilder_name builderPtr)
+
 %foreign (libxla "CreateSubBuilder")
 prim__createSubBuilder : GCAnyPtr -> String -> PrimIO AnyPtr
 

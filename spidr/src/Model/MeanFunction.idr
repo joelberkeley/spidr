@@ -25,9 +25,9 @@ import Tensor
 ||| @features The shape of the feature domain.
 public export 0
 MeanFunction : (0 features : Shape) -> Type
-MeanFunction features = {sm : _} -> Tensor (sm :: features) F64 -> Graph $ Tensor [sm] F64
+MeanFunction features = {sm : _} -> Tensor (sm :: features) F64 -> Tag $ Tensor [sm] F64
 
 ||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
-zero _ = fill 0
+zero _ = pure $ fill 0

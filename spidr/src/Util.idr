@@ -155,5 +155,5 @@ namespace List
 
 ||| Apply a function to the environment of a reader.
 export
-(>$<) : (env' -> env) -> Reader env a -> Reader env' a
+(>$<) : (env' -> env) -> ReaderT env m a -> ReaderT env' m a
 f >$< (MkReaderT g) = MkReaderT (g . f)

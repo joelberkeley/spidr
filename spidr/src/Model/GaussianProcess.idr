@@ -43,17 +43,17 @@ posterior :
   GaussianProcess features ->
   Tensor [] F64 ->
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
-  Graph $ GaussianProcess features
+  Tag $ GaussianProcess features
 posterior (MkGP priorMeanf priorKernel) noise (xTrain, yTrain) = do
-  l <- cholesky !(priorKernel xTrain xTrain + pure noise * identity)
-  let alpha = (pure l).T \| (pure l |\ pure yTrain)
+  l <- tag $ cholesky $ !(priorKernel xTrain xTrain) + noise * identity
+  let alpha = l.T \| (l |\ yTrain)
 
       posteriorMeanf : MeanFunction features
-      posteriorMeanf x = priorMeanf x + (priorKernel x xTrain) @@ alpha
+      posteriorMeanf x = pure $ !(priorMeanf x) + !(priorKernel x xTrain) @@ alpha
 
       posteriorKernel : Kernel features
-      posteriorKernel x x' =
-        priorKernel x x' - (pure l |\ priorKernel xTrain x).T @@ (pure l |\ priorKernel xTrain x')
+      posteriorKernel x x' = pure
+        $ !(priorKernel x x') - (l |\ !(priorKernel xTrain x)).T @@ (l |\ !(priorKernel xTrain x'))
 
   pure $ MkGP posteriorMeanf posteriorKernel
 
@@ -61,11 +61,11 @@ logMarginalLikelihood :
   GaussianProcess features ->
   Tensor [] F64 ->
   {s : _} -> (Tensor ((S s) :: features) F64, Tensor [S s] F64) ->
-  Graph $ Tensor [] F64
+  Tag $ Tensor [] F64
 logMarginalLikelihood (MkGP _ kernel) noise (x, y) = do
-  l <- cholesky !(kernel x x + pure noise * identity)
-  let alpha = (pure l).T \| (pure l |\ pure y)
-  - pure y @@ alpha / 2.0 - trace !(log l) - fromDouble (cast (S s)) * log !(2.0 * pi) / 2.0
+  l <- tag $ cholesky (!(kernel x x) + noise * identity)
+  let alpha = l.T \| (l |\ y)
+  pure $ - y @@ alpha / 2.0 - !(trace (log l)) - fromDouble (cast (S s)) * log (2.0 * pi) / 2.0
 
 ||| A trainable model implementing vanilla Gaussian process regression. That is, regression with a
 ||| Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following
@@ -86,7 +86,7 @@ data ConjugateGPRegression : (0 features : Shape) -> Type where
   ||| @noise The likehood amplitude, or observation noise.
   MkConjugateGPR :
     {p : _} ->
-    (gpFromHyperparameters : Tensor [p] F64 -> Graph $ GaussianProcess features) ->
+    (gpFromHyperparameters : Tensor [p] F64 -> Tag $ GaussianProcess features) ->
     (hyperparameters : Tensor [p] F64) ->
     (noise : Tensor [] F64) ->
     ConjugateGPRegression features
@@ -96,34 +96,33 @@ export
 [Latent] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise (MkConjugateGPR mkGP gpParams _) x = do
     MkGP meanf kernel <- mkGP gpParams
-    pure $ MkGaussian !(expand 1 =<< meanf x) !(expand 2 =<< kernel x x)
+    [| MkGaussian (expand 1 <$> meanf x) (expand 2 <$> kernel x x) |]
 
 ||| A probabilistic model from feature values to a distribution over observed target values.
 export
 [Observed] ProbabilisticModel features [1] Gaussian (ConjugateGPRegression features) where
   marginalise gpr@(MkConjugateGPR _ _ noise) x = do
     MkGaussian latentMean latentCov <- marginalise @{Latent} gpr x
-    cov <- pure latentCov + broadcast !(expand 2 !(pure noise * identity {n = S n}))
-    pure $ MkGaussian latentMean cov
+    pure $ MkGaussian latentMean $ latentCov + broadcast (expand 2 (noise * identity {n = S n}))
 
 ||| Fit the Gaussian process and noise to the specified data.
 export
 fit : (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
   -> Dataset features [1]
   -> ConjugateGPRegression features
-  -> Graph $ ConjugateGPRegression features
+  -> Tag $ ConjugateGPRegression features
 fit optimizer (MkDataset x y) (MkConjugateGPR {p} mkPrior gpParams noise) = do
-  let objective : Tensor [S p] F64 -> Graph $ Tensor [] F64
+  let objective : Tensor [S p] F64 -> Tag $ Tensor [] F64
       objective params = do
-        priorParams <- slice [1.to (S p)] params
-        logMarginalLikelihood !(mkPrior priorParams) !(slice [at 0] params) (x, !(squeeze y))
+        let priorParams = slice [1.to (S p)] params
+        logMarginalLikelihood !(mkPrior priorParams) (slice [at 0] params) (x, squeeze y)
 
-  params <- optimizer !(concat 0 !(expand 0 noise) gpParams) objective
+  params <- optimizer (concat 0 (expand 0 noise) gpParams) objective
 
-  let mkPosterior : Tensor [p] F64 -> Graph $ GaussianProcess features
-      mkPosterior params' = posterior !(mkPrior params') !(squeeze noise) (x, !(squeeze y))
+  let mkPosterior : Tensor [p] F64 -> Tag $ GaussianProcess features
+      mkPosterior params' = posterior !(mkPrior params') (squeeze noise) (x, squeeze y)
 
-  pure $ MkConjugateGPR mkPosterior !(slice [1.to (S p)] params) !(slice [at 0] params)
+  pure $ MkConjugateGPR mkPosterior (slice [1.to (S p)] params) (slice [at 0] params)
 
     where
     %hint

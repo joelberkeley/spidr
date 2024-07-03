@@ -15,64 +15,62 @@ limitations under the License.
 -->
 # Nuisances in the Tensor API
 
-## Efficiently reusing tensors, and working with `Graph`
+## Efficiently reusing tensors with `tag`
 
-spidr explicitly caches tensors so they can be efficiently be reused. We achieved this with _observable sharing_. Here we discuss what our implementation means for spidr's tensor API.
-
-Caching ensures that the computation you write will be the computation sent to the graph compiler. Unfortunately this comes with downsides. First, there is extra boilerplate. Most tensor operations accept `Tensor shape dtype` and output `Graph (Tensor shape dtype)`, so when you compose operations, you'll need to handle the `Graph` effect. For example, what might be `abs (max x y)` in another library can be `abs !(max !x !y)` in spidr. One notable exception to this is infix operators, which accept `Graph (Tensor shape dtype)` values. This is to avoid unreadable algebra: you won't need to write `!(!x * !y) + !z`. However, it does mean you will need to wrap any `Tensor shape dtype` values in `pure` to pass it to an infix operator. Let's see an example:
+Tensor calculations are not automatically reused in spidr. For example, in
 <!-- idris
 import Literal
 import Tensor
 -->
 ```idris
-f : Tensor shape F64 -> Tensor shape F64 -> Graph $ Tensor shape F64
-f x y = (abs x + pure y) * pure x
+y : Tensor [] S32
+y = let x = 1 + 2 in x + x
 ```
-Here, `pure` produces a `Graph (Tensor shape F64)` from a `Tensor shape F64`, as does `abs` (the element-wise absolute value function). Addition `(+)` and multiplication `(*)` produce _and accept_ `Graph (Tensor shape F64)` so there is no need to wrap the output of `abs x + pure y` in `pure` before passing it to `(*)`. A rule of thumb is that you only need `pure` if both of these are true
-
-* you're passing a tensor to an infix operator
-* the tensor is either a function argument or is on the left hand side of a monadic bind `x <- expression`
-
-Second, care is needed when reusing expressions to make sure you don't recompute sections of the graph. For example, in
+spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the interface
+> ```idris
+> interface Taggable a where
+>   tag : a -> Tag a
+> ```
+`tag` tags all tensor expressions contained within the `a`. You can efficiently reuse a value created by `tag` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
-whoops : Graph $ Tensor [3] S32
-whoops = let y = tensor [1, 2, 3]
-             z = y + y
-          in z * z
+y' : Tag $ Tensor [2] F64
+y' = do
+  x <- tag $ tensor [1.0, 2.0]
+  pure $ x + x 
 ```
-`z` will be calculated twice, and `y` allocated four times (unless the graph compiler chooses to optimize that out). Instead, we can reuse `y` and `z` with
+
+> *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `tag` might not always make a difference. However, eliminating these subexpressions itself requires compute, and even then the compiler might not catch all of them, so we don't recommend relying on this.
+
+There are downsides to `tag`. First, it's a distraction. Normally, we can rely on the compiler to reuse expressions by name bindings: in `let x : Nat = 1 + 2 in x + x`, Idris reuses the result of `x` without you needing to think about it. Naturally, we have the same situation in symbolic maths. Perhaps more importantly, though, it's possible to accidentally reuse an expression without tagging it, and thus incur a performance penalty. We are investigating how [linearity](https://www.type-driven.org.uk/edwinb/papers/idris2.pdf) might catch unintentional tensor reuse at compile time.
+
+### Tips for using `tag`
+
+#### Partially-applied functions
+
+`tag` binds values to the scope it is called in. This is important to consider when working with nested functions and currying, particularly when you expect a partially-applied function to be called many times. For example, the program
 ```idris
-ok : Graph $ Tensor [3] S32
-ok = do y <- tensor [1, 2, 3]
-        z <- pure y + pure y
-        pure z * pure z
+add : Tensor [] S32 -> Tensor [] S32 -> Tensor [] S32
+add x y = x + y
+
+bad : List (Tensor [] S32)
+bad = let sum = 1 + 2
+          f = add sum
+       in replicate 1000 (f 1)
 ```
-Here, `y` and `z` will only be calculated once. This problem can occur more subtley when reusing values from another scope. For example, in
+will calculate `sum` one thousand times. Perhaps counterintuitively, this is _not_ resolved if we tag `sum` within the call to `add`
 ```idris
-expensive : Graph $ Tensor [] F64
-expensive = reduce @{Sum} [0] !(fill {shape = [100000]} 1.0)
+addTagged : Tensor [] S32 -> Tensor [] S32 -> Tag $ Tensor [] S32
+addTagged x y = tag x <&> \x => x + y
 
-x : Graph $ Tensor [] F64
-x = abs !expensive
-
-y : Graph $ Tensor [] F64
-y = square !expensive
-
-whoops' : Graph $ Tensor [] F64
-whoops' = max !x !y
+alsoBad : List (Tag $ Tensor [] S32)
+alsoBad = let sum = 1 + 2
+              f = addTagged sum
+           in replicate 1000 (f 1)
 ```
-`expensive` is calculated twice. Instead, you could pass the reused part as a function argument
+As we can infer from the type of xs, we are repeatedly tagging `sum`, whilst we mean to tag it once. The solution is to tag `sum` _outside_ the call to `f`.
 ```idris
-xf : Tensor [] F64 -> Graph $ Tensor [] F64
-xf e = abs e
-
-yf : Tensor [] F64 -> Graph $ Tensor [] F64
-yf e = square e
-
-okf : Tensor [] F64 -> Graph $ Tensor [] F64
-okf e = max !(xf e) !(yf e)
-
-res : Graph $ Tensor [] F64
-res = okf !expensive
+good : Tag $ List (Tensor [] S32)
+good = do sum <- tag (1 + 2)
+          let f = add sum
+          pure $ replicate 1000 (f 1)
 ```
-Note we must pass the `Tensor [] F64` to `xf`, `yf` and `okf`, rather than a `Graph (Tensor [] F64)`, if the tensor is to be reused.
