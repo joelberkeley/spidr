@@ -248,6 +248,22 @@ show = fixedProperty $ do
     [] => Map {f = [(0, [] 4)] => Var 0} [Lit [] 4]
     """
 
+  let x : Tag $ Tensor [] S32 = do
+        tag =<< Tensor.map (\y => do
+            Prelude.map (y + ) $ tag =<< Tensor.map (
+                \u => do v <- tag (tensor 0); pure $ u + v
+              ) (tensor 0)
+          ) (tensor 0)
+  show x === """
+    [] => Var 4, with vars {
+        4    Map {f = [(0, [] 4)] => Add (Var 0) (Var 3), with vars {
+            3    Map {f = [(1, [] 4)] => Add (Var 1) (Var 2), with vars {
+                2    Lit [] 4
+              }} [Lit [] 4]
+          }} [Lit [] 4]
+      }
+    """
+
   let f : Tensor [] S32 -> Tag $ Tensor [] S32
       f x = do
         z <- tag $ the (Tensor [] S32) 5
