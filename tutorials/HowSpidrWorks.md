@@ -25,7 +25,7 @@ spidr is loosely designed around [StableHLO](https://openxla.org/stablehlo), a s
 
 > *__DETAIL__* StableHLO is implemented as an [MLIR](https://mlir.llvm.org/) dialect, and is based on another (deprecated) dialect MLIR-HLO. Such dialects are typically "lowered" down to another dialect compiled by the [LLVM](https://llvm.org/) compiler. However, not all compilers take this route for StableHLO. XLA, for example, converts StableHLO to HLO, its own internal graph representation, which is not an MLIR dialect.
 
-spidr represents every computation as directed acyclic graph of `Expr` values, each of which corresponds (almost) one-to-one with an XLA HLO tensor operation. Most of these ops are also present in the StableHLO specification. spidr uses the XLA API to build an HLO program. The primary runtime work of spidr is three-fold: build the graph of `Expr`s; interpret it as an HLO program; compile and execute the HLO. We'll take you through each of these steps in turn.
+spidr represents every computation as a directed acyclic graph of `Expr` values, each of which corresponds (almost) one-to-one with an XLA HLO tensor operation. Most of these ops are also present in the StableHLO specification. spidr uses the XLA API to build an HLO program. The primary runtime work of spidr is three-fold: build the graph of `Expr`s; interpret it as an HLO program; compile and execute the HLO. We'll take you through each of these steps in turn.
 
 ## Building the tensor graph in Idris
 
