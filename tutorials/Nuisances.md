@@ -19,7 +19,6 @@ limitations under the License.
 
 Tensor calculations are not automatically reused in spidr. For example, in
 <!-- idris
-import Literal
 import Tensor
 -->
 ```idris

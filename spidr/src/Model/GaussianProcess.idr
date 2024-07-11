@@ -22,7 +22,6 @@ import Data.Nat
 import Constants
 import Distribution
 import Data
-import Literal
 import Model
 import Model.Kernel
 import Model.MeanFunction

@@ -18,7 +18,6 @@ module Unit.TestTensor.Slice
 import System
 
 import Device
-import Literal
 import Tensor
 
 import Utils
