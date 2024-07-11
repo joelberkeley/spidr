@@ -54,6 +54,8 @@ expand = fixedProperty $ do
       withExtraDim = tensor [[[3, 4, 5]], [[6, 7, 8]]]
   expand 1 x ===# withExtraDim
 
+  expand 2
+
 partial
 broadcast : Device => Property
 broadcast = fixedProperty $ do
