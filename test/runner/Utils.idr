@@ -16,7 +16,6 @@ limitations under the License.
 module Utils
 
 import Device
-import Literal
 import Tensor
 
 export

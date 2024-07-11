@@ -19,7 +19,6 @@ import Control.Monad.Reader
 import Control.Monad.Identity
 import public Data.Nat
 import Distribution
-import Literal
 import Tensor
 import Data
 import Model

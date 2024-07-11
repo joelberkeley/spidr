@@ -54,7 +54,6 @@ import Data.Stream
 import BayesianOptimization
 import Data
 import Distribution
-import Literal
 import Model
 import Model.GaussianProcess
 import Model.Kernel

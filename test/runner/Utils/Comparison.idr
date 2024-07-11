@@ -20,7 +20,6 @@ import Data.Bounded
 import public Hedgehog
 
 import Device
-import Literal
 import Tensor
 
 import Utils

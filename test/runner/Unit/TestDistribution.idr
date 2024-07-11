@@ -16,7 +16,6 @@ limitations under the License.
 module Unit.TestDistribution
 
 import Device
-import Literal
 import Tensor
 import Distribution
 

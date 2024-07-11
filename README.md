@@ -26,7 +26,6 @@ We made spidr to try out modern programming language capabilities in machine lea
 
 If your spidr program compiles, and your hardware can run it, then it will run. This is primarily because Idris checks tensor shapes during compilation. For example, this will compile
 <!-- idris
-import Literal
 import Tensor
 -->
 ```idris

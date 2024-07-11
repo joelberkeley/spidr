@@ -35,7 +35,7 @@ import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
 import Compiler.LiteralRW
 import Device
-import Literal
+import public Literal
 import public Primitive
 import public Types
 import public Util
