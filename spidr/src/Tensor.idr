@@ -260,7 +260,7 @@ export
 expand :
   Primitive dtype =>
   (axis : Nat) ->
-  {auto 0 inBounds : axis `LTE` S (length shape)} ->
+  {auto 0 inBounds : axis `LTE` length shape} ->
   Tensor shape dtype ->
   Tensor (insertAt axis 1 shape) dtype
 expand axis $ MkTensor {shape = _} x = MkTensor $ Reshape shape (insertAt axis 1 shape) x
