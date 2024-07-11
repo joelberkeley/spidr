@@ -133,7 +133,7 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 try : Show e => EitherT e IO a -> IO a
-try = eitherT (assert_total . idris_crash . show) pure
+try = eitherT (\e => assert_total $ idris_crash $ show e) pure
 
 namespace Tag
   ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
