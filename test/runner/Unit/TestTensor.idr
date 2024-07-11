@@ -33,7 +33,6 @@ import Utils.Comparison
 import Utils.Cases
 import Utils.Proof
 
-partial
 tensorThenEval : Device => Property
 tensorThenEval @{device} = withTests 20 . property $ do
   shape <- forAll shapes
@@ -53,7 +52,6 @@ tensorThenEval @{device} = withTests 20 . property $ do
   x <- forAll (literal shape bool)
   x === unsafePerformIO (eval device $ pure $ tensor {dtype = PRED} x)
 
-partial
 evalTuple : Device => Property
 evalTuple @{device} = property $ do
   s0 <- forAll shapes
@@ -85,7 +83,6 @@ evalTuple @{device} = property $ do
   x1' === x1
   x2' === x2
 
-partial
 evalTupleNonTrivial : Device => Property
 evalTupleNonTrivial @{device} = property $ do
   let xs = do let y0 = tensor [1.0, -2.0, 0.4]
@@ -100,7 +97,6 @@ evalTupleNonTrivial @{device} = property $ do
   v ==~ Scalar (exp (-2.0) + 3.0)
   w ==~ [| exp [1.0, -2.0] |]
 
-partial
 canConvertAtXlaNumericBounds : Device => Property
 canConvertAtXlaNumericBounds = fixedProperty $ do
   let f64min : Literal [] Double = min @{Finite}
@@ -139,7 +135,6 @@ canConvertAtXlaNumericBounds = fixedProperty $ do
   unsafeEval (tensor u64min == min') === True
   unsafeEval (tensor u64max == max') === True
 
-partial
 boundedNonFinite : Device => Property
 boundedNonFinite = fixedProperty $ do
   let min' : Tensor [] S32 = Types.min @{NonFinite}
@@ -162,7 +157,6 @@ boundedNonFinite = fixedProperty $ do
   unsafeEval {dtype = F64} (Types.min @{NonFinite}) === -inf
   unsafeEval {dtype = F64} (Types.max @{NonFinite}) === inf
 
-partial
 iota : Device => Property
 iota = withTests 20 . property $ do
   init <- forAll shapes
@@ -189,7 +183,6 @@ iota = withTests 20 . property $ do
 
   actual ===# castDtype rangeFull
 
-partial
 iotaExamples : Device => Property
 iotaExamples = fixedProperty $ do
   iota 0 ===# tensor {dtype = S32} [0, 1, 2, 3]
@@ -211,7 +204,6 @@ iotaExamples = fixedProperty $ do
                                     [1.0, 1.0, 1.0, 1.0, 1.0],
                                     [2.0, 2.0, 2.0, 2.0, 2.0]]
 
-partial
 show : Device => Property
 show = fixedProperty $ do
   let x : Tag $ Tensor [] S32 = pure 1
@@ -280,7 +272,6 @@ show = fixedProperty $ do
     """
   -- x ===# pure 24  -- bug in XLA? https://github.com/openxla/xla/issues/14299
 
-partial
 cast : Device => Property
 cast = property $ do
   shape <- forAll shapes
@@ -297,7 +288,6 @@ cast = property $ do
   let x : Tensor shape F64 = castDtype $ tensor {dtype = S32} lit
   x ===# tensor (map (cast {to = Double}) lit)
 
-partial
 identity : Device => Property
 identity = fixedProperty $ do
   identity ===# tensor {dtype = S32} []
@@ -313,7 +303,7 @@ identity = fixedProperty $ do
     ]
 
 namespace Vector
-  export partial
+  export
   (@@) : Device => Property
   (@@) = fixedProperty $ do
     let l = tensor {dtype = S32} [-2, 0, 1]
@@ -321,7 +311,7 @@ namespace Vector
     l @@ r ===# -4
 
 namespace Matrix
-  export partial
+  export
   (@@) : Device => Property
   (@@) = fixedProperty $ do
     let l = tensor {dtype = S32} [[-2, 0, 1], [1, 3, 4]]
@@ -332,7 +322,6 @@ namespace Matrix
         r = tensor {dtype = S32} [[3, -1], [3, 2], [-1, -4]]
     l @@ r ===# tensor [[ -7,  -2], [  8, -11]]
 
-partial
 dotGeneral : Device => Property
 dotGeneral = fixedProperty $ do
   dotGeneral [] [] [] [] 2 3 ===# tensor {dtype = S32} 6
@@ -389,7 +378,6 @@ dotGeneral = fixedProperty $ do
                           [1.1037, 1.5626]]]
   dotGeneral [0] [0] [2] [1] l r ===# expected
 
-partial
 argmin : Device => Property
 argmin = property $ do
   d <- forAll dims
@@ -397,7 +385,6 @@ argmin = property $ do
   let xs = tensor xs
   (do pure $ slice [at !(argmin xs)] xs) ===# reduce [0] @{Min} xs
 
-partial
 argmax : Device => Property
 argmax = property $ do
   d <- forAll dims
@@ -405,7 +392,6 @@ argmax = property $ do
   let xs = tensor xs
   (do pure $ slice [at !(argmax xs)] xs) ===# reduce [0] @{Max} xs
 
-partial
 select : Device => Property
 select = fixedProperty $ do
   let onTrue = tensor {dtype = S32} 1
@@ -419,14 +405,12 @@ select = fixedProperty $ do
       expected = tensor [[6, 1, 2], [3, 10, 11]]
   select pred onTrue onFalse ===# expected
 
-partial
 erf : Device => Property
 erf = fixedProperty $ do
   let x = tensor [-1.5, -0.5, 0.5, 1.5]
       expected = tensor [-0.96610516, -0.5204998, 0.5204998, 0.9661051]
   erf x ===# expected
 
-partial
 cholesky : Device => Property
 cholesky = fixedProperty $ do
   let x = tensor [[1.0, 0.0], [2.0, 0.0]]
@@ -446,7 +430,6 @@ cholesky = fixedProperty $ do
             ]
   cholesky x ===# expected
 
-partial
 triangularSolveResultAndInverse : Device => Property
 triangularSolveResultAndInverse = fixedProperty $ do
   let a = tensor [
@@ -477,7 +460,6 @@ triangularSolveResultAndInverse = fixedProperty $ do
   actual ===# expected
   a.T @@ actual ===# b
 
-partial
 triangularSolveIgnoresOppositeElems : Device => Property
 triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let a = tensor [[1.0, 2.0], [3.0, 4.0]]
@@ -488,12 +470,11 @@ triangularSolveIgnoresOppositeElems = fixedProperty $ do
   let aUpper = tensor [[1.0, 2.0], [0.0, 4.0]]
   a \| b ===# aUpper \| b
 
-partial
 trace : Device => Property
 trace = fixedProperty $
   trace (tensor {dtype = S32} [[-1, 5], [1, 4]]) ===# pure 3
 
-export partial
+export
 group : Device => Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)

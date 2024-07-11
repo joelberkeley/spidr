@@ -28,7 +28,7 @@ import Unit.TestTensor
 import Unit.TestLiteral
 import Unit.TestUtil
 
-export partial
+export
 run : Device -> IO ()
 run device = test [
       Utils.TestComparison.group
