@@ -311,68 +311,67 @@ squeeze :
   Tensor to dtype
 squeeze $ MkTensor {shape} x = MkTensor $ Reshape shape to x
 
-||| A `SliceOrIndex d` is a valid slice or index into a dimension of size `d`. See `slice` for
+||| A `Subset d` is a valid slice or index into a dimension of size `d`. See `slice` for
 ||| details.
 export
-data SliceOrIndex : Nat -> Type where
-  Slice :
-    (from, to : Nat) ->
-    {size : _} ->
-    {auto 0 fromTo : from + size = to} ->
-    {auto 0 inDim : LTE to d} ->
-    SliceOrIndex d
-  Index : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
-  DynamicSlice : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
-  DynamicIndex : Tensor [] U64 -> SliceOrIndex d
+data Subset : Type where
+  All : Subset
+  Slice : (from, to : Nat) -> Subset
+  Index : (idx : Nat) -> Subset
+  DynamicSlice : Tensor [] U64 -> (size : Nat) -> Subset
+  DynamicIndex : Tensor [] U64 -> Subset
 
 ||| Index at `idx`. See `slice` for details.
 public export
-at : (idx : Nat) -> {auto 0 inDim : LT idx d} -> SliceOrIndex d
+at : (idx : Nat) -> Subset
 at = Index
 
 namespace Dynamic
   ||| Index at the specified index. See `slice` for details.
   public export
-  at : Tensor [] U64 -> SliceOrIndex d
+  at : Tensor [] U64 -> Subset
   at = DynamicIndex
 
 ||| Slice from `from` (inclusive) to `to` (exclusive). See `slice` for details.
 public export
-(.to) :
-  (from, to : Nat) ->
-  {size : _} ->
-  {auto 0 fromTo : from + size = to} ->
-  {auto 0 inDim : LTE to d} ->
-  SliceOrIndex d
+(.to) : (from, to : Nat) -> {auto 0 ordered : from `LT` to} -> Subset
 (.to) = Slice
 
 ||| Slice `size` elements starting at the specified scalar `U64` index. See `slice` for details.
 public export
-(.size) : Tensor [] U64 -> (size : Nat) -> {auto 0 inDim : LTE size d} -> SliceOrIndex d
+(.size) : Tensor [] U64 -> (size : Nat) -> Subset
 (.size) = DynamicSlice
 
 ||| Slice across all indices along an axis. See `slice` for details.
 public export
-all : {d : _} -> SliceOrIndex d
-all = Slice 0 @{%search} @{reflexive {ty = Nat}} d
+all : Subset
+all = All
 
-||| A `MultiSlice shape` is a valid multi-dimensional slice into a tensor with shape `shape`.
-||| See `slice` for details.
-public export
-data MultiSlice : Shape -> Type where
-  Nil : MultiSlice ds
-  (::) : SliceOrIndex d -> MultiSlice ds -> MultiSlice (d :: ds)
+public export   -- is there a stdlib version of this?
+assert : Bool -> e -> Either e a -> Either e a
+assert True _ either = either
+assert False e _ = Left e
 
-namespace MultiSlice
+namespace Subset
+  public export
+  data InvalidSubsetError =
+    ||| The number of dimensions requested and found
+    OutOfBounds Nat Nat
+
+    ||| The number of unaccounted-for axes
+    TooManyAxes Nat
+
   ||| The shape of a tensor produced by slicing with the specified multi-dimensional slice. See
   ||| `Tensor.slice` for details.
   public export
-  slice : {shape : _} -> MultiSlice shape -> Shape
-  slice {shape} [] = shape
-  slice {shape = (_ :: _)} (Slice {size} _ _ :: xs) = size :: slice xs
-  slice {shape = (_ :: _)} (Index _ :: xs) = slice xs
-  slice {shape = (_ :: _)} (DynamicSlice _ size :: xs) = size :: slice xs
-  slice {shape = (_ :: _)} (DynamicIndex _ :: xs) = slice xs
+  slice : Shape -> List Subset -> Either InvalidSubsetError Shape
+  slice [] at@(_ :: _) = Left TooManyAxes (length at)
+  slice ds [] = ds
+  slice (d :: ds) (Slice from to :: xs) = assert (to > d) (OutOfBounds to d) $ map (size ::) (slice ds xs)
+  slice (d :: ds) (Index idx :: xs) = assert (idx >= d) (OutOfBounds idx d) $ slice ds xs
+  slice (d :: ds) (DynamicSlice _ size :: xs) =
+    assert (size > d) (OutOfBounds size d) $ map (size ::) (slice ds xs)
+  slice (_ :: ds) (DynamicIndex _ :: xs) = slice ds xs
 
 ||| Slice or index `Tensor` axes. Each axis can be sliced or indexed, and this can be done with
 ||| either static (`Nat`) or dynamic (scalar `U64`) indices.
@@ -462,47 +461,40 @@ namespace MultiSlice
 export
 slice :
   Primitive dtype =>
-  (at : MultiSlice shape) ->
+  (at : List Subset) ->
   Tensor shape dtype ->
-  Tensor (slice at) dtype
+  {auto 0 shape' : IsRight (slice at shape)} ->
+  case shape' of Right shape' => Tensor shape' dtype
 slice at $ MkTensor x = MkTensor
-  $ Reshape (mapd size id at) (MultiSlice.slice at)
-    $ DynamicSlice (dynStarts [] at) (mapd size id at)
-      $ Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) x
+  $ Reshape (map size at) (MultiSlice.slice at)
+    $ DynamicSlice (map dynStart at ++ replicate (length shape `minus` length at) zero) (map size at)
+      $ Slice (map start at) (map (uncurry stop) (zip shape at)) (replicate (length shape) 1) x  -- zip doesn't account for length difference
 
-      where
-      mapd : ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
-             (Nat -> a) ->
-             {shape : Shape} ->
-             MultiSlice shape ->
-             List a
-      mapd _ dflt {shape} [] = Prelude.map dflt shape
-      mapd f dflt (x :: xs) = f dflt x :: mapd f dflt xs
+  where
 
-      start : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      start _ (Slice from _) = from
-      start _ (Index idx) = idx
-      start f {d} _ = f d
+  start : Subset -> Nat
+  start (Slice from _) = from
+  start (Index idx) = idx
+  start _ = 0
 
-      stop : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      stop _ (Slice _ to) = to
-      stop _ (Index idx) = S idx
-      stop f {d} _ = f d
+  stop : Nat -> Subset -> Nat
+  stop _ (Slice _ to) = to
+  stop _ (Index idx) = S idx
+  stop d _ = d
 
-      size : (Nat -> Nat) -> {d : Nat} -> SliceOrIndex d -> Nat
-      size _ (Slice {size = size'} _ _) = size'
-      size _ (Index _) = 1
-      size _ (DynamicSlice _ size') = size'
-      size _ (DynamicIndex _) = 1
+  size : Subset -> Nat
+  size (Slice {size = size'} _ _) = size'
+  size (Index _) = 1
+  size (DynamicSlice _ size') = size'
+  size (DynamicIndex _) = 1
 
-      zero : Expr
-      zero = FromLiteral {shape = []} {dtype = U64} 0
+  zero : Expr
+  zero = FromLiteral {shape = []} {dtype = U64} 0
 
-      dynStarts : List Expr -> {shape : _} -> MultiSlice shape -> List Expr
-      dynStarts idxs {shape} [] = replicate (length shape) zero ++ idxs
-      dynStarts idxs (DynamicSlice (MkTensor i) _ :: ds) = i :: dynStarts idxs ds
-      dynStarts idxs (DynamicIndex (MkTensor i) :: ds) = i :: dynStarts idxs ds
-      dynStarts idxs (_ :: ds) = zero :: dynStarts idxs ds
+  dynStart : Subset -> Expr
+  dynStart (DynamicSlice (MkTensor i) _) = i
+  dynStart (DynamicIndex (MkTensor i)) = i
+  dynStart _ = zero
 
 ||| Concatenate two `Tensor`s along the specfied `axis`. For example,
 ||| `concat 0 (tensor [[1, 2], [3, 4]]) (tensor [[5, 6]])` and
