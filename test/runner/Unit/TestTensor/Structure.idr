@@ -51,8 +51,8 @@ expand = fixedProperty $ do
   expand 0 3 ===# tensor {dtype = S32} [3]
 
   let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
-      withExtraDim = tensor [[[3, 4, 5]], [[6, 7, 8]]]
-  expand 1 x ===# withExtraDim
+  expand 1 x ===# tensor [[[3, 4, 5]], [[6, 7, 8]]]
+  expand 2 x ===# tensor [[[3], [4], [5]], [[6], [7], [8]]]
 
 partial
 broadcast : Device => Property
