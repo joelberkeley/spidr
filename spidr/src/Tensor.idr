@@ -143,7 +143,7 @@ namespace Tag
   ||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
   ||| different tensors, even if they are in the same computation, will be treated independently.
   ||| To efficiently evaluate multiple tensors at once, use `TensorList.Tag.eval`.
-  export partial
+  export covering  -- is this true?
   eval : Device -> PrimitiveRW dtype ty => Tag (Tensor shape dtype) -> IO (Literal shape ty)
   eval device (MkTagT x) =
     let (env, MkTensor root) = runState empty x
@@ -152,8 +152,12 @@ namespace Tag
           [lit] <- execute device (MkFn [] root env) [shape]
           read {dtype} [] lit
 
+-- is it safe to use this within a `Tag` context? It's probably not with `unsafePerformIO`, but
+-- that's kind of expected. What about w/o `unsafePerformIO`?
 ||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
-export partial
+|||
+||| **Note:** It is not safe to use
+export covering  -- is this true?
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
 
@@ -181,7 +185,7 @@ namespace TensorList
     ||| ```
     ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
     ||| compiles the graph just once.
-    export partial
+    export covering  -- is this true?
     eval : Device -> Tag (TensorList shapes tys) -> IO (All2 Literal shapes tys)
     eval device (MkTagT xs) =
       let (env, xs) = runState empty xs
@@ -211,7 +215,7 @@ namespace TensorList
       readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
   ||| A convenience wrapper for `TensorList.Tag.eval`, for use with a bare `TensorList`.
-  export partial
+  export covering  -- is this true?
   eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
   eval device xs = eval device (pure xs)
 
