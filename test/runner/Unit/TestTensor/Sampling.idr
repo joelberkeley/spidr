@@ -30,7 +30,6 @@ range n = cast (Vect.range n)
 product1 : (x : Nat) -> product (the (List Nat) [x]) = x
 product1 x = rewrite plusZeroRightNeutral x in Refl
 
-partial
 iidKolmogorovSmirnov :
   {shape : _} -> Tensor shape F64 -> (Tensor shape F64 -> Tensor shape F64) -> Tag $ Tensor [] F64
 iidKolmogorovSmirnov samples cdf = do
@@ -46,7 +45,6 @@ iidKolmogorovSmirnov samples cdf = do
 Prelude.Ord a => Prelude.Ord (Literal [] a) where
   compare (Scalar x) (Scalar y) = compare x y
 
-partial
 uniform : Device => Property
 uniform = withTests 20 . property $ do
   bound <- forAll (literal [5] finiteDoubles)
@@ -69,7 +67,6 @@ uniform = withTests 20 . property $ do
 
   diff (unsafeEval ksTest) (<) 0.015
 
-partial
 uniformForNonFiniteBounds : Device => Property
 uniformForNonFiniteBounds = property $ do
   key <- forAll (literal [] nats)
@@ -87,7 +84,6 @@ uniformForNonFiniteBounds = property $ do
 minNormal : Literal [] Double
 minNormal = 2.23e-308  -- see https://en.wikipedia.org/wiki/IEEE_754
 
-partial
 uniformForFiniteEqualBounds : Device => Property
 uniformForFiniteEqualBounds = withTests 20 . property $ do
   key <- forAll (literal [] nats)
@@ -98,7 +94,6 @@ uniformForFiniteEqualBounds = withTests 20 . property $ do
 
   samples ===# pure bound
 
-partial
 uniformSeedIsUpdated : Device => Property
 uniformSeedIsUpdated = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
@@ -121,7 +116,6 @@ uniformSeedIsUpdated = withTests 20 . property $ do
   diff seed'' (/=) seed'
   diff sample' (/=) sample
 
-partial
 uniformIsReproducible : Device => Property
 uniformIsReproducible = withTests 20 . property $ do
   bound <- forAll (literal [10] doubles)
@@ -142,7 +136,6 @@ uniformIsReproducible = withTests 20 . property $ do
 
   sample ==~ sample'
 
-partial
 normal : Device => Property
 normal = withTests 20 . property $ do
   key <- forAll (literal [] nats)
@@ -160,7 +153,6 @@ normal = withTests 20 . property $ do
 
   diff (unsafeEval ksTest) (<) 0.02
 
-partial
 normalSeedIsUpdated : Device => Property
 normalSeedIsUpdated = withTests 20 . property $ do
   key <- forAll (literal [] nats)
@@ -178,7 +170,6 @@ normalSeedIsUpdated = withTests 20 . property $ do
   diff seed'' (/=) seed'
   diff sample' (/=) sample
 
-partial
 normalIsReproducible : Device => Property
 normalIsReproducible = withTests 20 . property $ do
   key <- forAll (literal [] nats)
@@ -194,7 +185,7 @@ normalIsReproducible = withTests 20 . property $ do
 
   sample ==~ sample'
 
-export partial
+export
 all : Device => List (PropertyName, Property)
 all = [
       ("uniform", uniform)

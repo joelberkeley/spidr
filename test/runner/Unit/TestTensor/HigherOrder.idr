@@ -24,7 +24,6 @@ import Utils
 import Utils.Comparison
 import Utils.Cases
 
-partial
 mapResult : Device => Property
 mapResult = property $ do
   shape <- forAll shapes
@@ -38,7 +37,6 @@ mapResult = property $ do
   let x' = tensor {dtype = S32} x
   map (+ 1) x === Tag.unsafeEval (map (pure . (+ 1)) x')
 
-partial
 mapNonTrivial : Device => Property
 mapNonTrivial = fixedProperty $ do
   let res : Tag (Tensor [] S32) = pure 2
@@ -54,7 +52,6 @@ mapNonTrivial = fixedProperty $ do
         ) (tensor 7)
   x ===# pure 28
 
-partial
 map2Result : Device => Property
 map2Result = fixedProperty $ do
   shape <- forAll shapes
@@ -72,13 +69,11 @@ map2Result = fixedProperty $ do
       y' = tensor {dtype = F64} y
   [| x + y |] ==~ unsafeEval (map2 (pure .: Tensor.(+)) x' y')
 
-partial
 map2ResultWithReusedFnArgs : Device => Property
 map2ResultWithReusedFnArgs = fixedProperty $ do
   let x : Tensor [] S32 = 6
   map2 (\x, y => pure $ x + x + y + y) 1 2 ===# pure x
 
-partial
 reduce : Device => Property
 reduce = fixedProperty $ do
   let x = tensor {dtype = S32} [[1, 2, 3], [-1, -2, -3]]
@@ -105,7 +100,6 @@ reduce = fixedProperty $ do
   let x = tensor {dtype = PRED} [[True, False, True], [True, False, False]]
   reduce @{All} [1] x ===# pure (tensor [False, False])
 
-partial
 sort : Device => Property
 sort = withTests 20 . property $ do
   d <- forAll dims
@@ -160,7 +154,6 @@ sort = withTests 20 . property $ do
   reflex : {n : _} -> LTE n n
   reflex = reflexive {ty = Nat}
 
-partial
 sortWithEmptyAxis : Device => Property
 sortWithEmptyAxis = fixedProperty $ do
   let x = tensor {shape = [0, 2, 3]} {dtype = S32} []
@@ -175,7 +168,6 @@ sortWithEmptyAxis = fixedProperty $ do
   let x = tensor {shape = [2, 0, 3]} {dtype = S32} [[], []]
   sort (<) 1 x ===# pure x
 
-partial
 sortWithRepeatedElements : Device => Property
 sortWithRepeatedElements = fixedProperty $ do
   let x = tensor {dtype = S32} [1, 3, 4, 3, 2]
@@ -185,7 +177,6 @@ sortWithRepeatedElements = fixedProperty $ do
   sort (<) 0 x ===# pure (tensor [[1, 2, 4], [3, 4, 5]])
   sort (<) 1 x ===# pure (tensor [[1, 4, 4], [2, 3, 5]])
 
-partial
 condResultTrivialUsage : Device => Property
 condResultTrivialUsage = fixedProperty $ do
   let x = tensor {dtype = S32} 0
@@ -203,7 +194,6 @@ condResultTrivialUsage = fixedProperty $ do
       y = tensor {dtype = S32} [[6, 7], [8, 9]]
   cond (tensor False) (\x => pure $ tensor 5 * x) x (pure . diag) y ===# pure (tensor [6, 9])
 
-partial
 condResultWithReusedArgs : Device => Property
 condResultWithReusedArgs = fixedProperty $ do
   let x = tensor {dtype = S32} 1
@@ -221,7 +211,7 @@ condResultWithReusedArgs = fixedProperty $ do
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
-export partial
+export
 all : Device => List (PropertyName, Property)
 all = [
       ("map", mapResult)

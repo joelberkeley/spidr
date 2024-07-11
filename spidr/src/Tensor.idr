@@ -132,9 +132,8 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
-partial
 try : Show e => EitherT e IO a -> IO a
-try = eitherT (idris_crash . show) pure
+try = eitherT (assert_total . idris_crash . show) pure
 
 namespace Tag
   ||| Evaluate a `Tensor`, returning its value as a `Literal`. This function builds and executes the
@@ -143,7 +142,7 @@ namespace Tag
   ||| **Note:** Each call to `eval` will rebuild and execute the graph; multiple calls to `eval` on
   ||| different tensors, even if they are in the same computation, will be treated independently.
   ||| To efficiently evaluate multiple tensors at once, use `TensorList.Tag.eval`.
-  export covering  -- is this true?
+  export covering
   eval : Device -> PrimitiveRW dtype ty => Tag (Tensor shape dtype) -> IO (Literal shape ty)
   eval device (MkTagT x) =
     let (env, MkTensor root) = runState empty x
@@ -152,12 +151,8 @@ namespace Tag
           [lit] <- execute device (MkFn [] root env) [shape]
           read {dtype} [] lit
 
--- is it safe to use this within a `Tag` context? It's probably not with `unsafePerformIO`, but
--- that's kind of expected. What about w/o `unsafePerformIO`?
 ||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
-|||
-||| **Note:** It is not safe to use
-export covering  -- is this true?
+export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
 
@@ -185,7 +180,7 @@ namespace TensorList
     ||| ```
     ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
     ||| compiles the graph just once.
-    export covering  -- is this true?
+    export covering
     eval : Device -> Tag (TensorList shapes tys) -> IO (All2 Literal shapes tys)
     eval device (MkTagT xs) =
       let (env, xs) = runState empty xs
@@ -215,7 +210,7 @@ namespace TensorList
       readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
   ||| A convenience wrapper for `TensorList.Tag.eval`, for use with a bare `TensorList`.
-  export covering  -- is this true?
+  export covering
   eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
   eval device xs = eval device (pure xs)
 

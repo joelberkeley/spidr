@@ -22,7 +22,6 @@ import Model.Kernel
 import Utils.Comparison
 import Utils.Cases
 
-partial
 rbfMatchesTFP : Device => Property
 rbfMatchesTFP = fixedProperty $ do
   let lengthScale = tensor 0.4
@@ -41,7 +40,7 @@ rbfMatchesTFP = fixedProperty $ do
         ]
   rbf lengthScale x x' ===# pure expected
 
-export partial
+export
 group : Device => Group
 group = MkGroup "Kernel" $ [
     ("rbf matches tfp", rbfMatchesTFP)

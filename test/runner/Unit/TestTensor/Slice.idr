@@ -50,7 +50,6 @@ namespace MultiSlice
     slice {shape = [3, 4]} [0.to 2, at 2] === [2]
     slice {shape = [3, 4]} [at 1, at 2] === Prelude.Nil
 
-partial
 sliceStaticIndex : Device => Property
 sliceStaticIndex = fixedProperty $ do
   let x = tensor {dtype = S32} [3, 4, 5]
@@ -63,7 +62,6 @@ sliceStaticIndex = fixedProperty $ do
 
   slice [at idx] x ===# tensor 5
 
-partial
 sliceStaticSlice : Device => Property
 sliceStaticSlice = fixedProperty $ do
   let x = tensor {dtype = S32} [3, 4, 5]
@@ -77,7 +75,6 @@ sliceStaticSlice = fixedProperty $ do
   slice [2.to 2] x ===# tensor []
   slice [2.to 3] x ===# tensor [5]
 
-partial
 sliceStaticMixed : Device => Property
 sliceStaticMixed = fixedProperty $ do
   let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
@@ -99,7 +96,6 @@ sliceStaticMixed = fixedProperty $ do
 u64 : Nat -> Tensor [] U64
 u64 = tensor . Scalar
 
-partial
 sliceDynamicIndex : Device => Property
 sliceDynamicIndex = fixedProperty $ do
   let x = tensor {dtype = S32} [3, 4, 5]
@@ -115,7 +111,6 @@ sliceDynamicIndex = fixedProperty $ do
   slice [at (u64 2)] x ===# tensor [6, 7, 8]
   slice [at (u64 4)] x ===# tensor [6, 7, 8]
 
-partial
 sliceDynamicSlice : Device => Property
 sliceDynamicSlice = fixedProperty $ do
   let x = tensor {dtype = S32} [3, 4, 5]
@@ -144,7 +139,6 @@ sliceDynamicSlice = fixedProperty $ do
   slice [(u64 4).size 0] x ===# tensor []
   slice [(u64 4).size 1] x ===# tensor [[6, 7, 8]]
 
-partial
 sliceMixed : Device => Property
 sliceMixed = fixedProperty $ do
   let x = tensor {dtype = S32} [[3, 4, 5], [6, 7, 8]]
@@ -186,7 +180,6 @@ index : (idx : Nat) -> {auto 0 inDim : LT idx n} -> Literal [n] a -> Literal [] 
 index {inDim = (LTESucc _)} 0 (y :: _) = y
 index {inDim = (LTESucc _)} (S k) (_ :: xs) = index k xs
 
-partial
 sliceForVariableIndex : Device => Property
 sliceForVariableIndex = property $ do
   idx <- forAll dims
@@ -201,7 +194,7 @@ sliceForVariableIndex = property $ do
   inDim {idx = 0} = LTESucc LTEZero
   inDim {idx = (S k)} = LTESucc inDim
 
-export partial
+export
 all : Device => List (PropertyName, Property)
 all = [
       ("MultiSlice.slice", MultiSlice.slice)

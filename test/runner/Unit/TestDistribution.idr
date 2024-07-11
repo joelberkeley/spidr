@@ -22,7 +22,6 @@ import Distribution
 import Utils.Comparison
 import Utils.Cases
 
-partial
 gaussianUnivariatePDF : Device => Property
 gaussianUnivariatePDF = property $ do
   let doubles = literal [] doubles
@@ -36,7 +35,6 @@ gaussianUnivariatePDF = property $ do
     univariate : Double -> Double -> Double -> Double
     univariate x mean cov = exp (- (x - mean) * (x - mean) / (2 * cov)) / sqrt (2 * pi * cov)
 
-partial
 gaussianMultivariatePDF : Device => Property
 gaussianMultivariatePDF = fixedProperty $ do
   let mean = tensor [[-0.2], [0.3]]
@@ -44,7 +42,6 @@ gaussianMultivariatePDF = fixedProperty $ do
       x = tensor [[1.1], [-0.5]]
   pdf (MkGaussian mean cov) x ===# pure 0.016427375
 
-partial
 gaussianCDF : Device => Property
 gaussianCDF = fixedProperty $ do
   let gaussian = MkGaussian (tensor [[0.5]]) (tensor [[[1.44]]])
@@ -54,7 +51,7 @@ gaussianCDF = fixedProperty $ do
   cdf gaussian (tensor [[0.5]]) ===# pure 0.5
   cdf gaussian (tensor [[1.5]]) ===# pure 0.7976716
 
-export partial
+export
 group : Device => Group
 group = MkGroup "Distribution" $ [
       ("Gaussian univariate pdf", gaussianUnivariatePDF)
