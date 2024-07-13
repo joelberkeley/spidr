@@ -355,11 +355,11 @@ assert False e _ = Left e
 namespace Subset
   public export
   data InvalidSubsetError =
-    ||| The number of dimensions requested and found
-    OutOfBounds Nat Nat
+      ||| The number of dimensions requested and found (in that order)
+      OutOfBounds Nat Nat
 
-    ||| The number of unaccounted-for axes
-    TooManyAxes Nat
+      ||| The number of unaccounted-for axes
+    | TooManyAxes Nat
 
   ||| The shape of a tensor produced by slicing with the specified multi-dimensional slice. See
   ||| `Tensor.slice` for details.
