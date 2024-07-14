@@ -113,7 +113,7 @@ fit : (forall n . Tensor [n] F64 -> Optimizer $ Tensor [n] F64)
 fit optimizer (MkDataset x y) (MkConjugateGPR {p} mkPrior gpParams noise) = do
   let objective : Tensor [S p] F64 -> Tag $ Tensor [] F64
       objective params = do
-        let priorParams = slice [1.to (S p)] params
+        let priorParams = slice {inBounds = rewrite compareNatDiag (S p) in %search} [1.to (S p)] params
         logMarginalLikelihood !(mkPrior priorParams) (slice [at 0] params) (x, squeeze y)
 
   params <- optimizer (concat 0 (expand 0 noise) gpParams) objective

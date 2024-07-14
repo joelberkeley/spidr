@@ -23,6 +23,7 @@ limitations under the License.
 module Tensor
 
 import Control.Monad.Error.Either
+import public Data.Either
 import public Control.Monad.State
 import public Data.List
 import public Data.List.Elem
@@ -334,8 +335,8 @@ namespace Dynamic
 
 ||| Slice from `from` (inclusive) to `to` (exclusive). See `slice` for details.
 public export
-(.to) : (from, to : Nat) -> {auto 0 ordered : from `LT` to} -> Subset
-(.to) = Slice
+(.to) : (from, to : Nat) -> {auto 0 ordered : from `LTE` to} -> Subset
+from.to to = Slice from to
 
 ||| Slice `size` elements starting at the specified scalar `U64` index. See `slice` for details.
 public export
@@ -347,31 +348,33 @@ public export
 all : Subset
 all = All
 
-public export   -- is there a stdlib version of this?
-assert : Bool -> e -> Either e a -> Either e a
-assert True _ either = either
-assert False e _ = Left e
-
 namespace Subset
   public export
   data InvalidSubsetError =
-      ||| The number of dimensions requested and found (in that order)
-      OutOfBounds Nat Nat
+    ||| The number of dimensions requested and found (in that order)
+    OutOfBounds Nat Nat
 
-      ||| The number of unaccounted-for axes
-    | TooManyAxes Nat
+    | ||| The number of unaccounted-for axes
+    TooManyAxes Nat
 
   ||| The shape of a tensor produced by slicing with the specified multi-dimensional slice. See
   ||| `Tensor.slice` for details.
   public export
-  slice : Shape -> List Subset -> Either InvalidSubsetError Shape
-  slice [] at@(_ :: _) = Left TooManyAxes (length at)
-  slice ds [] = ds
-  slice (d :: ds) (Slice from to :: xs) = assert (to > d) (OutOfBounds to d) $ map (size ::) (slice ds xs)
-  slice (d :: ds) (Index idx :: xs) = assert (idx >= d) (OutOfBounds idx d) $ slice ds xs
-  slice (d :: ds) (DynamicSlice _ size :: xs) =
-    assert (size > d) (OutOfBounds size d) $ map (size ::) (slice ds xs)
-  slice (_ :: ds) (DynamicIndex _ :: xs) = slice ds xs
+  slice : List Subset -> Shape -> Either InvalidSubsetError Shape
+  slice at@(_ :: _) [] = Left $ TooManyAxes (length at)
+  slice [] ds = Right ds
+  slice (All :: xs) (d :: ds) = map (d ::) (slice xs ds)
+  slice (Slice from to :: xs) (d :: ds) =
+    ifThenElse (to > d) (Left $ OutOfBounds to d) $ (to `minus` from ::) <$> slice xs ds
+  slice (Index idx :: xs) (d :: ds) = ifThenElse (idx >= d) (Left $ OutOfBounds idx d) $ slice xs ds
+  slice (DynamicSlice _ size :: xs) (d :: ds) =
+    ifThenElse (size > d) (Left $ OutOfBounds size d) $ map (size ::) (slice xs ds)
+  slice (DynamicIndex _ :: xs) (_ :: ds) = slice xs ds
+
+public export
+fromRight : (e : Either l r) -> {auto 0 isRight : IsRight e} -> r
+fromRight (Right r) = r
+fromRight (Left _) impossible
 
 ||| Slice or index `Tensor` axes. Each axis can be sliced or indexed, and this can be done with
 ||| either static (`Nat`) or dynamic (scalar `U64`) indices.
@@ -460,15 +463,21 @@ namespace Subset
 ||| @at The multi-dimensional slices and indices at which to slice the tensor.
 export
 slice :
+  forall shape, dtype .
   Primitive dtype =>
   (at : List Subset) ->
   Tensor shape dtype ->
-  {auto 0 shape' : IsRight (slice at shape)} ->
-  case shape' of Right shape' => Tensor shape' dtype
-slice at $ MkTensor x = MkTensor
-  $ Reshape (map size at) (MultiSlice.slice at)
-    $ DynamicSlice (map dynStart at ++ replicate (length shape `minus` length at) zero) (map size at)
-      $ Slice (map start at) (map (uncurry stop) (zip shape at)) (replicate (length shape) 1) x  -- zip doesn't account for length difference
+  let out = slice at shape in
+  {auto 0 inBounds : IsRight out} ->
+  Tensor (fromRight out) dtype
+slice at $ MkTensor x =
+  let ldiff = length shape `minus` length at
+      at' = at ++ replicate ldiff All
+      map = Prelude.map  -- help type inference
+   in MkTensor
+        $ Reshape (zipWith size shape at') (fromRight $ slice at shape)
+          $ DynamicSlice (map dynStart at ++ replicate ldiff zero) (zipWith size shape at')
+            $ Slice (map start at) (zipWith stop shape at') (replicate (length shape) 1) x
 
   where
 
@@ -482,11 +491,12 @@ slice at $ MkTensor x = MkTensor
   stop _ (Index idx) = S idx
   stop d _ = d
 
-  size : Subset -> Nat
-  size (Slice {size = size'} _ _) = size'
-  size (Index _) = 1
-  size (DynamicSlice _ size') = size'
-  size (DynamicIndex _) = 1
+  size : Nat -> Subset -> Nat
+  size _ (Slice from to) = to `minus` from
+  size _ (Index _) = 1
+  size _ (DynamicSlice _ size') = size'
+  size _ (DynamicIndex _) = 1
+  size d All = d
 
   zero : Expr
   zero = FromLiteral {shape = []} {dtype = U64} 0
