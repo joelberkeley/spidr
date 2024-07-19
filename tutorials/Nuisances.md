@@ -32,9 +32,9 @@ spidr will interpret each `x` as a different expression, and create two copies o
 > ```
 `tag` tags all tensor expressions contained within the `a`. You can efficiently reuse a value created by `tag` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
-y' : Tag $ Tensor [2] F64
+y' : Tag $ Tensor [] S32
 y' = do
-  x <- tag $ tensor [1.0, 2.0]
+  x <- tag $ 1 + 2
   pure $ x + x 
 ```
 
