@@ -1,57 +1,191 @@
-# Copyright 2021 Joel Berkeley
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 on:
   pull_request:
     branches: master
 
-env:
-  PACK_DIR: /root/.pack
-
 jobs:
-  test-unit:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get install shellcheck
+      - name: Run shellcheck
+        shell: bash
+        run: |
+          shopt -s extglob nullglob globstar
+          shellcheck **/*.sh
+  pjrt-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    - name: Build PJRT + XLA binary
+      run: |
+        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
+        else
+          # free up space not used if running in Docker, see
+          # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
+          rm -rf /opt/hostedtoolcache
+          docker run \
+            -v $(pwd):/spidr -w /spidr \
+            tensorflow/build:latest-python3.9 \
+            sh -c "spidr/backend/build.sh"
+        fi
+
+        mv libc_xla-linux.so libc_xla.so
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: libc_xla.so
+        path: libc_xla.so
+        if-no-files-found: error
+  pjrt-plugin-xla-cpu-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    - name: Build or fetch XLA CPU PJRT plugin
+      run: |
+        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
+          rev=$(cat XLA_VERSION)
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
+        else
+          rm -rf /opt/hostedtoolcache
+          docker run \
+            -v $(pwd):/spidr -w /spidr \
+            tensorflow/build:latest-python3.9 \
+            sh -c "pjrt-plugins/xla-cpu/build.sh"
+        fi
+
+        mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: pjrt_plugin_xla_cpu.so
+        path: pjrt_plugin_xla_cpu.so
+        if-no-files-found: error
+  pjrt-plugin-xla-cuda-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Build or fetch XLA CUDA PJRT plugin
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
+            rev=$(cat XLA_VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
+          else
+            rm -rf /opt/hostedtoolcache
+            # note this implies specific versions of CUDA and cuDNN
+            docker run \
+              -v $(pwd):/spidr -w /spidr \
+              tensorflow/build:latest-python3.9 \
+              sh -c "pjrt-plugins/xla-cuda/build.sh"
+          fi
+
+          mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_xla_cuda.so
+          path: pjrt_plugin_xla_cuda.so
+          if-no-files-found: error
+  build-tests-xla-cpu:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
-    - name: Build backend
-      working-directory: backend
-      run: |
-        ./install_bazel.sh
-        ./build.sh cpu
+    - uses: actions/checkout@v4
     - name: Build tests
+      working-directory: test/xla-cpu
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
-        pack --no-prompt build test.ipkg
+        pack --no-prompt build xla-cpu.ipkg
+        tar cfz tests-xla-cpu.tar.gz -C build/exec .
+    - name: Upload tests
+      uses: actions/upload-artifact@v4
+      with:
+        name: tests-xla-cpu.tar.gz
+        path: test/xla-cpu/tests-xla-cpu.tar.gz
+        if-no-files-found: error
+  build-tests-xla-cuda:
+    runs-on: ubuntu-latest
+    container: ghcr.io/stefan-hoeck/idris2-pack
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build tests
+      working-directory: test/xla-cuda
+      run: |
+        apt-get update && apt-get install -y curl
+        pack switch HEAD
+        pack --no-prompt build xla-cuda.ipkg
+        tar cfz tests-xla-cuda.tar.gz -C build/exec .
+    - name: Upload tests
+      uses: actions/upload-artifact@v4
+      with:
+        name: tests-xla-cuda.tar.gz
+        path: test/xla-cuda/tests-xla-cuda.tar.gz
+        if-no-files-found: error
+  test-xla-cpu-linux:
+    needs:
+      - pjrt-linux
+      - pjrt-plugin-xla-cpu-linux
+      - build-tests-xla-cpu
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        sudo apt-get install chezscheme
     - name: Run tests
-      run: pack run test.ipkg
-      env:
-        LD_LIBRARY_PATH: $LD_LIBRARY_PATH:backend/bazel-bin
+      run: |
+        tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
+        ./test
+  test-xla-cuda-linux:
+    needs:
+      - pjrt-linux
+      - pjrt-plugin-xla-cuda-linux
+      - build-tests-xla-cuda
+    runs-on: ubuntu-latest  # needs a CUDA runner
+    container: nvcr.io/nvidia/tensorrt:23.11-py3
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        apt-get update && apt-get install chezscheme
+    - name: Run tests
+      run: |
+        tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
+        exit 0  # we can't run tests without a GPU
   readme:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check README
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         pack --no-prompt typecheck readme.ipkg
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Type-check tutorials
       run: |
+        apt-get update && apt-get install -y curl
         pack switch HEAD
         res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
