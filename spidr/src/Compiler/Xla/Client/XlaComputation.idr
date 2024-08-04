@@ -30,6 +30,15 @@ delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
 export
+%foreign (libxla "XlaComputation_proto")
+prim__xlaComputationProto : GCAnyPtr -> AnyPtr
+
+||| The HloModuleProto is owned by the XlaComputation.
+export
+proto : XlaComputation -> HloModuleProto
+proto (MkXlaComputation computation) = MkHloModuleProto $ prim__xlaComputationProto computation
+
+export
 %foreign (libxla "XlaComputation_SerializeAsString")
 prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 

@@ -23,6 +23,10 @@ extern "C" {
         delete reinterpret_cast<xla::XlaComputation*>(s);
     }
 
+    HloModuleProto* XlaComputation_proto(XlaComputation* s) {
+        return reinterpret_cast<xla::XlaComputation*>(s)->proto();
+    }
+
     string* XlaComputation_SerializeAsString(XlaComputation* s) {
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
         auto serialized = s_->proto().SerializeAsString();

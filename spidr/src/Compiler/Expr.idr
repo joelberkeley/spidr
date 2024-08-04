@@ -102,8 +102,10 @@ data UnaryOp =
 
 public export
 data Expr : Type where
-  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
   Var : Nat -> Expr
+  Grad : Fn 1 -> Expr -> Expr
+
+  FromLiteral : PrimitiveRW dtype ty => {shape : _} -> Literal shape ty -> Expr
   Tuple : List Expr -> Expr
   GetTupleElement : (index : Nat) -> Expr -> Expr
   MinValue : Primitive dtype => Expr
@@ -181,8 +183,9 @@ showFn indent (MkFn params result env@(MkEnv _ env')) =
 
 export Show (Fn arity) where show = assert_total $ showFn 0
 
-showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {dtype}}"
 showExpr indent (Var k) = "Var \{k}"
+showExpr indent (Grad f x) = "Grad {f = \{show f}} \{x}"
+showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {dtype}}"
 showExpr indent (Tuple xs) = "Tuple \{showExprList indent xs}"
 showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
 showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"

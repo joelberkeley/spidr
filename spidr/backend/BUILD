@@ -17,6 +17,9 @@ cc_binary(
         "//src/xla/client/lib",
         "//src/xla/pjrt",
         "//src/xla/pjrt/c",
+        "//src/xla/service",
+        "//src/xla/translate/hlo_to_mhlo",
+        "//src/xla/translate/mhlo_to_hlo",
         "//src",
     ],
     deps = [
@@ -25,6 +28,9 @@ cc_binary(
         "//src/xla/client/lib",
         "//src/xla/pjrt",
         "//src/xla/pjrt/c",
+        "//src/xla/service",
+        "//src/xla/translate/hlo_to_mhlo",
+        "//src/xla/translate/mhlo_to_hlo",
         "//src",
     ],
 )

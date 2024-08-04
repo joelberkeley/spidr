@@ -347,6 +347,20 @@ cholesky (MkXlaOp a) lower = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "Call")
+prim__call : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+
+export
+call : HasIO io => XlaBuilder -> XlaComputation -> List XlaOp -> io XlaOp
+call (MkXlaBuilder builder) operands (MkXlaComputation computation) = do
+  MkXlaOpArray operandsXlaOpArrayPtr <- mkXlaOpArray operands
+  opPtr <- primIO $ prim__call
+    builder
+    computation
+    operandsXlaOpArrayPtr (cast $ length operands)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
 %foreign (libxla "Add")
 prim__add : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 

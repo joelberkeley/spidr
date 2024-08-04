@@ -93,8 +93,16 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     set graphPos param
 
   interpretE : Expr -> ErrIO XlaOp
-  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
+  interpretE (Grad f x) = do
+    let computationName = "\{!(name xlaBuilder)}/grad:f"
+    subBuilder <- createSubBuilder xlaBuilder computationName
+    computation <- compile subBuilder f
+    moduleOp <- convertHloToStableHLO (proto computation)
+    gradient <- ?enzyme moduleOp
+    gradient <- convertMlirHloToXlaComputation gradient
+    call xlaBuilder gradient [!(interpretE x)]
   interpretE (Var x) = get x
+  interpretE (FromLiteral {dtype} lit) = constantLiteral xlaBuilder !(write {dtype} [] lit)
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
