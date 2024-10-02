@@ -1172,6 +1172,27 @@ export
 (+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (+) = binaryRef Add
 
+-- use same precedence as stdlib
+export infix 9 .+, +.
+
+||| Elementwise addition. Broadcasts the left operand before adding.
+export
+(.+) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s s'} ->
+       Tensor s' dtype
+(.+) = binaryRef Add
+
+||| Elementwise addition. Broadcasts the right operand before adding.
+export
+(+.) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s' s} ->
+       Tensor s dtype
+(+.) = binaryRef Add
+
 namespace Semigroup
   export
   [Sum] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
@@ -1197,22 +1218,51 @@ export
 (-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (-) = binaryRef Sub
 
+export infix 9 .-, -.
+
+||| Elementwise subtraction. Broadcasts the left operand before subtracting.
+export
+(.-) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s s'} ->
+       Tensor s' dtype
+(.-) = binaryRef Sub
+
+||| Elementwise subtraction. Broadcasts the right operand before subtracting.
+export
+(-.) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s' s} ->
+       Tensor s dtype
+(-.) = binaryRef Sub
+
 ||| Element-wise multiplication. For example, `tensor [2, 3] * tensor [4, 5]` is
 ||| `tensor [8, 15]`.
 export
 (*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (*) = binaryRef Mul
 
-namespace Scalarwise
-  ||| Multiplication by a scalar. For example, `tensor 2 * tensor [3, 5]` is
-  ||| `tensor [6, 10]`.
-  |||
-  ||| The RHS is required to be non-scalar simply to avoid ambiguities with element-wise `(*)`.
-  export
-  (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
-  l * r =
-    let MkTensor {shape = _ :: _} _ = r
-     in broadcast {shapesOK = scalarToAnyOk (d :: ds)} l * r
+export infix 9 .*, *.
+
+||| Elementwise multiplication. Broadcasts the left operand before multiplying.
+export
+(.*) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s s'} ->
+       Tensor s' dtype
+(.*) = binaryRef Sub
+
+||| Elementwise multiplication. Broadcasts the right operand before multiplying.
+export
+(*.) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s' s} ->
+       Tensor s dtype
+(*.) = binaryRef Sub
 
 namespace Semigroup
   export
@@ -1234,19 +1284,25 @@ export
 (/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
 (/) = binaryRef Div
 
-namespace Scalarwise
-  ||| Floating point division by a scalar. For example, `tensor [3.4, -5.6] / tensor 2` is
-  ||| `tensor [1.7, -2.8]`.
-  |||
-  ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
-  export
-  (/) : Primitive.Fractional dtype =>
-        Tensor (d :: ds) dtype ->
-        Tensor [] dtype ->
-        Tensor (d :: ds) dtype
-  l / r =
-    let MkTensor {shape = _ :: _} _ = l
-     in l / broadcast {shapesOK = scalarToAnyOk (d :: ds)} r
+export infix 9 ./, /.
+
+||| Elementwise division. Broadcasts the left operand before dividing.
+export
+(./) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s s'} ->
+       Tensor s' dtype
+(./) = binaryRef Div
+
+||| Elementwise division. Broadcasts the right operand before dividing.
+export
+(/.) : Primitive.Num dtype =>
+       Tensor s dtype ->
+       Tensor s' dtype ->
+       {auto 0 isBroadcastable : Broadcastable s' s} ->
+       Tensor s dtype
+(/.) = binaryRef Div
 
 ||| Element-wise division of natural numbers. For example,
 ||| `div (tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [4, 2]`.
@@ -1256,6 +1312,26 @@ div : Tensor shape U64 ->
       {auto 0 isSucc : All IsSucc denom} ->
       Tensor shape U64
 div x y with (x)
+  _ | (MkTensor {shape = _} _) = binaryRef Div x (tensor {dtype = U64} y)
+
+||| Element-wise division of natural numbers. Broadcasts the numerator before dividing.
+export
+divl : Tensor s U64 ->
+       (denom : Literal s' Nat) ->
+       {auto 0 isSucc : All IsSucc denom} ->
+       {auto 0 isBroadcastable : Broadcastable s s'} ->
+       Tensor s' U64
+divl x y with (x)
+  _ | (MkTensor {shape = _} _) = binaryRef Div x (tensor {dtype = U64} y)
+
+||| Element-wise division of natural numbers. Broadcasts the denominator before dividing.
+export
+divr : Tensor s U64 ->
+       (denom : Literal s' Nat) ->
+       {auto 0 isSucc : All IsSucc denom} ->
+       {auto 0 isBroadcastable : Broadcastable s' s} ->
+       Tensor s U64
+divr x y with (x)
   _ | (MkTensor {shape = _} _) = binaryRef Div x (tensor {dtype = U64} y)
 
 ||| Element-wise remainder for natural numbers. For example,
@@ -1274,7 +1350,7 @@ export
 recip : Tensor shape F64 -> Tensor shape F64
 recip = unary Reciprocal
 
-export infixr 9 ^
+export infixr 9 ^, .^, ^.
 
 ||| Each element in `base` raised to the power of the corresponding element in `exponent`.
 ||| example, `tensor [2, 25, -9] ^ tensor [3, -0.5, 0.5]` is `tensor [8, 0.2, nan]`.
@@ -1286,6 +1362,22 @@ export infixr 9 ^
 export
 (^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
 (^) = binaryRef Pow
+
+||| Element-wise exponential. Broadcasts the base before calculating the exponential.
+export
+(.^) : Tensor s F64 ->
+       Tensor s' F64 ->
+       {auto 0 isBroadcastable : Broadcastable s s'} ->
+       Tensor s' F64
+(.^) = binaryRef Pow
+
+||| Element-wise exponential. Broadcasts the exponent before calculating the exponential.
+export
+(^.) : Tensor s F64 ->
+       Tensor s' F64 ->
+       {auto 0 isBroadcastable : Broadcastable s' s} ->
+       Tensor s F64
+(^.) = binaryRef Pow
 
 ||| Element-wise absolute value. For example, `abs (tensor [-2, 3])` is `tensor [2, 3]`.
 export
