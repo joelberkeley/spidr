@@ -16,6 +16,7 @@ limitations under the License.
 ||| This module contains common library types.
 module Types
 
+import public Control.Monad.State
 import public Data.Nat
 import public Data.Vect
 
@@ -55,3 +56,8 @@ export
 [Finite] Bounded Double where
   min = -1.7976931348623157e308
   max = 1.7976931348623157e308
+
+||| A `Ref a` is essentially a counter we use to generate a unique _reference_ for each `a`.
+public export 0
+Ref : Type -> Type
+Ref = State Nat

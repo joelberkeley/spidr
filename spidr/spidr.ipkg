@@ -28,6 +28,7 @@ modules =
   Compiler.Expr,
   Compiler.FFI,
   Compiler.LiteralRW,
+  Compiler.Transform,
 
   Constants,
   Data,

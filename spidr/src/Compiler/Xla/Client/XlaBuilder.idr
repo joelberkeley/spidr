@@ -81,7 +81,7 @@ prim__build : GCAnyPtr -> GCAnyPtr -> AnyPtr
 
 export
 build : HasIO io => XlaBuilder -> XlaOp -> io XlaComputation
-build (MkXlaBuilder ptr) (MkXlaOp root)= do
+build (MkXlaBuilder ptr) (MkXlaOp root) = do
   let computationPtr = prim__build ptr root
   computationPtr <- onCollectAny computationPtr XlaComputation.delete
   pure (MkXlaComputation computationPtr)

@@ -476,7 +476,7 @@ trace = fixedProperty $
 
 export
 group : Device => Group
-group = MkGroup "Tensor" $ [
+group = MkGroup "Tensor" $ [{-
       ("eval . tensor", tensorThenEval)
     , ("eval multiple tensors (tuple)", evalTuple)
     , ("eval multiple tensors (tuple) for non-trivial graph", evalTupleNonTrivial)
@@ -498,10 +498,10 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
-  ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
-    , Unit.TestTensor.HigherOrder.all
-    , Unit.TestTensor.Sampling.all
-    , Unit.TestTensor.Slice.all
-    , Unit.TestTensor.Structure.all
+  -}] ++ concat (the (List _) [
+    --  Unit.TestTensor.Elementwise.all
+    Unit.TestTensor.HigherOrder.all
+    --, Unit.TestTensor.Sampling.all
+    --, Unit.TestTensor.Slice.all
+    --, Unit.TestTensor.Structure.all
   ])

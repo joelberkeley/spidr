@@ -22,6 +22,7 @@ limitations under the License.
 ||| _Nuisances in the Tensor API_ for a discussion of pitfalls to avoid when using `Tag`.
 module Tensor
 
+import Debug.Trace
 import Control.Monad.Error.Either
 import public Control.Monad.State
 import public Data.List
@@ -34,8 +35,9 @@ import Compiler.Expr
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
 import Compiler.LiteralRW
-import Device
+import Compiler.Transform
 import public Literal
+import Device
 import public Primitive
 import public Types
 import public Util
@@ -757,55 +759,53 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 
 ----------------------------- generic operations ----------------------------
 
-||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
-||| For example,
-||| ```
-||| recip : Tensor [] F64 -> Tag $ Tensor [] F64
-||| recip x = pure $ 1.0 / x
-||| ```
-||| can be lifted to an element-wise reciprocal function as `map recip (tensor [-2, 0.4])`,
-||| which produces `tensor [-0.5, 2.5]`.
-|||
-||| **Note:** Values tagged in the same scope as `map` cannot then be used within the scalar
-||| function passed to `map`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
-export
-map : (Primitive a, Primitive b) =>
-      (Tensor [] a -> Tag $ Tensor [] b) ->
-      Tensor shape a -> Tag $ Tensor shape b
-map f $ MkTensor {shape = _} x = MkTagT $ do
-  addr <- reserve
-  let MkTagT app = f (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr, MkParameter [] a)] res env
+lookup' : Nat -> Program -> Expr
+lookup' x env = case lookup x env of
+  Just expr => expr
+  Nothing => assert_total $ idris_crash ""
 
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x] (range $ length shape)
-
-||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
-||| For example,
+||| Apply a function between tensors to the trailing dimensions of a tensor. For example, for
 ||| ```
-||| addRecip : Tensor [] F64 -> Tensor [] F64 -> Tag $ Tensor [] F64
-||| addRecip x y = pure $ x + 1.0 / y
+||| x : Ref $ Tensor [2, 3, 3] S32
+||| x = tensor [[[ 0,  1,  2],
+|||              [ 3,  4,  5],
+|||              [ 6,  7,  8]],
+|||             [[ 9, 10, 11],
+|||              [12, 13, 14],
+|||              [15, 16, 17]]]
 ||| ```
-||| can be lifted to an element-wise function as
-||| `map2 addRecip (tensor [3.0, -3.0]) (tensor [-2.0, 0.4])`, which produces `tensor [2.5, -0.5]`.
-|||
-||| **Note:** Values tagged in the same scope as `map2` cannot then be used within the scalar
-||| function passed to `map2`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
-export
-map2 :
-  (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -> Tensor [] b -> Tag $ Tensor [] c) ->
-  Tensor shape a -> Tensor shape b -> Tag $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
+||| `vmap diag !x` is `tensor [[0, 4, 8], [9, 13, 17]]`.
+export partial
+vmap :
+  Primitive a =>
+  (Tensor from a -> Graph $ Tensor to b) ->
+  Tensor (n :: from) a -> Graph $ Tensor (n :: to) b
+vmap f (MkTensor {shape = n :: from} x) = do
+  (progShape, prog) <- get
+  -- rather than separate Program and ProgramShape, just combine them and pass it separately to
+  -- Transform.vmap
+  j <- new
+  MkTensor {shape = _} result <- f (MkTensor j (singleton j []) (singleton j (Arg j)))
+  (vmappedProgShape, vmappedProg, l) <- vmap result n j x to unVmappedProg progShape
+  pure (MkTensor l)
 
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x, x'] (range $ length shape)
+{-
+namespace Binary
+  ||| `vmap` for mapping over binary functions.
+  export partial
+  vmap :
+    (Primitive d0, Primitive d1) =>
+    (Tensor s0 d0 -> Tensor s1 d1 -> Ref $ Tensor s2 d2) ->
+    Tensor (n :: s0) d0 -> Tensor (n :: s1) d1 -> Ref $ Tensor (n :: s2) d2
+
+namespace Ternary
+  ||| `vmap` for mapping over ternary functions.
+  export partial
+  vmap :
+    (Primitive d0, Primitive d1, Primitive d2) =>
+    (Tensor s0 d0 -> Tensor s1 d1 -> Tensor s2 d2 -> Ref $ Tensor s3 d3) ->
+    Tensor (n :: s0) d0 -> Tensor (n :: s1) d1 -> Tensor (n :: s2) d2 -> Ref $ Tensor (n :: s3) d3
+-}
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
