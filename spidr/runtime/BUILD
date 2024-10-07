@@ -8,7 +8,7 @@
 # see also this SO post https://stackoverflow.com/a/51689102/5986907
 
 cc_binary(
-    name = "c_xla",
+    name = "runtime",
     linkshared = True,
     linkstatic = True,
     srcs = [

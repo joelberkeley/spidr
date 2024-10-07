@@ -2,7 +2,7 @@ package spidr
 version = 0.0.6
 
 opts = "--total"
-sourcedir = "src"
+sourcedir = "frontend"
 depends = elab-util
 modules =
   BayesianOptimization,

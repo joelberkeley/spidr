@@ -8,22 +8,30 @@ short_revision () {
   echo "${rev%%"${rev##??????????}"}"
 }
 
-install_xla () {
+install_repository () {
   if [ -z "$2" ]; then
-    echo "Usage: install_xla <xla-revision> <install-path>."
+    echo "Usage: install_$3 <revision> <install-path>."
     exit 1;
   fi
 
   if [ "$(ls -A "$2")" ]; then
-    echo "Directory at path $2 is not empty, refusing to install XLA to this directory."
+    echo "Directory at path $2 is not empty, refusing to install $3 to this directory."
     exit 1;
   fi
 
   (
     cd "$2"
     git init
-    git remote add origin https://github.com/openxla/xla
+    git remote add origin "https://github.com/openxla/$3"
     git fetch --depth 1 origin "$1"
     git checkout FETCH_HEAD
   )
+}
+
+install_xla () {
+  install_repository $1 $2 "xla"
+}
+
+install_stablehlo () {
+  install_repository $1 $2 "stablehlo"
 }
