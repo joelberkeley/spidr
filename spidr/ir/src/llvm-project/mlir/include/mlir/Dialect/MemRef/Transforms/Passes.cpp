@@ -13,6 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "Passes.h";
+
 extern "C" {
-    struct Sizes;
+    void loadDialect_FuncDialect(MLIRContext& context) {
+        context.loadDialect<mlir::func::FuncDialect>();
+    }
 }

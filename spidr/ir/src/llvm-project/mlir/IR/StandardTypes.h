@@ -13,6 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "Types.h"
+
 extern "C" {
-    struct Process;
+    struct RankedTensorType;
+
+    RankedTensorType* get(int64_t* shape, Type& elementType);
 }
