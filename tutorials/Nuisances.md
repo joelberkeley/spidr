@@ -28,7 +28,7 @@ y = let x = 1 + 2 in x + x
 spidr will interpret each `x` as a different expression, and create two copies of `1 + 2`. This is acceptable for small calculations, but it would be a big problem if `x` were expensive to evaluate, or used a lot of space in memory. To prevent recalculating expressions, spidr provides _observable sharing_ via the interface
 > ```idris
 > interface Taggable a where
->   tag : a -> Tag a
+>   tag : Monad m => a -> TagT m a
 > ```
 `tag` tags all tensor expressions contained within the `a`. You can efficiently reuse a value created by `tag` as many times as you like; it will only be evaluated once. In our example, this would be
 ```idris
@@ -37,6 +37,7 @@ y' = do
   x <- tag $ 1 + 2
   pure $ x + x 
 ```
+where we've used spidr's convenience alias `Tag = TagT Identity`.
 
 > *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `tag` might not always make a difference. However, eliminating these subexpressions itself requires compute, and even then the compiler might not catch all of them, so we don't recommend relying on this.
 
