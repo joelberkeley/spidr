@@ -18,5 +18,5 @@ limitations under the License.
 extern "C" {
     struct RankedTensorType;
 
-    RankedTensorType* get(int64_t* shape, Type& elementType);
+    RankedTensorType* RankedTensorType_get(int64_t* shape, Type& elementType);
 }

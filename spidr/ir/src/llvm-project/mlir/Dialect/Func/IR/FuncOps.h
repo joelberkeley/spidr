@@ -13,6 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "../../../IR/Block.h"
+
 extern "C" {
     struct FuncOp;
+
+    FuncOp* FuncOp_create(
+        Location& location, string& name, FunctionType& type, NamedAttribute* attrs
+    );
+    void FuncOp_setVisibility(int visibility);  // signature guessed
+    Block* FuncOp_addEntryBlock();
+
 }

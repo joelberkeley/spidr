@@ -13,11 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "Location.h"
-
 extern "C" {
-    struct ModuleOp;
+    struct Block;
 
-    ModuleOp* create(Location& loc);
-    void ModuleOp_push_back(FuncOp* function);  // signature guessed
+    ... Block_args_begin();
+    ... Block_args_end();
 }
