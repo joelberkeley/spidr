@@ -23,7 +23,7 @@ import Utils.Cases
 map : Property
 map = fixedProperty $ do
   map (+ 1) (Scalar 2) === Scalar 3
-  (map (+ 1) $ the (Literal [0] _) []) === []
+  (map (+ 1) $ the (Literal [0] Nat) []) === []
   (map (+ 1) $ the (Literal _ _) [[0, 1, 2], [3, 4, 5]]) === [[1, 2, 3], [4, 5, 6]]
 
 pure : Property
