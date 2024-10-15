@@ -85,13 +85,13 @@ evalTuple @{device} = property $ do
 
 evalTupleNonTrivial : Device => Property
 evalTupleNonTrivial @{device} = property $ do
-  let xs : Tag _ =
-        do let y0 = tensor [1.0, -2.0, 0.4]
-               y1 = tensor 3.0
-           u <- tag $ exp y0
-           let v = slice [at 1] u + y1
-               w = slice [0.to 2] u
-           pure [v, w]
+  let xs : Tag _ = do
+        let y0 = tensor [1.0, -2.0, 0.4]
+            y1 = tensor 3.0
+        u <- tag $ exp y0
+        let v = slice [at 1] u + y1
+            w = slice [0.to 2] u
+        pure [v, w]
 
       [v, w] = unsafePerformIO $ eval device xs
 
