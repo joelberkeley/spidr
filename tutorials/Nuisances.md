@@ -37,6 +37,7 @@ y' = do
   x <- tag $ 1 + 2
   pure $ x + x 
 ```
+where we've used spidr's convenience alias `Tag = TagT Identity`.
 
 > *__DETAIL__* Some machine learning compilers, including XLA, will eliminate common subexpressions, so using `tag` might not always make a difference. However, eliminating these subexpressions itself requires compute, and even then the compiler might not catch all of them, so we don't recommend relying on this.
 
