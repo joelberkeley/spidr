@@ -99,14 +99,14 @@ interface Taggable a where
   ||| For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
-  tag : a -> Tag a
+  tag : Monad m => a -> TagT m a
 
 export
 Taggable (Tensor shape dtype) where
   -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
   -- to an inner scope, but I can't see why that would be useful
   tag x@(MkTensor (Var _)) = pure x
-  tag (MkTensor x) = MkTagT $ do pure $ MkTensor !(tag x)
+  tag (MkTensor x) = MkTagT $ do pure $ MkTensor !(Expr.tag x)
 
 export
 (Taggable a, Taggable b) => Taggable (a, b) where
