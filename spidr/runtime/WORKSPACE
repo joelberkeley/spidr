@@ -1,5 +1,7 @@
 # this must be a local repository not http archive
 # so we can run ./configure.py before invoking bazel
+
+# ^^^ but we don't need to run ./configure.py for this build - we currently only run that for the xla-cpu build
 local_repository(name = "xla", path = "xla")
 
 load("@xla//:workspace4.bzl", "xla_workspace4")
