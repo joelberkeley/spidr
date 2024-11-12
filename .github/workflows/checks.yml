@@ -106,7 +106,7 @@ jobs:
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
-        pack --no-prompt build xla-cpu.ipkg
+        SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cpu.ipkg
         tar cfz tests-xla-cpu.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
@@ -124,7 +124,7 @@ jobs:
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
-        pack --no-prompt build xla-cuda.ipkg
+        SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cuda.ipkg
         tar cfz tests-xla-cuda.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
@@ -178,7 +178,7 @@ jobs:
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
-        pack --no-prompt typecheck readme.ipkg
+        SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt typecheck readme.ipkg
   tutorials:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
@@ -188,4 +188,5 @@ jobs:
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
+        export SPIDR_INSTALL_SUPPORT_LIBS=0
         res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
