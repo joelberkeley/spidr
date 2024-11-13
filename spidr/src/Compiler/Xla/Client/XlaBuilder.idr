@@ -631,3 +631,20 @@ conditional
       falseComputation
     opPtr <- onCollectAny opPtr XlaOp.delete
     pure (MkXlaOp opPtr)
+
+%foreign (libxla "SendWithToken")
+prim__sendWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO ()
+
+export
+sendWithToken : HasIO io => XlaOp -> ChannelHandle -> io ()
+sendWithToken (MkXlaOp op) (MkXlaOp token) (MkChannelHandle handle) = primIO $ prim__sendWithToken op token handle
+
+%foreign (libxla "RecvWithToken")
+prim__recvWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+recvWithToken : HasIO io => XlaOp -> Xla.Shape -> ChannelHandle -> io XlaOp
+recvWithToken (MkXlaOp token) (MkShape shape) (MkChannelHandle handle) = do
+  op <- primIO $ prim__recvWithToken token shape handle
+  op <- onCollectAny op XlaOp.delete
+  pure (MkXlaOp op)

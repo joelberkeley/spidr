@@ -26,6 +26,7 @@ limitations under the License.
 #include "../literal.h"
 #include "../shape.h"
 #include "../xla_data.pb.h"
+#include "../xla_data.proto.h"
 #include "xla_builder.h"
 #include "xla_computation.h"
 
@@ -457,6 +458,26 @@ extern "C" {
             false_operand_,
             false_computation_
         );
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* SendWithToken(XlaOp& operand, XlaOp& token, const ChannelHandle& handle) {
+        auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto& token_ = reinterpret_cast<xla::XlaOp&>(token);
+        auto& handle_ = reinterpret_cast<xla::ChannelHandle&>(handle);
+
+        auto res = xla::SendWithToken(operand, token, handle);
+
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* RecvWithToken(XlaOp& token, const Shape& shape, const ChannelHandle& handle) {
+        auto& token_ = reinterpret_cast<xla::XlaOp&>(token);
+        auto& shape_ = reinterpret_cast<xla::Shape&>(shape);
+        auto& handle_ = reinterpret_cast<xla::ChannelHandle&>(handle);
+
+        auto res = xla::RecvWithToken(token, shape, handle);
 
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }

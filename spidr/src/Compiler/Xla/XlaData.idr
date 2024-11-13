@@ -118,3 +118,24 @@ export
 addRhsBatchDimensions : HasIO io => DotDimensionNumbers -> Nat -> io ()
 addRhsBatchDimensions (MkDotDimensionNumbers dimensionNumbers) n =
   primIO $ prim__addRhsBatchDimensions dimensionNumbers (cast n)
+
+%foreign (libxla "ChannelHandle_new")
+prim__channelHandle_new : Int64 -> Bits8 -> PrimIO AnyPtr
+
+%foreign (libxla "ChannelHandle_delete")
+prim__channelHandle_delete : AnyPtr -> PrimIO ()
+
+export
+data ChannelHandle = MkChannelHandle GCAnyPtr
+
+public export
+data ChannelType =
+    DEVICE_TO_DEVICE
+  | DEVICE_TO_HOST
+  | HOST_TO_DEVICE
+
+allocChannelHandle : HasIO io => Int64 -> ChannelType -> io ChannelHandle
+allocChannelHandle handle type = do
+  ptr <- primIO prim__channelHandle_new
+  ptr <- onCollectAny ptr (primIO . prim__channelHandle_delete)
+  pure (MkChannelHandle ptr)
