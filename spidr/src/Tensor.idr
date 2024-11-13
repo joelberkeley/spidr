@@ -132,6 +132,20 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
+export
+data Session = MkSession Nat  -- Nat is pointer to op
+
+-- do we need IO if we're using linearity?
+export
+session : (1 _ : (1 _ : Session -> XlaOp)) -> XlaOp
+
+export
+send : (1 session : Session) -> Tensor shape dtype -> Session
+send (MkSession tok) (MkTensor op) = MkSession tok
+
+export
+recv : (1 session : Session) -> {shape : _} -> Res (Tensor shape dtype) (const Session)
+
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
 

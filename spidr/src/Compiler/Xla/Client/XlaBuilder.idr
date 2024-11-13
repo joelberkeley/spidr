@@ -636,8 +636,11 @@ conditional
 prim__sendWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO ()
 
 export
-sendWithToken : HasIO io => XlaOp -> ChannelHandle -> io ()
-sendWithToken (MkXlaOp op) (MkXlaOp token) (MkChannelHandle handle) = primIO $ prim__sendWithToken op token handle
+sendWithToken : HasIO io => XlaOp -> XlaOp -> ChannelHandle -> io XlaOp
+sendWithToken (MkXlaOp op) (MkXlaOp token) (MkChannelHandle handle) = do
+  tok <- primIO $ prim__sendWithToken op token handle
+  tok <- onCollectAny tok XlaOp.delete
+  pure (MkXlaOp tok)
 
 %foreign (libxla "RecvWithToken")
 prim__recvWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
@@ -645,6 +648,18 @@ prim__recvWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 export
 recvWithToken : HasIO io => XlaOp -> Xla.Shape -> ChannelHandle -> io XlaOp
 recvWithToken (MkXlaOp token) (MkShape shape) (MkChannelHandle handle) = do
-  op <- primIO $ prim__recvWithToken token shape handle
-  op <- onCollectAny op XlaOp.delete
-  pure (MkXlaOp op)
+  opAndTok <- primIO $ prim__recvWithToken token shape handle
+  opAndTok <- onCollectAny op XlaOp.delete
+  pure MkXlaOp opAndTok
+
+%foreign (libxla "CreateToken")
+prim__createToken : GCAnyPtr -> PrimIO AnyPtr
+
+-- create token should be a linear thing (which is going to match with the types beautifully),
+-- but I'm not sure I can be bothered to write that yet
+export
+createToken : HasIO io => XlaBuilder -> io XlaOp
+createToken (MkXlaBuilder builder) = do
+  tok <- primIO $ prim__createToken builder
+  tok <- onCollectAny tok XlaOp.delete
+  pure (MkXlaOp tok)

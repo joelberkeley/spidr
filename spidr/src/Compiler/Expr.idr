@@ -106,6 +106,10 @@ data Expr : Type where
   Var : Nat -> Expr
   Tuple : List Expr -> Expr
   GetTupleElement : (index : Nat) -> Expr -> Expr
+
+  Send : (token : Nat) -> (op : Expr) -> ChannelHandle -> Expr
+  Recv : (token : Nat) -> Primitive dtype => Shape -> ChannelHandle -> Expr
+
   MinValue : Primitive dtype => Expr
   MaxValue : Primitive dtype => Expr
   MinFiniteValue : Primitive dtype => Expr

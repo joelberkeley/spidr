@@ -468,7 +468,6 @@ extern "C" {
         auto& handle_ = reinterpret_cast<xla::ChannelHandle&>(handle);
 
         auto res = xla::SendWithToken(operand, token, handle);
-
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
@@ -478,7 +477,12 @@ extern "C" {
         auto& handle_ = reinterpret_cast<xla::ChannelHandle&>(handle);
 
         auto res = xla::RecvWithToken(token, shape, handle);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
 
+    XlaOp* CreateToken(XlaBuilder& builder) {
+        auto& builder_ = reinterpret_cast<xla::XlaBuilder>(builder);
+        auto res = xla::CreateToken(builder_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 }
