@@ -9,7 +9,7 @@ xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
 (
   cd "$xla_dir"
-  ./configure.py --backend=CPU
+  ./configure.py --backend=CPU --os=$1
   bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" pjrt_plugin_xla_cpu-linux.so
+mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" pjrt_plugin_xla_cpu-$1.so

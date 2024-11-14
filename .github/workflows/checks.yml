@@ -35,6 +35,25 @@ jobs:
         fi
 
         mv libc_xla-linux.so libc_xla.so
+  pjrt-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    - name: Build PJRT + XLA binary
+      run: |
+        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-macos.so"
+        else
+          rm -rf /opt/hostedtoolcache
+          docker run \
+            -v $(pwd):/spidr -w /spidr \
+            tensorflow/build:latest-python3.9 \
+            sh -c "spidr/backend/build.sh"
+        fi
+
+        mv libc_xla-linux.so libc_xla.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -58,7 +77,7 @@ jobs:
           docker run \
             -v $(pwd):/spidr -w /spidr \
             tensorflow/build:latest-python3.9 \
-            sh -c "pjrt-plugins/xla-cpu/build.sh"
+            sh -c "pjrt-plugins/xla-cpu/build.sh linux"
         fi
 
         mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
@@ -67,6 +86,34 @@ jobs:
       with:
         name: pjrt_plugin_xla_cpu.so
         path: pjrt_plugin_xla_cpu.so
+        if-no-files-found: error
+  pjrt-plugin-xla-cpu-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    - name: Build or fetch XLA CPU PJRT plugin
+      run: |
+        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
+          rev=$(cat XLA_VERSION)
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-macos.dylib"
+        else
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip3 install numpy
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          brew install bazelisk
+          ./pjrt-plugins/xla-cpu/build.sh macos
+        fi
+
+        mv pjrt_plugin_xla_cpu-macos.so pjrt_plugin_xla_cpu.dylib
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: pjrt_plugin_xla_cpu.dylib
+        path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux:
     runs-on: ubuntu-latest

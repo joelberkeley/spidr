@@ -3,10 +3,12 @@
 .idea
 .DS_Store
 
+.venv/
 build/
 out/
 bazel
 bazel-*
 bazelisk
 *.so
+*.dylib
 *.tar.gz
