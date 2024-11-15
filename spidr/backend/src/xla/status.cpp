@@ -13,16 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "xla/status.h"
+#include "absl/status/status.h"
 
 #include "status.h"
 
 extern "C" {
     void Status_delete(Status* status) {
-        delete reinterpret_cast<xla::Status*>(status);
+        delete reinterpret_cast<absl::Status*>(status);
     }
 
     int Status_ok(Status& status) {
-        return (int) reinterpret_cast<xla::Status&>(status).ok();
+        return (int) reinterpret_cast<absl::Status&>(status).ok();
     }
 }

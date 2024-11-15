@@ -7,8 +7,9 @@ rev="$(cat XLA_VERSION)"
 
 (
   cd spidr/backend
-  mkdir xla
-  install_xla "$rev" xla
+#  mkdir xla
+#  install_xla "$rev" xla
+  (cd xla; ./configure.py --backend=cpu --os=darwin)
   bazel build //:c_xla
   rm -rf xla
 )

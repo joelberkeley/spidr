@@ -43,15 +43,16 @@ jobs:
         fetch-depth: 2
     - name: Build PJRT + XLA binary
       run: |
-        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-macos.so"
-        else
-          rm -rf /opt/hostedtoolcache
-          docker run \
-            -v $(pwd):/spidr -w /spidr \
-            tensorflow/build:latest-python3.9 \
-            sh -c "spidr/backend/build.sh"
-        fi
+        # if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-macos.so"
+        # else
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        brew install bazelisk
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip3 install numpy
+        ./spidr/backend/build-macos.sh
+        # fi
 
         mv libc_xla-linux.so libc_xla.so
     - name: Upload binary
@@ -100,11 +101,11 @@ jobs:
         #   rev=$(cat XLA_VERSION)
         #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-macos.dylib"
         # else
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        brew install bazelisk
         python3 -m venv .venv
         source .venv/bin/activate
         pip3 install numpy
-        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        brew install bazelisk
         ./pjrt-plugins/xla-cpu/build.sh macos
         # fi
 
@@ -193,6 +194,24 @@ jobs:
     - name: Install runtime dependencies
       run: |
         sudo apt-get install chezscheme
+    - name: Run tests
+      run: |
+        tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
+        ./test
+  test-xla-cpu-macos:
+    needs:
+      - pjrt-macos
+      - pjrt-plugin-xla-cpu-macos
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        brew install chezscheme
     - name: Run tests
       run: |
         tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
