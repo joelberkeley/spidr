@@ -169,7 +169,14 @@ jobs:
         run: |
           brew install chezscheme coreutils gmp
           
+          echo
+          echo
+          echo
           scheme --version
+          echo
+          echo
+          echo
+          echo
           
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           cd idris2-pack
