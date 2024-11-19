@@ -5,11 +5,12 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
-case uname in
+osu="`uname`"
+case $osu in
   'Linux')
     ;;
   *)
-    echo "OS ${uname} not handled"
+    echo "OS ${osu} not handled"
     exit 1
     ;;
 esac
