@@ -5,7 +5,7 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
-osu="`uname`"
+osu="$(uname)"
 case $osu in
   'Linux')
     ;;
