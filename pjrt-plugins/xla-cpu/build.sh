@@ -10,10 +10,12 @@ case $osu in
   'Linux')
     os='linux'
     bin_ext=".so"
+    cxxopt="-std=c++17"
     ;;
   'Darwin')
     os='darwin'
     bin_ext=".dylib"
+    cxxopt="-std=c++2a"
     ;;
   *)
     echo "OS ${osu} not handled"
@@ -26,6 +28,6 @@ install_xla "$rev" "$xla_dir"
 (
   cd "$xla_dir"
   ./configure.py --backend=CPU --os=$os
-  bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+  bazel build --cxxopt=${cxxopt} //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 )
 mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "pjrt_plugin_xla_cpu-${os}${bin_ext}"
