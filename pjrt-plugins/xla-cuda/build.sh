@@ -5,6 +5,15 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
+case $uname in
+  'Linux')
+    ;;
+  *)
+    echo "OS ${uname} not handled"
+    exit 1
+    ;;
+esac
+
 xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
 (

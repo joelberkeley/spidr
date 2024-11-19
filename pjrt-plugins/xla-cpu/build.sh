@@ -5,16 +5,20 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
-if [ "$OSTYPE" == "linux-gnu"* ]; then
-  os="linux"
-  bin_ext=".so"
-elif [ "$OSTYPE" == "darwin"* ]; then
-  os="darwin"
-  bin_ext=".dylib"
-else
-  echo "OS ${OSTYPE} not handled, expected linux-gnu or darwin"
-  exit 1
-fi
+case $uname in
+  'Linux')
+    os='linux'
+    bin_ext=".so"
+    ;;
+  'Darwin')
+    os='darwin'
+    bin_ext=".dylib"
+    ;;
+  *)
+    echo "OS ${uname} not handled"
+    exit 1
+    ;;
+esac
 
 xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
