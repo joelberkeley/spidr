@@ -202,7 +202,7 @@ jobs:
     needs:
       - pjrt-linux
       - pjrt-plugin-xla-cpu-linux
-      - build-tests-xla-cpu
+      - build-tests-xla-cpu-linux
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
@@ -220,6 +220,7 @@ jobs:
     needs:
       - pjrt-macos
       - pjrt-plugin-xla-cpu-macos
+      - build-tests-xla-cpu-macos
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
