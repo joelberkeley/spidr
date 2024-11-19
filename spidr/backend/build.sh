@@ -26,7 +26,7 @@ esac
   mkdir xla
   install_xla "$rev" xla
   (cd xla; ./configure.py --backend=cpu --os=$os)
-  bazel build //:c_xla
+  bazel build --cxxopt='-std=c++17' //:c_xla  # shouldn't need this --cxxopt='-std=c++17'
   rm -rf xla
 )
 mv "spidr/backend/bazel-bin/libc_xla${bin_ext}" "libc_xla-${os}${bin_ext}"
