@@ -50,7 +50,7 @@ jobs:
         python3 -m venv .venv
         source .venv/bin/activate
         pip3 install numpy
-        ./spidr/backend/build.sh
+        BAZEL_CXXOPTS="-std=c++17" ./spidr/backend/build.sh
         # fi
 
         mv libc_xla-linux.so libc_xla.so
