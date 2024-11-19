@@ -5,7 +5,7 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
-case $uname in
+case uname in
   'Linux')
     ;;
   *)
