@@ -11,7 +11,7 @@ cc_binary(
     name = "c_xla",
     linkshared = True,
     linkstatic = True,
-    copts=["-dynamiclib"],
+    # copts=["-dynamiclib"],
     srcs = [
         "//src/xla",
         "//src/xla/client",
