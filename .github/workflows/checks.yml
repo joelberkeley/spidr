@@ -167,13 +167,14 @@ jobs:
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
-          apt-get update && apt-get install -y curl
-          brew install docker
-          colima start
-          docker run \
-            -v $(pwd):/spidr -w /spidr \
-            ghcr.io/stefan-hoeck/idris2-pack \
-            sh -c "pack switch HEAD && SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cpu.ipkg"
+          brew install chezscheme coreutils gmp
+          git clone https://github.com/stefan-hoeck/idris2-pack.git
+          cd idris2-pack
+          make micropack SCHEME=scheme
+          cd ..
+          export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
+          pack switch HEAD
+          SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build test/xla-cpu/xla-cpu.ipkg"
           tar cfz tests-xla-cpu.tar.gz -C build/exec .
       - name: Upload tests
         uses: actions/upload-artifact@v4
