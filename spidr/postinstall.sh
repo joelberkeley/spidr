@@ -5,13 +5,7 @@ if ! $SPIDR_INSTALL_SUPPORT_LIBS; then exit 0; fi
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 xla_ext_version=$(cat "$script_dir/backend/VERSION")
 
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  os="linux"
-  bin_ext=".so"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  os="darwin"
-  bin_ext=".dylib"
-else
+if ! [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
   echo "OS ${OSTYPE} not supported, unable to fetch supporting libraries"
   exit 1
 fi

@@ -8,13 +8,7 @@ cd "$script_dir/../.."
 rev=$(cat XLA_VERSION)
 cd - > /dev/null 2>&1
 
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  os="linux"
-  bin_ext=".so"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  os="darwin"
-  bin_ext=".dylib"
-else
+if ! [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
   echo "OS ${OSTYPE} not supported, unable to fetch supporting libraries"
   exit 1
 fi

@@ -1,20 +1,20 @@
 #!/bin/sh -e
 
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
+cd "$script_dir/../.."
+. ./dev.sh
+rev=$(cat XLA_VERSION)
+
+if [ "$OSTYPE" == "linux-gnu"* ]; then
   os="linux"
   bin_ext=".so"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
+elif [ "$OSTYPE" == "darwin"* ]; then
   os="darwin"
   bin_ext=".dylib"
 else
   echo "OS ${OSTYPE} not handled, expected linux-gnu or darwin"
   exit 1
 fi
-
-script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
-cd "$script_dir/../.."
-. ./dev.sh
-rev=$(cat XLA_VERSION)
 
 xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
