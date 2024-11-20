@@ -180,7 +180,7 @@ jobs:
           echo 0
           echo 0
           echo 0
-          brew install chezscheme coreutils gmp
+          arch -arm64e brew install chezscheme coreutils gmp
           echo 0'
           echo 0'
           echo 0'
