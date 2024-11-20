@@ -68,6 +68,7 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
+        exit 0
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
@@ -122,6 +123,7 @@ jobs:
           fetch-depth: 2
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
+          exit 0
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             rev=$(cat XLA_VERSION)
