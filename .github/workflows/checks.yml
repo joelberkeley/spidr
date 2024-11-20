@@ -169,17 +169,10 @@ jobs:
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
-          echo
-          echo
-          echo
-          stdbuf
-          echo
-          echo
-          echo
           brew install chezscheme coreutils gmp
-          git clone https://github.com/stefan-hoeck/idris2-pack.git
-          (cd idris2-pack && make micropack SCHEME=chez)
-          # echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
+          #git clone https://github.com/stefan-hoeck/idris2-pack.git
+          #(cd idris2-pack && make micropack SCHEME=chez)
+          echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
           pack switch HEAD
           SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cpu.ipkg
