@@ -47,9 +47,9 @@ jobs:
         # if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
         #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-macos.dylib"
         # else
-        brew install bazelisk
+        # brew install bazelisk  already installed
         brew install llvm lld  # 
-        tree /opt/homebrew/
+        find /opt/homebrew/
         python3 -m venv .venv
         source .venv/bin/activate
         pip3 install numpy
