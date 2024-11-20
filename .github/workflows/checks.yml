@@ -172,62 +172,12 @@ jobs:
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
-          echo 0
-          echo 0
-          echo 0
-          echo 0
-          brew config
-          echo 0
-          echo 0
-          echo 0
-          echo 0
-          brew install chezscheme gmp
+          brew install chezscheme gmp  # coreutils breaks pack so we just don't install it
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           (cd idris2-pack && make micropack SCHEME=chez)
-          #echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
-          echo 1
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
           pack switch HEAD
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
-          echo 2
           SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cpu.ipkg
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
-          echo 3
           tar cfz tests-xla-cpu.tar.gz -C build/exec .
       - name: Upload tests
         uses: actions/upload-artifact@v4
