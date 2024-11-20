@@ -53,7 +53,7 @@ jobs:
         ./spidr/backend/build.sh
         # fi
 
-        mv libc_xla-linux.so libc_xla.so
+        mv libc_xla-macos.dylib libc_xla.dylib
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -170,10 +170,10 @@ jobs:
         working-directory: test/xla-cpu
         run: |
           brew install chezscheme coreutils gmp
-          # git clone https://github.com/stefan-hoeck/idris2-pack.git
-          # cd idris2-pack
-          # cd ..
-          echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
+          git clone https://github.com/stefan-hoeck/idris2-pack.git
+          cd idris2-pack
+          cd ..
+          # echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
           pack switch HEAD
           SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cpu.ipkg
