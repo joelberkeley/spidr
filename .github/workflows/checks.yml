@@ -161,12 +161,20 @@ jobs:
         path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cpu-macos:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
+          echo
+          echo
+          echo
+          uname -e
+          echo
+          echo
+          echo
+          
           brew install chezscheme coreutils gmp
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           cd idris2-pack
@@ -223,7 +231,7 @@ jobs:
       - pjrt-macos
       - pjrt-plugin-xla-cpu-macos
       - build-tests-xla-cpu-macos
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
