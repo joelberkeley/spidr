@@ -199,7 +199,7 @@ jobs:
           echo 1
           echo 1
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
-          # pack switch HEAD
+          pack switch HEAD
           echo 2
           echo 2
           echo 2
