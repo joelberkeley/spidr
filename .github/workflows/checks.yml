@@ -170,7 +170,7 @@ jobs:
           echo
           echo
           echo
-          uname -e
+          uname -a
           echo
           echo
           echo
