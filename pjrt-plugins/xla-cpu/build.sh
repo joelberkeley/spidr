@@ -15,7 +15,7 @@ case $osu in
   'Darwin')
     os='darwin'
     bin_ext=".dylib"
-    cxxopt="-std=c++2a"
+    cxxopt="-std=c++1z"
     ;;
   *)
     echo "OS ${osu} not handled"
