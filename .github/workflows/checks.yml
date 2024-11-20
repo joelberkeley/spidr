@@ -97,6 +97,7 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
+        exit 1
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
         #   . ./dev.sh
         #   rev=$(cat XLA_VERSION)
@@ -181,9 +182,9 @@ jobs:
           echo 0
           echo 0
           brew install chezscheme gmp
-          #git clone https://github.com/stefan-hoeck/idris2-pack.git
-          #(cd idris2-pack && make micropack SCHEME=chez)
-          echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
+          git clone https://github.com/stefan-hoeck/idris2-pack.git
+          (cd idris2-pack && make micropack SCHEME=chez)
+          #echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
           echo 1
           echo 1
           echo 1
