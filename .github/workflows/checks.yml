@@ -45,9 +45,11 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         # if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-macos.so"
+        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-macos.dylib"
         # else
         brew install bazelisk
+        brew install llvm lld  # 
+        tree /opt/homebrew/
         python3 -m venv .venv
         source .venv/bin/activate
         pip3 install numpy
