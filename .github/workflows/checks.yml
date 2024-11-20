@@ -49,7 +49,6 @@ jobs:
         # else
         # brew install bazelisk  already installed
         brew install llvm lld  # 
-        find /opt/homebrew/
         python3 -m venv .venv
         source .venv/bin/activate
         pip3 install numpy

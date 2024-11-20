@@ -15,7 +15,7 @@ case $osu in
   'Darwin')
     os='darwin'
     bin_ext=".dylib"
-    configure_extras="lld_path=/opt/homebrew/bin/ld64.lld"
+    configure_extras="--lld_path=/opt/homebrew/bin/ld64.lld"
     ;;
   *)
     echo "OS ${osu} not handled"
