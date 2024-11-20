@@ -200,7 +200,33 @@ jobs:
           echo 1
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
           # pack switch HEAD
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
+          echo 2
           SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cpu.ipkg
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
+          echo 3
           tar cfz tests-xla-cpu.tar.gz -C build/exec .
       - name: Upload tests
         uses: actions/upload-artifact@v4
@@ -216,6 +242,7 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cuda
       run: |
+        exit 1
         apt-get update && apt-get install -y curl
         pack switch HEAD
         SPIDR_INSTALL_SUPPORT_LIBS=0 pack --no-prompt build xla-cuda.ipkg
