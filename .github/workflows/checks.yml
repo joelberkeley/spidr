@@ -181,9 +181,9 @@ jobs:
           echo 0
           echo 0
           brew install chezscheme coreutils gmp
-          git clone https://github.com/stefan-hoeck/idris2-pack.git
-          (cd idris2-pack && make micropack SCHEME=chez)
-          # echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
+          #git clone https://github.com/stefan-hoeck/idris2-pack.git
+          #(cd idris2-pack && make micropack SCHEME=chez)
+          echo chez | bash -c "$(curl -fsSL https://raw.githubusercontent.com/stefan-hoeck/idris2-pack/main/install.bash)"
           echo 1
           echo 1
           echo 1
