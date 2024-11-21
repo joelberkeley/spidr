@@ -10,12 +10,12 @@ case $osu in
   'Linux')
     os='linux'
     bin_ext=".so"
-    configure_extras=""
+    bazel_build_args=""
     ;;
   'Darwin')
     os='darwin'
     bin_ext=".dylib"
-    configure_extras="--lld_path=/opt/homebrew/bin/ld64.lld"
+    bazel_build_args="--config=macos_arm64" #"--lld_path=/opt/homebrew/bin/ld64.lld"  # not clear why ld64 rather than ld
     ;;
   *)
     echo "OS ${osu} not handled"
@@ -27,8 +27,8 @@ esac
   cd spidr/backend
   mkdir xla
   install_xla "$rev" xla
-  (cd xla; ./configure.py --backend=cpu --os=$os $configure_extras)
-  bazel build //:c_xla
-  rm -rf xla
+  (cd xla; ./configure.py --backend=cpu --os=$os)
+  bazel build $bazel_build_args //:c_xla
+  rm -rf xla/
 )
 mv "spidr/backend/bazel-bin/libc_xla${bin_ext}" "libc_xla-${os}${bin_ext}"

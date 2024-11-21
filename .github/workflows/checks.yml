@@ -98,7 +98,6 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        exit 1
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
         #   . ./dev.sh
         #   rev=$(cat XLA_VERSION)
@@ -107,16 +106,16 @@ jobs:
         brew install bazelisk
         python3 -m venv .venv
         source .venv/bin/activate
-        pip3 install numpy
+        pip3 install numpy  # is numpy even needed?
         ./pjrt-plugins/xla-cpu/build.sh
         # fi
 
-        mv pjrt_plugin_xla_cpu-macos.dylib pjrt_plugin_xla_cpu.dylib
+        mv libpjrt_plugin_xla_cpu-macos.dylib libpjrt_plugin_xla_cpu.dylib
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: pjrt_plugin_xla_cpu.dylib
-        path: pjrt_plugin_xla_cpu.dylib
+        name: libpjrt_plugin_xla_cpu.dylib
+        path: libpjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux:
     runs-on: ubuntu-latest
