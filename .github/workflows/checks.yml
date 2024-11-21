@@ -22,7 +22,6 @@ jobs:
         fetch-depth: 2
     - name: Build PJRT + XLA binary
       run: |
-        exit 1
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
           curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
         else
@@ -69,7 +68,6 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        exit 1
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
@@ -124,7 +122,6 @@ jobs:
           fetch-depth: 2
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
-          exit 1
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             rev=$(cat XLA_VERSION)
@@ -153,7 +150,6 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
-        exit 1
         apt-get update && apt-get install -y curl
         pack switch HEAD
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
@@ -192,7 +188,6 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cuda
       run: |
-        exit 1
         apt-get update && apt-get install -y curl
         pack switch HEAD
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cuda.ipkg
@@ -224,7 +219,7 @@ jobs:
   test-xla-cpu-macos:
     needs:
       - pjrt-macos
-      # - pjrt-plugin-xla-cpu-macos
+      - pjrt-plugin-xla-cpu-macos
       - build-tests-xla-cpu-macos
     runs-on: macos-latest
     steps:
@@ -237,7 +232,6 @@ jobs:
         brew install chezscheme
     - name: Run tests
       run: |
-        find .
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
   test-xla-cuda-linux:
