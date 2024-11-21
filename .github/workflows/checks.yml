@@ -168,22 +168,6 @@ jobs:
         working-directory: test/xla-cpu
         run: |
           brew install chezscheme gmp  # coreutils is broken on arm64, and it's only a nice-to-have
-          echo
-          echo
-          echo
-          echo
-          echo
-          echo
-          echo
-          find /opt/homebrew
-          echo
-          echo
-          echo
-          echo
-          echo
-          echo
-          echo
-          echo
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           (cd idris2-pack && make micropack SCHEME=chez)
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
@@ -248,7 +232,7 @@ jobs:
         brew install chezscheme
     - name: Run tests
       run: |
-        find /opt/homebrew/
+        ln -s /opt/homebrew/Cellar/chezscheme/10.0.0/bin/chez /usr/bin/chezscheme  # shouldn't need this - bug in idris/pack?
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
   test-xla-cuda-linux:
