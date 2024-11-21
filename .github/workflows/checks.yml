@@ -150,7 +150,6 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
-        exit 1  # need to sort out artifact name collision with mac
         apt-get update && apt-get install -y curl
         pack switch HEAD
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
@@ -158,7 +157,7 @@ jobs:
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cpu.tar.gz
+        name: tests-xla-cpu-linux
         path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cpu-macos:
@@ -178,7 +177,7 @@ jobs:
       - name: Upload tests
         uses: actions/upload-artifact@v4
         with:
-          name: tests-xla-cpu.tar.gz
+          name: tests-xla-cpu-macos
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
   build-tests-xla-cuda:
@@ -196,7 +195,7 @@ jobs:
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cuda.tar.gz
+        name: tests-xla-cuda
         path: test/xla-cuda/tests-xla-cuda.tar.gz
         if-no-files-found: error
   test-xla-cpu-linux:
