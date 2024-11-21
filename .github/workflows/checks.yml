@@ -150,6 +150,7 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
+        exit 1  # need to sort out artifact name collision with mac
         apt-get update && apt-get install -y curl
         pack switch HEAD
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
