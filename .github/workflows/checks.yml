@@ -58,8 +58,8 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libc_xla.so
-        path: libc_xla.so
+        name: libc_xla.dylib
+        path: libc_xla.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cpu-linux:
     runs-on: ubuntu-latest
