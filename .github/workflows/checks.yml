@@ -224,7 +224,7 @@ jobs:
   test-xla-cpu-macos:
     needs:
       - pjrt-macos
-      - pjrt-plugin-xla-cpu-macos
+      # - pjrt-plugin-xla-cpu-macos
       - build-tests-xla-cpu-macos
     runs-on: macos-latest
     steps:
@@ -237,6 +237,7 @@ jobs:
         brew install chezscheme
     - name: Run tests
       run: |
+        find .
         tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
         ./test
   test-xla-cuda-linux:
