@@ -232,6 +232,7 @@ jobs:
         brew install chezscheme
     - name: Run tests
       run: |
+        find /opt/homebrew/
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
   test-xla-cuda-linux:
