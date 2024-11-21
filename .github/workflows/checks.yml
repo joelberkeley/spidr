@@ -100,7 +100,7 @@ jobs:
         # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
         #   . ./dev.sh
         #   rev=$(cat XLA_VERSION)
-        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-macos.dylib"
+        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin.dylib"
         # else
         brew install bazelisk
         python3 -m venv .venv
@@ -109,7 +109,7 @@ jobs:
         ./pjrt-plugins/xla-cpu/build.sh
         # fi
 
-        mv libpjrt_plugin_xla_cpu-macos.dylib libpjrt_plugin_xla_cpu.dylib
+        mv libpjrt_plugin_xla_cpu-darwin.dylib libpjrt_plugin_xla_cpu.dylib
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
@@ -171,7 +171,7 @@ jobs:
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
-          brew install chezscheme gmp  # coreutils breaks pack so we just don't install it
+          brew install coreutils chezscheme gmp
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           (cd idris2-pack && make micropack SCHEME=chez)
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
