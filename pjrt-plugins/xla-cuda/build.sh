@@ -23,4 +23,4 @@ install_xla "$rev" "$xla_dir"
   # itself doesn't, see https://github.com/openxla/xla/issues/12017
   bazel build --config release_gpu_linux //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" pjrt_plugin_xla_cuda-linux.so
+mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" libpjrt_plugin_xla_cuda-linux.so

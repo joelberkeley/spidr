@@ -80,12 +80,12 @@ jobs:
             sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
 
-        mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
+        mv libpjrt_plugin_xla_cpu-linux.so libpjrt_plugin_xla_cpu.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: pjrt_plugin_xla_cpu.so
-        path: pjrt_plugin_xla_cpu.so
+        name: libpjrt_plugin_xla_cpu.so
+        path: libpjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-macos:
     runs-on: macos-latest
@@ -135,12 +135,12 @@ jobs:
               sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
 
-          mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
+          mv libpjrt_plugin_xla_cuda-linux.so libpjrt_plugin_xla_cuda.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: pjrt_plugin_xla_cuda.so
-          path: pjrt_plugin_xla_cuda.so
+          name: libpjrt_plugin_xla_cuda.so
+          path: libpjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu-linux:
     runs-on: ubuntu-latest
@@ -232,7 +232,7 @@ jobs:
         brew install chezscheme
     - name: Run tests
       run: |
-        ln -s /opt/homebrew/Cellar/chezscheme/10.0.0/bin/chez /usr/bin/chezscheme  # shouldn't need this - bug in idris/pack?
+        sudo ln -s /opt/homebrew/Cellar/chezscheme/10.0.0/bin/chez /usr/bin/chezscheme  # shouldn't need this - bug in idris/pack?
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
   test-xla-cuda-linux:
