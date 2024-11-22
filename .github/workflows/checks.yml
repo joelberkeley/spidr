@@ -35,6 +35,12 @@ jobs:
         fi
 
         mv libc_xla-linux.so libc_xla.so
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: libc_xla.so
+        path: libc_xla.so
+        if-no-files-found: error
   pjrt-macos:
     runs-on: macos-latest
     steps:
