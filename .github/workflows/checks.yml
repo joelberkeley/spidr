@@ -53,9 +53,9 @@ jobs:
         #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-darwin.dylib"
         # else
         # brew install bazelisk  already installed
-        python3 -m venv .venv
-        source .venv/bin/activate
-        pip3 install numpy  # is numpy even needed?
+        # python3 -m venv .venv
+        # source .venv/bin/activate
+        # pip3 install numpy  # is numpy even needed?
         ./spidr/backend/build.sh
         # fi
 
@@ -106,10 +106,10 @@ jobs:
         #   rev=$(cat XLA_VERSION)
         #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin.dylib"
         # else
-        brew install bazelisk
-        python3 -m venv .venv
-        source .venv/bin/activate
-        pip3 install numpy  # is numpy even needed?
+        # brew install bazelisk
+        # python3 -m venv .venv
+        # source .venv/bin/activate
+        # pip3 install numpy  # is numpy even needed?
         ./pjrt-plugins/xla-cpu/build.sh
         # fi
 
@@ -153,11 +153,13 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
-    - name: Build tests
-      working-directory: test/xla-cpu
+    - name: Install build dependencies
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
+    - name: Build tests
+      working-directory: test/xla-cpu
+      run: |
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
         tar cfz tests-xla-cpu.tar.gz -C build/exec .
     - name: Upload tests
@@ -170,14 +172,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build tests
-        working-directory: test/xla-cpu
+      - name: Install build dependencies
         run: |
           brew install chezscheme gmp  # coreutils is broken on arm64, and it's only a nice-to-have
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           (cd idris2-pack && make micropack SCHEME=chez)
           export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
           pack switch HEAD
+      - name: Build tests
+        working-directory: test/xla-cpu
+        run: |
           SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
           tar cfz tests-xla-cpu.tar.gz -C build/exec .
       - name: Upload tests
@@ -191,11 +195,13 @@ jobs:
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
-    - name: Build tests
-      working-directory: test/xla-cuda
+    - name: Install build dependencies
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
+    - name: Build tests
+      working-directory: test/xla-cuda
+      run: |
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cuda.ipkg
         tar cfz tests-xla-cuda.tar.gz -C build/exec .
     - name: Upload tests
