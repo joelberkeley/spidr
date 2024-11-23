@@ -5,7 +5,7 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/client:xla_builder",
+        "@xla//xla/hlo/builder:xla_builder",
         "//src",
         "//src/xla",
     ],

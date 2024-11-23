@@ -6,8 +6,8 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/hlo/builder/lib:math",
-        "@xla//xla/client/lib:matrix",
-        "@xla//xla/client/lib:prng",
+        "@xla//xla/hlo/builder/lib:matrix",
+        "@xla//xla/hlo/builder/lib:prng",
         "//src/xla",
         "//src/xla/hlo/builder",
     ],
