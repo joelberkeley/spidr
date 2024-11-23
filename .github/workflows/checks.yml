@@ -49,15 +49,11 @@ jobs:
         fetch-depth: 2
     - name: Build PJRT + XLA binary
       run: |
-        # if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-darwin.dylib"
-        # else
-        # brew install bazelisk  already installed
-        # python3 -m venv .venv
-        # source .venv/bin/activate
-        # pip3 install numpy  # is numpy even needed?
-        ./spidr/backend/build.sh
-        # fi
+        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-darwin.dylib"
+        else
+          ./spidr/backend/build.sh
+        fi
 
         mv libc_xla-darwin.dylib libc_xla.dylib
     - name: Upload binary
@@ -77,7 +73,7 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/libpjrt_plugin_xla_cpu-linux.so"
         else
           rm -rf /opt/hostedtoolcache
           docker run \
@@ -101,17 +97,13 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-        #   . ./dev.sh
-        #   rev=$(cat XLA_VERSION)
-        #   curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin.dylib"
-        # else
-        # brew install bazelisk
-        # python3 -m venv .venv
-        # source .venv/bin/activate
-        # pip3 install numpy  # is numpy even needed?
-        ./pjrt-plugins/xla-cpu/build.sh
-        # fi
+        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
+          rev=$(cat XLA_VERSION)
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/libpjrt_plugin_xla_cpu-darwin.dylib"
+        else
+          ./pjrt-plugins/xla-cpu/build.sh
+        fi
 
         mv libpjrt_plugin_xla_cpu-darwin.dylib libpjrt_plugin_xla_cpu.dylib
     - name: Upload binary
@@ -131,7 +123,7 @@ jobs:
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             rev=$(cat XLA_VERSION)
-            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/libpjrt_plugin_xla_cuda-linux.so"
           else
             rm -rf /opt/hostedtoolcache
             # note this implies specific versions of CUDA and cuDNN
