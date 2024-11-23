@@ -13,6 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "xla/hlo/builder/xla_computation.h"
+
+#include "../../../ffi.h"
+#include "xla_computation.h"
+
 extern "C" {
-    struct Status;
+    void XlaComputation_delete(XlaComputation* s) {
+        delete reinterpret_cast<xla::XlaComputation*>(s);
+    }
+
+    string* XlaComputation_SerializeAsString(XlaComputation* s) {
+        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
+        auto serialized = s_->proto().SerializeAsString();
+        return reinterpret_cast<string*>(new std::string(serialized));
+    }
 }

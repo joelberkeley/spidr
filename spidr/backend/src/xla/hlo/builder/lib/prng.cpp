@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "xla/client/lib/prng.h"
+#include "xla/hlo/builder/lib/prng.h"
 
-#include "../../shape.h"
+#include "../../../shape.h"
 #include "../xla_builder.h"
 
 xla::BitGeneratorTy BitGenerator(int bit_generator) {

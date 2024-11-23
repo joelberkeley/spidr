@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.Client.Lib.PRNG
+module Compiler.Xla.HLO.Builder.Lib.PRNG
 
 import Compiler.FFI
-import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.Shape
 
 public export

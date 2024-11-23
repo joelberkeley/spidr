@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.Client.Lib.Math
+module Compiler.Xla.HLO.Builder.Lib.Math
 
 import Compiler.FFI
-import Compiler.Xla.Client.XlaBuilder
+import Compiler.Xla.HLO.Builder.XlaBuilder
 
 %foreign (libxla "Square")
 prim__square : GCAnyPtr -> PrimIO AnyPtr

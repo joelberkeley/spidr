@@ -1,11 +1,13 @@
 cc_library(
-    name = "client",
+    name = "builder",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/client:executable_build_options",
+        "@xla//xla/hlo/builder:xla_builder",
+        "//src",
+        "//src/xla",
     ],
     visibility = ["//visibility:public"],
 )

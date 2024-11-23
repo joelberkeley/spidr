@@ -1440,20 +1440,29 @@ namespace Monoid
     Monoid (Tensor shape dtype) using Semigroup.Max where
       neutral = fill (- 1.0 / 0.0)
 
-highlightNan : Primitive.Ord dtype => Bool -> Tensor [S n] dtype -> Tag $ Tensor [S n] dtype
-highlightNan minimize x with (x)
+||| The first index of the maximum value in a vector. For example,
+||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
+||| `argmax` returns the index of the first NaN.
+|||
+||| **Note:** `argmax` uses `Tag` to work around what we believe to be an inconsistency in the XLA
+||| compiler's handling of NaN. Specifically, we have modified `argmax` to return the first index of
+||| the value returned by `reduce @{Max}`.
+export
+argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
+argmax x with (x)
   _ | (MkTensor {shape = _} _) = do
     x <- tag x
-    cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
+    MkTensor x <- cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
+    pure $ MkTensor $ Argmax {out = U64} 0 x
 
     where
 
-    extremizeNan : {n : _} -> Tensor [S n] dtype -> Tag $ Tensor [S n] dtype
+    extremizeNan : {m : _} -> Tensor [S m] dtype -> Tag $ Tensor [S m] dtype
     extremizeNan x = do
       x <- tag x
       let min' = broadcast $ Types.min @{NonFinite}
           max' = broadcast $ Types.max @{NonFinite}
-      pure $ select (if minimize then x == x else x /= x) max' min'
+      pure $ select (x /= x) max' min'
 
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin (tensor [-1, 3, -2, -2, 3])` produces `tensor 2`. If the vector contains NaN values,
@@ -1464,22 +1473,7 @@ highlightNan minimize x with (x)
 ||| the value returned by `reduce @{Min}`.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
-argmin x = do
-  MkTensor x <- highlightNan True x
-  pure $ MkTensor $ Argmin {out = U64} 0 x
-
-||| The first index of the maximum value in a vector. For example,
-||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
-||| `argmax` returns the index of the first NaN.
-|||
-||| **Note:** `argmax` uses `Tag` to work around what we believe to be an inconsistency in the XLA
-||| compiler's handling of NaN. Specifically, we have modified `argmax` to return the first index of
-||| the value returned by `reduce @{Max}`.
-export
-argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
-argmax x = do
-  MkTensor x <- highlightNan False x
-  pure $ MkTensor $ Argmax {out = U64} 0 x
+argmin (MkTensor x) = argmax (MkTensor {shape = [S n], dtype} $ UnaryElementwise Neg x)
 
 ---------------------------- other ----------------------------------
 

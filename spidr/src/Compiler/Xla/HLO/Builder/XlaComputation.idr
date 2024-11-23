@@ -14,24 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.Status
+module Compiler.Xla.HLO.Builder.XlaComputation
 
 import Compiler.FFI
 
 public export
-data Status : Type where
-  MkStatus : GCAnyPtr -> Status
+data XlaComputation : Type where
+  MkXlaComputation : GCAnyPtr -> XlaComputation
 
-%foreign (libxla "Status_delete")
+%foreign (libxla "XlaComputation_delete")
 prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
-%foreign (libxla "Status_ok")
-prim__ok : GCAnyPtr -> Int
-
 export
-ok : Status -> Bool
-ok (MkStatus ptr) = cIntToBool (prim__ok ptr)
+%foreign (libxla "XlaComputation_SerializeAsString")
+prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
+
+||| It is up to the caller to deallocate the CharArray.
+export
+serializeAsString : HasIO io => XlaComputation -> io CharArray
+serializeAsString (MkXlaComputation computation) = do
+  str <- primIO $ prim__xlaComputationSerializeAsString computation
+  data' <- primIO $ prim__stringData str
+  let size = prim__stringSize str
+  primIO $ prim__stringDelete str
+  pure (MkCharArray data' size)
