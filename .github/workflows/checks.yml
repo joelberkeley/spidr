@@ -182,6 +182,7 @@ jobs:
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
+          export PATH="$HOME/.pack/bin:$HOME/.idris2/bin:$PATH"
           SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
           tar cfz tests-xla-cpu.tar.gz -C build/exec .
       - name: Upload tests
