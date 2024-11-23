@@ -6,7 +6,7 @@ load("@xla//third_party/py:python_init_rules.bzl", "python_init_rules")
 python_init_rules()
 
 load("@xla//third_party/py:python_init_repositories.bzl", "python_init_repositories")
-python_init_repositories(requirements = {"3.11": "//:requirements_lock_3_11.txt"})
+python_init_repositories(requirements = {"3.11": "@xla//:requirements_lock_3_11.txt"})
 
 load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
 python_init_toolchains()
