@@ -18,14 +18,13 @@ limitations under the License.
 #include <string>
 
 #include "absl/types/span.h"
-#include "xla/client/xla_builder.h"
 #include "xla/literal.h"
 #include "xla/shape.h"
 #include "xla/xla_data.pb.h"
 
-#include "../literal.h"
-#include "../shape.h"
-#include "../xla_data.pb.h"
+#include "../../literal.h"
+#include "../../shape.h"
+#include "../../xla_data.pb.h"
 #include "xla_builder.h"
 #include "xla_computation.h"
 
