@@ -20,7 +20,7 @@ import System.FFI
 import public Compiler.Xla.PJRT.C.PjrtCApi
 import public Device
 
-%foreign "C:GetPjrtApi,libpjrt_plugin_xla_cpu"
+%foreign "C:GetPjrtApi,pjrt_plugin_xla_cpu"
 prim__getPjrtApi : PrimIO AnyPtr
 
 export

@@ -30,4 +30,4 @@ install_xla "$rev" "$xla_dir"
   ./configure.py --backend=CPU --os=$os
   bazel build $bazel_build_args //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "libpjrt_plugin_xla_cpu-${os}${bin_ext}"
+mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "pjrt_plugin_xla_cpu-${os}${bin_ext}"

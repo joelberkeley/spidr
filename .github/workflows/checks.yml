@@ -73,7 +73,7 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/libpjrt_plugin_xla_cpu-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
         else
           rm -rf /opt/hostedtoolcache
           docker run \
@@ -82,12 +82,12 @@ jobs:
             sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
 
-        mv libpjrt_plugin_xla_cpu-linux.so libpjrt_plugin_xla_cpu.so
+        mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libpjrt_plugin_xla_cpu.so
-        path: libpjrt_plugin_xla_cpu.so
+        name: pjrt_plugin_xla_cpu.so
+        path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-macos:
     runs-on: macos-latest
@@ -100,17 +100,17 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/libpjrt_plugin_xla_cpu-darwin.dylib"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin.dylib"
         else
           ./pjrt-plugins/xla-cpu/build.sh
         fi
 
-        mv libpjrt_plugin_xla_cpu-darwin.dylib libpjrt_plugin_xla_cpu.dylib
+        mv pjrt_plugin_xla_cpu-darwin.dylib pjrt_plugin_xla_cpu.dylib
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libpjrt_plugin_xla_cpu.dylib
-        path: libpjrt_plugin_xla_cpu.dylib
+        name: pjrt_plugin_xla_cpu.dylib
+        path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux:
     runs-on: ubuntu-latest
@@ -123,7 +123,7 @@ jobs:
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             rev=$(cat XLA_VERSION)
-            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/libpjrt_plugin_xla_cuda-linux.so"
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
           else
             rm -rf /opt/hostedtoolcache
             # note this implies specific versions of CUDA and cuDNN
@@ -133,12 +133,12 @@ jobs:
               sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
 
-          mv libpjrt_plugin_xla_cuda-linux.so libpjrt_plugin_xla_cuda.so
+          mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: libpjrt_plugin_xla_cuda.so
-          path: libpjrt_plugin_xla_cuda.so
+          name: pjrt_plugin_xla_cuda.so
+          path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu-linux:
     runs-on: ubuntu-latest
