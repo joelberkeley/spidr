@@ -14,8 +14,6 @@ pack install pjrt-plugin-xla-cpu
 ```
 or read the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
-We have tested spidr on Ubuntu Linux 22.04. It may work on other Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact).
-
 ### Motivation
 
 We made spidr to try out modern programming language capabilities in machine learning systems. To this end, we chose [Idris](https://github.com/idris-lang/Idris2) for the API; Idris is a general-purpose purely functional programming language with a particularly expressive type system. We also wanted to build something performant enough for working machine learning practitioners. Implementing efficient low-level linear algebra is not one of the project goals, so we opted to use [OpenXLA](https://openxla.org/)'s PJRT, an abstract interface for machine learning compilers for hardware accelerators.
