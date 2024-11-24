@@ -15,7 +15,8 @@ case $osu in
   'Darwin')
     os='darwin'
     bin_ext=".dylib"
-    bazel_build_args=""#"--config=macos_arm64"
+    #"--config=macos_arm64"
+    bazel_build_args=""
     ;;
   *)
     echo "OS ${osu} not handled"
