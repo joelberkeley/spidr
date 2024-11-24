@@ -4,5 +4,5 @@ build --experimental_repo_remote_exec
 build --cxxopt=-std=c++17
 build --host_cxxopt=-std=c++17
 
-build:macos_arm64 --cpu=darwin_arm64
-build:macos_arm64 --macos_minimum_os=11.0
+#build:macos_arm64 --cpu=darwin_arm64
+#build:macos_arm64 --macos_minimum_os=11.0

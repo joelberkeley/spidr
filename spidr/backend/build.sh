@@ -15,7 +15,7 @@ case $osu in
   'Darwin')
     os='darwin'
     bin_ext=".dylib"
-    bazel_build_args="--config=macos_arm64" #"--lld_path=/opt/homebrew/bin/ld64.lld"  # not clear why ld64 rather than ld
+    bazel_build_args=""#"--config=macos_arm64"
     ;;
   *)
     echo "OS ${osu} not handled"
