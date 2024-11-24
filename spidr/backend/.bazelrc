@@ -2,4 +2,4 @@ build --nobuild_runfile_links
 build --nolegacy_external_runfiles
 build --experimental_repo_remote_exec
 build --cxxopt=-std=c++17
-#build --host_cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
