@@ -8,15 +8,12 @@ rev="$(cat XLA_VERSION)"
 osu="$(uname)"
 case $osu in
   'Linux')
-    os='linux'
-    bin_ext=".so"
-    bazel_build_args=""
+    os=linux
+    bin_ext=.so
     ;;
   'Darwin')
-    os='darwin'
-    bin_ext=".dylib"
-    #"--config=macos_arm64"
-    bazel_build_args=""
+    os=darwin
+    bin_ext=.dylib
     ;;
   *)
     echo "OS ${osu} not handled"
@@ -29,7 +26,7 @@ esac
   mkdir xla
   install_xla "$rev" xla
   (cd xla; ./configure.py --backend=cpu --os=$os)
-  bazel build $bazel_build_args //:c_xla
+  bazel build //:c_xla
   rm -rf xla/
 )
 mv "spidr/backend/bazel-bin/libc_xla${bin_ext}" "libc_xla-${os}${bin_ext}"
