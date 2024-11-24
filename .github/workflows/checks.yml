@@ -232,9 +232,11 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        brew install chezscheme
     - name: Run tests
       run: |
-        brew install chezscheme  # moving this here because GH actions is repeatedly failing 
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
   test-xla-cuda-linux:
