@@ -8,8 +8,8 @@ cd "$script_dir/../.."
 rev=$(cat XLA_VERSION)
 cd - > /dev/null 2>&1
 
-osu="$(uname)"
-case $osu in
+os="$(uname)"
+case $os in
   'Linux')
     ;;
   'Darwin')
