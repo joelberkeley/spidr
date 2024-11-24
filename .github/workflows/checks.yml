@@ -98,13 +98,13 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        # if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-        . ./dev.sh
-        rev=$(cat XLA_VERSION)
-        curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin.dylib"
-        # else
-        #   ./pjrt-plugins/xla-cpu/build.sh
-        # fi
+        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
+          rev=$(cat XLA_VERSION)
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin.dylib"
+        else
+          ./pjrt-plugins/xla-cpu/build.sh
+        fi
 
         mv pjrt_plugin_xla_cpu-darwin.dylib pjrt_plugin_xla_cpu.dylib
     - name: Upload binary
