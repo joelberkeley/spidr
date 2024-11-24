@@ -27,6 +27,6 @@ esac
   install_xla "$rev" xla
   (cd xla; ./configure.py --backend=cpu --os=$os)
   bazel build //:c_xla
-  rm -rf xla/
+  rm -rf xla
 )
 mv "spidr/backend/bazel-bin/libc_xla${bin_ext}" "libc_xla-${os}${bin_ext}"

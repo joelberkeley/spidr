@@ -47,6 +47,22 @@ jobs:
         asset_path: pjrt_plugin_xla_cpu-linux.so
         asset_name: pjrt_plugin_xla_cpu-linux.so
         asset_content_type: application/x-sharedlib
+  pjrt-plugin-xla-cpu-darwin:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build XLA CPU plugin for Darwin
+      run: ./pjrt-plugins/xla-cpu/build.sh
+    - name: Publish XLA CPU plugin
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: pjrt_plugin_xla_cpu-darwin.so
+        asset_name: pjrt_plugin_xla_cpu-darwin.so
+        asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cuda-linux:
     needs: create-release
     runs-on: ubuntu-latest
