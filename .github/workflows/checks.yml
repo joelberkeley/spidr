@@ -14,7 +14,7 @@ jobs:
         run: |
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
-  pjrt-linux:
+  pjrt-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
     - name: Build PJRT + XLA binary
       run: |
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux-x86_64.so"
         else
           # free up space not used if running in Docker, see
           # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
@@ -34,11 +34,11 @@ jobs:
             sh -c "spidr/backend/build.sh"
         fi
 
-        mv libc_xla-linux.so libc_xla.so
+        mv libc_xla-linux-x86_64.so libc_xla.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libc_xla-linux
+        name: libc_xla-linux-x86_64
         path: libc_xla.so
         if-no-files-found: error
   pjrt-darwin-aarch64:
@@ -62,7 +62,7 @@ jobs:
         name: libc_xla-darwin-aarch64
         path: libc_xla.dylib
         if-no-files-found: error
-  pjrt-plugin-xla-cpu-linux:
+  pjrt-plugin-xla-cpu-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux-x86_64.so"
         else
           rm -rf /opt/hostedtoolcache
           docker run \
@@ -82,11 +82,11 @@ jobs:
             sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
 
-        mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
+        mv pjrt_plugin_xla_cpu-linux-x86_64.so pjrt_plugin_xla_cpu.so
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: pjrt_plugin_xla_cpu-linux
+        name: pjrt_plugin_xla_cpu-linux-x86_64
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-darwin-aarch64:
@@ -112,7 +112,7 @@ jobs:
         name: pjrt_plugin_xla_cpu-darwin-aarch64
         path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
-  pjrt-plugin-xla-cuda-linux:
+  pjrt-plugin-xla-cuda-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -123,7 +123,7 @@ jobs:
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
             . ./dev.sh
             rev=$(cat XLA_VERSION)
-            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux-x86_64.so"
           else
             rm -rf /opt/hostedtoolcache
             # note this implies specific versions of CUDA and cuDNN
@@ -133,14 +133,14 @@ jobs:
               sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
 
-          mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
+          mv pjrt_plugin_xla_cuda-linux-x86_64.so pjrt_plugin_xla_cuda.so
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: pjrt_plugin_xla_cuda-linux
+          name: pjrt_plugin_xla_cuda-linux-x86_64
           path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
-  build-tests-xla-cpu-linux:
+  build-tests-xla-cpu-linux-x86_64:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
@@ -157,7 +157,7 @@ jobs:
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cpu-linux
+        name: tests-xla-cpu-linux-x86_64
         path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cpu-darwin-aarch64:
@@ -181,7 +181,7 @@ jobs:
           name: tests-xla-cpu-darwin-aarch64
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
-  build-tests-xla-cuda-linux:
+  build-tests-xla-cuda-linux-x86_64:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
@@ -194,24 +194,24 @@ jobs:
       working-directory: test/xla-cuda
       run: |
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cuda.ipkg
-        tar cfz tests-xla-cuda-linux.tar.gz -C build/exec .
+        tar cfz tests-xla-cuda-linux-x86_64.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cuda-linux
-        path: test/xla-cuda/tests-xla-cuda-linux.tar.gz
+        name: tests-xla-cuda-linux-x86_64
+        path: test/xla-cuda/tests-xla-cuda-linux-x86_64.tar.gz
         if-no-files-found: error
-  test-xla-cpu-linux:
+  test-xla-cpu-linux-x86_64:
     needs:
-      - pjrt-linux
-      - pjrt-plugin-xla-cpu-linux
-      - build-tests-xla-cpu-linux
+      - pjrt-linux-x86_64
+      - pjrt-plugin-xla-cpu-linux-x86_64
+      - build-tests-xla-cpu-linux-x86_64
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: "{libc_xla-linux,*cpu-linux}"
+        pattern: "{libc_xla-linux-x86_64,*cpu-linux-x86_64}"
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
@@ -239,18 +239,18 @@ jobs:
       run: |
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
-  test-xla-cuda-linux:
+  test-xla-cuda-linux-x86_64:
     needs:
-      - pjrt-linux
-      - pjrt-plugin-xla-cuda-linux
-      - build-tests-xla-cuda-linux
+      - pjrt-linux-x86_64
+      - pjrt-plugin-xla-cuda-linux-x86_64
+      - build-tests-xla-cuda-linux-x86_64
     runs-on: ubuntu-latest  # needs a CUDA runner
     container: nvcr.io/nvidia/tensorrt:23.11-py3
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: "{libc_xla-linux,*cuda-linux}"
+        pattern: "{libc_xla-linux-x86_64,*cuda-linux-x86_64}"
         merge-multiple: true
     - name: Install runtime dependencies
       run: |

@@ -8,8 +8,10 @@ xla_ext_version=$(cat "$script_dir/backend/VERSION")
 os="$(uname)"
 case $os in
   'Linux')
+    platform=linux-x86_64
     ;;
   'Darwin')
+    platform=darwin-aarch64
     ;;
   *)
     echo "WARNING: OS ${os} not supported, unable to fetch supporting libraries."
@@ -17,5 +19,5 @@ case $os in
     ;;
 esac
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$xla_ext_version/libc_xla-linux.so" \
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$xla_ext_version/libc_xla-${platform}.so" \
   -o libc_xla.so --create-dirs --output-dir "$(idris2 --libdir)/spidr-0.0.6/lib"

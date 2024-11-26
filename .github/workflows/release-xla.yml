@@ -26,7 +26,7 @@ jobs:
         tag_name: xla-${{ env.XLA_REV }}
         release_name: XLA revision ${{ env.XLA_REV }}
         body: "XLA revision ${{ env.XLA_REV }}"
-  pjrt-plugin-xla-cpu-linux:
+  pjrt-plugin-xla-cpu-linux-x86_64:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
@@ -44,8 +44,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: pjrt_plugin_xla_cpu-linux.so
-        asset_name: pjrt_plugin_xla_cpu-linux.so
+        asset_path: pjrt_plugin_xla_cpu-linux-x86_64.so
+        asset_name: pjrt_plugin_xla_cpu-linux-x86_64.so
         asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cpu-darwin-aarch64:
     needs: create-release
@@ -63,7 +63,7 @@ jobs:
         asset_path: pjrt_plugin_xla_cpu-darwin-aarch64.so
         asset_name: pjrt_plugin_xla_cpu-darwin-aarch64.so
         asset_content_type: application/x-sharedlib
-  pjrt-plugin-xla-cuda-linux:
+  pjrt-plugin-xla-cuda-linux-x86_64:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
@@ -81,6 +81,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: pjrt_plugin_xla_cuda-linux.so
-        asset_name: pjrt_plugin_xla_cuda-linux.so
+        asset_path: pjrt_plugin_xla_cuda-linux-x86_64.so
+        asset_name: pjrt_plugin_xla_cuda-linux-x86_64.so
         asset_content_type: application/x-sharedlib

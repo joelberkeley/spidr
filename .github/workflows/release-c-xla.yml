@@ -23,7 +23,7 @@ jobs:
         tag_name: c-xla-v${{ env.C_XLA_VERSION }}
         release_name: C XLA release ${{ env.C_XLA_VERSION }}
         body: "C XLA release ${{ env.C_XLA_VERSION }}"
-  c-xla-linux:
+  c-xla-linux-x86_64:
     needs: create-release
     runs-on: ubuntu-latest
     container: tensorflow/build:latest-python3.9
@@ -37,8 +37,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: libc_xla-linux.so
-        asset_name: libc_xla-linux.so
+        asset_path: libc_xla-linux-x86_64.so
+        asset_name: libc_xla-linux-x86_64.so
         asset_content_type: application/x-sharedlib
   c-xla-darwin-aarch64:
     needs: create-release
