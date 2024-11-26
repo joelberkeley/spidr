@@ -9,11 +9,13 @@ osu="$(uname)"
 case $osu in
   'Linux')
     os=linux
-    bin_ext=.so
+    platform=x86_64
+    ext=so
     ;;
   'Darwin')
     os=darwin
-    bin_ext=.dylib
+    platform=aarch64
+    ext=dylib
     ;;
   *)
     echo "OS ${osu} not handled"
@@ -29,4 +31,4 @@ esac
   bazel build //:c_xla
   rm -rf xla
 )
-mv "spidr/backend/bazel-bin/libc_xla${bin_ext}" "libc_xla-${os}${bin_ext}"
+mv "spidr/backend/bazel-bin/libc_xla.${ext}" "libc_xla-${os}-${platform}.${ext}"
