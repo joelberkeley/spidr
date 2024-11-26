@@ -41,7 +41,7 @@ jobs:
         name: libc_xla-linux
         path: libc_xla.so
         if-no-files-found: error
-  pjrt-macos:
+  pjrt-darwin:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
@@ -89,7 +89,7 @@ jobs:
         name: pjrt_plugin_xla_cpu-linux
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
-  pjrt-plugin-xla-cpu-macos:
+  pjrt-plugin-xla-cpu-darwin:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
@@ -160,7 +160,7 @@ jobs:
         name: tests-xla-cpu-linux
         path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
-  build-tests-xla-cpu-macos:
+  build-tests-xla-cpu-darwin:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
       - name: Upload tests
         uses: actions/upload-artifact@v4
         with:
-          name: tests-xla-cpu-macos
+          name: tests-xla-cpu-darwin
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
   build-tests-xla-cuda-linux:
@@ -220,11 +220,11 @@ jobs:
       run: |
         tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
         ./test
-  test-xla-cpu-macos:
+  test-xla-cpu-darwin:
     needs:
-      - pjrt-macos
-      - pjrt-plugin-xla-cpu-macos
-      - build-tests-xla-cpu-macos
+      - pjrt-darwin
+      - pjrt-plugin-xla-cpu-darwin
+      - build-tests-xla-cpu-darwin
     runs-on: macos-latest
     steps:
     - name: Download artifacts
