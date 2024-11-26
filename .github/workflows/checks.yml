@@ -70,7 +70,6 @@ jobs:
         fetch-depth: 2
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
-        exit 1;
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
           . ./dev.sh
           rev=$(cat XLA_VERSION)
@@ -116,32 +115,31 @@ jobs:
   pjrt-plugin-xla-cuda-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      - name: Build or fetch XLA CUDA PJRT plugin
-        run: |
-          exit 1;
-          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-            . ./dev.sh
-            rev=$(cat XLA_VERSION)
-            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
-          else
-            rm -rf /opt/hostedtoolcache
-            # note this implies specific versions of CUDA and cuDNN
-            docker run \
-              -v $(pwd):/spidr -w /spidr \
-              tensorflow/build:latest-python3.9 \
-              sh -c "pjrt-plugins/xla-cuda/build.sh"
-          fi
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    - name: Build or fetch XLA CUDA PJRT plugin
+      run: |
+        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+          . ./dev.sh
+          rev=$(cat XLA_VERSION)
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
+        else
+          rm -rf /opt/hostedtoolcache
+          # note this implies specific versions of CUDA and cuDNN
+          docker run \
+            -v $(pwd):/spidr -w /spidr \
+            tensorflow/build:latest-python3.9 \
+            sh -c "pjrt-plugins/xla-cuda/build.sh"
+        fi
 
-          mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
-      - name: Upload binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: pjrt_plugin_xla_cuda-linux
-          path: pjrt_plugin_xla_cuda.so
-          if-no-files-found: error
+        mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: pjrt_plugin_xla_cuda-linux
+        path: pjrt_plugin_xla_cuda.so
+        if-no-files-found: error
   build-tests-xla-cpu-linux:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
