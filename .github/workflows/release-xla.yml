@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build XLA CPU plugin for Linux
+    - name: Build XLA CPU plugin for Linux x86_64
       run: |
         rm -rf /opt/hostedtoolcache
         docker run \
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build XLA CUDA plugin for Linux
+    - name: Build XLA CUDA plugin for Linux x86_64
       run: |
         rm -rf /opt/hostedtoolcache
         docker run \

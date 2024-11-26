@@ -12,9 +12,11 @@ os="$(uname)"
 case $os in
   'Linux')
     platform=linux-x86_64
+    ext=so
     ;;
   'Darwin')
     platform=darwin-aarch64
+    ext=dylib
     ;;
   *)
     echo "WARNING: OS ${os} not supported, unable to fetch supporting libraries."
@@ -22,5 +24,5 @@ case $os in
     ;;
 esac
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cpu-${platform}.so" \
-  -o pjrt_plugin_xla_cpu.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cpu-0.0.1/lib"
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cpu-${platform}.${ext}" \
+  -o "pjrt_plugin_xla_cpu.${ext}" --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cpu-0.0.1/lib"

@@ -9,9 +9,11 @@ os="$(uname)"
 case $os in
   'Linux')
     platform=linux-x86_64
+    ext=so
     ;;
   'Darwin')
     platform=darwin-aarch64
+    ext=dylib
     ;;
   *)
     echo "WARNING: OS ${os} not supported, unable to fetch supporting libraries."
@@ -19,5 +21,5 @@ case $os in
     ;;
 esac
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$xla_ext_version/libc_xla-${platform}.so" \
-  -o libc_xla.so --create-dirs --output-dir "$(idris2 --libdir)/spidr-0.0.6/lib"
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$xla_ext_version/libc_xla-${platform}.${ext}" \
+  -o "libc_xla.${ext}" --create-dirs --output-dir "$(idris2 --libdir)/spidr-0.0.6/lib"
