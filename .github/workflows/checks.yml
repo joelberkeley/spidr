@@ -38,7 +38,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libc_xla.so
+        name: libc_xla-linux
         path: libc_xla.so
         if-no-files-found: error
   pjrt-macos:
@@ -59,7 +59,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: libc_xla.dylib
+        name: libc_xla-darwin
         path: libc_xla.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cpu-linux:
@@ -87,7 +87,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: pjrt_plugin_xla_cpu.so
+        name: pjrt_plugin_xla_cpu-linux
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-macos:
@@ -110,7 +110,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: pjrt_plugin_xla_cpu.dylib
+        name: pjrt_plugin_xla_cpu-darwin
         path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux:
@@ -139,7 +139,7 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: pjrt_plugin_xla_cuda.so
+          name: pjrt_plugin_xla_cuda-linux
           path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu-linux:
@@ -183,7 +183,7 @@ jobs:
           name: tests-xla-cpu-macos
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
-  build-tests-xla-cuda:
+  build-tests-xla-cuda-linux:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
@@ -196,12 +196,12 @@ jobs:
       working-directory: test/xla-cuda
       run: |
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cuda.ipkg
-        tar cfz tests-xla-cuda.tar.gz -C build/exec .
+        tar cfz tests-xla-cuda-linux.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
       with:
-        name: tests-xla-cuda
-        path: test/xla-cuda/tests-xla-cuda.tar.gz
+        name: tests-xla-cuda-linux
+        path: test/xla-cuda/tests-xla-cuda-linux.tar.gz
         if-no-files-found: error
   test-xla-cpu-linux:
     needs:
@@ -213,6 +213,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
+        pattern: libc_xla-linux|tests-xla-cpu-linux|pjrt_plugin_xla_cpu-linux
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
@@ -231,6 +232,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
+        pattern: libc_xla-darwin|tests-xla-cpu-darwin|pjrt_plugin_xla_cpu-darwin
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
@@ -243,13 +245,14 @@ jobs:
     needs:
       - pjrt-linux
       - pjrt-plugin-xla-cuda-linux
-      - build-tests-xla-cuda
+      - build-tests-xla-cuda-linux
     runs-on: ubuntu-latest  # needs a CUDA runner
     container: nvcr.io/nvidia/tensorrt:23.11-py3
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
+        pattern: libc_xla-linux|tests-xla-cuda-linux|pjrt_plugin_xla_cuda-linux
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
