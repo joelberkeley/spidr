@@ -211,7 +211,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: libc_xla-linux|tests-xla-cpu-linux|pjrt_plugin_xla_cpu-linux
+        pattern: "{libc_xla-linux,pjrt_plugin_xla_cpu-linux,tests-xla-cpu-linux}"
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
@@ -230,7 +230,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: libc_xla-darwin|tests-xla-cpu-darwin|pjrt_plugin_xla_cpu-darwin
+        pattern: "{libc_xla-darwin,pjrt_plugin_xla_cpu-darwin,tests-xla-cpu-darwin}"
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
@@ -250,7 +250,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: libc_xla-linux|tests-xla-cuda-linux|pjrt_plugin_xla_cuda-linux
+        pattern: "{libc_xla-linux,pjrt_plugin_xla_cuda-linux,tests-xla-cuda-linux}"
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
