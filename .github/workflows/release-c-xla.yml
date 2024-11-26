@@ -40,7 +40,7 @@ jobs:
         asset_path: libc_xla-linux.so
         asset_name: libc_xla-linux.so
         asset_content_type: application/x-sharedlib
-  c-xla-darwin:
+  c-xla-darwin-aarch64:
     needs: create-release
     runs-on: macos-latest
     container: tensorflow/build:latest-python3.9
@@ -54,6 +54,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: libc_xla-darwin.so
-          asset_name: libc_xla-darwin.so
+          asset_path: libc_xla-darwin-aarch64.so
+          asset_name: libc_xla-darwin-aarch64.so
           asset_content_type: application/x-sharedlib
