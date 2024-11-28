@@ -60,8 +60,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: pjrt_plugin_xla_cpu-darwin-aarch64.so
-        asset_name: pjrt_plugin_xla_cpu-darwin-aarch64.so
+        asset_path: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
+        asset_name: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
         asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs: create-release
