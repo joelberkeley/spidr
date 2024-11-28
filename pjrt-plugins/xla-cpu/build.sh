@@ -9,12 +9,12 @@ osu="$(uname)"
 case $osu in
   'Linux')
     os=linux
-    platform=x86_64
+    arch=x86_64
     ext=so
     ;;
   'Darwin')
     os=darwin
-    platform=aarch64
+    arch=aarch64
     ext=dylib
     ;;
   *)
@@ -30,4 +30,4 @@ install_xla "$rev" "$xla_dir"
   ./configure.py --backend=CPU --os=$os
   bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "pjrt_plugin_xla_cpu-${os}-${platform}.${ext}"
+mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "pjrt_plugin_xla_cpu-${os}-${arch}.${ext}"
