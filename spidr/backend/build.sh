@@ -9,12 +9,12 @@ osu="$(uname)"
 case $osu in
   'Linux')
     os=linux
-    platform=x86_64
+    arch=x86_64
     ext=so
     ;;
   'Darwin')
     os=darwin
-    platform=aarch64
+    arch=aarch64
     ext=dylib
     ;;
   *)
@@ -31,4 +31,4 @@ esac
   bazel build //:c_xla
   rm -rf xla
 )
-mv "spidr/backend/bazel-bin/libc_xla.${ext}" "libc_xla-${os}-${platform}.${ext}"
+mv "spidr/backend/bazel-bin/libc_xla.${ext}" "libc_xla-${os}-${arch}.${ext}"

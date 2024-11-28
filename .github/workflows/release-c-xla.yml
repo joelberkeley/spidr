@@ -43,7 +43,6 @@ jobs:
   c-xla-darwin-aarch64:
     needs: create-release
     runs-on: macos-latest
-    container: tensorflow/build:latest-python3.9
     steps:
       - uses: actions/checkout@v4
       - name: Build C XLA lib
