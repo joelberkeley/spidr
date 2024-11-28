@@ -19,10 +19,10 @@ case $os in
     ext=dylib
     ;;
   *)
-    echo "WARNING: OS ${os} not supported, unable to fetch supporting libraries."
+    echo "WARNING: OS $os not supported, unable to fetch supporting libraries."
     exit 0
     ;;
 esac
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cpu-${platform}.${ext}" \
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cpu-$platform.$ext" \
   -o "pjrt_plugin_xla_cpu.${ext}" --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cpu-0.0.1/lib"

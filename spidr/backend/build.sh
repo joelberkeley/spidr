@@ -18,7 +18,7 @@ case $osu in
     ext=dylib
     ;;
   *)
-    echo "OS ${osu} not handled"
+    echo "OS $osu not handled"
     exit 1
     ;;
 esac
@@ -31,4 +31,4 @@ esac
   bazel build //:c_xla
   rm -rf xla
 )
-mv "spidr/backend/bazel-bin/libc_xla.${ext}" "libc_xla-${os}-${arch}.${ext}"
+mv "spidr/backend/bazel-bin/libc_xla.$ext" "libc_xla-$os-$arch.$ext"

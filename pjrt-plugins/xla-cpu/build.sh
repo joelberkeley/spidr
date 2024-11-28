@@ -18,7 +18,7 @@ case $osu in
     ext=dylib
     ;;
   *)
-    echo "OS ${osu} not handled"
+    echo "OS $osu not handled"
     exit 1
     ;;
 esac
@@ -30,4 +30,4 @@ install_xla "$rev" "$xla_dir"
   ./configure.py --backend=CPU --os=$os
   bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "pjrt_plugin_xla_cpu-${os}-${arch}.${ext}"
+mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" "pjrt_plugin_xla_cpu-$os-$arch.$ext"

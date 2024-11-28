@@ -13,7 +13,7 @@ case $os in
   'Linux')
     ;;
   *)
-    echo "WARNING: OS ${os} not supported, unable to fetch supporting libraries."
+    echo "WARNING: OS $os not supported, unable to fetch supporting libraries."
     exit 0
     ;;
 esac

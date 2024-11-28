@@ -10,7 +10,7 @@ case $osu in
   'Linux')
     ;;
   *)
-    echo "OS ${osu} not handled"
+    echo "OS $osu not handled"
     exit 1
     ;;
 esac
