@@ -8,7 +8,7 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-Installation requires curl and [pack](https://github.com/stefan-hoeck/idris2-pack). To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin with
+Installation requires curl and [pack](https://github.com/stefan-hoeck/idris2-pack). To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin, on Linux or Mac with Apple silicon, with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
