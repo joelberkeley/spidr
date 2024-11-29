@@ -5,6 +5,16 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
+osu="$(uname)"
+case $osu in
+  'Linux')
+    ;;
+  *)
+    echo "OS $osu not handled"
+    exit 1
+    ;;
+esac
+
 xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
 (
@@ -13,4 +23,4 @@ install_xla "$rev" "$xla_dir"
   # itself doesn't, see https://github.com/openxla/xla/issues/12017
   bazel build --config release_gpu_linux //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" pjrt_plugin_xla_cuda-linux.so
+mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" pjrt_plugin_xla_cuda-linux-x86_64.so
