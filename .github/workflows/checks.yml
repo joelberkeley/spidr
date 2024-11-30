@@ -296,7 +296,7 @@ jobs:
         brew install chezscheme
     - name: Run tests
       run: |
-        tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
+        tar xfz tests-apple-metal.tar.gz && rm tests-apple-metal.tar.gz
         ./test
   test-xla-cuda-linux-x86_64:
     needs:
