@@ -124,8 +124,7 @@ jobs:
           curl -fsL "https://files.pythonhosted.org/packages/80/af/ed482a421a868726e7ca3f51ac19b0c9a8e37f33f54413312c37e9056acc/jax_metal-0.1.0-py3-none-macosx_11_0_arm64.whl" \
             -o "$prefix.zip"
           unzip "$prefix.zip"
-          ls
-          mv "$prefix/jax_plugins/metal_plugin/pjrt_plugin_metal_14.dylib" pjrt_plugin_apple_metal.dylib
+          mv "jax_plugins/metal_plugin/pjrt_plugin_metal_14.dylib" pjrt_plugin_apple_metal.dylib
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
