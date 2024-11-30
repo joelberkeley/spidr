@@ -112,6 +112,25 @@ jobs:
         name: pjrt_plugin_xla_cpu-darwin-aarch64
         path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
+  pjrt-plugin-apple-metal:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Build or fetch Apple Metal PJRT plugin
+        run: |
+          prefix=jax_metal-0.1.0-py3-none-macosx_11_0_arm64
+          curl -fsL "https://files.pythonhosted.org/packages/80/af/ed482a421a868726e7ca3f51ac19b0c9a8e37f33f54413312c37e9056acc/jax_metal-0.1.0-py3-none-macosx_11_0_arm64.whl" \
+            -o "$prefix.zip"
+          unzip "$prefix.zip"
+          mv "$prefix/jax_plugins/metal_plugin/pjrt_plugin_metal_14.dylib" pjrt_plugin_apple_metal.dylib
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_apple_metal
+          path: pjrt_plugin_apple_metal.dylib
+          if-no-files-found: error
   pjrt-plugin-xla-cuda-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
@@ -181,6 +200,27 @@ jobs:
           name: tests-xla-cpu-darwin-aarch64
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
+  build-tests-apple-metal:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install build dependencies
+      run: |
+        brew install chezscheme
+        git clone https://github.com/stefan-hoeck/idris2-pack.git
+        (cd idris2-pack && make micropack SCHEME=chez)
+        ~/.pack/bin/pack switch HEAD
+    - name: Build tests
+      working-directory: test/xla-cpu
+      run: |
+        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build apple-metal.ipkg
+        tar cfz tests-apple-metal.tar.gz -C build/exec .
+    - name: Upload tests
+      uses: actions/upload-artifact@v4
+      with:
+        name: tests-apple-metal
+        path: test/xla-cpu/tests-apple-metal.tar.gz
+        if-no-files-found: error
   build-tests-xla-cuda-linux-x86_64:
     runs-on: ubuntu-latest
     container: ghcr.io/stefan-hoeck/idris2-pack
@@ -231,6 +271,25 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         pattern: "*darwin-aarch64"
+        merge-multiple: true
+    - name: Install runtime dependencies
+      run: |
+        brew install chezscheme
+    - name: Run tests
+      run: |
+        tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
+        ./test
+  test-apple-metal:
+    needs:
+      - pjrt-darwin-aarch64
+      - pjrt-plugin-apple-metal
+      - build-tests-apple-metal
+    runs-on: macos-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: "{libc_xla-darwin-aarch64,pjrt_plugin_apple_metal,tests-apple-metal}"
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
