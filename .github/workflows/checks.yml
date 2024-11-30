@@ -219,7 +219,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tests-apple-metal
-        path: test/xla-cpu/tests-apple-metal.tar.gz
+        path: test/apple-metal/tests-apple-metal.tar.gz
         if-no-files-found: error
   build-tests-xla-cuda-linux-x86_64:
     runs-on: ubuntu-latest
