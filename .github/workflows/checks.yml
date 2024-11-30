@@ -211,7 +211,7 @@ jobs:
         (cd idris2-pack && make micropack SCHEME=chez)
         ~/.pack/bin/pack switch HEAD
     - name: Build tests
-      working-directory: test/xla-cpu
+      working-directory: test/apple-metal
       run: |
         SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build apple-metal.ipkg
         tar cfz tests-apple-metal.tar.gz -C build/exec .
