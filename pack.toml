@@ -11,7 +11,7 @@ ipkg = "test/runner/runner.ipkg"
 [custom.all.pjrt-plugin-apple-metal]
 type = "local"
 path = ""
-ipkg = "pjrt-plugins/xla-cpu/pjrt-plugin-apple-metal.ipkg"
+ipkg = "pjrt-plugins/apple-metal/pjrt-plugin-apple-metal.ipkg"
 
 [custom.all.pjrt-plugin-xla-cpu]
 type = "local"
