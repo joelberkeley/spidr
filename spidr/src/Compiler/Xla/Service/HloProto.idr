@@ -14,5 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
+module Compiler.Xla.Service.HloProto
 
-serializeAsString : HloModuleProto -> String
+import Compiler.FFI
+
+public export
+data HloModuleProto = MkHloModuleProto GCAnyPtr
+
+%foreign (libxla "HloModuleProto_SerializeAsString")
+prim__hloModuleProtoSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
+
+export
+%foreign (libxla "HloModuleProto_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
+export
+serializeAsString : HasIO io => HloModuleProto -> io CharArray
+serializeAsString (MkHloModuleProto proto) =
+  primIO (prim__hloModuleProtoSerializeAsString proto) >>= stringToCharArray

@@ -27,10 +27,8 @@ extern "C" {
     HloModule* HloModule_CreateFromProto(HloModuleProto& proto, HloModuleConfig& module_config) {
         auto& proto_ = reinterpret_cast<xla::HloModuleProto&>(proto);
         auto& module_config_ = reinterpret_cast<xla::HloModuleConfig&>(module_config);
-
         auto module = xla::HloModule::CreateFromProto(proto_, module_config_);
-        // this looks suspicious, but I'm pretty sure we own the HloModule
-        return reinterpret_cast<HloModule*>(&*module);
+        return reinterpret_cast<HloModule*>(module.value().release());
     }
 
     void HloModule_delete(HloModule* s) {

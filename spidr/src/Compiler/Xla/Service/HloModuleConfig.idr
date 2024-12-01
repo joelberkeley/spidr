@@ -14,5 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
+module Compiler.Xla.Service.HloModuleConfig
 
-newHloModuleConfig : HasIO io => io HloModuleConfig
+import Compiler.FFI
+import Compiler.Xla.Shape
+
+public export
+data HloModuleConfig = MkHloModuleConfig GCAnyPtr
+
+%foreign (libxla "HloModuleConfig_new")
+prim__hloModuleConfig : GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "HloModuleConfig_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
+export
+hloModuleConfig : HasIO io => ProgramShape -> io HloModuleConfig
+hloModuleConfig (MkProgramShape pshape) = do
+  config <- primIO $ prim__hloModuleConfig pshape
+  config <- onCollectAny config (primIO . prim__delete)
+  pure (MkHloModuleConfig config)

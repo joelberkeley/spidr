@@ -34,8 +34,12 @@ import Compiler.Xla.HLO.Builder.Lib.Matrix
 import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.HLO.IR.HloModule
+import Compiler.Xla.HLO.Translate.PortableAPI
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
+import Compiler.Xla.Service.HloModuleConfig
+import Compiler.Xla.Service.HloProto
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
@@ -224,7 +228,17 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   bimapEitherT PjrtErr id $ do
-    code <- serializeAsString computation
+    -- printLn 0
+    proto <- proto computation
+    -- printLn 1
+    programShape <- getProgramShape computation
+    -- printLn 2
+    moduleConfig <- hloModuleConfig programShape
+    -- printLn 3
+    module' <- createFromProto proto moduleConfig
+    -- printLn 4
+    code <- convertHloToStablehlo module'
+    -- printLn 5
     executableBuildOptions <- mkExecutableBuildOptions
     compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
     loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions

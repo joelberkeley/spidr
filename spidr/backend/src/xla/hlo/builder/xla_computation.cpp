@@ -33,8 +33,6 @@ extern "C" {
 
     HloModuleProto* XlaComputation_proto(XlaComputation* s) {
         auto res = reinterpret_cast<xla::XlaComputation*>(s)->proto();
-        // I think the proto is owned by, and lives as long as, the XlaComputation
-        // so this is probably wrong since Idris will GC the XlaComputation
-        return reinterpret_cast<HloModuleProto*>(&res);
+        return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(res));
     }
 }

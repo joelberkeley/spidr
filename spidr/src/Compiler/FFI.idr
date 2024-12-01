@@ -48,7 +48,7 @@ export
 prim__index : Int -> AnyPtr -> AnyPtr
 
 export
-stringToCharArray : HasIO io => AnyPtr -> io MkCharArray
+stringToCharArray : HasIO io => AnyPtr -> io CharArray
 stringToCharArray str = do
   data' <- primIO $ prim__stringData str
   let size = prim__stringSize str

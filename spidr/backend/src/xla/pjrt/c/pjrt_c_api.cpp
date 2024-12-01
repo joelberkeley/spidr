@@ -127,7 +127,7 @@ extern "C" {
     }
 
     PJRT_Program* PJRT_Program_new(char* code, size_t code_size) {
-        auto format = pjrt::kHloFormat;
+        auto format = pjrt::kMlirFormat;
         return new PJRT_Program{
             .struct_size = PJRT_Program_STRUCT_SIZE,
             .extension_start = nullptr,
@@ -159,6 +159,7 @@ extern "C" {
     }
 
     PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
+        printf("%.*s\n", args->program->code_size, args->program->code);
         return api->PJRT_Client_Compile(args);
     }
 

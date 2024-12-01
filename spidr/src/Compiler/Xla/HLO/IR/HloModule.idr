@@ -17,19 +17,21 @@ limitations under the License.
 module Compiler.Xla.HLO.IR.HloModule
 
 import Compiler.FFI
+import Compiler.Xla.Service.HloModuleConfig
+import Compiler.Xla.Service.HloProto
 
 public export
 data HloModule = MkHloModule GCAnyPtr
 
 %foreign (libxla "HloModule_delete")
-prim__hloModuleDelete : AnyPtr -> PrimIO ()
+prim__delete : AnyPtr -> PrimIO ()
 
 %foreign (libxla "HloModule_CreateFromProto")
-prim__hloModuleCreateFromProto : AnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+prim__hloModuleCreateFromProto : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 createFromProto : HasIO io => HloModuleProto -> HloModuleConfig -> io HloModule
 createFromProto (MkHloModuleProto proto) (MkHloModuleConfig config) = do
-  module <- primIO $ prim__hloModuleCreateFromProto proto config
-  module <- onCollectAny (primIO . prim__hloModuleDelete) module
-  pure (MkHloModule module)
+  module' <- primIO $ prim__hloModuleCreateFromProto proto config
+  module' <- onCollectAny module' (primIO . HloModule.prim__delete)
+  pure (MkHloModule module')

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.HLO.Translate
+module Compiler.Xla.HLO.Translate.PortableAPI
 
 import Compiler.FFI
 import Compiler.Xla.HLO.IR.HloModule
@@ -24,5 +24,5 @@ prim__convertHloToStablehlo : GCAnyPtr -> PrimIO AnyPtr
 
 export
 convertHloToStablehlo : HasIO io => HloModule -> io CharArray
-convertHloToStablehlo (MkHloModule module) =
-  primIO (prim__convertHloToStablehlo module) >>= stringToCharArray
+convertHloToStablehlo (MkHloModule module') =
+  primIO (prim__convertHloToStablehlo module') >>= stringToCharArray

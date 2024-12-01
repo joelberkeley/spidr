@@ -18,6 +18,7 @@ module Compiler.Xla.HLO.Builder.XlaComputation
 
 import Compiler.FFI
 import Compiler.Xla.Shape
+import Compiler.Xla.Service.HloProto
 
 public export
 data XlaComputation : Type where
@@ -28,7 +29,7 @@ prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+delete = primIO . XlaComputation.prim__delete
 
 %foreign (libxla "XlaComputation_GetProgramShape")
 prim__xlaComputationGetProgramShape : GCAnyPtr -> PrimIO AnyPtr
@@ -37,12 +38,15 @@ export
 getProgramShape : HasIO io => XlaComputation -> io ProgramShape
 getProgramShape (MkXlaComputation comp) = do
   pshape <- primIO $ prim__xlaComputationGetProgramShape comp
-  pshape <- onCollectAny (primIO . prim__ProgramShape_delete) pshape
+  pshape <- onCollectAny pshape (primIO . prim__ProgramShape_delete)
   pure (MkProgramShape pshape)
 
 %foreign (libxla "XlaComputation_proto")
-prim__xlaComputationProto : GCAnyPtr -> AnyPtr
+prim__xlaComputationProto : GCAnyPtr -> PrimIO AnyPtr
 
 export
-proto : XlaComputation -> HloModuleProto  -- HasIO? ownership?
-proto (MkXlaComputation comp) = MkHloModuleProto $ prim__xlaComputationProto comp
+proto : HasIO io => XlaComputation -> io HloModuleProto
+proto (MkXlaComputation comp) = do
+  proto <- primIO $ prim__xlaComputationProto comp
+  proto <- onCollectAny proto (primIO . HloProto.prim__delete)
+  pure (MkHloModuleProto proto)

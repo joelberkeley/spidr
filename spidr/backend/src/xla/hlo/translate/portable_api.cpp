@@ -23,6 +23,6 @@ extern "C" {
     string* ConvertHloToStablehlo(HloModule& hlo_module) {
         auto& hlo_module_ = reinterpret_cast<xla::HloModule&>(hlo_module);
         auto res = xla::ConvertHloToStablehlo(hlo_module_);
-        return reinterpret_cast<string*>(new std::string(*res));
+        return reinterpret_cast<string*>(new std::string(res.value()));
     }
 }
