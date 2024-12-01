@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module defines supported primitive backend types and their interaction with Idris.
+||| Supported backend primitive types, and their relation to Idris primitives.
 |||
 ||| The module contains a number of interfaces (`Primitive.Num`, `Primitive.Eq` etc.). These
 ||| indicate what operations can be performed on primitive data in the backend. They are entirely
