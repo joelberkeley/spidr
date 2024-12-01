@@ -48,6 +48,14 @@ export
 prim__index : Int -> AnyPtr -> AnyPtr
 
 export
+stringToCharArray : HasIO io => AnyPtr -> io MkCharArray
+stringToCharArray str = do
+  data' <- primIO $ prim__stringData str
+  let size = prim__stringSize str
+  primIO $ prim__stringDelete str
+  pure (MkCharArray data' size)
+
+export
 cIntToBool : Int -> Bool
 cIntToBool 0 = False
 cIntToBool 1 = True

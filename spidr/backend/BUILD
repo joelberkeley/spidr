@@ -16,8 +16,11 @@ cc_binary(
         "//src/xla/client",
         "//src/xla/hlo/builder",
         "//src/xla/hlo/builder/lib",
+        "//src/xla/hlo/ir",
+        "//src/xla/hlo/translate",
         "//src/xla/pjrt",
         "//src/xla/pjrt/c",
+        "//src/xla/service",
         "//src",
     ],
     deps = [
@@ -25,8 +28,11 @@ cc_binary(
         "//src/xla/client",
         "//src/xla/hlo/builder",
         "//src/xla/hlo/builder/lib",
+        "//src/xla/hlo/ir",
+        "//src/xla/hlo/translate",
         "//src/xla/pjrt",
         "//src/xla/pjrt/c",
+        "//src/xla/service",
         "//src",
     ],
 )

@@ -1,14 +1,13 @@
 cc_library(
-    name = "builder",
+    name = "translate",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/hlo/builder:xla_builder",
+        "@xla//xla/hlo/translate:portable_api",
+        "//src/xla/hlo/ir",
         "//src",
-        "//src/xla",
-        "//src/xla/service",
     ],
     visibility = ["//visibility:public"],
 )

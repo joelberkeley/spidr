@@ -14,8 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "xla/hlo/builder/xla_computation.h"
+#include "xla/shape.h"
 
 #include "../../../ffi.h"
+#include "../../service/hlo.proto.h"
+#include "../../shape.h"
 #include "xla_computation.h"
 
 extern "C" {
@@ -23,9 +26,15 @@ extern "C" {
         delete reinterpret_cast<xla::XlaComputation*>(s);
     }
 
-    string* XlaComputation_SerializeAsString(XlaComputation* s) {
-        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
-        auto serialized = s_->proto().SerializeAsString();
-        return reinterpret_cast<string*>(new std::string(serialized));
+    ProgramShape* XlaComputation_GetProgramShape(XlaComputation* s) {
+        auto res = reinterpret_cast<xla::XlaComputation*>(s)->GetProgramShape();
+        return reinterpret_cast<ProgramShape*>(new xla::ProgramShape(*res));
+    }
+
+    HloModuleProto* XlaComputation_proto(XlaComputation* s) {
+        auto res = reinterpret_cast<xla::XlaComputation*>(s)->proto();
+        // I think the proto is owned by, and lives as long as, the XlaComputation
+        // so this is probably wrong since Idris will GC the XlaComputation
+        return reinterpret_cast<HloModuleProto*>(&res);
     }
 }

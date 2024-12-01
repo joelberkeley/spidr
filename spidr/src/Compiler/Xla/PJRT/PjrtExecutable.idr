@@ -39,9 +39,5 @@ prim__compileOptionsSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 ||| It is up to the caller to deallocate the CharArray.
 export
 serializeAsString : HasIO io => CompileOptions -> io CharArray
-serializeAsString (MkCompileOptions options) = do
-  str <- primIO $ prim__compileOptionsSerializeAsString options
-  data' <- primIO $ prim__stringData str
-  let size = prim__stringSize str
-  primIO $ prim__stringDelete str
-  pure (MkCharArray data' size)
+serializeAsString (MkCompileOptions options) =
+  primIO (prim__compileOptionsSerializeAsString options) >>= stringToCharArray

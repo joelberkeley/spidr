@@ -1,5 +1,5 @@
-/*
-Copyright 2022 Joel Berkeley
+{--
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,25 +12,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "xla/shape.h"
+--}
+||| For internal spidr use only.
+module Compiler.Xla.HLO.Translate
 
-#include "shape.h"
+import Compiler.FFI
+import Compiler.Xla.HLO.IR.HloModule
 
-extern "C" {
-    void Shape_delete(Shape* s) {
-        delete reinterpret_cast<xla::Shape*>(s);
-    }
+%foreign (libxla "ConvertHloToStablehlo")
+prim__convertHloToStablehlo : GCAnyPtr -> PrimIO AnyPtr
 
-    int sizeof_Shape() {
-        return sizeof(xla::Shape);
-    }
-
-    void set_array_Shape(Shape* arr, int idx, Shape* shape) {
-        reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
-    }
-
-    void ProgramShape_delete(ProgramShape* s) {
-        delete reinterpret_cast<xla::ProgramShape*>(s);
-    }
-}
+export
+convertHloToStablehlo : HasIO io => HloModule -> io CharArray
+convertHloToStablehlo (MkHloModule module) =
+  primIO (prim__convertHloToStablehlo module) >>= stringToCharArray

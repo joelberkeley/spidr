@@ -17,6 +17,7 @@ limitations under the License.
 module Compiler.Xla.HLO.Builder.XlaComputation
 
 import Compiler.FFI
+import Compiler.Xla.Shape
 
 public export
 data XlaComputation : Type where
@@ -29,16 +30,19 @@ export
 delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
-export
-%foreign (libxla "XlaComputation_SerializeAsString")
-prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
+%foreign (libxla "XlaComputation_GetProgramShape")
+prim__xlaComputationGetProgramShape : GCAnyPtr -> PrimIO AnyPtr
 
-||| It is up to the caller to deallocate the CharArray.
 export
-serializeAsString : HasIO io => XlaComputation -> io CharArray
-serializeAsString (MkXlaComputation computation) = do
-  str <- primIO $ prim__xlaComputationSerializeAsString computation
-  data' <- primIO $ prim__stringData str
-  let size = prim__stringSize str
-  primIO $ prim__stringDelete str
-  pure (MkCharArray data' size)
+getProgramShape : HasIO io => XlaComputation -> io ProgramShape
+getProgramShape (MkXlaComputation comp) = do
+  pshape <- primIO $ prim__xlaComputationGetProgramShape comp
+  pshape <- onCollectAny (primIO . prim__ProgramShape_delete) pshape
+  pure (MkProgramShape pshape)
+
+%foreign (libxla "XlaComputation_proto")
+prim__xlaComputationProto : GCAnyPtr -> AnyPtr
+
+export
+proto : XlaComputation -> HloModuleProto  -- HasIO? ownership?
+proto (MkXlaComputation comp) = MkHloModuleProto $ prim__xlaComputationProto comp

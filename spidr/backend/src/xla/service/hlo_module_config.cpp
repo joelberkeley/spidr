@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Joel Berkeley
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,24 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "xla/service/hlo_module_config.h"
 #include "xla/shape.h"
 
-#include "shape.h"
+#include "hlo_module_config.h"
+
+#include "../shape.h"
 
 extern "C" {
-    void Shape_delete(Shape* s) {
-        delete reinterpret_cast<xla::Shape*>(s);
+    HloModuleConfig* HloModuleConfig_new(ProgramShape& program_shape) {
+        auto& program_shape_ = reinterpret_cast<xla::ProgramShape&>(program_shape);
+        auto config = new xla::HloModuleConfig(program_shape_);
+        return reinterpret_cast<HloModuleConfig*>(config);
     }
 
-    int sizeof_Shape() {
-        return sizeof(xla::Shape);
-    }
-
-    void set_array_Shape(Shape* arr, int idx, Shape* shape) {
-        reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
-    }
-
-    void ProgramShape_delete(ProgramShape* s) {
-        delete reinterpret_cast<xla::ProgramShape*>(s);
+    void HloModuleConfig_delete(HloModuleConfig* s) {
+        delete reinterpret_cast<xla::HloModuleConfig*>(s);
     }
 }

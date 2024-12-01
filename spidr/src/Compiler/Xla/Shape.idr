@@ -25,11 +25,11 @@ namespace Xla
     MkShape : GCAnyPtr -> Shape
 
 %foreign (libxla "Shape_delete")
-prim__delete : AnyPtr -> PrimIO ()
+prim__Shape_delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+delete = primIO . prim__Shape_delete
 
 %foreign (libxla "sizeof_Shape")
 sizeOfShape : Int
@@ -48,3 +48,10 @@ mkShapeArray shapes = do
     primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate (fromList shapes))
   arr <- onCollectAny arr free
   pure (MkShapeArray arr)
+
+public export
+data ProgramShape = MkProgramShape GCAnyPtr
+
+export
+%foreign (libxla "ProgramShape_delete")
+prim__ProgramShape_delete : AnyPtr -> PrimIO ()

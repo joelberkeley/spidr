@@ -15,4 +15,5 @@ limitations under the License.
 */
 extern "C" {
     struct Shape;
+    struct ProgramShape;
 }
