@@ -148,7 +148,7 @@ jobs:
     - name: Install build dependencies
       run: |
         apt-get update && apt-get install -y curl
-        pack switch HEAD
+        # pack switch HEAD
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
@@ -169,7 +169,7 @@ jobs:
           brew install chezscheme
           git clone https://github.com/stefan-hoeck/idris2-pack.git
           (cd idris2-pack && make micropack SCHEME=chez)
-          ~/.pack/bin/pack switch HEAD
+          # ~/.pack/bin/pack switch HEAD
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
@@ -189,7 +189,7 @@ jobs:
     - name: Install build dependencies
       run: |
         apt-get update && apt-get install -y curl
-        pack switch HEAD
+        # pack switch HEAD
     - name: Build tests
       working-directory: test/xla-cuda
       run: |
