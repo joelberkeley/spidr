@@ -228,17 +228,9 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   bimapEitherT PjrtErr id $ do
-    -- printLn 0
-    proto <- proto computation
-    -- printLn 1
-    programShape <- getProgramShape computation
-    -- printLn 2
-    moduleConfig <- hloModuleConfig programShape
-    -- printLn 3
-    module' <- createFromProto proto moduleConfig
-    -- printLn 4
+    moduleConfig <- hloModuleConfig !(getProgramShape computation)
+    module' <- createFromProto !(proto computation) moduleConfig
     code <- convertHloToStablehlo module'
-    -- printLn 5
     executableBuildOptions <- mkExecutableBuildOptions
     compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
     loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
