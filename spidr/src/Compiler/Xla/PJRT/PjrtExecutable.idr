@@ -36,7 +36,7 @@ mkCompileOptions (MkExecutableBuildOptions executableBuildOptions) = do
 %foreign (libxla "CompileOptions_SerializeAsString")
 prim__compileOptionsSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 
-||| It is up to the caller to deallocate the CharArray.
+||| It is up to the caller to `free` the `CharArray`.
 export
 serializeAsString : HasIO io => CompileOptions -> io CharArray
 serializeAsString (MkCompileOptions options) =

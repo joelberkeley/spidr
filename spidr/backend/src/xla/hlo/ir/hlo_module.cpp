@@ -23,7 +23,6 @@ limitations under the License.
 #include "../../service/hlo_module_config.h"
 
 extern "C" {
-    // if proto is a nuisance, could pass in the XlaComputation instead
     HloModule* HloModule_CreateFromProto(HloModuleProto& proto, HloModuleConfig& module_config) {
         auto& proto_ = reinterpret_cast<xla::HloModuleProto&>(proto);
         auto& module_config_ = reinterpret_cast<xla::HloModuleConfig&>(module_config);

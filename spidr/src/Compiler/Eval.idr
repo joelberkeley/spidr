@@ -225,15 +225,24 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
+  putStrLn "execute ..."
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
+  printLn 0
+  moduleConfig <- hloModuleConfig !(getProgramShape computation)
+  printLn 1
+  module' <- createFromProto !(proto computation) moduleConfig
+  printLn 2
+  code <- convertHloToStablehlo module'
+  printLn 3
+  executableBuildOptions <- mkExecutableBuildOptions
+  printLn 4
+  compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
+  printLn 5
+  program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
-    moduleConfig <- hloModuleConfig !(getProgramShape computation)
-    module' <- createFromProto !(proto computation) moduleConfig
-    code <- convertHloToStablehlo module'
-    executableBuildOptions <- mkExecutableBuildOptions
-    compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-    loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
+    loadedExec <- pjrtClientCompile api client program compileOptions
+    printLn 6
     free code
     free compileOptions
     delete executableBuildOptions

@@ -22,6 +22,7 @@ import Compiler.Xla.HLO.IR.HloModule
 %foreign (libxla "ConvertHloToStablehlo")
 prim__convertHloToStablehlo : GCAnyPtr -> PrimIO AnyPtr
 
+||| It is up to the caller to `free` the `CharArray`.
 export
 convertHloToStablehlo : HasIO io => HloModule -> io CharArray
 convertHloToStablehlo (MkHloModule module') =

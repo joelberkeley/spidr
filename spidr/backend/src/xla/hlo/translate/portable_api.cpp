@@ -21,10 +21,13 @@ limitations under the License.
 
 extern "C" {
     string* ConvertHloToStablehlo(HloModule& hlo_module) {
+        printf("ConvertHloToStablehlo ...\n");
         auto& hlo_module_ = reinterpret_cast<xla::HloModule&>(hlo_module);
+        printf("0\n");
         // the implementation of this function shows how to get the actual MLIR module, which is
         // crucial for enzyme!
         auto res = xla::ConvertHloToStablehlo(hlo_module_, true);
+        printf("1\n");
         return reinterpret_cast<string*>(new std::string(res.value()));
     }
 }

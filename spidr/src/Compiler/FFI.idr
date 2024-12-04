@@ -47,6 +47,7 @@ export
 %foreign (libxla "idx")
 prim__index : Int -> AnyPtr -> AnyPtr
 
+||| Deletes the `string`. It is up to the caller to `free` the `CharArray`.
 export
 stringToCharArray : HasIO io => AnyPtr -> io CharArray
 stringToCharArray str = do

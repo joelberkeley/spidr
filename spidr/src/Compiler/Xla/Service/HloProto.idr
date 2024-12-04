@@ -28,6 +28,7 @@ export
 %foreign (libxla "HloModuleProto_delete")
 prim__delete : AnyPtr -> PrimIO ()
 
+||| It is up to the caller to `free` the `CharArray`.
 export
 serializeAsString : HasIO io => HloModuleProto -> io CharArray
 serializeAsString (MkHloModuleProto proto) =
