@@ -26,6 +26,10 @@ import Data.List.Elem
 import Compiler.Expr
 import Compiler.FFI
 import Compiler.LiteralRW
+import Compiler.MLIR.IR.BuiltinOps
+import Compiler.MLIR.IR.DialectRegistry
+import Compiler.MLIR.IR.MLIRContext
+import Compiler.StableHLO.Dialect.Register
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
 import Compiler.Xla.HLO.Builder.Lib.Constants
@@ -35,7 +39,8 @@ import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.HLO.Builder.XlaComputation
 import Compiler.Xla.HLO.IR.HloModule
-import Compiler.Xla.HLO.Translate.PortableAPI
+import Compiler.Xla.HLO.Translate.StableHLO
+import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
 import Compiler.Xla.Service.HloModuleConfig
@@ -49,6 +54,8 @@ import Primitive
 import Types
 import Util
 import Device
+
+import System
 
 export
 data Err
@@ -226,19 +233,20 @@ export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   putStrLn "execute ..."
+  dialectRegistry <- mkDialectRegistry
+  registerAllMhloDialects dialectRegistry
+  registerAllDialects dialectRegistry
+  mlirCtx <- mkMLIRContext
+  appendDialectRegistry mlirCtx dialectRegistry
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  printLn 0
-  moduleConfig <- hloModuleConfig !(getProgramShape computation)
   printLn 1
-  module' <- createFromProto !(proto computation) moduleConfig
+  code <- serializeUsingBytecode !(convertHloToStablehlo mlirCtx !(proto computation))
   printLn 2
-  code <- convertHloToStablehlo module'
-  printLn 3
   executableBuildOptions <- mkExecutableBuildOptions
-  printLn 4
+  printLn 3
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-  printLn 5
+  printLn 4
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
     loadedExec <- pjrtClientCompile api client program compileOptions

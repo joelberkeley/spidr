@@ -24,6 +24,7 @@ limitations under the License.
 
 extern "C" {
     HloModule* HloModule_CreateFromProto(HloModuleProto& proto, HloModuleConfig& module_config) {
+        // put print statements in all C functions to see if the error's coming from elsewhere
         auto& proto_ = reinterpret_cast<xla::HloModuleProto&>(proto);
         auto& module_config_ = reinterpret_cast<xla::HloModuleConfig&>(module_config);
         auto module = xla::HloModule::CreateFromProto(proto_, module_config_);

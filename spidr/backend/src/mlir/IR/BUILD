@@ -1,14 +1,11 @@
 cc_library(
-    name = "translate",
+    name = "IR",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/hlo/translate:stablehlo",
-        "//src/mlir/IR",
-        "//src/xla/hlo/ir",
-        "//src",
+        "@llvm-project//mlir:IR",
     ],
     visibility = ["//visibility:public"],
 )

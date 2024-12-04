@@ -1,14 +1,12 @@
 cc_library(
-    name = "translate",
+    name = "dialect",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/hlo/translate:stablehlo",
+        "@stablehlo//:register",
         "//src/mlir/IR",
-        "//src/xla/hlo/ir",
-        "//src",
     ],
     visibility = ["//visibility:public"],
 )
