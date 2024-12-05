@@ -1,0 +1,11 @@
+package pjrt-plugin-apple-metal
+version = 0.0.1
+
+depends = spidr
+modules = PjrtPluginAppleMetal
+
+brief = "XLA PJRT plugin for Apple Metal."
+readme = "README.md"
+license = "Apache License, Version 2.0"
+
+postinstall = "./postinstall.sh"
