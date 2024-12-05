@@ -4,7 +4,7 @@ This is the PJRT plugin for CPU. It uses the XLA compiler.
 
 ## Install
 
-On Linux, run
+On Linux, or MacOS with AArch64 (ARM64, Apple Silicon), run
 ```
 pack install pjrt-plugin-xla-cpu
 ```

@@ -15,7 +15,7 @@ limitations under the License.
 */
 #include <functional>
 
-#include "xla/client/xla_builder.h"
+#include "xla/hlo/builder/xla_builder.h"
 
 extern "C" {
     struct XlaOp;

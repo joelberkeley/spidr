@@ -26,14 +26,14 @@ import Data.List.Elem
 import Compiler.Expr
 import Compiler.FFI
 import Compiler.LiteralRW
-import Compiler.Xla.Client.Lib.Arithmetic
-import Compiler.Xla.Client.Lib.Constants
-import Compiler.Xla.Client.Lib.Math
-import Compiler.Xla.Client.Lib.Matrix
-import Compiler.Xla.Client.Lib.PRNG
 import Compiler.Xla.Client.ExecutableBuildOptions
-import Compiler.Xla.Client.XlaBuilder
-import Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.HLO.Builder.Lib.Arithmetic
+import Compiler.Xla.HLO.Builder.Lib.Constants
+import Compiler.Xla.HLO.Builder.Lib.Math
+import Compiler.Xla.HLO.Builder.Lib.Matrix
+import Compiler.Xla.HLO.Builder.Lib.PRNG
+import Compiler.Xla.HLO.Builder.XlaBuilder
+import Compiler.Xla.HLO.Builder.XlaComputation
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
 import Compiler.Xla.Literal
@@ -183,7 +183,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       Asinh      => asinh
       Acosh      => acosh
       Atanh      => atanh
-  interpretE (Argmin {out} axis x) = argMin {outputType = out} !(interpretE x) axis
   interpretE (Argmax {out} axis x) = argMax {outputType = out} !(interpretE x) axis
   interpretE (Select pred true false) =
     select !(interpretE pred) !(interpretE true) !(interpretE false)

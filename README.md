@@ -8,13 +8,11 @@ See the [online reference](https://joelberkeley.github.io/spidr/) for API docume
 
 ### Install
 
-Installation requires curl and [pack](https://github.com/stefan-hoeck/idris2-pack). To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin with
+Installation requires curl and [pack](https://github.com/stefan-hoeck/idris2-pack). To install spidr, install a PJRT plugin. A plugin executes a spidr program, and determines what hardware your program will run on. You can install the CPU plugin, on Linux or Mac with Apple silicon, with
 ```
 pack install pjrt-plugin-xla-cpu
 ```
 or read the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
-
-We have tested spidr on Ubuntu Linux 22.04. It may work on other Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact).
 
 ### Motivation
 
