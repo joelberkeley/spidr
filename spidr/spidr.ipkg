@@ -12,6 +12,7 @@ modules =
   Compiler.MLIR.IR.DialectRegistry,
   Compiler.MLIR.IR.MLIRContext,
   Compiler.StableHLO.Dialect.Register,
+  Compiler.StableHLO.Dialect.Serialization,
   Compiler.Xla.Client.ExecutableBuildOptions,
   Compiler.Xla.HLO.Builder.Lib.Arithmetic,
   Compiler.Xla.HLO.Builder.Lib.Constants,

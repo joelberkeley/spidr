@@ -7,8 +7,7 @@ cc_library(
     deps = [
         "@xla//xla/hlo/translate:stablehlo",
         "//src/mlir/IR",
-        "//src/xla/hlo/ir",
-        "//src",
+        "//src/xla/service",
     ],
     visibility = ["//visibility:public"],
 )

@@ -30,6 +30,7 @@ import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.StableHLO.Dialect.Register
+import Compiler.StableHLO.Dialect.Serialization
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
 import Compiler.Xla.HLO.Builder.Lib.Constants
@@ -241,7 +242,7 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   printLn 1
-  code <- serializeUsingBytecode !(convertHloToStablehlo mlirCtx !(proto computation))
+  code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx !(proto computation))
   printLn 2
   executableBuildOptions <- mkExecutableBuildOptions
   printLn 3
@@ -249,6 +250,7 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   printLn 4
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
+    printLn 5
     loadedExec <- pjrtClientCompile api client program compileOptions
     printLn 6
     free code

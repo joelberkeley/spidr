@@ -32,6 +32,10 @@ namespace CharArray
   free (MkCharArray arr _) = free $ prim__forgetPtr arr
 
 export
+%foreign (libxla "string_new")
+prim__stringNew : PrimIO AnyPtr
+
+export
 %foreign (libxla "string_delete")
 prim__stringDelete : AnyPtr -> PrimIO ()
 

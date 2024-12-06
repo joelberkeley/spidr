@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.HLO.Translate.StableHLO
+module Compiler.StableHLO.Dialect.Serialization
 
-import Compiler.FFI
 import Compiler.MLIR.IR.BuiltinOps
-import Compiler.MLIR.IR.MLIRContext
-import Compiler.Xla.Service.HloProto
+import Compiler.FFI
 
-%foreign (libxla "ConvertHloToStablehlo")
-prim__convertHloToStablehlo : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+%foreign (libxla "serializePortableArtifact")
+prim__serializePortableArtifact : AnyPtr -> AnyPtr -> PrimIO Int
 
 export
-convertHloToStablehlo : HasIO io => MLIRContext -> HloModuleProto -> io ModuleOp
-convertHloToStablehlo (MkMLIRContext ctx) (MkHloModuleProto proto) = do
-  moduleOp <- primIO $ prim__convertHloToStablehlo ctx proto
-  pure (MkModuleOp moduleOp)
+serializePortableArtifact : HasIO io => ModuleOp -> io CharArray
+serializePortableArtifact (MkModuleOp moduleOp) = do
+  str <- primIO prim__stringNew
+  ok <- primIO $ prim__serializePortableArtifact moduleOp str
+  if ok == 0 then stringToCharArray str else ?fheuwof
