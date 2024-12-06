@@ -16,6 +16,7 @@ limitations under the License.
 #include "mlir/Bytecode/BytecodeWriter.h"
 #include "mlir/Support/LogicalResult.h"
 #include "stablehlo/dialect/Serialization.h"
+#include "stablehlo/dialect/Version.h"
 
 #include "../../mlir/IR/BuiltinOps.h"
 #include "../../ffi.h"
@@ -28,7 +29,7 @@ extern "C" {
         mlir::BytecodeWriterConfig config;
         mlir::writeBytecodeToFile(module_, os, config);
         printf("%s\n", str_.c_str());
-        // get version from Version.h
-        return mlir::failed(mlir::stablehlo::serializePortableArtifact(module_, "1.8.3", os));
+        auto version = mlir::vhlo::Version::getCurrentVersion().toString();
+        return mlir::failed(mlir::stablehlo::serializePortableArtifact(module_, version, os));
     }
 }

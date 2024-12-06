@@ -20,10 +20,7 @@ limitations under the License.
 
 extern "C" {
     MLIRContext* MLIRContext_new() {
-//        printf("MLIRContext_new ...\n");
-        auto res = reinterpret_cast<MLIRContext*>(new mlir::MLIRContext);
-//        printf("0\n");
-        return res;
+        return reinterpret_cast<MLIRContext*>(new mlir::MLIRContext);
     }
 
     void MLIRContext_delete(MLIRContext* s) {

@@ -39,12 +39,10 @@ import Compiler.Xla.HLO.Builder.Lib.Matrix
 import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.HLO.Builder.XlaComputation
-import Compiler.Xla.HLO.IR.HloModule
 import Compiler.Xla.HLO.Translate.StableHLO
 import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
-import Compiler.Xla.Service.HloModuleConfig
 import Compiler.Xla.Service.HloProto
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape

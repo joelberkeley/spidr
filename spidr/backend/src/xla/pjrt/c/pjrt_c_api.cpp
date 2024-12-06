@@ -159,8 +159,11 @@ extern "C" {
     }
 
     PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
+        printf("pjrt_client_compile ... \n");
         printf("%.*s\n", args->program->code_size, args->program->code);
-        return api->PJRT_Client_Compile(args);
+        auto res = api->PJRT_Client_Compile(args);
+        printf("... pjrt_client_compile\n");
+        return res;
     }
 
     PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
