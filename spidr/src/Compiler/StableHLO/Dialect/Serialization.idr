@@ -23,8 +23,17 @@ import Compiler.FFI
 prim__serializePortableArtifact : AnyPtr -> AnyPtr -> PrimIO Int
 
 export
-serializePortableArtifact : HasIO io => ModuleOp -> io CharArray
+serializePortableArtifact : HasIO io => ModuleOp -> io (Maybe CharArray)
 serializePortableArtifact (MkModuleOp moduleOp) = do
   str <- primIO prim__stringNew
   ok <- primIO $ prim__serializePortableArtifact moduleOp str
-  if ok == 0 then stringToCharArray str else ?fheuwof
+  case cIntToBool ok of
+    True => Just <$> stringToCharArray str
+    False => do free str; pure Nothing
+
+%foreign (libxla "printModule")
+prim__printModule : AnyPtr -> PrimIO AnyPtr
+
+export
+printModule : HasIO io => ModuleOp -> io CharArray
+printModule (MkModuleOp moduleOp) = primIO (prim__printModule moduleOp) >>= stringToCharArray

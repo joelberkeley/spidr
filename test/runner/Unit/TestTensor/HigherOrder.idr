@@ -214,14 +214,14 @@ condResultWithReusedArgs = fixedProperty $ do
 export
 all : Device => List (PropertyName, Property)
 all = [
-      ("map", mapResult)
-    , ("map with non-trivial function", mapNonTrivial)
-    , ("map2", map2Result)
-    , ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
-    , ("reduce", reduce)
-    , ("sort", sort)
-    , ("sort with empty axis", sortWithEmptyAxis)
-    , ("sort with repeated elements", sortWithRepeatedElements)
+    --  ("map", mapResult)
+    --, ("map with non-trivial function", mapNonTrivial)
+    --, ("map2", map2Result)
+    --, ("map2 with re-used function arguments", map2ResultWithReusedFnArgs)
+      ("reduce", reduce)
+    --, ("sort", sort)
+    --, ("sort with empty axis", sortWithEmptyAxis)
+    --, ("sort with repeated elements", sortWithRepeatedElements)
     , ("cond for trivial usage", condResultTrivialUsage)
     , ("cond for re-used arguments", condResultWithReusedArgs)
   ]

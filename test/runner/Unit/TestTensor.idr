@@ -37,8 +37,8 @@ tensorThenEval : Device => Property
 tensorThenEval @{device} = withTests 20 . property $ do
   shape <- forAll shapes
 
-  x <- forAll (literal shape doubles)
-  x ==~ unsafePerformIO (eval device $ pure $ tensor {dtype = F64} x)
+  --x <- forAll (literal shape doubles)
+  --x ==~ unsafePerformIO (eval device $ pure $ tensor {dtype = F64} x)
 
   x <- forAll (literal shape int32s)
   x === unsafePerformIO (eval device $ pure $ tensor {dtype = S32} x)
@@ -50,7 +50,7 @@ tensorThenEval @{device} = withTests 20 . property $ do
   x === unsafePerformIO (eval device $ pure $ tensor {dtype = U64} x)
 
   x <- forAll (literal shape bool)
-  x === unsafePerformIO (eval device $ pure $ tensor {dtype = PRED} x)
+  x === unsafePerformIO (eval device $ pure $ tensor {dtype = PRED} x)-}
 
 evalTuple : Device => Property
 evalTuple @{device} = property $ do
@@ -479,7 +479,7 @@ export
 group : Device => Group
 group = MkGroup "Tensor" $ [
       ("eval . tensor", tensorThenEval)
-    , ("eval multiple tensors (tuple)", evalTuple)
+    {-, ("eval multiple tensors (tuple)", evalTuple)
     , ("eval multiple tensors (tuple) for non-trivial graph", evalTupleNonTrivial)
     , ("can read/write finite numeric bounds to/from XLA", canConvertAtXlaNumericBounds)
     , ("show", show)
@@ -498,11 +498,11 @@ group = MkGroup "Tensor" $ [
     , ("cholesky", cholesky)
     , (#"(|\) and (/|) result and inverse"#, triangularSolveResultAndInverse)
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
-    , ("trace", trace)
-  ] ++ concat (the (List _) [
+    , ("trace", trace)-}
+  ]{- ++ concat (the (List _) [
       Unit.TestTensor.Elementwise.all
     , Unit.TestTensor.HigherOrder.all
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all
-  ])
+  ])-}

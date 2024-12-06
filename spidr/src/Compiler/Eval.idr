@@ -61,12 +61,14 @@ data Err
   = OutOfBounds Nat Nat
   | ValueNotFound Nat
   | PjrtErr PjrtError
+  | SerializationError String
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
-  show (PjrtErr err)= show err
+  show (PjrtErr err) = show err
+  show (SerializationError err) = "SerializationError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
@@ -231,26 +233,21 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
-  putStrLn "execute ..."
+  xlaBuilder <- mkXlaBuilder "root"
+  computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   dialectRegistry <- mkDialectRegistry
   registerAllMhloDialects dialectRegistry
   registerAllDialects dialectRegistry
   mlirCtx <- mkMLIRContext
   appendDialectRegistry mlirCtx dialectRegistry
-  xlaBuilder <- mkXlaBuilder "root"
-  computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  printLn 1
-  code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx !(proto computation))
-  printLn 2
+  -- Just code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx !(proto computation))
+  --  | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
+  code <- printModule !(convertHloToStablehlo mlirCtx !(proto computation))
   executableBuildOptions <- mkExecutableBuildOptions
-  printLn 3
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-  printLn 4
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
-    printLn 5
     loadedExec <- pjrtClientCompile api client program compileOptions
-    printLn 6
     free code
     free compileOptions
     delete executableBuildOptions
