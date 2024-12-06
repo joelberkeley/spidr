@@ -107,8 +107,10 @@ data Expr : Type where
   Tuple : List Expr -> Expr
   GetTupleElement : (index : Nat) -> Expr -> Expr
 
-  Send : (token : Nat) -> (op : Expr) -> ChannelHandle -> Expr
-  Recv : (token : Nat) -> Primitive dtype => Shape -> ChannelHandle -> Expr
+  -- these may need to be in a separate data structure
+  CreateToken : Expr
+  Send : (token : Expr) -> (op : Expr) -> (handle : Int64) -> (type : ChannelType) -> Expr
+  Recv : (token : Expr) -> Primitive dtype => Shape -> (handle : Int64) -> (type : ChannelType) -> Expr
 
   MinValue : Primitive dtype => Expr
   MaxValue : Primitive dtype => Expr
@@ -188,6 +190,9 @@ showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {
 showExpr indent (Var k) = "Var \{k}"
 showExpr indent (Tuple xs) = "Tuple \{showExprList indent xs}"
 showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
+showExpr indent CreateToken = "CreateToken"
+showExpr indent (Send _ _ _ _) = "Send <other stuff>"
+showExpr indent (Recv _ _ _ _) = "Recv <other stuff>"
 showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MaxValue {dtype}) = "MaxValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{xlaIdentifier {dtype}}}"

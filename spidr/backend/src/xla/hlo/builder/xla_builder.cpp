@@ -22,10 +22,10 @@ limitations under the License.
 #include "xla/shape.h"
 #include "xla/xla_data.pb.h"
 
-#include "../../xla_data.proto.h"
 #include "../../literal.h"
 #include "../../shape.h"
 #include "../../xla_data.pb.h"
+#include "../../xla_data.proto.h"
 #include "xla_builder.h"
 #include "xla_computation.h"
 
@@ -461,26 +461,26 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
-    XlaOp* SendWithToken(XlaOp& operand, XlaOp& token, const ChannelHandle& handle) {
+    XlaOp* SendWithToken(XlaOp& operand, XlaOp& token, ChannelHandle& handle) {
         auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
         auto& token_ = reinterpret_cast<xla::XlaOp&>(token);
         auto& handle_ = reinterpret_cast<xla::ChannelHandle&>(handle);
 
-        auto res = xla::SendWithToken(operand, token, handle);
+        auto res = xla::SendWithToken(operand_, token_, handle_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
-    XlaOp* RecvWithToken(XlaOp& token, const Shape& shape, const ChannelHandle& handle) {
+    XlaOp* RecvWithToken(XlaOp& token, Shape& shape, ChannelHandle& handle) {
         auto& token_ = reinterpret_cast<xla::XlaOp&>(token);
         auto& shape_ = reinterpret_cast<xla::Shape&>(shape);
         auto& handle_ = reinterpret_cast<xla::ChannelHandle&>(handle);
 
-        auto res = xla::RecvWithToken(token, shape, handle);
+        auto res = xla::RecvWithToken(token_, shape_, handle_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
-    XlaOp* CreateToken(XlaBuilder& builder) {
-        auto& builder_ = reinterpret_cast<xla::XlaBuilder>(builder);
+    XlaOp* CreateToken(XlaBuilder* builder) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         auto res = xla::CreateToken(builder_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }

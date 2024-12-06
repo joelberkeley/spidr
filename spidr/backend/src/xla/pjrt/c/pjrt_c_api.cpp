@@ -162,6 +162,30 @@ extern "C" {
         return api->PJRT_Client_Compile(args);
     }
 
+    PJRT_Client_DefaultDeviceAssignment_Args* PJRT_Client_DefaultDeviceAssignment_Args_new(
+        PJRT_Client* client,
+        int num_replicas,
+        int num_partitions,
+        size_t default_assignment_size,
+        int* default_assignment
+    ) {
+        return new PJRT_Client_DefaultDeviceAssignment_Args {
+            .struct_size = PJRT_Client_DefaultDeviceAssignment_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .client = client,
+            .num_replicas = num_replicas,
+            .num_partitions = num_partitions,
+            .default_assignment_size = default_assignment_size,
+            .default_assignment = default_assignment,
+        };
+    }
+
+    PJRT_Error* pjrt_client_defaultdeviceassignment(
+        PJRT_Api* api, PJRT_Client_DefaultDeviceAssignment_Args* args
+    ) {
+        return api->PJRT_Client_DefaultDeviceAssignment(args);
+    }
+
     PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
         PJRT_LoadedExecutable* executable
     ) {

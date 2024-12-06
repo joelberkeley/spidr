@@ -59,6 +59,10 @@ extern "C" {
         return ptr[idx];
     }
 
+    int idx_int(int idx, int* ptr) {
+        return ptr[idx];
+    }
+
     void set_array_int(int* arr, int idx, int value) {
         arr[idx] = value;
     }

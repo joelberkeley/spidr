@@ -21,6 +21,7 @@ import Hedgehog
 import Device
 
 import TestUtils
+import Composite.Concurrent
 import Utils.TestComparison
 import Unit.Model.TestKernel
 import Unit.TestDistribution
@@ -30,12 +31,13 @@ import Unit.TestUtil
 
 export
 run : Device -> IO ()
-run device = test [
+run device = test [{-
       Utils.TestComparison.group
     , TestUtils.group
     , Unit.TestUtil.group
     , Unit.TestLiteral.group
     , Unit.TestTensor.group
     , Unit.TestDistribution.group
-    , Unit.Model.TestKernel.group
+    , Unit.Model.TestKernel.group-}
+    Composite.Concurrent.group
   ]

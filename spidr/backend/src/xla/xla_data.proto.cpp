@@ -13,11 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "xla/xla_data.pb.h"
+
 #include "xla_data.proto.h"
 
 extern "C" {
     ChannelHandle* ChannelHandle_new(int64_t handle, uint8_t type) {
-        return reinterpret_cast<ChannelHandle*>(xla::ChannelHandle(handle, (xla::ChannelType) type))
+        auto channel_handle = new xla::ChannelHandle;
+        // should really be separate ... hmmm
+        channel_handle->set_handle(handle);
+        channel_handle->set_type( (xla::ChannelHandle::ChannelType) type);
+        return reinterpret_cast<ChannelHandle*>(channel_handle);
     }
 
     void ChannelHandle_delete(ChannelHandle* handle) {

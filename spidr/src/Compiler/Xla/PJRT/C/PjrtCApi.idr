@@ -262,6 +262,34 @@ prim__pjrtClientCompileArgsExecutable : AnyPtr -> AnyPtr
 %foreign (libxla "pjrt_client_compile")
 prim__pjrtClientCompile : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+%foreign (libxla "PJRT_Client_DefaultDeviceAssignment_Args_new")
+prim__mkPjrtClientDefaultDeviceAssignmentArgs :
+  GCAnyPtr -> Int -> Int -> Bits64 -> Ptr Int -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_client_defaultdeviceassignment")
+prim__pjrtClientDefaultDeviceAssignment : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+||| For internal spidr use only.
+export
+pjrtClientDefaultDeviceAssignment :
+  PjrtApi -> PjrtClient -> (num_replicas, num_partitions : Nat) -> Pjrt (List Int)
+pjrtClientDefaultDeviceAssignment
+  (MkPjrtApi api) (MkPjrtClient client) num_replicas num_partitions = do
+    let defaultAssignmentSize = num_replicas * num_partitions
+    defaultAssignment <- prim__castPtr <$> malloc (cast defaultAssignmentSize * sizeofInt)
+    args <- primIO $ prim__mkPjrtClientDefaultDeviceAssignmentArgs
+      client
+      (cast num_replicas)
+      (cast num_partitions)
+      (cast defaultAssignmentSize)
+      defaultAssignment
+    err <- primIO $ prim__pjrtClientDefaultDeviceAssignment api args
+    free args
+    let defaultAssignment' =
+          [prim__indexInt (cast idx) defaultAssignment | idx <- range defaultAssignmentSize]
+    free $ prim__forgetPtr defaultAssignment
+    try api err $ defaultAssignment'
+
 %foreign (libxla "PJRT_LoadedExecutable_Destroy_Args_new")
 prim__mkPjrtLoadedExecutableDestroyArgs : AnyPtr -> PrimIO AnyPtr
 

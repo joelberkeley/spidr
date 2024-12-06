@@ -633,7 +633,7 @@ conditional
     pure (MkXlaOp opPtr)
 
 %foreign (libxla "SendWithToken")
-prim__sendWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO ()
+prim__sendWithToken : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
 sendWithToken : HasIO io => XlaOp -> XlaOp -> ChannelHandle -> io XlaOp
@@ -649,8 +649,8 @@ export
 recvWithToken : HasIO io => XlaOp -> Xla.Shape -> ChannelHandle -> io XlaOp
 recvWithToken (MkXlaOp token) (MkShape shape) (MkChannelHandle handle) = do
   opAndTok <- primIO $ prim__recvWithToken token shape handle
-  opAndTok <- onCollectAny op XlaOp.delete
-  pure MkXlaOp opAndTok
+  opAndTok <- onCollectAny opAndTok XlaOp.delete
+  pure (MkXlaOp opAndTok)
 
 %foreign (libxla "CreateToken")
 prim__createToken : GCAnyPtr -> PrimIO AnyPtr

@@ -125,7 +125,7 @@ prim__channelHandle_new : Int64 -> Bits8 -> PrimIO AnyPtr
 %foreign (libxla "ChannelHandle_delete")
 prim__channelHandle_delete : AnyPtr -> PrimIO ()
 
-export
+public export
 data ChannelHandle = MkChannelHandle GCAnyPtr
 
 public export
@@ -134,8 +134,12 @@ data ChannelType =
   | DEVICE_TO_HOST
   | HOST_TO_DEVICE
 
-allocChannelHandle : HasIO io => Int64 -> ChannelType -> io ChannelHandle
-allocChannelHandle handle type = do
-  ptr <- primIO prim__channelHandle_new
+export
+mkChannelHandle : HasIO io => Int64 -> ChannelType -> io ChannelHandle
+mkChannelHandle handle type = do
+  ptr <- primIO $ prim__channelHandle_new handle (case type of
+    DEVICE_TO_DEVICE => 1
+    DEVICE_TO_HOST   => 2
+    HOST_TO_DEVICE   => 3)
   ptr <- onCollectAny ptr (primIO . prim__channelHandle_delete)
   pure (MkChannelHandle ptr)

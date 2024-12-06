@@ -6,6 +6,8 @@ depends =
   sop
 
 modules =
+  Composite.Concurrent,
+
   Unit.Model.TestKernel,
 
   Unit.TestTensor.Elementwise,

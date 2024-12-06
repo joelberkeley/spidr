@@ -48,6 +48,10 @@ export
 prim__index : Int -> AnyPtr -> AnyPtr
 
 export
+%foreign (libxla "idx_int")
+prim__indexInt : Int -> Ptr Int -> Int
+
+export
 cIntToBool : Int -> Bool
 cIntToBool 0 = False
 cIntToBool 1 = True
@@ -71,6 +75,7 @@ public export
 data IntArray : Type where
   MkIntArray : GCPtr Int -> IntArray
 
+export
 %foreign (libxla "sizeof_int")
 sizeofInt : Int
 

@@ -97,6 +97,11 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Var x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
+  interpretE CreateToken = createToken xlaBuilder
+  interpretE (Send op token handle type) =
+    sendWithToken !(interpretE op) !(interpretE token) !(mkChannelHandle handle type)
+  interpretE (Recv token shape {dtype} handle type) =
+    recvWithToken !(interpretE token) !(mkShape shape {dtype}) !(mkChannelHandle handle type)
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
   interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder
   interpretE (MinFiniteValue {dtype}) = minFiniteValue {dtype} xlaBuilder
@@ -227,6 +232,7 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
     code <- serializeAsString computation
     executableBuildOptions <- mkExecutableBuildOptions
     compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
+    _ <- pjrtClientDefaultDeviceAssignment api client 1 2
     loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
     free code
     free compileOptions

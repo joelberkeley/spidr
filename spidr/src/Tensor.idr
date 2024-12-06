@@ -27,6 +27,7 @@ import public Control.Monad.State
 import public Data.List
 import public Data.List.Elem
 import Data.List.Quantifiers
+import Data.Linear.Notation
 import Decidable.Equality
 
 import Compiler.Eval
@@ -56,7 +57,7 @@ data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Expr -> {shape : _} -> Tensor shape dtype
 
 ||| The effect of tagging nodes in a computational graph.
-export
+public export
 data TagT : (Type -> Type) -> Type -> Type where
   MkTagT : StateT Env m a -> TagT m a
 
@@ -133,18 +134,30 @@ namespace S32
   fromInteger = tensor . Scalar . fromInteger
 
 export
-data Session = MkSession Nat  -- Nat is pointer to op
+data Session = MkSession Expr  -- Expr here is a token ... this feels suspicious but might be right
 
--- do we need IO if we're using linearity?
-export
-session : (1 _ : (1 _ : Session -> XlaOp)) -> XlaOp
-
-export
-send : (1 session : Session) -> Tensor shape dtype -> Session
-send (MkSession tok) (MkTensor op) = MkSession tok
+public export
+data Ur a = U a
 
 export
-recv : (1 session : Session) -> {shape : _} -> Res (Tensor shape dtype) (const Session)
+session : (Session -@ Ur a) -@ Ur a  -- credit stefan?
+session f = f (MkSession CreateToken)
+
+export
+send : (1 _ : Session) -> Tensor shape dtype -> (channel : Int64) -> ChannelType -> Session
+send (MkSession tok) (MkTensor op) handle type = MkSession (Send tok op handle type)
+
+export
+recv : Primitive dtype => (1 _ : Session) -> (channel : Int64) -> ChannelType -> Env -> {shape : _} -> Res (Env, Tensor shape dtype) (const Session)
+recv (MkSession tok) handle type env =
+  let (env, x) = runState env $ Expr.tag $ Recv tok shape {dtype} handle type
+      op = GetTupleElement 0 x
+      tok = GetTupleElement 1 x
+   in (env, MkTensor op) # MkSession tok
+
+export
+end : (1 _ : Session) -> a -> a
+end (MkSession _) a = a
 
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
