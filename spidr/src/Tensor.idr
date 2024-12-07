@@ -23,12 +23,14 @@ limitations under the License.
 module Tensor
 
 import Control.Monad.Error.Either
+import Control.Linear.LIO
 import public Control.Monad.State
 import public Data.List
 import public Data.List.Elem
 import Data.List.Quantifiers
 import Data.Linear.Notation
 import Decidable.Equality
+import System.Concurrency.Linear
 
 import Compiler.Eval
 import Compiler.Expr
@@ -57,7 +59,7 @@ data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Expr -> {shape : _} -> Tensor shape dtype
 
 ||| The effect of tagging nodes in a computational graph.
-public export
+export
 data TagT : (Type -> Type) -> Type -> Type where
   MkTagT : StateT Env m a -> TagT m a
 
@@ -133,31 +135,68 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
+-- is this how we want to do this? are LinearBind and HasLinearIO necessary?
 export
-data Session = MkSession Expr  -- Expr here is a token ... this feels suspicious but might be right
+LinearBind io => LinearBind (TagT io) where
+  -- bindL : io a -@ (a -> io b) -@ io b
+  bindL = ?yvh54wsy
+
+export
+HasLinearIO io => HasLinearIO (TagT io) where
+  -- liftIO1 : (1 _ : IO a) -> TagT io a
+  liftIO1 _ = ?vy3qa
 
 public export
-data Ur a = U a
+data Session
+  = SendT Shape Type Session
+  | RecvT Shape Type Session
+  | EndT
+
+public export
+dual : Session -> Session
 
 export
-session : (Session -@ Ur a) -@ Ur a  -- credit stefan?
-session f = f (MkSession CreateToken)
+data Channel : Session -> Type where
+  -- Expr here is a token ... this feels suspicious but might be right
+  MkChannel : Expr -> Channel sess
 
 export
-send : (1 _ : Session) -> Tensor shape dtype -> (channel : Int64) -> ChannelType -> Session
-send (MkSession tok) (MkTensor op) handle type = MkSession (Send tok op handle type)
+makeChannel : LinearIO io => (0 s : Session) -> L1 io (LPair (Channel s) (Channel (dual s)))
+makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
 
 export
-recv : Primitive dtype => (1 _ : Session) -> (channel : Int64) -> ChannelType -> Env -> {shape : _} -> Res (Env, Tensor shape dtype) (const Session)
-recv (MkSession tok) handle type env =
-  let (env, x) = runState env $ Expr.tag $ Recv tok shape {dtype} handle type
-      op = GetTupleElement 0 x
+send :
+  LinearIO io =>
+  (1 _ : Channel (SendT shape dtype sess)) ->
+  Tensor shape dtype ->
+  ChannelType ->
+  L1 io (Channel sess)
+send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
+
+export
+recv :
+  LinearIO io =>
+  Primitive dtype =>
+  {shape : _} ->
+  (1 _ : Channel (RecvT shape dtype sess)) ->
+  ChannelType ->
+  L1 (TagT io) $ Res (Env, Tensor shape dtype) (const $ Channel sess)
+recv (MkChannel tok) type = do
+  x <- liftIO1 $ MkTagT $ Expr.tag $ Recv tok shape {dtype} 1 type
+  let op = GetTupleElement 0 x
       tok = GetTupleElement 1 x
-   in (env, MkTensor op) # MkSession tok
+  pure1 $ (env, MkTensor op) # MkChannel tok
 
 export
-end : (1 _ : Session) -> a -> a
-end (MkSession _) a = a
+end : (1 _ : Channel EndT) -> L IO ()
+end (MkChannel _) = pure ()
+
+export
+fork : (0 s : Session) -> (Channel s -@ L IO a) -@ (Channel (dual s) -@ L IO b) -@ L IO (a, b)
+fork s kA kB = do
+  let 1 io = makeChannel s
+  (posCh # negCh) <- io
+  par (kA posCh) (kB negCh)
 
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure

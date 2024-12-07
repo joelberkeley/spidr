@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Composite.Concurrent
 
+import Control.Linear.LIO
 import Control.Monad.State
 import Data.Linear.Notation
 
@@ -25,16 +26,33 @@ import Tensor
 import Utils.Comparison
 import Utils.Cases
 
+public export
+0 protocol : Session
+protocol = SendT [] S32 $ RecvT [] S32 $ EndT
+
 -- tries to use single device
 simpleSend : Device => Property
 simpleSend = fixedProperty $ do
-  let x = tensor {dtype = F64} 2.0
-      -- what do we do with this? should this be in IO as there's no value here?
-      _ = session $ \s => let s = send s x 1 DEVICE_TO_DEVICE in end s (U ())
-      w = session $ \s => MkTagT $ ST $ \env =>
-            let (env, x) # s = recv s 1 {shape = [], dtype = F64} DEVICE_TO_DEVICE env
-             in U (env, x)
-  w ===# pure x
+  let x = tensor {dtype = S32} 2
+
+      host : Channel Concurrent.protocol -@ L (TagT IO) ()
+      host s = do
+        s <- send s x HOST_TO_DEVICE
+        (env, x) # s <- recv s HOST_TO_DEVICE
+        end s
+
+      device : Channel Concurrent.protocol -@ L (TagT IO) ()
+
+      prog : TagT IO (Tensor [] S32) = fork Concurrent.protocol host ?device'
+
+        {-
+        the (TagT IO _) $ lift $ MkTagT $ ST $ \env => the (IO _) $ run $ the (L IO _) $ do
+        session $
+        session $ \s => the (L1 IO ()) $ do
+          (env, x) # s <- the (L1 IO _) $ recv s {shape = [], dtype = S32} DEVICE_TO_HOST env
+          the (L IO ()) $ pure $ end s (env, x)
+          -}
+  Tensor.Tag.eval prog === 2
 
 export
 group : Device => Group
