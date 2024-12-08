@@ -29,7 +29,7 @@ serializePortableArtifact (MkModuleOp moduleOp) = do
   ok <- primIO $ prim__serializePortableArtifact moduleOp str
   case cIntToBool ok of
     True => Just <$> stringToCharArray str
-    False => do free str; pure Nothing
+    False => free str >> pure Nothing
 
 %foreign (libxla "printModule")
 prim__printModule : AnyPtr -> PrimIO AnyPtr

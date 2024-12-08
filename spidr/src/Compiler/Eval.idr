@@ -239,10 +239,10 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   registerAllMhloDialects dialectRegistry
   registerAllDialects dialectRegistry
   mlirCtx <- mkMLIRContext
+  stablehlo <- convertHloToStablehlo mlirCtx !(proto computation)
   appendDialectRegistry mlirCtx dialectRegistry
-  -- Just code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx !(proto computation))
-  --  | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
-  code <- printModule !(convertHloToStablehlo mlirCtx !(proto computation))
+  Just code <- serializePortableArtifact stablehlo | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
+  -- code <- printModule stablehlo
   executableBuildOptions <- mkExecutableBuildOptions
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code

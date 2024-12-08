@@ -33,9 +33,9 @@ extern "C" {
 //        printf("%s\n", s.c_str());
 
         llvm::raw_string_ostream os(str_);
-        if (mlir::writeBytecodeToFile(module_, os).failed()) {
-            return (int) false;
-        }
+//        if (mlir::writeBytecodeToFile(module_, os).failed()) {
+//            return (int) false;
+//        }
 
 //        printf("... serialization:\n");
 //        printf("%s\n", str_.c_str());
@@ -49,6 +49,9 @@ extern "C" {
         auto str = new std::string();
         llvm::raw_string_ostream os(*str);
         module_.print(os);
+
+        printf("... debug print:\n");
+        printf("%s\n", str->c_str());
         return reinterpret_cast<string*>(str);
     }
 }
