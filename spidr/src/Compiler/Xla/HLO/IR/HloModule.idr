@@ -1,5 +1,5 @@
 {--
-Copyright 2022 Joel Berkeley
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,29 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.HLO.Builder.XlaComputation
+module Compiler.Xla.HLO.IR.HloModule
 
 import Compiler.FFI
-import Compiler.Xla.Shape
+import Compiler.Xla.Service.HloModuleConfig
 import Compiler.Xla.Service.HloProto
 
 public export
-data XlaComputation : Type where
-  MkXlaComputation : GCAnyPtr -> XlaComputation
+data HloModule = MkHloModule GCAnyPtr
 
-%foreign (libxla "XlaComputation_delete")
+%foreign (libxla "HloModule_delete")
 prim__delete : AnyPtr -> PrimIO ()
 
-export
-delete : AnyPtr -> IO ()
-delete = primIO . XlaComputation.prim__delete
-
-%foreign (libxla "XlaComputation_proto")
-prim__xlaComputationProto : GCAnyPtr -> PrimIO AnyPtr
+%foreign (libxla "HloModule_CreateFromProto")
+prim__hloModuleCreateFromProto : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 export
-proto : HasIO io => XlaComputation -> io HloModuleProto
-proto (MkXlaComputation comp) = do
-  proto <- primIO $ prim__xlaComputationProto comp
-  proto <- onCollectAny proto (primIO . HloProto.prim__delete)
-  pure (MkHloModuleProto proto)
+createFromProto : HasIO io => HloModuleProto -> HloModuleConfig -> io HloModule
+createFromProto (MkHloModuleProto proto) (MkHloModuleConfig config) = do
+  module' <- primIO $ prim__hloModuleCreateFromProto proto config
+  module' <- onCollectAny module' (primIO . HloModule.prim__delete)
+  pure (MkHloModule module')

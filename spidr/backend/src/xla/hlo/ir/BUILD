@@ -1,13 +1,11 @@
 cc_library(
-    name = "builder",
+    name = "ir",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/hlo/builder:xla_builder",
-        "//src",
-        "//src/xla",
+        "@xla//xla/hlo/ir:hlo",
         "//src/xla/service",
     ],
     visibility = ["//visibility:public"],
