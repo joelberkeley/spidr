@@ -1,14 +1,14 @@
 cc_library(
-    name = "builder",
+    name = "dialect",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/hlo/builder:xla_builder",
-        "//src",
-        "//src/xla",
-        "//src/xla/service",
+        "@llvm-project//mlir:IR",
+        "@stablehlo//:register",
+        "@stablehlo//:stablehlo_serialization",
+        "//src/mlir/IR",
     ],
     visibility = ["//visibility:public"],
 )

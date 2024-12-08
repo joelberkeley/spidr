@@ -1,7 +1,7 @@
-package xla-cpu
+package apple-metal
 
 depends =
-  pjrt-plugin-xla-cpu,
+  pjrt-plugin-apple-metal,
   runner
 
 executable = test
