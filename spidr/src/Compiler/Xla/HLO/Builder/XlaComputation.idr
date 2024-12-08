@@ -31,16 +31,6 @@ export
 delete : AnyPtr -> IO ()
 delete = primIO . XlaComputation.prim__delete
 
-%foreign (libxla "XlaComputation_GetProgramShape")
-prim__xlaComputationGetProgramShape : GCAnyPtr -> PrimIO AnyPtr
-
-export
-getProgramShape : HasIO io => XlaComputation -> io ProgramShape
-getProgramShape (MkXlaComputation comp) = do
-  pshape <- primIO $ prim__xlaComputationGetProgramShape comp
-  pshape <- onCollectAny pshape (primIO . prim__ProgramShape_delete)
-  pure (MkProgramShape pshape)
-
 %foreign (libxla "XlaComputation_proto")
 prim__xlaComputationProto : GCAnyPtr -> PrimIO AnyPtr
 

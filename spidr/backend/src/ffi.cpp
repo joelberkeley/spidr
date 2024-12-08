@@ -29,6 +29,10 @@ extern "C" {
         return ptr == nullptr;
     }
 
+    string* string_new() {
+        return reinterpret_cast<string*>(new std::string());
+    }
+
     void string_delete(string* s) {
         delete reinterpret_cast<std::string*>(s);
     }

@@ -6,6 +6,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@llvm-project//mlir:IR",
+        "//src",
     ],
     visibility = ["//visibility:public"],
 )

@@ -29,8 +29,4 @@ extern "C" {
     void set_array_Shape(Shape* arr, int idx, Shape* shape) {
         reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
     }
-
-    void ProgramShape_delete(ProgramShape* s) {
-        delete reinterpret_cast<xla::ProgramShape*>(s);
-    }
 }

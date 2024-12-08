@@ -30,6 +30,7 @@ import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.StableHLO.Dialect.Register
+import Compiler.StableHLO.Dialect.Serialization
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
 import Compiler.Xla.HLO.Builder.Lib.Constants
@@ -38,12 +39,10 @@ import Compiler.Xla.HLO.Builder.Lib.Matrix
 import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.HLO.Builder.XlaComputation
-import Compiler.Xla.HLO.IR.HloModule
 import Compiler.Xla.HLO.Translate.StableHLO
 import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
-import Compiler.Xla.Service.HloModuleConfig
 import Compiler.Xla.Service.HloProto
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape
@@ -62,12 +61,14 @@ data Err
   = OutOfBounds Nat Nat
   | ValueNotFound Nat
   | PjrtErr PjrtError
+  | SerializationError String
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
-  show (PjrtErr err)= show err
+  show (PjrtErr err) = show err
+  show (SerializationError err) = "SerializationError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
@@ -232,25 +233,21 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
-  putStrLn "execute ..."
+  xlaBuilder <- mkXlaBuilder "root"
+  computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   dialectRegistry <- mkDialectRegistry
   registerAllMhloDialects dialectRegistry
   registerAllDialects dialectRegistry
   mlirCtx <- mkMLIRContext
+  stablehlo <- convertHloToStablehlo mlirCtx !(proto computation)
   appendDialectRegistry mlirCtx dialectRegistry
-  xlaBuilder <- mkXlaBuilder "root"
-  computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  printLn 1
-  code <- serializeUsingBytecode !(convertHloToStablehlo mlirCtx !(proto computation))
-  printLn 2
+  Just code <- serializePortableArtifact stablehlo | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
+  -- code <- printModule stablehlo
   executableBuildOptions <- mkExecutableBuildOptions
-  printLn 3
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-  printLn 4
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
     loadedExec <- pjrtClientCompile api client program compileOptions
-    printLn 6
     free code
     free compileOptions
     delete executableBuildOptions

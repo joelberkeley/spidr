@@ -29,13 +29,3 @@ convertHloToStablehlo : HasIO io => MLIRContext -> HloModuleProto -> io ModuleOp
 convertHloToStablehlo (MkMLIRContext ctx) (MkHloModuleProto proto) = do
   moduleOp <- primIO $ prim__convertHloToStablehlo ctx proto
   pure (MkModuleOp moduleOp)
-
-%foreign (libxla "SerializeUsingBytecode")
-prim__serializeUsingBytecode : AnyPtr -> PrimIO AnyPtr
-
-export
-serializeUsingBytecode : HasIO io => ModuleOp -> io CharArray
-serializeUsingBytecode (MkModuleOp mop) = do
-  putStrLn "serializeUsingBytecode ..."
-  printLn 0
-  primIO (prim__serializeUsingBytecode mop) >>= stringToCharArray

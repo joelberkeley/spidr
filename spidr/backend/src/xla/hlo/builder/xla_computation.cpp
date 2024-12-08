@@ -26,13 +26,8 @@ extern "C" {
         delete reinterpret_cast<xla::XlaComputation*>(s);
     }
 
-    ProgramShape* XlaComputation_GetProgramShape(XlaComputation* s) {
-        auto res = reinterpret_cast<xla::XlaComputation*>(s)->GetProgramShape();
-        return reinterpret_cast<ProgramShape*>(new xla::ProgramShape(*res));
-    }
-
     HloModuleProto* XlaComputation_proto(XlaComputation* s) {
-        auto res = reinterpret_cast<xla::XlaComputation*>(s)->proto();
-        return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(res));
+        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
+        return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(s_->proto()));
     }
 }

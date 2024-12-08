@@ -1,4 +1,4 @@
-/*
+{--
 Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,22 +12,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
-#include "xla/service/hlo_module_config.h"
-#include "xla/shape.h"
+--}
+module Main
 
-#include "hlo_module_config.h"
+import System
 
-#include "../shape.h"
+import TestRunner
+import PjrtPluginXlaCuda
 
-extern "C" {
-    HloModuleConfig* HloModuleConfig_new(ProgramShape& program_shape) {
-        auto& program_shape_ = reinterpret_cast<xla::ProgramShape&>(program_shape);
-        auto config = new xla::HloModuleConfig(program_shape_);
-        return reinterpret_cast<HloModuleConfig*>(config);
-    }
-
-    void HloModuleConfig_delete(HloModuleConfig* s) {
-        delete reinterpret_cast<xla::HloModuleConfig*>(s);
-    }
-}
+partial
+main : IO ()
+main = eitherT (die . show) run device

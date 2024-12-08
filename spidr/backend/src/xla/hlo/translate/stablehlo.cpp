@@ -17,13 +17,9 @@ limitations under the License.
 #include "xla/service/hlo.pb.h"
 #include "xla/hlo/translate/stablehlo.h"
 
-
-#include "mlir/Bytecode/BytecodeWriter.h"
-
 #include "../../service/hlo.proto.h"
 #include "../../../mlir/IR/BuiltinOps.h"
 #include "../../../mlir/IR/MLIRContext.h"
-#include "../../../ffi.h"
 
 extern "C" {
     ModuleOp* ConvertHloToStablehlo(MLIRContext& ctx, HloModuleProto* hlo_module) {
@@ -31,14 +27,5 @@ extern "C" {
         auto hlo_module_ = reinterpret_cast<xla::HloModuleProto*>(hlo_module);
         auto module_op = xla::ConvertHloToStablehlo(ctx_, hlo_module_);
         return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(module_op.value().release()));
-    }
-
-    string* SerializeUsingBytecode(ModuleOp& module) {
-        auto module_ = reinterpret_cast<mlir::ModuleOp&>(module);
-        auto bytecode = new std::string();
-        llvm::raw_string_ostream os(*bytecode);
-        mlir::BytecodeWriterConfig config;
-        mlir::writeBytecodeToFile(module_, os, config);
-        return reinterpret_cast<string*>(bytecode);
     }
 }
