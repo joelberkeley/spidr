@@ -35,13 +35,13 @@ simpleSend : Device => Property
 simpleSend = fixedProperty $ do
   let x = tensor {dtype = S32} 2
 
-      host : Channel Concurrent.protocol -@ L (TagT IO) ()
+      host : Channel Concurrent.protocol -@ TagT1 IO ()
       host s = do
         s <- send s x HOST_TO_DEVICE
         (env, x) # s <- recv s HOST_TO_DEVICE
         end s
 
-      device : Channel Concurrent.protocol -@ L (TagT IO) ()
+      device : Channel Concurrent.protocol -@ TagT1 IO (Tensor [] S32)
 
       prog : TagT IO (Tensor [] S32) = fork Concurrent.protocol host ?device'
 

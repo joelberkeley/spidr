@@ -173,19 +173,42 @@ send :
   L1 io (Channel sess)
 send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
 
+public export 0
+CRes : Type -> Type -> Type
+CRes a b = Res a (const b)
+
+export
+data TagT1 : (Type -> Type) -> Type -> Type where
+  MkTagT1 : LinearIO io => (Env -> L1 io (CRes Env a)) -@ TagT1 io a
+
+export
+(>>=) :
+  LinearIO io =>
+  TagT1 io a ->
+  (1 _ : a -> TagT1 io b) ->
+  TagT1 io b
+
+export
+lift1 : LinearIO io => TagT IO a -> TagT1 io a
+lift1 (MkTagT st) = MkTagT1 (\e => liftIO1 (runStateT e st) >>= \(e, a) => pure1 (e # a))
+
+export
+pure : LinearIO io => a -> TagT1 io a
+pure xa = MkTagT1 $ \e => pure1 (e # xa)
+
 export
 recv :
   LinearIO io =>
   Primitive dtype =>
   {shape : _} ->
   (1 _ : Channel (RecvT shape dtype sess)) ->
-  ChannelType ->
-  L1 (TagT io) $ Res (Env, Tensor shape dtype) (const $ Channel sess)
+  ChannelType ->  -- this almost certainly doesn't make sense with Channel
+  TagT1 io $ CRes (Tensor shape dtype) (Channel sess)
 recv (MkChannel tok) type = do
-  x <- liftIO1 $ MkTagT $ Expr.tag $ Recv tok shape {dtype} 1 type
+  x <- lift1 $ MkTagT $ Expr.tag $ Recv tok shape {dtype} 1 type
   let op = GetTupleElement 0 x
       tok = GetTupleElement 1 x
-  pure1 $ (env, MkTensor op) # MkChannel tok
+  pure $ MkTensor op # MkChannel tok
 
 export
 end : (1 _ : Channel EndT) -> L IO ()
