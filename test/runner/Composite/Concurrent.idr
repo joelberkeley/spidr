@@ -33,25 +33,26 @@ protocol = SendT [] S32 $ RecvT [] S32 $ EndT
 -- tries to use single device
 simpleSend : Device => Property
 simpleSend = fixedProperty $ do
-  let x = tensor {dtype = S32} 2
+  let host : Channel Concurrent.protocol -@ TagT1 IO (Tensor [] S32)
+      host ch = do
+        let x = tensor {dtype = S32} 2
+        ch <- send ch x HOST_TO_DEVICE
+        x # ch <- recv ch HOST_TO_DEVICE
+        end ch  -- i think we need an equivalent to `liftIO1 : (1 _ : IO a) -> io a`, maybe also need `run`
+        pure x
 
-      host : Channel Concurrent.protocol -@ TagT1 IO ()
-      host s = do
-        s <- send s x HOST_TO_DEVICE
-        (env, x) # s <- recv s HOST_TO_DEVICE
-        end s
+      device : Channel Concurrent.protocol -@ TagT1 IO ()
+      device ch = do
+        x # ch <- recv ch DEVICE_TO_HOST
+        ch <- send ch x DEVICE_TO_HOST
+        end ch
 
-      device : Channel Concurrent.protocol -@ TagT1 IO (Tensor [] S32)
+      prog : TagT IO (Tensor [] S32) = do
+        (h # d) <- makeChannel Concurrent.protocol
+        -- this doesn't look very concurrent
+        host h
+        device d
 
-      prog : TagT IO (Tensor [] S32) = fork Concurrent.protocol host ?device'
-
-        {-
-        the (TagT IO _) $ lift $ MkTagT $ ST $ \env => the (IO _) $ run $ the (L IO _) $ do
-        session $
-        session $ \s => the (L1 IO ()) $ do
-          (env, x) # s <- the (L1 IO _) $ recv s {shape = [], dtype = S32} DEVICE_TO_HOST env
-          the (L IO ()) $ pure $ end s (env, x)
-          -}
   Tensor.Tag.eval prog === 2
 
 export

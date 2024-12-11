@@ -179,47 +179,59 @@ CRes a b = Res a (const b)
 
 export
 data TagT1 : (Type -> Type) -> Type -> Type where
-  MkTagT1 : LinearIO io => (Env -> L1 io (CRes Env a)) -@ TagT1 io a
+  MkTagT1 : (Env -> m (CRes Env a)) -@ TagT1 m a
 
 export
-(>>=) :
-  LinearIO io =>
-  TagT1 io a ->
-  (1 _ : a -> TagT1 io b) ->
-  TagT1 io b
+(>>=) : TagT1 (L1 IO) a -@ (a -@ TagT1 (L1 IO) b) -@ TagT1 (L1 IO) b
+(MkTagT1 g) >>= f = MkTagT1 $ \e => do
+  e' # xa <- g e
+  let MkTagT1 g' = f xa
+  g' e'
 
 export
-lift1 : LinearIO io => TagT IO a -> TagT1 io a
-lift1 (MkTagT st) = MkTagT1 (\e => liftIO1 (runStateT e st) >>= \(e, a) => pure1 (e # a))
+pure : Applicative m => a -> TagT1 m a
+pure xa = MkTagT1 $ \e => pure (e # xa)
 
-export
-pure : LinearIO io => a -> TagT1 io a
-pure xa = MkTagT1 $ \e => pure1 (e # xa)
+-- export
+-- lift1 : LinearIO io => TagT IO a -> TagT1 io a
+-- lift1 (MkTagT st) = MkTagT1 (\e => liftIO1 (runStateT e st) >>= \(e, a) => pure1 (e # a))
+--
+-- export
+-- pure : LinearIO io => a -> TagT1 io a
+-- pure xa = MkTagT1 $ \e => pure1 (e # xa)
 
+-- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
+-- TagT is not linear in its argument, so it needs to be modified. The only way I can see it
+-- producing a linear `Channel sess` is to use either a
+-- L1 IO (Env -> CRes Env ?x) i.e. L1 IO (Tag1 ?x) where `MkTag1 : (1 _ : Env -> CRes Env ?x) -> Tag1`
+-- or a
+-- Env -> L1 IO (CRes Env ?x) i.e. `MkTag1 : (1 _ : Env -> m (CRes Env ?x)) -> Tag1` with m = L1 IO
+-- It definitely seems more reasonable to have TagT1 IO over IO (Tag1 ?x) the Tag effect comes before
+-- the IO, indeed you'd execute TagT to get an IO, but where does L1 belong L1 (TagT1 IO) or
+-- TagT1 (L1 IO)? Is L1 (TagT1 IO) even possible?
 export
 recv :
-  LinearIO io =>
   Primitive dtype =>
   {shape : _} ->
   (1 _ : Channel (RecvT shape dtype sess)) ->
   ChannelType ->  -- this almost certainly doesn't make sense with Channel
-  TagT1 io $ CRes (Tensor shape dtype) (Channel sess)
-recv (MkChannel tok) type = do
-  x <- lift1 $ MkTagT $ Expr.tag $ Recv tok shape {dtype} 1 type
+  TagT1 (L1 IO) $ CRes (Tensor shape dtype) (Channel sess)
+recv (MkChannel tok) type = MkTagT1 $ \e => do
+  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 1 type
   let op = GetTupleElement 0 x
       tok = GetTupleElement 1 x
-  pure $ MkTensor op # MkChannel tok
+  pure1 $ e # (MkTensor op # MkChannel tok)
 
 export
 end : (1 _ : Channel EndT) -> L IO ()
 end (MkChannel _) = pure ()
 
-export
-fork : (0 s : Session) -> (Channel s -@ L IO a) -@ (Channel (dual s) -@ L IO b) -@ L IO (a, b)
-fork s kA kB = do
-  let 1 io = makeChannel s
-  (posCh # negCh) <- io
-  par (kA posCh) (kB negCh)
+--export
+--fork : (0 s : Session) -> (Channel s -@ L IO a) -@ (Channel (dual s) -@ L IO b) -@ L IO (a, b)
+--fork s kA kB = do
+--  let 1 io = makeChannel s
+--  (posCh # negCh) <- io
+--  par (kA posCh) (kB negCh)
 
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
