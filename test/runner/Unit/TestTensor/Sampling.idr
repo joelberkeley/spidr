@@ -24,6 +24,8 @@ import Utils
 import Utils.Comparison
 import Utils.Cases
 
+%hide Tensor.(>>=)
+
 range : (n : Nat) -> Literal [n] Nat
 range n = cast (Vect.range n)
 

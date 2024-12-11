@@ -31,32 +31,30 @@ public export
 protocol = SendT [] S32 $ RecvT [] S32 $ EndT
 
 -- tries to use single device
-simpleSend : Device => Property
-simpleSend = fixedProperty $ do
-  let host : Channel Concurrent.protocol -@ TagT1 IO (Tensor [] S32)
-      host ch = do
+sendRecv : Device => Property
+sendRecv @{device} = fixedProperty $ do
+  let onHost : Channel Concurrent.protocol -@ TagT1 (L IO) (Tensor [] S32)
+      onHost ch = do
         let x = tensor {dtype = S32} 2
-        ch <- send ch x HOST_TO_DEVICE
-        x # ch <- recv ch HOST_TO_DEVICE
-        end ch  -- i think we need an equivalent to `liftIO1 : (1 _ : IO a) -> io a`, maybe also need `run`
-        pure x
+        ch <- lift1 $ send ch x DEVICE_TO_DEVICE
+        x # ch <- recv ch DEVICE_TO_DEVICE
+        lift (end ch) `bind` \_ => pure x
 
-      device : Channel Concurrent.protocol -@ TagT1 IO ()
-      device ch = do
-        x # ch <- recv ch DEVICE_TO_HOST
-        ch <- send ch x DEVICE_TO_HOST
-        end ch
+      onDevice : Channel (dual Concurrent.protocol) -@ TagT1 (L IO) ()
+      onDevice ch = do
+        x # ch <- recv {shape = [], dtype = S32} ch DEVICE_TO_DEVICE
+        ch <- lift1 $ send ch x DEVICE_TO_DEVICE
+        lift $ end ch
 
-      prog : TagT IO (Tensor [] S32) = do
-        (h # d) <- makeChannel Concurrent.protocol
+      prog : TagT1 (L IO) (Tensor [] S32) := do
+        (h # d) <- lift1 $ makeChannel Concurrent.protocol
         -- this doesn't look very concurrent
-        host h
-        device d
+        onDevice d `bind` \_ => onHost h
 
-  Tensor.Tag.eval prog === 2
+  (unsafePerformIO $ eval1 device prog) === 2
 
 export
 group : Device => Group
 group = MkGroup "Concurrent" $ [
-      ("send/recv a simple value, no operations", simpleSend)
+      ("send and recv a simple value, no maths operations", sendRecv)
   ]

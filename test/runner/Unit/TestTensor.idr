@@ -33,6 +33,8 @@ import Utils.Comparison
 import Utils.Cases
 import Utils.Proof
 
+%hide Tensor.(>>=)
+
 tensorThenEval : Device => Property
 tensorThenEval @{device} = withTests 20 . property $ do
   shape <- forAll shapes

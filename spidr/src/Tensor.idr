@@ -135,17 +135,6 @@ namespace S32
   fromInteger : Integer -> Tensor [] S32
   fromInteger = tensor . Scalar . fromInteger
 
--- is this how we want to do this? are LinearBind and HasLinearIO necessary?
-export
-LinearBind io => LinearBind (TagT io) where
-  -- bindL : io a -@ (a -> io b) -@ io b
-  bindL = ?yvh54wsy
-
-export
-HasLinearIO io => HasLinearIO (TagT io) where
-  -- liftIO1 : (1 _ : IO a) -> TagT io a
-  liftIO1 _ = ?vy3qa
-
 public export
 data Session
   = SendT Shape Type Session
@@ -154,6 +143,9 @@ data Session
 
 public export
 dual : Session -> Session
+dual (SendT s t sess) = RecvT s t (dual sess)
+dual (RecvT s t sess) = SendT s t (dual sess)
+dual EndT = EndT
 
 export
 data Channel : Session -> Type where
@@ -161,16 +153,15 @@ data Channel : Session -> Type where
   MkChannel : Expr -> Channel sess
 
 export
-makeChannel : LinearIO io => (0 s : Session) -> L1 io (LPair (Channel s) (Channel (dual s)))
+makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
 makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
 
 export
 send :
-  LinearIO io =>
   (1 _ : Channel (SendT shape dtype sess)) ->
   Tensor shape dtype ->
   ChannelType ->
-  L1 io (Channel sess)
+  L1 IO (Channel sess)
 send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
 
 public export 0
@@ -181,24 +172,32 @@ export
 data TagT1 : (Type -> Type) -> Type -> Type where
   MkTagT1 : (Env -> m (CRes Env a)) -@ TagT1 m a
 
+-- can combine `>>=` and `bind` using `ContType`
 export
-(>>=) : TagT1 (L1 IO) a -@ (a -@ TagT1 (L1 IO) b) -@ TagT1 (L1 IO) b
+(>>=) : TagT1 (L1 IO) a -@ (a -@ TagT1 (L {use} IO) b) -@ TagT1 (L {use} IO) b
 (MkTagT1 g) >>= f = MkTagT1 $ \e => do
   e' # xa <- g e
   let MkTagT1 g' = f xa
   g' e'
 
 export
-pure : Applicative m => a -> TagT1 m a
+bind : TagT1 (L IO) a -@ (a -> TagT1 (L {use} IO) b) -@ TagT1 (L {use} IO) b
+bind (MkTagT1 g) f = MkTagT1 $ \e => do
+  e' # xa <- g e
+  let MkTagT1 g' = f xa
+  g' e'
+
+export
+pure : a -> TagT1 (L IO) a
 pure xa = MkTagT1 $ \e => pure (e # xa)
 
--- export
--- lift1 : LinearIO io => TagT IO a -> TagT1 io a
--- lift1 (MkTagT st) = MkTagT1 (\e => liftIO1 (runStateT e st) >>= \(e, a) => pure1 (e # a))
---
--- export
--- pure : LinearIO io => a -> TagT1 io a
--- pure xa = MkTagT1 $ \e => pure1 (e # xa)
+export
+lift1 : L1 IO a -@ TagT1 (L1 IO) a
+lift1 io = MkTagT1 $ \e => do xa <- io; pure1 (e # xa)
+
+export
+lift : L IO a -@ TagT1 (L IO) a
+lift io = MkTagT1 $ \e => do xa <- io; pure (e # xa)
 
 -- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
 -- TagT is not linear in its argument, so it needs to be modified. The only way I can see it
@@ -209,6 +208,8 @@ pure xa = MkTagT1 $ \e => pure (e # xa)
 -- It definitely seems more reasonable to have TagT1 IO over IO (Tag1 ?x) the Tag effect comes before
 -- the IO, indeed you'd execute TagT to get an IO, but where does L1 belong L1 (TagT1 IO) or
 -- TagT1 (L1 IO)? Is L1 (TagT1 IO) even possible?
+--
+-- crucial test: can we duplicate the channel? if not, we're good. That is, after all, why we're linear
 export
 recv :
   Primitive dtype =>
@@ -223,7 +224,7 @@ recv (MkChannel tok) type = MkTagT1 $ \e => do
   pure1 $ e # (MkTensor op # MkChannel tok)
 
 export
-end : (1 _ : Channel EndT) -> L IO ()
+end : Channel EndT -@ L IO ()
 end (MkChannel _) = pure ()
 
 --export
@@ -256,6 +257,15 @@ namespace Tag
 export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
+
+export covering
+eval1 : Device -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -> IO (Literal shape ty)
+eval1 device (MkTagT1 x) = do
+  (env # MkTensor root) <- run $ x empty
+  try $ do
+        shape <- mkShape shape {dtype}
+        [lit] <- execute device (MkFn [] root env) [shape]
+        read {dtype} [] lit
 
 namespace TensorList
   namespace Tag
