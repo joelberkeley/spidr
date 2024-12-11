@@ -26,6 +26,11 @@ import Data.List.Elem
 import Compiler.Expr
 import Compiler.FFI
 import Compiler.LiteralRW
+import Compiler.MLIR.IR.BuiltinOps
+import Compiler.MLIR.IR.DialectRegistry
+import Compiler.MLIR.IR.MLIRContext
+import Compiler.StableHLO.Dialect.Register
+import Compiler.StableHLO.Dialect.Serialization
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
 import Compiler.Xla.HLO.Builder.Lib.Constants
@@ -34,8 +39,11 @@ import Compiler.Xla.HLO.Builder.Lib.Matrix
 import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.HLO.Translate.StableHLO
+import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
+import Compiler.Xla.Service.HloProto
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
@@ -46,17 +54,21 @@ import Types
 import Util
 import Device
 
+import System
+
 export
 data Err
   = OutOfBounds Nat Nat
   | ValueNotFound Nat
   | PjrtErr PjrtError
+  | SerializationError String
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
-  show (PjrtErr err)= show err
+  show (PjrtErr err) = show err
+  show (SerializationError err) = "SerializationError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
@@ -228,6 +240,17 @@ execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ V
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
+  dialectRegistry <- mkDialectRegistry
+  registerAllMhloDialects dialectRegistry
+  registerAllDialects dialectRegistry
+  mlirCtx <- mkMLIRContext
+  appendDialectRegistry mlirCtx dialectRegistry
+  -- Just code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx !(proto computation))
+  --  | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
+  code <- printModule !(convertHloToStablehlo mlirCtx !(proto computation))
+  executableBuildOptions <- mkExecutableBuildOptions
+  compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
+  program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
     code <- serializeAsString computation
     executableBuildOptions <- mkExecutableBuildOptions

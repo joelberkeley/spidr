@@ -32,6 +32,10 @@ namespace CharArray
   free (MkCharArray arr _) = free $ prim__forgetPtr arr
 
 export
+%foreign (libxla "string_new")
+prim__stringNew : PrimIO AnyPtr
+
+export
 %foreign (libxla "string_delete")
 prim__stringDelete : AnyPtr -> PrimIO ()
 
@@ -46,6 +50,15 @@ prim__stringSize : AnyPtr -> Bits64
 export
 %foreign (libxla "idx")
 prim__index : Int -> AnyPtr -> AnyPtr
+
+||| Deletes the `string`. It is up to the caller to `free` the `CharArray`.
+export
+stringToCharArray : HasIO io => AnyPtr -> io CharArray
+stringToCharArray str = do
+  data' <- primIO $ prim__stringData str
+  let size = prim__stringSize str
+  primIO $ prim__stringDelete str
+  pure (MkCharArray data' size)
 
 export
 %foreign (libxla "idx_int")
