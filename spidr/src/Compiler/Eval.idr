@@ -252,11 +252,8 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
-    code <- serializeAsString computation
-    executableBuildOptions <- mkExecutableBuildOptions
-    compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-    _ <- pjrtClientDefaultDeviceAssignment api client 1 2
-    loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
+    -- _ <- pjrtClientDefaultDeviceAssignment api client 1 2
+    loadedExec <- pjrtClientCompile api client program compileOptions
     free code
     free compileOptions
     delete executableBuildOptions
