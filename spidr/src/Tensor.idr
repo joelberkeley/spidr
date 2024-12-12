@@ -32,6 +32,7 @@ import Data.Linear.Notation
 import Decidable.Equality
 import System.Concurrency.Linear
 
+import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Eval
 import Compiler.Expr
 import Compiler.Xla.Shape
@@ -227,13 +228,6 @@ export
 end : Channel EndT -@ L IO ()
 end (MkChannel _) = pure ()
 
---export
---fork : (0 s : Session) -> (Channel s -@ L IO a) -@ (Channel (dual s) -@ L IO b) -@ L IO (a, b)
---fork s kA kB = do
---  let 1 io = makeChannel s
---  (posCh # negCh) <- io
---  par (kA posCh) (kB negCh)
-
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
 
@@ -250,7 +244,7 @@ namespace Tag
     let (env, MkTensor root) = runState empty x
      in try $ do
           shape <- mkShape shape {dtype}
-          [lit] <- execute device (MkFn [] root env) [shape]
+          [lit] <- execute device (MkPjrtDevice prim__getNullAnyPtr) (MkFn [] root env) [shape]
           read {dtype} [] lit
 
 ||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
@@ -259,13 +253,19 @@ eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape
 eval device x = eval device (pure x)
 
 export covering
-eval1 : Device -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -> IO (Literal shape ty)
-eval1 device (MkTagT1 x) = do
+eval1 : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -> IO (Literal shape ty)
+eval1 device pjrtdevice (MkTagT1 x) = do
   (env # MkTensor root) <- run $ x empty
   try $ do
-        shape <- mkShape shape {dtype}
-        [lit] <- execute device (MkFn [] root env) [shape]
-        read {dtype} [] lit
+    shape <- mkShape shape {dtype}
+    [lit] <- execute device pjrtdevice (MkFn [] root env) [shape]
+    read {dtype} [] lit
+
+export covering
+eval1nil : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) () -> IO ()
+eval1nil device pjrtdevice (MkTagT1 x) = do
+  (env # ()) <- run $ x empty
+  try $ ignore $ execute device pjrtdevice (MkFn [] root env) []
 
 namespace TensorList
   namespace Tag
@@ -299,7 +299,7 @@ namespace TensorList
        in try $ do
             xlaShapes <- buildShapes xs
             let (outputs ** eq) = lengthC xs
-            lits <- execute device (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
+            lits <- execute device (MkPjrtDevice prim__getNullAnyPtr) (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
             readAll xs $ rewrite sym eq in lits
 
       where

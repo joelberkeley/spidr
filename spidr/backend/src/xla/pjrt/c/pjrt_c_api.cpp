@@ -126,6 +126,18 @@ extern "C" {
         return api->PJRT_Client_Destroy(args);
     }
 
+    PJRT_Client_Devices_Args* PJRT_Client_Devices_Args_new(PJRT_Client* client) {
+        return new PJRT_Client_Devices_Args{
+            .struct_size = PJRT_Client_Devices_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .client = client,
+        };
+    }
+
+    PJRT_Error* pjrt_client_devices(PJRT_Api* api, PJRT_Client_Devices_Args* args) {
+        return api->PJRT_Client_Devices(args);
+    }
+
     PJRT_Program* PJRT_Program_new(char* code, size_t code_size) {
         auto format = pjrt::kMlirFormat;
         return new PJRT_Program{
@@ -223,7 +235,8 @@ extern "C" {
     PJRT_LoadedExecutable_Execute_Args* PJRT_LoadedExecutable_Execute_Args_new(
         PJRT_LoadedExecutable* executable,
         PJRT_ExecuteOptions* options,
-        PJRT_Buffer*** output_lists
+        PJRT_Buffer*** output_lists,
+        PJRT_Device* execute_device
     ) {
         return new PJRT_LoadedExecutable_Execute_Args{
             .struct_size = PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE,
@@ -231,11 +244,11 @@ extern "C" {
             .executable = executable,
             .options = options,
             .argument_lists = nullptr,
-            .num_devices = 1,
+            .num_devices = 1,  // is this correct?
             .num_args = 0,
             .output_lists = output_lists,
             .device_complete_events = nullptr,
-            .execute_device = nullptr,
+            .execute_device = execute_device,
         };
     }
 

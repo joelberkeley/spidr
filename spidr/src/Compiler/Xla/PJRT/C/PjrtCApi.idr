@@ -236,6 +236,33 @@ pjrtClientCreate (MkPjrtApi api) = do
       free args
       handleErrOnDestroy api err "PJRT_Client"
 
+%foreign (libxla "PJRT_Client_Devices_Args_new")
+prim__mkPjrtClientDevicesArgs : GCAnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Client_Devices_Args_devices")
+prim__pjrtClientDevicesArgsDevices : AnyPtr -> AnyPtr
+
+%foreign (libxla "PJRT_Client_Devices_Args_num_devices")
+prim__pjrtClientDevicesArgsNumDevices : AnyPtr -> Bits64
+
+%foreign (libxla "pjrt_client_devices")
+prim__pjrtClientDevices : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+public export
+data PjrtDevice = MkPjrtDevice AnyPtr  -- owned by client
+
+||| write me.
+export
+pjrtClientDevices : PjrtApi -> PjrtClient -> Pjrt (List PjrtDevice)
+pjrtClientDevices (MkPjrtApi api) (MkPjrtClient client) = do
+  args <- primIO $ prim__mkPjrtClientDevicesArgs client
+  err <- primIO $ prim__pjrtClientDevices api args
+  let argsDevices = prim__pjrtClientDevicesArgsDevices args
+      argsNumDevices = prim__pjrtClientDevicesArgsNumDevices args
+  let devices = Prelude.map (\i => MkPjrtDevice $ prim__index (cast i) argsDevices) (range $ cast argsNumDevices)
+  free args
+  try api err devices
+
 ||| For internal spidr use only.
 export
 data PjrtProgram = MkPjrtProgram GCAnyPtr
@@ -334,7 +361,7 @@ pjrtClientCompile
 prim__mkPjrtExecuteOptions : PrimIO AnyPtr
 
 %foreign (libxla "PJRT_LoadedExecutable_Execute_Args_new")
-prim__mkPjrtLoadedExecutableExecuteArgs : AnyPtr -> AnyPtr -> AnyPtr -> PrimIO AnyPtr
+prim__mkPjrtLoadedExecutableExecuteArgs : AnyPtr -> AnyPtr -> AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "pjrt_loadedexecutable_execute")
 prim__pjrtLoadedExecutableExecute : AnyPtr -> AnyPtr -> PrimIO AnyPtr
@@ -363,20 +390,21 @@ pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
 ||| It is up to the caller to free the `PjrtBuffer`s.
 export
 pjrtLoadedExecutableExecute :
-  PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> Pjrt (Vect outputs PjrtBuffer)
-pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs = do
-  outputListsInner <- malloc (cast outputs * sizeofPtr)
-  outputLists <- malloc sizeofPtr
-  primIO $ prim__setArrayPtr outputLists 0 outputListsInner
-  options <- primIO prim__mkPjrtExecuteOptions
-  args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists
-  err <- primIO $ prim__pjrtLoadedExecutableExecute api args
-  free args
-  free options
-  let buffers = map (\o => MkPjrtBuffer $ prim__index (cast o) outputListsInner) (range outputs)
-  free outputLists
-  free outputListsInner
-  try api err buffers
+  PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> PjrtDevice -> Pjrt (Vect outputs PjrtBuffer)
+pjrtLoadedExecutableExecute
+  (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs (MkPjrtDevice device) = do
+    outputListsInner <- malloc (cast outputs * sizeofPtr)
+    outputLists <- malloc sizeofPtr
+    primIO $ prim__setArrayPtr outputLists 0 outputListsInner
+    options <- primIO prim__mkPjrtExecuteOptions
+    args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists device
+    err <- primIO $ prim__pjrtLoadedExecutableExecute api args
+    free args
+    free options
+    let buffers = map (\o => MkPjrtBuffer $ prim__index (cast o) outputListsInner) (range outputs)
+    free outputLists
+    free outputListsInner
+    try api err buffers
 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")
 prim__mkPjrtBufferToHostBufferArgs : AnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr

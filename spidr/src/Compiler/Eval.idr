@@ -236,8 +236,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 
 ||| It is up to the caller to free the `Literal`s.
 export covering
-execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
-execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
+execute : Device -> PjrtDevice -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
+execute (MkDevice api client) device f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   dialectRegistry <- mkDialectRegistry
@@ -252,13 +252,14 @@ execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
+    -- would two partitions (on my linux cuda machine) give me two devices instead of one?
     -- _ <- pjrtClientDefaultDeviceAssignment api client 1 2
     loadedExec <- pjrtClientCompile api client program compileOptions
     free code
     free compileOptions
     delete executableBuildOptions
 
-    buffers <- pjrtLoadedExecutableExecute api loadedExec outputs
+    buffers <- pjrtLoadedExecutableExecute api loadedExec outputs device
     pjrtLoadedExecutableDestroy api loadedExec
 
     for (zip buffers shapes) $ \(buffer, shape) => do

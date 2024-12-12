@@ -49,7 +49,7 @@ prim__stringSize : AnyPtr -> Bits64
 
 export
 %foreign (libxla "idx")
-prim__index : Int -> AnyPtr -> AnyPtr
+prim__index : Bits64 -> AnyPtr -> AnyPtr
 
 ||| Deletes the `string`. It is up to the caller to `free` the `CharArray`.
 export
