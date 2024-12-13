@@ -8,6 +8,7 @@ modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,
 
+  Compiler.LLVM.Support.RawOStream,
   Compiler.MLIR.IR.BuiltinOps,
   Compiler.MLIR.IR.DialectRegistry,
   Compiler.MLIR.IR.MLIRContext,
