@@ -39,5 +39,6 @@ prim__compileOptionsSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 ||| It is up to the caller to `free` the `CharArray`.
 export
 serializeAsString : HasIO io => CompileOptions -> io CharArray
-serializeAsString (MkCompileOptions options) =
-  primIO (prim__compileOptionsSerializeAsString options) >>= stringToCharArray
+serializeAsString (MkCompileOptions options) = do
+  str <- primIO (prim__compileOptionsSerializeAsString options)
+  stringToCharArray (MkCppString str)

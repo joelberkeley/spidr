@@ -12,6 +12,7 @@ cc_binary(
     linkshared = True,
     linkstatic = True,
     srcs = [
+        "//src/llvm/Support",
         "//src/mlir/IR",
         "//src/stablehlo/dialect",
         "//src/xla",
@@ -26,6 +27,7 @@ cc_binary(
         "//src",
     ],
     deps = [
+        "//src/llvm/Support",
         "//src/mlir/IR",
         "//src/stablehlo/dialect",
         "//src/xla",

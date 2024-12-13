@@ -14,13 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.Service.HloProto
+module Compiler.LLVM.Support.RawOStream
 
 import Compiler.FFI
 
 public export
-data HloModuleProto = MkHloModuleProto GCAnyPtr
+data RawStringOStream = MkRawStringOStream GCAnyPtr
+
+%foreign (libxla "raw_string_ostream_new")
+prim__mkRawStringOStream : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "raw_string_ostream_delete")
+prim__delete : AnyPtr -> PrimIO ()
 
 export
-%foreign (libxla "HloModuleProto_delete")
-prim__delete : AnyPtr -> PrimIO ()
+rawStringOStream : HasIO io => CppString -> io RawStringOStream
+rawStringOStream (MkCppString str) = do
+  os <- primIO $ prim__mkRawStringOStream str
+  os <- onCollectAny os (primIO . prim__delete)
+  pure (MkRawStringOStream os)

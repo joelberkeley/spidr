@@ -27,7 +27,7 @@ public export
 data CharArray = MkCharArray (Ptr Char) Bits64
 
 public export
-data CppString = MkCppString GCAnyPtr
+data CppString = MkCppString AnyPtr
 
 namespace CharArray
   export
@@ -36,11 +36,21 @@ namespace CharArray
 
 export
 %foreign (libxla "string_new")
-prim__stringNew : PrimIO AnyPtr
+prim__mkString : PrimIO AnyPtr
+
+||| It is up to the caller to `delete` the string.
+export
+cppString : HasIO io => io CppString
+cppString = MkCppString <$> primIO prim__mkString
 
 export
 %foreign (libxla "string_delete")
 prim__stringDelete : AnyPtr -> PrimIO ()
+
+namespace CppString
+  export
+  delete : HasIO io => CppString -> io ()
+  delete (MkCppString str) = primIO $ prim__stringDelete str
 
 export
 %foreign (libxla "string_data")
@@ -56,8 +66,8 @@ prim__index : Int -> AnyPtr -> AnyPtr
 
 ||| Deletes the `string`. It is up to the caller to `free` the `CharArray`.
 export
-stringToCharArray : HasIO io => AnyPtr -> io CharArray
-stringToCharArray str = do
+stringToCharArray : HasIO io => CppString -> io CharArray
+stringToCharArray (MkCppString str) = do
   data' <- primIO $ prim__stringData str
   let size = prim__stringSize str
   primIO $ prim__stringDelete str

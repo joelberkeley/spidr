@@ -26,6 +26,7 @@ import Data.List.Elem
 import Compiler.Expr
 import Compiler.FFI
 import Compiler.LiteralRW
+import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
@@ -238,9 +239,10 @@ hloModuleProtoToStableHLO proto = do
   mlirCtx <- mkMLIRContext
   stablehlo <- convertHloToStablehlo mlirCtx proto
   appendDialectRegistry mlirCtx dialectRegistry
-  Just code <- serializePortableArtifact stablehlo !(toString !getMinimumVersion)
-    | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
-  pure code
+  code <- cppString
+  version <- toString !getMinimumVersion
+  ok <- serializePortableArtifact stablehlo version !(rawStringOStream code)
+  if ok then stringToCharArray code else throwE (SerializationError "Failed to serialize StableHLO")
 
 ||| It is up to the caller to free the `Literal`s.
 export covering

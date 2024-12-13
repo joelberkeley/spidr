@@ -16,17 +16,15 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.StableHLO.Dialect.Serialization
 
+import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.FFI
 
 %foreign (libxla "serializePortableArtifact")
-prim__serializePortableArtifact : AnyPtr -> AnyPtr -> PrimIO Int
+prim__serializePortableArtifact : AnyPtr -> AnyPtr -> GCAnyPtr -> PrimIO Int
 
 export
-serializePortableArtifact : HasIO io => ModuleOp -> CppString -> io (Maybe CharArray)
-serializePortableArtifact (MkModuleOp moduleOp) (MkCppString version) = do
-  str <- primIO prim__stringNew
-  ok <- primIO $ prim__serializePortableArtifact moduleOp version str
-  case cIntToBool ok of
-    True => Just <$> stringToCharArray str
-    False => free str >> pure Nothing
+serializePortableArtifact : HasIO io => ModuleOp -> CppString -> RawStringOStream -> io Bool
+serializePortableArtifact (MkModuleOp moduleOp) (MkCppString version) (MkRawStringOStream os) = do
+  ok <- primIO $ prim__serializePortableArtifact moduleOp version os
+  pure (cIntToBool ok)

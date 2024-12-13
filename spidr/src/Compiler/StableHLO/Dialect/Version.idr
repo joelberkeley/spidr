@@ -37,9 +37,9 @@ getMinimumVersion = do
 %foreign (libxla "Version_toString")
 prim__versionToString : GCAnyPtr -> PrimIO AnyPtr
 
+||| It is up to the caller to `delete` the string.
 export
 toString : HasIO io => Version -> io CppString
 toString (MkVersion version) = do
   str <- primIO $ prim__versionToString version
-  str <- onCollectAny str (primIO . prim__stringDelete)
   pure (MkCppString str)

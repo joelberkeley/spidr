@@ -16,15 +16,15 @@ limitations under the License.
 #include "stablehlo/dialect/Serialization.h"
 
 #include "../../mlir/IR/BuiltinOps.h"
+#include "../../llvm/Support/raw_ostream.h"
 #include "../../ffi.h"
 
 extern "C" {
-    int serializePortableArtifact(ModuleOp& module, string& version, string& str) {
+    int serializePortableArtifact(ModuleOp& module, string& version, raw_ostream& os) {
         auto& module_ = reinterpret_cast<mlir::ModuleOp&>(module);
-        auto& version_ = reinterpret_cast<std::string&>(str);
-        auto& str_ = reinterpret_cast<std::string&>(str);
-        llvm::raw_string_ostream os(str_);
-        auto result = mlir::stablehlo::serializePortableArtifact(module_, version_, os);
+        auto& version_ = reinterpret_cast<std::string&>(version);
+        auto& os_ = reinterpret_cast<llvm::raw_ostream&>(os);
+        auto result = mlir::stablehlo::serializePortableArtifact(module_, version_, os_);
         return (int) result.succeeded();
     }
 }

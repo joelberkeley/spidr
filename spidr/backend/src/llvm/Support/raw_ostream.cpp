@@ -1,4 +1,4 @@
-{--
+/*
 Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,21 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
---}
-||| For internal spidr use only.
-module Compiler.Xla.Service.HloProto
+*/
+#include "llvm/Support/raw_ostream.h"
 
-import Compiler.FFI
+#include "../../ffi.h"
+#include "raw_ostream.h"
 
-public export
-data HloModuleProto = MkHloModuleProto GCAnyPtr
+extern "C" {
+    struct raw_string_ostream;
 
-export
-%foreign (libxla "HloModuleProto_delete")
-prim__delete : AnyPtr -> PrimIO ()
+    raw_string_ostream* raw_string_ostream_new(string& o) {
+        auto& o_ = reinterpret_cast<std::string&>(o);
+        return reinterpret_cast<raw_string_ostream*>(new llvm::raw_string_ostream(o_));
+    }
+
+    void raw_string_ostream_delete(raw_string_ostream* s) {
+        delete reinterpret_cast<llvm::raw_string_ostream*>(s);
+    }
+}
