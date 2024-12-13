@@ -265,7 +265,8 @@ export covering
 eval1nil : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) () -> IO ()
 eval1nil device pjrtdevice (MkTagT1 x) = do
   (env # ()) <- run $ x empty
-  try $ ignore $ execute device pjrtdevice (MkFn [] root env) []
+  let MkEnv _ ((_, tok) :: _) = env | _ => ?grevra
+  try $ ignore $ execute device pjrtdevice (MkFn [] tok env) []
 
 namespace TensorList
   namespace Tag

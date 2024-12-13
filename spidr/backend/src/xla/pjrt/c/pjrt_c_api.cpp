@@ -134,6 +134,14 @@ extern "C" {
         };
     }
 
+    PJRT_Device* const* PJRT_Client_Devices_Args_devices(PJRT_Client_Devices_Args* args) {
+        return args->devices;
+    }
+
+    size_t PJRT_Client_Devices_Args_num_devices(PJRT_Client_Devices_Args* args) {
+        return args->num_devices;
+    }
+
     PJRT_Error* pjrt_client_devices(PJRT_Api* api, PJRT_Client_Devices_Args* args) {
         return api->PJRT_Client_Devices(args);
     }
@@ -244,7 +252,7 @@ extern "C" {
             .executable = executable,
             .options = options,
             .argument_lists = nullptr,
-            .num_devices = 1,  // is this correct?
+            .num_devices = 1,
             .num_args = 0,
             .output_lists = output_lists,
             .device_complete_events = nullptr,

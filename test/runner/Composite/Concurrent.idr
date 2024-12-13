@@ -20,6 +20,7 @@ import Control.Monad.State
 import Data.Linear.Notation
 
 import Compiler.Xla.XlaData
+import Compiler.Xla.PJRT.C.PjrtCApi
 import Device
 import Tensor
 
@@ -33,6 +34,9 @@ protocol = SendT [] S32 $ RecvT [] S32 $ EndT
 -- tries to use single device
 sendRecv : Device => Property
 sendRecv @{device} = fixedProperty $ do
+  let MkDevice api client = device
+      Right [dev] = unsafePerformIO (runEitherT (pjrtClientDevices api client)) | _ => ?fhnewoi
+
   let onHost : Channel Concurrent.protocol -@ TagT1 (L IO) (Tensor [] S32)
       onHost ch = do
         let x = tensor {dtype = S32} 2
@@ -51,7 +55,7 @@ sendRecv @{device} = fixedProperty $ do
         -- this doesn't look very concurrent
         onDevice d `bind` \_ => onHost h
 
-  (unsafePerformIO $ eval1 device prog) === 2
+  (unsafePerformIO $ eval1 device dev prog) === 2
 
 export
 group : Device => Group

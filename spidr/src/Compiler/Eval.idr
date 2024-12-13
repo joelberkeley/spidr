@@ -234,20 +234,25 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       !(interpretE key) !(interpretE initialState) ThreeFry !(mkShape {dtype = F64} shape)
     tuple xlaBuilder [value rngOutput, state rngOutput]
 
+hloModuleProtoToStableHLO : HloModuleProto -> ErrIO CharArray
+hloModuleProtoToStableHLO hlo = do
+  dialectRegistry <- mkDialectRegistry
+  registerAllMhloDialects dialectRegistry
+  registerAllDialects dialectRegistry
+  mlirCtx <- mkMLIRContext
+  appendDialectRegistry mlirCtx dialectRegistry
+  -- Just code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx hlo)
+  --  | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
+  code <- printModule !(convertHloToStablehlo mlirCtx hlo)
+  pure code
+
 ||| It is up to the caller to free the `Literal`s.
 export covering
 execute : Device -> PjrtDevice -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) device f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  dialectRegistry <- mkDialectRegistry
-  registerAllMhloDialects dialectRegistry
-  registerAllDialects dialectRegistry
-  mlirCtx <- mkMLIRContext
-  appendDialectRegistry mlirCtx dialectRegistry
-  -- Just code <- serializePortableArtifact !(convertHloToStablehlo mlirCtx !(proto computation))
-  --  | Nothing => throwE (SerializationError "Failed to serialize StableHLO")
-  code <- printModule !(convertHloToStablehlo mlirCtx !(proto computation))
+  code <- hloModuleProtoToStableHLO !(proto computation)
   executableBuildOptions <- mkExecutableBuildOptions
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code
