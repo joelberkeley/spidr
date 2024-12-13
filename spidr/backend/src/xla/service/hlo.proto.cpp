@@ -14,17 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "xla/service/hlo.pb.h"
-// #include "xla/service/..."  // try to import from some random place
 
-#include "../../ffi.h"
 #include "hlo.proto.h"
 
 extern "C" {
-    string* HloModuleProto_SerializeAsString(HloModuleProto& s) {
-        auto s_ = reinterpret_cast<xla::HloModuleProto&>(s);
-        return reinterpret_cast<string*>(new std::string(s_.SerializeAsString()));
-    }
-
     void HloModuleProto_delete(HloModuleProto* s) {
         delete reinterpret_cast<xla::HloModuleProto*>(s);
     }

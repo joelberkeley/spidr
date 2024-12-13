@@ -28,4 +28,5 @@ export
 convertHloToStablehlo : HasIO io => MLIRContext -> HloModuleProto -> io ModuleOp
 convertHloToStablehlo (MkMLIRContext ctx) (MkHloModuleProto proto) = do
   moduleOp <- primIO $ prim__convertHloToStablehlo ctx proto
+  moduleOp <- onCollectAny moduleOp (primIO . BuiltinOps.prim__delete)
   pure (MkModuleOp moduleOp)

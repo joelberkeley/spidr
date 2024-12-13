@@ -21,7 +21,7 @@ import Compiler.MLIR.IR.BuiltinOps
 import Compiler.FFI
 
 %foreign (libxla "serializePortableArtifact")
-prim__serializePortableArtifact : AnyPtr -> AnyPtr -> GCAnyPtr -> PrimIO Int
+prim__serializePortableArtifact : GCAnyPtr -> AnyPtr -> GCAnyPtr -> PrimIO Int
 
 export
 serializePortableArtifact : HasIO io => ModuleOp -> CppString -> RawStringOStream -> io Bool
