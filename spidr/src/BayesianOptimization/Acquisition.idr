@@ -23,7 +23,7 @@ import Tensor
 import Data
 import Model
 
-%hide Tensor.(>>=)
+
 %prefix_record_projections off
 
 ||| A `DataModel` packages data with a model over that data.

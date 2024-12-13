@@ -28,7 +28,7 @@ import Model.MeanFunction
 import Optimize
 import Tensor
 
-%hide Tensor.(>>=)
+
 
 ||| A Gaussian process is a collection of random variables, any finite number of which have joint
 ||| Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian

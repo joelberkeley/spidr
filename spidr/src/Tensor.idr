@@ -175,8 +175,8 @@ data TagT1 : (Type -> Type) -> Type -> Type where
 
 -- can combine `>>=` and `bind` using `ContType`
 export
-(>>=) : TagT1 (L1 IO) a -@ (a -@ TagT1 (L {use} IO) b) -@ TagT1 (L {use} IO) b
-(MkTagT1 g) >>= f = MkTagT1 $ \e => do
+bind1 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L {use} IO) b) -@ TagT1 (L {use} IO) b
+bind1 (MkTagT1 g) f = MkTagT1 $ \e => do
   e' # xa <- g e
   let MkTagT1 g' = f xa
   g' e'
@@ -191,6 +191,10 @@ bind (MkTagT1 g) f = MkTagT1 $ \e => do
 export
 pure : a -> TagT1 (L IO) a
 pure xa = MkTagT1 $ \e => pure (e # xa)
+
+export
+pure1 : a -> TagT1 (L1 IO) a
+pure1 xa = MkTagT1 $ \e => pure1 (e # xa)
 
 export
 lift1 : L1 IO a -@ TagT1 (L1 IO) a
@@ -225,8 +229,8 @@ recv (MkChannel tok) type = MkTagT1 $ \e => do
   pure1 $ e # (MkTensor op # MkChannel tok)
 
 export
-end : Channel EndT -@ L IO ()
-end (MkChannel _) = pure ()
+end : Channel EndT -@ L1 IO ()  -- should be L IO like gallais' version? does it matter since () is unique?
+end (MkChannel _) = pure1 ()
 
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
@@ -252,6 +256,7 @@ export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
 
+-- what should the linearity be here wrt return types?
 export covering
 eval1 : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -> IO (Literal shape ty)
 eval1 device pjrtdevice (MkTagT1 x) = do
