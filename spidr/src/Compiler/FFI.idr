@@ -26,6 +26,9 @@ libxla fname = "C:" ++ fname ++ ",libc_xla"
 public export
 data CharArray = MkCharArray (Ptr Char) Bits64
 
+public export
+data CppString = MkCppString GCAnyPtr
+
 namespace CharArray
   export
   free : HasIO io => CharArray -> io ()
