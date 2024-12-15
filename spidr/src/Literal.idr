@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `Literal` type, which is a single value or array of values with a
-||| specified shape. It is similar to the `Tensor` type, but differs in a number of important ways:
+||| Defines `Literal`, a single value or array of values with a specified shape. It is similar to
+||| the `Tensor` type, but differs in a number of important ways:
 |||
 ||| * `Literal` offers a convenient syntax for constructing `Literal`s with boolean and numeric
 |||   contents. For example, `True`, `1` and `[1, 2, 3]` are all valid `Literal`s. This makes it
