@@ -1,3 +1,5 @@
+### xla
+
 # this must be a local repository not http archive
 # so we can run ./configure.py before invoking bazel
 local_repository(name = "xla", path = "xla")
@@ -28,3 +30,28 @@ xla_workspace0()
 
 load("@tsl//third_party/gpus/cuda/hermetic:cuda_configure.bzl", "cuda_configure")
 cuda_configure(name = "local_config_cuda")
+
+### Enzyme-JAX
+# note enzyme-jax specifies XLA versions, which we're currently ignoring. Do we need to use their versions?
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+local_repository(name = "enzyme-jax", path = "Enzyme-JAX")
+
+load("@enzyme-jax//:workspace.bzl", "JAX_COMMIT", "JAX_SHA256", "ENZYME_COMMIT", "ENZYME_SHA256")
+
+http_archive(
+    name = "jax",
+    sha256 = JAX_SHA256,
+    strip_prefix = "jax-" + JAX_COMMIT,
+    urls = ["https://github.com/google/jax/archive/{commit}.tar.gz".format(commit = JAX_COMMIT)],
+    patch_args = ["-p1"],
+    patches = ["@enzyme-jax//:patches/jax.patch"],
+)
+
+http_archive(
+    name = "enzyme",
+    sha256 = ENZYME_SHA256,
+    strip_prefix = "Enzyme-" + ENZYME_COMMIT + "/enzyme",
+    urls = ["https://github.com/EnzymeAD/Enzyme/archive/{commit}.tar.gz".format(commit = ENZYME_COMMIT)],
+)

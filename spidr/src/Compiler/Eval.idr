@@ -26,6 +26,15 @@ import Data.List.Elem
 import Compiler.Expr
 import Compiler.FFI
 import Compiler.LiteralRW
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl
+import Compiler.LLVM.Support.RawOStream
+import Compiler.MLIR.IR.BuiltinOps
+import Compiler.MLIR.IR.DialectRegistry
+import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.Pass.PassManager
+import Compiler.StableHLO.Dialect.Register
+import Compiler.StableHLO.Dialect.Serialization
+import Compiler.StableHLO.Dialect.Version
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
 import Compiler.Xla.HLO.Builder.Lib.Constants
@@ -34,8 +43,11 @@ import Compiler.Xla.HLO.Builder.Lib.Matrix
 import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Builder.XlaBuilder
 import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.HLO.Translate.StableHLO
+import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
+import Compiler.Xla.Service.HloProto
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
@@ -46,21 +58,41 @@ import Types
 import Util
 import Device
 
+import System
+
 export
 data Err
   = OutOfBounds Nat Nat
   | ValueNotFound Nat
   | PjrtErr PjrtError
+  | SerializationError String
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
-  show (PjrtErr err)= show err
+  show (PjrtErr err) = show err
+  show (SerializationError err) = "SerializationError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
 ErrIO = EitherT Err IO
+
+serializeStableHLO : ModuleOp -> ErrIO CharArray
+serializeStableHLO stablehlo = do
+  code <- cppString
+  version <- toString !getMinimumVersion
+  ok <- serializePortableArtifact stablehlo version !(rawStringOStream code)
+  if ok then stringToCharArray code else throwE (SerializationError "Failed to serialize StableHLO")
+
+hloModuleProtoToStableHLO : HloModuleProto -> ErrIO ModuleOp
+hloModuleProtoToStableHLO proto = do
+  dialectRegistry <- mkDialectRegistry
+  registerAllMhloDialects dialectRegistry
+  registerAllDialects dialectRegistry
+  mlirCtx <- mkMLIRContext
+  appendDialectRegistry mlirCtx dialectRegistry
+  convertHloToStablehlo mlirCtx proto
 
 covering
 interpret : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaOp
@@ -97,6 +129,21 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Var x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
+  interpretE (Grad f x) = do
+    reg <- mkDialectRegistry
+    StableHLO.Dialect.Register.registerAllDialects reg
+    registerStableHLODialectAutoDiffInterface reg
+    ctx <- mkMLIRContext
+    appendDialectRegistry ctx reg
+    mgr <- mkPassManager ctx
+    computation <- compile xlaBuilder f
+    stablehlo <- hloModuleProtoToStableHLO !(proto computation)  -- using the wrong function, we want the module, not the string
+    True <- run mgr stablehlo | False => ?err
+    hloProto <- convertStablehloToHlo stablehlo
+    computation <- mkXlaComputation hloProto
+    -- x should be correct shape, because we're sending R^{n0, n1, ..} -> R
+    -- to R^{n0, n1, ..} -> R^{n0, n1, ..} i.e. we're only changing the output shape
+    call xlaBuilder computation [!(interpretE x)]
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
   interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder
   interpretE (MinFiniteValue {dtype}) = minFiniteValue {dtype} xlaBuilder
@@ -223,11 +270,12 @@ execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ V
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
+  code <- serializeStableHLO !(hloModuleProtoToStableHLO !(proto computation))
+  executableBuildOptions <- mkExecutableBuildOptions
+  compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
+  program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
-    code <- serializeAsString computation
-    executableBuildOptions <- mkExecutableBuildOptions
-    compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-    loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
+    loadedExec <- pjrtClientCompile api client program compileOptions
     free code
     free compileOptions
     delete executableBuildOptions
