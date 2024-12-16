@@ -24,9 +24,9 @@ install_git_repository () {
 }
 
 install_xla () {
-  install_git_repository $1 $2 https://github.com/openxla/xla
+  install_git_repository "$1" "$2" https://github.com/openxla/xla
 }
 
 install_enzyme () {
-  install_git_repository $1 $2 https://github.com/EnzymeAD/Enzyme-JAX.git
+  install_git_repository "$1" "$2" https://github.com/EnzymeAD/Enzyme-JAX.git
 }
