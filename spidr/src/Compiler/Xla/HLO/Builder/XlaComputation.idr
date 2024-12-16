@@ -24,12 +24,22 @@ public export
 data XlaComputation : Type where
   MkXlaComputation : GCAnyPtr -> XlaComputation
 
+%foreign (libxla "XlaComputation_new")
+prim__mkXlaComputation : GCAnyPtr -> PrimIO AnyPtr
+
 %foreign (libxla "XlaComputation_delete")
 prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
 delete = primIO . XlaComputation.prim__delete
+
+export
+mkXlaComputation : HasIO io => HloModuleProto -> io XlaComputation
+mkXlaComputation (MkHloModuleProto proto) = do
+  comp <- primIO $ prim__mkXlaComputation proto
+  comp <- onCollectAny comp XlaComputation.delete
+  pure (MkXlaComputation comp)
 
 %foreign (libxla "XlaComputation_proto")
 prim__xlaComputationProto : GCAnyPtr -> PrimIO AnyPtr

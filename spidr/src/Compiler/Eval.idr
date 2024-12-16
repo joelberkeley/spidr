@@ -26,10 +26,12 @@ import Data.List.Elem
 import Compiler.Expr
 import Compiler.FFI
 import Compiler.LiteralRW
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.Pass.PassManager
 import Compiler.StableHLO.Dialect.Register
 import Compiler.StableHLO.Dialect.Serialization
 import Compiler.StableHLO.Dialect.Version
@@ -76,6 +78,22 @@ public export 0
 ErrIO : Type -> Type
 ErrIO = EitherT Err IO
 
+serializeStableHLO : ModuleOp -> ErrIO CharArray
+serializeStableHLO stablehlo = do
+  code <- cppString
+  version <- toString !getMinimumVersion
+  ok <- serializePortableArtifact stablehlo version !(rawStringOStream code)
+  if ok then stringToCharArray code else throwE (SerializationError "Failed to serialize StableHLO")
+
+hloModuleProtoToStableHLO : HloModuleProto -> ErrIO ModuleOp
+hloModuleProtoToStableHLO proto = do
+  dialectRegistry <- mkDialectRegistry
+  registerAllMhloDialects dialectRegistry
+  registerAllDialects dialectRegistry
+  mlirCtx <- mkMLIRContext
+  appendDialectRegistry mlirCtx dialectRegistry
+  convertHloToStablehlo mlirCtx proto
+
 covering
 interpret : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaOp
 
@@ -111,6 +129,21 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Var x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
+  interpretE (Grad f x) = do
+    reg <- mkDialectRegistry
+    StableHLO.Dialect.Register.registerAllDialects reg
+    registerStableHLODialectAutoDiffInterface reg
+    ctx <- mkMLIRContext
+    appendDialectRegistry ctx reg
+    mgr <- mkPassManager ctx
+    computation <- compile xlaBuilder f
+    stablehlo <- hloModuleProtoToStableHLO !(proto computation)  -- using the wrong function, we want the module, not the string
+    True <- run mgr stablehlo | False => ?err
+    hloProto <- convertStablehloToHlo stablehlo
+    computation <- mkXlaComputation hloProto
+    -- x should be correct shape, because we're sending R^{n0, n1, ..} -> R
+    -- to R^{n0, n1, ..} -> R^{n0, n1, ..} i.e. we're only changing the output shape
+    call xlaBuilder computation [!(interpretE x)]
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
   interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder
   interpretE (MinFiniteValue {dtype}) = minFiniteValue {dtype} xlaBuilder
@@ -231,26 +264,13 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       !(interpretE key) !(interpretE initialState) ThreeFry !(mkShape {dtype = F64} shape)
     tuple xlaBuilder [value rngOutput, state rngOutput]
 
-hloModuleProtoToStableHLO : HloModuleProto -> ErrIO CharArray
-hloModuleProtoToStableHLO proto = do
-  dialectRegistry <- mkDialectRegistry
-  registerAllMhloDialects dialectRegistry
-  registerAllDialects dialectRegistry
-  mlirCtx <- mkMLIRContext
-  stablehlo <- convertHloToStablehlo mlirCtx proto
-  appendDialectRegistry mlirCtx dialectRegistry
-  code <- cppString
-  version <- toString !getMinimumVersion
-  ok <- serializePortableArtifact stablehlo version !(rawStringOStream code)
-  if ok then stringToCharArray code else throwE (SerializationError "Failed to serialize StableHLO")
-
 ||| It is up to the caller to free the `Literal`s.
 export covering
 execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  code <- hloModuleProtoToStableHLO !(proto computation)
+  code <- serializeStableHLO !(hloModuleProtoToStableHLO !(proto computation))
   executableBuildOptions <- mkExecutableBuildOptions
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code

@@ -239,6 +239,17 @@ export
 castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
 castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
+export
+grad : (Tensor shape F64 -> Tag $ Tensor [] F64) -> Tensor shape F64 -> Tag $ Tensor shape F64
+grad f (MkTensor x) = MkTagT $ do
+  addr <- reserve
+  let MkTagT app = f (MkTensor $ Var addr)
+      (env, MkTensor res) = runState (emptyFrom !get) app
+      g = MkFn [(addr, MkParameter [] F64)] res env
+
+  updateCounterFrom env
+  pure $ MkTensor $ Grad g x
+
 ----------------------------- structural operations ----------------------------
 
 ||| Reshape a `Tensor`. For example, `reshape {to = [2, 1]} (tensor [3, 4])` is

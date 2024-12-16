@@ -22,6 +22,12 @@ limitations under the License.
 #include "xla_computation.h"
 
 extern "C" {
+    XlaComputation* XlaComputation_new(HloModuleProto& proto) {
+        auto& proto_ = reinterpret_cast<xla::HloModuleProto&>(proto);
+        // this moves the proto? should we then not GC it?
+        return reinterpret_cast<XlaComputation*>(new xla::XlaComputation(proto_));
+    }
+
     void XlaComputation_delete(XlaComputation* s) {
         delete reinterpret_cast<xla::XlaComputation*>(s);
     }

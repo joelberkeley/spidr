@@ -30,3 +30,13 @@ convertHloToStablehlo (MkMLIRContext ctx) (MkHloModuleProto proto) = do
   moduleOp <- primIO $ prim__convertHloToStablehlo ctx proto
   moduleOp <- onCollectAny moduleOp (primIO . BuiltinOps.prim__delete)
   pure (MkModuleOp moduleOp)
+
+%foreign (libxla "ConvertStablehloToHlo")
+prim__convertStablehloToHlo : GCAnyPtr -> PrimIO AnyPtr
+
+export
+convertStablehloToHlo : HasIO io => ModuleOp -> io HloModuleProto
+convertStablehloToHlo (MkModuleOp op) = do
+  hlo <- primIO $ prim__convertStablehloToHlo op
+  hlo <- onCollectAny hlo (primIO . BuiltinOps.prim__delete)
+  pure (MkHloModuleProto hlo)
