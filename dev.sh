@@ -17,7 +17,7 @@ install_git_repository () {
   (
     cd "$2"
     git init
-    git remote add origin $3
+    git remote add origin "$3"
     git fetch --depth 1 origin "$1"
     git checkout FETCH_HEAD
   )
