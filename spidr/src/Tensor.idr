@@ -238,6 +238,7 @@ export
 castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
 castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
+||| Reverse-mode automatic differentiation.
 export
 grad : (Tensor shape F64 -> Tag $ Tensor [] F64) -> Tensor shape F64 -> Tag $ Tensor shape F64
 grad f (MkTensor x) = MkTagT $ do

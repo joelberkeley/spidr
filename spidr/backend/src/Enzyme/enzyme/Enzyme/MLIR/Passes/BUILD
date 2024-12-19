@@ -1,12 +1,12 @@
 cc_library(
-    name = "Implementations",
+    name = "Passes",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@enzyme-jax//:enzymexlamlir-opt",
-        "//src/mlir/IR",
+        "@enzyme//:EnzymeMLIR",
+        "//src/mlir/Pass",
     ],
     visibility = ["//visibility:public"],
 )

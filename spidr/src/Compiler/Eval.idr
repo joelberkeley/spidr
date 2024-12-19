@@ -23,9 +23,8 @@ import Data.IOArray
 import Data.List
 import Data.List.Elem
 
-import Compiler.Expr
-import Compiler.FFI
-import Compiler.LiteralRW
+import Compiler.Enzyme.enzyme.Enzyme.MLIR.Dialect.Dialect
+import Compiler.Enzyme.enzyme.Enzyme.MLIR.Passes.Passes
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
@@ -52,6 +51,9 @@ import Compiler.Xla.Literal
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
 import Compiler.Xla.XlaData
+import Compiler.Expr
+import Compiler.FFI
+import Compiler.LiteralRW
 import Literal
 import Primitive
 import Types
@@ -66,6 +68,7 @@ data Err
   | ValueNotFound Nat
   | PjrtErr PjrtError
   | SerializationError String
+  | MlirPassError String
 
 export
 Show Err where
@@ -73,6 +76,7 @@ Show Err where
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
   show (PjrtErr err) = show err
   show (SerializationError err) = "SerializationError: \{err}"
+  show (MlirPassError err) = "MlirPassError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
@@ -131,14 +135,20 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (Grad f x) = do
     reg <- mkDialectRegistry
+    -- need other dialects?
+    insertEnzymeDialect reg
     StableHLO.Dialect.Register.registerAllDialects reg
-    registerStableHLODialectAutoDiffInterface reg
+    -- registerStableHLODialectAutoDiffInterface reg
+    -- should we instead be getting the context from the stablehlo ModuleOp?
     ctx <- mkMLIRContext
     appendDialectRegistry ctx reg
     mgr <- mkPassManager ctx
+    addPass mgr !createDifferentiatePass
     computation <- compile xlaBuilder f
-    stablehlo <- hloModuleProtoToStableHLO !(proto computation)  -- using the wrong function, we want the module, not the string
-    True <- run mgr stablehlo | False => ?err
+    stablehlo <- hloModuleProtoToStableHLO !(proto computation)
+    enzymeOp <- ?enzymeAutodiffReverseOp stablehlo
+    True <- run mgr enzymeOp
+      | False => throwE $ MlirPassError "Failed to run differentiate pass on StableHLO"
     hloProto <- convertStablehloToHlo stablehlo
     computation <- mkXlaComputation hloProto
     -- x should be correct shape, because we're sending R^{n0, n1, ..} -> R

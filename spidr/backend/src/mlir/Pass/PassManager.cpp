@@ -13,7 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "mlir/Pass/PassManager.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/Pass.h"
 
 #include "../IR/BuiltinOps.h"
 #include "../IR/MLIRContext.h"
@@ -29,6 +31,12 @@ extern "C" {
 
     void PassManager_delete(PassManager* s) {
         delete reinterpret_cast<mlir::PassManager*>(s);
+    }
+
+    void PassManager_addPass(PassManager& s, Pass* pass) {
+        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
+        auto pass_ = reinterpret_cast<mlir::Pass*>(pass);
+        s_.addPass(pass_);
     }
 
     int PassManager_run(PassManager& s, Operation* op) {

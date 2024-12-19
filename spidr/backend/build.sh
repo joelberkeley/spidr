@@ -31,6 +31,7 @@ esac
   (cd xla; ./configure.py --backend=cpu --os=$os)
   mkdir Enzyme-JAX
   install_enzyme "$enzyme_rev" Enzyme-JAX
+  # sed -i -e 's/"-Werror=unused-variable",//g' Enzyme-JAX/src/enzyme_ad/jax/BUILD
   bazel build //:c_xla
   rm -rf xla
 )

@@ -36,6 +36,13 @@ mkPassManager (MkMLIRContext ctx) = do
   manager <- onCollectAny manager (primIO . PassManager.prim__delete)
   pure (MkPassManager manager)
 
+%foreign (libxla "PassManager_addPass")
+prim__passManagerAddPass : GCAnyPtr -> GCAnyPtr -> PrimIO Int
+
+export
+addPass : HasIO io => PassManager -> Pass -> io ()
+addPass (MkPassManager manager) (MkPass pass) = primIO $ prim__passManagerAddPass manager pass
+
 %foreign (libxla "PassManager_run")
 prim__passManagerRun : GCAnyPtr -> GCAnyPtr -> PrimIO Int
 

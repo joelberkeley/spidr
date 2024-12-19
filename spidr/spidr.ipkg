@@ -8,7 +8,8 @@ modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,
 
-  Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl,
+  Compiler.Enzyme.enzyme.Enzyme.MLIR.Dialect.Dialect,
+  Compiler.Enzyme.enzyme.Enzyme.MLIR.Passes.Passes,
   Compiler.LLVM.Support.RawOStream,
   Compiler.MLIR.IR.BuiltinOps,
   Compiler.MLIR.IR.DialectRegistry,
