@@ -24,8 +24,6 @@ import Utils
 import Utils.Comparison
 import Utils.Cases
 
-%hide Tensor.(>>=)
-
 namespace MultiSlice
   indexFirstDim :
     (n, idx : Nat) ->

@@ -24,8 +24,6 @@ import Utils
 import Utils.Comparison
 import Utils.Cases
 
-%hide Tensor.(>>=)
-
 mapResult : Device => Property
 mapResult = property $ do
   shape <- forAll shapes

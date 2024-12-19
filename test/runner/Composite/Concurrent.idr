@@ -31,31 +31,31 @@ public export
 0 protocol : Session
 protocol = SendT [] S32 $ RecvT [] S32 $ EndT
 
-onHost : Channel Concurrent.protocol -@ TagT1 (L1 IO) (Tensor [] S32)
+-- TagT1 because we can only use the computation (L IO) once, else we'd use the channel n times
+-- L (not L1) because we can use the tensor as much as we want
+onHost : Channel Concurrent.protocol -@ TagT1 (L IO) (Tensor [] S32)
 onHost ch =
     let x = tensor {dtype = S32} 2 in
-    bind1 {use = 1} (the (TagT1 (L1 IO) (Channel _)) $ lift1 $ send ch x DEVICE_TO_DEVICE) $ \ch =>
-      bind1 (recv ch DEVICE_TO_DEVICE) $ \(x # ch) =>
-        bind1 (lift1 $ end ch) $ the (() -> TagT1 (L1 IO) _) $ \() => pure1 x
+    bind10 (lift1 $ send ch x DEVICE_TO_DEVICE) $ \ch =>
+      bind10 (recv ch DEVICE_TO_DEVICE) $ \(x # ch) =>
+        bind (lift $ end ch) $ \() => pure x
 
-onDevice : Channel (dual Concurrent.protocol) -@ TagT1 (L1 IO) ()
+onDevice : Channel (dual Concurrent.protocol) -@ TagT1 (L IO) ()
 onDevice ch = do
-    x # ch <- recv {shape = [], dtype = S32} ch DEVICE_TO_DEVICE
-    ch <- lift1 $ send ch x DEVICE_TO_DEVICE
-    lift1 $ end ch
+    bind10 (recv {shape = [], dtype = S32} ch DEVICE_TO_DEVICE) $ \(x # ch) =>
+      bind10 (lift1 $ send ch x DEVICE_TO_DEVICE) $ \ch => lift $ end ch
 
--- tries to use single device
 sendRecv : Device => Property
 sendRecv @{device} = fixedProperty $ do
   let MkDevice api client = device
       Right [dev] = unsafePerformIO (runEitherT (pjrtClientDevices api client)) | _ => ?fhnewoi
 
-      prog : L IO (Tensor [] S32) = do
+      prog : L IO (Literal [] Int32) = do
         (h # d) <- makeChannel Concurrent.protocol
-        liftIO1 $ eval1 (onHost h)
-        liftIO1 $ eval1nil (onDevice d)
+        eval1nil device dev (onDevice d)
+        eval1 device dev (onHost h)
 
-  (unsafePerformIO $ eval1 device dev prog) === 2
+  (unsafePerformIO $ run prog) === 2
 
 export
 group : Device => Group

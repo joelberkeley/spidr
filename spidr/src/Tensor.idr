@@ -175,8 +175,15 @@ data TagT1 : (Type -> Type) -> Type -> Type where
 
 -- can combine `>>=` and `bind` using `ContType`
 export
-bind1 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L {use} IO) b) -@ TagT1 (L {use} IO) b
+bind1 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L1 IO) b) -@ TagT1 (L1 IO) b  -- why doesn't this work with {use}?
 bind1 (MkTagT1 g) f = MkTagT1 $ \e => do
+  e' # xa <- g e
+  let MkTagT1 g' = f xa
+  g' e'
+
+export
+bind10 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L IO) b) -@ TagT1 (L IO) b  -- why doesn't this work with {use}?
+bind10 (MkTagT1 g) f = MkTagT1 $ \e => do
   e' # xa <- g e
   let MkTagT1 g' = f xa
   g' e'
@@ -229,8 +236,8 @@ recv (MkChannel tok) type = MkTagT1 $ \e => do
   pure1 $ e # (MkTensor op # MkChannel tok)
 
 export
-end : Channel EndT -@ L1 IO ()  -- should be L IO like gallais' version? does it matter since () is unique?
-end (MkChannel _) = pure1 ()
+end : Channel EndT -@ L IO ()  -- should be L IO like gallais' version? does it matter since () is unique?
+end (MkChannel _) = pure ()
 
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
@@ -256,22 +263,21 @@ export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
 
--- what should the linearity be here wrt return types?
 export covering
-eval1 : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -> IO (Literal shape ty)
+eval1 : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -@ L IO (Literal shape ty)
 eval1 device pjrtdevice (MkTagT1 x) = do
-  (env # MkTensor root) <- run $ x empty
-  try $ do
+  (MkBang $ env # MkTensor root) <- bang $ x empty
+  liftIO1 $ try $ do
     shape <- mkShape shape {dtype}
     [lit] <- execute device pjrtdevice (MkFn [] root env) [shape]
     read {dtype} [] lit
 
 export covering
-eval1nil : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) () -> IO ()
+eval1nil : Device -> PjrtDevice -> TagT1 (L IO) () -@ L IO ()
 eval1nil device pjrtdevice (MkTagT1 x) = do
-  (env # ()) <- run $ x empty
+  (MkBang $ env # ()) <- bang $ x empty
   let MkEnv _ ((_, tok) :: _) = env | _ => ?grevra
-  try $ ignore $ execute device pjrtdevice (MkFn [] tok env) []
+  liftIO1 $ try $ ignore $ execute device pjrtdevice (MkFn [] tok env) []
 
 namespace TensorList
   namespace Tag
