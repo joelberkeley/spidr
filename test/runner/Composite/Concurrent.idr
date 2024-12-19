@@ -55,7 +55,7 @@ sendRecv @{device} = fixedProperty $ do
         eval1nil device dev (onDevice d)
         eval1 device dev (onHost h)
 
-  (unsafePerformIO $ run prog) === 2
+  unsafePerformIO (run prog) === 2
 
 export
 group : Device => Group
