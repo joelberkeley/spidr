@@ -140,6 +140,9 @@ public export
 data Session
   = SendT Shape Type Session
   | RecvT Shape Type Session
+  -- Rec (Inf Session)
+  -- rather than having Branch and Select here, and trying to encode subtyping at this level, I
+  -- suggest keeping it simple and require protocols are the supertype of naive implementation types
   | EndT
 
 public export
@@ -153,18 +156,6 @@ data Channel : Session -> Type where
   -- Expr here is a token ... this feels suspicious but might be right
   MkChannel : Expr -> Channel sess
 
-export
-makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
-makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
-
-export
-send :
-  (1 _ : Channel (SendT shape dtype sess)) ->
-  Tensor shape dtype ->
-  ChannelType ->
-  L1 IO (Channel sess)
-send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
-
 public export 0
 CRes : Type -> Type -> Type
 CRes a b = Res a (const b)
@@ -173,23 +164,17 @@ export
 data TagT1 : (Type -> Type) -> Type -> Type where
   MkTagT1 : (Env -> m (CRes Env a)) -@ TagT1 m a
 
--- can combine `>>=` and `bind` using `ContType`
+-- we're using `bind`/`bind1` partly to avoid disambiguation problems, partly because this isn't
+-- a proper monad afaik
 export
-bind1 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L1 IO) b) -@ TagT1 (L1 IO) b  -- why doesn't this work with {use}?
+bind1 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L IO) b) -@ TagT1 (L IO) b
 bind1 (MkTagT1 g) f = MkTagT1 $ \e => do
   e' # xa <- g e
   let MkTagT1 g' = f xa
   g' e'
 
 export
-bind10 : TagT1 (L1 IO) a -@ (a -@ TagT1 (L IO) b) -@ TagT1 (L IO) b  -- why doesn't this work with {use}?
-bind10 (MkTagT1 g) f = MkTagT1 $ \e => do
-  e' # xa <- g e
-  let MkTagT1 g' = f xa
-  g' e'
-
-export
-bind : TagT1 (L IO) a -@ (a -> TagT1 (L {use} IO) b) -@ TagT1 (L {use} IO) b
+bind : TagT1 (L IO) a -@ (a -> TagT1 (L IO) b) -@ TagT1 (L IO) b
 bind (MkTagT1 g) f = MkTagT1 $ \e => do
   e' # xa <- g e
   let MkTagT1 g' = f xa
@@ -200,16 +185,22 @@ pure : a -> TagT1 (L IO) a
 pure xa = MkTagT1 $ \e => pure (e # xa)
 
 export
-pure1 : a -> TagT1 (L1 IO) a
-pure1 xa = MkTagT1 $ \e => pure1 (e # xa)
-
-export
 lift1 : L1 IO a -@ TagT1 (L1 IO) a
 lift1 io = MkTagT1 $ \e => do xa <- io; pure1 (e # xa)
 
 export
 lift : L IO a -@ TagT1 (L IO) a
 lift io = MkTagT1 $ \e => do xa <- io; pure (e # xa)
+
+export
+makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
+makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
+
+-- user code would be easier to parse if this returned `TagT1 (L1 IO) (Channel sess)`, similar for `end`
+-- assuming user code always includes `read`
+export
+send : (1 _ : Channel (SendT shape dtype sess)) -> Tensor shape dtype -> ChannelType -> L1 IO (Channel sess)
+send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
 
 -- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
 -- TagT is not linear in its argument, so it needs to be modified. The only way I can see it
@@ -224,8 +215,7 @@ lift io = MkTagT1 $ \e => do xa <- io; pure (e # xa)
 -- crucial test: can we duplicate the channel? if not, we're good. That is, after all, why we're linear
 export
 recv :
-  Primitive dtype =>
-  {shape : _} ->
+  Primitive dtype => {shape : _} ->
   (1 _ : Channel (RecvT shape dtype sess)) ->
   ChannelType ->  -- this almost certainly doesn't make sense with Channel
   TagT1 (L1 IO) $ CRes (Tensor shape dtype) (Channel sess)
@@ -236,7 +226,7 @@ recv (MkChannel tok) type = MkTagT1 $ \e => do
   pure1 $ e # (MkTensor op # MkChannel tok)
 
 export
-end : Channel EndT -@ L IO ()  -- should be L IO like gallais' version? does it matter since () is unique?
+end : Channel EndT -@ L IO ()
 end (MkChannel _) = pure ()
 
 try : Show e => EitherT e IO a -> IO a

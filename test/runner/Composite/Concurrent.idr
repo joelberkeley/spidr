@@ -36,19 +36,21 @@ protocol = SendT [] S32 $ RecvT [] S32 $ EndT
 onHost : Channel Concurrent.protocol -@ TagT1 (L IO) (Tensor [] S32)
 onHost ch =
     let x = tensor {dtype = S32} 2 in
-    bind10 (lift1 $ send ch x DEVICE_TO_DEVICE) $ \ch =>
-      bind10 (recv ch DEVICE_TO_DEVICE) $ \(x # ch) =>
-        bind (lift $ end ch) $ \() => pure x
+    lift1 (send ch x DEVICE_TO_DEVICE) `bind1` \ch =>
+      recv ch DEVICE_TO_DEVICE `bind1` \(x # ch) =>
+        lift (end ch) `bind` \() =>
+          pure x
 
 onDevice : Channel (dual Concurrent.protocol) -@ TagT1 (L IO) ()
 onDevice ch = do
-    bind10 (recv {shape = [], dtype = S32} ch DEVICE_TO_DEVICE) $ \(x # ch) =>
-      bind10 (lift1 $ send ch x DEVICE_TO_DEVICE) $ \ch => lift $ end ch
+    recv ch DEVICE_TO_DEVICE `bind1` \(x # ch) =>
+      lift1 (send ch x DEVICE_TO_DEVICE) `bind1` \ch =>
+        lift (end ch)
 
 sendRecv : Device => Property
 sendRecv @{device} = fixedProperty $ do
   let MkDevice api client = device
-      Right [dev] = unsafePerformIO (runEitherT (pjrtClientDevices api client)) | _ => ?fhnewoi
+      Right [dev] = unsafePerformIO (runEitherT (pjrtClientDevices api client)) | _ => ?notExactlyOneDevice
 
       prog : L IO (Literal [] Int32) = do
         (h # d) <- makeChannel Concurrent.protocol
