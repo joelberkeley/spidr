@@ -29,7 +29,7 @@ import Utils.Cases
 
 public export
 0 protocol : Session
-protocol = SendT [] S32 $ RecvT [] S32 $ EndT
+protocol = Send [] S32 $ Recv [] S32 $ End
 
 -- TagT1 because we can only use the computation (L IO) once, else we'd use the channel n times
 -- L (not L1) because we can use the tensor as much as we want

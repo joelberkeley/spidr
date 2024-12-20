@@ -138,18 +138,18 @@ namespace S32
 
 public export
 data Session
-  = SendT Shape Type Session
-  | RecvT Shape Type Session
+  = Send Shape Type Session
+  | Recv Shape Type Session
   -- Rec (Inf Session)
   -- rather than having Branch and Select here, and trying to encode subtyping at this level, I
   -- suggest keeping it simple and require protocols are the supertype of naive implementation types
-  | EndT
+  | End
 
 public export
 dual : Session -> Session
-dual (SendT s t sess) = RecvT s t (dual sess)
-dual (RecvT s t sess) = SendT s t (dual sess)
-dual EndT = EndT
+dual (Send s t sess) = Recv s t (dual sess)
+dual (Recv s t sess) = Send s t (dual sess)
+dual End = End
 
 export
 data Channel : Session -> Type where
@@ -199,7 +199,7 @@ makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
 -- user code would be easier to parse if this returned `TagT1 (L1 IO) (Channel sess)`, similar for `end`
 -- assuming user code always includes `read`
 export
-send : (1 _ : Channel (SendT shape dtype sess)) -> Tensor shape dtype -> ChannelType -> L1 IO (Channel sess)
+send : (1 _ : Channel (Send shape dtype sess)) -> Tensor shape dtype -> ChannelType -> L1 IO (Channel sess)
 send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
 
 -- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
@@ -216,7 +216,7 @@ send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send tok op 1 type)
 export
 recv :
   Primitive dtype => {shape : _} ->
-  (1 _ : Channel (RecvT shape dtype sess)) ->
+  (1 _ : Channel (Recv shape dtype sess)) ->
   ChannelType ->  -- this almost certainly doesn't make sense with Channel
   TagT1 (L1 IO) $ CRes (Tensor shape dtype) (Channel sess)
 recv (MkChannel tok) type = MkTagT1 $ \e => do
@@ -226,7 +226,7 @@ recv (MkChannel tok) type = MkTagT1 $ \e => do
   pure1 $ e # (MkTensor op # MkChannel tok)
 
 export
-end : Channel EndT -@ L IO ()
+end : Channel End -@ L IO ()
 end (MkChannel _) = pure ()
 
 try : Show e => EitherT e IO a -> IO a
