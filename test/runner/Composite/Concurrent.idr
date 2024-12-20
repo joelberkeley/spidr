@@ -60,5 +60,5 @@ sendRecv @{device} = fixedProperty $ do
 export
 group : Device => Group
 group = MkGroup "Concurrent" $ [
-      ("send and recv a simple value, no maths operations", sendRecv)
+      ("send and recv a simple value, no maths", sendRecv)
   ]
