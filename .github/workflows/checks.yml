@@ -113,7 +113,7 @@ jobs:
         path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux-x86_64:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04  # maybe this version doesn't matter, it's only pjrt that matters
     steps:
       - uses: actions/checkout@v4
         with:
