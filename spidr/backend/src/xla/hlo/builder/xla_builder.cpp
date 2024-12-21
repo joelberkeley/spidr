@@ -340,7 +340,7 @@ extern "C" {
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
 
     XlaOp* Exp(XlaOp& operand) {
-        auto& res = xla::Exp(reinterpret_cast<xla::XlaOp&>(operand));
+        auto res = xla::Exp(reinterpret_cast<xla::XlaOp&>(operand));
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
