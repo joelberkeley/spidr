@@ -338,7 +338,12 @@ extern "C" {
     }
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
-    XlaOp* Exp(XlaOp& operand) { return unaryOp(xla::Exp, operand); }
+
+    XlaOp* Exp(XlaOp& operand) {
+        auto& res = xla::Exp(reinterpret_cast<xla::XlaOp&>(operand));
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Floor(XlaOp& operand) { return unaryOp(xla::Floor, operand); }
     XlaOp* Ceil(XlaOp& operand) { return unaryOp(xla::Ceil, operand); }
     XlaOp* Log(XlaOp& operand) { return unaryOp(xla::Log, operand); }
