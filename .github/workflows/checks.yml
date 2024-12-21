@@ -15,7 +15,7 @@ jobs:
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
   pjrt-linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # should pin version, but which version - 22.04 or 24.04? or both separately?
     steps:
     - uses: actions/checkout@v4
       with:
@@ -42,7 +42,7 @@ jobs:
         path: libc_xla.so
         if-no-files-found: error
   pjrt-darwin-aarch64:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
       with:
@@ -63,7 +63,7 @@ jobs:
         path: libc_xla.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cpu-linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
       with:
@@ -90,7 +90,7 @@ jobs:
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-darwin-aarch64:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
       with:
@@ -113,7 +113,7 @@ jobs:
         path: pjrt_plugin_xla_cpu.dylib
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -141,7 +141,7 @@ jobs:
           path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu-linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
@@ -161,7 +161,7 @@ jobs:
         path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cpu-darwin-aarch64:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
@@ -182,7 +182,7 @@ jobs:
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
   build-tests-xla-cuda-linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
@@ -206,7 +206,7 @@ jobs:
       - pjrt-linux-x86_64
       - pjrt-plugin-xla-cpu-linux-x86_64
       - build-tests-xla-cpu-linux-x86_64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -225,7 +225,7 @@ jobs:
       - pjrt-darwin-aarch64
       - pjrt-plugin-xla-cpu-darwin-aarch64
       - build-tests-xla-cpu-darwin-aarch64
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -245,7 +245,7 @@ jobs:
       - pjrt-plugin-xla-cuda-linux-x86_64
       - build-tests-xla-cuda-linux-x86_64
     runs-on: ubuntu-latest  # needs a CUDA runner
-    container: nvcr.io/nvidia/tensorrt:23.11-py3
+    container: nvcr.io/nvidia/tensorrt:24.07-py3
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -260,7 +260,7 @@ jobs:
         tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
         exit 0  # we can't run tests without a GPU
   readme:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
@@ -270,7 +270,7 @@ jobs:
         pack switch HEAD
         SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt typecheck readme.ipkg
   tutorials:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4

@@ -17,10 +17,10 @@ docker run -it                          \
     --name spidr                        \
     -v $(pwd):/spidr                    \
     -w /spidr                           \
-    nvcr.io/nvidia/tensorrt:23.11-py3   \
+    nvcr.io/nvidia/tensorrt:24.07-py3   \
     bash
 ```
-The image version `23.11` is important. Next, in the Docker container, install `pack` and prerequisites (the container uses Ubuntu). Finally, install the plugin with
+The image version `24.07-py3` is important. Next, in the Docker container, install `pack` and prerequisites (the container uses Ubuntu). Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```
