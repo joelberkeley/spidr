@@ -15,7 +15,7 @@ jobs:
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
   pjrt-linux-x86_64:
-    runs-on: ubuntu-latest  # should pin version, but which version - 22.04 or 24.04? or both separately?
+    runs-on: ubuntu-22.04  # which version - 22.04 or 24.04? or both separately?
     steps:
     - uses: actions/checkout@v4
       with:
