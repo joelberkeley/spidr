@@ -28,7 +28,7 @@ jobs:
         body: "XLA revision ${{ env.XLA_REV }}"
   pjrt-plugin-xla-cpu-linux-x86_64:
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CPU plugin for Linux x86_64
@@ -49,7 +49,7 @@ jobs:
         asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cpu-darwin-aarch64:
     needs: create-release
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CPU plugin for Darwin AArch64
@@ -65,7 +65,7 @@ jobs:
         asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CUDA plugin for Linux x86_64
