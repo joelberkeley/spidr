@@ -50,12 +50,21 @@ onDevice ch = do
 sendRecv : Device => Property
 sendRecv @{device} = fixedProperty $ do
   let MkDevice api client = device
-      Right [dev] = unsafePerformIO (runEitherT (pjrtClientDevices api client)) | _ => ?notExactlyOneDevice
+      devices := do
+          devices <- pjrtClientDevices api client
+          descr <- traverse (pjrtDeviceGetDescription api) devices
+          debugs <- traverse (pjrtDeviceDescriptionDebugString api) descr
+          printLn debugs
+          pure devices
+
+      Right [gpu] = unsafePerformIO (runEitherT devices) | _ => ?notExactlyOneDevice
 
       prog : L IO (Literal [] Int32) = do
         (h # d) <- makeChannel Concurrent.protocol
-        eval1nil device dev (onDevice d)
-        eval1 device dev (onHost h)
+        -- look at topology e.g. PJRT_TopologyDescription
+        -- does that allow you to run a
+        eval1nil device gpu (onDevice d)
+        eval1 device (MkPjrtDevice prim__getNullAnyPtr) (onHost h)
 
   unsafePerformIO (run prog) === 2
 

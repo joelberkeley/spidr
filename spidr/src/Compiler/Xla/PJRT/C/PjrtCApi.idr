@@ -236,6 +236,31 @@ pjrtClientCreate (MkPjrtApi api) = do
       free args
       handleErrOnDestroy api err "PJRT_Client"
 
+-- docstring
+public export
+data PjrtTopologyDescription = MkPjrtTopologyDescription GCAnyPtr
+
+%foreign (libxla "PJRT_Client_TopologyDescription_Args_new")
+prim__mkPjrtClientTopologyDescriptionArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Client_TopologyDescription_Args_topology")
+prim__pjrtClientTopologyDescriptionArgsTopology : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_client_topologydescription")
+prim__pjrtClientTopologyDescription : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+-- docstring ... this is probably exposed to user
+export
+pjrtClientTopologyDescription : PjrtApi -> PjrtClient -> Pjrt PjrtTopologyDescription
+pjrtClientTopologyDescription (MkPjrtApi api) (MkPjrtClient client) = do
+  args <- primIO $ prim__mkPjrtClientTopologyDescriptionArgs client
+  err <- primIO $ prim__pjrtClientTopologyDescription api args
+  topology <- primIO $ prim__pjrtClientTopologyDescriptionArgsTopology args
+  free args
+  try api err =<< do
+    topology <- onCollectAny topology (const $ pure ())  -- client owns the topology
+    pure $ MkPjrtTopologyDescription topology
+
 %foreign (libxla "PJRT_Client_Devices_Args_new")
 prim__mkPjrtClientDevicesArgs : GCAnyPtr -> PrimIO AnyPtr
 
@@ -248,6 +273,7 @@ prim__pjrtClientDevicesArgsNumDevices : AnyPtr -> Bits64
 %foreign (libxla "pjrt_client_devices")
 prim__pjrtClientDevices : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
+--docstring
 public export
 data PjrtDevice = MkPjrtDevice AnyPtr  -- owned by client
 
@@ -316,6 +342,58 @@ pjrtClientDefaultDeviceAssignment
           [prim__indexInt (cast idx) defaultAssignment | idx <- range defaultAssignmentSize]
     free $ prim__forgetPtr defaultAssignment
     try api err $ defaultAssignment'
+
+-------------------------- Device Descriptions ------------------------------
+
+-- docstring
+public export
+data PjrtDeviceDescription = MkPjrtDeviceDescription AnyPtr  -- not GCAnyPtr as there's no PJRT function to delete it
+
+%foreign (libxla "PJRT_DeviceDescription_DebugString_Args_new")
+prim__mkPjrtDeviceDescriptionDebugStringArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Device_GetDescription_Args_debug_string")
+prim__pjrtDeviceDescriptionDebugStringArgsDebugString : AnyPtr -> PrimIO String
+
+%foreign (libxla "pjrt_devicedescription_debugstring")
+prim__pjrtDeviceDescriptionDebugString : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+-- docstring ... this is probably exposed to user
+export
+pjrtDeviceDescriptionDebugString : PjrtApi -> PjrtDeviceDescription -> Pjrt String
+pjrtDeviceDescriptionDebugString (MkPjrtApi api) (MkPjrtDeviceDescription descr) = do
+    args <- primIO $ prim__mkPjrtDeviceDescriptionDebugStringArgs descr
+    err <- primIO $ prim__pjrtDeviceDescriptionDebugString api args
+    debugString <- primIO $ prim__pjrtDeviceDescriptionDebugStringArgsDebugString args
+    free args
+    try api err debugString
+
+--------------------------------- Devices -----------------------------------
+
+%foreign (libxla "PJRT_Device_GetDescription_Args_new")
+prim__mkPjrtDeviceGetDescriptionArgs : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "PJRT_Device_GetDescription_Args_device_description")
+prim__pjrtDeviceGetDescriptionArgsDeviceDescription : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "pjrt_device_getdescription")
+prim__pjrtDeviceGetDescription : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+-- docstring ... this is probably exposed to user
+export
+pjrtDeviceGetDescription : PjrtApi -> PjrtDevice -> Pjrt PjrtDeviceDescription
+pjrtDeviceGetDescription (MkPjrtApi api) (MkPjrtDevice device) = do
+    args <- primIO $ prim__mkPjrtDeviceGetDescriptionArgs device
+    err <- primIO $ prim__pjrtDeviceGetDescription api args
+    descr <- primIO $ prim__pjrtDeviceGetDescriptionArgsDeviceDescription args
+    free args
+    try api err $ MkPjrtDeviceDescription descr
+
+-------------------------------- Memory --------------------------------------
+
+------------------------------- Execute Context -----------------------------
+
+------------------------------- Executables ---------------------------------
 
 %foreign (libxla "PJRT_LoadedExecutable_Destroy_Args_new")
 prim__mkPjrtLoadedExecutableDestroyArgs : AnyPtr -> PrimIO AnyPtr

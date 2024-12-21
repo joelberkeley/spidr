@@ -258,7 +258,6 @@ execute (MkDevice api client) device f@(MkFn _ _ env) shapes = do
   program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
     -- would two partitions (on my linux cuda machine) give me two devices instead of one?
-    -- _ <- pjrtClientDefaultDeviceAssignment api client 1 2
     loadedExec <- pjrtClientCompile api client program compileOptions
     free code
     free compileOptions

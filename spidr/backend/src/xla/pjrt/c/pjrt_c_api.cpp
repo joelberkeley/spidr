@@ -19,7 +19,20 @@ limitations under the License.
 #include "xla/pjrt/c/pjrt_c_api.h"
 #include "xla/pjrt/c/pjrt_c_api_helpers.h"
 
+char* str_alloc(const char* str, size_t len) {
+    auto res = (char*) malloc(len + 1);
+    strncpy(res, str, len);
+    res[len] = '\0';
+    return res;
+}
+
 extern "C" {
+    // ------------------------------- Extensions ----------------------------------
+
+    // --------------------------------- Version -----------------------------------
+
+    // ---------------------------------- Errors -----------------------------------
+
     PJRT_Error_Destroy_Args* PJRT_Error_Destroy_Args_new(PJRT_Error* error) {
         return new PJRT_Error_Destroy_Args{
             .struct_size = PJRT_Error_Destroy_Args_STRUCT_SIZE,
@@ -41,11 +54,7 @@ extern "C" {
     }
 
     char* PJRT_Error_Message_Args_message(PJRT_Error_Message_Args* args) {
-        auto len = args->message_size;
-        auto res = (char*) malloc(len + 1);
-        strncpy(res, args->message, len);
-        res[len] = '\0';
-        return res;
+        return str_alloc(args->message, args->message_size);
     }
 
     void pjrt_error_message(PJRT_Api* api, PJRT_Error_Message_Args* args) {
@@ -67,6 +76,12 @@ extern "C" {
     PJRT_Error* pjrt_error_getcode(PJRT_Api* api, PJRT_Error_GetCode_Args* args) {
         return api->PJRT_Error_GetCode(args);
     }
+
+    // ---------------------------- Named Values -----------------------------------
+
+    // ---------------------------------- Plugin -----------------------------------
+
+    // ---------------------------------- Events -----------------------------------
 
     PJRT_Event_Destroy_Args* PJRT_Event_Destroy_Args_new(PJRT_Event* event) {
         return new PJRT_Event_Destroy_Args{
@@ -91,6 +106,8 @@ extern "C" {
     void pjrt_event_await(PJRT_Api* api, PJRT_Event_Await_Args* args) {
         api->PJRT_Event_Await(args);
     }
+
+    // ---------------------------------- Client -----------------------------------
 
     PJRT_Client_Create_Args* PJRT_Client_Create_Args_new() {
         return new PJRT_Client_Create_Args {
@@ -124,6 +141,28 @@ extern "C" {
 
     PJRT_Error* pjrt_client_destroy(PJRT_Api* api, PJRT_Client_Destroy_Args* args) {
         return api->PJRT_Client_Destroy(args);
+    }
+
+    PJRT_Client_TopologyDescription_Args* PJRT_Client_TopologyDescription_Args_new(
+        PJRT_Client* client
+    ) {
+        return new PJRT_Client_TopologyDescription_Args{
+            .struct_size = PJRT_Client_TopologyDescription_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .client = client,
+        };
+    }
+
+    PJRT_TopologyDescription* PJRT_Client_TopologyDescription_Args_topology(
+        PJRT_Client_TopologyDescription_Args* args
+    ) {
+        return args->topology;
+    }
+
+    PJRT_Error* pjrt_client_topologydescription(
+        PJRT_Api* api, PJRT_Client_TopologyDescription_Args* args
+    ) {
+        return api->PJRT_Client_TopologyDescription(args);
     }
 
     PJRT_Client_Devices_Args* PJRT_Client_Devices_Args_new(PJRT_Client* client) {
@@ -179,11 +218,7 @@ extern "C" {
     }
 
     PJRT_Error* pjrt_client_compile(PJRT_Api* api, PJRT_Client_Compile_Args* args) {
-//        printf("pjrt_client_compile ...\n");
-//        printf("... args->program->code\n");
-//        printf("%.*s\n", args->program->code_size, args->program->code);
-        auto res = api->PJRT_Client_Compile(args);
-        return res;
+        return api->PJRT_Client_Compile(args);
     }
 
     PJRT_Client_DefaultDeviceAssignment_Args* PJRT_Client_DefaultDeviceAssignment_Args_new(
@@ -209,6 +244,58 @@ extern "C" {
     ) {
         return api->PJRT_Client_DefaultDeviceAssignment(args);
     }
+
+    // -------------------------- Device Descriptions ------------------------------
+
+    PJRT_DeviceDescription_DebugString_Args* PJRT_DeviceDescription_DebugString_Args_new(
+        PJRT_DeviceDescription* device_description
+    ) {
+        return new PJRT_DeviceDescription_DebugString_Args{
+            .struct_size = PJRT_DeviceDescription_DebugString_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .device_description = device_description,
+        };
+    }
+
+    char* PJRT_Device_GetDescription_Args_debug_string(
+        PJRT_DeviceDescription_DebugString_Args* args
+    ) {
+        return str_alloc(args->debug_string, args->debug_string_size);
+    }
+
+    PJRT_Error* pjrt_devicedescription_debugstring(
+        PJRT_Api* api, PJRT_DeviceDescription_DebugString_Args* args
+    ) {
+        return api->PJRT_DeviceDescription_DebugString(args);
+    }
+
+    // --------------------------------- Devices -----------------------------------
+
+    PJRT_Device_GetDescription_Args* PJRT_Device_GetDescription_Args_new(
+        PJRT_Device* device
+    ) {
+        return new PJRT_Device_GetDescription_Args{
+            .struct_size = PJRT_Device_GetDescription_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .device = device,
+        };
+    }
+
+    PJRT_DeviceDescription* PJRT_Device_GetDescription_Args_device_description(
+        PJRT_Device_GetDescription_Args* args
+    ) {
+        return args->device_description;
+    }
+
+    PJRT_Error* pjrt_device_getdescription(PJRT_Api* api, PJRT_Device_GetDescription_Args* args) {
+        return api->PJRT_Device_GetDescription(args);
+    }
+
+    //-------------------------------- Memory --------------------------------------
+
+    // ------------------------------- Execute Context -----------------------------
+
+    // ------------------------------- Executables ---------------------------------
 
     PJRT_LoadedExecutable_Destroy_Args* PJRT_LoadedExecutable_Destroy_Args_new(
         PJRT_LoadedExecutable* executable
@@ -272,6 +359,8 @@ extern "C" {
         return api->PJRT_LoadedExecutable_Execute(args);
     }
 
+    // ---------------------------------- Buffers ----------------------------------
+
     PJRT_Buffer_Destroy_Args* PJRT_Buffer_Destroy_Args_new(PJRT_Buffer* buffer) {
         return new PJRT_Buffer_Destroy_Args{
             .struct_size = PJRT_Buffer_Destroy_Args_STRUCT_SIZE,
@@ -304,5 +393,53 @@ extern "C" {
 
     PJRT_Error* pjrt_buffer_tohostbuffer(PJRT_Api* api, PJRT_Buffer_ToHostBuffer_Args* args) {
         return api->PJRT_Buffer_ToHostBuffer(args);
+    }
+
+    // ---------------------------- CopyToDeviceStream -----------------------------
+
+    // ------------------------------ Device Topology ------------------------------
+
+    PJRT_TopologyDescription_Create_Args* PJRT_TopologyDescription_Create_Args_new(
+        const char* topology_name,
+        size_t topology_name_size,
+        const PJRT_NamedValue* create_options,
+        size_t num_options
+    ) {
+        return new PJRT_TopologyDescription_Create_Args{
+            .struct_size = PJRT_TopologyDescription_Create_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .topology_name = topology_name,
+            .topology_name_size = topology_name_size,
+            .create_options = create_options,
+            .num_options = num_options,
+        }
+    }
+
+    PJRT_TopologyDescription* PJRT_TopologyDescription_Create_Args_topology(
+        PJRT_TopologyDescription_Create_Args* args
+    ) {
+        return args->topology;
+    }
+
+    PJRT_Error* pjrt_topologydescription_create(
+        PJRT_Api* api, PJRT_TopologyDescription_Create_Args* args
+    ) {
+        return api->PJRT_TopologyDescription_Create(args);
+    }
+
+    PJRT_TopologyDescription_Destroy_Args* PJRT_TopologyDescription_Destroy_Args_new(
+        PJRT_TopologyDescription* topology
+    ) {
+        return new PJRT_TopologyDescription_Destroy_Args{
+            .struct_size = PJRT_Client_TopologyDescription_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .topology = topology,
+        };
+    }
+
+    PJRT_Error* pjrt_topologydescription_destroy(
+        PJRT_Api* api, PJRT_Client_TopologyDescription_Args* args
+    ) {
+        return api->PJRT_TopologyDescription_Destroy(args);
     }
 }
