@@ -26,14 +26,31 @@ libxla fname = "C:" ++ fname ++ ",libc_xla"
 public export
 data CharArray = MkCharArray (Ptr Char) Bits64
 
+public export
+data CppString = MkCppString AnyPtr
+
 namespace CharArray
   export
   free : HasIO io => CharArray -> io ()
   free (MkCharArray arr _) = free $ prim__forgetPtr arr
 
 export
+%foreign (libxla "string_new")
+prim__mkString : PrimIO AnyPtr
+
+||| It is up to the caller to `delete` the string.
+export
+cppString : HasIO io => io CppString
+cppString = MkCppString <$> primIO prim__mkString
+
+export
 %foreign (libxla "string_delete")
 prim__stringDelete : AnyPtr -> PrimIO ()
+
+namespace CppString
+  export
+  delete : HasIO io => CppString -> io ()
+  delete (MkCppString str) = primIO $ prim__stringDelete str
 
 export
 %foreign (libxla "string_data")
@@ -46,6 +63,15 @@ prim__stringSize : AnyPtr -> Bits64
 export
 %foreign (libxla "idx")
 prim__index : Int -> AnyPtr -> AnyPtr
+
+||| Deletes the `string`. It is up to the caller to `free` the `CharArray`.
+export
+stringToCharArray : HasIO io => CppString -> io CharArray
+stringToCharArray (MkCppString str) = do
+  data' <- primIO $ prim__stringData str
+  let size = prim__stringSize str
+  primIO $ prim__stringDelete str
+  pure (MkCharArray data' size)
 
 export
 cIntToBool : Int -> Bool
