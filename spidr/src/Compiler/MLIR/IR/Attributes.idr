@@ -30,6 +30,6 @@ prim__deleteAttribute : AnyPtr -> PrimIO ()
 export
 mkAttribute : HasIO io => io Attribute
 mkAttribute = do
-  Attribute <- primIO prim__mkAttribute
-  Attribute <- onCollectAny Attribute (primIO . prim__deleteAttribute)
-  pure (MkAttribute Attribute)
+  attr <- primIO prim__mkAttribute
+  attr <- onCollectAny attr (primIO . prim__deleteAttribute)
+  pure (MkAttribute attr)

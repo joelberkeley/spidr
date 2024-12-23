@@ -27,7 +27,7 @@ import Utils.Cases
 square : Device => Property
 square = fixedProperty $ do
   sqrt (square $ tensor 3.0) ===# tensor 3.0
---  grad (pure . square) (tensor 1.0) ===# pure (tensor 2.0)
+  grad (pure . square) (tensor 1.0) ===# pure (tensor 2.0)
 {-
   shape <- forAll shapes
 

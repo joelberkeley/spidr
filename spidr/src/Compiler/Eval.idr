@@ -147,7 +147,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     addPass mgr !createDifferentiatePass
     computation <- compile xlaBuilder f
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
-    enzymeOp <- ?enzymeAutodiffReverseOp stablehlo
+    enzymeOp <- emitEnzymeADOp stablehlo reg
     True <- run mgr enzymeOp
       | False => throwE $ MlirPassError "Failed to run differentiate pass on StableHLO"
     hloProto <- convertStablehloToHlo stablehlo

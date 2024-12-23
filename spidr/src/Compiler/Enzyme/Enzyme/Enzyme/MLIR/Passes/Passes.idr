@@ -16,6 +16,8 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes
 
+import Compiler.MLIR.IR.BuiltinOps
+import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
@@ -28,3 +30,13 @@ createDifferentiatePass = do
   pass <- primIO prim__createDifferentiatePass
   pass <- onCollectAny pass (primIO . Pass.prim__delete)
   pure (MkPass pass)
+
+%foreign (libxla "emitEnzymeADOp")
+prim__emitEnzymeADOp : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+emitEnzymeADOp : HasIO io => ModuleOp -> DialectRegistry -> io ModuleOp
+emitEnzymeADOp (MkModuleOp op) (MkDialectRegistry reg) = do
+  op <- primIO $ prim__emitEnzymeADOp op reg
+  op <- onCollectAny op (primIO . BuiltinOps.prim__delete)
+  pure (MkModuleOp op)

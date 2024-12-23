@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.Pass.OperationSupport
+module Compiler.MLIR.IR.OperationSupport
 
+import Compiler.MLIR.IR.Attributes
 import Compiler.MLIR.IR.Location
+import Compiler.MLIR.IR.ValueRange
 import Compiler.FFI
 
 public export
@@ -32,7 +34,7 @@ export
 mkOperationState : HasIO io => Location -> String -> io OperationState
 mkOperationState (MkLocation location) name = do
   opState <- primIO $ prim__mkOperationState location name
-  opState <- onCollectAny opState (primIO . OperationState.prim__delete)
+  opState <- onCollectAny opState (primIO . OperationSupport.prim__delete)
   pure (MkOperationState opState)
 
 %foreign (libxla "OperationState_addOperands")
