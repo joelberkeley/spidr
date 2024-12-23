@@ -14,17 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Enzyme.enzyme.Enzyme.MLIR.Passes.Passes
+module Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect
 
+import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
-%foreign (libxla "createDifferentiatePass")
-prim__createDifferentiatePass : PrimIO AnyPtr
+%foreign (libxla "DialectRegistry_insert_EnzymeDialect")
+prim__dialectRegistryInsertEnzymeDialect : GCAnyPtr -> PrimIO ()
 
 export
-createDifferentiatePass : HasIO io => io ()
-createDifferentiatePass = do
-  pass <- primIO prim__createDifferentiatePass
-  pass <- onCollectAny pass (primIO . Pass.prim__delete)
-  pure (MkPass pass)
+insertEnzymeDialect : HasIO io => DialectRegistry -> io ()
+insertEnzymeDialect (MkDialectRegistry reg) = primIO $ prim__dialectRegistryInsertEnzymeDialect reg

@@ -8,16 +8,25 @@ modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,
 
-  Compiler.Enzyme.enzyme.Enzyme.MLIR.Dialect.Dialect,
-  Compiler.Enzyme.enzyme.Enzyme.MLIR.Passes.Passes,
+  Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect,
+  Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes,
+
   Compiler.LLVM.Support.RawOStream,
+
+  Compiler.MLIR.IR.Block,
   Compiler.MLIR.IR.BuiltinOps,
   Compiler.MLIR.IR.DialectRegistry,
+  Compiler.MLIR.IR.Location,
   Compiler.MLIR.IR.MLIRContext,
+  Compiler.MLIR.IR.OperationSupport,
+  Compiler.MLIR.IR.ValueRange,
   Compiler.MLIR.Pass.PassManager,
+  Compiler.MLIR.Pass.Pass,
+
   Compiler.StableHLO.Dialect.Register,
   Compiler.StableHLO.Dialect.Serialization,
   Compiler.StableHLO.Dialect.Version,
+
   Compiler.Xla.Client.ExecutableBuildOptions,
   Compiler.Xla.HLO.Builder.Lib.Arithmetic,
   Compiler.Xla.HLO.Builder.Lib.Constants,

@@ -1,4 +1,4 @@
-{--
+/*
 Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
---}
-||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+*/
+#include "mlir/IR/Block.h"
 
-import Compiler.FFI
+#include "Block.h"
 
-public export
-data Operation = MkOperation GCAnyPtr
+extern "C" {
+    Block* Block_new() {
+        return reinterpret_cast<Block*>(new mlir::Block());
+    }
 
-export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+    void Block_delete(Block* s) {
+        delete reinterpret_cast<mlir::Block*>(s);
+    }
+}

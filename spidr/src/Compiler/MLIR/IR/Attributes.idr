@@ -14,13 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+module Compiler.MLIR.IR.Attributes
 
 import Compiler.FFI
 
 public export
-data Operation = MkOperation GCAnyPtr
+data Attribute = MkAttribute GCAnyPtr
+
+%foreign (libxla "Attribute_new")
+prim__mkAttribute : PrimIO AnyPtr
+
+%foreign (libxla "Attribute_delete")
+prim__deleteAttribute : AnyPtr -> PrimIO ()
 
 export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+mkAttribute : HasIO io => io Attribute
+mkAttribute = do
+  Attribute <- primIO prim__mkAttribute
+  Attribute <- onCollectAny Attribute (primIO . prim__deleteAttribute)
+  pure (MkAttribute Attribute)

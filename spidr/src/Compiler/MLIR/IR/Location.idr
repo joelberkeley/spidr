@@ -14,13 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+module Compiler.MLIR.IR.Location
 
 import Compiler.FFI
 
 public export
-data Operation = MkOperation GCAnyPtr
-
-export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+data Location = MkLocation GCAnyPtr

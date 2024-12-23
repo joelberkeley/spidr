@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+module Compiler.MLIR.IR.BuiltinOps
 
 import Compiler.FFI
 
 public export
-data Operation = MkOperation GCAnyPtr
+data ModuleOp = MkModuleOp GCAnyPtr
 
 export
 %foreign (libxla "ModuleOp_delete")

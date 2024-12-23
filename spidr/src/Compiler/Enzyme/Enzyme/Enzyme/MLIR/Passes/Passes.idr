@@ -14,13 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+module Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes
 
+import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
-public export
-data Operation = MkOperation GCAnyPtr
+%foreign (libxla "createDifferentiatePass")
+prim__createDifferentiatePass : PrimIO AnyPtr
 
 export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+createDifferentiatePass : HasIO io => io Pass
+createDifferentiatePass = do
+  pass <- primIO prim__createDifferentiatePass
+  pass <- onCollectAny pass (primIO . Pass.prim__delete)
+  pure (MkPass pass)

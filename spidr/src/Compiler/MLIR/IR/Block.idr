@@ -14,13 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+module Compiler.MLIR.IR.Block
 
 import Compiler.FFI
 
 public export
-data Operation = MkOperation GCAnyPtr
+data Block = MkBlock GCAnyPtr
+
+%foreign (libxla "Block_new")
+prim__mkBlock : PrimIO AnyPtr
+
+%foreign (libxla "Block_delete")
+prim__deleteBlock : AnyPtr -> PrimIO ()
 
 export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+mkBlock : HasIO io => io Block
+mkBlock = do
+  block <- primIO prim__mkBlock
+  block <- onCollectAny block (primIO . prim__deleteBlock)
+  pure (MkBlock block)

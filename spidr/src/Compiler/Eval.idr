@@ -23,14 +23,15 @@ import Data.IOArray
 import Data.List
 import Data.List.Elem
 
-import Compiler.Enzyme.enzyme.Enzyme.MLIR.Dialect.Dialect
-import Compiler.Enzyme.enzyme.Enzyme.MLIR.Passes.Passes
-import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl
+import Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect
+import Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes
+--import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.Pass.PassManager
+import Compiler.MLIR.Pass.Pass
 import Compiler.StableHLO.Dialect.Register
 import Compiler.StableHLO.Dialect.Serialization
 import Compiler.StableHLO.Dialect.Version

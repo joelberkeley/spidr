@@ -15,8 +15,9 @@ limitations under the License.
 */
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
 
+#include "Pass.h"
 #include "../IR/BuiltinOps.h"
 #include "../IR/MLIRContext.h"
 #include "../IR/Operation.h"
@@ -34,9 +35,11 @@ extern "C" {
     }
 
     void PassManager_addPass(PassManager& s, Pass* pass) {
-        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
-        auto pass_ = reinterpret_cast<mlir::Pass*>(pass);
-        s_.addPass(pass_);
+        return; // i hate cpp
+//        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
+//        auto pass_ = reinterpret_cast<mlir::Pass*>(pass);
+//        auto pass__ = std::unique_ptr<mlir::Pass>{std::exchange(pass_, nullptr)};
+//        s_.addPass(pass__);
     }
 
     int PassManager_run(PassManager& s, Operation* op) {

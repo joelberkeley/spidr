@@ -21,5 +21,6 @@ import Compiler.FFI
 public export
 data Pass = MkPass GCAnyPtr
 
+export
 %foreign (libxla "Pass_delete")
 prim__delete : AnyPtr -> PrimIO ()

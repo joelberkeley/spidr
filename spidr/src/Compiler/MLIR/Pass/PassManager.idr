@@ -18,6 +18,7 @@ module Compiler.MLIR.Pass.PassManager
 
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
 public export
@@ -37,7 +38,7 @@ mkPassManager (MkMLIRContext ctx) = do
   pure (MkPassManager manager)
 
 %foreign (libxla "PassManager_addPass")
-prim__passManagerAddPass : GCAnyPtr -> GCAnyPtr -> PrimIO Int
+prim__passManagerAddPass : GCAnyPtr -> GCAnyPtr -> PrimIO ()
 
 export
 addPass : HasIO io => PassManager -> Pass -> io ()
