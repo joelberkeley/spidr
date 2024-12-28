@@ -14,25 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.BuiltinOps
+module Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 
-import Compiler.MLIR.IR.MLIRContext
 import Compiler.FFI
 
-public export
-data ModuleOp = MkModuleOp GCAnyPtr
+%foreign (libxla "regsiterenzymeXLAPasses_")
+prim__regsiterenzymeXLAPasses : PrimIO ()
 
 export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+regsiterenzymeXLAPasses : HasIO io => io ()
+regsiterenzymeXLAPasses = primIO prim__regsiterenzymeXLAPasses
+
+%foreign (libxla "registerenzymePasses")
+prim__registerenzymePasses : PrimIO ()
 
 export
-%foreign (libxla "ModuleOp_getContext")
-prim__moduleOp : GCAnyPtr -> PrimIO AnyPtr
-
-export
-getContext : HasIO io => ModuleOp -> io MLIRContext
-getContext (MkModuleOp op) = do
-  ctx <- primIO $ prim__moduleOp op
-  ctx <- onCollectAny ctx (const $ pure ())  --  I reckon we've already GC'ed this
-  pure (MkMLIRContext ctx)
+registerenzymePasses : HasIO io => io ()
+registerenzymePasses = primIO prim__registerenzymePasses

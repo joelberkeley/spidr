@@ -23,9 +23,10 @@ import Data.IOArray
 import Data.List
 import Data.List.Elem
 
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.RegistryUtils
 import Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect
 import Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes
---import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.StableHLOAutoDiffOpInterfaceImpl
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
@@ -135,19 +136,22 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (Grad f x) = do
-    reg <- mkDialectRegistry
-    -- need other dialects?
-    insertEnzymeDialect reg
-    StableHLO.Dialect.Register.registerAllDialects reg
-    -- registerStableHLODialectAutoDiffInterface reg
-    -- should we instead be getting the context from the stablehlo ModuleOp?
-    ctx <- mkMLIRContext
-    appendDialectRegistry ctx reg
-    mgr <- mkPassManager ctx
-    addPass mgr !createDifferentiatePass
     computation <- compile xlaBuilder f
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
-    enzymeOp <- emitEnzymeADOp stablehlo reg
+    ctx <- getContext stablehlo
+    -- reg <- mkDialectRegistry
+    -- appendDialectRegistry ctx reg
+    -- insertEnzymeDialect reg
+    enzymeOp <- emitEnzymeADOp stablehlo
+    --regsiterenzymeXLAPasses
+    --prepareRegistry reg
+    --registerenzymePasses
+    -- need other dialects?
+    -- surely the ModuleOp already has stablehlo registered, since it's stablehlo code
+    -- StableHLO.Dialect.Register.registerAllDialects reg
+    -- registerStableHLODialectAutoDiffInterface reg
+    mgr <- mkPassManager ctx
+    addPass mgr !createDifferentiatePass
     True <- run mgr enzymeOp
       | False => throwE $ MlirPassError "Failed to run differentiate pass on StableHLO"
     hloProto <- convertStablehloToHlo stablehlo

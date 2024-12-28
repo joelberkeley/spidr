@@ -14,25 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.BuiltinOps
+module Compiler.EnzymeJAX.Src.EnzymeAD.JAX.RegistryUtils
 
-import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.IR.DialectRegistry
 import Compiler.FFI
 
-public export
-data ModuleOp = MkModuleOp GCAnyPtr
+%foreign (libxla "prepareRegistry_")
+prim__prepareRegistry : GCAnyPtr -> PrimIO ()
 
 export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
-
-export
-%foreign (libxla "ModuleOp_getContext")
-prim__moduleOp : GCAnyPtr -> PrimIO AnyPtr
-
-export
-getContext : HasIO io => ModuleOp -> io MLIRContext
-getContext (MkModuleOp op) = do
-  ctx <- primIO $ prim__moduleOp op
-  ctx <- onCollectAny ctx (const $ pure ())  --  I reckon we've already GC'ed this
-  pure (MkMLIRContext ctx)
+prepareRegistry : HasIO io => DialectRegistry -> io ()
+prepareRegistry (MkDialectRegistry registry) = primIO $ prim__prepareRegistry registry

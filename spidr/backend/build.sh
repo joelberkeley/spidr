@@ -29,9 +29,9 @@ esac
   mkdir xla
   install_xla "$xla_rev" xla
   (cd xla; ./configure.py --backend=cpu --os=$os)
-  mkdir Enzyme-JAX
-  install_enzyme "$enzyme_rev" Enzyme-JAX
-  # sed -i -e 's/"-Werror=unused-variable",//g' Enzyme-JAX/src/enzyme_ad/jax/BUILD
+  # depending on Enzyme-JAX is problematic as it fixes the XLA version. Can we only depend on enzyme?
+#  mkdir Enzyme-JAX
+#  install_enzyme "$enzyme_rev" Enzyme-JAX
   bazel build //:c_xla
   rm -rf xla
 )

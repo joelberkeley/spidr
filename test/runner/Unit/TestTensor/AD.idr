@@ -26,16 +26,8 @@ import Utils.Cases
 
 square : Device => Property
 square = fixedProperty $ do
-  sqrt (square $ tensor 3.0) ===# tensor 3.0
-  grad (pure . square) (tensor 1.0) ===# pure (tensor 2.0)
-{-
-  shape <- forAll shapes
-
-  x <- forAll (literal shape doubles)
-  let x' = tensor {dtype = F64} x
-  map id x ==~ unsafeEval (map pure x')
-  map (1.0 /) x ==~ Tag.unsafeEval (map (pure . (1.0 /)) x')
--}
+  square (tensor 3.0) ===# tensor 9.0
+  grad (pure . square) (tensor 3.0) ===# pure (tensor 6.0)
 
 export
 all : Device => List (PropertyName, Property)

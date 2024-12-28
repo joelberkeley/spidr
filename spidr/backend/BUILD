@@ -12,6 +12,8 @@ cc_binary(
     linkshared = True,
     linkstatic = True,
     srcs = [
+        "//src/Enzyme-JAX/src/enzyme_ad/jax",
+        "//src/Enzyme-JAX/src/enzyme_ad/jax/Passes",
         "//src/Enzyme/enzyme/Enzyme/MLIR/Dialect",
         "//src/Enzyme/enzyme/Enzyme/MLIR/Passes",
         "//src/llvm/Support",
@@ -30,6 +32,8 @@ cc_binary(
         "//src",
     ],
     deps = [
+        "//src/Enzyme-JAX/src/enzyme_ad/jax",
+        "//src/Enzyme-JAX/src/enzyme_ad/jax/Passes",
         "//src/Enzyme/enzyme/Enzyme/MLIR/Dialect",
         "//src/Enzyme/enzyme/Enzyme/MLIR/Passes",
         "//src/llvm/Support",

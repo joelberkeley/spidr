@@ -16,9 +16,16 @@ limitations under the License.
 #include "mlir/IR/BuiltinOps.h"
 
 #include "BuiltinOps.h"
+#include "MLIRContext.h"
 
 extern "C" {
     void ModuleOp_delete(ModuleOp* s) {
         delete reinterpret_cast<mlir::ModuleOp*>(s);
+    }
+
+    // who owns this?
+    MLIRContext* ModuleOp_getContext(ModuleOp& s) {
+        auto s_ = reinterpret_cast<mlir::ModuleOp&>(s);
+        return reinterpret_cast<MLIRContext*>(s_.getContext());
     }
 }

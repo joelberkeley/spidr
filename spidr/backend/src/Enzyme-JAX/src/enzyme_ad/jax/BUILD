@@ -1,13 +1,11 @@
 cc_library(
-    name = "Dialect",
+    name = "jax",
     linkstatic = True,
     alwayslink = True,
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@stablehlo//:register",
-        "@enzyme//:EnzymeMLIR",
-        "@llvm-project//mlir:IR",
+        "@enzyme-jax//:everything",
         "//src/mlir/IR",
     ],
     visibility = ["//visibility:public"],

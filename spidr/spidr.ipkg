@@ -8,6 +8,9 @@ modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,
 
+  Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes,
+  Compiler.EnzymeJAX.Src.EnzymeAD.JAX.RegistryUtils,
+
   Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect,
   Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes,
 
