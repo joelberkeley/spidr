@@ -25,7 +25,7 @@ jobs:
         body: "C XLA release ${{ env.C_XLA_VERSION }}"
   c-xla-linux-x86_64:
     needs: create-release
-    runs-on: ubuntu-22.04  # which version? 22 or 24?
+    runs-on: ubuntu-24.04
     container: tensorflow/build:latest-python3.9
     steps:
     - uses: actions/checkout@v4

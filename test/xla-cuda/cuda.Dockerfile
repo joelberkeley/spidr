@@ -1,12 +1,5 @@
 FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y git curl libgmp3-dev build-essential chezscheme
-RUN git clone https://github.com/stefan-hoeck/idris2-pack.git
-
-RUN cd idris2-pack && make micropack SCHEME=chezscheme
-
-ENV PATH=$PATH:/root/.pack/bin/
-
 RUN apt-get update && apt-get install -y wget
 RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
 RUN dpkg -i cuda-keyring_1.1-1_all.deb

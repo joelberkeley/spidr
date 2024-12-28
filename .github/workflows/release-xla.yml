@@ -65,7 +65,7 @@ jobs:
         asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs: create-release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CUDA plugin for Linux x86_64
