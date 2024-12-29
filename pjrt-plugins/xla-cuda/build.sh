@@ -17,6 +17,7 @@ case $osu in
     ;;
 esac
 
+# why am i installing to a temp dir only for plugins?
 xla_dir=$(mktemp -d)
 install_xla "$rev" "$xla_dir"
 (
