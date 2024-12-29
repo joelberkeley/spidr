@@ -123,9 +123,8 @@ jobs:
             rev=$(cat XLA_VERSION)
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux-x86_64.so"
           else
-            curl -LO https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-amd64.deb
-            sudo apt-get install -y clang ./bazelisk-amd64.deb
-            ./pjrt-plugins/xla-cuda/build.sh
+            docker build -t xla-cuda -f pjrt-plugins/xla-cuda/build.Dockerfile .
+            docker run -v $(pwd):/spidr -w /spidr xla-cuda
           fi
 
           mv pjrt_plugin_xla_cuda-linux-x86_64.so pjrt_plugin_xla_cuda.so
