@@ -145,7 +145,7 @@ jobs:
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
-        pack --no-prompt build xla-cpu.ipkg
+        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cpu.ipkg
         tar cfz tests-xla-cpu.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
@@ -163,11 +163,8 @@ jobs:
           install_pack
       - name: Build tests
         working-directory: test/xla-cpu
-        env:
-          PATH: $PATH:$HOME/.pack/bin/
-          SPIDR_INSTALL_SUPPORT_LIBS: false
         run: |
-          pack --no-prompt build xla-cpu.ipkg
+          SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cpu.ipkg
           tar cfz tests-xla-cpu.tar.gz -C build/exec .
       - name: Upload tests
         uses: actions/upload-artifact@v4
@@ -185,11 +182,8 @@ jobs:
         install_pack
     - name: Build tests
       working-directory: test/xla-cuda
-      env:
-        PATH: $PATH:$HOME/.pack/bin/
-        SPIDR_INSTALL_SUPPORT_LIBS: false
       run: |
-        pack --no-prompt build xla-cuda.ipkg
+        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cuda.ipkg
         tar cfz tests-xla-cuda-linux-x86_64.tar.gz -C build/exec .
     - name: Upload tests
       uses: actions/upload-artifact@v4
@@ -260,25 +254,23 @@ jobs:
           sh -c "./test || exit 0"  # no gpu
   readme:
     runs-on: ubuntu-24.04
-    env:
-      PATH: $PATH:$HOME/.pack/bin/
-      SPIDR_INSTALL_SUPPORT_LIBS: false
     steps:
     - uses: actions/checkout@v4
     - name: Type-check README
       run: |
         . ./dev.sh
         install_pack
-        pack --no-prompt typecheck readme.ipkg
+        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt typecheck readme.ipkg
   tutorials:
     runs-on: ubuntu-24.04
-    env:
-      PATH: $PATH:$HOME/.pack/bin/
-      SPIDR_INSTALL_SUPPORT_LIBS: false
     steps:
     - uses: actions/checkout@v4
     - name: Type-check tutorials
+      env:
+        PATH: $PATH:$HOME/.pack/bin/
+        SPIDR_INSTALL_SUPPORT_LIBS: false
       run: |
         . ./dev.sh
         install_pack
-        res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
+        export SPIDR_INSTALL_SUPPORT_LIBS=false
+        res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
