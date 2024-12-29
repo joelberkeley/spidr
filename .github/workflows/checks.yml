@@ -266,9 +266,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Type-check tutorials
-      env:
-        PATH: $PATH:$HOME/.pack/bin/
-        SPIDR_INSTALL_SUPPORT_LIBS: false
       run: |
         . ./.github/scripts/dev_gha.sh
         install_pack
