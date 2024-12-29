@@ -253,8 +253,10 @@ jobs:
         merge-multiple: true
     - name: Install runtime dependencies
       run: |
-        apt-get update
-        apt-get install -y chezscheme cuda-toolkit-12-6 cudnn-cuda-12 libnccl2=2.22.3-1+cuda12.6
+        apt-get update && apt-get install -y chezscheme wget
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+        dpkg -i cuda-keyring_1.1-1_all.deb
+        apt-get update && apt-get install -y cuda-toolkit-12-6 cudnn-cuda-12 libnccl2=2.22.3-1+cuda12.6
     - name: Run tests
       run: |
         tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
