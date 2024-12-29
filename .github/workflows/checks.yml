@@ -6,9 +6,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  PATH: $PATH:$HOME/.pack/bin/
+
 jobs:
   shellcheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install shellcheck
@@ -136,13 +139,12 @@ jobs:
           if-no-files-found: error
   build-tests-xla-cpu-linux-x86_64:
     runs-on: ubuntu-24.04
-    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
     - name: Install build dependencies
-      run: |
-        apt-get update && apt-get install -y curl
-        pack switch HEAD
+      run:
+        . ./dev.sh
+        install_pack
     - name: Build tests
       working-directory: test/xla-cpu
       run: |
@@ -159,11 +161,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
-        run: |
-          brew install chezscheme
-          git clone https://github.com/stefan-hoeck/idris2-pack.git
-          (cd idris2-pack && make micropack SCHEME=chez)
-          ~/.pack/bin/pack switch HEAD
+        run:
+          . ./dev.sh
+          install_pack
       - name: Build tests
         working-directory: test/xla-cpu
         run: |
@@ -177,13 +177,14 @@ jobs:
           if-no-files-found: error
   build-tests-xla-cuda-linux-x86_64:
     runs-on: ubuntu-24.04
-    container: ghcr.io/stefan-hoeck/idris2-pack
+    env:
+      PATH: $PATH:$HOME/.pack/bin/
     steps:
     - uses: actions/checkout@v4
     - name: Install build dependencies
-      run: |
-        apt-get update && apt-get install -y curl
-        pack switch HEAD
+      run:
+        . ./dev.sh
+        install_pack
     - name: Build tests
       working-directory: test/xla-cuda
       run: |
@@ -258,22 +259,23 @@ jobs:
           sh -c "./test || exit 0"  # no gpu
   readme:
     runs-on: ubuntu-24.04
-    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
     - name: Type-check README
+      env:
+        SPIDR_INSTALL_SUPPORT_LIBS: false
       run: |
-        apt-get update && apt-get install -y curl
-        pack switch HEAD
-        SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt typecheck readme.ipkg
+        . ./dev.sh
+        install_pack
+        pack --no-prompt typecheck readme.ipkg
   tutorials:
     runs-on: ubuntu-24.04
-    container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
     - uses: actions/checkout@v4
     - name: Type-check tutorials
+      env:
+        SPIDR_INSTALL_SUPPORT_LIBS: false
       run: |
-        apt-get update && apt-get install -y curl
-        pack switch HEAD
-        export SPIDR_INSTALL_SUPPORT_LIBS=false
+        . ./dev.sh
+        install_pack
         res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)

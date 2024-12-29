@@ -8,6 +8,17 @@ short_revision () {
   echo "${rev%%"${rev##??????????}"}"
 }
 
+install_pack() {
+  sudo apt-get update && sudo apt-get install -y git libgmp3-dev build-essential chezscheme
+  (
+    cd $(mktemp -d)
+    git clone https://github.com/stefan-hoeck/idris2-pack.git
+    cd idris2-pack && make micropack SCHEME=chezscheme
+  )
+  export PATH=$PATH:$HOME/.pack/bin
+  pack switch HEAD
+}
+
 install_xla () {
   if [ -z "$2" ]; then
     echo "Usage: install_xla <xla-revision> <install-path>."
