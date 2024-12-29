@@ -8,14 +8,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
     cudnn9-cuda-12 \
     libnccl2=2.23.4-1+cuda12.6
 
-FROM runtime as devel-xla
-COPY --from=runtime / /
-
-RUN apt-get install -y clang lld
-RUN curl -LO https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-amd64.deb
-RUN apt-get install -y ./bazelisk-amd64.deb
-
-FROM runtime as devel-idris
+FROM runtime as devel
 COPY --from=runtime / /
 
 RUN apt-get update && apt-get install -y git libgmp3-dev build-essential chezscheme

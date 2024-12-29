@@ -119,12 +119,9 @@ jobs:
             rev=$(cat XLA_VERSION)
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux-x86_64.so"
           else
-            rm -rf /opt/hostedtoolcache
-            docker build -t xla-cuda -f pjrt-plugins/xla-cuda/Dockerfile .
-            docker run \
-              -v $(pwd):/spidr -w /spidr \
-              xla-cuda \
-              sh -c "pjrt-plugins/xla-cuda/build.sh"
+            curl -LO https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-amd64.deb
+            sudo apt-get install -y ./bazelisk-amd64.deb
+            ./pjrt-plugins/xla-cuda/build.sh
           fi
 
           mv pjrt_plugin_xla_cuda-linux-x86_64.so pjrt_plugin_xla_cuda.so
@@ -245,16 +242,17 @@ jobs:
       with:
         pattern: "{libc_xla-linux-x86_64,*cuda-linux-x86_64}"
         merge-multiple: true
-    - name: Install runtime dependencies
+    - name: Build Docker image
       run: |
-        apt-get update && apt-get install -y chezscheme wget
-        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
-        dpkg -i cuda-keyring_1.1-1_all.deb
-        apt-get update && apt-get install -y cuda-toolkit-12-6 cudnn-cuda-12 libnccl2=2.22.3-1+cuda12.6
+        docker build -t xla-cuda -f pjrt-plugins/xla-cuda/Dockerfile --target runtime .
     - name: Run tests
       run: |
         tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
-        exit 0  # we can't run tests without a GPU
+        docker run \
+          -v $(pwd):/xla-cuda -w /xla-cuda
+          # --gpus all  # no gpu
+          xla-cuda
+          sh -c "./test || exit 0"  # no gpu
   readme:
     runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack
