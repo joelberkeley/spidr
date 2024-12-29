@@ -2,6 +2,7 @@
 
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir"
+# how to pin nccl?
 cuda_version=$(cat CUDA_VERSION)
 cudnn_version=$(cat CUDNN_VERSION)
 cd "$script_dir/../.."
@@ -28,7 +29,6 @@ install_xla "$rev" "$xla_dir"
     --config release_gpu_linux \
     --repo_env HERMETIC_CUDA_VERSION="$cuda_version" \
     --repo_env HERMETIC_CUDNN_VERSION="$cudnn_version" \
-    # how to pin nccl?
     //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
 )
 mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" pjrt_plugin_xla_cuda-linux-x86_64.so
