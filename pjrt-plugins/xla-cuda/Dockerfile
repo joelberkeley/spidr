@@ -1,5 +1,7 @@
 FROM ubuntu:24.04 as runtime
 
+# WE MUST MAKE THIS PART OF OUR CI, ELSE WE'LL HAVE THIS SAME PROBLEM AGAIN
+# PERHAPS BUILD THE DOCKERFILE W/O GPU THEN SHARE IT FOR GPU STEPS
 RUN apt-get update && apt-get install -y git curl
 RUN curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
 RUN dpkg -i cuda-keyring_1.1-1_all.deb
