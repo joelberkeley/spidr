@@ -229,29 +229,45 @@ jobs:
       run: |
         tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
         ./test
+  build-xla-cuda-linux-x86_64-runtime:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and export
+        uses: docker/build-push-action@v6
+        with:
+          file: pjrt-plugins/xla-cuda/Dockerfile
+          tags: xla-cuda
+          outputs: type=docker,dest=/tmp/xla_cuda.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xla-cuda
+          path: /tmp/xla_cuda.tar
   test-xla-cuda-linux-x86_64:
     needs:
       - pjrt-linux-x86_64
       - pjrt-plugin-xla-cuda-linux-x86_64
       - build-tests-xla-cuda-linux-x86_64
+      - build-xla-cuda-linux-x86_64-runtime
     runs-on: ubuntu-24.04  # needs a CUDA runner
     steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        pattern: "{libc_xla-linux-x86_64,*cuda-linux-x86_64}"
-        merge-multiple: true
-    - name: Build Docker image
-      run: |
-        docker build -t xla-cuda -f pjrt-plugins/xla-cuda/Dockerfile --target runtime .
-    - name: Run tests
-      run: |
-        tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
-        docker run \
-          -v $(pwd):/xla-cuda -w /xla-cuda
-          # --gpus all  # no gpu
-          xla-cuda
-          sh -c "./test || exit 0"  # no gpu
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: xla-cuda
+          path: /tmp
+      - name: Load image
+        run: docker load --input /tmp/xla-cuda.tar
+      - name: Download app artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "{libc_xla-linux-x86_64,*cuda-linux-x86_64}"
+          merge-multiple: true
+      - name: Run tests
+        run: |
+          tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
+          docker run -v $(pwd):/xla-cuda -w /xla-cuda --gpus all xla-cuda sh -c "./test"
   readme:
     runs-on: ubuntu-24.04
     steps:
