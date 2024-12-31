@@ -25,7 +25,7 @@ jobs:
       - name: Build and export
         uses: docker/build-push-action@v6
         with:
-          file: bazel-ubuntu2404.Dockerfile
+          file: spidr/backend/build.Dockerfile
           tags: bazel-ubuntu2404
           outputs: type=docker,dest=/tmp/bazel-ubuntu2404.tar
       - name: Upload artifact
