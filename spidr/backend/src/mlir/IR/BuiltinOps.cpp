@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Joel Berkeley
+Copyright 2024 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,21 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "xla/hlo/builder/xla_computation.h"
-#include "xla/shape.h"
+#include "mlir/IR/BuiltinOps.h"
 
-#include "../../../ffi.h"
-#include "../../service/hlo.proto.h"
-#include "../../shape.h"
-#include "xla_computation.h"
+#include "BuiltinOps.h"
 
 extern "C" {
-    void XlaComputation_delete(XlaComputation* s) {
-        delete reinterpret_cast<xla::XlaComputation*>(s);
-    }
-
-    HloModuleProto* XlaComputation_proto(XlaComputation* s) {
-        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
-        return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(s_->proto()));
+    void ModuleOp_delete(ModuleOp* s) {
+        delete reinterpret_cast<mlir::ModuleOp*>(s);
     }
 }
