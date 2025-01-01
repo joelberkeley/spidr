@@ -6,12 +6,12 @@ jobs:
   backend-version:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
-    - name: Check backend version is updated when necessary
-      run: |
-        sh -c "
-        (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ spidr/backend/**) || \
-          ! git diff --quiet HEAD^ spidr/backend/VERSION
-        "
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check backend version is updated when necessary
+        run: |
+          sh -c "
+          (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ spidr/backend/**) || \
+            ! git diff --quiet HEAD^ spidr/backend/VERSION
+          "
