@@ -18,24 +18,24 @@ jobs:
         run: |
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
-  build-bazel-ubuntu2404-docker:
+  build-openxla-dev-docker:
     runs-on: ubuntu-24.04
     steps:
       - uses: docker/setup-buildx-action@v3
       - name: Build and export
         uses: docker/build-push-action@v6
         with:
-          file: spidr/backend/build.Dockerfile
-          tags: bazel-ubuntu2404
-          outputs: type=docker,dest=/tmp/bazel-ubuntu2404.tar
+          file: openxla-dev.Dockerfile
+          tags: openxla-dev
+          outputs: type=docker,dest=/tmp/openxla-dev.tar
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bazel-ubuntu2404
-          path: /tmp/bazel-ubuntu2404.tar
+          name: openxla-dev
+          path: /tmp/openxla-dev.tar
   pjrt-linux-x86_64:
     needs:
-      - build-bazel-ubuntu2404-docker
+      - build-openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -44,15 +44,15 @@ jobs:
       - name: Download bazel Docker image
         uses: actions/download-artifact@v4
         with:
-          name: bazel-ubuntu2404
+          name: openxla-dev
           path: /tmp
       - name: Build PJRT + XLA binary
         run: |
           if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux-x86_64.so"
           else
-            docker load --input /tmp/bazel-ubuntu2404.tar
-            docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./spidr/backend/build.sh"
+            docker load --input /tmp/openxla-dev.tar
+            docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./spidr/backend/build.sh"
           fi
           
           mv libc_xla-linux-x86_64.so libc_xla.so
@@ -85,7 +85,7 @@ jobs:
           if-no-files-found: error
   pjrt-plugin-xla-cpu-linux-x86_64:
     needs:
-      - build-bazel-ubuntu2404-docker
+      - build-openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -94,7 +94,7 @@ jobs:
       - name: Download bazel Docker image
         uses: actions/download-artifact@v4
         with:
-          name: bazel-ubuntu2404
+          name: openxla-dev
           path: /tmp
       - name: Build or fetch XLA CPU PJRT plugin
         run: |
@@ -103,8 +103,8 @@ jobs:
             rev=$(cat XLA_VERSION)
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux-x86_64.so"
           else
-            docker load --input /tmp/bazel-ubuntu2404.tar
-            docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./pjrt-plugins/xla-cpu/build.sh"
+            docker load --input /tmp/openxla-dev.tar
+            docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cpu/build.sh"
           fi
           
           mv pjrt_plugin_xla_cpu-linux-x86_64.so pjrt_plugin_xla_cpu.so
@@ -139,7 +139,7 @@ jobs:
           if-no-files-found: error
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs:
-      - build-bazel-ubuntu2404-docker
+      - build-openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -148,7 +148,7 @@ jobs:
       - name: Download bazel Docker image
         uses: actions/download-artifact@v4
         with:
-          name: bazel-ubuntu2404
+          name: openxla-dev
           path: /tmp
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
@@ -157,8 +157,8 @@ jobs:
             rev=$(cat XLA_VERSION)
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux-x86_64.so"
           else
-            docker load --input /tmp/bazel-ubuntu2404.tar
-            docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./pjrt-plugins/xla-cuda/build.sh"
+            docker load --input /tmp/openxla-dev.tar
+            docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cuda/build.sh"
           fi
 
           mv pjrt_plugin_xla_cuda-linux-x86_64.so pjrt_plugin_xla_cuda.so
