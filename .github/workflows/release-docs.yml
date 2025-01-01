@@ -12,18 +12,18 @@ jobs:
     runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack
     steps:
-    - uses: actions/checkout@v4
-    - name: Build docs
-      run: |
-        apt-get update && apt-get install -y curl
-        pack switch HEAD
-        pack --no-prompt --with-docs install spidr
-        mv spidr/build/docs .
-    - name: Upload docs
-      run: |
-        git config --global --add safe.directory "$GITHUB_WORKSPACE"
-        git add .
-        git config user.email "none"
-        git config user.name "none"
-        git commit -m "build documentation"
-        git push -f origin HEAD:gh-pages
+      - uses: actions/checkout@v4
+      - name: Build docs
+        run: |
+          apt-get update && apt-get install -y curl
+          pack switch HEAD
+          pack --no-prompt --with-docs install spidr
+          mv spidr/build/docs .
+      - name: Upload docs
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git add .
+          git config user.email "none"
+          git config user.name "none"
+          git commit -m "build documentation"
+          git push -f origin HEAD:gh-pages

@@ -38,105 +38,105 @@ jobs:
       - build-bazel-ubuntu2404-docker
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
-    - name: Download bazel Docker image
-      uses: actions/download-artifact@v4
-      with:
-        name: bazel-ubuntu2404
-        path: /tmp
-    - name: Build PJRT + XLA binary
-      run: |
-        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux-x86_64.so"
-        else
-          docker load --input /tmp/bazel-ubuntu2404.tar
-          docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./spidr/backend/build.sh"
-        fi
-
-        mv libc_xla-linux-x86_64.so libc_xla.so
-    - name: Upload binary
-      uses: actions/upload-artifact@v4
-      with:
-        name: libc_xla-linux-x86_64
-        path: libc_xla.so
-        if-no-files-found: error
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Download bazel Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: bazel-ubuntu2404
+          path: /tmp
+      - name: Build PJRT + XLA binary
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux-x86_64.so"
+          else
+            docker load --input /tmp/bazel-ubuntu2404.tar
+            docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./spidr/backend/build.sh"
+          fi
+          
+          mv libc_xla-linux-x86_64.so libc_xla.so
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: libc_xla-linux-x86_64
+          path: libc_xla.so
+          if-no-files-found: error
   pjrt-darwin-aarch64:
     runs-on: macos-14
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
-    - name: Build PJRT + XLA binary
-      run: |
-        if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-darwin-aarch64.dylib"
-        else
-          ./spidr/backend/build.sh
-        fi
-
-        mv libc_xla-darwin-aarch64.dylib libc_xla.dylib
-    - name: Upload binary
-      uses: actions/upload-artifact@v4
-      with:
-        name: libc_xla-darwin-aarch64
-        path: libc_xla.dylib
-        if-no-files-found: error
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Build PJRT + XLA binary
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-darwin-aarch64.dylib"
+          else
+            ./spidr/backend/build.sh
+          fi
+          
+          mv libc_xla-darwin-aarch64.dylib libc_xla.dylib
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: libc_xla-darwin-aarch64
+          path: libc_xla.dylib
+          if-no-files-found: error
   pjrt-plugin-xla-cpu-linux-x86_64:
     needs:
       - build-bazel-ubuntu2404-docker
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
-    - name: Download bazel Docker image
-      uses: actions/download-artifact@v4
-      with:
-        name: bazel-ubuntu2404
-        path: /tmp
-    - name: Build or fetch XLA CPU PJRT plugin
-      run: |
-        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          . ./dev.sh
-          rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux-x86_64.so"
-        else
-          docker load --input /tmp/bazel-ubuntu2404.tar
-          docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./pjrt-plugins/xla-cpu/build.sh"
-        fi
-
-        mv pjrt_plugin_xla_cpu-linux-x86_64.so pjrt_plugin_xla_cpu.so
-    - name: Upload binary
-      uses: actions/upload-artifact@v4
-      with:
-        name: pjrt_plugin_xla_cpu-linux-x86_64
-        path: pjrt_plugin_xla_cpu.so
-        if-no-files-found: error
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Download bazel Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: bazel-ubuntu2404
+          path: /tmp
+      - name: Build or fetch XLA CPU PJRT plugin
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
+            rev=$(cat XLA_VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux-x86_64.so"
+          else
+            docker load --input /tmp/bazel-ubuntu2404.tar
+            docker run -v $(pwd):/spidr -w /spidr bazel-ubuntu2404 sh -c "./pjrt-plugins/xla-cpu/build.sh"
+          fi
+          
+          mv pjrt_plugin_xla_cpu-linux-x86_64.so pjrt_plugin_xla_cpu.so
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_xla_cpu-linux-x86_64
+          path: pjrt_plugin_xla_cpu.so
+          if-no-files-found: error
   pjrt-plugin-xla-cpu-darwin-aarch64:
     runs-on: macos-14
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
-    - name: Build or fetch XLA CPU PJRT plugin
-      run: |
-        if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          . ./dev.sh
-          rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin-aarch64.dylib"
-        else
-          ./pjrt-plugins/xla-cpu/build.sh
-        fi
-
-        mv pjrt_plugin_xla_cpu-darwin-aarch64.dylib pjrt_plugin_xla_cpu.dylib
-    - name: Upload binary
-      uses: actions/upload-artifact@v4
-      with:
-        name: pjrt_plugin_xla_cpu-darwin-aarch64
-        path: pjrt_plugin_xla_cpu.dylib
-        if-no-files-found: error
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Build or fetch XLA CPU PJRT plugin
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
+            rev=$(cat XLA_VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin-aarch64.dylib"
+          else
+            ./pjrt-plugins/xla-cpu/build.sh
+          fi
+          
+          mv pjrt_plugin_xla_cpu-darwin-aarch64.dylib pjrt_plugin_xla_cpu.dylib
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_xla_cpu-darwin-aarch64
+          path: pjrt_plugin_xla_cpu.dylib
+          if-no-files-found: error
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs:
       - build-bazel-ubuntu2404-docker
@@ -171,22 +171,22 @@ jobs:
   build-tests-xla-cpu-linux-x86_64:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - name: Install build dependencies
-      run: |
-        . ./.github/scripts/dev_gha.sh
-        install_pack
-    - name: Build tests
-      working-directory: test/xla-cpu
-      run: |
-        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cpu.ipkg
-        tar cfz tests-xla-cpu.tar.gz -C build/exec .
-    - name: Upload tests
-      uses: actions/upload-artifact@v4
-      with:
-        name: tests-xla-cpu-linux-x86_64
-        path: test/xla-cpu/tests-xla-cpu.tar.gz
-        if-no-files-found: error
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          . ./.github/scripts/dev_gha.sh
+          install_pack
+      - name: Build tests
+        working-directory: test/xla-cpu
+        run: |
+          SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cpu.ipkg
+          tar cfz tests-xla-cpu.tar.gz -C build/exec .
+      - name: Upload tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-xla-cpu-linux-x86_64
+          path: test/xla-cpu/tests-xla-cpu.tar.gz
+          if-no-files-found: error
   build-tests-xla-cpu-darwin-aarch64:
     runs-on: macos-14
     steps:
@@ -209,22 +209,22 @@ jobs:
   build-tests-xla-cuda-linux-x86_64:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - name: Install build dependencies
-      run: |
-        . ./.github/scripts/dev_gha.sh
-        install_pack
-    - name: Build tests
-      working-directory: test/xla-cuda
-      run: |
-        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cuda.ipkg
-        tar cfz tests-xla-cuda-linux-x86_64.tar.gz -C build/exec .
-    - name: Upload tests
-      uses: actions/upload-artifact@v4
-      with:
-        name: tests-xla-cuda-linux-x86_64
-        path: test/xla-cuda/tests-xla-cuda-linux-x86_64.tar.gz
-        if-no-files-found: error
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          . ./.github/scripts/dev_gha.sh
+          install_pack
+      - name: Build tests
+        working-directory: test/xla-cuda
+        run: |
+          SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cuda.ipkg
+          tar cfz tests-xla-cuda-linux-x86_64.tar.gz -C build/exec .
+      - name: Upload tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-xla-cuda-linux-x86_64
+          path: test/xla-cuda/tests-xla-cuda-linux-x86_64.tar.gz
+          if-no-files-found: error
   test-xla-cpu-linux-x86_64:
     needs:
       - pjrt-linux-x86_64
@@ -232,18 +232,18 @@ jobs:
       - build-tests-xla-cpu-linux-x86_64
     runs-on: ubuntu-24.04
     steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        pattern: "{libc_xla-linux-x86_64,*cpu-linux-x86_64}"
-        merge-multiple: true
-    - name: Install runtime dependencies
-      run: |
-        sudo apt-get install chezscheme
-    - name: Run tests
-      run: |
-        tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
-        ./test
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "{libc_xla-linux-x86_64,*cpu-linux-x86_64}"
+          merge-multiple: true
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get install chezscheme
+      - name: Run tests
+        run: |
+          tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
+          ./test
   test-xla-cpu-darwin-aarch64:
     needs:
       - pjrt-darwin-aarch64
@@ -251,18 +251,18 @@ jobs:
       - build-tests-xla-cpu-darwin-aarch64
     runs-on: macos-14
     steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        pattern: "*darwin-aarch64"
-        merge-multiple: true
-    - name: Install runtime dependencies
-      run: |
-        brew install chezscheme
-    - name: Run tests
-      run: |
-        tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
-        ./test
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*darwin-aarch64"
+          merge-multiple: true
+      - name: Install runtime dependencies
+        run: |
+          brew install chezscheme
+      - name: Run tests
+        run: |
+          tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
+          ./test
   build-xla-cuda-linux-x86_64-runtime:
     runs-on: ubuntu-24.04
     steps:
@@ -304,19 +304,19 @@ jobs:
   readme:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - name: Type-check README
-      run: |
-        . ./.github/scripts/dev_gha.sh
-        install_pack
-        SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt typecheck readme.ipkg
+      - uses: actions/checkout@v4
+      - name: Type-check README
+        run: |
+          . ./.github/scripts/dev_gha.sh
+          install_pack
+          SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt typecheck readme.ipkg
   tutorials:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - name: Type-check tutorials
-      run: |
-        . ./.github/scripts/dev_gha.sh
-        install_pack
-        export SPIDR_INSTALL_SUPPORT_LIBS=false
-        res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
+      - uses: actions/checkout@v4
+      - name: Type-check tutorials
+        run: |
+          . ./.github/scripts/dev_gha.sh
+          install_pack
+          export SPIDR_INSTALL_SUPPORT_LIBS=false
+          res=0; for f in tutorials/*.ipkg; do ~/.pack/bin/pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
