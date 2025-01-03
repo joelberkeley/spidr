@@ -218,12 +218,12 @@ jobs:
         working-directory: test/xla-cuda
         run: |
           SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cuda.ipkg
-          tar cfz tests-xla-cuda-linux-x86_64.tar.gz -C build/exec .
+          tar cfz tests-xla-cuda.tar.gz -C build/exec .
       - name: Upload tests
         uses: actions/upload-artifact@v4
         with:
           name: tests-xla-cuda-linux-x86_64
-          path: test/xla-cuda/tests-xla-cuda-linux-x86_64.tar.gz
+          path: test/xla-cuda/tests-xla-cuda.tar.gz
           if-no-files-found: error
   test-xla-cpu-linux-x86_64:
     needs:
@@ -272,12 +272,12 @@ jobs:
         with:
           file: pjrt-plugins/xla-cuda/Dockerfile
           tags: xla-cuda
-          outputs: type=docker,dest=/tmp/xla_cuda.tar
+          outputs: type=docker,dest=/tmp/xla-cuda.tar
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: xla-cuda
-          path: /tmp/xla_cuda.tar
+          path: /tmp/xla-cuda.tar
   test-xla-cuda-linux-x86_64:
     needs:
       - pjrt-linux-x86_64
