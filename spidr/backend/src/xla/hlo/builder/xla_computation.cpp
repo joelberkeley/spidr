@@ -15,6 +15,7 @@ limitations under the License.
 */
 #include "xla/hlo/builder/xla_computation.h"
 #include "xla/shape.h"
+#include "xla/hlo/ir/hlo_module.h"
 
 #include "../../../ffi.h"
 #include "../../service/hlo.proto.h"
@@ -28,6 +29,11 @@ extern "C" {
 
     HloModuleProto* XlaComputation_proto(XlaComputation* s) {
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
+//        printf("%s\n", xla::HloModule::CreateFromProto(
+//                s_->proto(),
+//                xla::HloModuleConfig(*(s_->GetProgramShape()))
+//            ).value().release()->ToString()
+//        );
         return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(s_->proto()));
     }
 }

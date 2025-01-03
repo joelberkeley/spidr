@@ -53,6 +53,10 @@ extern "C" {
         return sizeof(int);
     }
 
+    int sizeof_int64_t() {
+        return sizeof(int64_t);
+    }
+
     int sizeof_ptr() {
         return sizeof(void*);
     }

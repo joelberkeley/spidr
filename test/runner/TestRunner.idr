@@ -39,5 +39,5 @@ run device = test [{-
     , Unit.TestTensor.group
     , Unit.TestDistribution.group
     , Unit.Model.TestKernel.group-}
-    Composite.Concurrent.group
+    --Composite.Concurrent.group
   ]

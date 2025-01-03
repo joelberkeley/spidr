@@ -27,5 +27,7 @@ prim__convertHloToStablehlo : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 export
 convertHloToStablehlo : HasIO io => MLIRContext -> HloModuleProto -> io ModuleOp
 convertHloToStablehlo (MkMLIRContext ctx) (MkHloModuleProto proto) = do
+  putStrLn "convertHloToStablehlo ..."
   moduleOp <- primIO $ prim__convertHloToStablehlo ctx proto
+  putStrLn "... return"
   pure (MkModuleOp moduleOp)

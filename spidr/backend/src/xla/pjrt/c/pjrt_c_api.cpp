@@ -79,13 +79,15 @@ extern "C" {
 
     // ---------------------------- Named Values -----------------------------------
 
+    size_t sizeof_PJRT_NamedValue() { return sizeof(PJRT_NamedValue); }
+
     void PJRT_NamedValue_array_set_string(
         PJRT_NamedValue* arr,
         size_t idx,
         char* name,
         size_t name_size,
         char* string_value,
-        size_t value_size,
+        size_t value_size
     ) {
         arr[idx] = PJRT_NamedValue {
             .struct_size = PJRT_NamedValue_STRUCT_SIZE,
@@ -95,11 +97,11 @@ extern "C" {
             .type = PJRT_NamedValue_kString,
             .string_value = string_value,
             .value_size = value_size,
-        }
+        };
     }
 
     void PJRT_NamedValue_array_set_int64(
-        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, int64 int64_value
+        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, int64_t int64_value
     ) {
         arr[idx] = PJRT_NamedValue {
             .struct_size = PJRT_NamedValue_STRUCT_SIZE,
@@ -109,7 +111,7 @@ extern "C" {
             .type = PJRT_NamedValue_kInt64,
             .int64_value = int64_value,
             .value_size = 1,
-        }
+        };
     }
 
     void PJRT_NamedValue_array_set_int64list(
@@ -118,7 +120,7 @@ extern "C" {
         char* name,
         size_t name_size,
         int64_t* int64_array_value,
-        size_t value_size,
+        size_t value_size
     ) {
         arr[idx] = PJRT_NamedValue {
             .struct_size = PJRT_NamedValue_STRUCT_SIZE,
@@ -128,11 +130,11 @@ extern "C" {
             .type = PJRT_NamedValue_kInt64List,
             .int64_array_value = int64_array_value,
             .value_size = value_size,
-        }
+        };
     }
 
     void PJRT_NamedValue_array_set_float(
-        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, float float_value
+        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, double float_value
     ) {
         arr[idx] = PJRT_NamedValue {
             .struct_size = PJRT_NamedValue_STRUCT_SIZE,
@@ -140,9 +142,9 @@ extern "C" {
             .name = name,
             .name_size = name_size,
             .type = PJRT_NamedValue_kFloat,
-            .float_value = float_value,
+            .float_value = (float) float_value,
             .value_size = 1,
-        }
+        };
     }
 
     void PJRT_NamedValue_array_set_bool(
@@ -156,7 +158,7 @@ extern "C" {
             .type = PJRT_NamedValue_kBool,
             .bool_value = bool_value,
             .value_size = 1,
-        }
+        };
     }
 
     // ---------------------------------- Plugin -----------------------------------
@@ -494,7 +496,7 @@ extern "C" {
             .topology_name_size = topology_name_size,
             .create_options = create_options,
             .num_options = num_options,
-        }
+        };
     }
 
     PJRT_TopologyDescription* PJRT_TopologyDescription_Create_Args_topology(
@@ -520,7 +522,7 @@ extern "C" {
     }
 
     PJRT_Error* pjrt_topologydescription_destroy(
-        PJRT_Api* api, PJRT_Client_TopologyDescription_Args* args
+        PJRT_Api* api, PJRT_TopologyDescription_Destroy_Args* args
     ) {
         return api->PJRT_TopologyDescription_Destroy(args);
     }
