@@ -300,7 +300,7 @@ jobs:
         run: |
           tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
           docker load --input /tmp/xla-cuda.tar
-          docker run -v $(pwd):/xla-cuda -w /xla-cuda --gpus all xla-cuda sh -c "exit 0"  # needs a CUDA runner
+          docker run -v $(pwd):/xla-cuda -w /xla-cuda xla-cuda sh -c "exit 0"  # needs a CUDA runner
   readme:
     runs-on: ubuntu-24.04
     steps:
