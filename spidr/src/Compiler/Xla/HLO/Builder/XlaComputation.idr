@@ -40,3 +40,17 @@ proto (MkXlaComputation comp) = do
   proto <- primIO $ prim__xlaComputationProto comp
   proto <- onCollectAny proto (primIO . HloProto.prim__delete)
   pure (MkHloModuleProto proto)
+
+export
+%foreign (libxla "XlaComputation_SerializeAsString")
+prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
+
+||| It is up to the caller to deallocate the CharArray.
+export
+serializeAsString : HasIO io => XlaComputation -> io CharArray
+serializeAsString (MkXlaComputation computation) = do
+  str <- primIO $ prim__xlaComputationSerializeAsString computation
+  data' <- primIO $ prim__stringData str
+  let size = prim__stringSize str
+  primIO $ prim__stringDelete str
+  pure (MkCharArray data' size)

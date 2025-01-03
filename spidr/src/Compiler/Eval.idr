@@ -252,7 +252,8 @@ execute : Device -> PjrtDevice -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shap
 execute (MkDevice api client) device f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  code <- hloModuleProtoToStableHLO !(proto computation)
+  code <- serializeAsString computation
+  -- code <- hloModuleProtoToStableHLO !(proto computation)
   executableBuildOptions <- mkExecutableBuildOptions
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code

@@ -200,7 +200,7 @@ makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
 -- assuming user code always includes `read`
 export
 send : (1 _ : Channel (Send shape dtype sess)) -> Tensor shape dtype -> ChannelType -> L1 IO (Channel sess)
-send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send op tok 1 type)
+send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send op tok 0 type)
 
 -- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
 -- TagT is not linear in its argument, so it needs to be modified. The only way I can see it
@@ -220,7 +220,7 @@ recv :
   ChannelType ->  -- this almost certainly doesn't make sense with Channel
   TagT1 (L1 IO) $ CRes (Tensor shape dtype) (Channel sess)
 recv (MkChannel tok) type = MkTagT1 $ \e => do
-  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 1 type
+  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 0 type
   let op = GetTupleElement 0 x
       tok = GetTupleElement 1 x
   pure1 $ e # (MkTensor op # MkChannel tok)

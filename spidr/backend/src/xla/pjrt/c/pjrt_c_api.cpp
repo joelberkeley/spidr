@@ -270,7 +270,7 @@ extern "C" {
     }
 
     PJRT_Program* PJRT_Program_new(char* code, size_t code_size) {
-        auto format = pjrt::kMlirFormat;
+        auto format = pjrt::kHloFormat;
         return new PJRT_Program{
             .struct_size = PJRT_Program_STRUCT_SIZE,
             .extension_start = nullptr,
