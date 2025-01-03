@@ -92,8 +92,16 @@ export
 %foreign (libxla "sizeof_int")
 sizeofInt : Int
 
+export
+%foreign (libxla "sizeof_int64")
+sizeofInt64 : Bits64
+
 %foreign (libxla "set_array_int")
 prim__setArrayInt : Ptr Int -> Int -> Int -> PrimIO ()
+
+export
+%foreign (libxla "")
+prim__setArrayInt64 : Ptr Int64 -> Bits64 -> Int64 -> PrimIO ()
 
 export
 mkIntArray : (HasIO io, Cast a Int) => List a -> io IntArray

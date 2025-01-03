@@ -26,5 +26,5 @@ prim__getPjrtApi : PrimIO AnyPtr
 export
 device : Pjrt Device
 device = do
-  api <- MkPjrtApi <$> primIO prim__getPjrtApi
+  api <- MkPjrtApi <$> primIO (prim__getPjrtApi empty)
   MkDevice api <$> pjrtClientCreate api

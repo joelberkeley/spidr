@@ -29,6 +29,62 @@ import Util
 
 %language ElabReflection
 
+sizeOfPjrtValue : Bits64
+
+public export
+data PjrtValue
+  = PjrtValueString String
+  | PjrtValueInt64 Int64
+  | PjrtValueInt64List (List Int64)
+  | PjrtValueFloat Double
+  | PjrtValueBool Bool
+
+%foreign (libxla "PJRT_NamedValue_array_set_string")
+prim__pjrtNamedValueArraySetString :
+  AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_array_set_int64")
+prim__pjrtNamedValueArraySetInt64 : AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> Int64 -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_array_set_int64list")
+prim__pjrtNamedValueArraySetInt64List :
+  AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> PrimIO ()
+
+-- this really only accepts float ... how to handle?
+%foreign (libxla "PJRT_NamedValue_array_set_float")
+prim__pjrtNamedValueArraySetFloat : AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> Double -> PrimIO ()
+
+%foreign (libxla "PJRT_NamedValue_array_set_bool")
+prim__pjrtNamedValueArraySetBool : AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> Int -> PrimIO ()
+
+mkPJRTNamedValueArray : HasIO io => SortedMap String PjrtValue -> io (AnyPtr, io ())
+mkPJRTNamedValueArray xs = do
+  let xs = toList xs
+  arr <- malloc (cast (length xs) * sizeOfPjrtValue)
+  let arr = prim__castPtr arr
+  finalizers <- traverse_ (\(idx, name, value) => set arr idx name value) (enumerate xs)
+  pure (arr, sequence_ finalizers)
+
+  where
+
+  set : AnyPtr -> Bits64 -> String -> PjrtValue -> io (io ())
+  set arr idx name = let idx = cast idx in \case
+    PjrtValueString x => pure $ primIO $
+      prim__pjrtNamedValueArraySetString arr idx name (cast $ length name) x (cast $ length x)
+    PjrtValueInt64 x => pure $ primIO $
+      prim__pjrtNamedValueArraySetInt64 arr idx name (cast $ length name) x
+    PjrtValueInt64List xs => do
+      int64s <- malloc (cast (length xs) * sizeofInt)
+      let int64s = prim__castPtr int64s
+      traverse_ (\(idx, x) => primIO $ prim__setArrayInt64 ptr (cast idx) (cast x)) (enumerate xs)
+      primIO $ prim__pjrtNamedValueArraySetInt64List
+        arr idx name (cast $ length name) int64s (cast $ length xs)
+      pure (free int64s)
+    PjrtValueFloat x => pure $ primIO $
+      prim__pjrtNamedValueArraySetFloat arr idx name (cast $ length name) (cast x)
+    PjrtValueBool x => pure $ primIO $
+      prim__pjrtNamedValueArraySetBool arr idx name (cast $ length name) (boolToCInt x)
+
 ||| For use by plugin developers.
 |||
 ||| A minimal wrapper round a C `PJRT_Api` struct pointer. The memory should be owned by the
@@ -184,7 +240,7 @@ export
 data PjrtClient = MkPjrtClient GCAnyPtr
 
 %foreign (libxla "PJRT_Client_Create_Args_new")
-prim__mkPjrtClientCreateArgs : PrimIO AnyPtr
+prim__mkPjrtClientCreateArgs : AnyPtr -> Bits64 -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_Create_Args_client")
 prim__pjrtClientCreateArgsClient : AnyPtr -> AnyPtr
@@ -216,13 +272,17 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 ||| For use by plugin developers.
 |||
 ||| Create a `PjrtClient`.
+|||
+||| @createOptions Platform-specific options. See plugin documentation for details.
 export
-pjrtClientCreate : PjrtApi -> Pjrt PjrtClient
-pjrtClientCreate (MkPjrtApi api) = do
-  args <- primIO prim__mkPjrtClientCreateArgs
+pjrtClientCreate : PjrtApi -> (createOptions : SortedMap String PjrtNamedValue) -> Pjrt PjrtClient
+pjrtClientCreate createOptions (MkPjrtApi api) = do
+  (createOptionsPtr, createOptionsFinalizers) <- mkPJRTNamedValueArray createOptions
+  args <- primIO $ prim__mkPjrtClientCreateArgs createOptionsPtr (length $ toList createOptions)
   err <- primIO $ prim__pjrtClientCreate api args
   let client = prim__pjrtClientCreateArgsClient args
   free args
+  createOptionsFinalizers
   try api err =<< do
     client <- onCollectAny client destroy
     pure $ MkPjrtClient client

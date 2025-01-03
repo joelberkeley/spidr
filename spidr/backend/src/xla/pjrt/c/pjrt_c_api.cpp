@@ -79,6 +79,86 @@ extern "C" {
 
     // ---------------------------- Named Values -----------------------------------
 
+    void PJRT_NamedValue_array_set_string(
+        PJRT_NamedValue* arr,
+        size_t idx,
+        char* name,
+        size_t name_size,
+        char* string_value,
+        size_t value_size,
+    ) {
+        arr[idx] = PJRT_NamedValue {
+            .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .name = name,
+            .name_size = name_size,
+            .type = PJRT_NamedValue_kString,
+            .string_value = string_value,
+            .value_size = value_size,
+        }
+    }
+
+    void PJRT_NamedValue_array_set_int64(
+        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, int64 int64_value
+    ) {
+        arr[idx] = PJRT_NamedValue {
+            .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .name = name,
+            .name_size = name_size,
+            .type = PJRT_NamedValue_kInt64,
+            .int64_value = int64_value,
+            .value_size = 1,
+        }
+    }
+
+    void PJRT_NamedValue_array_set_int64list(
+        PJRT_NamedValue* arr,
+        size_t idx,
+        char* name,
+        size_t name_size,
+        int64_t* int64_array_value,
+        size_t value_size,
+    ) {
+        arr[idx] = PJRT_NamedValue {
+            .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .name = name,
+            .name_size = name_size,
+            .type = PJRT_NamedValue_kInt64List,
+            .int64_array_value = int64_array_value,
+            .value_size = value_size,
+        }
+    }
+
+    void PJRT_NamedValue_array_set_float(
+        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, float float_value
+    ) {
+        arr[idx] = PJRT_NamedValue {
+            .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .name = name,
+            .name_size = name_size,
+            .type = PJRT_NamedValue_kFloat,
+            .float_value = float_value,
+            .value_size = 1,
+        }
+    }
+
+    void PJRT_NamedValue_array_set_bool(
+        PJRT_NamedValue* arr, size_t idx, char* name, size_t name_size, int bool_value
+    ) {
+        arr[idx] = PJRT_NamedValue {
+            .struct_size = PJRT_NamedValue_STRUCT_SIZE,
+            .extension_start = nullptr,
+            .name = name,
+            .name_size = name_size,
+            .type = PJRT_NamedValue_kBool,
+            .bool_value = bool_value,
+            .value_size = 1,
+        }
+    }
+
     // ---------------------------------- Plugin -----------------------------------
 
     // ---------------------------------- Events -----------------------------------
@@ -109,12 +189,14 @@ extern "C" {
 
     // ---------------------------------- Client -----------------------------------
 
-    PJRT_Client_Create_Args* PJRT_Client_Create_Args_new() {
+    PJRT_Client_Create_Args* PJRT_Client_Create_Args_new(
+        PJRT_NamedValue* create_options, size_t num_options
+    ) {
         return new PJRT_Client_Create_Args {
             .struct_size = PJRT_Client_Create_Args_STRUCT_SIZE,
             .extension_start = nullptr,
-            .create_options = nullptr,
-            .num_options = 0,
+            .create_options = create_options,
+            .num_options = num_options,
             .kv_get_callback = nullptr,
             .kv_get_user_arg = nullptr,
             .kv_put_callback = nullptr,
