@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y git curl
+RUN apt-get update && apt-get install -y chezscheme git curl
 RUN curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
 RUN dpkg -i cuda-keyring_1.1-1_all.deb
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
