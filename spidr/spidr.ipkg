@@ -8,6 +8,28 @@ modules =
   BayesianOptimization,
   BayesianOptimization.Acquisition,
 
+  Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes,
+  Compiler.EnzymeJAX.Src.EnzymeAD.JAX.RegistryUtils,
+
+  Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect,
+  Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes,
+
+  Compiler.LLVM.Support.RawOStream,
+
+  Compiler.MLIR.IR.Block,
+  Compiler.MLIR.IR.BuiltinOps,
+  Compiler.MLIR.IR.DialectRegistry,
+  Compiler.MLIR.IR.Location,
+  Compiler.MLIR.IR.MLIRContext,
+  Compiler.MLIR.IR.OperationSupport,
+  Compiler.MLIR.IR.ValueRange,
+  Compiler.MLIR.Pass.PassManager,
+  Compiler.MLIR.Pass.Pass,
+
+  Compiler.StableHLO.Dialect.Register,
+  Compiler.StableHLO.Dialect.Serialization,
+  Compiler.StableHLO.Dialect.Version,
+
   Compiler.Xla.Client.ExecutableBuildOptions,
   Compiler.Xla.HLO.Builder.Lib.Arithmetic,
   Compiler.Xla.HLO.Builder.Lib.Constants,
@@ -16,8 +38,11 @@ modules =
   Compiler.Xla.HLO.Builder.Lib.PRNG,
   Compiler.Xla.HLO.Builder.XlaBuilder,
   Compiler.Xla.HLO.Builder.XlaComputation,
+  Compiler.Xla.HLO.Translate.StableHLO,
+  Compiler.Xla.MLIRHLO.MHLO.IR.Register,
   Compiler.Xla.PJRT.C.PjrtCApi,
   Compiler.Xla.PJRT.PjrtExecutable,
+  Compiler.Xla.Service.HloProto,
   Compiler.Xla.Literal,
   Compiler.Xla.Shape,
   Compiler.Xla.ShapeUtil,

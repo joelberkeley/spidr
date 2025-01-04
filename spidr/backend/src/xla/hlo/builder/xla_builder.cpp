@@ -290,6 +290,18 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* Call(
+        XlaBuilder* builder, XlaComputation& computation, XlaOp* operands, size_t operands_len
+    ) {
+        auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
+        auto& computation_ = reinterpret_cast<xla::XlaComputation&>(computation);
+        auto operands_ = reinterpret_cast<xla::XlaOp*>(operands);
+        auto operands_span = absl::Span<xla::XlaOp>(operands_, operands_len);
+
+        auto res = xla::Call(builder_, computation_, operands_span);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Add(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Add, lhs, rhs); }
     XlaOp* Sub(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Sub, lhs, rhs); }
     XlaOp* Mul(XlaOp& lhs, XlaOp& rhs) { return binOp(xla::Mul, lhs, rhs); }
@@ -338,7 +350,10 @@ extern "C" {
     }
 
     XlaOp* Abs(XlaOp& operand) { return unaryOp(xla::Abs, operand); }
-    XlaOp* Exp(XlaOp& operand) { return unaryOp(xla::Exp, operand); }
+    XlaOp* Exp(XlaOp& operand) {
+        xla::XlaOp res = xla::Exp(reinterpret_cast<xla::XlaOp&>(operand));
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
     XlaOp* Floor(XlaOp& operand) { return unaryOp(xla::Floor, operand); }
     XlaOp* Ceil(XlaOp& operand) { return unaryOp(xla::Ceil, operand); }
     XlaOp* Log(XlaOp& operand) { return unaryOp(xla::Log, operand); }
