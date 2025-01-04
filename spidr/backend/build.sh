@@ -30,8 +30,10 @@ esac
   install_xla "$xla_rev" xla
   (cd xla; ./configure.py --backend=cpu --os=$os)
   # depending on Enzyme-JAX is problematic as it fixes the XLA version. Can we only depend on enzyme?
+  # seems unlikely that they could decouple XLA entirely. They almost certainly can't decouple stablehlo
   mkdir Enzyme-JAX
   install_enzyme "$enzyme_rev" Enzyme-JAX
+  cat everything >> Enzyme-JAX/BUILD
   bazel build //:c_xla
   rm -rf xla
 )
