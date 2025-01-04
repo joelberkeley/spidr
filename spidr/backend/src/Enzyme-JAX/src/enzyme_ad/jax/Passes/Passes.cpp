@@ -109,6 +109,7 @@ int main() {
     ctx.appendDialectRegistry(registry_);
     mlir::mhlo::registerAllMhloDialects(registry_);
     mlir::stablehlo::registerAllDialects(registry_);
+    ctx.insertenzyme::EnzymeDialect();
 
     auto module_op_ = xla::ConvertHloToStablehlo(ctx, &proto).value().release();
 
