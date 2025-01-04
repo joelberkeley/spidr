@@ -11,3 +11,4 @@ bazelisk
 *.so
 *.dylib
 *.tar.gz
+*.deb
