@@ -30,8 +30,8 @@ esac
   install_xla "$xla_rev" xla
   (cd xla; ./configure.py --backend=cpu --os=$os)
   # depending on Enzyme-JAX is problematic as it fixes the XLA version. Can we only depend on enzyme?
-#  mkdir Enzyme-JAX
-#  install_enzyme "$enzyme_rev" Enzyme-JAX
+  mkdir Enzyme-JAX
+  install_enzyme "$enzyme_rev" Enzyme-JAX
   bazel build //:c_xla
   rm -rf xla
 )
