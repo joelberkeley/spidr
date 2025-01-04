@@ -2,10 +2,9 @@
 
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir"
-# how to pin nccl?
 cuda_version=$(cat CUDA_VERSION)
 cudnn_version=$(cat CUDNN_VERSION)
-cd "$script_dir/../.."
+cd ../..
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
