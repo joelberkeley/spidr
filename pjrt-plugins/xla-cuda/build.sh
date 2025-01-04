@@ -15,7 +15,8 @@ case $osu in
     ;;
 esac
 
-xla_dir=$(mktemp -d)
+xla_dir=pjrt-plugins/xla-cuda/xla
+mkdir "$xla_dir"
 install_xla "$rev" "$xla_dir"
 (
   cd "$xla_dir"

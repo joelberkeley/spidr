@@ -32,11 +32,11 @@ createDifferentiatePass = do
   pure (MkPass pass)
 
 %foreign (libxla "emitEnzymeADOp")
-prim__emitEnzymeADOp : PrimIO ()
+prim__emitEnzymeADOp : GCAnyPtr -> PrimIO AnyPtr
 
 export
 emitEnzymeADOp : HasIO io => ModuleOp -> io ModuleOp
 emitEnzymeADOp (MkModuleOp op) = do
-  _ <- primIO $ prim__emitEnzymeADOp
-  --op <- onCollectAny op (primIO . BuiltinOps.prim__delete)
+  op <- primIO $ prim__emitEnzymeADOp op
+  op <- onCollectAny op (primIO . BuiltinOps.prim__delete)
   pure (MkModuleOp op)

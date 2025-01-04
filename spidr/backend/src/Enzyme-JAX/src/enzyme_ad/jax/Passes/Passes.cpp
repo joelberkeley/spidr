@@ -85,7 +85,7 @@ struct PtrElementModel
     : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<
           PtrElementModel<T>, T> {};
 
-//extern "C" {
+extern "C" {
 //    void regsiterenzymeXLAPasses_() {
 //        regsiterenzymeXLAPasses();
 //    }
@@ -98,79 +98,84 @@ struct PtrElementModel
 ////        return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
 ////    }
 
-int main() {
-    xla::XlaBuilder builder("root");
-    auto xlaScalarf64 = xla::ShapeUtil::MakeScalarShape((xla::PrimitiveType) 12);
-    auto arg = xla::Parameter(&builder, 0, xlaScalarf64, "arg");
-    auto proto = builder.Build(xla::Square(arg))->proto();
+     ModuleOp* emitEnzymeADOp(ModuleOp& module_op) {
+//    xla::XlaBuilder builder("root");
+//    auto xlaScalarf64 = xla::ShapeUtil::MakeScalarShape((xla::PrimitiveType) 12);
+//    auto arg = xla::Parameter(&builder, 0, xlaScalarf64, "arg");
+//    auto proto = builder.Build(xla::Square(arg))->proto();
+//
+//    mlir::MLIRContext ctx;
+//    mlir::DialectRegistry registry_;
+//    ctx.appendDialectRegistry(registry_);
+//    mlir::mhlo::registerAllMhloDialects(registry_);
+//    mlir::stablehlo::registerAllDialects(registry_);
+//
+//        auto module_op_ = xla::ConvertHloToStablehlo(ctx, &proto).value().release();
+        auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
+        auto ctx = module_op_.getContext();
+        mlir::DialectRegistry registry_;
 
-    mlir::MLIRContext ctx;
-    mlir::DialectRegistry registry_;
-    ctx.appendDialectRegistry(registry_);
-    mlir::mhlo::registerAllMhloDialects(registry_);
-    mlir::stablehlo::registerAllDialects(registry_);
+        registry_.insert<mlir::enzyme::EnzymeDialect>();
+        registry_.insert<mlir::stablehlo::check::CheckDialect>();
+        prepareRegistry(registry_);
 
-    auto module_op_ = xla::ConvertHloToStablehlo(ctx, &proto).value().release();
+        ctx->appendDialectRegistry(registry_);
 
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
+        llvm::InitializeNativeTarget();
+        llvm::InitializeNativeTargetAsmPrinter();
 
-    registry_.insert<enzyme::EnzymeDialect>();
-    registry_.insert<mlir::stablehlo::check::CheckDialect>();
-    prepareRegistry(registry_);
+        mlir::registerenzymePasses();
+        regsiterenzymeXLAPasses();
 
-    mlir::registerenzymePasses();
-    regsiterenzymeXLAPasses();
+        mlir::registerCSEPass();
+        mlir::registerConvertAffineToStandardPass();
+        mlir::registerSCCPPass();
+        mlir::registerInlinerPass();
+        mlir::registerCanonicalizerPass();
+        mlir::registerSymbolDCEPass();
+        mlir::registerLoopInvariantCodeMotionPass();
+        mlir::registerConvertSCFToOpenMPPass();
+        mlir::affine::registerAffinePasses();
+        mlir::registerReconcileUnrealizedCasts();
 
-    mlir::registerCSEPass();
-    mlir::registerConvertAffineToStandardPass();
-    mlir::registerSCCPPass();
-    mlir::registerInlinerPass();
-    mlir::registerCanonicalizerPass();
-    mlir::registerSymbolDCEPass();
-    mlir::registerLoopInvariantCodeMotionPass();
-    mlir::registerConvertSCFToOpenMPPass();
-    mlir::affine::registerAffinePasses();
-    mlir::registerReconcileUnrealizedCasts();
+        registry_.addExtension(+[](mlir::MLIRContext *ctx, mlir::LLVM::LLVMDialect *dialect) {
+            mlir::LLVM::LLVMFunctionType::attachInterface<MemRefInsider>(*ctx);
+            mlir::LLVM::LLVMArrayType::attachInterface<MemRefInsider>(*ctx);
+            mlir::LLVM::LLVMPointerType::attachInterface<MemRefInsider>(*ctx);
+            mlir::LLVM::LLVMStructType::attachInterface<MemRefInsider>(*ctx);
+            mlir::MemRefType::attachInterface<PtrElementModel<mlir::MemRefType>>(*ctx);
+            mlir::LLVM::LLVMStructType::attachInterface<
+                PtrElementModel<mlir::LLVM::LLVMStructType>>(*ctx);
+            mlir::LLVM::LLVMPointerType::attachInterface<
+                PtrElementModel<mlir::LLVM::LLVMPointerType>>(*ctx);
+            mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
+        });
 
-    registry_.addExtension(+[](mlir::MLIRContext *ctx, mlir::LLVM::LLVMDialect *dialect) {
-        mlir::LLVM::LLVMFunctionType::attachInterface<MemRefInsider>(*ctx);
-        mlir::LLVM::LLVMArrayType::attachInterface<MemRefInsider>(*ctx);
-        mlir::LLVM::LLVMPointerType::attachInterface<MemRefInsider>(*ctx);
-        mlir::LLVM::LLVMStructType::attachInterface<MemRefInsider>(*ctx);
-        mlir::MemRefType::attachInterface<PtrElementModel<mlir::MemRefType>>(*ctx);
-        mlir::LLVM::LLVMStructType::attachInterface<
-            PtrElementModel<mlir::LLVM::LLVMStructType>>(*ctx);
-        mlir::LLVM::LLVMPointerType::attachInterface<
-            PtrElementModel<mlir::LLVM::LLVMPointerType>>(*ctx);
-        mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
-    });
+        mlir::transform::registerInterpreterPass();
+        mlir::enzyme::registerGenerateApplyPatternsPass();
+        mlir::enzyme::registerRemoveTransformPass();
 
-    mlir::transform::registerInterpreterPass();
-    mlir::enzyme::registerGenerateApplyPatternsPass();
-    mlir::enzyme::registerRemoveTransformPass();
+        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
 
-    auto state = mlir::OperationState(mlir::UnknownLoc::get(&ctx), "enzyme.autodiff");
+        auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+        state.addTypes({scalarf64});
 
-    auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(&ctx));
-    state.addTypes({scalarf64});
+        auto operands = module_op_.getOperation()->getOperands();  // complete guess
+        state.addOperands(mlir::ValueRange(operands));
 
-    auto operands = module_op_.getOperation()->getOperands();  // complete guess
-    state.addOperands(mlir::ValueRange(operands));
+        auto operation = module_op_.getOperation();  // complete guess
+        state.addAttribute("fn", operation->getAttr("sym_name"));
+        auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
+        state.addAttribute("activity", {activity});
+        auto ret_activity = mlir::enzyme::ActivityAttr::get(
+            ctx, mlir::enzyme::Activity::enzyme_activenoneed
+        );
+        state.addAttribute("ret_activity", {ret_activity});
 
-    auto operation = module_op_.getOperation();  // complete guess
-    state.addAttribute("fn", operation->getAttr("sym_name"));
-    auto activity = mlir::enzyme::ActivityAttr::get(&ctx, mlir::enzyme::Activity::enzyme_active);
-    state.addAttribute("activity", {activity});
-    auto ret_activity = mlir::enzyme::ActivityAttr::get(
-        &ctx, mlir::enzyme::Activity::enzyme_activenoneed
-    );
-    state.addAttribute("ret_activity", {ret_activity});
+        auto res = mlir::Operation::create(state);
 
-    auto res = mlir::Operation::create(state);
+//    return 0;
 
-    return 0;
-
-//        return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(res));
-//}
+        return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(res));
+    }
 }
