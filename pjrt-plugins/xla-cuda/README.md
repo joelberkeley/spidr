@@ -25,7 +25,7 @@ Next, run the container with
 ```
 docker run -it --gpus all --name spidr -v <absolute_path>:/spidr -w /spidr spidr bash
 ```
-Where `<absolute_path>` contains any executables and/or source code, present on the host, you wish to access from the container. Next, install `pack` and prerequisites in the container. Finally, install the plugin with
+Where `<absolute_path>` is a directory containing any executables and/or source code, present on the host, that you wish to access from the container. Next, install pack and prerequisites in the container. Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```

@@ -55,7 +55,7 @@ jobs:
           path: /tmp
       - name: Build XLA CPU plugin for Linux x86_64
         run: |
-          docker build -t openxla-dev -f bazel-ubuntu2404.Dockerfile .
+          docker load --input /tmp/openxla-dev.tar
           docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cpu/build.sh"
       - name: Publish XLA CPU plugin
         uses: actions/upload-release-asset@v1
@@ -96,7 +96,7 @@ jobs:
           path: /tmp
       - name: Build XLA CUDA plugin for Linux x86_64
         run: |
-          docker build -t openxla-dev -f openxla-dev.Dockerfile .
+          docker load --input /tmp/openxla-dev.tar
           docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cuda/build.sh"
       - name: Publish XLA CUDA plugin
         uses: actions/upload-release-asset@v1
