@@ -202,6 +202,8 @@ lift io = MkTagT1 $ \e => do xa <- io; pure (e # xa)
 -- * something about devices - e.g. makeChannel doesn't say you need two different devices. Do we need to combine
 --   PJRT_Client_AddressableDevices with makeChannel to ensure correctness? let's get it working before we try to fix
 --   the types, so we don't have to rewrite it all
+-- * recursion
+-- * branching (cond)
 export
 makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
 makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
