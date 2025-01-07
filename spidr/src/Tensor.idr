@@ -192,6 +192,16 @@ export
 lift : L IO a -@ TagT1 (L IO) a
 lift io = MkTagT1 $ \e => do xa <- io; pure (e # xa)
 
+-- TODO
+--
+-- * do we need to track device across all ops so we don't try to send/recv something that's not on device?
+--   if so, does this relate to jan's work on data permissions in session types? perhaps it's more tricky for
+--   jan because he's working with arbitrary data types that can't be parametrized by device, but on the other
+--   hand that could be nice because then we wouldn't have to mention devices if we don't use them
+--   (note we could hide them, beyond function signatures, by making them implicit)
+-- * something about devices - e.g. makeChannel doesn't say you need two different devices. Do we need to combine
+--   PJRT_Client_AddressableDevices with makeChannel to ensure correctness? let's get it working before we try to fix
+--   the types, so we don't have to rewrite it all
 export
 makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
 makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
