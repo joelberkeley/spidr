@@ -18,6 +18,7 @@ limitations under the License.
 ||| The Idris API for PJRT.
 module Compiler.Xla.PJRT.C.PjrtCApi
 
+import Data.SortedMap
 import public Control.Monad.Either
 import Derive.Prelude
 import Language.Reflection
@@ -29,6 +30,7 @@ import Util
 
 %language ElabReflection
 
+%foreign (libxla "sizeof_PJRT_NamedValue")
 sizeOfPjrtValue : Bits64
 
 public export
@@ -41,28 +43,27 @@ data PjrtValue
 
 %foreign (libxla "PJRT_NamedValue_array_set_string")
 prim__pjrtNamedValueArraySetString :
-  AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> PrimIO ()
+  AnyPtr -> Bits64 -> String -> Bits64 -> String -> Bits64 -> PrimIO ()
 
 %foreign (libxla "PJRT_NamedValue_array_set_int64")
-prim__pjrtNamedValueArraySetInt64 : AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> Int64 -> PrimIO ()
+prim__pjrtNamedValueArraySetInt64 : AnyPtr -> Bits64 -> String -> Bits64 -> Int64 -> PrimIO ()
 
 %foreign (libxla "PJRT_NamedValue_array_set_int64list")
 prim__pjrtNamedValueArraySetInt64List :
-  AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> PrimIO ()
+  AnyPtr -> Bits64 -> String -> Bits64 -> AnyPtr -> Bits64 -> PrimIO ()
 
 -- this really only accepts float ... how to handle?
 %foreign (libxla "PJRT_NamedValue_array_set_float")
-prim__pjrtNamedValueArraySetFloat : AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> Double -> PrimIO ()
+prim__pjrtNamedValueArraySetFloat : AnyPtr -> Bits64 -> String -> Bits64 -> Double -> PrimIO ()
 
 %foreign (libxla "PJRT_NamedValue_array_set_bool")
-prim__pjrtNamedValueArraySetBool : AnyPtr -> Bits64 -> AnyPtr -> Bits64 -> Int -> PrimIO ()
+prim__pjrtNamedValueArraySetBool : AnyPtr -> Bits64 -> String -> Bits64 -> Int -> PrimIO ()
 
 mkPJRTNamedValueArray : HasIO io => SortedMap String PjrtValue -> io (AnyPtr, io ())
 mkPJRTNamedValueArray xs = do
   let xs = toList xs
-  arr <- malloc (cast (length xs) * sizeOfPjrtValue)
-  let arr = prim__castPtr arr
-  finalizers <- traverse_ (\(idx, name, value) => set arr idx name value) (enumerate xs)
+  arr <- malloc (cast (length xs) * cast sizeOfPjrtValue)
+  finalizers <- traverse (\(idx, nv) => set arr (cast idx) (Builtin.fst nv) (Builtin.snd nv)) (enumerate xs)
   pure (arr, sequence_ finalizers)
 
   where
@@ -74,9 +75,8 @@ mkPJRTNamedValueArray xs = do
     PjrtValueInt64 x => pure $ primIO $
       prim__pjrtNamedValueArraySetInt64 arr idx name (cast $ length name) x
     PjrtValueInt64List xs => do
-      int64s <- malloc (cast (length xs) * sizeofInt)
-      let int64s = prim__castPtr int64s
-      traverse_ (\(idx, x) => primIO $ prim__setArrayInt64 ptr (cast idx) (cast x)) (enumerate xs)
+      int64s <- malloc (cast (length xs) * cast sizeofInt64)
+      traverse_ (\(idx, x) => primIO $ prim__setArrayInt64 int64s (cast idx) (cast x)) (enumerate xs)
       primIO $ prim__pjrtNamedValueArraySetInt64List
         arr idx name (cast $ length name) int64s (cast $ length xs)
       pure (free int64s)
@@ -275,10 +275,10 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 |||
 ||| @createOptions Platform-specific options. See plugin documentation for details.
 export
-pjrtClientCreate : PjrtApi -> (createOptions : SortedMap String PjrtNamedValue) -> Pjrt PjrtClient
-pjrtClientCreate createOptions (MkPjrtApi api) = do
+pjrtClientCreate : PjrtApi -> (createOptions : SortedMap String PjrtValue) -> Pjrt PjrtClient
+pjrtClientCreate (MkPjrtApi api) createOptions = do
   (createOptionsPtr, createOptionsFinalizers) <- mkPJRTNamedValueArray createOptions
-  args <- primIO $ prim__mkPjrtClientCreateArgs createOptionsPtr (length $ toList createOptions)
+  args <- primIO $ prim__mkPjrtClientCreateArgs createOptionsPtr (cast $ length $ Prelude.toList createOptions)
   err <- primIO $ prim__pjrtClientCreate api args
   let client = prim__pjrtClientCreateArgsClient args
   free args
@@ -301,7 +301,7 @@ public export
 data PjrtTopologyDescription = MkPjrtTopologyDescription GCAnyPtr
 
 %foreign (libxla "PJRT_Client_TopologyDescription_Args_new")
-prim__mkPjrtClientTopologyDescriptionArgs : AnyPtr -> PrimIO AnyPtr
+prim__mkPjrtClientTopologyDescriptionArgs : GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "PJRT_Client_TopologyDescription_Args_topology")
 prim__pjrtClientTopologyDescriptionArgsTopology : AnyPtr -> PrimIO AnyPtr

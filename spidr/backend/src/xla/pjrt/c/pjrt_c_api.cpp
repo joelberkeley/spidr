@@ -79,6 +79,8 @@ extern "C" {
 
     // ---------------------------- Named Values -----------------------------------
 
+    size_t sizeof_PJRT_NamedValue() { return sizeof(PJRT_NamedValue); }
+
     void PJRT_NamedValue_array_set_string(
         PJRT_NamedValue* arr,
         size_t idx,

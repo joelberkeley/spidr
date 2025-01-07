@@ -22,4 +22,4 @@ import PjrtPluginXlaCuda
 
 partial
 main : IO ()
-main = eitherT (die . show) run device
+main = eitherT (die . show) run (device 0.1)
