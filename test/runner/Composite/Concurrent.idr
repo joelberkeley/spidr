@@ -57,14 +57,12 @@ sendRecv @{device} = fixedProperty $ do
           printLn debugs
           pure devices
 
-      Right [gpu] = unsafePerformIO (runEitherT devices) | _ => ?notExactlyOneDevice
+      Right [gpu0, gpu1] = unsafePerformIO (runEitherT devices) | _ => ?notExactlyTwoDevices
 
       prog : L IO (Literal [] Int32) = do
         (h # d) <- makeChannel Concurrent.protocol
-        -- look at topology e.g. PJRT_TopologyDescription
-        -- does that allow you to run a
-        eval1nil device gpu (onDevice d)
-        eval1 device (MkPjrtDevice prim__getNullAnyPtr) (onHost h)
+        eval1nil device gpu0 (onDevice d)
+        eval1 device gpu1 (onHost h)
 
   unsafePerformIO (run prog) === 2
 
