@@ -36,15 +36,15 @@ protocol = Send [] S32 $ Recv [] S32 $ End
 onHost : Channel Concurrent.protocol -@ TagT1 (L IO) (Tensor [] S32)
 onHost ch =
     let x = tensor {dtype = S32} 2 in
-    lift1 (send ch x DEVICE_TO_DEVICE) `bind1` \ch =>
-      recv ch DEVICE_TO_DEVICE `bind1` \(x # ch) =>
+    lift1 (send ch x) `bind1` \ch =>
+      recv ch `bind1` \(x # ch) =>
         lift (end ch) `bind` \() =>
           pure x
 
 onDevice : Channel (dual Concurrent.protocol) -@ TagT1 (L IO) ()
 onDevice ch = do
-    recv ch DEVICE_TO_DEVICE `bind1` \(x # ch) =>
-      lift1 (send ch x DEVICE_TO_DEVICE) `bind1` \ch =>
+    recv ch `bind1` \(x # ch) =>
+      lift1 (send ch x) `bind1` \ch =>
         lift (end ch)
 
 sendRecv : Device => Property

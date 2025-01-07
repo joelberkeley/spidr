@@ -196,11 +196,9 @@ export
 makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
 makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
 
--- user code would be easier to parse if this returned `TagT1 (L1 IO) (Channel sess)`, similar for `end`
--- assuming user code always includes `read`
 export
-send : (1 _ : Channel (Send shape dtype sess)) -> Tensor shape dtype -> ChannelType -> L1 IO (Channel sess)
-send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send op tok 1 type)
+send : Channel (Send shape dtype sess) -@ (Tensor shape dtype -> L1 IO (Channel sess))
+send (MkChannel tok) (MkTensor op) = pure1 $ MkChannel (Send op tok 1 DEVICE_TO_DEVICE)
 
 -- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
 -- TagT is not linear in its argument, so it needs to be modified. The only way I can see it
@@ -216,11 +214,10 @@ send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send op tok 1 type)
 export
 recv :
   Primitive dtype => {shape : _} ->
-  (1 _ : Channel (Recv shape dtype sess)) ->
-  ChannelType ->  -- this almost certainly doesn't make sense with Channel
+  Channel (Recv shape dtype sess) -@
   TagT1 (L1 IO) $ CRes (Tensor shape dtype) (Channel sess)
-recv (MkChannel tok) type = MkTagT1 $ \e => do
-  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 1 type
+recv (MkChannel tok) = MkTagT1 $ \e => do
+  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 1 DEVICE_TO_DEVICE
   let op = GetTupleElement 0 x
       tok = GetTupleElement 1 x
   pure1 $ e # (MkTensor op # MkChannel tok)
