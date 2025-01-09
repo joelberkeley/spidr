@@ -61,6 +61,8 @@ sendRecv @{device} = fixedProperty $ do
 
       prog : L IO (Literal [] Int32) = do
         (h # d) <- makeChannel Concurrent.protocol
+        -- this might actually work because we don't await any buffers for eval1nil, so we only
+        -- wait on the second call. It's obviously super-hacky but meh for now
         eval1nil device gpu0 (onDevice d)
         eval1 device gpu1 (onHost h)
 
