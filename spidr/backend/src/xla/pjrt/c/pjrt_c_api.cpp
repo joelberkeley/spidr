@@ -68,7 +68,7 @@ extern "C" {
         return api->PJRT_Error_GetCode(args);
     }
 
-    PJRT_Plugin_Initialize_Args* PJRT_Plugin_Initialize_Args_new {
+    PJRT_Plugin_Initialize_Args* PJRT_Plugin_Initialize_Args_new() {
         return new PJRT_Plugin_Initialize_Args{
             .struct_size = PJRT_Plugin_Initialize_Args_STRUCT_SIZE,
             .extension_start = nullptr,
