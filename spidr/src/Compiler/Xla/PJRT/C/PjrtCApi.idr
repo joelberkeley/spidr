@@ -154,6 +154,23 @@ try api err onOk = if (isNullPtr err) then right onOk else do
   destroyPjrtError api err
   left $ MkPjrtError msg $ map pjrtErrorCodeFromCInt code
 
+%foreign (libxla "PJRT_Plugin_Initialize_Args_new")
+prim__mkPjrtPluginInitializeArgs : PrimIO AnyPtr
+
+%foreign (libxla "pjrt_plugin_initialize")
+prim__pjrtPluginInitialize : AnyPtr -> AnyPtr -> PrimIO AnyPtr
+
+||| For use by plugin developers.
+|||
+||| One-time plugin setup. Must be called before any other functions are called.
+export
+pjrtPluginInitialize : PjrtApi -> Pjrt ()
+pjrtPluginInitialize (MkPjrtApi api) = do
+  args <- primIO prim__mkPjrtPluginInitializeArgs
+  err <- primIO $ prim__pjrtPluginInitialize args
+  free args
+  try api err ()
+
 ||| For internal spidr use only.
 export
 data PjrtEvent = MkPjrtEvent AnyPtr
