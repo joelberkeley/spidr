@@ -192,7 +192,7 @@ jobs:
         run: |
           brew install chezscheme
           git clone https://github.com/stefan-hoeck/idris2-pack.git
-          (cd idris2-pack && make micropack SCHEME=$SCHEME)
+          (cd idris2-pack && make micropack SCHEME=chez)
           ~/.pack/bin/pack switch HEAD
       - name: Build tests
         working-directory: test/xla-cpu
