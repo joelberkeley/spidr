@@ -167,7 +167,7 @@ export
 pjrtPluginInitialize : PjrtApi -> Pjrt ()
 pjrtPluginInitialize (MkPjrtApi api) = do
   args <- primIO prim__mkPjrtPluginInitializeArgs
-  err <- primIO $ prim__pjrtPluginInitialize args
+  err <- primIO $ prim__pjrtPluginInitialize api args
   free args
   try api err ()
 
