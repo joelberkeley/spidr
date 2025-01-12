@@ -17,7 +17,7 @@ jobs:
         run: |
           apt-get update && apt-get install -y curl
           pack switch HEAD
-          pack --no-prompt --with-docs install spidr
+          SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt --with-docs install spidr
           mv spidr/build/docs .
       - name: Upload docs
         run: |
