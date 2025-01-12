@@ -1,0 +1,29 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+env:
+  PACK_DIR: /root/.pack
+
+jobs:
+  docs:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build docs
+        run: |
+          apt-get update && apt-get install -y curl
+          pack switch HEAD
+          SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt --with-docs install spidr
+          mv spidr/build/docs .
+      - name: Upload docs
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git add .
+          git config user.email "none"
+          git config user.name "none"
+          git commit -m "build documentation"
+          git push -f origin HEAD:gh-pages

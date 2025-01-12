@@ -1,0 +1,7 @@
+package readme
+
+main = README
+
+depends = spidr
+
+opts = "--total"

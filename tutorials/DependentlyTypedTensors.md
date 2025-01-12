@@ -59,3 +59,7 @@ We could define a function that transposes matrices such as this, where the shap
 transpose : Vect m (Vect n Int) -> Vect n (Vect m Int)
 ```
 `transpose zs` will give us a `Vect 3 (Vect 2 Int)`. It's precisely this kind of extra precision that we use throughout spidr when working with tensors.
+
+<!-- idris
+main : IO ()
+-->

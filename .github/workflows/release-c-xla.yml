@@ -1,0 +1,59 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: master
+    paths:
+      - 'spidr/backend/VERSION'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-24.04
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read C XLA version
+        run: echo "C_XLA_VERSION=$(cat spidr/backend/VERSION)" >> $GITHUB_ENV
+      - name: Create C XLA release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: c-xla-v${{ env.C_XLA_VERSION }}
+          release_name: C XLA release ${{ env.C_XLA_VERSION }}
+          body: "C XLA release ${{ env.C_XLA_VERSION }}"
+  c-xla-linux-x86_64:
+    needs: create-release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build C XLA lib
+        run: |
+          docker build -t openxla-dev -f openxla-dev.Dockerfile .
+          docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./spidr/backend/build.sh"
+      - name: Publish C XLA lib
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: libc_xla-linux-x86_64.so
+          asset_name: libc_xla-linux-x86_64.so
+          asset_content_type: application/x-sharedlib
+  c-xla-darwin-aarch64:
+    needs: create-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build C XLA lib
+        run: ./spidr/backend/build.sh
+      - name: Publish C XLA lib
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: libc_xla-darwin-aarch64.dylib
+          asset_name: libc_xla-darwin-aarch64.dylib
+          asset_content_type: application/x-sharedlib

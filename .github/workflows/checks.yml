@@ -1,53 +1,320 @@
-# Copyright 2021 Joel Berkeley
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 on:
   pull_request:
     branches: master
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
-  test-unit:
-    runs-on: ubuntu-latest
+  shellcheck:
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        wget -qO- https://github.com/elixir-nx/xla/releases/download/v0.3.0/xla_extension-x86_64-linux-cpu.tar.gz | tar xvz -C backend/
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get install shellcheck
+      - name: Run shellcheck
+        shell: bash
+        run: |
+          shopt -s extglob nullglob globstar
+          shellcheck **/*.sh
+  openxla-dev-docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and export
+        uses: docker/build-push-action@v6
+        with:
+          file: openxla-dev.Dockerfile
+          tags: openxla-dev
+          outputs: type=docker,dest=/tmp/openxla-dev.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp/openxla-dev.tar
+  pjrt-linux-x86_64:
+    needs:
+      - openxla-dev-docker
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Download bazel Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp
+      - name: Build PJRT + XLA binary
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux-x86_64.so"
+          else
+            docker load --input /tmp/openxla-dev.tar
+            docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./spidr/backend/build.sh"
+          fi
 
-        sudo apt install -y apt-transport-https curl gnupg
-        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-        sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-        sudo apt update && sudo apt install bazel
+          mv libc_xla-linux-x86_64.so libc_xla.so
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: libc_xla-linux-x86_64
+          path: libc_xla.so
+          if-no-files-found: error
+  pjrt-darwin-aarch64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Build PJRT + XLA binary
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-darwin-aarch64.dylib"
+          else
+            ./spidr/backend/build.sh
+          fi
 
-        (cd backend; BAZEL_CXXOPTS='-std=c++14' bazel build //:c_xla_extension)
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/backend/bazel-bin
+          mv libc_xla-darwin-aarch64.dylib libc_xla.dylib
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: libc_xla-darwin-aarch64
+          path: libc_xla.dylib
+          if-no-files-found: error
+  pjrt-plugin-xla-cpu-linux-x86_64:
+    needs:
+      - openxla-dev-docker
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Download bazel Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp
+      - name: Build or fetch XLA CPU PJRT plugin
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
+            rev=$(cat XLA_VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux-x86_64.so"
+          else
+            docker load --input /tmp/openxla-dev.tar
+            docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cpu/build.sh"
+          fi
 
-        ./install_deps.sh
-        idris2 --install spidr.ipkg
-        ./test/install_deps.sh
-        idris2 --install test.ipkg
-        ./build/exec/test
+          mv pjrt_plugin_xla_cpu-linux-x86_64.so pjrt_plugin_xla_cpu.so
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_xla_cpu-linux-x86_64
+          path: pjrt_plugin_xla_cpu.so
+          if-no-files-found: error
+  pjrt-plugin-xla-cpu-darwin-aarch64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Build or fetch XLA CPU PJRT plugin
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
+            rev=$(cat XLA_VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-darwin-aarch64.dylib"
+          else
+            ./pjrt-plugins/xla-cpu/build.sh
+          fi
+
+          mv pjrt_plugin_xla_cpu-darwin-aarch64.dylib pjrt_plugin_xla_cpu.dylib
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_xla_cpu-darwin-aarch64
+          path: pjrt_plugin_xla_cpu.dylib
+          if-no-files-found: error
+  pjrt-plugin-xla-cuda-linux-x86_64:
+    needs:
+      - openxla-dev-docker
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Download bazel Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp
+      - name: Build or fetch XLA CUDA PJRT plugin
+        run: |
+          if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
+            . ./dev.sh
+            rev=$(cat XLA_VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux-x86_64.so"
+          else
+            docker load --input /tmp/openxla-dev.tar
+            docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cuda/build.sh"
+          fi
+
+          mv pjrt_plugin_xla_cuda-linux-x86_64.so pjrt_plugin_xla_cuda.so
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pjrt_plugin_xla_cuda-linux-x86_64
+          path: pjrt_plugin_xla_cuda.so
+          if-no-files-found: error
+  build-tests-xla-cpu-linux-x86_64:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build tests
+        working-directory: test/xla-cpu
+        run: |
+          pack switch HEAD
+          SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cpu.ipkg
+          tar cfz tests-xla-cpu.tar.gz -C build/exec .
+      - name: Upload tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-xla-cpu-linux-x86_64
+          path: test/xla-cpu/tests-xla-cpu.tar.gz
+          if-no-files-found: error
+  build-tests-xla-cpu-darwin-aarch64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          brew install chezscheme
+          git clone https://github.com/stefan-hoeck/idris2-pack.git
+          (cd idris2-pack && make micropack SCHEME=chez)
+          ~/.pack/bin/pack switch HEAD
+      - name: Build tests
+        working-directory: test/xla-cpu
+        run: |
+          SPIDR_INSTALL_SUPPORT_LIBS=false ~/.pack/bin/pack --no-prompt build xla-cpu.ipkg
+          tar cfz tests-xla-cpu.tar.gz -C build/exec .
+      - name: Upload tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-xla-cpu-darwin-aarch64
+          path: test/xla-cpu/tests-xla-cpu.tar.gz
+          if-no-files-found: error
+  build-tests-xla-cuda-linux-x86_64:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build tests
+        working-directory: test/xla-cuda
+        run: |
+          pack switch HEAD
+          SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt build xla-cuda.ipkg
+          tar cfz tests-xla-cuda.tar.gz -C build/exec .
+      - name: Upload tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-xla-cuda-linux-x86_64
+          path: test/xla-cuda/tests-xla-cuda.tar.gz
+          if-no-files-found: error
+  test-xla-cpu-linux-x86_64:
+    needs:
+      - pjrt-linux-x86_64
+      - pjrt-plugin-xla-cpu-linux-x86_64
+      - build-tests-xla-cpu-linux-x86_64
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "{libc_xla-linux-x86_64,*cpu-linux-x86_64}"
+          merge-multiple: true
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get install chezscheme
+      - name: Run tests
+        run: |
+          tar xfz tests-xla-cpu.tar.gz . && rm tests-xla-cpu.tar.gz
+          ./test
+  test-xla-cpu-darwin-aarch64:
+    needs:
+      - pjrt-darwin-aarch64
+      - pjrt-plugin-xla-cpu-darwin-aarch64
+      - build-tests-xla-cpu-darwin-aarch64
+    runs-on: macos-14
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*darwin-aarch64"
+          merge-multiple: true
+      - name: Install runtime dependencies
+        run: |
+          brew install chezscheme
+      - name: Run tests
+        run: |
+          tar xfz tests-xla-cpu.tar.gz && rm tests-xla-cpu.tar.gz
+          ./test
+  build-xla-cuda-linux-x86_64-runtime:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and export
+        uses: docker/build-push-action@v6
+        with:
+          file: pjrt-plugins/xla-cuda/Dockerfile
+          tags: xla-cuda
+          outputs: type=docker,dest=/tmp/xla-cuda.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xla-cuda
+          path: /tmp/xla-cuda.tar
+  test-xla-cuda-linux-x86_64:
+    needs:
+      - pjrt-linux-x86_64
+      - pjrt-plugin-xla-cuda-linux-x86_64
+      - build-tests-xla-cuda-linux-x86_64
+      - build-xla-cuda-linux-x86_64-runtime
+    runs-on: ubuntu-24.04  # needs a CUDA runner
+    steps:
+      - name: Download XLA CUDA runtime Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: xla-cuda
+          path: /tmp
+      - name: Download app artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "{libc_xla-linux-x86_64,*cuda-linux-x86_64}"
+          merge-multiple: true
+      - name: Run tests
+        run: |
+          tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
+          docker load --input /tmp/xla-cuda.tar
+          docker run -v $(pwd):/xla-cuda -w /xla-cuda xla-cuda sh -c "exit 0"  # needs a CUDA runner
+  readme:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Type-check README
+        run: |
+          pack switch HEAD
+          SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt typecheck readme.ipkg
   tutorials:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
-    - uses: actions/checkout@v2
-    - run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    - run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install idris2
-        ./install_deps.sh
-        idris2 --install spidr.ipkg
-        res=0; for f in tutorials/*.md; do idris2 --check -p contrib -p hashable "$f" || res=$?; done; $(exit $res)
+      - uses: actions/checkout@v4
+      - name: Type-check tutorials
+        run: |
+          pack switch HEAD
+          export SPIDR_INSTALL_SUPPORT_LIBS=false
+          res=0; for f in tutorials/*.ipkg; do pack --no-prompt typecheck $f || res=$?; done; $(exit $res)
