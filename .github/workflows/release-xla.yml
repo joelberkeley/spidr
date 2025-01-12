@@ -7,7 +7,7 @@ on:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
@@ -26,18 +26,37 @@ jobs:
           tag_name: xla-${{ env.XLA_REV }}
           release_name: XLA revision ${{ env.XLA_REV }}
           body: "XLA revision ${{ env.XLA_REV }}"
+  openxla-dev-docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and export
+        uses: docker/build-push-action@v6
+        with:
+          file: openxla-dev.Dockerfile
+          tags: openxla-dev
+          outputs: type=docker,dest=/tmp/openxla-dev.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp/openxla-dev.tar
   pjrt-plugin-xla-cpu-linux-x86_64:
-    needs: create-release
-    runs-on: ubuntu-latest
+    needs:
+      - create-release
+      - openxla-dev-docker
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Download OpenXLA dev Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp
       - name: Build XLA CPU plugin for Linux x86_64
         run: |
-          rm -rf /opt/hostedtoolcache
-          docker run \
-            -v $(pwd):/spidr -w /spidr \
-            tensorflow/build:latest-python3.9 \
-            sh -c "pjrt-plugins/xla-cpu/build.sh"
+          docker load --input /tmp/openxla-dev.tar
+          docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cpu/build.sh"
       - name: Publish XLA CPU plugin
         uses: actions/upload-release-asset@v1
         env:
@@ -49,7 +68,7 @@ jobs:
           asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cpu-darwin-aarch64:
     needs: create-release
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - name: Build XLA CPU plugin for Darwin AArch64
@@ -64,17 +83,21 @@ jobs:
           asset_name: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
           asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cuda-linux-x86_64:
-    needs: create-release
-    runs-on: ubuntu-latest
+    needs:
+      - create-release
+      - openxla-dev-docker
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Download OpenXLA dev Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp
       - name: Build XLA CUDA plugin for Linux x86_64
         run: |
-          rm -rf /opt/hostedtoolcache
-          docker run \
-            -v $(pwd):/spidr -w /spidr \
-            tensorflow/build:latest-python3.9 \
-            sh -c "pjrt-plugins/xla-cuda/build.sh"
+          docker load --input /tmp/openxla-dev.tar
+          docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cuda/build.sh"
       - name: Publish XLA CUDA plugin
         uses: actions/upload-release-asset@v1
         env:

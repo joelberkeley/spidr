@@ -7,7 +7,7 @@ on:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
@@ -25,12 +25,14 @@ jobs:
           body: "C XLA release ${{ env.C_XLA_VERSION }}"
   c-xla-linux-x86_64:
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: tensorflow/build:latest-python3.9
     steps:
       - uses: actions/checkout@v4
       - name: Build C XLA lib
-        run: ./spidr/backend/build.sh
+        run: |
+          docker build -t openxla-dev -f openxla-dev.Dockerfile .
+          docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./spidr/backend/build.sh"
       - name: Publish C XLA lib
         uses: actions/upload-release-asset@v1
         env:
@@ -42,7 +44,7 @@ jobs:
           asset_content_type: application/x-sharedlib
   c-xla-darwin-aarch64:
     needs: create-release
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - name: Build C XLA lib
