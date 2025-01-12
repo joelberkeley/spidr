@@ -162,7 +162,7 @@ prim__pjrtPluginInitialize : AnyPtr -> AnyPtr -> PrimIO AnyPtr
 
 ||| For use by plugin developers.
 |||
-||| One-time plugin setup. Must be called before any other functions are called.
+||| Initialize a PJRT plugin. Must be called before the PjrtApi is used.
 export
 pjrtPluginInitialize : PjrtApi -> Pjrt ()
 pjrtPluginInitialize (MkPjrtApi api) = do
