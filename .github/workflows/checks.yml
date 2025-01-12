@@ -169,7 +169,8 @@ jobs:
           path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu-linux-x86_64:
-    runs-on: ghcr.io/stefan-hoeck/idris2-pack:noble
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
       - uses: actions/checkout@v4
       - name: Build tests
@@ -206,7 +207,8 @@ jobs:
           path: test/xla-cpu/tests-xla-cpu.tar.gz
           if-no-files-found: error
   build-tests-xla-cuda-linux-x86_64:
-    runs-on: ghcr.io/stefan-hoeck/idris2-pack:noble
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
       - uses: actions/checkout@v4
       - name: Build tests
@@ -298,7 +300,8 @@ jobs:
           docker load --input /tmp/xla-cuda.tar
           docker run -v $(pwd):/xla-cuda -w /xla-cuda xla-cuda sh -c "exit 0"  # needs a CUDA runner
   readme:
-    runs-on: ghcr.io/stefan-hoeck/idris2-pack:noble
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
       - uses: actions/checkout@v4
       - name: Type-check README
@@ -306,7 +309,8 @@ jobs:
           pack switch HEAD
           SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt typecheck readme.ipkg
   tutorials:
-    runs-on: ghcr.io/stefan-hoeck/idris2-pack:noble
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
       - uses: actions/checkout@v4
       - name: Type-check tutorials
