@@ -4,7 +4,7 @@ This is the PJRT plugin for CUDA-enabled GPUs. It uses the XLA compiler.
 
 ## Install
 
-This plugin requires Ubuntu Linux 24.04 (or NVIDIA Docker), a CUDA-enabled GPU, and a number of NVIDIA packages.
+The plugin requires Ubuntu Linux 24.04 (or NVIDIA Docker), a CUDA-enabled GPU, and a number of NVIDIA packages.
 
 First, install NVIDIA GPU drivers. The remaining packages can be installed either on your host machine, or in Docker.
 
@@ -25,7 +25,7 @@ Next, run the container with
 ```
 docker run -it --gpus all --name spidr -v <absolute_path>:/spidr -w /spidr spidr bash
 ```
-Where `<absolute_path>` is a directory containing any executables and/or source code, present on the host, that you wish to access from the container. Next, install pack and prerequisites in the container. Finally, install the plugin with
+where `<absolute_path>` is a directory containing any executables and/or source code, present on the host, that you wish to access from the container. Next, install pack and prerequisites in the container (the container uses Ubuntu Linux 24.04). Finally, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```

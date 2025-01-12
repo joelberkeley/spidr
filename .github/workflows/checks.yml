@@ -3,7 +3,7 @@ on:
     branches: master
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
         run: |
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
-  build-openxla-dev-docker:
+  openxla-dev-docker:
     runs-on: ubuntu-24.04
     steps:
       - uses: docker/setup-buildx-action@v3
@@ -35,7 +35,7 @@ jobs:
           path: /tmp/openxla-dev.tar
   pjrt-linux-x86_64:
     needs:
-      - build-openxla-dev-docker
+      - openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
           if-no-files-found: error
   pjrt-plugin-xla-cpu-linux-x86_64:
     needs:
-      - build-openxla-dev-docker
+      - openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -139,7 +139,7 @@ jobs:
           if-no-files-found: error
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs:
-      - build-openxla-dev-docker
+      - openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

@@ -26,7 +26,7 @@ jobs:
           tag_name: xla-${{ env.XLA_REV }}
           release_name: XLA revision ${{ env.XLA_REV }}
           body: "XLA revision ${{ env.XLA_REV }}"
-  build-openxla-dev-docker:
+  openxla-dev-docker:
     runs-on: ubuntu-24.04
     steps:
       - uses: docker/setup-buildx-action@v3
@@ -44,11 +44,11 @@ jobs:
   pjrt-plugin-xla-cpu-linux-x86_64:
     needs:
       - create-release
-      - build-openxla-dev-docker
+      - openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Download bazel Docker image
+      - name: Download OpenXLA dev Docker image
         uses: actions/download-artifact@v4
         with:
           name: openxla-dev
@@ -85,11 +85,11 @@ jobs:
   pjrt-plugin-xla-cuda-linux-x86_64:
     needs:
       - create-release
-      - build-openxla-dev-docker
+      - openxla-dev-docker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Download bazel Docker image
+      - name: Download OpenXLA dev Docker image
         uses: actions/download-artifact@v4
         with:
           name: openxla-dev
