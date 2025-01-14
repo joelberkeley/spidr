@@ -1,8 +1,0 @@
-package apple-metal
-
-depends =
-  pjrt-plugin-apple-metal,
-  runner
-
-executable = test
-main = Main

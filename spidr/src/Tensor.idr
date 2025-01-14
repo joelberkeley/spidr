@@ -192,15 +192,25 @@ export
 lift : L IO a -@ TagT1 (L IO) a
 lift io = MkTagT1 $ \e => do xa <- io; pure (e # xa)
 
+-- TODO
+--
+-- * do we need to track device across all ops so we don't try to send/recv something that's not on device?
+--   if so, does this relate to jan's work on data permissions in session types? perhaps it's more tricky for
+--   jan because he's working with arbitrary data types that can't be parametrized by device, but on the other
+--   hand that could be nice because then we wouldn't have to mention devices if we don't use them
+--   (note we could hide them, beyond function signatures, by making them implicit)
+-- * something about devices - e.g. makeChannel doesn't say you need two different devices. Do we need to combine
+--   PJRT_Client_AddressableDevices with makeChannel to ensure correctness? let's get it working before we try to fix
+--   the types, so we don't have to rewrite it all
+-- * recursion
+-- * branching (cond)
 export
 makeChannel : (0 s : Session) -> L1 IO (LPair (Channel s) (Channel (dual s)))
 makeChannel s = pure1 (MkChannel CreateToken # MkChannel CreateToken)
 
--- user code would be easier to parse if this returned `TagT1 (L1 IO) (Channel sess)`, similar for `end`
--- assuming user code always includes `read`
 export
-send : (1 _ : Channel (Send shape dtype sess)) -> Tensor shape dtype -> ChannelType -> L1 IO (Channel sess)
-send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send op tok 0 type)
+send : Channel (Send shape dtype sess) -@ (Tensor shape dtype -> L1 IO (Channel sess))
+send (MkChannel tok) (MkTensor op) = pure1 $ MkChannel (Send op tok 1 DEVICE_TO_DEVICE)
 
 -- TagT must wrap both tensor and channel, since they require the TagT effect to exist. Meanwhile,
 -- TagT is not linear in its argument, so it needs to be modified. The only way I can see it
@@ -216,11 +226,10 @@ send (MkChannel tok) (MkTensor op) type = pure1 $ MkChannel (Send op tok 0 type)
 export
 recv :
   Primitive dtype => {shape : _} ->
-  (1 _ : Channel (Recv shape dtype sess)) ->
-  ChannelType ->  -- this almost certainly doesn't make sense with Channel
+  Channel (Recv shape dtype sess) -@
   TagT1 (L1 IO) $ CRes (Tensor shape dtype) (Channel sess)
-recv (MkChannel tok) type = MkTagT1 $ \e => do
-  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 0 type
+recv (MkChannel tok) = MkTagT1 $ \e => do
+  (e, x) <- liftIO1 $ runStateT e $ Expr.tag $ Recv tok shape {dtype} 1 DEVICE_TO_DEVICE
   let op = GetTupleElement 0 x
       tok = GetTupleElement 1 x
   pure1 $ e # (MkTensor op # MkChannel tok)

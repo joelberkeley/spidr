@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module PjrtPluginXlaCuda
 
+import Data.SortedMap
 import System.FFI
 
 import Data.SortedMap
@@ -28,16 +29,19 @@ export
 device :
   (memoryFraction : Double) ->
   {auto 0 memoryFractionPositive : (0.0 < memoryFraction) === True} ->
-  {auto 0 memoryFractionLtOne : (memoryFraction <= 1.0) === True} ->{-
-  (preallocate : Bool) ->
+  {auto 0 memoryFractionLtOne : (memoryFraction <= 1.0) === True} ->
+  {-(preallocate : Bool) ->
   (collectiveMemorySize : Int64) ->
   (visibleDevices : List Int64) ->-}
   Pjrt Device
 device memoryFraction = do
-  api <- primIO $ prim__getPjrtApi
-    {-, ("preallocate", preallocate)
-    , ("collective_memory_size", collectiveMemorySize)
-    , ("visible_devices", visibleDevices)
-    ]-}
+  api <- primIO prim__getPjrtApi
   let api = MkPjrtApi api
-  MkDevice api <$> pjrtClientCreate api (fromList [ ("memory_fraction", PjrtValueFloat memoryFraction) ])
+  MkDevice api <$> pjrtClientCreate api (
+      fromList
+        [ ("memory_fraction", PjrtValueFloat memoryFraction)
+        {-, ("preallocate", preallocate)
+        , ("collective_memory_size", collectiveMemorySize)
+        , ("visible_devices", visibleDevices)-}
+        ]
+    )

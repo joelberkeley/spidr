@@ -64,7 +64,7 @@ mkPJRTNamedValueArray xs = do
   -- putStrLn "mkPJRTNamedValueArray"
   let xs = toList xs
   arr <- malloc (cast (length xs) * cast sizeofPjrtNamedValue)
-  finalizers <- traverse (\(idx, nv) => uncurry (set arr (cast idx)) nv) (enumerate xs)
+  finalizers <- traverse (\(idx, nv) => set arr (cast idx) (Builtin.fst nv) (Builtin.snd nv)) (enumerate xs)
   pure (arr, sequence_ finalizers)
 
   where
@@ -285,19 +285,12 @@ handleErrOnDestroy api err target = unless (isNullPtr err) $ do
 export
 pjrtClientCreate : PjrtApi -> (createOptions : SortedMap String PjrtValue) -> Pjrt PjrtClient
 pjrtClientCreate (MkPjrtApi api) createOptions = do
-  --putStrLn "pjrtClientCreate"
-  --printLn 1
   (createOptionsPtr, createOptionsFinalizers) <- liftIO $ mkPJRTNamedValueArray createOptions
-  --printLn 2
   args <- primIO $ prim__mkPjrtClientCreateArgs createOptionsPtr (cast $ length $ Prelude.toList createOptions)
-  --printLn 3
   err <- primIO $ prim__pjrtClientCreate api args
-  --printLn 4
   let client = prim__pjrtClientCreateArgsClient args
-  -- printLn 5
   free args
   liftIO createOptionsFinalizers
-  --putStrLn "pjrtClientCreate return"
   try api err =<< do
     client <- onCollectAny client destroy
     pure $ MkPjrtClient client
