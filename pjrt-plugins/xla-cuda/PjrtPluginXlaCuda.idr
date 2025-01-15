@@ -37,6 +37,7 @@ device :
 device memoryFraction = do
   api <- primIO prim__getPjrtApi
   let api = MkPjrtApi api
+  pjrtPluginInitialize api
   MkDevice api <$> pjrtClientCreate api (
       fromList
         [ ("memory_fraction", PjrtValueFloat memoryFraction)

@@ -13,10 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module contains the `Tensor`, an array of numbers or booleans, along with a
-||| number of functions operating on `Tensor`s. spidr tracks tensor shape and data type in the
-||| types, so you can be sure that if your tensor code compiles, the shapes and types are
-||| consistent.
+||| The `Tensor` API. A `Tensor` is an array (or scalar) of numbers or booleans. spidr tracks
+||| tensor shape and data type in the types, so you can be sure that if your tensor code compiles,
+||| the shapes and types are consistent.
 |||
 ||| spidr achieves efficient reuse of tensor computations with `Tag`. See the tutorial
 ||| _Nuisances in the Tensor API_ for a discussion of pitfalls to avoid when using `Tag`.

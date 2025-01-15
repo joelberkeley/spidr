@@ -13,11 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| This module defines functionality for Bayesian optimization, the data-efficient optimization of
-||| objective functions. Bayesian optimization recommends new points at which to query your
-||| objective by placing a probabilistic model over historic data then, typically, optimizing an
-||| _acquisition function_ which quantifies how useful it would be to evaluate the objective at any
-||| given set of points.
+||| Functionality for Bayesian optimization, the data-efficient optimization of objective functions.
+||| Bayesian optimization recommends new points at which to query your objective by placing a
+||| probabilistic model over historic data then, typically, optimizing an _acquisition function_
+||| which quantifies how useful it would be to evaluate the objective at any given set of points.
 module BayesianOptimization
 
 import Control.Monad.Reader
