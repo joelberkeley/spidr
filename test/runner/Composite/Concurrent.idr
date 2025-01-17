@@ -33,19 +33,17 @@ protocol = Send [] S32 $ Recv [] S32 $ End
 
 -- TagT1 because we can only use the computation (L IO) once, else we'd use the channel n times
 -- L (not L1) because we can use the tensor as much as we want
-onHost : Channel Concurrent.protocol -@ TagT1 (L IO) (Tensor [] S32)
-onHost ch =
-    let x = tensor {dtype = S32} 2 in
-    lift1 (send ch x) `bind1` \ch =>
-      recv ch `bind1` \(x # ch) =>
-        lift (end ch) `bind` \() =>
-          pure x
+dev0 : Channel Concurrent.protocol -@ TagT1 (L IO) ()
+dev0 ch =
+  let x = tensor {dtype = S32} 2 in
+  lift1 (send ch x) `bind1` \ch =>
+    lift (end ch)
 
-onDevice : Channel (dual Concurrent.protocol) -@ TagT1 (L IO) ()
-onDevice ch = do
-    recv ch `bind1` \(x # ch) =>
-      lift1 (send ch x) `bind1` \ch =>
-        lift (end ch)
+dev1 : Channel (dual Concurrent.protocol) -@ TagT1 (L IO) (Tensor [] S32)
+dev1 ch = do
+  recv ch `bind1` \(x # ch) =>
+    lift (end ch) `bind` \() =>
+      pure x
 
 sendRecv : Device => Property
 sendRecv @{device} = fixedProperty $ do

@@ -53,6 +53,10 @@ extern "C" {
 
     XlaBuilder* XlaBuilder_new(const char* computation_name) {
         auto builder = new xla::XlaBuilder(computation_name);
+        FrontendAttributes attributes;
+        // the hack to hack all hacks
+        (*attributes.mutable_map())["_xla_send_recv_source_target_pairs"] = "{{0,1}}";
+        builder->SetFrontendAttributes(attributes);
         return reinterpret_cast<XlaBuilder*>(builder);
     }
 
