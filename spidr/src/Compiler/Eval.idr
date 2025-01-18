@@ -248,8 +248,8 @@ hloModuleProtoToStableHLO hlo = do
 
 ||| It is up to the caller to free the `Literal`s.
 export covering
-execute : Device -> PjrtDevice -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
-execute (MkDevice api client) device f@(MkFn _ _ env) shapes = do
+execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ Vect outputs Literal
+execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
   code <- serializeAsString computation
@@ -264,7 +264,7 @@ execute (MkDevice api client) device f@(MkFn _ _ env) shapes = do
     free compileOptions
     delete executableBuildOptions
 
-    buffers <- pjrtLoadedExecutableExecute api loadedExec outputs device
+    buffers <- pjrtLoadedExecutableExecute api loadedExec outputs
     pjrtLoadedExecutableDestroy api loadedExec
 
     for (zip buffers shapes) $ \(buffer, shape) => do

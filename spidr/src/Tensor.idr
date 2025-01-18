@@ -253,7 +253,7 @@ namespace Tag
     let (env, MkTensor root) = runState empty x
      in try $ do
           shape <- mkShape shape {dtype}
-          [lit] <- execute device (MkPjrtDevice prim__getNullAnyPtr) (MkFn [] root env) [shape]
+          [lit] <- execute device (MkFn [] root env) [shape]
           read {dtype} [] lit
 
 ||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
@@ -262,20 +262,22 @@ eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape
 eval device x = eval device (pure x)
 
 export covering
-eval1 : Device -> PjrtDevice -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -@ L IO (Literal shape ty)
-eval1 device pjrtdevice (MkTagT1 x) = do
+eval1 : Device -> PrimitiveRW dtype ty => TagT1 (L IO) (Tensor shape dtype) -@ L IO (Literal shape ty)
+eval1 device (MkTagT1 x) = do
   (MkBang $ env # MkTensor root) <- bang $ x empty
   liftIO1 $ try $ do
     shape <- mkShape shape {dtype}
-    [lit] <- execute device pjrtdevice (MkFn [] root env) [shape]
+    [lit] <- execute device (MkFn [] root env) [shape]
     read {dtype} [] lit
 
+{-
 export covering
-eval1nil : Device -> PjrtDevice -> TagT1 (L IO) () -@ L IO ()
-eval1nil device pjrtdevice (MkTagT1 x) = do
+eval1nil : Device -> TagT1 (L IO) () -@ L IO ()
+eval1nil device (MkTagT1 x) = do
   (MkBang $ env # ()) <- bang $ x empty
   let MkEnv _ ((_, tok) :: _) = env | _ => ?empty_env
-  liftIO1 $ try $ ignore $ execute device pjrtdevice (MkFn [] tok env) []
+  liftIO1 $ try $ ignore $ execute device (MkFn [] tok env) []
+  -}
 
 namespace TensorList
   namespace Tag
@@ -309,7 +311,7 @@ namespace TensorList
        in try $ do
             xlaShapes <- buildShapes xs
             let (outputs ** eq) = lengthC xs
-            lits <- execute device (MkPjrtDevice prim__getNullAnyPtr) (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
+            lits <- execute device (MkFn [] root env) {outputs} (rewrite eq in xlaShapes)
             readAll xs $ rewrite sym eq in lits
 
       where

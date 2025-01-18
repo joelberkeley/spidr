@@ -553,21 +553,21 @@ pjrtBufferDestroy (MkPjrtApi api) (MkPjrtBuffer buffer) = do
 ||| It is up to the caller to free the `PjrtBuffer`s.
 export
 pjrtLoadedExecutableExecute :
-  PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> PjrtDevice -> Pjrt (Vect outputs PjrtBuffer)
-pjrtLoadedExecutableExecute
-  (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs (MkPjrtDevice device) = do
-    outputListsInner <- malloc (cast outputs * sizeofPtr)
-    outputLists <- malloc sizeofPtr
-    primIO $ prim__setArrayPtr outputLists 0 outputListsInner
-    options <- primIO prim__mkPjrtExecuteOptions
-    args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists device
-    err <- primIO $ prim__pjrtLoadedExecutableExecute api args
-    free args
-    free options
-    let buffers = map (\o => MkPjrtBuffer $ prim__index (cast o) outputListsInner) (range outputs)
-    free outputLists
-    free outputListsInner
-    try api err buffers
+  PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> Pjrt (Vect outputs PjrtBuffer)
+pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs = do
+  outputListsInner <- malloc (cast outputs * sizeofPtr)
+  outputLists <- malloc sizeofPtr
+  primIO $ prim__setArrayPtr outputLists 0 outputListsInner
+  options <- primIO prim__mkPjrtExecuteOptions
+  args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs
+    executable options outputLists prim__getNullAnyPtr
+  err <- primIO $ prim__pjrtLoadedExecutableExecute api args
+  free args
+  free options
+  let buffers = map (\o => MkPjrtBuffer $ prim__index (cast o) outputListsInner) (range outputs)
+  free outputLists
+  free outputListsInner
+  try api err buffers
 
 %foreign (libxla "PJRT_Buffer_ToHostBuffer_Args_new")
 prim__mkPjrtBufferToHostBufferArgs : AnyPtr -> AnyPtr -> Int -> PrimIO AnyPtr

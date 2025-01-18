@@ -17,6 +17,6 @@ COPY pjrt_plugin_xla_cuda.so /xla-cuda/pjrt_plugin_xla_cuda.so
 ENV LD_LIBRARY_PATH=/xla-cuda
 
 # singularity starts a container at $HOME regardless of any WORKDIR directives,
-# so I need to `--pwd /xla-cuda` for this to work
+# so I need `singularity run --pwd /xla-cuda` for this to work
 
 CMD ["./test"]
