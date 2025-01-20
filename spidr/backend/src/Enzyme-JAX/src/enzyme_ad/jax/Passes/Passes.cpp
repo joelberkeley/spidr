@@ -115,7 +115,7 @@ extern "C" {
         auto ctx = module_op_.getContext();
         mlir::DialectRegistry registry_;
 
-        ctx.loadDialect<mlir::enzyme::EnzymeDialect>();
+        ctx.loadDialect<mlir::enzyme::EnzymeDialect>();  // as suggested in MLIR tutorial
         registry_.insert<mlir::enzyme::EnzymeDialect>();
         registry_.insert<mlir::stablehlo::check::CheckDialect>();
         prepareRegistry(registry_);
