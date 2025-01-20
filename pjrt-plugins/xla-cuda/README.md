@@ -4,34 +4,29 @@ This is the PJRT plugin for CUDA-enabled GPUs. It uses the XLA compiler.
 
 ## Install
 
-This plugin requires Linux, a CUDA-enabled GPU, and a number of Nvidia packages.
+The plugin requires Ubuntu Linux 24.04 (or NVIDIA Docker), a CUDA-enabled GPU, and a number of NVIDIA packages.
 
-First, install Nvidia GPU drivers. The remaining packages can be installed in two different ways: with Docker, which is reliable but cumbersome; or without Docker, where installing Nvidia packages can prove tricky indeed. We recommend using Docker.
-
-### Install with Docker
-
-To install with Nvidia Docker, first install [Docker](https://www.docker.com/), then the [Nvidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Next, run the Nvidia TensorRT Docker container with e.g.
-```
-docker run -it                          \
-    --gpus all                          \
-    --name spidr                        \
-    -v $(pwd):/spidr                    \
-    -w /spidr                           \
-    nvcr.io/nvidia/tensorrt:23.11-py3   \
-    bash
-```
-The image version `23.11` is important. Next, in the Docker container, install `pack` and prerequisites (the container uses Ubuntu). Finally, install the plugin with
-```
-pack install pjrt-plugin-xla-cuda
-```
+First, install NVIDIA GPU drivers. The remaining packages can be installed either on your host machine, or in Docker.
 
 ### Install without Docker
 
-To install without Docker, first install CUDA toolkit 12.3. Then install the cuDNN and TensorRT packages. We have successfully installed these last two, on Ubuntu 22.04, with
-```
-apt-get install libcudnn8 libnvinfer8 libnvinfer-plugin8
-```
-Finally, install the plugin with
+To install without Docker, refer to the commands in the [Dockerfile](./Dockerfile). Next, install the plugin with
 ```
 pack install pjrt-plugin-xla-cuda
 ```
+
+### Install with Docker
+
+To install with NVIDIA Docker, first install [Docker](https://www.docker.com/), then the [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit). Next, clone this repository, and build the runtime Docker container with
+```
+docker build -t spidr -f pjrt-plugins/xla-cuda/Dockerfile .
+```
+Next, run the container with
+```
+docker run -it --gpus all --name spidr -v <absolute_path>:/spidr -w /spidr spidr bash
+```
+where `<absolute_path>` is a directory containing any executables and/or source code, present on the host, that you wish to access from the container. Next, install pack and prerequisites in the container (the container uses Ubuntu Linux 24.04). Finally, install the plugin with
+```
+pack install pjrt-plugin-xla-cuda
+```
+Note: If you are also running Ubuntu 24.04 on your host machine, you can instead install `pjrt-plugin-xla-cuda`, and build your code, on the host, then mount and run the executable in the container.
