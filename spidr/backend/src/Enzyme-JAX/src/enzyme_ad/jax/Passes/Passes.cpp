@@ -86,19 +86,20 @@ struct PtrElementModel
           PtrElementModel<T>, T> {};
 
 extern "C" {
-//    void regsiterenzymeXLAPasses_() {
-//        regsiterenzymeXLAPasses();
-//    }
-//
-//    void registerenzymePasses() {
-//        mlir::registerenzymePasses();
-//    }
-//
-////    Pass* createDifferentiatePass() {
-////        return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
-////    }
+    void regsiterenzymeXLAPasses_() {
+        regsiterenzymeXLAPasses();
+    }
+
+    void registerenzymePasses() {
+        mlir::registerenzymePasses();
+    }
+
+    Pass* createDifferentiatePass() {
+        return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
+    }
 
      ModuleOp* emitEnzymeADOp(ModuleOp& module_op) {
+        printf("emitEnzymeADOp\n");
 //    xla::XlaBuilder builder("root");
 //    auto xlaScalarf64 = xla::ShapeUtil::MakeScalarShape((xla::PrimitiveType) 12);
 //    auto arg = xla::Parameter(&builder, 0, xlaScalarf64, "arg");
@@ -115,7 +116,7 @@ extern "C" {
         auto ctx = module_op_.getContext();
         mlir::DialectRegistry registry_;
 
-        ctx.loadDialect<mlir::enzyme::EnzymeDialect>();  // as suggested in MLIR tutorial
+        ctx->loadDialect<mlir::enzyme::EnzymeDialect>();  // as suggested in MLIR tutorial
         registry_.insert<mlir::enzyme::EnzymeDialect>();
         registry_.insert<mlir::stablehlo::check::CheckDialect>();
         prepareRegistry(registry_);
@@ -161,6 +162,19 @@ extern "C" {
         auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
         state.addTypes({scalarf64});
 
+        printf("module_op_.getOperation()\n");
+        module_op_.getOperation()->dump();
+
+        printf("module_op_.getOperation()->getName()\n");
+        module_op_.getOperation()->getName().dump();
+        printf("\n");
+
+        printf("module_op_.getOperation()->getNumOperands()\n");
+        printf("%d\n", module_op_.getOperation()->getNumOperands());
+
+        printf("module_op_.getOperation()->getAttr('mhlo.cross_program_prefetches')\n");
+        module_op_.getOperation()->getAttr("mhlo.cross_program_prefetches");
+
         auto operands = module_op_.getOperation()->getOperands();  // complete guess
         state.addOperands(mlir::ValueRange(operands));
 
@@ -175,7 +189,12 @@ extern "C" {
 
         auto res = mlir::Operation::create(state);
 
-//    return 0;
+        printf("enzyme op\n");
+        res->dump();
+
+        mlir::PassManager pm(ctx);
+        pm.addPass(mlir::enzyme::createDifferentiatePass());
+        pm.run(res);
 
         return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(res));
     }

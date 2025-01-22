@@ -136,9 +136,10 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (Grad f x) = do
+    putStrLn "interpretE (Grad _ _)"
     computation <- compile xlaBuilder f
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
-    ctx <- getContext stablehlo
+    -- ctx <- getContext stablehlo
     -- reg <- mkDialectRegistry
     -- appendDialectRegistry ctx reg
     -- insertEnzymeDialect reg
@@ -150,11 +151,11 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     -- surely the ModuleOp already has stablehlo registered, since it's stablehlo code
     -- StableHLO.Dialect.Register.registerAllDialects reg
     -- registerStableHLODialectAutoDiffInterface reg
-    mgr <- mkPassManager ctx
-    addPass mgr !createDifferentiatePass
-    True <- run mgr enzymeOp
-      | False => throwE $ MlirPassError "Failed to run differentiate pass on StableHLO"
-    hloProto <- convertStablehloToHlo stablehlo
+    --mgr <- mkPassManager ctx
+    --addPass mgr !createDifferentiatePass
+    -- True <- run mgr enzymeOp
+    --  | False => throwE $ MlirPassError "Failed to run differentiate pass on StableHLO"
+    hloProto <- convertStablehloToHlo enzymeOp
     computation <- mkXlaComputation hloProto
     -- x should be correct shape, because we're sending R^{n0, n1, ..} -> R
     -- to R^{n0, n1, ..} -> R^{n0, n1, ..} i.e. we're only changing the output shape
