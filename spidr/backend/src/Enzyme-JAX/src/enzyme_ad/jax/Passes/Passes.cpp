@@ -77,13 +77,13 @@ limitations under the License.
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/tests/CheckOps.h"
 
-class MemRefInsider
-    : public mlir::MemRefElementTypeInterface::FallbackModel<MemRefInsider> {};
-
-template <typename T>
-struct PtrElementModel
-    : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<
-          PtrElementModel<T>, T> {};
+//class MemRefInsider
+//    : public mlir::MemRefElementTypeInterface::FallbackModel<MemRefInsider> {};
+//
+//template <typename T>
+//struct PtrElementModel
+//    : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<
+//          PtrElementModel<T>, T> {};
 
 extern "C" {
     void regsiterenzymeXLAPasses_() {
@@ -140,46 +140,74 @@ extern "C" {
         mlir::affine::registerAffinePasses();
         mlir::registerReconcileUnrealizedCasts();
 
-        registry_.addExtension(+[](mlir::MLIRContext *ctx, mlir::LLVM::LLVMDialect *dialect) {
-            mlir::LLVM::LLVMFunctionType::attachInterface<MemRefInsider>(*ctx);
-            mlir::LLVM::LLVMArrayType::attachInterface<MemRefInsider>(*ctx);
-            mlir::LLVM::LLVMPointerType::attachInterface<MemRefInsider>(*ctx);
-            mlir::LLVM::LLVMStructType::attachInterface<MemRefInsider>(*ctx);
-            mlir::MemRefType::attachInterface<PtrElementModel<mlir::MemRefType>>(*ctx);
-            mlir::LLVM::LLVMStructType::attachInterface<
-                PtrElementModel<mlir::LLVM::LLVMStructType>>(*ctx);
-            mlir::LLVM::LLVMPointerType::attachInterface<
-                PtrElementModel<mlir::LLVM::LLVMPointerType>>(*ctx);
-            mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
-        });
+//        registry_.addExtension(+[](mlir::MLIRContext *ctx, mlir::LLVM::LLVMDialect *dialect) {
+//            mlir::LLVM::LLVMFunctionType::attachInterface<MemRefInsider>(*ctx);
+//            mlir::LLVM::LLVMArrayType::attachInterface<MemRefInsider>(*ctx);
+//            mlir::LLVM::LLVMPointerType::attachInterface<MemRefInsider>(*ctx);
+//            mlir::LLVM::LLVMStructType::attachInterface<MemRefInsider>(*ctx);
+//            mlir::MemRefType::attachInterface<PtrElementModel<mlir::MemRefType>>(*ctx);
+//            mlir::LLVM::LLVMStructType::attachInterface<
+//                PtrElementModel<mlir::LLVM::LLVMStructType>>(*ctx);
+//            mlir::LLVM::LLVMPointerType::attachInterface<
+//                PtrElementModel<mlir::LLVM::LLVMPointerType>>(*ctx);
+//            mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
+//        });
 
         mlir::transform::registerInterpreterPass();
         mlir::enzyme::registerGenerateApplyPatternsPass();
         mlir::enzyme::registerRemoveTransformPass();
 
-        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
+        printf("module_op_.getOperation()\n");
+        module_op_.getOperation()->dump();
 
-        auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
-        state.addTypes({scalarf64});
+        auto& region = module_op_.getOperation()->getRegion(0);
+
+        printf("region.getNumArguments()\n");
+        printf("%d\n", region.getNumArguments());
+
+        auto& block = region.front();
+
+        printf("block.getNumArguments()\n");
+        printf("%d\n", block.getNumArguments());
+
+        auto& operation = block.front();
+
+        mlir::SymbolTable::setSymbolName(&operation, "tmp");
+        mlir::SymbolTable::setSymbolVisibility(&operation, mlir::SymbolTable::Visibility::Private);
 
         printf("module_op_.getOperation()\n");
         module_op_.getOperation()->dump();
 
-        printf("module_op_.getOperation()->getName()\n");
-        module_op_.getOperation()->getName().dump();
-        printf("\n");
+        printf("operation.getNumOperands()\n");
+        printf("%d\n", operation.getNumOperands());
 
-        printf("module_op_.getOperation()->getNumOperands()\n");
-        printf("%d\n", module_op_.getOperation()->getNumOperands());
+        printf("operation\n");
+        operation.dump();
 
-        printf("module_op_.getOperation()->getAttr('mhlo.cross_program_prefetches')\n");
-        module_op_.getOperation()->getAttr("mhlo.cross_program_prefetches");
+        printf("operation.getNumRegions()\n");
+        printf("%d\n", operation.getNumRegions());
 
-        auto operands = module_op_.getOperation()->getOperands();  // complete guess
+        printf("operation.getRegion(0).getNumArguments()\n");
+        printf("%d\n", operation.getRegion(0).getNumArguments());
+
+        auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+        auto func_type = mlir::FunctionType::get({scalarf64}, {scalarf64}, ctx);
+        auto func_op = mlir::func::FuncOp::create(mlir::UnknownLoc::get(ctx), "main", func_type);
+
+        // in FuncOp, emit an "enzyme.autodiff" op (i.e. function call) like in
+        // https://github.com/EnzymeAD/Enzyme-JAX/blob/fb483c06f697990c60cc3c0bda7fb1d730fca3de/test/lit_tests/grad_sum1d.mlir#L11
+        // (you can reuse a lot of the stuff below for that), followed by a func::ReturnOp
+        //
+        // I think the differentiate pass should just work then, and we've got a mwe!(?)
+
+        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
+
+//        state.addTypes({scalarf64});
+
+        auto operands = operation.getOperands();  // complete guess
         state.addOperands(mlir::ValueRange(operands));
 
-        auto operation = module_op_.getOperation();  // complete guess
-        state.addAttribute("fn", operation->getAttr("sym_name"));
+        state.addAttribute("fn", operation.getAttr("sym_name"));
         auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
         state.addAttribute("activity", {activity});
         auto ret_activity = mlir::enzyme::ActivityAttr::get(
