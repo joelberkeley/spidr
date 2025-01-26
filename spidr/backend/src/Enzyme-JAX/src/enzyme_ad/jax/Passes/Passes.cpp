@@ -34,9 +34,11 @@ limitations under the License.
 #include "src/enzyme_ad/jax/TransformOps/TransformOps.h"
 #include "src/enzyme_ad/jax/RegistryUtils.h"
 
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/OperationSupport.h"
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMPass.h"
 #include "mlir/Conversion/NVVMToLLVM/NVVMToLLVM.h"
 #include "mlir/Conversion/Passes.h"
@@ -161,69 +163,69 @@ extern "C" {
         module_op_.getOperation()->dump();
 
         auto& region = module_op_.getOperation()->getRegion(0);
-
-        printf("region.getNumArguments()\n");
-        printf("%d\n", region.getNumArguments());
-
         auto& block = region.front();
-
-        printf("block.getNumArguments()\n");
-        printf("%d\n", block.getNumArguments());
-
         auto& operation = block.front();
 
         mlir::SymbolTable::setSymbolName(&operation, "tmp");
-        mlir::SymbolTable::setSymbolVisibility(&operation, mlir::SymbolTable::Visibility::Private);
+//        mlir::SymbolTable::setSymbolVisibility(&operation, mlir::SymbolTable::Visibility::Private);
+
+        auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+        auto func_type = mlir::FunctionType::get(ctx, {scalarf64}, {scalarf64});
+        auto func_op = mlir::func::FuncOp::create(mlir::UnknownLoc::get(ctx), "main", func_type);
+
+        block.push_back(func_op);
+
+        auto entry_block = func_op.addEntryBlock();
+
+        auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
+        auto ret_activity = mlir::enzyme::ActivityAttr::get(
+            ctx, mlir::enzyme::Activity::enzyme_activenoneed
+        );
+
+        mlir::NamedAttrList attrs;
+        attrs.set("fn", operation.getAttr("sym_name"));
+        attrs.set("activity", activity);
+        attrs.set("ret_activity", ret_activity);
+
+        auto autodiff = mlir::Operation::create(
+            mlir::UnknownLoc::get(ctx),
+            mlir::OperationName("enzyme.autodiff", ctx),
+            mlir::TypeRange({scalarf64}),
+            mlir::ValueRange(entry_block->getArgument(0)),
+            std::move(attrs),
+//            mlir::NamedAttributeList({
+//                mlir::NamedAttribute(mlir::StringAttr::get("fn", ctx), operation.getAttr("sym_name")),
+//                mlir::NamedAttribute(mlir::StringAttr::get("activity", ctx), activity),
+//                mlir::NamedAttribute(mlir::StringAttr::get("ret_activity", ctx), ret_activity),
+//            }),
+            mlir::OpaqueProperties(nullptr)
+        );
+
+//        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
+//        state.addOperands(mlir::ValueRange(entry_block->getArgument(0)));
+//        state.addTypes({scalarf64});
+//        state.addAttribute("fn", operation.getAttr("sym_name"));
+//        state.addAttribute("activity", {activity});
+//        state.addAttribute("ret_activity", {ret_activity});
+//        auto autodiff = mlir::Operation::create(state);
+        entry_block->push_back(autodiff);
+
+        auto return_op = mlir::OpBuilder(ctx).create<mlir::func::ReturnOp>(
+            mlir::UnknownLoc::get(ctx),
+            mlir::ValueRange(autodiff->getOpResult(0))
+        );
+        entry_block->push_back(return_op);
 
         printf("module_op_.getOperation()\n");
         module_op_.getOperation()->dump();
 
-        printf("operation.getNumOperands()\n");
-        printf("%d\n", operation.getNumOperands());
-
-        printf("operation\n");
-        operation.dump();
-
-        printf("operation.getNumRegions()\n");
-        printf("%d\n", operation.getNumRegions());
-
-        printf("operation.getRegion(0).getNumArguments()\n");
-        printf("%d\n", operation.getRegion(0).getNumArguments());
-
-        auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
-        auto func_type = mlir::FunctionType::get({scalarf64}, {scalarf64}, ctx);
-        auto func_op = mlir::func::FuncOp::create(mlir::UnknownLoc::get(ctx), "main", func_type);
-
-        // in FuncOp, emit an "enzyme.autodiff" op (i.e. function call) like in
-        // https://github.com/EnzymeAD/Enzyme-JAX/blob/fb483c06f697990c60cc3c0bda7fb1d730fca3de/test/lit_tests/grad_sum1d.mlir#L11
-        // (you can reuse a lot of the stuff below for that), followed by a func::ReturnOp
-        //
-        // I think the differentiate pass should just work then, and we've got a mwe!(?)
-
-        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
-
-//        state.addTypes({scalarf64});
-
-        auto operands = operation.getOperands();  // complete guess
-        state.addOperands(mlir::ValueRange(operands));
-
-        state.addAttribute("fn", operation.getAttr("sym_name"));
-        auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
-        state.addAttribute("activity", {activity});
-        auto ret_activity = mlir::enzyme::ActivityAttr::get(
-            ctx, mlir::enzyme::Activity::enzyme_activenoneed
-        );
-        state.addAttribute("ret_activity", {ret_activity});
-
-        auto res = mlir::Operation::create(state);
-
-        printf("enzyme op\n");
-        res->dump();
-
         mlir::PassManager pm(ctx);
+        printf("0\n");
         pm.addPass(mlir::enzyme::createDifferentiatePass());
-        pm.run(res);
+        printf("1\n");
+        pm.run(func_op);
+        printf("2\n");
 
-        return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(res));
+        return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(func_op));
     }
 }
