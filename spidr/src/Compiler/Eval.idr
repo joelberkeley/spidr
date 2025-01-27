@@ -136,7 +136,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (Grad f x) = do
-    putStrLn "interpretE (Grad _ _)"
     computation <- compile xlaBuilder f
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
     -- ctx <- getContext stablehlo

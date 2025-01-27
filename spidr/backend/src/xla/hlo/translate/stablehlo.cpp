@@ -26,7 +26,6 @@ extern "C" {
         auto& ctx_ = reinterpret_cast<mlir::MLIRContext&>(ctx);
         auto hlo_module_ = reinterpret_cast<xla::HloModuleProto*>(hlo_module);
         auto module_op = xla::ConvertHloToStablehlo(ctx_, hlo_module_);
-        module_op.value()->dump();
         return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(module_op.value().release()));
     }
 
@@ -34,7 +33,6 @@ extern "C" {
         auto& module_ = reinterpret_cast<mlir::ModuleOp&>(module);
         auto hlo = xla::ConvertStablehloToHlo(module_).value().release();
         // mode ToProto to separate function?
-        auto res = hlo->ToProto();
-        return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(res));
+        return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(hlo->ToProto()));
     }
 }
