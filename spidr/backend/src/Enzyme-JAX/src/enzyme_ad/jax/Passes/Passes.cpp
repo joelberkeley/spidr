@@ -84,26 +84,46 @@ extern "C" {
 
         auto entry_block = func_op.addEntryBlock();
 
+        auto diff = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
+            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalarf64, 1.0)
+        );
+        entry_block->push_back(diff);
+
         auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
         auto ret_activity = mlir::enzyme::ActivityAttr::get(
             ctx, mlir::enzyme::Activity::enzyme_activenoneed
         );
 
-        mlir::NamedAttrList attrs;
-        attrs.set("fn", operation.getAttr("sym_name"));
-        attrs.set("activity", mlir::ArrayAttr::get(ctx, {activity}));
-        attrs.set("ret_activity", mlir::ArrayAttr::get(ctx, {ret_activity}));
+//        mlir::NamedAttrList attrs;
+//        attrs.set("fn", operation.getAttr("sym_name"));
+//        attrs.set("activity", mlir::ArrayAttr::get(ctx, {activity}));
+//        attrs.set("ret_activity", mlir::ArrayAttr::get(ctx, {ret_activity}));
 
-        auto autodiff = mlir::Operation::create(
+        // we can probably improve this by following the stablehlo example
+        // https://github.com/openxla/stablehlo/blob/main/examples/c%2B%2B/ExampleAdd.cpp
+
+        auto autodiff = mlir::OpBuilder(ctx).create<mlir::enzyme::AutoDiffOp>(
             mlir::UnknownLoc::get(ctx),
-            mlir::OperationName("enzyme.autodiff", ctx),
             mlir::TypeRange({scalarf64}),
-            mlir::ValueRange(entry_block->getArgument(0)),
-            {},
-            mlir::OpaqueProperties(nullptr)
+            "tmp",
+            mlir::ValueRange({entry_block->getArgument(0), diff->getOpResult(0)}),
+            mlir::ArrayAttr::get(ctx, {activity}),
+            mlir::ArrayAttr::get(ctx, {ret_activity})
+//            mlir::OperationName("enzyme.autodiff", ctx),
+//            {},
+//            mlir::OpaqueProperties(nullptr)
         );
-        autodiff->removeAttr("width");
-        autodiff->setDiscardableAttrs(attrs.getDictionary(ctx));
+
+//        auto autodiff = mlir::Operation::create(
+//            mlir::UnknownLoc::get(ctx),
+//            mlir::OperationName("enzyme.autodiff", ctx),
+//            mlir::TypeRange({scalarf64}),
+//            mlir::ValueRange(entry_block->getArgument(0)),
+//            {},
+//            mlir::OpaqueProperties(nullptr)
+//        );
+//        autodiff->removeAttr("width");
+//        autodiff->setDiscardableAttrs(attrs.getDictionary(ctx));
 
 //        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
 //        state.addOperands(mlir::ValueRange(entry_block->getArgument(0)));
@@ -127,6 +147,9 @@ extern "C" {
         printf("0\n");
         pm.addPass(mlir::enzyme::createDifferentiatePass());
         printf("1\n");
+
+        // this comment https://github.com/triton-lang/triton/issues/1372#issuecomment-1476815422
+        // suggests that the invalid IR (which we probably have) can cause a segfault, so fix that first
         pm.run(module_op_);
         printf("2\n");
 
