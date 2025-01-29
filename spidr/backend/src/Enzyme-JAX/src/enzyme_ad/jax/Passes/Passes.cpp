@@ -65,7 +65,7 @@ limitations under the License.
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
-
+#include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 
 class MemRefInsider
     : public mlir::MemRefElementTypeInterface::FallbackModel<MemRefInsider> {};
@@ -96,7 +96,7 @@ extern "C" {
   ctx->loadDialect<mlir::arith::ArithDialect>();
   ctx->loadDialect<mlir::tensor::TensorDialect>();
   ctx->loadDialect<mlir::func::FuncDialect>();
-//  ctx->loadDialect<mlir::mhlo::MhloDialect>();
+  ctx->loadDialect<mlir::mhlo::MhloDialect>();
   ctx->loadDialect<mlir::chlo::ChloDialect>();
 
         ctx->loadDialect<mlir::stablehlo::StablehloDialect>();
