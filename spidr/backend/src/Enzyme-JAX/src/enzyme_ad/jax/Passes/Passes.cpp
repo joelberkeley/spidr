@@ -67,6 +67,8 @@ limitations under the License.
 
 #include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 
+//#include "mlir/Dialect/Transform/IR/TransformDialect.h"
+
 class MemRefInsider
     : public mlir::MemRefElementTypeInterface::FallbackModel<MemRefInsider> {};
 
@@ -104,7 +106,7 @@ extern "C" {
         ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
         registry.insert<mlir::enzyme::EnzymeDialect>();
 
-
+prepareRegistry(registry);
 
   registry.insert<mlir::affine::AffineDialect>();
   registry.insert<mlir::LLVM::LLVMDialect>();
@@ -193,9 +195,6 @@ extern "C" {
             mlir::ValueRange({entry_block->getArgument(0), diff->getOpResult(0)}),
             mlir::ArrayAttr::get(ctx, {activity}),
             mlir::ArrayAttr::get(ctx, {ret_activity})
-//            mlir::OperationName("enzyme.autodiff", ctx),
-//            {},
-//            mlir::OpaqueProperties(nullptr)
         );
 
 //        auto autodiff = mlir::Operation::create(
@@ -224,17 +223,48 @@ extern "C" {
         );
         entry_block->push_back(return_op);
 
-//        printf("module_op_.getOperation()\n");
         module_op_.getOperation()->dump();
 
-        mlir::PassManager pm(ctx);
-        pm.addPass(mlir::enzyme::createDifferentiatePass());
-        printf("1\n");
+  // Transform dialect and extensions.
+  mlir::transform::registerInterpreterPass();
+//  mlir::linalg::registerTransformDialectExtension(registry);
+  mlir::enzyme::registerGenerateApplyPatternsPass();
+  mlir::enzyme::registerRemoveTransformPass();
+  mlir::enzyme::registerEnzymeJaxTransformExtension(registry);
 
-        // this comment https://github.com/triton-lang/triton/issues/1372#issuecomment-1476815422
-        // suggests that the invalid IR (which we probably have) can cause a segfault, so fix that first
+        mlir::PassManager pm(ctx);
+
+//        pm.addPass(mlir::enzyme::createEnzymeHLOOptPass());
+//        pm.addPass(mlir::enzyme::createDifferentiateWrapperPass());
+        pm.addPass(mlir::enzyme::createDifferentiatePass());
+//        pm.run(module_op_);
+
+        module_op_.getOperation()->dump();
+// enzyme-wrap{infn=main outfn= outTys=enzyme_const inTys=[enzyme_dup, enzyme_const] mode=ReverseModeCombined}
+
+//        pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
+//        pm.addPass(mlir::enzyme::createEnzymeToMemRefPass());
+
+//        pm.run(module_op_);
+//  auto pass = "enzyme-wrap{infn=main outfn= retTys=enzyme_activenoneed argTys=enzyme_active}, canonicalize, remove-unnecessary-enzyme-ops";
+  auto pass = "canonicalize, remove-unnecessary-enzyme-ops";
+  std::string error_message;
+  llvm::raw_string_ostream error_stream(error_message);
+  mlir::LogicalResult result = mlir::parsePassPipeline(pass, pm, error_stream);
+  if (result.succeeded()) { printf("parsed pipeline\n"); } else { printf("parse failed!!!\n"); }
+  operation.dump();
+//        pm.run(module_op_);
+        pm.addPass(mlir::enzyme::createArithRaisingPass());
         pm.run(module_op_);
-        printf("2\n");
+//
+//        // see for after ad https://github.com/EnzymeAD/Enzyme-JAX/blob/d89468ed883ca18c04346eec10f784bbe2b754fc/src/enzyme_ad/jax/primitives.py#L1188
+//        pm.addPass(mlir::enzyme::createArithRaisingPass());
+
+//        pm.addPass(mlir::enzyme::createEnzymeToMemRefPass());
+//        pm.addPass(mlir::enzyme::createEnzymeHLOUnrollPass());
+
+
+        module_op_.getOperation()->dump();
 
         return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(module_op_));
     }
