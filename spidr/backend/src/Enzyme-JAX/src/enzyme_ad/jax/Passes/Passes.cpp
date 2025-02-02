@@ -39,7 +39,98 @@ limitations under the License.
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Transforms/Passes.h"
 
+extern "C" {
+    Pass* createDifferentiatePass() {
+        return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
+    }
 
+    int emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
+        auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
+
+        auto ctx = module_op_.getContext();
+        ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
+
+        mlir::DialectRegistry registry;
+        registry.insert<mlir::enzyme::EnzymeDialect>();
+        mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
+        mlir::enzyme::registerStableHLODialectAutoDiffInterface(registry);
+        mlir::enzyme::registerCHLODialectAutoDiffInterface(registry);
+        ctx->appendDialectRegistry(registry);
+
+        mlir::registerenzymePasses();
+        mlir::PassManager pm(ctx);
+
+        std::string error_message;
+        llvm::raw_string_ostream error_stream(error_message);
+        auto pipeline = "enzyme-wrap{"
+            "infn=main"
+            " outfn=fdiff"
+            " argTys=enzyme_active"
+            " retTys=enzyme_active"
+            " mode=ReverseModeCombined"
+        "}";
+        auto parse_result = mlir::parsePassPipeline(pipeline, pm, error_stream);
+
+        if ( parse_result.failed() ) {
+            printf("pipeline parse failed\n");
+            return (int) false;
+        }
+
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
+        pm.addPass(mlir::enzyme::createArithRaisingPass());
+
+        auto pass_result = pm.run(module_op_);
+
+        if ( pass_result.failed() ) {
+            printf("passes failed\n");
+            return (int) false;
+        }
+
+        auto& root_block = module_op_.getOperation()->getRegion(0).front();
+
+        auto& main_function = root_block.front();
+        main_function.erase();
+
+        mlir::OpBuilder builder(ctx);
+
+        auto tensor_shape = mlir::RankedTensorType::get(
+            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
+        );
+        auto func_op = builder.create<mlir::func::FuncOp>(
+            mlir::UnknownLoc::get(ctx),
+            "main",
+            mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape})
+        );
+        root_block.push_back(func_op);
+
+        auto entry_block = func_op.addEntryBlock();
+
+        // scalar because this initializes the reverse pass, which starts at a scalar
+        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+        auto rev_init = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
+            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
+        );
+        entry_block->push_back(rev_init);
+
+        auto fdiff_callop = builder.create<mlir::func::CallOp>(
+            mlir::UnknownLoc::get(ctx),
+            "fdiff",
+            mlir::TypeRange({tensor_shape}),
+            mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
+        );
+        entry_block->push_back(fdiff_callop);
+
+        auto return_op = builder.create<mlir::func::ReturnOp>(
+            mlir::UnknownLoc::get(ctx),
+            fdiff_callop->getOpResults()
+        );
+        entry_block->push_back(return_op);
+
+        return (int) true;
+    }
+}
 
 //#include "mlir/Dialect/Affine/IR/AffineOps.h"
 //#include "mlir/Dialect/Arith/IR/Arith.h"
@@ -69,35 +160,16 @@ limitations under the License.
 //struct PtrElementModel
 //    : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<PtrElementModel<T>, T> {};
 
-extern "C" {
-    Pass* createDifferentiatePass() {
-        return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
-    }
-
-    int emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
-        auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
-
-        auto ctx = module_op_.getContext();
-
 //        ctx->loadDialect<mlir::func::FuncDialect>();
 //        ctx->loadDialect<mlir::arith::ArithDialect>();
 //        ctx->loadDialect<mlir::stablehlo::StablehloDialect>();
 //        ctx->loadDialect<mlir::chlo::ChloDialect>();
-        ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
 //        ctx->loadDialect<mlir::mhlo::MhloDialect>();
-
-        mlir::DialectRegistry registry;
 
 //        registry.insert<mlir::func::FuncDialect>();
 //        registry.insert<mlir::arith::ArithDialect>();
 //        registry.insert<mlir::stablehlo::StablehloDialect>();
 //        registry.insert<mlir::chlo::ChloDialect>();
-        registry.insert<mlir::enzyme::EnzymeDialect>();
-        mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
-        mlir::enzyme::registerStableHLODialectAutoDiffInterface(registry);
-        mlir::enzyme::registerCHLODialectAutoDiffInterface(registry);
-
-        ctx->appendDialectRegistry(registry);
 
 //  registry.insert<mlir::affine::AffineDialect>();
 //  registry.insert<mlir::LLVM::LLVMDialect>();
@@ -133,11 +205,6 @@ extern "C" {
 //    mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
 //  });
 
-        // can we replace most of this with `DifferentiateWrapperPass`?
-
-        auto& root_region = module_op_.getOperation()->getRegion(0);
-        auto& root_block = root_region.front();
-        auto& main_function = root_block.front();
 
 //        mlir::SymbolTable::setSymbolName(&operation, "tmp");
 //
@@ -184,108 +251,3 @@ extern "C" {
 //            mlir::ValueRange(autodiff->getOpResult(0))
 //        );
 //        entry_block->push_back(return_op);
-
-
-        printf("-2\n");
-
-        mlir::registerenzymePasses();
-//        mlir::registerCanonicalizerPass();
-//        mlir::registerCSEPass();
-
-//  auto pass = "canonicalize, remove-unnecessary-enzyme-ops, arith-raise";
-
-        mlir::PassManager pm(ctx);
-
-        std::string error_message;
-        llvm::raw_string_ostream error_stream(error_message);
-        // we'll try to do value_and_grad later
-        auto pipeline = "enzyme-wrap{"
-            "infn=main"
-            " outfn=fdiff"
-            " argTys=enzyme_active"
-            " retTys=enzyme_active"
-            " mode=ReverseModeGradient"
-        "}";
-        auto parse_result = mlir::parsePassPipeline(pipeline, pm, error_stream);
-
-        printf("-1\n");
-
-        if ( parse_result.failed() ) {
-            printf("pipeline parse failed\n");
-            return (int) false;
-        }
-
-//        DifferentiateWrapperPassOptions options(
-//            infn="main",
-//            retTys=mlir::enzyme::DerivativeMode::ReverseModeCombined,
-//            argTys=enzyme_active,
-//            retTys=enzyme_activenoneed,
-//        );
-//        pm.addPass(mlir::enzyme::createDifferentiateWrapperPass(options));
-
-//        pm_.addPass(mlir::enzyme::createDifferentiatePass());
-        pm.addPass(mlir::createCanonicalizerPass());
-        pm.addPass(mlir::createCSEPass());
-        pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
-        pm.addPass(mlir::enzyme::createArithRaisingPass());
-
-        printf("0\n");
-        auto result = pm.run(module_op_);
-        printf("01\n");
-        module_op_.getOperation()->dump();
-        printf("02\n");
-
-        main_function.erase();
-
-        printf("1\n");
-        module_op_.getOperation()->dump();
-
-
-        mlir::OpBuilder builder(ctx);
-
-        auto tensor_shape = mlir::RankedTensorType::get(
-            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
-        );
-        auto func_op = builder.create<mlir::func::FuncOp>(
-            mlir::UnknownLoc::get(ctx),
-            "main",
-            mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape})
-        );
-
-        root_block.push_back(func_op);
-
-        printf("2\n");
-        module_op_.getOperation()->dump();
-
-        auto entry_block = func_op.addEntryBlock();
-
-        // scalar because this initializes the reverse pass, which starts at a scalar
-        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
-        auto rev_init = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
-            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
-        );
-        entry_block->push_back(rev_init);
-
-        printf("3\n");
-
-        auto fdiff_callop = builder.create<mlir::func::CallOp>(
-            mlir::UnknownLoc::get(ctx),
-            "fdiff",
-            mlir::TypeRange({tensor_shape}),
-            mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
-        );
-        entry_block->push_back(fdiff_callop);
-
-        printf("4\n");
-
-        auto return_op = builder.create<mlir::func::ReturnOp>(
-            mlir::UnknownLoc::get(ctx),
-            mlir::ValueRange(fdiff_callop->getOpResult(0))
-        );
-        entry_block->push_back(return_op);
-
-        module_op_.getOperation()->dump();
-
-        return (int) result.succeeded();
-    }
-}
