@@ -26,8 +26,17 @@ import Utils.Cases
 
 square : Device => Property
 square = fixedProperty $ do
-  -- square (tensor 3.0) ===# tensor 9.0
-  grad (pure . square) (tensor 3.0) ===# pure (tensor 6.0)
+  let f : Tensor [] F64 -> Tag $ Tensor [] F64
+      f x = do
+        x <- tag $ x + x
+        pure (x * x)
+
+  grad f (tensor 3.0) ===# pure (tensor 24.0)
+
+--  let f : Tensor [] F64 -> Tag $ Tensor [] F64
+--      f x = reduce @{Sum} [0] $ broadcast {to = [3]} x
+--
+--  grad f (tensor 7.0) ===# pure (tensor 3.0)
 
 export
 all : Device => List (PropertyName, Property)

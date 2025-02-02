@@ -48,33 +48,33 @@ limitations under the License.
 
 
 
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
+//#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Async/IR/Async.h"
-#include "mlir/Dialect/Complex/IR/Complex.h"
-#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
-#include "mlir/Dialect/DLTI/DLTI.h"
+//#include "mlir/Dialect/Async/IR/Async.h"
+//#include "mlir/Dialect/Complex/IR/Complex.h"
+//#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
+//#include "mlir/Dialect/DLTI/DLTI.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/GPU/IR/GPUDialect.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/LLVMIR/NVVMDialect.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Math/IR/Math.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Tools/mlir-opt/MlirOptMain.h"
+//#include "mlir/Dialect/GPU/IR/GPUDialect.h"
+//#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+//#include "mlir/Dialect/LLVMIR/NVVMDialect.h"
+//#include "mlir/Dialect/Linalg/IR/Linalg.h"
+//#include "mlir/Dialect/Math/IR/Math.h"
+//#include "mlir/Dialect/MemRef/IR/MemRef.h"
+//#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+//#include "mlir/Dialect/SCF/IR/SCF.h"
+//#include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
 #include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 
 //#include "mlir/Dialect/Transform/IR/TransformDialect.h"
 
-class MemRefInsider
-    : public mlir::MemRefElementTypeInterface::FallbackModel<MemRefInsider> {};
-
-template <typename T>
-struct PtrElementModel
-    : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<PtrElementModel<T>, T> {};
+//class MemRefInsider
+//    : public mlir::MemRefElementTypeInterface::FallbackModel<MemRefInsider> {};
+//
+//template <typename T>
+//struct PtrElementModel
+//    : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<PtrElementModel<T>, T> {};
 
 extern "C" {
     void regsiterenzymeXLAPasses_() {
@@ -95,66 +95,60 @@ extern "C" {
         auto ctx = module_op_.getContext();
         mlir::DialectRegistry registry;
 
-  ctx->loadDialect<mlir::arith::ArithDialect>();
-  ctx->loadDialect<mlir::tensor::TensorDialect>();
-  ctx->loadDialect<mlir::func::FuncDialect>();
-  ctx->loadDialect<mlir::mhlo::MhloDialect>();
-  ctx->loadDialect<mlir::chlo::ChloDialect>();
-
+        ctx->loadDialect<mlir::arith::ArithDialect>();
+        ctx->loadDialect<mlir::tensor::TensorDialect>();
+        ctx->loadDialect<mlir::func::FuncDialect>();
         ctx->loadDialect<mlir::stablehlo::StablehloDialect>();
+        ctx->loadDialect<mlir::chlo::ChloDialect>();
+//        ctx->loadDialect<mlir::mhlo::MhloDialect>();
+
         registry.insert<mlir::stablehlo::StablehloDialect>();
         ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
         registry.insert<mlir::enzyme::EnzymeDialect>();
 
-prepareRegistry(registry);
+        prepareRegistry(registry);
 
-  registry.insert<mlir::affine::AffineDialect>();
-  registry.insert<mlir::LLVM::LLVMDialect>();
-  registry.insert<mlir::memref::MemRefDialect>();
-  registry.insert<mlir::async::AsyncDialect>();
-  registry.insert<mlir::complex::ComplexDialect>();
-  registry.insert<mlir::func::FuncDialect>();
-  registry.insert<mlir::arith::ArithDialect>();
-  registry.insert<mlir::cf::ControlFlowDialect>();
-  registry.insert<mlir::scf::SCFDialect>();
-  registry.insert<mlir::gpu::GPUDialect>();
-  registry.insert<mlir::NVVM::NVVMDialect>();
-  registry.insert<mlir::omp::OpenMPDialect>();
-  registry.insert<mlir::math::MathDialect>();
-  registry.insert<mlir::linalg::LinalgDialect>();
-  registry.insert<mlir::DLTIDialect>();
+//  registry.insert<mlir::affine::AffineDialect>();
+//  registry.insert<mlir::LLVM::LLVMDialect>();
+//  registry.insert<mlir::memref::MemRefDialect>();
+//  registry.insert<mlir::async::AsyncDialect>();
+//  registry.insert<mlir::complex::ComplexDialect>();
+        registry.insert<mlir::func::FuncDialect>();
+        registry.insert<mlir::arith::ArithDialect>();
+//  registry.insert<mlir::cf::ControlFlowDialect>();
+//  registry.insert<mlir::scf::SCFDialect>();
+//  registry.insert<mlir::gpu::GPUDialect>();
+//  registry.insert<mlir::NVVM::NVVMDialect>();
+//  registry.insert<mlir::omp::OpenMPDialect>();
+//  registry.insert<mlir::math::MathDialect>();
+//  registry.insert<mlir::linalg::LinalgDialect>();
+//  registry.insert<mlir::DLTIDialect>();
 
-  mlir::registerenzymePasses();
+        mlir::registerenzymePasses();
+        mlir::registerCSEPass();
+        mlir::registerCanonicalizerPass();
+//  mlir::registerConvertAffineToStandardPass();
+//  mlir::registerSCCPPass();
+//  mlir::registerInlinerPass();
+//  mlir::registerSymbolDCEPass();
+//  mlir::registerLoopInvariantCodeMotionPass();
+//  mlir::registerConvertSCFToOpenMPPass();
+//  mlir::affine::registerAffinePasses();
+//  mlir::registerReconcileUnrealizedCasts();
 
-  mlir::registerCSEPass();
-  mlir::registerConvertAffineToStandardPass();
-  mlir::registerSCCPPass();
-  mlir::registerInlinerPass();
-  mlir::registerCanonicalizerPass();
-  mlir::registerSymbolDCEPass();
-  mlir::registerLoopInvariantCodeMotionPass();
-  mlir::registerConvertSCFToOpenMPPass();
-  mlir::affine::registerAffinePasses();
-  mlir::registerReconcileUnrealizedCasts();
-
-  registry.addExtension(+[](mlir::MLIRContext *ctx, mlir::LLVM::LLVMDialect *dialect) {
-    mlir::LLVM::LLVMFunctionType::attachInterface<MemRefInsider>(*ctx);
-    mlir::LLVM::LLVMArrayType::attachInterface<MemRefInsider>(*ctx);
-    mlir::LLVM::LLVMPointerType::attachInterface<MemRefInsider>(*ctx);
-    mlir::LLVM::LLVMStructType::attachInterface<MemRefInsider>(*ctx);
-    mlir::MemRefType::attachInterface<PtrElementModel<mlir::MemRefType>>(*ctx);
-    mlir::LLVM::LLVMStructType::attachInterface<PtrElementModel<mlir::LLVM::LLVMStructType>>(*ctx);
-    mlir::LLVM::LLVMPointerType::attachInterface<PtrElementModel<mlir::LLVM::LLVMPointerType>>(*ctx);
-    mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
-  });
-
-
+//  registry.addExtension(+[](mlir::MLIRContext *ctx, mlir::LLVM::LLVMDialect *dialect) {
+//    mlir::LLVM::LLVMFunctionType::attachInterface<MemRefInsider>(*ctx);
+//    mlir::LLVM::LLVMArrayType::attachInterface<MemRefInsider>(*ctx);
+//    mlir::LLVM::LLVMPointerType::attachInterface<MemRefInsider>(*ctx);
+//    mlir::LLVM::LLVMStructType::attachInterface<MemRefInsider>(*ctx);
+//    mlir::MemRefType::attachInterface<PtrElementModel<mlir::MemRefType>>(*ctx);
+//    mlir::LLVM::LLVMStructType::attachInterface<PtrElementModel<mlir::LLVM::LLVMStructType>>(*ctx);
+//    mlir::LLVM::LLVMPointerType::attachInterface<PtrElementModel<mlir::LLVM::LLVMPointerType>>(*ctx);
+//    mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
+//  });
 
         mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
         ctx->appendDialectRegistry(registry);
-
-//        printf("module_op_.getOperation()\n");
-        module_op_.getOperation()->dump();
 
         auto& region = module_op_.getOperation()->getRegion(0);
         auto& block = region.front();
@@ -179,11 +173,6 @@ prepareRegistry(registry);
         auto ret_activity = mlir::enzyme::ActivityAttr::get(
             ctx, mlir::enzyme::Activity::enzyme_activenoneed
         );
-
-//        mlir::NamedAttrList attrs;
-//        attrs.set("fn", operation.getAttr("sym_name"));
-//        attrs.set("activity", mlir::ArrayAttr::get(ctx, {activity}));
-//        attrs.set("ret_activity", mlir::ArrayAttr::get(ctx, {ret_activity}));
 
         // we can probably improve this by following the stablehlo example
         // https://github.com/openxla/stablehlo/blob/main/examples/c%2B%2B/ExampleAdd.cpp
@@ -211,9 +200,6 @@ prepareRegistry(registry);
 //        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
 //        state.addOperands(mlir::ValueRange(entry_block->getArgument(0)));
 //        state.addTypes({scalarf64});
-//        state.addAttribute("fn", operation.getAttr("sym_name"));
-//        state.addAttribute("activity", {activity});
-//        state.addAttribute("ret_activity", {ret_activity});
 //        auto autodiff = mlir::Operation::create(state);
         entry_block->push_back(autodiff);
 
@@ -223,48 +209,18 @@ prepareRegistry(registry);
         );
         entry_block->push_back(return_op);
 
-        module_op_.getOperation()->dump();
-
-  // Transform dialect and extensions.
-  mlir::transform::registerInterpreterPass();
-//  mlir::linalg::registerTransformDialectExtension(registry);
-  mlir::enzyme::registerGenerateApplyPatternsPass();
-  mlir::enzyme::registerRemoveTransformPass();
-  mlir::enzyme::registerEnzymeJaxTransformExtension(registry);
-
         mlir::PassManager pm(ctx);
 
-//        pm.addPass(mlir::enzyme::createEnzymeHLOOptPass());
-//        pm.addPass(mlir::enzyme::createDifferentiateWrapperPass());
         pm.addPass(mlir::enzyme::createDifferentiatePass());
-//        pm.run(module_op_);
 
-        module_op_.getOperation()->dump();
-// enzyme-wrap{infn=main outfn= outTys=enzyme_const inTys=[enzyme_dup, enzyme_const] mode=ReverseModeCombined}
-
-//        pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
-//        pm.addPass(mlir::enzyme::createEnzymeToMemRefPass());
-
-//        pm.run(module_op_);
 //  auto pass = "enzyme-wrap{infn=main outfn= retTys=enzyme_activenoneed argTys=enzyme_active}, canonicalize, remove-unnecessary-enzyme-ops";
-  auto pass = "canonicalize, remove-unnecessary-enzyme-ops";
-  std::string error_message;
-  llvm::raw_string_ostream error_stream(error_message);
-  mlir::LogicalResult result = mlir::parsePassPipeline(pass, pm, error_stream);
-  if (result.succeeded()) { printf("parsed pipeline\n"); } else { printf("parse failed!!!\n"); }
-  operation.dump();
-//        pm.run(module_op_);
+//  auto pass = "canonicalize, remove-unnecessary-enzyme-ops, arith-raise";
+
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
         pm.addPass(mlir::enzyme::createArithRaisingPass());
         pm.run(module_op_);
-//
-//        // see for after ad https://github.com/EnzymeAD/Enzyme-JAX/blob/d89468ed883ca18c04346eec10f784bbe2b754fc/src/enzyme_ad/jax/primitives.py#L1188
-//        pm.addPass(mlir::enzyme::createArithRaisingPass());
-
-//        pm.addPass(mlir::enzyme::createEnzymeToMemRefPass());
-//        pm.addPass(mlir::enzyme::createEnzymeHLOUnrollPass());
-
-
-        module_op_.getOperation()->dump();
 
         return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(module_op_));
     }
