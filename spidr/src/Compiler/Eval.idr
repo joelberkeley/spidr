@@ -142,8 +142,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       | False => throwE $ MlirPassError "Failed to perform automatic differentiation"
     hloProto <- convertStablehloToHlo stablehlo
     computation <- mkXlaComputation hloProto
-    -- x should be correct shape, because we're sending R^{n0, n1, ..} -> R
-    -- to R^{n0, n1, ..} -> R^{n0, n1, ..} i.e. we're only changing the output shape
     call xlaBuilder computation [!(interpretE x)]
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
   interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder
