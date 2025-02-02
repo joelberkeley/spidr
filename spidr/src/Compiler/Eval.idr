@@ -138,7 +138,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Grad shape f x) = do
     computation <- compile xlaBuilder f
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
-    enzymeAD shape stablehlo
+    True <- enzymeAD shape stablehlo
+      | False => throwE $ MlirPassError "Failed to perform automatic differentiation"
     hloProto <- convertStablehloToHlo stablehlo
     computation <- mkXlaComputation hloProto
     -- x should be correct shape, because we're sending R^{n0, n1, ..} -> R

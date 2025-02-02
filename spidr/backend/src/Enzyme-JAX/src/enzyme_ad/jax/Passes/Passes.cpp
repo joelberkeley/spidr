@@ -17,14 +17,8 @@ limitations under the License.
 #include "../../../../../mlir/IR/DialectRegistry.h"
 #include "../../../../../mlir/Pass/Pass.h"
 
-#include "stablehlo/dialect/Register.h"
 #include "stablehlo/dialect/ChloOps.h"
 #include "stablehlo/dialect/StablehloOps.h"
-
-#include "xla/hlo/builder/xla_builder.h"
-#include "xla/hlo/translate/stablehlo.h"
-#include "xla/hlo/builder/lib/math.h"
-#include "xla/mlir_hlo/mhlo/IR/register.h"
 
 #include "Enzyme/MLIR/Implementations/CoreDialectsAutoDiffImplementations.h"
 #include "Enzyme/MLIR/Dialect/Dialect.h"
@@ -34,8 +28,6 @@ limitations under the License.
 #include "src/enzyme_ad/jax/Dialect/Dialect.h"
 #include "src/enzyme_ad/jax/Passes/Passes.h"
 #include "src/enzyme_ad/jax/Implementations/XLADerivatives.h"
-#include "src/enzyme_ad/jax/TransformOps/TransformOps.h"
-#include "src/enzyme_ad/jax/RegistryUtils.h"
 
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -50,12 +42,12 @@ limitations under the License.
 
 
 //#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
+//#include "mlir/Dialect/Arith/IR/Arith.h"
 //#include "mlir/Dialect/Async/IR/Async.h"
 //#include "mlir/Dialect/Complex/IR/Complex.h"
 //#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 //#include "mlir/Dialect/DLTI/DLTI.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
+//#include "mlir/Dialect/Func/IR/FuncOps.h"
 //#include "mlir/Dialect/GPU/IR/GPUDialect.h"
 //#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 //#include "mlir/Dialect/LLVMIR/NVVMDialect.h"
@@ -78,19 +70,11 @@ limitations under the License.
 //    : public mlir::LLVM::PointerElementTypeInterface::ExternalModel<PtrElementModel<T>, T> {};
 
 extern "C" {
-    void regsiterenzymeXLAPasses_() {
-        regsiterenzymeXLAPasses();
-    }
-
-    void registerenzymePasses() {
-        mlir::registerenzymePasses();
-    }
-
     Pass* createDifferentiatePass() {
         return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
     }
 
-    void emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
+    int emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
 
         auto ctx = module_op_.getContext();
@@ -199,21 +183,23 @@ extern "C" {
         );
         entry_block->push_back(return_op);
 
-        mlir::PassManager pm(ctx);
-
-        mlir::registerenzymePasses();
-        mlir::registerCSEPass();
-        mlir::registerCanonicalizerPass();
-
-        pm.addPass(mlir::enzyme::createDifferentiatePass());
+//        mlir::registerenzymePasses();
+//        mlir::registerCanonicalizerPass();
+//        mlir::registerCSEPass();
 
 //  auto pass = "enzyme-wrap{infn=main outfn= retTys=enzyme_activenoneed argTys=enzyme_active}, canonicalize, remove-unnecessary-enzyme-ops";
 //  auto pass = "canonicalize, remove-unnecessary-enzyme-ops, arith-raise";
 
+        mlir::PassManager pm(ctx);
+
+        pm.addPass(mlir::enzyme::createDifferentiatePass());
         pm.addPass(mlir::createCanonicalizerPass());
         pm.addPass(mlir::createCSEPass());
         pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
         pm.addPass(mlir::enzyme::createArithRaisingPass());
-        pm.run(module_op_);
+
+        auto result = pm.run(module_op_);
+
+        return (int) result.succeeded();
     }
 }

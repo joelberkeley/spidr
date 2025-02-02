@@ -32,10 +32,11 @@ createDifferentiatePass = do
   pure (MkPass pass)
 
 %foreign (libxla "emitEnzymeADOp")
-prim__emitEnzymeADOp : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO ()
+prim__emitEnzymeADOp : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO Int
 
 export
-enzymeAD : HasIO io => List Nat -> ModuleOp -> io ()
+enzymeAD : HasIO io => List Nat -> ModuleOp -> io Bool
 enzymeAD shape (MkModuleOp op) = do
   MkInt64Array shapePtr <- mkInt64Array (map cast shape)  -- int64 is wrong? should be uint64?
-  primIO $ prim__emitEnzymeADOp shapePtr (cast $ length shape) op
+  ok <- primIO $ prim__emitEnzymeADOp shapePtr (cast $ length shape) op
+  pure (cIntToBool ok)
