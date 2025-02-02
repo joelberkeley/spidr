@@ -91,25 +91,24 @@ extern "C" {
     }
 
     void emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
-//        printf("enzymeADOp\n");
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
 
         auto ctx = module_op_.getContext();
 
-        ctx->loadDialect<mlir::arith::ArithDialect>();
-        ctx->loadDialect<mlir::tensor::TensorDialect>();
-        ctx->loadDialect<mlir::func::FuncDialect>();
-        ctx->loadDialect<mlir::stablehlo::StablehloDialect>();
-        ctx->loadDialect<mlir::chlo::ChloDialect>();
+//        ctx->loadDialect<mlir::func::FuncDialect>();
+//        ctx->loadDialect<mlir::arith::ArithDialect>();
+//        ctx->loadDialect<mlir::stablehlo::StablehloDialect>();
+//        ctx->loadDialect<mlir::chlo::ChloDialect>();
         ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
 //        ctx->loadDialect<mlir::mhlo::MhloDialect>();
 
         mlir::DialectRegistry registry;
 
-        registry.insert<mlir::stablehlo::StablehloDialect>();
+//        registry.insert<mlir::func::FuncDialect>();
+//        registry.insert<mlir::arith::ArithDialect>();
+//        registry.insert<mlir::stablehlo::StablehloDialect>();
+//        registry.insert<mlir::chlo::ChloDialect>();
         registry.insert<mlir::enzyme::EnzymeDialect>();
-        registry.insert<mlir::func::FuncDialect>();
-        registry.insert<mlir::arith::ArithDialect>();
         mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
         mlir::enzyme::registerStableHLODialectAutoDiffInterface(registry);
         mlir::enzyme::registerCHLODialectAutoDiffInterface(registry);
@@ -150,6 +149,8 @@ extern "C" {
 //    mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
 //  });
 
+        // can we replace most of this with `DifferentiateWrapperPass`?
+
         auto& region = module_op_.getOperation()->getRegion(0);
         auto& block = region.front();
         auto& operation = block.front();
@@ -166,9 +167,10 @@ extern "C" {
 
         auto entry_block = func_op.addEntryBlock();
 
+        // scalar because this initializes the reverse pass, which starts at a scalar
         auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
         auto diff = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
-            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)  // why does scalar_shape work?
+            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
         );
         entry_block->push_back(diff);
 
@@ -189,21 +191,6 @@ extern "C" {
             mlir::ArrayAttr::get(ctx, {ret_activity})
         );
 
-//        auto autodiff = mlir::Operation::create(
-//            mlir::UnknownLoc::get(ctx),
-//            mlir::OperationName("enzyme.autodiff", ctx),
-//            mlir::TypeRange({scalar_shape}),
-//            mlir::ValueRange(entry_block->getArgument(0)),
-//            {},
-//            mlir::OpaqueProperties(nullptr)
-//        );
-//        autodiff->removeAttr("width");
-//        autodiff->setDiscardableAttrs(attrs.getDictionary(ctx));
-
-//        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
-//        state.addOperands(mlir::ValueRange(entry_block->getArgument(0)));
-//        state.addTypes({scalar_shape});
-//        auto autodiff = mlir::Operation::create(state);
         entry_block->push_back(autodiff);
 
         auto return_op = mlir::OpBuilder(ctx).create<mlir::func::ReturnOp>(
@@ -228,7 +215,5 @@ extern "C" {
         pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
         pm.addPass(mlir::enzyme::createArithRaisingPass());
         pm.run(module_op_);
-
-//        module_op_.getOperation()->dump();
     }
 }
