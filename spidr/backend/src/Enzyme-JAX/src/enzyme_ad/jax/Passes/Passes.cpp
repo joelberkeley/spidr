@@ -135,70 +135,156 @@ extern "C" {
 
         // can we replace most of this with `DifferentiateWrapperPass`?
 
-        auto& region = module_op_.getOperation()->getRegion(0);
-        auto& block = region.front();
-        auto& operation = block.front();
+        auto& root_region = module_op_.getOperation()->getRegion(0);
+        auto& root_block = root_region.front();
+        auto& main_function = root_block.front();
 
-        mlir::SymbolTable::setSymbolName(&operation, "tmp");
+//        mlir::SymbolTable::setSymbolName(&operation, "tmp");
+//
+//        mlir::OpBuilder builder(ctx);
+//
+//        auto tensor_shape = mlir::RankedTensorType::get(
+//            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
+//        );
+//        auto func_type = mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape});
+//        auto func_op = mlir::func::FuncOp::create(mlir::UnknownLoc::get(ctx), "main", func_type);
+//
+//        block.push_back(func_op);
+//
+//        auto entry_block = func_op.addEntryBlock();
+//
+//        // scalar because this initializes the reverse pass, which starts at a scalar
+//        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+//        auto diff = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
+//            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
+//        );
+//        entry_block->push_back(diff);
+//
+//        auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
+//        auto ret_activity = mlir::enzyme::ActivityAttr::get(
+//            ctx, mlir::enzyme::Activity::enzyme_activenoneed
+//        );
+//
+//        // we can probably improve this by following the stablehlo example
+//        // https://github.com/openxla/stablehlo/blob/main/examples/c%2B%2B/ExampleAdd.cpp
+//
+//        auto autodiff = builder.create<mlir::enzyme::AutoDiffOp>(
+//            mlir::UnknownLoc::get(ctx),
+//            mlir::TypeRange({tensor_shape}),
+//            "tmp",
+//            mlir::ValueRange({entry_block->getArgument(0), diff->getOpResult(0)}),
+//            mlir::ArrayAttr::get(ctx, {activity}),
+//            mlir::ArrayAttr::get(ctx, {ret_activity})
+//        );
+//
+//        entry_block->push_back(autodiff);
+//
+//        auto return_op = builder.create<mlir::func::ReturnOp>(
+//            mlir::UnknownLoc::get(ctx),
+//            mlir::ValueRange(autodiff->getOpResult(0))
+//        );
+//        entry_block->push_back(return_op);
 
-        auto tensor_shape = mlir::RankedTensorType::get(
-            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
-        );
-        auto func_type = mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape});
-        auto func_op = mlir::func::FuncOp::create(mlir::UnknownLoc::get(ctx), "main", func_type);
 
-        block.push_back(func_op);
+        printf("-2\n");
 
-        auto entry_block = func_op.addEntryBlock();
-
-        // scalar because this initializes the reverse pass, which starts at a scalar
-        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
-        auto diff = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
-            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
-        );
-        entry_block->push_back(diff);
-
-        auto activity = mlir::enzyme::ActivityAttr::get(ctx, mlir::enzyme::Activity::enzyme_active);
-        auto ret_activity = mlir::enzyme::ActivityAttr::get(
-            ctx, mlir::enzyme::Activity::enzyme_activenoneed
-        );
-
-        // we can probably improve this by following the stablehlo example
-        // https://github.com/openxla/stablehlo/blob/main/examples/c%2B%2B/ExampleAdd.cpp
-
-        auto autodiff = mlir::OpBuilder(ctx).create<mlir::enzyme::AutoDiffOp>(
-            mlir::UnknownLoc::get(ctx),
-            mlir::TypeRange({tensor_shape}),
-            "tmp",
-            mlir::ValueRange({entry_block->getArgument(0), diff->getOpResult(0)}),
-            mlir::ArrayAttr::get(ctx, {activity}),
-            mlir::ArrayAttr::get(ctx, {ret_activity})
-        );
-
-        entry_block->push_back(autodiff);
-
-        auto return_op = mlir::OpBuilder(ctx).create<mlir::func::ReturnOp>(
-            mlir::UnknownLoc::get(ctx),
-            mlir::ValueRange(autodiff->getOpResult(0))
-        );
-        entry_block->push_back(return_op);
-
-//        mlir::registerenzymePasses();
+        mlir::registerenzymePasses();
 //        mlir::registerCanonicalizerPass();
 //        mlir::registerCSEPass();
 
-//  auto pass = "enzyme-wrap{infn=main outfn= retTys=enzyme_activenoneed argTys=enzyme_active}, canonicalize, remove-unnecessary-enzyme-ops";
 //  auto pass = "canonicalize, remove-unnecessary-enzyme-ops, arith-raise";
 
         mlir::PassManager pm(ctx);
 
-        pm.addPass(mlir::enzyme::createDifferentiatePass());
+        std::string error_message;
+        llvm::raw_string_ostream error_stream(error_message);
+        // we'll try to do value_and_grad later
+        auto pipeline = "enzyme-wrap{"
+            "infn=main"
+            " outfn=fdiff"
+            " argTys=enzyme_active"
+            " retTys=enzyme_active"
+            " mode=ReverseModeGradient"
+        "}";
+        auto parse_result = mlir::parsePassPipeline(pipeline, pm, error_stream);
+
+        printf("-1\n");
+
+        if ( parse_result.failed() ) {
+            printf("pipeline parse failed\n");
+            return (int) false;
+        }
+
+//        DifferentiateWrapperPassOptions options(
+//            infn="main",
+//            retTys=mlir::enzyme::DerivativeMode::ReverseModeCombined,
+//            argTys=enzyme_active,
+//            retTys=enzyme_activenoneed,
+//        );
+//        pm.addPass(mlir::enzyme::createDifferentiateWrapperPass(options));
+
+//        pm_.addPass(mlir::enzyme::createDifferentiatePass());
         pm.addPass(mlir::createCanonicalizerPass());
         pm.addPass(mlir::createCSEPass());
         pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
         pm.addPass(mlir::enzyme::createArithRaisingPass());
 
+        printf("0\n");
         auto result = pm.run(module_op_);
+        printf("01\n");
+        module_op_.getOperation()->dump();
+        printf("02\n");
+
+        main_function.erase();
+
+        printf("1\n");
+        module_op_.getOperation()->dump();
+
+
+        mlir::OpBuilder builder(ctx);
+
+        auto tensor_shape = mlir::RankedTensorType::get(
+            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
+        );
+        auto func_op = builder.create<mlir::func::FuncOp>(
+            mlir::UnknownLoc::get(ctx),
+            "main",
+            mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape})
+        );
+
+        root_block.push_back(func_op);
+
+        printf("2\n");
+        module_op_.getOperation()->dump();
+
+        auto entry_block = func_op.addEntryBlock();
+
+        // scalar because this initializes the reverse pass, which starts at a scalar
+        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+        auto rev_init = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
+            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
+        );
+        entry_block->push_back(rev_init);
+
+        printf("3\n");
+
+        auto fdiff_callop = builder.create<mlir::func::CallOp>(
+            mlir::UnknownLoc::get(ctx),
+            "fdiff",
+            mlir::TypeRange({tensor_shape}),
+            mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
+        );
+        entry_block->push_back(fdiff_callop);
+
+        printf("4\n");
+
+        auto return_op = builder.create<mlir::func::ReturnOp>(
+            mlir::UnknownLoc::get(ctx),
+            mlir::ValueRange(fdiff_callop->getOpResult(0))
+        );
+        entry_block->push_back(return_op);
+
+        module_op_.getOperation()->dump();
 
         return (int) result.succeeded();
     }
