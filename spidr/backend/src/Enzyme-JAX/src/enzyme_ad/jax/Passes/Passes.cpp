@@ -33,6 +33,7 @@ limitations under the License.
 
 #include "src/enzyme_ad/jax/Dialect/Dialect.h"
 #include "src/enzyme_ad/jax/Passes/Passes.h"
+#include "src/enzyme_ad/jax/Implementations/XLADerivatives.h"
 #include "src/enzyme_ad/jax/TransformOps/TransformOps.h"
 #include "src/enzyme_ad/jax/RegistryUtils.h"
 
@@ -65,7 +66,7 @@ limitations under the License.
 //#include "mlir/Dialect/SCF/IR/SCF.h"
 //#include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
-#include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
+//#include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 
 //#include "mlir/Dialect/Transform/IR/TransformDialect.h"
 
@@ -89,32 +90,37 @@ extern "C" {
         return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
     }
 
-    ModuleOp* emitEnzymeADOp(ModuleOp& module_op) {
+    void emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
+//        printf("enzymeADOp\n");
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
 
         auto ctx = module_op_.getContext();
-        mlir::DialectRegistry registry;
 
         ctx->loadDialect<mlir::arith::ArithDialect>();
         ctx->loadDialect<mlir::tensor::TensorDialect>();
         ctx->loadDialect<mlir::func::FuncDialect>();
         ctx->loadDialect<mlir::stablehlo::StablehloDialect>();
         ctx->loadDialect<mlir::chlo::ChloDialect>();
+        ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
 //        ctx->loadDialect<mlir::mhlo::MhloDialect>();
 
-        registry.insert<mlir::stablehlo::StablehloDialect>();
-        ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
-        registry.insert<mlir::enzyme::EnzymeDialect>();
+        mlir::DialectRegistry registry;
 
-        prepareRegistry(registry);
+        registry.insert<mlir::stablehlo::StablehloDialect>();
+        registry.insert<mlir::enzyme::EnzymeDialect>();
+        registry.insert<mlir::func::FuncDialect>();
+        registry.insert<mlir::arith::ArithDialect>();
+        mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
+        mlir::enzyme::registerStableHLODialectAutoDiffInterface(registry);
+        mlir::enzyme::registerCHLODialectAutoDiffInterface(registry);
+
+        ctx->appendDialectRegistry(registry);
 
 //  registry.insert<mlir::affine::AffineDialect>();
 //  registry.insert<mlir::LLVM::LLVMDialect>();
 //  registry.insert<mlir::memref::MemRefDialect>();
 //  registry.insert<mlir::async::AsyncDialect>();
 //  registry.insert<mlir::complex::ComplexDialect>();
-        registry.insert<mlir::func::FuncDialect>();
-        registry.insert<mlir::arith::ArithDialect>();
 //  registry.insert<mlir::cf::ControlFlowDialect>();
 //  registry.insert<mlir::scf::SCFDialect>();
 //  registry.insert<mlir::gpu::GPUDialect>();
@@ -124,9 +130,6 @@ extern "C" {
 //  registry.insert<mlir::linalg::LinalgDialect>();
 //  registry.insert<mlir::DLTIDialect>();
 
-        mlir::registerenzymePasses();
-        mlir::registerCSEPass();
-        mlir::registerCanonicalizerPass();
 //  mlir::registerConvertAffineToStandardPass();
 //  mlir::registerSCCPPass();
 //  mlir::registerInlinerPass();
@@ -147,25 +150,25 @@ extern "C" {
 //    mlir::LLVM::LLVMArrayType::attachInterface<PtrElementModel<mlir::LLVM::LLVMArrayType>>(*ctx);
 //  });
 
-        mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
-        ctx->appendDialectRegistry(registry);
-
         auto& region = module_op_.getOperation()->getRegion(0);
         auto& block = region.front();
         auto& operation = block.front();
 
         mlir::SymbolTable::setSymbolName(&operation, "tmp");
 
-        auto scalarf64 = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
-        auto func_type = mlir::FunctionType::get(ctx, {scalarf64}, {scalarf64});
+        auto tensor_shape = mlir::RankedTensorType::get(
+            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
+        );
+        auto func_type = mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape});
         auto func_op = mlir::func::FuncOp::create(mlir::UnknownLoc::get(ctx), "main", func_type);
 
         block.push_back(func_op);
 
         auto entry_block = func_op.addEntryBlock();
 
+        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
         auto diff = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
-            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalarf64, 1.0)
+            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)  // why does scalar_shape work?
         );
         entry_block->push_back(diff);
 
@@ -179,7 +182,7 @@ extern "C" {
 
         auto autodiff = mlir::OpBuilder(ctx).create<mlir::enzyme::AutoDiffOp>(
             mlir::UnknownLoc::get(ctx),
-            mlir::TypeRange({scalarf64}),
+            mlir::TypeRange({tensor_shape}),
             "tmp",
             mlir::ValueRange({entry_block->getArgument(0), diff->getOpResult(0)}),
             mlir::ArrayAttr::get(ctx, {activity}),
@@ -189,7 +192,7 @@ extern "C" {
 //        auto autodiff = mlir::Operation::create(
 //            mlir::UnknownLoc::get(ctx),
 //            mlir::OperationName("enzyme.autodiff", ctx),
-//            mlir::TypeRange({scalarf64}),
+//            mlir::TypeRange({scalar_shape}),
 //            mlir::ValueRange(entry_block->getArgument(0)),
 //            {},
 //            mlir::OpaqueProperties(nullptr)
@@ -199,7 +202,7 @@ extern "C" {
 
 //        auto state = mlir::OperationState(mlir::UnknownLoc::get(ctx), "enzyme.autodiff");
 //        state.addOperands(mlir::ValueRange(entry_block->getArgument(0)));
-//        state.addTypes({scalarf64});
+//        state.addTypes({scalar_shape});
 //        auto autodiff = mlir::Operation::create(state);
         entry_block->push_back(autodiff);
 
@@ -210,6 +213,10 @@ extern "C" {
         entry_block->push_back(return_op);
 
         mlir::PassManager pm(ctx);
+
+        mlir::registerenzymePasses();
+        mlir::registerCSEPass();
+        mlir::registerCanonicalizerPass();
 
         pm.addPass(mlir::enzyme::createDifferentiatePass());
 
@@ -222,6 +229,6 @@ extern "C" {
         pm.addPass(mlir::enzyme::createArithRaisingPass());
         pm.run(module_op_);
 
-        return reinterpret_cast<ModuleOp*>(new mlir::ModuleOp(module_op_));
+//        module_op_.getOperation()->dump();
     }
 }

@@ -245,10 +245,10 @@ grad f (MkTensor x) = MkTagT $ do
   addr <- reserve
   let MkTagT app = f (MkTensor $ Var addr)
       (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr, MkParameter [] F64)] res env
+      g = MkFn [(addr, MkParameter shape F64)] res env
 
   updateCounterFrom env
-  pure $ MkTensor $ Grad g x
+  pure $ MkTensor $ Grad shape g x
 
 ----------------------------- structural operations ----------------------------
 
@@ -478,7 +478,7 @@ slice :
   Tensor (slice at) dtype
 slice at $ MkTensor x = MkTensor
   $ Reshape (mapd size id at) (MultiSlice.slice at)
-    $ DynamicSlice (dynStarts [] at) (mapd size id at)
+    --$ DynamicSlice (dynStarts [] at) (mapd size id at)
       $ Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) x
 
       where

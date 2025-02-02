@@ -53,6 +53,10 @@ extern "C" {
         return sizeof(int);
     }
 
+    int sizeof_int64_t() {
+        return sizeof(int64_t);
+    }
+
     int sizeof_ptr() {
         return sizeof(void*);
     }
@@ -64,6 +68,10 @@ extern "C" {
     }
 
     void set_array_int(int* arr, int idx, int value) {
+        arr[idx] = value;
+    }
+
+    void set_array_int64_t(int64_t* arr, size_t idx, int64_t value) {
         arr[idx] = value;
     }
 

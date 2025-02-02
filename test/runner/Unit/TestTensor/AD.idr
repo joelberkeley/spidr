@@ -33,6 +33,11 @@ square = fixedProperty $ do
 
   grad f (tensor 3.0) ===# pure (tensor 24.0)
 
+  let f : Tensor [2] F64 -> Tag $ Tensor [] F64
+      f x = pure $ slice [at 0] $ square x
+
+  grad f (tensor [3.0, 5.0]) ===# pure (tensor [6.0, 0.0])
+
 --  let f : Tensor [] F64 -> Tag $ Tensor [] F64
 --      f x = reduce @{Sum} [0] $ broadcast {to = [3]} x
 --

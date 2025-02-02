@@ -112,6 +112,25 @@ mkIntArray xs = do
   ptr <- onCollect ptr (free . prim__forgetPtr)
   pure (MkIntArray ptr)
 
+public export
+data Int64Array : Type where
+  MkInt64Array : GCPtr Int64 -> Int64Array
+
+%foreign (libxla "sizeof_int64_t")
+sizeofInt64 : Bits64
+
+%foreign (libxla "set_array_int64_t")
+prim__setArrayInt64 : Ptr Int64 -> Bits64 -> Int64 -> PrimIO ()
+
+export
+mkInt64Array : HasIO io => List Int64 -> io Int64Array
+mkInt64Array xs = do
+  ptr <- malloc (cast (length xs) * cast sizeofInt64)
+  let ptr = prim__castPtr ptr
+  traverse_ (\(idx, x) => primIO $ prim__setArrayInt64 ptr (cast idx) (cast x)) (enumerate xs)
+  ptr <- onCollect ptr (free . prim__forgetPtr)
+  pure (MkInt64Array ptr)
+
 export
 %foreign (libxla "sizeof_ptr")
 sizeofPtr : Int
