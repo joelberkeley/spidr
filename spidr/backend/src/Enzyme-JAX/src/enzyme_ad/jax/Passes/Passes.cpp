@@ -90,6 +90,8 @@ extern "C" {
 
         auto& root_block = module_op_.getOperation()->getRegion(0).front();
 
+        // i think this doesn't hold for second derivative. It's pretty fragile anyway.
+        // Can we search for the "main" function?
         auto& main_function = root_block.front();
         main_function.erase();
 
