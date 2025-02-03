@@ -239,7 +239,9 @@ castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
 castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
 ||| Reverse-mode automatic differentiation.
-export
+|||
+||| This function is only implemented for a subset of the tensor API.
+export partial
 grad : (Tensor shape F64 -> Tag $ Tensor [] F64) -> Tensor shape F64 -> Tag $ Tensor shape F64
 grad f (MkTensor x) = MkTagT $ do
   addr <- reserve
