@@ -185,7 +185,7 @@ showExpr indent (FromLiteral {shape, dtype} x) = "Lit \{shape} \{xlaIdentifier {
 showExpr indent (Var k) = "Var \{k}"
 showExpr indent (Tuple xs) = "Tuple \{showExprList indent xs}"
 showExpr indent (GetTupleElement k x) = "GetTupleElement {index = \{k}} (\{showExpr indent x})"
-showExpr indent (Grad _ op x) = "Grad {op = \{showFn indent op} \{showExpr indent x}"
+showExpr indent (Grad _ op x) = "Grad {op = \{showFn indent op}} (\{showExpr indent x})"
 showExpr indent (MinValue {dtype}) = "MinValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MaxValue {dtype}) = "MaxValue {dtype = \{xlaIdentifier {dtype}}}"
 showExpr indent (MinFiniteValue {dtype}) = "MinFiniteValue {dtype = \{xlaIdentifier {dtype}}}"

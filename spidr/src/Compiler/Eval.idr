@@ -136,7 +136,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (Grad shape f x) = do
-    computation <- compile xlaBuilder f
+    subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/grad:f"
+    computation <- compile subBuilder f
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
     True <- enzymeAD shape stablehlo
       | False => throwE $ MlirPassError "Failed to perform automatic differentiation"

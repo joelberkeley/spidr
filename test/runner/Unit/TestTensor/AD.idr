@@ -24,8 +24,8 @@ import Utils
 import Utils.Comparison
 import Utils.Cases
 
-square : Device => Property
-square = fixedProperty $ do
+firstDerivative : Device => Property
+firstDerivative = fixedProperty $ do
   let f : Tensor [] F64 -> Tag $ Tensor [] F64
       f x = do
         x <- tag $ x + x
@@ -38,6 +38,13 @@ square = fixedProperty $ do
 
   grad f (tensor [3.0, 5.0]) ===# pure (tensor [6.0, 0.0])
 
+secondDerivative : Device => Property
+secondDerivative @{device} = fixedProperty $ do
+  let cube : Tensor [] F64 -> Tensor [] F64
+      cube x = x * x * x
+
+  (let x = grad (grad (pure . cube)) (tensor 3.0) in unsafePerformIO $ do putStrLn (show x); eval device x) === 18.0
+
 --  let f : Tensor [] F64 -> Tag $ Tensor [] F64
 --      f x = reduce @{Sum} [0] $ broadcast {to = [3]} x
 --
@@ -46,5 +53,6 @@ square = fixedProperty $ do
 export
 all : Device => List (PropertyName, Property)
 all = [
-      ("grad square", square)
+    --  ("first derivatives", firstDerivative)
+     ("second derivatives", secondDerivative)
   ]
