@@ -5,7 +5,6 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@enzyme-jax//:everything",
         "//src/mlir/IR",
     ],
     visibility = ["//visibility:public"],

@@ -98,7 +98,7 @@ extern "C" {
         mlir::OpBuilder builder(ctx);
 
         auto tensor_shape = mlir::RankedTensorType::get(
-            llvm::ArrayRef(shape, shape_length), mlir::FloatType::getF64(ctx)
+            llvm::ArrayRef(shape, shape_length), builder.getF64Type()
         );
         auto func_op = builder.create<mlir::func::FuncOp>(
             mlir::UnknownLoc::get(ctx),
@@ -110,7 +110,7 @@ extern "C" {
         auto entry_block = func_op.addEntryBlock();
 
         // scalar because this initializes the reverse pass, which starts at a scalar
-        auto scalar_shape = mlir::RankedTensorType::get({}, mlir::FloatType::getF64(ctx));
+        auto scalar_shape = mlir::RankedTensorType::get({}, builder.getF64Type());
         auto rev_init = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
             mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
         );

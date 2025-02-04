@@ -33,6 +33,7 @@ esac
   # seems unlikely that they could decouple XLA entirely. They almost certainly can't decouple stablehlo
   mkdir Enzyme-JAX
   install_enzyme "$enzyme_rev" Enzyme-JAX
+  patch Enzyme-JAX/src/enzyme_ad/jax/BUILD < BUILD.patch
   bazel build //:c_xla
   rm -rf xla
 )
