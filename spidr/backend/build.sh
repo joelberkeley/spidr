@@ -35,6 +35,6 @@ esac
   install_enzyme "$enzyme_rev" Enzyme-JAX
   patch Enzyme-JAX/src/enzyme_ad/jax/BUILD < BUILD.patch
   bazel build //:c_xla
-  rm -rf xla
+  rm -rf xla Enzyme-JAX
 )
 mv "spidr/backend/bazel-bin/libc_xla.$ext" "libc_xla-$os-$arch.$ext"

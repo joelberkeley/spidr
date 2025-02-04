@@ -38,21 +38,17 @@ firstDerivative = fixedProperty $ do
 
   grad f (tensor [3.0, 5.0]) ===# pure (tensor [6.0, 0.0])
 
-secondDerivative : Device => Property
-secondDerivative @{device} = fixedProperty $ do
-  let cube : Tensor [] F64 -> Tensor [] F64
-      cube x = x * x * x
+higherDerivatives : Device => Property
+higherDerivatives @{device} = fixedProperty $ do
+  let quartic : Tensor [] F64 -> Tensor [] F64
+      quartic x = x * x * x * x
 
-  (let x = grad (grad (pure . cube)) (tensor 3.0) in unsafePerformIO $ do putStrLn (show x); eval device x) === 18.0
-
---  let f : Tensor [] F64 -> Tag $ Tensor [] F64
---      f x = reduce @{Sum} [0] $ broadcast {to = [3]} x
---
---  grad f (tensor 7.0) ===# pure (tensor 3.0)
+  grad (grad (pure . quartic)) (tensor 3.0) ===# pure (tensor 108.0)
+  grad (grad (grad (pure . quartic))) (tensor 0.1) ===# pure (tensor 2.4)
 
 export
 all : Device => List (PropertyName, Property)
 all = [
       ("first derivatives", firstDerivative)
-    --, ("second derivatives", secondDerivative)
+    , ("higher derivatives", higherDerivatives)
   ]

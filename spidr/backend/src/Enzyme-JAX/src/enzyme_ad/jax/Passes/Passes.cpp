@@ -62,14 +62,14 @@ extern "C" {
 
         std::string error_message;
         llvm::raw_string_ostream error_stream(error_message);
-        auto pipeline = "enzyme-wrap{"
+        auto enzyme_pass = "enzyme-wrap{"
             "infn=main"
             " outfn=fdiff"
             " argTys=enzyme_active"
             " retTys=enzyme_active"
             " mode=ReverseModeCombined"
         "}";
-        auto parse_result = mlir::parsePassPipeline(pipeline, pm, error_stream);
+        auto parse_result = mlir::parsePassPipeline(enzyme_pass, pm, error_stream);
 
         if ( parse_result.failed() ) {
             printf("pipeline parse failed\n");
@@ -90,10 +90,7 @@ extern "C" {
 
         auto& root_block = module_op_.getOperation()->getRegion(0).front();
 
-        // i think this doesn't hold for second derivative. It's pretty fragile anyway.
-        // Can we search for the "main" function?
-        auto& main_function = root_block.front();
-        main_function.erase();
+        mlir::SymbolTable::lookupSymbolIn(module_op_, "main")->erase();
 
         mlir::OpBuilder builder(ctx);
 
