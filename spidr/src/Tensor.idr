@@ -480,7 +480,8 @@ slice :
   Tensor (slice at) dtype
 slice at $ MkTensor x = MkTensor
   $ Reshape (mapd size id at) (MultiSlice.slice at)
-    --$ DynamicSlice (dynStarts [] at) (mapd size id at)
+    -- we shortcut DynamicSlice to allow autodiff for static slicing
+    $ if isDynamic at then DynamicSlice (dynStarts [] at) (mapd size id at) else id
       $ Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) x
 
       where
@@ -510,6 +511,12 @@ slice at $ MkTensor x = MkTensor
 
       zero : Expr
       zero = FromLiteral {shape = []} {dtype = U64} 0
+
+      isDynamic : Multislice shape -> Bool
+      isDynamic [] = False
+      isDynamic (DynamicSlice _ _ :: _) = True
+      isDynamic (DynamicIndex _ :: _) = True
+      isDynamic (_ :: ds) = isDynamic ds
 
       dynStarts : List Expr -> {shape : _} -> MultiSlice shape -> List Expr
       dynStarts idxs {shape} [] = replicate (length shape) zero ++ idxs
