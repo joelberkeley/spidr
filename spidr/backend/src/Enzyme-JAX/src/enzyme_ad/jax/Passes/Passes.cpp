@@ -40,6 +40,10 @@ limitations under the License.
 #include "mlir/Transforms/Passes.h"
 
 extern "C" {
+    void registerenzymePasses() {
+        mlir::registerenzymePasses();
+    }
+
     Pass* createDifferentiatePass() {
         return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
     }

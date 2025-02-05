@@ -240,7 +240,7 @@ castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
 ||| Reverse-mode automatic differentiation.
 |||
-||| This function is only implemented for a subset of the tensor API.
+||| This function is experimental, and only implemented for a subset of the tensor API.
 export partial
 grad : (Tensor shape F64 -> Tag $ Tensor [] F64) -> Tensor shape F64 -> Tag $ Tensor shape F64
 grad f (MkTensor x) = MkTagT $ do

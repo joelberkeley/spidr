@@ -18,13 +18,6 @@ module Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 
 import Compiler.FFI
 
-%foreign (libxla "regsiterenzymeXLAPasses_")
-prim__regsiterenzymeXLAPasses : PrimIO ()
-
-export
-regsiterenzymeXLAPasses : HasIO io => io ()
-regsiterenzymeXLAPasses = primIO prim__regsiterenzymeXLAPasses
-
 %foreign (libxla "registerenzymePasses")
 prim__registerenzymePasses : PrimIO ()
 
