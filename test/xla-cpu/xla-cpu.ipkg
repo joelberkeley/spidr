@@ -5,4 +5,4 @@ depends =
   runner
 
 executable = test
-main = Main
+main = XlaCpu
