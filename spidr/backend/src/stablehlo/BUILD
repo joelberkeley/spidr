@@ -1,14 +1,14 @@
 cc_library(
-    name = "dialect",
+    name = "stablehlo",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]),
-    hdrs = glob(["*.h"]),
+    srcs = glob(["**/*.cpp"]),
+    hdrs = glob(["**/*.h"]),
     deps = [
         "@stablehlo//:register",
         "@stablehlo//:stablehlo_serialization",
-        "//src/llvm/Support",
-        "//src/mlir/IR",
+        "//src/llvm",
+        "//src/mlir",
     ],
     visibility = ["//visibility:public"],
 )

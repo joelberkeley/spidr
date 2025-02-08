@@ -35,16 +35,6 @@ mkMLIRContext = do
   ctx <- onCollectAny ctx (primIO . prim__deleteMLIRContext)
   pure (MkMLIRContext ctx)
 
-%foreign (libxla "MLIRContext_getDialectRegistry")
-prim__getDialectRegistry : GCAnyPtr -> PrimIO AnyPtr
-
-export
-getDialectRegistry : HasIO io => MLIRContext -> io DialectRegistry
-getDialectRegistry (MkMLIRContext ctx) = do
-  registry <- primIO $ prim__getDialectRegistry ctx
-  registry <- onCollectAny registry (const $ pure ())  -- correct?
-  pure (MkDialectRegistry registry)
-
 %foreign (libxla "MLIRContext_appendDialectRegistry")
 prim__appendDialectRegistry : GCAnyPtr -> GCAnyPtr -> PrimIO ()
 

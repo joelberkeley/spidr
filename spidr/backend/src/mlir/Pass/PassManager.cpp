@@ -18,13 +18,12 @@ limitations under the License.
 #include "mlir/Pass/PassManager.h"
 
 #include "Pass.h"
+#include "PassManager.h"
 #include "../IR/BuiltinOps.h"
 #include "../IR/MLIRContext.h"
 #include "../IR/Operation.h"
 
 extern "C" {
-    struct PassManager;
-
     PassManager* PassManager_new(MLIRContext* ctx) {
         auto ctx_ = reinterpret_cast<mlir::MLIRContext*>(ctx);
         return reinterpret_cast<PassManager*>(new mlir::PassManager(ctx_));
@@ -35,11 +34,9 @@ extern "C" {
     }
 
     void PassManager_addPass(PassManager& s, Pass* pass) {
-        return; // i hate cpp
-//        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
-//        auto pass_ = reinterpret_cast<mlir::Pass*>(pass);
-//        auto pass__ = std::unique_ptr<mlir::Pass>{std::exchange(pass_, nullptr)};
-//        s_.addPass(pass__);
+        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
+        auto pass_ = reinterpret_cast<mlir::Pass*>(pass);
+        s_.addPass(std::make_unique<mlir::Pass>(pass_));  // will this work with concrete passes?
     }
 
     int PassManager_run(PassManager& s, Operation* op) {

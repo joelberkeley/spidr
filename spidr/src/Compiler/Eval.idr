@@ -91,12 +91,11 @@ serializeStableHLO stablehlo = do
   ok <- serializePortableArtifact stablehlo version !(rawStringOStream code)
   if ok then stringToCharArray code else throwE (SerializationError "Failed to serialize StableHLO")
 
-hloModuleProtoToStableHLO : HloModuleProto -> ErrIO ModuleOp
-hloModuleProtoToStableHLO proto = do
+hloModuleProtoToStableHLO : MLIRContext -> HloModuleProto -> ErrIO ModuleOp
+hloModuleProtoToStableHLO mlirCtx proto = do
   dialectRegistry <- mkDialectRegistry
   registerAllMhloDialects dialectRegistry
   registerAllDialects dialectRegistry
-  mlirCtx <- mkMLIRContext
   appendDialectRegistry mlirCtx dialectRegistry
   convertHloToStablehlo mlirCtx proto
 
@@ -138,9 +137,20 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Grad shape f x) = do
     subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/grad:f"
     computation <- compile subBuilder f
+
+    mlirCtx <- mkMLIRContext
     stablehlo <- hloModuleProtoToStableHLO !(proto computation)
-    True <- enzymeAD shape stablehlo
+    dialectRegistry <- mkDialectRegistry
+    appendDialectRegistry ctx dialectRegistry
+    loadDialectEnzymeDialect ctx
+    insertEnzymeDialect dialectRegistry
+    registerCoreDialectAutodiffInterfaces dialectRegistry
+    registerenzymePasses
+    passManager <- mkPassManager mlirCtx
+
+    True <- enzymeAD shape stablehlo registry passManager
       | False => throwE $ MlirPassError "Failed to perform automatic differentiation"
+
     hloProto <- convertStablehloToHlo stablehlo
     computation <- mkXlaComputation hloProto
     call xlaBuilder computation [!(interpretE x)]

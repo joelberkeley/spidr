@@ -20,14 +20,12 @@ limitations under the License.
 #include "stablehlo/dialect/ChloOps.h"
 #include "stablehlo/dialect/StablehloOps.h"
 
-#include "Enzyme/MLIR/Implementations/CoreDialectsAutoDiffImplementations.h"
 #include "Enzyme/MLIR/Dialect/Dialect.h"
 #include "Enzyme/MLIR/Dialect/Ops.h"
 #include "Enzyme/MLIR/Passes/Passes.h"
 
 #include "src/enzyme_ad/jax/Dialect/Dialect.h"
 #include "src/enzyme_ad/jax/Passes/Passes.h"
-#include "src/enzyme_ad/jax/Implementations/XLADerivatives.h"
 
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -39,30 +37,23 @@ limitations under the License.
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Transforms/Passes.h"
 
+#include "../../../../../mlir/IR/DialectRegistry.h"
+#include "../../../../../mlir/IR/MLIRContext.h"
+#include "../../../../../mlir/Pass/PassManager.h"
+
 extern "C" {
-    void registerenzymePasses() {
-        mlir::registerenzymePasses();
-    }
-
-    Pass* createDifferentiatePass() {
-        return reinterpret_cast<Pass*>(mlir::enzyme::createDifferentiatePass().release());
-    }
-
-    int emitEnzymeADOp(int64_t* shape, size_t shape_length, ModuleOp& module_op) {
+    int emitEnzymeADOp(
+        int64_t* shape,
+        size_t shape_length,
+        ModuleOp& module_op,
+        MLIRContext* ctx_,
+        DialectRegistry& registry,
+        PassManager* pm_
+    ) {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
-
-        auto ctx = module_op_.getContext();
-        ctx->loadDialect<mlir::enzyme::EnzymeDialect>();
-
-        mlir::DialectRegistry registry;
-        registry.insert<mlir::enzyme::EnzymeDialect>();
-        mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry);
-        mlir::enzyme::registerStableHLODialectAutoDiffInterface(registry);
-        mlir::enzyme::registerCHLODialectAutoDiffInterface(registry);
-        ctx->appendDialectRegistry(registry);
-
-        mlir::registerenzymePasses();
-        mlir::PassManager pm(ctx);
+        auto registry_ = reinterpret_cast<mlir::DialectRegistry&>(registry);
+        auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
+        auto pm = reinterpret_cast<mlir::PassManager*>(pm_);
 
         std::string error_message;
         llvm::raw_string_ostream error_stream(error_message);
@@ -73,19 +64,19 @@ extern "C" {
             " retTys=enzyme_active"
             " mode=ReverseModeCombined"
         "}";
-        auto parse_result = mlir::parsePassPipeline(enzyme_pass, pm, error_stream);
+        auto parse_result = mlir::parsePassPipeline(enzyme_pass, *pm, error_stream);
 
         if ( parse_result.failed() ) {
             printf("pipeline parse failed\n");
             return (int) false;
         }
 
-        pm.addPass(mlir::createCanonicalizerPass());
-        pm.addPass(mlir::createCSEPass());
-        pm.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
-        pm.addPass(mlir::enzyme::createArithRaisingPass());
+        pm->addPass(mlir::createCanonicalizerPass());
+        pm->addPass(mlir::createCSEPass());
+        pm->addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
+        pm->addPass(mlir::enzyme::createArithRaisingPass());
 
-        auto pass_result = pm.run(module_op_);
+        auto pass_result = pm->run(module_op_);
 
         if ( pass_result.failed() ) {
             printf("passes failed\n");

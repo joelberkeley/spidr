@@ -6,7 +6,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/hlo/translate:stablehlo",
-        "//src/mlir/IR",
+        "//src/mlir",
         "//src/xla/service",
     ],
     visibility = ["//visibility:public"],

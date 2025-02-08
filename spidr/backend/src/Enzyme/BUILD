@@ -1,14 +1,14 @@
 cc_library(
-    name = "Dialect",
+    name = "Enzyme",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]),
-    hdrs = glob(["*.h"]),
+    srcs = glob(["**/*.cpp"]),
+    hdrs = glob(["**/*.h"]),
     deps = [
         "@stablehlo//:register",
         "@enzyme//:EnzymeMLIR",
         "@llvm-project//mlir:IR",
-        "//src/mlir/IR",
+        "//src/mlir",
     ],
     visibility = ["//visibility:public"],
 )

@@ -13,12 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-//#include "src/enzyme_ad/jax/RegistryUtils.h"
-//
-//#include "../../../../mlir/IR/DialectRegistry.h"
-//
-//extern "C" {
-//    void prepareRegistry_(DialectRegistry& registry) {
-//        prepareRegistry(reinterpret_cast<mlir::DialectRegistry&>(registry));
-//    }
-//}
+extern "C" {
+    struct PassManager;
+}

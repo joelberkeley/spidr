@@ -1,12 +1,13 @@
 cc_library(
-    name = "Pass",
+    name = "mlir",
     linkstatic = True,
     alwayslink = True,
-    srcs = glob(["*.cpp"]),
-    hdrs = glob(["*.h"]),
+    srcs = glob(["**/*.cpp"]),
+    hdrs = glob(["**/*.h"]),
     deps = [
+        "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Pass",
-        "//src/mlir/IR",
+        "//src",
     ],
     visibility = ["//visibility:public"],
 )

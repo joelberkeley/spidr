@@ -27,11 +27,6 @@ extern "C" {
         delete reinterpret_cast<mlir::MLIRContext*>(s);
     }
 
-//    DialectRegistry* MLIRContext_getDialectRegistry(MLIRContext& s) {
-//        auto& s_ = reinterpret_cast<mlir::MLIRContext&>(s);
-//        return reinterpret_cast<DialectRegistry*>(s_.getDialectRegistry());
-//    }
-
     void MLIRContext_appendDialectRegistry(MLIRContext& s, DialectRegistry& registry) {
         auto& registry_ = reinterpret_cast<mlir::DialectRegistry&>(registry);
         reinterpret_cast<mlir::MLIRContext&>(s).appendDialectRegistry(registry_);

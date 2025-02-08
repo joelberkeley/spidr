@@ -6,7 +6,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@xla//xla/mlir_hlo:hlo_dialect_registration",
-        "//src/mlir/IR",
+        "//src/mlir",
     ],
     visibility = ["//visibility:public"],
 )

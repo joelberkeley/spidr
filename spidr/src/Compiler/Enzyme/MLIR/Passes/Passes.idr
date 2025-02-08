@@ -21,22 +21,18 @@ import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
-%foreign (libxla "createDifferentiatePass")
-prim__createDifferentiatePass : PrimIO AnyPtr
+%foreign (libxla "registerenzymePasses")
+prim__registerenzymePasses : PrimIO ()
 
-export
-createDifferentiatePass : HasIO io => io Pass
-createDifferentiatePass = do
-  pass <- primIO prim__createDifferentiatePass
-  pass <- onCollectAny pass (primIO . Pass.prim__delete)
-  pure (MkPass pass)
+registerenzymePasses : HasIO io => io ()
+registerenzymePasses = primIO $ prim__registerenzymePasses
 
 %foreign (libxla "emitEnzymeADOp")
-prim__emitEnzymeADOp : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO Int
+prim__emitEnzymeADOp : GCPtr Int64 -> Bits64 -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO Int
 
 export
-enzymeAD : HasIO io => List Nat -> ModuleOp -> io Bool
-enzymeAD shape (MkModuleOp op) = do
+enzymeAD : HasIO io => List Nat -> ModuleOp -> DialectRegistry -> PassManager -> io Bool
+enzymeAD shape (MkModuleOp op) (MkDialectRegistry registry) (MkPassManager pm) = do
   MkInt64Array shapePtr <- mkInt64Array (map cast shape)  -- int64 is wrong? should be uint64?
-  ok <- primIO $ prim__emitEnzymeADOp shapePtr (cast $ length shape) op
+  ok <- primIO $ prim__emitEnzymeADOp shapePtr (cast $ length shape) op registry pm
   pure (cIntToBool ok)
