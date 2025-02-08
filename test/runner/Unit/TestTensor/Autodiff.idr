@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-module Unit.TestTensor.AD
+module Unit.TestTensor.Autodiff
 
 import System
 
@@ -37,6 +37,11 @@ firstDerivative = fixedProperty $ do
       f x = pure $ slice [at 0] $ square x
 
   grad f (tensor [3.0, 5.0]) ===# pure (tensor [6.0, 0.0])
+
+  let f : Tensor [2] F64 -> Tag $ Tensor [] F64
+      f x = reduce @{Sum} [0] (square x)
+
+  grad f (tensor [3.14, 2.72]) ===# pure (tensor [6.28, 5.44])
 
 higherDerivatives : Device => Property
 higherDerivatives @{device} = fixedProperty $ do
