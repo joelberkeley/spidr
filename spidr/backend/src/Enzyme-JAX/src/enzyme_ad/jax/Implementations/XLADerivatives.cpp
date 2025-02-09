@@ -21,13 +21,13 @@ limitations under the License.
 #include "../../../../../mlir/IR/DialectRegistry.h"
 
 extern "C" {
-    void registerStableHLODialectAutoDiffInterface(DialectRegistry& registry) {
-        auto registry_ = reinterpret_cast<mlir::DialectRegistry&>(registry);
-        mlir::enzyme::registerStableHLODialectAutoDiffInterface(registry_);
+    void registerStableHLODialectAutoDiffInterface(DialectRegistry* registry) {
+        auto registry_ = reinterpret_cast<mlir::DialectRegistry*>(registry);
+        mlir::enzyme::registerStableHLODialectAutoDiffInterface(*registry_);
     }
 
-    void registerCHLODialectAutoDiffInterface(DialectRegistry& registry) {
-        auto registry_ = reinterpret_cast<mlir::DialectRegistry&>(registry);
-        mlir::enzyme::registerCHLODialectAutoDiffInterface(registry_);
+    void registerCHLODialectAutoDiffInterface(DialectRegistry* registry) {
+        auto registry_ = reinterpret_cast<mlir::DialectRegistry*>(registry);
+        mlir::enzyme::registerCHLODialectAutoDiffInterface(*registry_);
     }
 }

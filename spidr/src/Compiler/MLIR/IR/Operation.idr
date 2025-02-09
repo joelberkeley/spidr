@@ -14,13 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.BuiltinOps
+module Compiler.MLIR.IR.Operation
 
 import Compiler.FFI
 
 public export
-data ModuleOp = MkModuleOp GCAnyPtr
-
-export
-%foreign (libxla "ModuleOp_delete")
-prim__delete : AnyPtr -> PrimIO ()
+data Operation = MkOperation GCAnyPtr

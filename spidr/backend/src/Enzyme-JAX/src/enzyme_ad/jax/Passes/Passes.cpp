@@ -42,46 +42,19 @@ limitations under the License.
 #include "../../../../../mlir/Pass/PassManager.h"
 
 extern "C" {
-    int emitEnzymeADOp(
+    void PassManager_addPass_ArithRaisingPass(PassManager& s) {
+        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
+        s_.addPass(mlir::enzyme::createArithRaisingPass());
+    }
+
+    void emitEnzymeADOp(
         int64_t* shape,
         size_t shape_length,
         ModuleOp& module_op,
-        MLIRContext* ctx_,
-        DialectRegistry& registry,
-        PassManager* pm_
+        MLIRContext* ctx_
     ) {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
-        auto registry_ = reinterpret_cast<mlir::DialectRegistry&>(registry);
         auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
-        auto pm = reinterpret_cast<mlir::PassManager*>(pm_);
-
-        std::string error_message;
-        llvm::raw_string_ostream error_stream(error_message);
-        auto enzyme_pass = "enzyme-wrap{"
-            "infn=main"
-            " outfn=fdiff"
-            " argTys=enzyme_active"
-            " retTys=enzyme_active"
-            " mode=ReverseModeCombined"
-        "}";
-        auto parse_result = mlir::parsePassPipeline(enzyme_pass, *pm, error_stream);
-
-        if ( parse_result.failed() ) {
-            printf("pipeline parse failed\n");
-            return (int) false;
-        }
-
-        pm->addPass(mlir::createCanonicalizerPass());
-        pm->addPass(mlir::createCSEPass());
-        pm->addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
-        pm->addPass(mlir::enzyme::createArithRaisingPass());
-
-        auto pass_result = pm->run(module_op_);
-
-        if ( pass_result.failed() ) {
-            printf("passes failed\n");
-            return (int) false;
-        }
 
         auto& root_block = module_op_.getOperation()->getRegion(0).front();
 
@@ -121,8 +94,6 @@ extern "C" {
             fdiff_callop->getOpResults()
         );
         entry_block->push_back(return_op);
-
-        return (int) true;
     }
 }
 

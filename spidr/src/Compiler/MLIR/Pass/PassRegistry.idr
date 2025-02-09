@@ -1,5 +1,5 @@
 {--
-Copyright 2024 Joel Berkeley
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Enzyme.MLIR.Implementations.CoreDialectsAutoDiffImplementations
+module Compiler.MLIR.Pass.PassRegistry
 
-import Compiler.MLIR.IR.DialectRegistry
+import Compiler.LLVM.Support.RawOStream
+import Compiler.MLIR.Pass.PassManager
 import Compiler.FFI
 
-%foreign (libxla "registerCoreDialectAutodiffInterfaces")
-prim__registerCoreDialectAutodiffInterfaces : GCAnyPtr -> PrimIO ()
+%foreign (libxla "parsePassPipeline")
+prim__parsePassPipeline : String -> GCAnyPtr -> GCAnyPtr -> PrimIO Int
 
 export
-registerCoreDialectAutodiffInterfaces : HasIO io => DialectRegistry -> io ()
-registerCoreDialectAutodiffInterfaces (MkDialectRegistry registry) =
-  primIO $ prim__registerCoreDialectAutodiffInterfaces registry
+parsePassPipeline : HasIO io => String -> PassManager -> RawStringOStream -> io Bool
+parsePassPipeline pipeline (MkPassManager pm) (MkRawStringOStream errorStream) = do
+  ok <- primIO $ prim__parsePassPipeline pipeline pm errorStream
+  pure (cIntToBool ok)

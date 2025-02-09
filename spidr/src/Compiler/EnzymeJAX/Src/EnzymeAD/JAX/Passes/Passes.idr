@@ -16,11 +16,23 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 
+import Compiler.MLIR.IR.BuiltinOps
+import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.Pass.PassManager
 import Compiler.FFI
 
-%foreign (libxla "registerenzymePasses")
-prim__registerenzymePasses : PrimIO ()
+%foreign (libxla "PassManager_addPass_ArithRaisingPass")
+prim__passManagerAddPassArithRaisingPass : GCAnyPtr -> PrimIO ()
 
 export
-registerenzymePasses : HasIO io => io ()
-registerenzymePasses = primIO prim__registerenzymePasses
+addArithRaisingPass : HasIO io => PassManager -> io ()
+addArithRaisingPass (MkPassManager pm) = primIO $ prim__passManagerAddPassArithRaisingPass pm
+
+%foreign (libxla "emitEnzymeADOp")
+prim__emitEnzymeADOp : GCPtr Int64 -> Bits64 -> GCAnyPtr -> GCAnyPtr -> PrimIO ()
+
+export
+enzymeAD : HasIO io => List Nat -> ModuleOp -> MLIRContext -> io ()
+enzymeAD shape (MkModuleOp op) (MkMLIRContext ctx) = do
+  MkInt64Array shapePtr <- mkInt64Array (map cast shape)  -- int64 is wrong? should be uint64?
+  primIO $ prim__emitEnzymeADOp shapePtr (cast $ length shape) op ctx

@@ -16,8 +16,8 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.Pass.PassManager
 
-import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
@@ -48,7 +48,7 @@ addPass (MkPassManager manager) (MkPass pass) = primIO $ prim__passManagerAddPas
 prim__passManagerRun : GCAnyPtr -> GCAnyPtr -> PrimIO Int
 
 export
-run : HasIO io => PassManager -> ModuleOp -> io Bool
-run (MkPassManager manager) (MkModuleOp op) = do
+run : HasIO io => PassManager -> Operation -> io Bool
+run (MkPassManager manager) (MkOperation op) = do
   ok <- primIO $ prim__passManagerRun manager op
   pure (cIntToBool ok)

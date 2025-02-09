@@ -23,16 +23,20 @@ import Data.IOArray
 import Data.List
 import Data.List.Elem
 
+import Compiler.Enzyme.MLIR.Dialect.Dialect
+import Compiler.Enzyme.MLIR.Implementations.CoreDialectsAutoDiffImplementations
+import Compiler.Enzyme.MLIR.Passes.Passes
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.XLADerivatives
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
-import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.RegistryUtils
-import Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect
-import Compiler.Enzyme.Enzyme.Enzyme.MLIR.Passes.Passes
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
-import Compiler.MLIR.Pass.PassManager
+import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.Pass.Pass
+import Compiler.MLIR.Pass.PassManager
+import Compiler.MLIR.Pass.PassRegistry
+import Compiler.MLIR.Transforms.Passes
 import Compiler.StableHLO.Dialect.Register
 import Compiler.StableHLO.Dialect.Serialization
 import Compiler.StableHLO.Dialect.Version
@@ -139,17 +143,35 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     computation <- compile subBuilder f
 
     mlirCtx <- mkMLIRContext
-    stablehlo <- hloModuleProtoToStableHLO !(proto computation)
-    dialectRegistry <- mkDialectRegistry
-    appendDialectRegistry ctx dialectRegistry
-    loadDialectEnzymeDialect ctx
-    insertEnzymeDialect dialectRegistry
-    registerCoreDialectAutodiffInterfaces dialectRegistry
-    registerenzymePasses
-    passManager <- mkPassManager mlirCtx
+    stablehlo <- hloModuleProtoToStableHLO mlirCtx !(proto computation)
 
-    True <- enzymeAD shape stablehlo registry passManager
-      | False => throwE $ MlirPassError "Failed to perform automatic differentiation"
+    loadDialectEnzymeDialect mlirCtx
+    registerenzymePasses
+    dialectRegistry <- mkDialectRegistry
+    registerCoreDialectAutodiffInterfaces dialectRegistry
+    registerStableHLODialectAutoDiffInterface dialectRegistry
+    registerCHLODialectAutoDiffInterface dialectRegistry
+    insertEnzymeDialect dialectRegistry
+    appendDialectRegistry mlirCtx dialectRegistry
+
+    passManager <- mkPassManager mlirCtx
+    let enzymePass = "enzyme-wrap{infn=main outfn=fdiff argTys=enzyme_active retTys=enzyme_active mode=ReverseModeCombined}"
+    pipelineParseErrMsg <- cppString
+    True <- parsePassPipeline enzymePass passManager !(rawStringOStream pipelineParseErrMsg)
+      | False => throwE $ MlirPassError """
+        Failed to parse enzyme autodiff pass directive
+        \{!(toString pipelineParseErrMsg)}
+        """
+    -- CppString.delete {io = ErrIO} cppString
+
+    addCanonicalizerPass passManager
+    addCSEPass passManager
+    addRemoveUnusedEnzymeOpsPass passManager
+    addArithRaisingPass passManager
+    True <- run passManager !(getOperation stablehlo)
+      | False => throwE $ MlirPassError "Failed to run autodiff MLIR passes"
+
+    enzymeAD shape stablehlo mlirCtx
 
     hloProto <- convertStablehloToHlo stablehlo
     computation <- mkXlaComputation hloProto
@@ -280,7 +302,8 @@ execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ V
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  code <- serializeStableHLO !(hloModuleProtoToStableHLO !(proto computation))
+  mlirCtx <- mkMLIRContext
+  code <- serializeStableHLO !(hloModuleProtoToStableHLO mlirCtx !(proto computation))
   executableBuildOptions <- mkExecutableBuildOptions
   compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
   program <- mkPjrtProgram code

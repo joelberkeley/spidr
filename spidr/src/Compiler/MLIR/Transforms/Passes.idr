@@ -1,5 +1,5 @@
 {--
-Copyright 2024 Joel Berkeley
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Enzyme.MLIR.Passes.Passes
+module Compiler.MLIR.Transforms.Passes
 
 import Compiler.MLIR.Pass.PassManager
 import Compiler.FFI
 
-%foreign (libxla "registerenzymePasses")
-prim__registerenzymePasses : PrimIO ()
+%foreign (libxla "PassManager_addPass_CanonicalizerPass")
+prim__passManagerAddPassCanonicalizerPass : GCAnyPtr -> PrimIO ()
 
 export
-registerenzymePasses : HasIO io => io ()
-registerenzymePasses = primIO $ prim__registerenzymePasses
+addCanonicalizerPass : HasIO io => PassManager -> io ()
+addCanonicalizerPass (MkPassManager pm) = primIO $ prim__passManagerAddPassCanonicalizerPass pm
 
-%foreign (libxla "PassManager_addPass_RemoveUnusedEnzymeOpsPass")
-prim__passManagerAddPassRemoveUnusedEnzymeOpsPass : GCAnyPtr -> PrimIO ()
+%foreign (libxla "PassManager_addPass_CSEPass")
+prim__passManagerAddPassCSEPass : GCAnyPtr -> PrimIO ()
 
 export
-addRemoveUnusedEnzymeOpsPass : HasIO io => PassManager -> io ()
-addRemoveUnusedEnzymeOpsPass (MkPassManager pm) =
-  primIO $ prim__passManagerAddPassRemoveUnusedEnzymeOpsPass pm
+addCSEPass : HasIO io => PassManager -> io ()
+addCSEPass (MkPassManager pm) = primIO $ prim__passManagerAddPassCSEPass pm

@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Enzyme.Enzyme.Enzyme.MLIR.Dialect.Dialect
+module Compiler.Enzyme.MLIR.Dialect.Dialect
 
 import Compiler.MLIR.IR.DialectRegistry
+import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 

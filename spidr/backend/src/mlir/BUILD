@@ -7,7 +7,9 @@ cc_library(
     deps = [
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Pass",
+        "@llvm-project//mlir:Transforms",
         "//src",
+        "//src/llvm",
     ],
     visibility = ["//visibility:public"],
 )

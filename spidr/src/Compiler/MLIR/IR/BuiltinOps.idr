@@ -17,6 +17,7 @@ limitations under the License.
 module Compiler.MLIR.IR.BuiltinOps
 
 import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.IR.Operation
 import Compiler.FFI
 
 public export
@@ -25,3 +26,14 @@ data ModuleOp = MkModuleOp GCAnyPtr
 export
 %foreign (libxla "ModuleOp_delete")
 prim__delete : AnyPtr -> PrimIO ()
+
+export
+%foreign (libxla "ModuleOp_getOperation")
+prim__moduleOpGetOperation : GCAnyPtr -> AnyPtr  -- I assume the ModuleOp owns the Operation
+
+export
+getOperation : HasIO io => ModuleOp -> io Operation
+getOperation (MkModuleOp moduleOp) = do
+  let op = prim__moduleOpGetOperation moduleOp
+  op <- onCollectAny op (const $ pure ())
+  pure (MkOperation op)

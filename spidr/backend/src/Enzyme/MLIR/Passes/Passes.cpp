@@ -14,10 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "Enzyme/MLIR/Passes/Passes.h"
+#include "mlir/Pass/PassManager.h"
+
+#include "../../../mlir/Pass/PassManager.h"
 
 extern "C" {
     void registerenzymePasses() {
         // where on earth does this come from?
         mlir::registerenzymePasses();
+    }
+
+    void PassManager_addPass_RemoveUnusedEnzymeOpsPass(PassManager& s) {
+        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
+        s_.addPass(mlir::enzyme::createRemoveUnusedEnzymeOpsPass());
     }
 }

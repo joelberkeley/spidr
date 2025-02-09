@@ -17,15 +17,15 @@ limitations under the License.
 
 #include "BuiltinOps.h"
 #include "MLIRContext.h"
+#include "Operation.h"
 
 extern "C" {
     void ModuleOp_delete(ModuleOp* s) {
         delete reinterpret_cast<mlir::ModuleOp*>(s);
     }
 
-    // who owns this?
-    MLIRContext* ModuleOp_getContext(ModuleOp& s) {
+    Operation* ModuleOp_getOperation(ModuleOp& s) {
         auto s_ = reinterpret_cast<mlir::ModuleOp&>(s);
-        return reinterpret_cast<MLIRContext*>(s_.getContext());
+        return reinterpret_cast<Operation*>(s_.getOperation());
     }
 }

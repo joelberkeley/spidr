@@ -13,28 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
 
-#include "Pass.h"
-#include "PassManager.h"
-#include "../IR/MLIRContext.h"
-#include "../IR/Operation.h"
+#include "../Pass/PassManager.h"
 
 extern "C" {
-    PassManager* PassManager_new(MLIRContext* ctx) {
-        auto ctx_ = reinterpret_cast<mlir::MLIRContext*>(ctx);
-        return reinterpret_cast<PassManager*>(new mlir::PassManager(ctx_));
-    }
-
-    void PassManager_delete(PassManager* s) {
-        delete reinterpret_cast<mlir::PassManager*>(s);
-    }
-
-    int PassManager_run(PassManager& s, Operation* op) {
+    void PassManager_addPass_CanonicalizerPass(PassManager& s) {
         auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
-        auto op_ = reinterpret_cast<mlir::Operation*>(op);
-        return (int) s_.run(op_).succeeded();
+        s_.addPass(mlir::createCanonicalizerPass());
+    }
+
+    void PassManager_addPass_CSEPass(PassManager& s) {
+        auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
+        s_.addPass(mlir::createCSEPass());
     }
 }

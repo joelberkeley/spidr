@@ -18,8 +18,8 @@ limitations under the License.
 #include "../../../mlir/IR/DialectRegistry.h"
 
 extern "C" {
-    void registerCoreDialectAutodiffInterfaces(DialectRegistry& registry) {
-        auto registry_ = reinterpret_cast<mlir::DialectRegistry&>(registry);
-        mlir::enzyme::registerCoreDialectAutodiffInterfaces(registry_);
+    void registerCoreDialectAutodiffInterfaces(DialectRegistry* registry) {
+        auto registry_ = reinterpret_cast<mlir::DialectRegistry*>(registry);
+        mlir::enzyme::registerCoreDialectAutodiffInterfaces(*registry_);
     }
 }

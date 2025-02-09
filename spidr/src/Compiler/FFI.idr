@@ -53,6 +53,14 @@ namespace CppString
   delete (MkCppString str) = primIO $ prim__stringDelete str
 
 export
+%foreign (libxla "string_c_str")
+prim__stringCStr : AnyPtr -> PrimIO String
+
+export
+toString : HasIO io => CppString -> io String
+toString (MkCppString str) = primIO $ prim__stringCStr str
+
+export
 %foreign (libxla "string_data")
 prim__stringData : AnyPtr -> PrimIO $ Ptr Char
 
