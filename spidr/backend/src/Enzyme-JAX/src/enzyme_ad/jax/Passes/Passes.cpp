@@ -54,14 +54,10 @@ extern "C" {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
         auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
 
-        mlir::SymbolTable::lookupSymbolIn(module_op_, "main")->erase();
-
-        mlir::OpBuilder builder(ctx);
-
         auto tensor_shape = mlir::RankedTensorType::get(
-            llvm::ArrayRef(shape, shape_length), builder.getF64Type()
+            llvm::ArrayRef(shape, shape_length), mlir::OpBuilder(ctx).getF64Type()
         );
-        auto func_op = builder.create<mlir::func::FuncOp>(
+        auto func_op = mlir::func::FuncOp::create(
             mlir::UnknownLoc::get(ctx),
             "main",
             mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape})

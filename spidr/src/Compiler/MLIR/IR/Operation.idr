@@ -20,3 +20,10 @@ import Compiler.FFI
 
 public export
 data Operation = MkOperation GCAnyPtr
+
+%foreign (libxla "Operation_erase")
+prim__operationErase : GCAnyPtr -> PrimIO ()
+
+export
+erase : HasIO io => Operation -> io ()
+erase (MkOperation op) = primIO $ prim__operationErase op

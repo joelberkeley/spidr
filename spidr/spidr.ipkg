@@ -23,6 +23,7 @@ modules =
   Compiler.MLIR.IR.Location,
   Compiler.MLIR.IR.MLIRContext,
   Compiler.MLIR.IR.Operation,
+  Compiler.MLIR.IR.SymbolTable,
   Compiler.MLIR.IR.ValueRange,
   Compiler.MLIR.Pass.PassManager,
   Compiler.MLIR.Pass.PassRegistry,

@@ -33,6 +33,7 @@ import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.IR.Operation
+import Compiler.MLIR.IR.SymbolTable
 import Compiler.MLIR.Pass.PassManager
 import Compiler.MLIR.Pass.PassRegistry
 import Compiler.MLIR.Transforms.Passes
@@ -170,6 +171,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     True <- run passManager !(getOperation stablehlo)
       | False => throwE $ MlirPassError "Failed to run autodiff MLIR passes"
 
+    erase !(lookupSymbolIn !(getOperation stablehlo) "main")
     enzymeAD shape stablehlo mlirCtx
 
     hloProto <- convertStablehloToHlo stablehlo
