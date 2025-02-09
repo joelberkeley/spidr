@@ -15,7 +15,6 @@ limitations under the License.
 */
 #include "../../../../../mlir/IR/BuiltinOps.h"
 #include "../../../../../mlir/IR/DialectRegistry.h"
-#include "../../../../../mlir/Pass/Pass.h"
 
 #include "stablehlo/dialect/ChloOps.h"
 #include "stablehlo/dialect/StablehloOps.h"
@@ -31,7 +30,6 @@ limitations under the License.
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Location.h"
-#include "mlir/IR/OperationSupport.h"
 #include "mlir/Conversion/Passes.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Pass/PassRegistry.h"

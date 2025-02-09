@@ -17,7 +17,6 @@ limitations under the License.
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 
-#include "Pass.h"
 #include "PassManager.h"
 #include "../IR/MLIRContext.h"
 #include "../IR/Operation.h"

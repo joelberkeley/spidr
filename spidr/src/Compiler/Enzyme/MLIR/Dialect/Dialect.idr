@@ -18,7 +18,6 @@ module Compiler.Enzyme.MLIR.Dialect.Dialect
 
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
-import Compiler.MLIR.Pass.Pass
 import Compiler.FFI
 
 %foreign (libxla "DialectRegistry_insert_EnzymeDialect")
