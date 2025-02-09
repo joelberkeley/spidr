@@ -54,8 +54,6 @@ extern "C" {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
         auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
 
-        auto& root_block = module_op_.getOperation()->getRegion(0).front();
-
         mlir::SymbolTable::lookupSymbolIn(module_op_, "main")->erase();
 
         mlir::OpBuilder builder(ctx);
@@ -68,7 +66,7 @@ extern "C" {
             "main",
             mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape})
         );
-        root_block.push_back(func_op);
+        module_op_.push_back(func_op);
 
         auto entry_block = func_op.addEntryBlock();
         auto block_builder = mlir::OpBuilder::atBlockEnd(entry_block);
