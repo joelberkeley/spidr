@@ -71,27 +71,23 @@ extern "C" {
         root_block.push_back(func_op);
 
         auto entry_block = func_op.addEntryBlock();
+        auto block_builder = mlir::OpBuilder::atBlockEnd(entry_block);
 
-        // scalar because this initializes the reverse pass, which starts at a scalar
-        auto scalar_shape = mlir::RankedTensorType::get({}, builder.getF64Type());
-        auto rev_init = mlir::OpBuilder(ctx).create<mlir::stablehlo::ConstantOp>(
+        auto scalar_shape = mlir::RankedTensorType::get({}, block_builder.getF64Type());
+        auto rev_init = block_builder.create<mlir::stablehlo::ConstantOp>(
             mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
         );
-        entry_block->push_back(rev_init);
 
-        auto fdiff_callop = builder.create<mlir::func::CallOp>(
+        auto fdiff_callop = block_builder.create<mlir::func::CallOp>(
             mlir::UnknownLoc::get(ctx),
             "fdiff",
             mlir::TypeRange({tensor_shape}),
             mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
         );
-        entry_block->push_back(fdiff_callop);
 
-        auto return_op = builder.create<mlir::func::ReturnOp>(
-            mlir::UnknownLoc::get(ctx),
-            fdiff_callop->getOpResults()
+        block_builder.create<mlir::func::ReturnOp>(
+            mlir::UnknownLoc::get(ctx), fdiff_callop->getOpResults()
         );
-        entry_block->push_back(return_op);
     }
 }
 
