@@ -8,6 +8,7 @@ cc_library(
         "@xla//xla/hlo/builder:xla_builder",
         "//src",
         "//src/xla",
+        "//src/xla/service",
     ],
     visibility = ["//visibility:public"],
 )

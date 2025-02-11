@@ -73,9 +73,9 @@ export
 Show PjrtError where
   show e =
     let code = case e.code of
-          Nothing => "not found"
+          Nothing => "unknown"
           Just c => show c
-     in "PjrtError \{show e.message} (code \{code})"
+     in "PjrtError (error code \{code})\n\{e.message}"
 
 %foreign (libxla "PJRT_Error_Destroy_Args_new")
 prim__mkPjrtErrorDestroyArgs : AnyPtr -> PrimIO AnyPtr
