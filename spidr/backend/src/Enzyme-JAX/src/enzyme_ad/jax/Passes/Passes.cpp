@@ -54,9 +54,6 @@ extern "C" {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
         auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
 
-        auto tensor_shape = mlir::RankedTensorType::get(
-            llvm::ArrayRef(shape, shape_length), mlir::OpBuilder(ctx).getF64Type()
-        );
         auto func_op = mlir::func::FuncOp::create(
             mlir::UnknownLoc::get(ctx),
             "main",

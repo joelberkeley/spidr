@@ -43,7 +43,7 @@ Show Parameter where
   show (MkParameter shape dtype) = "\{shape} \{xlaIdentifier {dtype}}"
 
 public export
-data Expr : Type where
+data Expr : Type
 
 -- we use `List (Nat, Expr)` for O(1) append (all we do when building the graph is append)
 -- we can't use `(Nat, List Expr)`, or even better `(n ** Vect n Expr)`, because we don't handle

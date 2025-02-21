@@ -1,5 +1,5 @@
 {--
-Copyright 2024 Joel Berkeley
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Location
+module Compiler.MLIR.IR.BuiltinLocationAttributes
 
+import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.IR.Location
 import Compiler.FFI
 
-public export
-data Location = MkLocation GCAnyPtr
+%foreign (libxla "UnknownLoc_get")
+prim__unknownLocGet : GCAnyPtr -> PrimIO AnyPtr
 
-%foreign (libxla "Location_delete")
-prim__deleteLocation : AnyPtr -> PrimIO ()
+namespace UnknownLoc
+  export
+  get : HasIO io => MLIRContext -> io OpBuilder
+  get (MkMLIRContext ctx) = do
+    op <- primIO $ prim__unknownLocGet ctx
+    op <- onCollectAny op (Location.delete)
+    pure (MkOpBuilder op)
 
 export
-delete : HasIO io => Location -> io ()
-delete (MkLocation loc) = primIO $ prim__deleteLocation loc
+getF64Type : HasIO io => OpBuilder -> io Types.Type

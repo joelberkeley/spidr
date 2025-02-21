@@ -1,5 +1,5 @@
 {--
-Copyright 2024 Joel Berkeley
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Location
+module Compiler.MLIR.IR.Builders
 
+import Compiler.MLIR.IR.MLIRContext
 import Compiler.FFI
 
 public export
-data Location = MkLocation GCAnyPtr
+data OpBuilder = MkOpBuilder GCAnyPtr
 
-%foreign (libxla "Location_delete")
-prim__deleteLocation : AnyPtr -> PrimIO ()
+%foreign (libxla "OpBuilder_new")
+prim__mkOpBuilder : AnyPtr -> PrimIO AnyPtr
+
+%foreign (libxla "OpBuilder_delete")
+prim__deleteOpBuilder : AnyPtr -> PrimIO ()
 
 export
-delete : HasIO io => Location -> io ()
-delete (MkLocation loc) = primIO $ prim__deleteLocation loc
+mkOpBuilder : HasIO io => MLIRContext -> io OpBuilder
+mkOpBuilder (MkMLIRContext ctx) = do
+  op <- primIO $ prim__mkOpBuilder ctx
+  op <- onCollectAny op (primIO . prim__deleteOpBuilder)
+  pure (MkOpBuilder op)
+
+export
+getF64Type : HasIO io => OpBuilder -> io Types.Type

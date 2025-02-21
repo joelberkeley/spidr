@@ -19,6 +19,7 @@ modules =
 
   Compiler.MLIR.IR.Block,
   Compiler.MLIR.IR.BuiltinOps,
+  Compiler.MLIR.IR.BuiltinTypes,
   Compiler.MLIR.IR.DialectRegistry,
   Compiler.MLIR.IR.Location,
   Compiler.MLIR.IR.MLIRContext,

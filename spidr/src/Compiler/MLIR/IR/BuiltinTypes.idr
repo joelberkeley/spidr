@@ -1,5 +1,5 @@
 {--
-Copyright 2024 Joel Berkeley
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Location
+module Compiler.MLIR.IR.BuiltinTypes
 
+import Compiler.MLIR.IR.Types
 import Compiler.FFI
 
 public export
-data Location = MkLocation GCAnyPtr
+data RankedTensorType = MkRankedTensorType GCAnyPtr
 
-%foreign (libxla "Location_delete")
-prim__deleteLocation : AnyPtr -> PrimIO ()
+%foreign (libxla "RankedTensorType_get")
+prim__rankedTensorTypeGet : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
-export
-delete : HasIO io => Location -> io ()
-delete (MkLocation loc) = primIO $ prim__deleteLocation loc
+namespace RankedTensorType
+  export
+  get : HasIO io => List Nat -> Types.Type -> io Operation
+  get (MkModuleOp moduleOp) = do
+    let op = prim__moduleOpGetOperation moduleOp
+    op <- onCollectAny op (const $ pure ())
+    pure (MkOperation op)

@@ -29,6 +29,7 @@ import Compiler.Enzyme.MLIR.Passes.Passes
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.XLADerivatives
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 import Compiler.LLVM.Support.RawOStream
+import Compiler.MLIR.IR.BuiltinTypes
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
@@ -172,6 +173,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       | False => throwE $ MlirPassError "Failed to run autodiff MLIR passes"
 
     erase !(lookupSymbolIn !(getOperation stablehlo) "main")
+    tensorShape <- RankedTensorType.get shape !(getF64Type !(mkOpBuilder mlirCtx))
     enzymeAD shape stablehlo mlirCtx
 
     hloProto <- convertStablehloToHlo stablehlo

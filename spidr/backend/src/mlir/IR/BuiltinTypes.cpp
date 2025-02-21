@@ -1,5 +1,5 @@
-{--
-Copyright 2024 Joel Berkeley
+/*
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,18 +12,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
---}
-||| For internal spidr use only.
-module Compiler.MLIR.IR.Location
+*/
+#include "mlir/IR/BuiltinTypes.h"
 
-import Compiler.FFI
+#include "BuiltinTypes.h"
+#include "Types.h"
 
-public export
-data Location = MkLocation GCAnyPtr
-
-%foreign (libxla "Location_delete")
-prim__deleteLocation : AnyPtr -> PrimIO ()
-
-export
-delete : HasIO io => Location -> io ()
-delete (MkLocation loc) = primIO $ prim__deleteLocation loc
+extern "C" {
+    RankedTensorType* RankedTensorType_get(int64_t* shape, size_t shape_len, Type& elementType) {
+        auto elementType_ = reinterpret_cast<mlir::Type&>(elementType);
+        llvm::ArrayRef<int64_t> shape_(shape, shape_len);
+        auto res = mlir::RankedTensorType::get(shape_, elementType_);
+        return reinterpret_cast<RankedTensorType*>(new mlir::RankedTensorType(res));
+    }
+}
