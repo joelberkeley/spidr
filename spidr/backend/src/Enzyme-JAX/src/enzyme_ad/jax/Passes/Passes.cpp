@@ -54,11 +54,6 @@ extern "C" {
         auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
         auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
 
-        auto func_op = mlir::func::FuncOp::create(
-            mlir::UnknownLoc::get(ctx),
-            "main",
-            mlir::FunctionType::get(ctx, {tensor_shape}, {tensor_shape})
-        );
         module_op_.push_back(func_op);
 
         auto entry_block = func_op.addEntryBlock();

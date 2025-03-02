@@ -16,8 +16,20 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.BuiltinTypes
 
+import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.IR.Types
 import Compiler.FFI
+
+public export
+data FunctionType = MkFunctionType GCAnyPtr
+
+%foreign (libxla "FunctionType_get")
+prim__functionTypeGet : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
+
+namespace FunctionType
+  export
+  get : HasIO io => MLIRContext -> List Types.Type -> List Types.Type -> io Operation
+  get (MkMLIRContext ctx) inputs results = ?weahrae
 
 public export
 data RankedTensorType = MkRankedTensorType GCAnyPtr

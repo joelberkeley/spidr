@@ -14,26 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Types
+module Compiler.MLIR.Func.IR.FuncOps
 
 import Compiler.FFI
 
 public export
-data Type = MkType GCAnyPtr
+data FuncOp = MkFuncOp GCAnyPtr
 
-public export
-data TypeArray = MkTypeArray GCAnyPtr
+%foreign (libxla "FuncOp_create")
+prim__funcOpCreate : GCAnyPtr -> String -> GCAnyPtr -> PrimIO AnyPtr
 
-%foreign (libxla "sizeof_Type")
-sizeofType : Bits64
-
-%foreign (libxla "set_array_Type")
-prim__setArrayType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
-export
-mkTypeArray : HasIO io => List Type -> io TypeArray
-mkTypeArray xs = do
-  ptr <- malloc (cast (length xs) * cast sizeofType)
-  ptr <- onCollect ptr free
-  traverse_ (\(idx, x) => primIO $ prim__setArrayType ptr (cast idx) (cast x)) (enumerate xs)
-  pure (MkTypeArray ptr)
+namespace FuncOp
+  export
+  create : HasIO io => Location -> String -> FunctionType -> io FuncOp

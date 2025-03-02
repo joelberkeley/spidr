@@ -19,6 +19,19 @@ limitations under the License.
 #include "Types.h"
 
 extern "C" {
+    FunctionType* FunctionType_get(
+        MLIRContext* ctx, Type* inputs, size_t inputs_len, Type* results, size_t results_len
+    ) {
+        auto ctx_ = reinterpret_cast<mlir::MLIRContext*>(ctx);
+        auto inputs_ = reinterpret_cast<mlir::Type*>(inputs);
+        auto inputs_ar = llvm::ArrayRef(inputs_, inputs_len);
+        auto results_ = reinterpret_cast<mlir::Type*>(results);
+        auto results_ar = llvm::ArrayRef(results_, results_len);
+
+        auto res = mlir::func::FunctionType::get(ctx_, inputs_ar, results_ar);
+        return reinterpret_cast<FunctionType*>(new mlir::func::FunctionType(res));
+    }
+
     RankedTensorType* RankedTensorType_get(int64_t* shape, size_t shape_len, Type& elementType) {
         auto elementType_ = reinterpret_cast<mlir::Type&>(elementType);
         llvm::ArrayRef<int64_t> shape_(shape, shape_len);

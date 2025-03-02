@@ -174,6 +174,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 
     erase !(lookupSymbolIn !(getOperation stablehlo) "main")
     tensorShape <- RankedTensorType.get shape !(getF64Type !(mkOpBuilder mlirCtx))
+    funcType <- FunctionType.get mlirCtx !(mkTypeArray tensorShape) !(mkTypeArray tensorShape)
+    funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
     enzymeAD shape stablehlo mlirCtx
 
     hloProto <- convertStablehloToHlo stablehlo
