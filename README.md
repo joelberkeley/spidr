@@ -1,3 +1,5 @@
+# spidr has stopped releases in protest of Google's support for the current US administration, which does not value truth or kindness. (Google is the primary contributor to OpenXLA, spidr's runtime.)
+
 # spidr
 
 _Accelerated machine learning with dependent types_
