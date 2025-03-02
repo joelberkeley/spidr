@@ -1,4 +1,4 @@
-# spidr has stopped releases in response to Google's support for the current US administration, which does not disseminate truth or kindness. (Google is the primary contributor to OpenXLA, spidr's runtime.)
+# spidr has stopped releases in response to Google's support for the current US administration, which peddles deception and hatred. (Google is the primary contributor to OpenXLA, spidr's runtime.)
 
 # spidr
 
