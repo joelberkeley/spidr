@@ -27,6 +27,8 @@ import public Data.List
 import public Data.List.Elem
 import Data.List.Quantifiers
 import Decidable.Equality
+import Data.Linear.Notation
+import Control.Linear.LIO 
 
 import Compiler.Eval
 import Compiler.Expr
@@ -56,29 +58,32 @@ data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
 
 ||| The effect of tagging nodes in a computational graph.
 export
-data TagT : (Type -> Type) -> Type -> Type where
-  MkTagT : StateT Env m a -> TagT m a
+data Tag : Type -> Type where
+  MkTag : (Env -> Res Env (const a)) -@ Tag a
 
-public export 0
-Tag : Type -> Type
-Tag = TagT Identity
+--export
+--Functor m => Functor (TagT m) where
+--  map f (MkTagT fe) = MkTagT $ \e => map (mapSnd f) (fe e)
+--
+--export
+--Monad m => Applicative (TagT m) where
+--  pure x = MkTagT $ \e => pure (e, x)
+--  (MkTagT f) <*> (MkTagT x) = MkTagT $ \e => do
+--    (e, ff) <- f e
+--    (e, xx) <- x e
+--    pure (e, ff xx)
+--
+--export
+--Monad m => Monad (TagT m) where
+--  (MkTagT x) >>= f = MkTagT $ \e => do
+--    (e, xx) <- x e
+--    let MkTagT ff = f xx
+--    ff e
+--    -- x >>= (\y => let MkTagT z = f y in z)
 
-export
-Functor m => Functor (TagT m) where
-  map f (MkTagT x) = MkTagT (map f x)
-
-export
-Monad m => Applicative (TagT m) where
-  pure x = MkTagT (pure x)
-  (MkTagT f) <*> (MkTagT x) = MkTagT (f <*> x)
-
-export
-Monad m => Monad (TagT m) where
-  (MkTagT x) >>= f = MkTagT $ x >>= (\y => let MkTagT z = f y in z)
-
-export
-MonadTrans TagT where
-  lift = MkTagT . lift
+--export
+--MonadTrans TagT where
+--  lift x = MkTagT $ \e => map (e,) x
 
 public export
 interface Taggable a where
@@ -98,18 +103,43 @@ interface Taggable a where
   ||| For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
-  tag : Monad m => a -> TagT m a
+  -- tag : Env -@ a -@ (Env -@ a -> Res b (const Env)) -@ Res b (const Env)
+  -- tag : a -@ (a -> Env -@ Res b (const Env)) -@ Env -@ Res b (const Env)
+  -- tag : Monad m => (1 _ : a) -> (a -> TagT m b) -@ TagT m b  -- compare this to L
+  -- Tag is the effect of updating Env (caching the `a`); !* makes the `a` unrestricted
+  -- note we can update Env without producing an unrestricted value - e.g. if we derive a linear
+  -- value from an unrestricted one and another linear one ... this makes a `Tag a`,
+  -- which constrains `a` to be linear
+  tag : a -@ Tag (!* a)
+
+-- this is like (>>=) for LIO, but not like bindL ... why are they different?
+export
+(>>=) : Tag a -@ ((a -@ Tag b) -@ Tag b)
+MkTag x >>= f = MkTag $ \e =>
+  let (e # x) = x e
+      MkTag res = f x
+   in res e
+
+export
+pure : a -@ Tag a
+pure x = MkTag $ \e => (e # x)
 
 export
 Taggable (Tensor shape dtype) where
   -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
   -- to an inner scope, but I can't see why that would be useful
-  tag x@(MkTensor (Var _)) = pure x
-  tag (MkTensor x) = MkTagT $ do pure $ MkTensor !(Expr.tag x)
-
-export
-(Taggable a, Taggable b) => Taggable (a, b) where
-  tag (a, b) = [| (tag a, tag b) |]
+  -- tag (MkTensor (Var x)) f = f (MkTensor (Var x))
+  tag (MkTensor (Var x)) = MkTag $ \e => (e # MkBang (MkTensor (Var x)))
+  -- tag (MkTensor x) f = MkTagT $ do let e # xn = addToEnv e x in f e (MkTensor (Var xn))
+  tag (MkTensor x) = MkTag $ \e =>
+    let (e, x) = Expr.tag x e
+     in (e # MkBang (MkTensor x))
+{-
+  tag (MkTensor x) f = MkTagT $ \e =>
+    let (e, x) = Expr.tag x e
+        MkTagT ff = f (MkTensor x)
+     in ff e
+     -}
 
 ||| Construct a `Tensor` from `Literal` data. For example
 ||| ```
@@ -118,18 +148,18 @@ export
 |||             [4, 5, 6]]
 ||| ```
 export
-tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tensor shape dtype
-tensor lit = MkTensor $ FromLiteral {dtype} {shape} lit
+tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> (Tensor shape dtype -@ Tag (!* b)) -@ Tag (!* b)
+tensor lit f = f (MkTensor $ FromLiteral {dtype} {shape} lit)  -- is this right? do i need to cache it?
 
 namespace F64
   export
   fromDouble : Double -> Tensor [] F64
-  fromDouble = tensor . Scalar
+  fromDouble x = MkTensor $ FromLiteral {shape = [], dtype = F64} $ Scalar x
 
 namespace S32
   export
   fromInteger : Integer -> Tensor [] S32
-  fromInteger = tensor . Scalar . fromInteger
+  fromInteger x = MkTensor $ FromLiteral {shape = [], dtype = F64} $ Scalar $ fromInteger x
 
 try : Show e => EitherT e IO a -> IO a
 try = eitherT (\e => assert_total $ idris_crash $ show e) pure
@@ -143,8 +173,8 @@ namespace Tag
   ||| To efficiently evaluate multiple tensors at once, use `TensorList.Tag.eval`.
   export covering
   eval : Device -> PrimitiveRW dtype ty => Tag (Tensor shape dtype) -> IO (Literal shape ty)
-  eval device (MkTagT x) =
-    let (env, MkTensor root) = runState empty x
+  eval device (MkTag x) =
+    let (env # MkTensor root) = x empty
      in try $ do
           shape <- mkShape shape {dtype}
           [lit] <- execute device (MkFn [] root env) [shape]
@@ -153,7 +183,7 @@ namespace Tag
 ||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
 export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
-eval device x = eval device (pure x)
+eval device x = eval device (MkTag $ \e => (e # x))
 
 namespace TensorList
   namespace Tag
@@ -181,8 +211,8 @@ namespace TensorList
     ||| compiles the graph just once.
     export covering
     eval : Device -> Tag (TensorList shapes tys) -> IO (All2 Literal shapes tys)
-    eval device (MkTagT xs) =
-      let (env, xs) = runState empty xs
+    eval device (MkTag xs) =
+      let (env # xs) = xs empty
           root = Tuple $ nodes xs
        in try $ do
             xlaShapes <- buildShapes xs
@@ -211,14 +241,14 @@ namespace TensorList
   ||| A convenience wrapper for `TensorList.Tag.eval`, for use with a bare `TensorList`.
   export covering
   eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
-  eval device xs = eval device (pure xs)
+  eval device xs = eval device (MkTag $ \e => (e # xs))
 
 ||| A string representation of a tensor graph.
 |||
 ||| There are no guarantees whatsoever as to the string structure and contents.
 export
 Show (Tag $ Tensor shape dtype) where
-  show (MkTagT x) = let (env, MkTensor root) = runState empty x in show (MkFn [] root env)
+  show (MkTag x) = let (env # MkTensor root) = x empty in show (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -703,7 +733,7 @@ broadcast :
   Primitive dtype =>
   {to : _} ->
   {auto shapesOK : Broadcastable from to} ->
-  Tensor from dtype ->
+  (1 x : Tensor from dtype) ->
   Tensor to dtype
 broadcast $ MkTensor {shape = _} x = MkTensor $ Broadcast {dtype} from to x
 
@@ -719,8 +749,8 @@ broadcast $ MkTensor {shape = _} x = MkTensor $ Broadcast {dtype} from to x
 |||                 [5, 5, 5]]
 ||| ```
 export
-fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tensor shape dtype
-fill x = broadcast {shapesOK = scalarToAnyOk shape} (tensor (Scalar x))
+fill : PrimitiveRW dtype ty => {shape : _} -> ty -> (Tensor shape dtype -@ Tag (!* b)) -@ Tag (!* b)
+fill x f = tensor (Scalar x) $ f . broadcast {shapesOK = scalarToAnyOk shape}
 
 ||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
@@ -769,16 +799,15 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| function passed to `map`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map : (Primitive a, Primitive b) =>
-      (Tensor [] a -> Tag $ Tensor [] b) ->
-      Tensor shape a -> Tag $ Tensor shape b
-map f $ MkTensor {shape = _} x = MkTagT $ do
-  addr <- reserve
-  let MkTagT app = f (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr, MkParameter [] a)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x] (range $ length shape)
+      (Tensor [] a -@ Tag $ Tensor [] b) ->
+      (Tensor shape a -@ Tag $ Tensor shape b)
+map f $ MkTensor {shape = _} x = MkTag $ \env =>
+  let (env, addr) = reserve env
+      MkTag app = f (MkTensor $ Var addr)
+      (subenv # MkTensor res) = app (emptyFrom env)
+      g = MkFn [(addr, MkParameter [] a)] res subenv
+      env = updateCounterFrom env subenv
+   in (env # MkTensor (Map g [x] (range $ length shape)))
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -794,17 +823,16 @@ map f $ MkTensor {shape = _} x = MkTagT $ do
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -> Tensor [] b -> Tag $ Tensor [] c) ->
-  Tensor shape a -> Tensor shape b -> Tag $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x, x'] (range $ length shape)
+  (Tensor [] a -@ (Tensor [] b -@ Tag $ Tensor [] c)) ->
+  (Tensor shape a -@ (Tensor shape b -@ Tag $ Tensor shape c))
+map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTag $ \env =>
+  let (env, addr0) = reserve env
+      (env, addr1) = reserve env
+      MkTag app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
+      (subenv # MkTensor res) = app (emptyFrom env)
+      g  = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res subenv
+      env = updateCounterFrom env subenv
+   in (env # MkTensor (Map g [x, x'] (range $ length shape)))
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
@@ -827,20 +855,20 @@ reduce :
   (axes : List Nat) ->
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
-  Tensor shape dtype ->
+  Tensor shape dtype -@
   Tag $ Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x = MkTagT $ do
-  let semigroup : Monoid a -> Semigroup a
-      semigroup _ = %search
-
-  addr0 <- reserve
-  addr1 <- reserve
-
-  let MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      g = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
+reduce axes $ MkTensor x = MkTag $ \env =>
+  let (env, addr0) = reserve env
+      (env, addr1) = reserve env
+      MkTensor res = (<+>) @{semigroup reducer} (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       MkTensor neutral' = neutral @{reducer}
+      g = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
+   in (env # MkTensor (Reduce g neutral' axes x))
 
-  pure $ MkTensor $ Reduce g neutral' axes x
+  where
+
+  semigroup : Monoid a -> Semigroup a
+  semigroup _ = %search
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -867,14 +895,12 @@ sort :
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Tag $ Tensor shape dtype
-sort comp dimension $ MkTensor x = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-
-  let MkTensor res = comp (MkTensor $ Var addr0) (MkTensor $ Var addr1)
+sort comp dimension $ MkTensor x = MkTag $ \env =>
+  let (env, addr0) = reserve env
+      (env, addr1) = reserve env
+      MkTensor res = comp (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       comparator = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
-
-  pure $ MkTensor $ Sort comparator dimension False [x]
+   in (env # MkTensor (Sort comparator dimension False [x]))
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -968,8 +994,8 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [All] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.All where
-    neutral = fill True
+  [All] Monoid (Tensor [] PRED) using Tensor.Semigroup.All where
+    neutral = MkTensor (FromLiteral {dtype = PRED} True)
 
 ||| Element-wise boolean or. For example,
 ||| `tensor [True, True, False, False] || tensor [True, False, True, False]` is
@@ -985,8 +1011,8 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Any] {shape : _} -> Monoid (Tensor shape PRED) using Tensor.Semigroup.Any where
-    neutral = fill False
+  [Any] Monoid (Tensor [] PRED) using Tensor.Semigroup.Any where
+    neutral = MkTensor (FromLiteral {dtype = PRED} False)
 
 unary : UnaryOp -> Tensor s a -> Tensor s a'
 unary op $ MkTensor x = MkTensor $ UnaryElementwise op x
@@ -1054,22 +1080,20 @@ cond :
   (onTrue : Tensor ts tt -> Tag $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Tag $ Tensor shape dtype) -> Tensor fs ft ->
   Tag $ Tensor shape dtype
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTagT $ do
-  addr <- reserve
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTag $ \env =>
+  let (env, addr) = reserve env
+      MkTag app = onTrue (MkTensor $ Var addr)
+      (subenv # MkTensor res) = app (emptyFrom env)
+      onTrue = MkFn [(addr, MkParameter ts tt)] res subenv
+      env = updateCounterFrom env subenv
 
-  let MkTagT app = onTrue (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      onTrue = MkFn [(addr, MkParameter ts tt)] res env
+      (env, addr) = reserve env
+      MkTag app = onFalse (MkTensor $ Var addr)
+      (subenv # MkTensor res) = app (emptyFrom env)
+      onFalse = MkFn [(addr, MkParameter fs ft)] res subenv
+      env = updateCounterFrom env subenv
 
-  updateCounterFrom env
-  addr <- reserve
-
-  let MkTagT app = onFalse (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      onFalse = MkFn [(addr, MkParameter fs ft)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Cond pred onTrue true onFalse false
+   in (env # MkTensor (Cond pred onTrue true onFalse false))
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 export infixl 9 @@
@@ -1178,12 +1202,11 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Sum] {shape : _} ->
-        Prelude.Num a =>
+  [Sum] Prelude.Num a =>
         PrimitiveRW dtype a =>
         Primitive.Num dtype =>
-    Monoid (Tensor shape dtype) using Semigroup.Sum where
-      neutral = fill 0
+    Monoid (Tensor [] dtype) using Semigroup.Sum where
+      neutral = MkTensor (FromLiteral {dtype} $ Scalar 0)
 
 ||| Element-wise negation. For example, `- tensor [1, -2]` is `tensor [-1, 2]`.
 export
@@ -1220,12 +1243,11 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Prod] {shape : _} ->
-         Prelude.Num a =>
+  [Prod] Prelude.Num a =>
          PrimitiveRW dtype a =>
          Primitive.Num dtype =>
-    Monoid (Tensor shape dtype) using Semigroup.Prod where
-      neutral = fill 1
+    Monoid (Tensor [] dtype) using Semigroup.Prod where
+      neutral = MkTensor (FromLiteral {dtype} $ Scalar 1)
 
 ||| Element-wise floating point division. For example, `tensor [2, 3] / tensor [4, 5]` is
 ||| `tensor [0.5, 0.6]`.
@@ -1255,7 +1277,7 @@ div : Tensor shape U64 ->
       {auto 0 isSucc : All IsSucc denom} ->
       Tensor shape U64
 div x y with (x)
-  _ | (MkTensor {shape = _} _) = binaryRef Div x (tensor {dtype = U64} y)
+  _ | (MkTensor {shape = _} _) = binaryRef {a' = U64} Div x (MkTensor $ FromLiteral {dtype = U64} y)  -- is this safe because the LHS is linear?
 
 ||| Element-wise remainder for natural numbers. For example,
 ||| `rem (tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [1, 0]`.
@@ -1265,7 +1287,7 @@ rem : Tensor shape U64 ->
       {auto 0 isSucc : All IsSucc denom} ->
       Tensor shape U64
 rem x y with (x)
-  _ | (MkTensor {shape = _} _) = binaryRef Rem x (tensor {dtype = U64} y)
+  _ | (MkTensor {shape = _} _) = binaryRef {a' = U64} Rem x (MkTensor $ FromLiteral {dtype = U64} y)
 
 ||| The element-wise reciprocal. For example, `recip (tensor [-2, 0, 0.2])`
 ||| is `tensor [-0.5, nan, 5]`.
@@ -1412,12 +1434,11 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Min] {shape : _} ->
-        PrimitiveRW dtype Double =>
+  [Min] PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Tensor shape dtype) using Semigroup.Min where
-      neutral = fill (1.0 / 0.0)
+    Monoid (Tensor [] dtype) using Semigroup.Min where
+      neutral = MkTensor (FromLiteral {dtype} $ Scalar $ 1.0 / 0.0)
 
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max (tensor [-3, -1, 3]) (tensor [-1, 0, 1])` is `tensor [-1, 0, 3]`.
@@ -1432,13 +1453,12 @@ namespace Semigroup
 
 namespace Monoid
   export
-  [Max] {shape : _} ->
-        PrimitiveRW dtype Double =>
+  [Max] PrimitiveRW dtype Double =>
         Primitive.Fractional dtype =>
         Primitive.Ord dtype => 
-    Monoid (Tensor shape dtype) using Semigroup.Max where
-      neutral = fill (- 1.0 / 0.0)
-
+    Monoid (Tensor [] dtype) using Semigroup.Max where
+      neutral = MkTensor (FromLiteral {dtype} $ Scalar $ - 1.0 / 0.0)
+{-
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,
 ||| `argmax` returns the index of the first NaN.
@@ -1450,9 +1470,9 @@ export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
 argmax x with (x)
   _ | (MkTensor {shape = _} _) = do
-    x <- tag x
-    MkTensor x <- cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
-    pure $ MkTensor $ Argmax {out = U64} 0 x
+    tag x $ \x => do
+      MkTensor x <- cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
+      pure $ MkTensor $ Argmax {out = U64} 0 x
 
     where
 
@@ -1473,7 +1493,7 @@ argmax x with (x)
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
 argmin (MkTensor x) = argmax (MkTensor {shape = [S n], dtype} $ UnaryElementwise Neg x)
-
+-}
 ---------------------------- other ----------------------------------
 
 ||| Cholesky decomposition. Computes the lower triangular matrix `L` from the symmetric, positive
@@ -1546,11 +1566,12 @@ trace x with (x)
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
-Rand = StateT (Tensor [1] U64) Tag
+Rand a = (1 _ : Tensor [1] U64) -> Tag (LPair (Tensor [1] U64) a)
 
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
+{-
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
 ||| between `bound` and `bound'`.
 |||
@@ -1580,12 +1601,13 @@ uniform :
   (bound, bound' : Tensor shape F64) ->
   Tag $ Rand $ Tensor shape F64
 uniform (MkTensor key) bound bound' = do
-  minval@(MkTensor iMinval) <- tag $ Tensor.min bound bound'
-  maxval@(MkTensor iMaxval) <- tag $ Tensor.max bound bound'
+  -- I reckon we can overload (>>=) to reintroduce do notation
+  MkBang minval@(MkTensor iMinval) <- tag (Tensor.min bound bound')
+  MkBang maxval@(MkTensor iMaxval) <- tag (Tensor.max bound bound')
   let inf = broadcast inf
-  pure $ ST $ \(MkTensor state) => do
-    MkTensor x <- tag $ MkTensor {shape, dtype = F64}
-      $ UniformFloatingPoint key state iMinval iMaxval shape
+  pure $ \(MkTensor state) => do
+    let expr = UniformFloatingPoint key state iMinval iMaxval shape
+    MkBang (MkTensor x) <- tag (MkTensor {shape, dtype = F64} expr)
     let state = MkTensor $ GetTupleElement 1 x
         value = MkTensor $ GetTupleElement 0 x
         -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
@@ -1594,7 +1616,8 @@ uniform (MkTensor key) bound bound' = do
         value = select ((minval == - inf) && (maxval == fill 0)) (-inf) value
         value = select ((minval == inf) && (maxval == inf)) inf value
         value = select ((minval == -inf) && (maxval == -inf)) (-inf) value
-    pure (state, value)
+    pure (state # value)
+-}
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1613,10 +1636,9 @@ uniform (MkTensor key) bound bound' = do
 |||
 ||| @key Determines the stream of generated samples.
 export
-normal : {shape : _} -> (key : Tensor [] U64) -> Rand $ Tensor shape F64
-normal $ MkTensor key =
-  ST $ \(MkTensor state) => do
-    MkTensor x <- tag $ MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape
-    let state = MkTensor $ GetTupleElement 1 x
-        value = MkTensor $ GetTupleElement 0 x
-    pure (state, value)
+normal : {shape : _} -> (1 key : Tensor [] U64) -> Rand $ Tensor shape F64
+normal (MkTensor key) (MkTensor state) = do
+  MkBang $ MkTensor x <- tag (MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape)
+  let state = MkTensor $ GetTupleElement 1 x
+      value = MkTensor $ GetTupleElement 0 x
+  pure (state # value)

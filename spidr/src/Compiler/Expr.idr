@@ -51,28 +51,6 @@ data Expr : Type
 export
 data Env = MkEnv Nat (List (Nat, Expr))
 
-export
-empty : Env
-empty = MkEnv 0 []
-
-export
-emptyFrom : Env -> Env
-emptyFrom (MkEnv n _) = MkEnv n []
-
-export
-updateCounterFrom : Env -> State Env ()
-updateCounterFrom (MkEnv n _) = do
-  MkEnv _ xs <- get
-  put $ MkEnv n xs
-
-export
-toList : Env -> List (Nat, Expr)
-toList (MkEnv _ env) = reverse env
-
-export
-counter : Env -> Nat
-counter (MkEnv c _) = c
-
 public export
 data Fn : Nat -> Type where
 
@@ -139,18 +117,32 @@ data Expr : Type where
   NormalFloatingPoint : (key, initialState : Expr) -> (shape : Shape) -> Expr
 
 export
-tag : Monad m => Expr -> StateT Env m Expr
-tag expr = do
-  MkEnv next env <- get
-  put $ MkEnv (S next) ((next, expr) :: env)
-  pure (Var next)
+empty : Env
+empty = MkEnv 0 []
 
 export
-reserve : State Env Nat
-reserve = do
-  MkEnv next env <- get
-  put $ MkEnv (S next) env
-  pure next
+emptyFrom : (1 _ : Env) -> Env
+emptyFrom (MkEnv n _) = MkEnv n []
+
+export
+updateCounterFrom : Env -> Env -> Env
+updateCounterFrom (MkEnv n _) (MkEnv _ xs) = MkEnv n xs
+
+export
+toList : Env -> List (Nat, Expr)
+toList (MkEnv _ env) = reverse env
+
+export
+counter : Env -> Nat
+counter (MkEnv c _) = c
+
+export
+tag : Expr -> (1 _ : Env) -> (Env, Expr)
+tag expr (MkEnv next env) = (MkEnv (S next) ((next, expr) :: env), Var next)
+
+export
+reserve : (1 _ : Env) -> (Env, Nat)
+reserve (MkEnv next env) = (MkEnv (S next) env, next)
 
 covering
 showExpr : Nat -> Expr -> String
