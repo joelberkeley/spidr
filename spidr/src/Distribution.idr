@@ -29,15 +29,17 @@ import Constants
 public export
 interface Distribution (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
   ||| The mean of the distribution.
-  mean : dist event dim -> Tag $ Tensor (dim :: event) F64
+  mean : dist event dim -@ Tag $ Tensor (dim :: event) F64
 
   ||| The covariance, or correlation, between sub-events.
-  cov : dist event dim -> Tag $ Tensor (dim :: dim :: event) F64
+  cov : dist event dim -@ Tag $ Tensor (dim :: dim :: event) F64
 
 ||| The variance of a single random variable.
 export
-variance : {event : _} -> Distribution dist => dist event 1 -> Tag $ Tensor (1 :: event) F64
-variance dist = squeeze {from = (1 :: 1 :: event)} <$> cov dist
+variance : {event : _} -> Distribution dist => dist event 1 -@ Tag $ Tensor (1 :: event) F64
+variance dist = do
+  cov <- cov dist
+  pure $ squeeze {from = (1 :: 1 :: event)} cov
 
 ||| A joint, or multivariate distribution over a tensor of floating point values, where the density
 ||| function and corresponding cumulative density function are known (either analytically or via
@@ -51,11 +53,11 @@ interface Distribution dist  =>
   ClosedFormDistribution (0 event : Shape)
     (0 dist : (0 event : Shape) -> (0 dim : Nat) -> Type) where
       ||| The probability density function of the distribution at the specified point.
-      pdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tag $ Tensor [] F64
+      pdf : dist event (S d) -@ (Tensor (S d :: event) F64 -@ Tag $ Tensor [] F64)
 
       ||| The cumulative distribution function of the distribution at the specified point (that is,
       ||| the probability the random variable takes a value less than or equal to the given point).
-      cdf : dist event (S d) -> Tensor (S d :: event) F64 -> Tag $ Tensor [] F64
+      cdf : dist event (S d) -@ (Tensor (S d :: event) F64 -@ Tag $ Tensor [] F64)
 
 ||| A joint Gaussian distribution.
 |||
@@ -65,28 +67,36 @@ public export
 data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
   ||| @mean The mean of the events.
   ||| @cov The covariance between events.
-  MkGaussian : {d : Nat} -> (mean : Tensor (S d :: event) F64) ->
-               (cov : Tensor (S d :: S d :: event) F64) ->
+  MkGaussian : {d : Nat} -> (1 mean : Tensor (S d :: event) F64) ->
+               (1 cov : Tensor (S d :: S d :: event) F64) ->
                Gaussian event (S d)
 
 export
-Taggable (Gaussian event dim) where
-  tag (MkGaussian mean cov) = [| MkGaussian (tag mean) (tag cov) |]
+Copy (Gaussian event dim) where
+  copy (MkGaussian mean cov) = do
+    MkBang mean <- copy mean
+    MkBang cov <- copy cov
+    pure $ MkBang $ MkGaussian mean cov
+
+  discard (MkGaussian mean cov) =
+    let () = discard mean
+        () = discard cov
+     in ()
 
 export
 Distribution Gaussian where
-  mean (MkGaussian mean' _) = pure mean'
-  cov (MkGaussian _ cov') = pure cov'
+  mean (MkGaussian mean' cov) = let () = discard cov in pure mean'
+  cov (MkGaussian mean cov') = let () = discard mean in pure cov'
 
 ||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
   pdf (MkGaussian {d} mean cov) x = do
-    cholCov <- tag $ cholesky $ squeeze {to = [S d, S d]} cov
-    tri <- tag $ cholCov |\ squeeze (x - mean)
+    MkBang cholCov <- copy $ cholesky $ squeeze {to = [S d, S d]} cov
+    MkBang tri <- copy $ cholCov |\ squeeze (x - mean)
     let exponent = - tri @@ tri / 2.0
     covSqrtDet <- reduce @{Prod} [0] (diag cholCov)
-    let denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
+    let 1 denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
     pure (exp exponent / denominator)
 
   cdf (MkGaussian {d = S _} _ _) _ = ?multivariateGaussianCDF

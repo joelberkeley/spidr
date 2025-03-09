@@ -25,24 +25,27 @@ import public BayesianOptimization.Acquisition as BayesianOptimization
 import Data
 import Model
 import Tensor
+import Data.Linear.LVect
 
+{-
 ||| A `Stream`-like collection where each successive element can extend the set of `Tag`s.
 public export
 data TagStream : Type -> Type where
-  (::) : a -> Inf (Tag (TagStream a)) -> TagStream a
+  (::) : a -@ (Inf (Tag (TagStream a)) -> TagStream a)
 
 ||| Take `n` values from a `TagStream`, sequencing the `Tag` effects.
 public export
-take : (n : Nat) -> TagStream a -> Tag $ Vect n a
-take Z _ = pure Nil
+take : Copy a => (n : Nat) -> TagStream a -@ Tag $ LVect n a
+take Z (x :: _) = discarding x $ pure Nil
 take (S k) (x :: xs) = pure (x :: !(take k !xs))
 
 ||| Create an infinite stream of values from a generator function and a starting value.
 export covering
-iterate : (a -> Tag a) -> a -> Tag $ TagStream a
+iterate : Copy a => (a -@ Tag a) -> a -@ Tag $ TagStream a
 iterate f x = do
-  x' <- f x
-  pure (x' :: iterate f x')
+  x <- f x
+  MkBang x <- copy x
+  pure (x :: iterate f x)
 
 ||| Construct a single simple Bayesian optimization step.
 |||
@@ -51,13 +54,16 @@ iterate f x = do
 ||| @tactic The tactic, such as an optimized acquisition function, to find a new point from the
 |||   data and model
 export
-step : (objective : forall n . Tensor (n :: features) F64 -> Tag $ Tensor (n :: targets) F64) ->
+step : Copy model =>
+       (objective : forall n . Tensor (n :: features) F64 -@ Tag $ Tensor (n :: targets) F64) ->
        (probabilisticModel : ProbabilisticModel features targets marginal model) =>
-       (train : Dataset features targets -> model -> Tag $ model) ->
-       (tactic : ReaderT (DataModel {probabilisticModel} model) Tag (Tensor (1 :: features) F64)) ->
-       DataModel {probabilisticModel} model ->
-       Tag $ DataModel {probabilisticModel} model
+       (train : Dataset features targets -@ (model -@ Tag $ model)) ->
+       (tactic : DataModel {features, targets} model -@ Tag (Tensor (1 :: features) F64)) ->
+       DataModel {features, targets} model -@
+       Tag $ DataModel {features, targets} model
 step objective train tactic env = do
-  newPoint <- runReaderT env tactic
-  dataset <- tag $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
+  MkBang env <- copy env
+  MkBang newPoint <- copy !(tactic env)
+  MkBang dataset <- copy $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
   pure $ MkDataModel !(train dataset env.model) dataset
+-}

@@ -88,7 +88,7 @@ evalTupleNonTrivial @{device} = property $ do
   let xs : Tag _ = do
         let y0 = tensor [1.0, -2.0, 0.4]
             y1 = tensor 3.0
-        u <- tag $ exp y0
+        u <- copy $ exp y0
         let v = slice [at 1] u + y1
             w = slice [0.to 2] u
         pure [v, w]
@@ -217,7 +217,7 @@ show = fixedProperty $ do
   show x === "[] => Lit [3] 12"
 
   let x : Tag (Tensor [] S32) = do
-        y <- tag $ 1 + 2
+        y <- copy $ 1 + 2
         pure (y + y)
   show x ===
     """
@@ -227,7 +227,7 @@ show = fixedProperty $ do
     """
 
   let x : Tag $ Tensor [] S32 = do
-        x <- tag 0
+        x <- copy 0
         map (\_ => pure x) x
   show x === """
     [] => Map {f = [(1, [] 4)] => Var 0} [Var 0], with vars {
@@ -235,15 +235,15 @@ show = fixedProperty $ do
       }
     """
 
-  let x : Tag $ Tensor [] S32 = map tag 0
+  let x : Tag $ Tensor [] S32 = map copy 0
   show x === """
     [] => Map {f = [(0, [] 4)] => Var 0} [Lit [] 4]
     """
 
   let x : Tag $ Tensor [] S32 = do
-        tag =<< Tensor.map (\y => do
-            Prelude.map (y + ) $ tag =<< Tensor.map (
-                \u => do v <- tag (tensor 0); pure $ u + v
+        copy =<< Tensor.map (\y => do
+            Prelude.map (y + ) $ copy =<< Tensor.map (
+                \u => do v <- copy (tensor 0); pure $ u + v
               ) (tensor 0)
           ) (tensor 0)
   show x === """
@@ -258,11 +258,11 @@ show = fixedProperty $ do
 
   let f : Tensor [] S32 -> Tag $ Tensor [] S32
       f x = do
-        z <- tag $ the (Tensor [] S32) 5
-        map (\v => do v <- tag v; pure $ v + v + z) (x + z)
+        z <- copy $ the (Tensor [] S32) 5
+        map (\v => do v <- copy v; pure $ v + v + z) (x + z)
 
       x : Tag (Tensor [] S32) := do
-        x <- tag =<< reduce @{Sum} [0] (tensor {dtype = S32} [1, 2])
+        x <- copy =<< reduce @{Sum} [0] (tensor {dtype = S32} [1, 2])
         pure $ x + !(map f x)
   show x === """
     [] => Add (Var 2) (Map {f = [(3, [] 4)] => Map {f = [(5, [] 4)] => Add (Add (Var 5) (Var 5)) (Var 4)} [Add (Var 3) (Var 4)], with vars {

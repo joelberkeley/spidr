@@ -36,6 +36,7 @@ modules =
   Data,
   Device,
   Distribution,
+  Linear,
   Literal,
 
   Model,

@@ -27,7 +27,8 @@ import public Data.List
 import public Data.List.Elem
 import Data.List.Quantifiers
 import Decidable.Equality
-import Data.Linear.Notation
+import public Data.Linear.Notation
+import public Linear
 import Control.Linear.LIO 
 
 import Compiler.Eval
@@ -45,6 +46,7 @@ import public Util
 XlaShape = Xla.Shape
 
 %hide Xla.Shape
+%hide Control.Linear.LIO.(>>=)
 
 ----------------------------- core definitions ----------------------------
 
@@ -86,31 +88,36 @@ data Tag : Type -> Type where
 --  lift x = MkTagT $ \e => map (e,) x
 
 public export
-interface Taggable a where
+interface Copy a where
   ||| Mark an expression to be efficiently reused. For example, in
   ||| ```
   ||| bad : Tensor [9999999] F64
   ||| bad = let x = fill {shape = [9999999]} 1.0 in x + x
   |||
   ||| good : Tag $ Tensor [9999999] F64
-  ||| good = do x <- tag $ fill {shape = [9999999]} 1.0
+  ||| good = do x <- copy $ fill {shape = [9999999]} 1.0
   |||           pure (x + x)
   ||| ```
-  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `tag` marks it for
+  ||| the large vector `x` is calculated twice in `bad`, but once in `good`, as `copy` marks it for
   ||| sharing.
   |||
-  ||| Types that implement this interface should `tag` constituent components it deems worth sharing.
+  ||| Types that implement this interface should `copy` constituent components it deems worth sharing.
   ||| For example, see the implementation for tuples.
   |||
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
-  -- tag : Env -@ a -@ (Env -@ a -> Res b (const Env)) -@ Res b (const Env)
-  -- tag : a -@ (a -> Env -@ Res b (const Env)) -@ Env -@ Res b (const Env)
-  -- tag : Monad m => (1 _ : a) -> (a -> TagT m b) -@ TagT m b  -- compare this to L
+  -- copy : Env -@ a -@ (Env -@ a -> Res b (const Env)) -@ Res b (const Env)
+  -- copy : a -@ (a -> Env -@ Res b (const Env)) -@ Env -@ Res b (const Env)
+  -- copy : Monad m => (1 _ : a) -> (a -> TagT m b) -@ TagT m b  -- compare this to L
   -- Tag is the effect of updating Env (caching the `a`); !* makes the `a` unrestricted
   -- note we can update Env without producing an unrestricted value - e.g. if we derive a linear
   -- value from an unrestricted one and another linear one ... this makes a `Tag a`,
   -- which constrains `a` to be linear
-  tag : a -@ Tag (!* a)
+  copy : a -@ Tag (!* a)
+  discard : a -@ ()
+
+export
+discarding : Copy a => a -@ (b -@ b)
+discarding a b = let () = discard a in b
 
 -- this is like (>>=) for LIO, but not like bindL ... why are they different?
 export
@@ -125,18 +132,19 @@ pure : a -@ Tag a
 pure x = MkTag $ \e => (e # x)
 
 export
-Taggable (Tensor shape dtype) where
+Copy (Tensor shape dtype) where
   -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
   -- to an inner scope, but I can't see why that would be useful
-  -- tag (MkTensor (Var x)) f = f (MkTensor (Var x))
-  tag (MkTensor (Var x)) = MkTag $ \e => (e # MkBang (MkTensor (Var x)))
-  -- tag (MkTensor x) f = MkTagT $ do let e # xn = addToEnv e x in f e (MkTensor (Var xn))
-  tag (MkTensor x) = MkTag $ \e =>
-    let (e, x) = Expr.tag x e
+  -- copy (MkTensor (Var x)) f = f (MkTensor (Var x))
+  copy (MkTensor (Var x)) = MkTag $ \e => (e # MkBang (MkTensor (Var x)))
+  -- copy (MkTensor x) f = MkTagT $ do let e # xn = addToEnv e x in f e (MkTensor (Var xn))
+  copy (MkTensor x) = MkTag $ \e =>
+    let (e, x) = Expr.copy x e
      in (e # MkBang (MkTensor x))
+  discard (MkTensor _) = ()
 {-
-  tag (MkTensor x) f = MkTagT $ \e =>
-    let (e, x) = Expr.tag x e
+  copy (MkTensor x) f = MkTagT $ \e =>
+    let (e, x) = Expr.copy x e
         MkTagT ff = f (MkTensor x)
      in ff e
      -}
@@ -150,6 +158,10 @@ Taggable (Tensor shape dtype) where
 export
 tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> (Tensor shape dtype -@ Tag (!* b)) -@ Tag (!* b)
 tensor lit f = f (MkTensor $ FromLiteral {dtype} {shape} lit)  -- is this right? do i need to cache it?
+
+export
+tensorN : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tag (!* Tensor shape dtype)
+tensorN lit = copy (MkTensor $ FromLiteral {dtype} {shape} lit)
 
 namespace F64
   export
@@ -265,7 +277,7 @@ export
 ||| Cast the element type. For example, `castDtype (tensor {dtype = S32} [1, -2])` is
 ||| `tensor {dtype = F64} [1.0, -2.0]`.
 export
-castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
+castDtype : Primitive.Integral a => Tensor shape a -@ Tensor shape F64
 castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
 ----------------------------- structural operations ----------------------------
@@ -277,7 +289,7 @@ reshape :
   Primitive dtype =>
   {to : _} ->
   {auto 0 sizesEqual : product from = product to} ->
-  Tensor from dtype ->
+  Tensor from dtype -@
   Tensor to dtype
 reshape $ MkTensor {shape} x = MkTensor $ Reshape shape to x
 
@@ -289,7 +301,7 @@ expand :
   Primitive dtype =>
   (axis : Nat) ->
   {auto 0 inBounds : axis `LTE` length shape} ->
-  Tensor shape dtype ->
+  Tensor shape dtype -@
   Tensor (insertAt axis 1 shape) dtype
 expand axis $ MkTensor {shape = _} x = MkTensor $ Reshape shape (insertAt axis 1 shape) x
 
@@ -336,7 +348,7 @@ squeeze :
   Primitive dtype =>
   {to : _} ->
   {auto 0 shapesSqueezable : Squeezable from to} ->
-  Tensor from dtype ->
+  Tensor from dtype -@
   Tensor to dtype
 squeeze $ MkTensor {shape} x = MkTensor $ Reshape shape to x
 
@@ -492,7 +504,7 @@ export
 slice :
   Primitive dtype =>
   (at : MultiSlice shape) ->
-  Tensor shape dtype ->
+  Tensor shape dtype -@
   Tensor (slice at) dtype
 slice at $ MkTensor x = MkTensor
   $ Reshape (mapd size id at) (MultiSlice.slice at)
@@ -541,11 +553,11 @@ export
 concat :
   Primitive dtype =>
   (axis : Nat) ->
-  Tensor s dtype ->
-  Tensor s' dtype ->
+  Tensor s dtype -@
+  (Tensor s' dtype -@ (
   {auto 0 inBounds : (InBounds axis s, InBounds axis s')} ->
   {auto 0 shapesConcatenable : deleteAt axis s = deleteAt axis s'} ->
-  Tensor (replaceAt axis (index axis s + index axis s') s) dtype
+  Tensor (replaceAt axis (index axis s + index axis s') s) dtype))
 concat axis (MkTensor x) (MkTensor x') = MkTensor $ Concat axis x x'
 
 ||| The diagonal of a matrix as a vector. For example, for
@@ -557,7 +569,7 @@ concat axis (MkTensor x) (MkTensor x') = MkTensor $ Concat axis x x'
 ||| ```
 ||| `diag x` is `tensor [0, 4, 8]`.
 export
-diag : Primitive dtype => Tensor [n, n] dtype -> Tensor [n] dtype
+diag : Primitive dtype => Tensor [n, n] dtype -@ Tensor [n] dtype
 diag $ MkTensor x = MkTensor $ Diag x
 
 ||| Represents the upper- or lower-triangular component of a matrix.
@@ -579,12 +591,12 @@ data Triangle = Upper | Lower
 |||             [7, 8, 9]]
 ||| ```
 export
-triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -> Tensor [n, n] dtype
+triangle : Primitive dtype => Triangle -> Tensor [n, n] dtype -@ Tensor [n, n] dtype
 triangle tri $ MkTensor x = MkTensor $ Triangle (case tri of Upper => False; Lower => True) x
 
 ||| Transpose a matrix. For example, `(tensor [[1, 2], [3, 4]]).T` is `tensor [[1, 3], [2, 4]]`.
 export
-(.T) : Tensor [m, n] dtype -> Tensor [n, m] dtype
+(.T) : Tensor [m, n] dtype -@ Tensor [n, m] dtype
 (MkTensor x).T = MkTensor $ Transpose [1, 0] x
 
 ||| Transpose axes of a tensor. This is a more general version of `(.T)`, in which you can
@@ -634,11 +646,11 @@ export
 export
 transpose :
   (ordering : List Nat) ->
-  Tensor shape dtype ->
+  Tensor shape dtype -@ (
   {auto 0 lengths : length ordering = length shape} ->
   {auto 0 axesUnique : unique ordering = True} ->
   {auto 0 inBounds : All (flip InBounds shape) ordering} ->
-  Tensor (multiIndex ordering shape) dtype
+  Tensor (multiIndex ordering shape) dtype)
 transpose ordering $ MkTensor x = MkTensor $ Transpose ordering x
 
 ||| The identity tensor, with inferred shape and element type. For example,
@@ -653,8 +665,8 @@ transpose ordering $ MkTensor x = MkTensor $ Transpose ordering x
 |||             [0, 1]]
 ||| ```
 export
-identity : Primitive.Num dtype => {n : _} -> Tensor [n, n] dtype
-identity = MkTensor $ Identity {dtype} n
+identity : Primitive.Num dtype => {n : _} -> Tag (!* Tensor [n, n] dtype)
+identity = copy $ MkTensor $ Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -749,8 +761,10 @@ broadcast $ MkTensor {shape = _} x = MkTensor $ Broadcast {dtype} from to x
 |||                 [5, 5, 5]]
 ||| ```
 export
-fill : PrimitiveRW dtype ty => {shape : _} -> ty -> (Tensor shape dtype -@ Tag (!* b)) -@ Tag (!* b)
-fill x f = tensor (Scalar x) $ f . broadcast {shapesOK = scalarToAnyOk shape}
+fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tag (!* Tensor shape dtype)
+fill x = do
+  MkBang x <- tensorN (Scalar x)
+  pure $ MkBang $ broadcast {shapesOK = scalarToAnyOk shape} x
 
 ||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
@@ -941,56 +955,56 @@ reverse axes $ MkTensor x = MkTensor $ Reverse axes x
 
 ----------------------------- numeric operations ----------------------------
 
-binaryRef : BinaryOp -> Tensor s a -> Tensor s a' -> Tensor s a''
+binaryRef : BinaryOp -> Tensor s a -@ (Tensor s a' -@ Tensor s a'')
 binaryRef op (MkTensor x) (MkTensor x') = MkTensor $ BinaryElementwise op x x'
 
 ||| Element-wise equality. For example, `tensor [1, 2] /= tensor [1, 3]` is
 ||| `tensor [True, False]`.
 export
-(==) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
+(==) : Primitive.Eq dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape PRED)
 (==) = binaryRef Eq
 
 ||| Element-wise inequality. For example, `tensor [1, 2] /= tensor [1, 3]` is
 ||| `tensor [False, True]`.
 export
-(/=) : Primitive.Eq dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
+(/=) : Primitive.Eq dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape PRED)
 (/=) = binaryRef Ne
 
 ||| Element-wise less than. For example, `tensor [1, 2, 3] < tensor [2, 2, 2]` is
 ||| `tensor [True, False, False]`.
 export
-(<) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
+(<) : Primitive.Ord dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape PRED)
 (<) = binaryRef Lt
 
 ||| Element-wise greater than. For example, `tensor [1, 2, 3] > tensor [2, 2, 2]` is
 ||| `tensor [False, False, True]`.
 export
-(>) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
+(>) : Primitive.Ord dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape PRED)
 (>) = binaryRef Gt
 
 ||| Element-wise less than or equal. For example, `tensor [1, 2, 3] <= tensor [2, 2, 2]`
 ||| is `tensor [True, True, False]`.
 export
-(<=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
+(<=) : Primitive.Ord dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape PRED)
 (<=) = binaryRef Le
 
 ||| Element-wise greater than or equal. For example,
 ||| `tensor [1, 2, 3] >= tensor [2, 2, 2]` is `tensor [False, True, True]`.
 export
-(>=) : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape PRED
+(>=) : Primitive.Ord dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape PRED)
 (>=) = binaryRef Ge
 
 ||| Element-wise boolean and. For example,
 ||| `tensor [True, True, False, False] && tensor [True, False, True, False]` is
 ||| `tensor [True, False, False, False]`.
 export
-(&&) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
+(&&) : Tensor shape PRED -@ (Tensor shape PRED -@ Tensor shape PRED)
 (&&) = binaryRef And
 
 namespace Semigroup
   export
   [All] Semigroup (Tensor shape PRED) where
-    (<+>) = (&&)
+    x <+> x' = binaryRef And x x'
 
 namespace Monoid
   export
@@ -1001,26 +1015,26 @@ namespace Monoid
 ||| `tensor [True, True, False, False] || tensor [True, False, True, False]` is
 ||| `tensor [True, True, True, False]`.
 export
-(||) : Tensor shape PRED -> Tensor shape PRED -> Tensor shape PRED
+(||) : Tensor shape PRED -@ (Tensor shape PRED -@ Tensor shape PRED)
 (||) = binaryRef Or
 
 namespace Semigroup
   export
   [Any] Semigroup (Tensor shape PRED) where
-    (<+>) = (||)
+    x <+> x' = binaryRef Or x x'
 
 namespace Monoid
   export
   [Any] Monoid (Tensor [] PRED) using Tensor.Semigroup.Any where
     neutral = MkTensor (FromLiteral {dtype = PRED} False)
 
-unary : UnaryOp -> Tensor s a -> Tensor s a'
+unary : UnaryOp -> Tensor s a -@ Tensor s a'
 unary op $ MkTensor x = MkTensor $ UnaryElementwise op x
 
 ||| Element-wise boolean negation. For example, `not (tensor [True, False])` is
 ||| `tensor [False, True]`.
 export
-not : Tensor shape PRED -> Tensor shape PRED
+not : Tensor shape PRED -@ Tensor shape PRED
 not = unary Not
 
 ||| Choose elements from two `Tensor`s based on a `Tensor` of predicates. For each element in the
@@ -1103,7 +1117,7 @@ namespace Vector
   ||| the right-hand side tensor. For example `tensor [0, 1, 2] @@ tensor [-1, -3, -1]` is
   ||| `-1`.
   export
-  (@@) : Primitive.Num dtype => Tensor [S m] dtype -> Tensor [S m] dtype -> Tensor [] dtype
+  (@@) : Primitive.Num dtype => Tensor [S m] dtype -@ (Tensor [S m] dtype -@ Tensor [] dtype)
   (MkTensor x) @@ (MkTensor x') = MkTensor $ Dot x x'
 
 namespace Matrix
@@ -1127,10 +1141,10 @@ namespace Matrix
   ||| ```
   export
   (@@) : (Primitive dtype, Primitive.Num dtype) =>
-         Tensor [n, S m] dtype ->
-         Tensor (S m :: tl) dtype ->
-         {auto 0 vectorTail : length tl `LTE` 1} ->
-         Tensor (n :: tl) dtype
+         Tensor [n, S m] dtype -@
+         (Tensor (S m :: tl) dtype -@
+         ({auto 0 vectorTail : length tl `LTE` 1} ->
+         Tensor (n :: tl) dtype))
   (MkTensor x) @@ (MkTensor x') = MkTensor $ Dot x x'
 
 ||| The output shape of a `dotGeneral` operation.
@@ -1192,13 +1206,13 @@ dotGeneral lb rb lc rc (MkTensor x) (MkTensor y) = MkTensor $ DotGeneral lb rb l
 ||| Element-wise addition. For example, `tensor [1, 2] + tensor [3, 4]` is
 ||| `tensor [4, 6]`.
 export
-(+) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(+) : Primitive.Num dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape dtype)
 (+) = binaryRef Add
 
 namespace Semigroup
   export
   [Sum] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = (+)
+    x <+> x' = binaryRef Add x x'
 
 namespace Monoid
   export
@@ -1210,19 +1224,19 @@ namespace Monoid
 
 ||| Element-wise negation. For example, `- tensor [1, -2]` is `tensor [-1, 2]`.
 export
-negate : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype
+negate : Primitive.Neg dtype => Tensor shape dtype -@ Tensor shape dtype
 negate $ MkTensor i = MkTensor $ UnaryElementwise Neg i
 
 ||| Element-wise subtraction. For example, `tensor [3, 4] - tensor [4, 2]` is
 ||| `tensor [-1, 2]`.
 export
-(-) : Primitive.Neg dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(-) : Primitive.Neg dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape dtype)
 (-) = binaryRef Sub
 
 ||| Element-wise multiplication. For example, `tensor [2, 3] * tensor [4, 5]` is
 ||| `tensor [8, 15]`.
 export
-(*) : Primitive.Num dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(*) : Primitive.Num dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape dtype)
 (*) = binaryRef Mul
 
 namespace Scalarwise
@@ -1231,15 +1245,15 @@ namespace Scalarwise
   |||
   ||| The RHS is required to be non-scalar simply to avoid ambiguities with element-wise `(*)`.
   export
-  (*) : Primitive.Num dtype => Tensor [] dtype -> Tensor (d :: ds) dtype -> Tensor (d :: ds) dtype
+  (*) : Primitive.Num dtype => Tensor [] dtype -@ (Tensor (d :: ds) dtype -@ Tensor (d :: ds) dtype)
   l * r =
-    let MkTensor {shape = _ :: _} _ = r
-     in broadcast {shapesOK = scalarToAnyOk (d :: ds)} l * r
+    let MkTensor {shape = _ :: _} r = r
+     in broadcast {shapesOK = scalarToAnyOk (d :: ds)} l * MkTensor r
 
 namespace Semigroup
   export
   [Prod] Primitive.Num dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = (*)
+    x <+> x' = binaryRef Mul x x'
 
 namespace Monoid
   export
@@ -1252,7 +1266,7 @@ namespace Monoid
 ||| Element-wise floating point division. For example, `tensor [2, 3] / tensor [4, 5]` is
 ||| `tensor [0.5, 0.6]`.
 export
-(/) : Primitive.Fractional dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+(/) : Primitive.Fractional dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape dtype)
 (/) = binaryRef Div
 
 namespace Scalarwise
@@ -1262,37 +1276,39 @@ namespace Scalarwise
   ||| The LHS is required to be non-scalar simply to avoid ambiguities with element-wise `(/)`.
   export
   (/) : Primitive.Fractional dtype =>
-        Tensor (d :: ds) dtype ->
-        Tensor [] dtype ->
-        Tensor (d :: ds) dtype
+        Tensor (d :: ds) dtype -@
+        (Tensor [] dtype -@
+        Tensor (d :: ds) dtype)
   l / r =
-    let MkTensor {shape = _ :: _} _ = l
-     in l / broadcast {shapesOK = scalarToAnyOk (d :: ds)} r
+    let MkTensor {shape = _ :: _} l = l
+     in MkTensor l / broadcast {shapesOK = scalarToAnyOk (d :: ds)} r
 
 ||| Element-wise division of natural numbers. For example,
 ||| `div (tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [4, 2]`.
 export
-div : Tensor shape U64 ->
-      (denom : Literal shape Nat) ->
+div : Tensor shape U64 -@
+      ((denom : Literal shape Nat) ->
       {auto 0 isSucc : All IsSucc denom} ->
-      Tensor shape U64
-div x y with (x)
-  _ | (MkTensor {shape = _} _) = binaryRef {a' = U64} Div x (MkTensor $ FromLiteral {dtype = U64} y)  -- is this safe because the LHS is linear?
+      Tensor shape U64)
+div x y =
+  let MkTensor {shape = _} x = x
+   in binaryRef {a' = U64} Div (MkTensor {dtype = U64} x) (MkTensor $ FromLiteral {dtype = U64} y)  -- is this safe because the LHS is linear?
 
 ||| Element-wise remainder for natural numbers. For example,
 ||| `rem (tensor [Scalar 13, Scalar 8]) [3, 4]` is `tensor [1, 0]`.
 export
-rem : Tensor shape U64 ->
-      (denom : Literal shape Nat) ->
+rem : Tensor shape U64 -@
+      ((denom : Literal shape Nat) ->
       {auto 0 isSucc : All IsSucc denom} ->
-      Tensor shape U64
-rem x y with (x)
-  _ | (MkTensor {shape = _} _) = binaryRef {a' = U64} Rem x (MkTensor $ FromLiteral {dtype = U64} y)
+      Tensor shape U64)
+rem x y =
+  let MkTensor {shape = _} x = x
+   in binaryRef {a' = U64} Rem (MkTensor {dtype = U64} x) (MkTensor $ FromLiteral {dtype = U64} y)
 
 ||| The element-wise reciprocal. For example, `recip (tensor [-2, 0, 0.2])`
 ||| is `tensor [-0.5, nan, 5]`.
 export
-recip : Tensor shape F64 -> Tensor shape F64
+recip : Tensor shape F64 -@ Tensor shape F64
 recip = unary Reciprocal
 
 export infixr 9 ^
@@ -1305,132 +1321,132 @@ export infixr 9 ^
 |||
 ||| Note: The first root is used.
 export
-(^) : Tensor shape F64 -> Tensor shape F64 -> Tensor shape F64
+(^) : Tensor shape F64 -@ (Tensor shape F64 -@ Tensor shape F64)
 (^) = binaryRef Pow
 
 ||| Element-wise absolute value. For example, `abs (tensor [-2, 3])` is `tensor [2, 3]`.
 export
-abs : Primitive.Abs dtype => Tensor shape dtype -> Tensor shape dtype
+abs : Primitive.Abs dtype => Tensor shape dtype -@ Tensor shape dtype
 abs = unary Abs
 
 ||| The element-wise natural exponential. For example, `exp (tensor [-1, 0, 2])` is
 ||| `tensor [1 / euler, 1, pow euler 2]`.
 export
-exp : Tensor shape F64 -> Tensor shape F64
+exp : Tensor shape F64 -@ Tensor shape F64
 exp = unary Exp
 
 ||| The element-wise floor function. For example,
 ||| `floor (tensor [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `tensor [-2.0, -2.0, -2.0, -1.0, 1.0, 1.0, 1.0, 1.0]`.
 export
-floor : Tensor shape F64 -> Tensor shape F64
+floor : Tensor shape F64 -@ Tensor shape F64
 floor = unary Floor
 
 ||| The element-wise ceiling function. For example,
 ||| `ceil (tensor [-1.6, -1.5, -1.4, -1.0, 1.0, 1.4, 1.5, 1.6])` is
 ||| `tensor [-1.0, -1.0, -1.0, -1.0, 1.0, 2.0, 2.0, 2.0]`.
 export
-ceil : Tensor shape F64 -> Tensor shape F64
+ceil : Tensor shape F64 -@ Tensor shape F64
 ceil = unary Ceil
 
 ||| The element-wise natural logarithm. Negative inputs yield NaN output. For example,
 ||| `log (tensor [1 / euler, 1, euler * euler])` is `tensor [-1, 0, 2]`.
 export
-log : Tensor shape F64 -> Tensor shape F64
+log : Tensor shape F64 -@ Tensor shape F64
 log = unary Log
 
 ||| The element-wise logistic function equivalent to `1 / 1 + exp (-x)`.
 export
-logistic : Tensor shape F64 -> Tensor shape F64
+logistic : Tensor shape F64 -@ Tensor shape F64
 logistic = unary Logistic
 
 ||| The element-wise sine.
 export
-sin : Tensor shape F64 -> Tensor shape F64
+sin : Tensor shape F64 -@ Tensor shape F64
 sin = unary Sin
 
 ||| The element-wise cosine.
 export
-cos : Tensor shape F64 -> Tensor shape F64
+cos : Tensor shape F64 -@ Tensor shape F64
 cos = unary Cos
 
 ||| The element-wise tangent.
 export
-tan : Tensor shape F64 -> Tensor shape F64
+tan : Tensor shape F64 -@ Tensor shape F64
 tan = unary Tan
 
 ||| The element-wise inverse sine.
 export
-asin : Tensor shape F64 -> Tensor shape F64
+asin : Tensor shape F64 -@ Tensor shape F64
 asin = unary Asin
 
 ||| The element-wise inverse cosine.
 export
-acos : Tensor shape F64 -> Tensor shape F64
+acos : Tensor shape F64 -@ Tensor shape F64
 acos = unary Acos
 
 ||| The element-wise inverse tangent.
 export
-atan : Tensor shape F64 -> Tensor shape F64
+atan : Tensor shape F64 -@ Tensor shape F64
 atan = unary Atan
 
 ||| The element-wise hyperbolic sine.
 export
-sinh : Tensor shape F64 -> Tensor shape F64
+sinh : Tensor shape F64 -@ Tensor shape F64
 sinh = unary Sinh
 
 ||| The element-wise hyperbolic cosine.
 export
-cosh : Tensor shape F64 -> Tensor shape F64
+cosh : Tensor shape F64 -@ Tensor shape F64
 cosh = unary Cosh
 
 ||| The element-wise hyperbolic tangent.
 export
-tanh : Tensor shape F64 -> Tensor shape F64
+tanh : Tensor shape F64 -@ Tensor shape F64
 tanh = unary Tanh
 
 ||| The element-wise inverse hyperbolic sine.
 export
-asinh : Tensor shape F64 -> Tensor shape F64
+asinh : Tensor shape F64 -@ Tensor shape F64
 asinh = unary Asinh
 
 ||| The element-wise inverse hyperbolic cosine.
 export
-acosh : Tensor shape F64 -> Tensor shape F64
+acosh : Tensor shape F64 -@ Tensor shape F64
 acosh = unary Acosh
 
 ||| The element-wise inverse hyperbolic tangent.
 export
-atanh : Tensor shape F64 -> Tensor shape F64
+atanh : Tensor shape F64 -@ Tensor shape F64
 atanh = unary Atanh
 
 ||| An approximation to the element-wise error function.
 export
-erf : Tensor shape F64 -> Tensor shape F64
+erf : Tensor shape F64 -@ Tensor shape F64
 erf = unary Erf
 
 ||| The element-wise square. For example, `square (tensor [-2, 0, 3])`
 ||| is `tensor [4, 0, 9]`.
 export
-square : Tensor shape F64 -> Tensor shape F64
+square : Tensor shape F64 -@ Tensor shape F64
 square = unary Square
 
 ||| The element-wise square root. The first root is used. Negative inputs yield NaN output.
 ||| For example, `sqrt (tensor [0, 9])` is `tensor [0, 3]`.
 export
-sqrt : Tensor shape F64 -> Tensor shape F64
+sqrt : Tensor shape F64 -@ Tensor shape F64
 sqrt = unary Sqrt
 
 ||| The element-wise minimum of the first argument compared to the second. For example,
 ||| `min (tensor [-3, -1, 3]) (tensor [-1, 0, 1])` is `tensor [-3, -1, 1]`.
 export
-min : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+min : Primitive.Ord dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape dtype)
 min (MkTensor x) (MkTensor x') = MkTensor $ BinaryElementwise Min x x'
 
 namespace Semigroup
   export
   [Min] {shape : _} -> Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = min
+    MkTensor x <+> MkTensor x' = MkTensor $ BinaryElementwise Min x x'
 
 namespace Monoid
   export
@@ -1443,13 +1459,13 @@ namespace Monoid
 ||| The element-wise maximum of the first argument compared to the second. For example,
 ||| `max (tensor [-3, -1, 3]) (tensor [-1, 0, 1])` is `tensor [-1, 0, 3]`.
 export
-max : Primitive.Ord dtype => Tensor shape dtype -> Tensor shape dtype -> Tensor shape dtype
+max : Primitive.Ord dtype => Tensor shape dtype -@ (Tensor shape dtype -@ Tensor shape dtype)
 max (MkTensor x) (MkTensor x') = MkTensor $ BinaryElementwise Max x x'
 
 namespace Semigroup
   export
   [Max] Primitive.Ord dtype => Semigroup (Tensor shape dtype) where
-    (<+>) = max
+    MkTensor x <+> MkTensor x' = MkTensor $ BinaryElementwise Max x x'
 
 namespace Monoid
   export
@@ -1470,7 +1486,7 @@ export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
 argmax x with (x)
   _ | (MkTensor {shape = _} _) = do
-    tag x $ \x => do
+    copy x $ \x => do
       MkTensor x <- cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
       pure $ MkTensor $ Argmax {out = U64} 0 x
 
@@ -1478,7 +1494,7 @@ argmax x with (x)
 
     extremizeNan : {m : _} -> Tensor [S m] dtype -> Tag $ Tensor [S m] dtype
     extremizeNan x = do
-      x <- tag x
+      x <- copy x
       let min' = broadcast $ Types.min @{NonFinite}
           max' = broadcast $ Types.max @{NonFinite}
       pure $ select (x /= x) max' min'
@@ -1501,7 +1517,7 @@ argmin (MkTensor x) = argmax (MkTensor {shape = [S n], dtype} $ UnaryElementwise
 ||| positive semi-definite. The remaining matrix components - those not in the lower triangle or
 ||| diagonal - will always be zero.
 export
-cholesky : Tensor [S n, S n] F64 -> Tensor [S n, S n] F64
+cholesky : Tensor [S n, S n] F64 -@ Tensor [S n, S n] F64
 cholesky $ MkTensor x = triangle Lower (MkTensor $ Cholesky x)
 
 export infix 9 |\, \|
@@ -1515,7 +1531,7 @@ namespace Matrix
   ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (|\) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
+  (|\) : Tensor [m, m] F64 -@ (Tensor [m, n] F64 -@ Tensor [m, n] F64)
   (MkTensor a) |\ (MkTensor b) = MkTensor $ TriangularSolve a b True
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
@@ -1526,7 +1542,7 @@ namespace Matrix
   ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
-  (\|) : Tensor [m, m] F64 -> Tensor [m, n] F64 -> Tensor [m, n] F64
+  (\|) : Tensor [m, m] F64 -@ (Tensor [m, n] F64 -@ Tensor [m, n] F64)
   (MkTensor a) \| (MkTensor b) = MkTensor $ TriangularSolve a b False
 
 namespace Vector
@@ -1538,8 +1554,8 @@ namespace Vector
   ||| The operator is shaped like the lower-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(\|)`.
   export
-  (|\) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
-  a |\ b = let (MkTensor {shape = [_]} _) = b in squeeze (a |\ expand 1 b)
+  (|\) : Tensor [m, m] F64 -@ (Tensor [m] F64 -@ Tensor [m] F64)
+  a |\ b = let MkTensor {shape = [_]} b = b in squeeze (a |\ expand 1 (MkTensor {shape = [_]} b))
 
   ||| Solve the set of linear equations `a @@ x = b` for `x` where `a` is an upper-triangular
   ||| matrix. `a` is given by the upper-triangular elements of the first argument. Values in the
@@ -1549,8 +1565,8 @@ namespace Vector
   ||| The operator is shaped like the upper-triangular portion of a matrix to signal that it uses
   ||| this portion of its argument. This is in contrast to `(|\)`.
   export
-  (\|) : Tensor [m, m] F64 -> Tensor [m] F64 -> Tensor [m] F64
-  a \| b = let (MkTensor {shape = [_]} _) = b in squeeze (a \| expand 1 b)
+  (\|) : Tensor [m, m] F64 -@ (Tensor [m] F64 -@ Tensor [m] F64)
+  a \| b = let MkTensor {shape = [_]} b = b in squeeze (a \| expand 1 (MkTensor {shape = [_]} b))
 
 ||| Sum the elements along the diagonal of the input. For example,
 ||| `trace (tensor [[-1, 5], [1, 4]])` produces `3`.
@@ -1559,8 +1575,9 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
         Tag $ Tensor [] dtype
-trace x with (x)
-  _ | MkTensor {shape = [_, _]} _ = reduce @{Sum} [0, 1] $ x * identity
+trace x =
+  let MkTensor {shape = [_, _]} x = x
+   in reduce @{Sum} [0, 1] $ (MkTensor {shape = [S n, S n]} x) * unr !identity
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
@@ -1571,7 +1588,6 @@ Rand a = (1 _ : Tensor [1] U64) -> Tag (LPair (Tensor [1] U64) a)
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
 
-{-
 ||| Generate independent and identically distributed (IID) uniform samples bounded element-wise
 ||| between `bound` and `bound'`.
 |||
@@ -1601,23 +1617,22 @@ uniform :
   (bound, bound' : Tensor shape F64) ->
   Tag $ Rand $ Tensor shape F64
 uniform (MkTensor key) bound bound' = do
-  -- I reckon we can overload (>>=) to reintroduce do notation
-  MkBang minval@(MkTensor iMinval) <- tag (Tensor.min bound bound')
-  MkBang maxval@(MkTensor iMaxval) <- tag (Tensor.max bound bound')
+  MkBang minval@(MkTensor iMinval) <- copy (Tensor.min bound bound')
+  MkBang maxval@(MkTensor iMaxval) <- copy (Tensor.max bound bound')
   let inf = broadcast inf
+  MkBang zeroes <- fill 0
   pure $ \(MkTensor state) => do
     let expr = UniformFloatingPoint key state iMinval iMaxval shape
-    MkBang (MkTensor x) <- tag (MkTensor {shape, dtype = F64} expr)
+    MkBang (MkTensor x) <- copy (MkTensor {shape, dtype = F64} expr)
     let state = MkTensor $ GetTupleElement 1 x
         value = MkTensor $ GetTupleElement 0 x
         -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
         -- samples between -inf and 0 should be at -inf, but XLA produces nan
         -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
-        value = select ((minval == - inf) && (maxval == fill 0)) (-inf) value
+        value = select ((minval == - inf) && (maxval == zeroes)) (-inf) value
         value = select ((minval == inf) && (maxval == inf)) inf value
         value = select ((minval == -inf) && (maxval == -inf)) (-inf) value
     pure (state # value)
--}
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1638,7 +1653,7 @@ uniform (MkTensor key) bound bound' = do
 export
 normal : {shape : _} -> (1 key : Tensor [] U64) -> Rand $ Tensor shape F64
 normal (MkTensor key) (MkTensor state) = do
-  MkBang $ MkTensor x <- tag (MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape)
+  MkBang $ MkTensor x <- copy (MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape)
   let state = MkTensor $ GetTupleElement 1 x
       value = MkTensor $ GetTupleElement 0 x
   pure (state # value)

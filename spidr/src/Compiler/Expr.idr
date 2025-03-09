@@ -137,8 +137,8 @@ counter : Env -> Nat
 counter (MkEnv c _) = c
 
 export
-tag : Expr -> (1 _ : Env) -> (Env, Expr)
-tag expr (MkEnv next env) = (MkEnv (S next) ((next, expr) :: env), Var next)
+copy : Expr -> (1 _ : Env) -> (Env, Expr)
+copy expr (MkEnv next env) = (MkEnv (S next) ((next, expr) :: env), Var next)
 
 export
 reserve : (1 _ : Env) -> (Env, Nat)

@@ -18,32 +18,45 @@ module Data
 
 import Tensor
 
-%prefix_record_projections off
-
 ||| Observed pairs of data points from feature and target domains. Data sets such as this are
 ||| commonly used in supervised learning settings.
 |||
 ||| @features The shape of the feature domain.
 ||| @targets The shape of the target domain.
 public export
-record Dataset (0 featureShape, targetShape : Shape) where
-  constructor MkDataset
-  {s : Nat}
+data Dataset : (features, targets : Shape) -> Type where
+  MkDataset : {s : Nat} ->
+              Tensor (S s :: features) F64 -@
+              (Tensor (S s :: targets) F64 -@
+              Dataset features targets)
 
-  ||| The feature data
-  features : Tensor (S s :: featureShape) F64
+public export
+size : Dataset f t -> Nat
+size (MkDataset {s} f t) = S s
 
-  ||| The target data
-  targets : Tensor (S s :: targetShape) F64
+||| The feature data
+export
+(.features) : (1 dataset : Dataset features targets) -> Tensor (size dataset :: features) F64
+(MkDataset fs ts).features = discarding ts fs
 
-%prefix_record_projections on
+||| The target data
+export
+(.targets) : (1 dataset : Dataset features targets) -> Tensor (size dataset :: targets) F64
+(MkDataset fs ts).targets = discarding fs ts
 
 ||| Concatenate two datasets along their leading axis.
 export
-concat : Dataset features targets -> Dataset features targets -> Dataset features targets
+concat : Dataset features targets -@ (Dataset features targets -@ Dataset features targets)
 concat (MkDataset {s = s} x y) (MkDataset {s = s'} x' y') =
   MkDataset {s = s + S s'} (concat 0 x x') (concat 0 y y')
 
 export
-Taggable (Dataset f t) where
-  tag (MkDataset f t) = [| MkDataset (tag f) (tag t) |]
+Copy (Dataset f t) where
+  copy (MkDataset f t) = do
+    MkBang f <- copy f
+    MkBang t <- copy t
+    pure $ MkBang $ MkDataset f t
+  discard (MkDataset f t) =
+    let () = discard f
+        () = discard t
+     in ()
