@@ -27,7 +27,6 @@ import Model
 import Tensor
 import Data.Linear.LVect
 
-{-
 ||| A `Stream`-like collection where each successive element can extend the set of `Tag`s.
 public export
 data TagStream : Type -> Type where
@@ -66,4 +65,3 @@ step objective train tactic env = do
   MkBang newPoint <- copy !(tactic env)
   MkBang dataset <- copy $ concat env.dataset $ MkDataset newPoint !(objective newPoint)
   pure $ MkDataModel !(train dataset env.model) dataset
--}

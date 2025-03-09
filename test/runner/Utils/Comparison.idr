@@ -60,9 +60,9 @@ namespace Tag
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Tag (Tensor shape PRED) ->
-             Tag (Tensor shape PRED) ->
-             TestT m ()
+             Tag (Tensor shape PRED) -@ (
+             Tag (Tensor shape PRED) -@
+             TestT m ())
     x ===# y = unsafeEval x === unsafeEval y
 
   namespace S32
@@ -70,9 +70,9 @@ namespace Tag
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Tag (Tensor shape S32) ->
-             Tag (Tensor shape S32) ->
-             TestT m ()
+             Tag (Tensor shape S32) -@ (
+             Tag (Tensor shape S32) -@
+             TestT m ())
     x ===# y = unsafeEval x === unsafeEval y
 
   namespace U32
@@ -80,9 +80,9 @@ namespace Tag
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Tag (Tensor shape U32) ->
-             Tag (Tensor shape U32) ->
-             TestT m ()
+             Tag (Tensor shape U32) -@ (
+             Tag (Tensor shape U32) -@
+             TestT m ())
     x ===# y = unsafeEval x === unsafeEval y
 
   namespace U64
@@ -90,9 +90,9 @@ namespace Tag
     (===#) : Device =>
              Monad m =>
              {shape : _} ->
-             Tag (Tensor shape U64) ->
-             Tag (Tensor shape U64) ->
-             TestT m ()
+             Tag (Tensor shape U64) -@ (
+             Tag (Tensor shape U64) -@
+             TestT m ())
     x ===# y = unsafeEval x === unsafeEval y
 
   namespace F64
@@ -101,33 +101,33 @@ namespace Tag
              Monad m =>
              {shape : _} ->
              {default floatingPointTolerance tol : Double} ->
-             Tag (Tensor shape F64) ->
-             Tag (Tensor shape F64) ->
-             TestT m ()
+             Tag (Tensor shape F64) -@ (
+             Tag (Tensor shape F64) -@
+             TestT m ())
     x ===# y = (==~) {tol} (unsafeEval x) (unsafeEval y)
 
 namespace PRED
   export
-  (===#) : Device => Monad m => {shape : _} -> Tensor shape PRED -> Tensor shape PRED -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape PRED -@ (Tensor shape PRED -@ TestT m ())
   x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace S32
   export
-  (===#) : Device => Monad m => {shape : _} -> Tensor shape S32 -> Tensor shape S32 -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape S32 -@ (Tensor shape S32 -@ TestT m ())
   x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace U32
   export
-  (===#) : Device => Monad m => {shape : _} -> Tensor shape U32 -> Tensor shape U32 -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape U32 -@ (Tensor shape U32 -@ TestT m ())
   x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace U64
   export
-  (===#) : Device => Monad m => {shape : _} -> Tensor shape U64 -> Tensor shape U64 -> TestT m ()
+  (===#) : Device => Monad m => {shape : _} -> Tensor shape U64 -@ (Tensor shape U64 -@ TestT m ())
   x ===# y = unsafeEval (pure x) === unsafeEval (pure y)
 
 namespace F64
   export
   (===#) : Device => Monad m => {shape : _} -> {default floatingPointTolerance tol : Double} ->
-           Tensor shape F64 -> Tensor shape F64 -> TestT m ()
+           Tensor shape F64 -@ (Tensor shape F64 -@ TestT m ())
   x ===# y = (==~) {tol} (unsafeEval $ pure x) (unsafeEval $ pure y)
