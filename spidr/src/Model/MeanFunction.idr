@@ -29,4 +29,4 @@ MeanFunction features = {sm : _} -> Tensor (sm :: features) F64 -@ Tag $ Tensor 
 ||| A mean function where the mean is zero in all target dimensions.
 export
 zero : MeanFunction features
-zero x = let () = discard x in pure $ unr !(fill 0)
+zero x = pure $ x `seq` get !(fill {n = 0} 0)

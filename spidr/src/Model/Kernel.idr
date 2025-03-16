@@ -39,7 +39,7 @@ scaledL2Norm :
   Tag $ Tensor [n, n'] F64))
 scaledL2Norm len x x' =
   let xs = broadcast {to = [n, n', S d]} $ expand 1 x
-   in reduce @{Sum} [2] $ ((xs - broadcast (expand 0 x')) / len) ^ unr !(fill 2.0)
+   in reduce @{Sum} [2] $ ((xs - broadcast (expand 0 x')) / len) ^ get !(fill {n = 0} 2.0)
 
 ||| The radial basis function, or squared exponential kernel. This is a stationary kernel with form
 |||
@@ -71,7 +71,7 @@ rbf lengthScale x x' = pure $ exp (- !(scaledL2Norm lengthScale x x') / 2.0)
 export
 matern52 :
   (1 amplitude : Tensor [] F64) -> (1 length_scale : Tensor [] F64) -> {d : _} -> Kernel [S d]
-matern52 amp len x x' = do
-  MkBang d2 <- copy $ Tensor.Scalarwise.(*) 5.0 !(scaledL2Norm len x x')
-  MkBang d <- copy $ d2 ^ unr !(fill 0.5)
-  pure $ (amp ^ 2.0) * (d2 / 3.0 + d + unr !(fill 1.0)) * exp (- d)
+matern52 amp len x x' = ?mres {-do
+  (d2 ## [d2]) <- copy {n = 1} $ Tensor.Scalarwise.(*) 5.0 !(scaledL2Norm len x x')
+  (d ## [d]) <- copy {n = 1} $ d2 ^ unr !(fill 0.5)
+  pure $ (amp ^ 2.0) * (d2 / 3.0 + d + unr !(fill 1.0)) * exp (- d)-}

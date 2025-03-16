@@ -26,8 +26,8 @@ import Tensor
 public export
 data Dataset : (features, targets : Shape) -> Type where
   MkDataset : {s : Nat} ->
-              Tensor (S s :: features) F64 -@
-              (Tensor (S s :: targets) F64 -@
+              Tensor (S s :: features) F64 -@ (
+              Tensor (S s :: targets) F64 -@
               Dataset features targets)
 
 public export
@@ -37,12 +37,12 @@ size (MkDataset {s} f t) = S s
 ||| The feature data
 export
 (.features) : (1 dataset : Dataset features targets) -> Tensor (size dataset :: features) F64
-(MkDataset fs ts).features = discarding ts fs
+(MkDataset fs ts).features = ts `seq` fs
 
 ||| The target data
 export
 (.targets) : (1 dataset : Dataset features targets) -> Tensor (size dataset :: targets) F64
-(MkDataset fs ts).targets = discarding fs ts
+(MkDataset fs ts).targets = fs `seq` ts
 
 ||| Concatenate two datasets along their leading axis.
 export
@@ -52,11 +52,9 @@ concat (MkDataset {s = s} x y) (MkDataset {s = s'} x' y') =
 
 export
 Copy (Dataset f t) where
-  copy (MkDataset f t) = do
-    MkBang f <- copy f
-    MkBang t <- copy t
-    pure $ MkBang $ MkDataset f t
-  discard (MkDataset f t) =
-    let () = discard f
-        () = discard t
-     in ()
+  copy (MkDataset f t) = pure $ zipWith MkDataset !(copy f) !(copy t)
+
+export
+Consumable (Dataset f t) where
+  consume (MkDataset f t) = f `seq` t `seq` ()
+

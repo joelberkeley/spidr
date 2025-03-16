@@ -73,31 +73,27 @@ data Gaussian : (0 event : Shape) -> (0 dim : Nat) -> Type where
 
 export
 Copy (Gaussian event dim) where
-  copy (MkGaussian mean cov) = do
-    MkBang mean <- copy mean
-    MkBang cov <- copy cov
-    pure $ MkBang $ MkGaussian mean cov
+  copy (MkGaussian mean cov) = pure $ zipWith MkGaussian !(copy mean) !(copy cov)
 
-  discard (MkGaussian mean cov) =
-    let () = discard mean
-        () = discard cov
-     in ()
+export
+Consumable (Gaussian event dim) where
+  consume (MkGaussian mean cov) = mean `seq` cov `seq` ()
 
 export
 Distribution Gaussian where
-  mean (MkGaussian mean' cov) = let () = discard cov in pure mean'
-  cov (MkGaussian mean cov') = let () = discard mean in pure cov'
+  mean (MkGaussian mean' cov) = cov `seq` pure mean'
+  cov (MkGaussian mean cov') = mean `seq` pure cov'
 
 ||| **NOTE** `cdf` is implemented only for univariate `Gaussian`.
 export
 ClosedFormDistribution [1] Gaussian where
-  pdf (MkGaussian {d} mean cov) x = do
-    MkBang cholCov <- copy $ cholesky $ squeeze {to = [S d, S d]} cov
-    MkBang tri <- copy $ cholCov |\ squeeze (x - mean)
+  pdf (MkGaussian {d} mean cov) x = ?pdf_res {-do
+    (cholCov ## [cholCov]) <- copy {n = 1} $ cholesky $ squeeze {to = [S d, S d]} cov
+    (tri ## [tri]) <- copy {n = 1} $ cholCov |\ squeeze (x - mean)
     let exponent = - tri @@ tri / 2.0
     covSqrtDet <- reduce @{Prod} [0] (diag cholCov)
     let 1 denominator = fromDouble (pow (2.0 * pi) (cast (S d) / 2.0)) * covSqrtDet
-    pure (exp exponent / denominator)
+    pure (exp exponent / denominator)-}
 
   cdf (MkGaussian {d = S _} _ _) _ = ?multivariateGaussianCDF
   cdf (MkGaussian {d = 0} mean cov) x =

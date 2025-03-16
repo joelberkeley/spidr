@@ -21,6 +21,8 @@ limitations under the License.
 ||| _Nuisances in the Tensor API_ for a discussion of pitfalls to avoid when using `Tag`.
 module Tensor
 
+import public Data.Linear.Copies
+import public Data.Linear.Interface
 import Control.Monad.Error.Either
 import public Control.Monad.State
 import public Data.List
@@ -95,6 +97,28 @@ data Tag : Type -> Type where
 --MonadTrans TagT where
 --  lift x = MkTagT $ \e => map (e,) x
 
+export
+(<$>) : (a -@ b) -@ Tag a -@ Tag b
+(<$>) f (MkTag (ST x)) = MkTag $ ST $ \e => let Id (e # x) = x e in Id (e # f x)
+
+export infixr 6 ##
+
+public export
+data LDPair : (a : Type) -> (a -> Type) -> Type where
+  (##) : (1 x : a) -> (1 y : p x) -> LDPair a p
+
+Consumable a => Consumable (Copies n {a} x) where
+  consume [] = ()
+  consume (x :: xs) = x `seq` xs `seq` ()
+
+public export 0
+Foo : Nat -> Type -> Type
+Foo n a = LDPair a (\x => Copies n x)
+
+public export
+get : Consumable a => Foo n a -@ a
+get (x ## xs) = xs `seq` x
+
 public export
 interface Copy a where
   ||| Mark an expression to be efficiently reused. For example, in
@@ -120,12 +144,23 @@ interface Copy a where
   -- note we can update Env without producing an unrestricted value - e.g. if we derive a linear
   -- value from an unrestricted one and another linear one ... this makes a `Tag a`,
   -- which constrains `a` to be linear
-  copy : a -@ Tag (!* a)
-  discard : a -@ ()
+  copy : {n : _} -> a -@ Tag $ Foo n a
+
+public export
+zipWith : {0 x : a} -> {0 y : b} -> (f : a -@ (b -@ c)) -> n `Copies` x -@ (n `Copies` y -@ n `Copies` f x y)
+zipWith f [] [] = []
+zipWith f (x :: xs) (y :: ys) = f x y :: zipWith f xs ys
+
+namespace Foo
+  public export
+  zipWith : (f : a -@ (b -@ c)) -> Foo n a -@ (Foo n b -@ Foo n c)
+  zipWith f (x ## xs) (y ## ys) = (f x y ## zipWith f xs ys)
+
+replicate : (n : Nat) -> (x : a) -> Copies n x
 
 export
-discarding : Copy a => a -@ (b -@ b)
-discarding a b = let () = discard a in b
+pure : a -@ Tag a
+pure x = MkTag $ ST $ \e => Id (e # x)
 
 -- this is like (>>=) for LIO, but not like bindL ... why are they different?
 export
@@ -136,26 +171,18 @@ MkTag (ST x) >>= f = MkTag $ ST $ \e =>
    in res e
 
 export
-pure : a -@ Tag a
-pure x = MkTag $ ST $ \e => Id (e # x)
-
-export
 Copy (Tensor shape dtype) where
   -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
   -- to an inner scope, but I can't see why that would be useful
-  -- copy (MkTensor (Var x)) f = f (MkTensor (Var x))
-  copy (MkTensor (Var x)) = MkTag $ ST $ \e => Id (e # MkBang (MkTensor (Var x)))
-  -- copy (MkTensor x) f = MkTagT $ do let e # xn = addToEnv e x in f e (MkTensor (Var xn))
-  copy (MkTensor x) = MkTag $ ST $ \e =>
+  copy {n} (MkTensor (Var x)) = let x = MkTensor (Var x) in MkTag $ ST $ \e => Id (e # x ## replicate n x)
+  copy {n} (MkTensor x) = MkTag $ ST $ \e =>
     let (e, x) = Expr.copy x e
-     in Id (e # MkBang (MkTensor x))
-  discard (MkTensor _) = ()
-{-
-  copy (MkTensor x) f = MkTagT $ \e =>
-    let (e, x) = Expr.copy x e
-        MkTagT ff = f (MkTensor x)
-     in ff e
-     -}
+        x = MkTensor x
+     in Id (e # x ## replicate n x)
+
+export
+Consumable (Tensor shape dtype) where
+  consume (MkTensor _) = ()
 
 ||| Construct a `Tensor` from `Literal` data. For example
 ||| ```
@@ -168,7 +195,7 @@ tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> (Tensor shape 
 tensor lit f = f (MkTensor $ FromLiteral {dtype} {shape} lit)  -- is this right? do i need to cache it?
 
 export
-tensorN : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tag (!* Tensor shape dtype)
+tensorN : {n : _} -> PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tag $ Foo n (Tensor shape dtype)
 tensorN lit = copy (MkTensor $ FromLiteral {dtype} {shape} lit)
 
 namespace F64
@@ -673,7 +700,7 @@ transpose ordering $ MkTensor x = MkTensor $ Transpose ordering x
 |||             [0, 1]]
 ||| ```
 export
-identity : Primitive.Num dtype => {n : _} -> Tag (!* Tensor [n, n] dtype)
+identity : Primitive.Num dtype => {n, m : _} -> Tag $ Foo m (Tensor [n, n] dtype)
 identity = copy $ MkTensor $ Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
@@ -769,10 +796,10 @@ broadcast $ MkTensor {shape = _} x = MkTensor $ Broadcast {dtype} from to x
 |||                 [5, 5, 5]]
 ||| ```
 export
-fill : PrimitiveRW dtype ty => {shape : _} -> ty -> Tag (!* Tensor shape dtype)
+fill : PrimitiveRW dtype ty => {n : _} -> {shape : _} -> ty -> Tag $ Foo n (Tensor shape dtype)
 fill x = do
-  MkBang x <- tensorN (Scalar x)
-  pure $ MkBang $ broadcast {shapesOK = scalarToAnyOk shape} x
+  (x ## []) <- tensorN {n = Z} (Scalar x)
+  copy $ broadcast {shapesOK = scalarToAnyOk shape} x
 
 ||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
@@ -1492,9 +1519,9 @@ namespace Monoid
 ||| the value returned by `reduce @{Max}`.
 export
 argmax : Primitive.Ord dtype => Tensor [S n] dtype -@ Tag $ Tensor [] U64
-argmax x = do
+{-argmax x = do
   let MkTensor {shape = _} x = x
-  MkBang x <- copy $ MkTensor {shape = [S n]} x
+  (x # [x, x, x]) <- copy {n = 3} $ MkTensor {shape = [S n], dtype = U64} x 
   MkTensor x <- cond !(reduce @{All} [0] (x == x)) pure x extremizeNan x
   pure $ MkTensor $ Argmax {out = U64} 0 x
 
@@ -1502,10 +1529,10 @@ argmax x = do
 
     extremizeNan : {m : _} -> Tensor [S m] dtype -@ Tag $ Tensor [S m] dtype
     extremizeNan x = do
-      MkBang x <- copy x
+      (x # [x]) <- copy {n = 1} x
       let min' = broadcast $ Types.min @{NonFinite}
           max' = broadcast $ Types.max @{NonFinite}
-      pure $ select (x /= x) max' min'
+      pure $ select (x /= x) max' min'-}
 
 ||| The first index of the minimum value in a vector. For example,
 ||| `argmin (tensor [-1, 3, -2, -2, 3])` produces `tensor 2`. If the vector contains NaN values,
@@ -1583,9 +1610,10 @@ trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
         Tag $ Tensor [] dtype
-trace x =
+trace x = do
   let MkTensor {shape = [_, _]} x = x
-   in reduce @{Sum} [0, 1] $ (MkTensor {shape = [S n, S n]} x) * unr !identity
+  (id' ## []) <- identity {m = 0}
+  reduce @{Sum} [0, 1] $ (MkTensor {shape = [S n, S n]} x) * id'
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
@@ -1621,26 +1649,30 @@ inf = fromDouble (1.0 / 0.0)
 export
 uniform :
   {shape : _} ->
-  (key : Tensor [] U64) ->
-  (bound, bound' : Tensor shape F64) ->
-  Tag $ Rand $ Tensor shape F64
+  (1 key : Tensor [] U64) ->
+  (1 bound, bound' : Tensor shape F64) ->
+  Tag $ Rand $ Tensor shape F64{-
 uniform (MkTensor key) bound bound' = do
-  MkBang minval@(MkTensor iMinval) <- copy (Tensor.min bound bound')
-  MkBang maxval@(MkTensor iMaxval) <- copy (Tensor.max bound bound')
-  let inf = broadcast inf
-  MkBang zeroes <- fill 0
+  (bound # [bound]) <- copy {n = 1} bound
+  (bound' # [bound']) <- copy {n = 1} bound'
+  (i # [i, i]) <- copy {n = 3} $ Tensor.min bound bound'
+  (a # [a, a]) <- copy {n = 3} $ Tensor.max bound bound'
+  let inf = broadcast {to = shape} inf
+      MkTensor iMinval = i
+      MkTensor iMaxval = a
+  (zeroes # []) <- fill {dtype = F64} {n = Z} 0
   pure $ \(MkTensor state) => do
     let expr = UniformFloatingPoint key state iMinval iMaxval shape
-    MkBang (MkTensor x) <- copy (MkTensor {shape, dtype = F64} expr)
+    (MkTensor x # []) <- copy {n = Z} (MkTensor {shape, dtype = F64} expr)
     let state = MkTensor $ GetTupleElement 1 x
         value = MkTensor $ GetTupleElement 0 x
         -- workaround for XLA bug https://github.com/tensorflow/tensorflow/issues/56663
         -- samples between -inf and 0 should be at -inf, but XLA produces nan
         -- similarly, samples in (inf, inf) should be at inf and respectively for -inf
-        value = select ((minval == - inf) && (maxval == zeroes)) (-inf) value
-        value = select ((minval == inf) && (maxval == inf)) inf value
-        value = select ((minval == -inf) && (maxval == -inf)) (-inf) value
-    pure (state # value)
+        value = select ((i == -inf) && (a == zeroes)) (-inf) value
+        value = select ((i == inf) && (a == inf)) inf value
+        value = select ((i == -inf) && (a == -inf)) (-inf) value
+        pure (state # value)-}
 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
@@ -1661,7 +1693,8 @@ uniform (MkTensor key) bound bound' = do
 export
 normal : {shape : _} -> (1 key : Tensor [] U64) -> Rand $ Tensor shape F64
 normal (MkTensor key) (MkTensor state) = do
-  MkBang $ MkTensor x <- copy (MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape)
-  let state = MkTensor $ GetTupleElement 1 x
+  (x ## []) <- copy {n = Z} $ MkTensor {shape, dtype = F64} $ NormalFloatingPoint key state shape
+  let MkTensor x = x
+      state = MkTensor $ GetTupleElement 1 x
       value = MkTensor $ GetTupleElement 0 x
   pure (state # value)
