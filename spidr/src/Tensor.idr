@@ -33,6 +33,8 @@ import public Data.Linear.Notation
 import public Linear
 import Control.Linear.LIO 
 
+import Data.Vect.Quantifiers
+
 import Compiler.Eval
 import Compiler.Expr
 import Compiler.Xla.Shape
@@ -68,56 +70,31 @@ public export
 data LIdentity : Type -> Type where
   Id : (1 x : a) -> LIdentity a
 
+export
+data Cache : Vect n Nat -> Vect n Type -> Type where
+  MkCache : HVect types -> Cache counts types
+
+-- this is wrong :
+-- cache is the finite set of linear references
+-- env is the things the references in the cache point to
+
 ||| The effect of tagging nodes in a computational graph.
 export
-data Tag : Type -> Type where
-  MkTag : (1 _ : LStateT Env LIdentity a) -> Tag a
-
---export
---Functor m => Functor (TagT m) where
---  map f (MkTagT fe) = MkTagT $ \e => map (mapSnd f) (fe e)
---
---export
---Monad m => Applicative (TagT m) where
---  pure x = MkTagT $ \e => pure (e, x)
---  (MkTagT f) <*> (MkTagT x) = MkTagT $ \e => do
---    (e, ff) <- f e
---    (e, xx) <- x e
---    pure (e, ff xx)
---
---export
---Monad m => Monad (TagT m) where
---  (MkTagT x) >>= f = MkTagT $ \e => do
---    (e, xx) <- x e
---    let MkTagT ff = f xx
---    ff e
---    -- x >>= (\y => let MkTagT z = f y in z)
-
---export
---MonadTrans TagT where
---  lift x = MkTagT $ \e => map (e,) x
+data Tag : Vect n Nat -> Vect n Type -> Type -> Type where
+  MkTag : (1 _ : LStateT (Cache counts types) LIdentity a) -> Tag counts types a
 
 export
-(<$>) : (a -@ b) -@ Tag a -@ Tag b
-(<$>) f (MkTag (ST x)) = MkTag $ ST $ \e => let Id (e # x) = x e in Id (e # f x)
+dec : (m : Fin n) -> (counts : Vect n Nat) -> {auto isSucc : IsSucc (index m counts)} -> Vect n Nat
+dec FZ (S x :: xs) = (x :: xs)
+dec (FS m) (x :: xs) = x :: dec m xs 
 
-export infixr 6 ##
-
-public export
-data LDPair : (a : Type) -> (a -> Type) -> Type where
-  (##) : (1 x : a) -> (1 y : p x) -> LDPair a p
-
-Consumable a => Consumable (Copies n {a} x) where
-  consume [] = ()
-  consume (x :: xs) = x `seq` xs `seq` ()
-
-public export 0
-Foo : Nat -> Type -> Type
-Foo n a = LDPair a (\x => Copies n x)
-
-public export
-get : Consumable a => Foo n a -@ a
-get (x ## xs) = xs `seq` x
+export
+deref :
+  (m : Fin n) ->
+  Cache {n} counts types ->
+  {auto isSucc : IsSucc (index m counts)} ->
+  Res (Cache {n} (dec m counts) types) (const $ index m types)
+deref m (MkCache cache) = (MkCache cache # index m cache)
 
 public export
 interface Copy a where
@@ -144,24 +121,13 @@ interface Copy a where
   -- note we can update Env without producing an unrestricted value - e.g. if we derive a linear
   -- value from an unrestricted one and another linear one ... this makes a `Tag a`,
   -- which constrains `a` to be linear
-  copy : {n : _} -> a -@ Tag $ Foo n a
-
-public export
-zipWith : {0 x : a} -> {0 y : b} -> (f : a -@ (b -@ c)) -> n `Copies` x -@ (n `Copies` y -@ n `Copies` f x y)
-zipWith f [] [] = []
-zipWith f (x :: xs) (y :: ys) = f x y :: zipWith f xs ys
-
-namespace Foo
-  public export
-  zipWith : (f : a -@ (b -@ c)) -> Foo n a -@ (Foo n b -@ Foo n c)
-  zipWith f (x ## xs) (y ## ys) = (f x y ## zipWith f xs ys)
-
-replicate : (n : Nat) -> (x : a) -> Copies n x
+  ref : (c : Nat) -> (1 x : a) -> Cache {n} counts types -> Res (Cache {n = S n} (c :: counts) (a :: types)) (const $ Fin (S n))
 
 export
-pure : a -@ Tag a
+pure : a -@ Tag c t a
 pure x = MkTag $ ST $ \e => Id (e # x)
 
+{-
 -- this is like (>>=) for LIO, but not like bindL ... why are they different?
 export
 (>>=) : Tag a -@ ((a -@ Tag b) -@ Tag b)
@@ -169,16 +135,19 @@ MkTag (ST x) >>= f = MkTag $ ST $ \e =>
   let Id (e # x) = x e
       MkTag (ST res) = f x
    in res e
+   -}
 
 export
 Copy (Tensor shape dtype) where
-  -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
-  -- to an inner scope, but I can't see why that would be useful
-  copy {n} (MkTensor (Var x)) = let x = MkTensor (Var x) in MkTag $ ST $ \e => Id (e # x ## replicate n x)
+  ref c (MkTensor x) (MkCache cache) = 
+    let (c, x) = Expr.copy x c
+        x = MkTensor x
+        
+{-  copy {n} (MkTensor (Var x)) = let x = MkTensor (Var x) in MkTag $ ST $ \e => Id (e # x ## replicate n x)
   copy {n} (MkTensor x) = MkTag $ ST $ \e =>
     let (e, x) = Expr.copy x e
         x = MkTensor x
-     in Id (e # x ## replicate n x)
+        in Id (e # x ## replicate n x)-}
 
 export
 Consumable (Tensor shape dtype) where
@@ -191,13 +160,9 @@ Consumable (Tensor shape dtype) where
 |||             [4, 5, 6]]
 ||| ```
 export
-tensor : PrimitiveRW dtype a => {shape : _} -> Literal shape a -> (Tensor shape dtype -@ Tag (!* b)) -@ Tag (!* b)
-tensor lit f = f (MkTensor $ FromLiteral {dtype} {shape} lit)  -- is this right? do i need to cache it?
-
-export
-tensorN : {n : _} -> PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tag $ Foo n (Tensor shape dtype)
-tensorN lit = copy (MkTensor $ FromLiteral {dtype} {shape} lit)
-
+tensor : {n : _} -> PrimitiveRW dtype a => {shape : _} -> Literal shape a -> Tag c t (Tensor shape dtype)
+--tensor lit = copy (MkTensor $ FromLiteral {dtype} {shape} lit)
+{-
 namespace F64
   export
   fromDouble : Double -> Tensor [] F64
@@ -219,18 +184,18 @@ namespace Tag
   ||| different tensors, even if they are in the same computation, will be treated independently.
   ||| To efficiently evaluate multiple tensors at once, use `TensorList.Tag.eval`.
   export covering
-  eval : Device -> PrimitiveRW dtype ty => Tag (Tensor shape dtype) -@ IO (Literal shape ty)
-  eval device (MkTag $ ST x) =
+  eval : Device -> PrimitiveRW dtype ty => Tag c t (Tensor shape dtype) -@ IO (Literal shape ty)
+  {-eval device (MkTag $ ST x) =
     let Id (env # MkTensor root) = x empty
      in try $ do
           shape <- mkShape shape {dtype}
           [lit] <- execute device (MkFn [] root env) [shape]
-          read {dtype} [] lit
+          read {dtype} [] lit-}
 
 ||| A convenience wrapper for `Tag.eval`, for use with a bare `Tensor`.
 export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -@ IO (Literal shape ty)
-eval device x = eval device (MkTag $ ST $ \e => Id (e # x))
+--eval device x = eval device (MkTag $ ST $ \e => Id (e # x))
 
 namespace TensorList
   namespace Tag
@@ -257,7 +222,7 @@ namespace TensorList
     ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
     ||| compiles the graph just once.
     export covering
-    eval : Device -> Tag (TensorList shapes tys) -@ IO (All2 Literal shapes tys){-
+    eval : Device -> Tag c t (TensorList shapes tys) -@ IO (All2 Literal shapes tys){-
     eval device (MkTag $ ST xs) =
       let (env # xs) = xs empty
           root = Tuple $ nodes xs  -- curious example ... we could make this linear all the way down, but assert_linear is fine from here
@@ -294,8 +259,8 @@ namespace TensorList
 |||
 ||| There are no guarantees whatsoever as to the string structure and contents.
 export
-Show (Tag $ Tensor shape dtype) where
-  show (MkTag $ ST x) = let Id (env # MkTensor root) = x empty in show (MkFn [] root env)
+Show (Tag c t $ Tensor shape dtype) where
+  show (MkTag $ ST x) = ?htsher --let Id (env # MkTensor root) = x empty in show (MkFn [] root env)
 
 ||| Bounds for numeric tensors. Will be infinite for floating point types.
 export
@@ -700,8 +665,8 @@ transpose ordering $ MkTensor x = MkTensor $ Transpose ordering x
 |||             [0, 1]]
 ||| ```
 export
-identity : Primitive.Num dtype => {n, m : _} -> Tag $ Foo m (Tensor [n, n] dtype)
-identity = copy $ MkTensor $ Identity {dtype} n
+identity : Primitive.Num dtype => {n, m : _} -> Tag c t (Tensor [n, n] dtype)
+--identity = copy $ MkTensor $ Identity {dtype} n
 
 ||| A `DimBroadcastable from to` proves that a dimension of size `from` can be broadcast to a
 ||| dimension of size `to`.
@@ -796,10 +761,10 @@ broadcast $ MkTensor {shape = _} x = MkTensor $ Broadcast {dtype} from to x
 |||                 [5, 5, 5]]
 ||| ```
 export
-fill : PrimitiveRW dtype ty => {n : _} -> {shape : _} -> ty -> Tag $ Foo n (Tensor shape dtype)
-fill x = do
+fill : PrimitiveRW dtype ty => {n : _} -> {shape : _} -> ty -> Tag c t (Tensor shape dtype)
+{-fill x = do
   (x ## []) <- tensorN {n = Z} (Scalar x)
-  copy $ broadcast {shapesOK = scalarToAnyOk shape} x
+  copy $ broadcast {shapesOK = scalarToAnyOk shape} x-}
 
 ||| A constant where values increment from zero along the specified `axis`. For example,
 ||| ```
@@ -848,15 +813,15 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 ||| function passed to `map`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 export
 map : (Primitive a, Primitive b) =>
-      (Tensor [] a -@ Tag $ Tensor [] b) ->
-      (Tensor shape a -@ Tag $ Tensor shape b)
-map f $ MkTensor {shape = _} x = MkTag $ ST $ \env =>
+      (Tensor [] a -@ Tag c t $ Tensor [] b) ->
+      (Tensor shape a -@ Tag c t $ Tensor shape b)
+{-map f $ MkTensor {shape = _} x = MkTag $ ST $ \env =>
   let (env, addr) = reserve env
       MkTag (ST app) = f (MkTensor $ Var addr)
       Id (subenv # MkTensor res) = app (emptyFrom env)
       g = MkFn [(addr, MkParameter [] a)] res subenv
       env = updateCounterFrom env subenv
-   in Id (env # MkTensor (Map g [x] (range $ length shape)))
+      in Id (env # MkTensor (Map g [x] (range $ length shape)))-}
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -872,16 +837,16 @@ map f $ MkTensor {shape = _} x = MkTag $ ST $ \env =>
 export
 map2 :
   (Primitive a, Primitive b, Primitive c) =>
-  (Tensor [] a -@ (Tensor [] b -@ Tag $ Tensor [] c)) ->
-  (Tensor shape a -@ (Tensor shape b -@ Tag $ Tensor shape c))
-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTag $ ST $ \env =>
+  (Tensor [] a -@ (Tensor [] b -@ Tag c t $ Tensor [] c)) ->
+  (Tensor shape a -@ (Tensor shape b -@ Tag c t $ Tensor shape c))
+{-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTag $ ST $ \env =>
   let (env, addr0) = reserve env
       (env, addr1) = reserve env
       MkTag (ST app) = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       Id (subenv # MkTensor res) = app (emptyFrom env)
       g  = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res subenv
       env = updateCounterFrom env subenv
-   in Id (env # MkTensor (Map g [x, x'] (range $ length shape)))
+      in Id (env # MkTensor (Map g [x, x'] (range $ length shape)))-}
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
@@ -905,8 +870,8 @@ reduce :
   {auto 0 axesUnique : Sorted LT axes} ->
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype -@
-  Tag $ Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x = MkTag $ ST $ \env =>
+  Tag c t $ Tensor (deleteAt axes shape) dtype
+{-reduce axes $ MkTensor x = MkTag $ ST $ \env =>
   let (env, addr0) = reserve env
       (env, addr1) = reserve env
       MkTensor res = (<+>) @{semigroup reducer} (MkTensor $ Var addr0) (MkTensor $ Var addr1)
@@ -917,7 +882,7 @@ reduce axes $ MkTensor x = MkTag $ ST $ \env =>
   where
 
   semigroup : Monoid a -> Semigroup a
-  semigroup _ = %search
+  semigroup _ = %search-}
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -943,13 +908,13 @@ sort :
   (dimension : Nat) ->
   Tensor shape dtype -@ (
   {auto 0 dimInBounds : InBounds dimension shape} ->
-  Tag $ Tensor shape dtype)
-sort comp dimension $ MkTensor x = MkTag $ ST $ \env =>
+  Tag c t $ Tensor shape dtype)
+{-sort comp dimension $ MkTensor x = MkTag $ ST $ \env =>
   let (env, addr0) = reserve env
       (env, addr1) = reserve env
       MkTensor res = comp (MkTensor $ Var addr0) (MkTensor $ Var addr1)
       comparator = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
-   in Id (env # MkTensor (Sort comparator dimension False [x]))
+      in Id (env # MkTensor (Sort comparator dimension False [x]))-}
 
 ||| Reverse elements along the specified axes. For example, for
 ||| ```
@@ -1126,10 +1091,10 @@ cond :
   (Primitive tt, Primitive ft, Primitive dtype) =>
   {shape, ts, fs : _} ->
   Tensor [] PRED -@ (
-  (onTrue : Tensor ts tt -@ Tag $ Tensor shape dtype) -> Tensor ts tt -@ (
-  (onFalse : Tensor fs ft -@ Tag $ Tensor shape dtype) -> Tensor fs ft -@
-  Tag $ Tensor shape dtype))
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTag $ ST $ \env =>
+  (onTrue : Tensor ts tt -@ Tag c t $ Tensor shape dtype) -> Tensor ts tt -@ (
+  (onFalse : Tensor fs ft -@ Tag c t $ Tensor shape dtype) -> Tensor fs ft -@
+  Tag c t $ Tensor shape dtype))
+{-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTag $ ST $ \env =>
   let (env, addr) = reserve env
       MkTag (ST app) = onTrue (MkTensor $ Var addr)
       Id (subenv # MkTensor res) = app (emptyFrom env)
@@ -1142,7 +1107,7 @@ cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTag $ S
       onFalse = MkFn [(addr, MkParameter fs ft)] res subenv
       env = updateCounterFrom env subenv
 
-   in Id (env # MkTensor (Cond pred onTrue true onFalse false))
+   in Id (env # MkTensor (Cond pred onTrue true onFalse false))-}
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 export infixl 9 @@
@@ -1518,7 +1483,7 @@ namespace Monoid
 ||| compiler's handling of NaN. Specifically, we have modified `argmax` to return the first index of
 ||| the value returned by `reduce @{Max}`.
 export
-argmax : Primitive.Ord dtype => Tensor [S n] dtype -@ Tag $ Tensor [] U64
+argmax : Primitive.Ord dtype => Tensor [S n] dtype -@ Tag c t $ Tensor [] U64
 {-argmax x = do
   let MkTensor {shape = _} x = x
   (x # [x, x, x]) <- copy {n = 3} $ MkTensor {shape = [S n], dtype = U64} x 
@@ -1542,7 +1507,7 @@ argmax : Primitive.Ord dtype => Tensor [S n] dtype -@ Tag $ Tensor [] U64
 ||| compiler's handling of NaN. Specifically, we have modified `argmin` to return the first index of
 ||| the value returned by `reduce @{Min}`.
 export
-argmin : Primitive.Ord dtype => Tensor [S n] dtype -@ Tag $ Tensor [] U64
+argmin : Primitive.Ord dtype => Tensor [S n] dtype -@ Tag c t $ Tensor [] U64
 argmin (MkTensor x) = argmax (MkTensor {shape = [S n], dtype} $ UnaryElementwise Neg x)
 
 ---------------------------- other ----------------------------------
@@ -1609,17 +1574,17 @@ export
 trace : (Primitive.Num dtype, Prelude.Num a) =>
         PrimitiveRW dtype a =>
         Tensor [S n, S n] dtype ->
-        Tag $ Tensor [] dtype
-trace x = do
+        Tag c t $ Tensor [] dtype
+{-trace x = do
   let MkTensor {shape = [_, _]} x = x
   (id' ## []) <- identity {m = 0}
-  reduce @{Sum} [0, 1] $ (MkTensor {shape = [S n, S n]} x) * id'
+  reduce @{Sum} [0, 1] $ (MkTensor {shape = [S n, S n]} x) * id'-}
 
 ||| A `Rand a` produces a pseudo-random value of type `a` from a `Tensor [1] U64` state.
 ||| The state is updated each time a new value is generated.
 public export 0
 Rand : Type -> Type
-Rand a = (1 _ : Tensor [1] U64) -> Tag (LPair (Tensor [1] U64) a)
+Rand a = (1 _ : Tensor [1] U64) -> Tag [] [] (LPair (Tensor [1] U64) a)
 
 inf : Tensor [] F64
 inf = fromDouble (1.0 / 0.0)
@@ -1651,7 +1616,7 @@ uniform :
   {shape : _} ->
   (1 key : Tensor [] U64) ->
   (1 bound, bound' : Tensor shape F64) ->
-  Tag $ Rand $ Tensor shape F64{-
+  Tag c t $ Rand $ Tensor shape F64{-
 uniform (MkTensor key) bound bound' = do
   (bound # [bound]) <- copy {n = 1} bound
   (bound' # [bound']) <- copy {n = 1} bound'
@@ -1673,7 +1638,7 @@ uniform (MkTensor key) bound bound' = do
         value = select ((i == inf) && (a == inf)) inf value
         value = select ((i == -inf) && (a == -inf)) (-inf) value
         pure (state # value)-}
-
+ 
 ||| Generate independent and identically distributed (IID) samples from the standard normal
 ||| distribution.
 |||
@@ -1697,4 +1662,4 @@ normal (MkTensor key) (MkTensor state) = do
   let MkTensor x = x
       state = MkTensor $ GetTupleElement 1 x
       value = MkTensor $ GetTupleElement 0 x
-  pure (state # value)
+      pure (state # value)-}
