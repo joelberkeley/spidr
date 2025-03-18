@@ -16,8 +16,12 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.Builders
 
+import Compiler.MLIR.IR.Block
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.FFI
+
+%foreign (libxla "Builder_getF64Type")
+prim__builderGetF64Type : AnyPtr -> PrimIO AnyPtr
 
 public export
 data OpBuilder = MkOpBuilder GCAnyPtr
@@ -31,9 +35,23 @@ prim__deleteOpBuilder : AnyPtr -> PrimIO ()
 export
 mkOpBuilder : HasIO io => MLIRContext -> io OpBuilder
 mkOpBuilder (MkMLIRContext ctx) = do
-  op <- primIO $ prim__mkOpBuilder ctx
-  op <- onCollectAny op (primIO . prim__deleteOpBuilder)
-  pure (MkOpBuilder op)
+  builder <- primIO $ prim__mkOpBuilder ctx
+  builder <- onCollectAny builder (primIO . prim__deleteOpBuilder)
+  pure (MkOpBuilder builder)
+
+%foreign (libxla "OpBuilder_atBlockEnd")
+prim__opBuilderAtBlockEnd : GCAnyPtr -> PrimIO AnyPtr
+
+export
+atBlockEnd : HasIO io => Block -> io OpBuilder
+atBlockEnd (MkBlock block) = do
+  builder <- primIO $ prim__opBuilderAtBlockEnd block
+  builder <- onCollectAny (primIO . prim__deleteOpBuilder) builder
+  pure (MkOpBuilder builder)
 
 export
 getF64Type : HasIO io => OpBuilder -> io Types.Type
+getF64Type (MkOpBuilder builder) = do
+  type <- primIO $ prim__builderGetF64Type builder
+  type <- onCollectAny (primIO . prim__deleteFloatType) type
+  pure (MkFloatType type)

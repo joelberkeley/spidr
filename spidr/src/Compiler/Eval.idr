@@ -176,6 +176,28 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     tensorShape <- RankedTensorType.get shape !(getF64Type !(mkOpBuilder mlirCtx))
     funcType <- FunctionType.get mlirCtx !(mkTypeArray tensorShape) !(mkTypeArray tensorShape)
     funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
+    pushBack stablehlo funcOp
+    entryBlock <- addEntryBlock funcOp
+    blockBuilder <- atBlockEnd entryBlock
+    scalarShape <- RankedTensorType.get [] !(getF64Type blockBuilder)
+
+{-
+        auto rev_init = block_builder.create<mlir::stablehlo::ConstantOp>(
+            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
+        );
+
+        auto fdiff_callop = block_builder.create<mlir::func::CallOp>(
+            mlir::UnknownLoc::get(ctx),
+            "fdiff",
+            mlir::TypeRange({tensor_shape}),
+            mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
+        );
+
+        block_builder.create<mlir::func::ReturnOp>(
+            mlir::UnknownLoc::get(ctx), fdiff_callop->getOpResults()
+        );
+-}
+
     enzymeAD shape stablehlo mlirCtx
 
     hloProto <- convertStablehloToHlo stablehlo

@@ -37,3 +37,10 @@ getOperation (MkModuleOp moduleOp) = do
   let op = prim__moduleOpGetOperation moduleOp
   op <- onCollectAny op (const $ pure ())
   pure (MkOperation op)
+
+export
+%foreign (libxla "ModuleOp_push_back")
+prim__moduleOpPushBack : GCAnyPtr -> GCAnyPtr -> PrimIO ()
+
+pushBack : HasIO io => ModuleOp -> Operation -> io ()
+pushBack (MkModuleOp mOp) (MkOperation op) = primIO $ prim__moduleOpPushBack mOp op

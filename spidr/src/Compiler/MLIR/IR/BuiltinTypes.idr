@@ -21,6 +21,14 @@ import Compiler.MLIR.IR.Types
 import Compiler.FFI
 
 public export
+data FloatType = MkFloatType GCAnyPtr
+
+%foreign (libxla "FloatType_delete")
+prim__deleteFloatType : AnyPtr -> PrimIO ()
+
+delete :
+
+public export
 data FunctionType = MkFunctionType GCAnyPtr
 
 %foreign (libxla "FunctionType_get")

@@ -27,4 +27,9 @@ extern "C" {
         auto res = mlir::func::FuncOp::create(location_, name, type_);
         return reinterpret_cast<FuncOp*>(new mlir::func::FuncOp(res));
     }
+
+    Block* FuncOp_addEntryBlock(FuncOp& s) {
+        auto s_ = reinterpret_cast<mlir::func::FuncOp&>(s);
+        return reinterpret_cast<Block*>(s_.addEntryBlock());
+    }
 }

@@ -24,6 +24,7 @@ data Block = MkBlock GCAnyPtr
 %foreign (libxla "Block_new")
 prim__mkBlock : PrimIO AnyPtr
 
+export
 %foreign (libxla "Block_delete")
 prim__deleteBlock : AnyPtr -> PrimIO ()
 

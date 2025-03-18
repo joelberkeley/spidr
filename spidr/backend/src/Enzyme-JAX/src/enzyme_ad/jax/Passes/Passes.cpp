@@ -44,37 +44,6 @@ extern "C" {
         auto& s_ = reinterpret_cast<mlir::PassManager&>(s);
         s_.addPass(mlir::enzyme::createArithRaisingPass());
     }
-
-    void emitEnzymeADOp(
-        int64_t* shape,
-        size_t shape_length,
-        ModuleOp& module_op,
-        MLIRContext* ctx_
-    ) {
-        auto module_op_ = reinterpret_cast<mlir::ModuleOp&>(module_op);
-        auto ctx = reinterpret_cast<mlir::MLIRContext*>(ctx_);
-
-        module_op_.push_back(func_op);
-
-        auto entry_block = func_op.addEntryBlock();
-        auto block_builder = mlir::OpBuilder::atBlockEnd(entry_block);
-
-        auto scalar_shape = mlir::RankedTensorType::get({}, block_builder.getF64Type());
-        auto rev_init = block_builder.create<mlir::stablehlo::ConstantOp>(
-            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
-        );
-
-        auto fdiff_callop = block_builder.create<mlir::func::CallOp>(
-            mlir::UnknownLoc::get(ctx),
-            "fdiff",
-            mlir::TypeRange({tensor_shape}),
-            mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
-        );
-
-        block_builder.create<mlir::func::ReturnOp>(
-            mlir::UnknownLoc::get(ctx), fdiff_callop->getOpResults()
-        );
-    }
 }
 
 //#include "mlir/Dialect/Affine/IR/AffineOps.h"

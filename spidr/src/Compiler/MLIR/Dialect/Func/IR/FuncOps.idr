@@ -16,6 +16,7 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.Func.IR.FuncOps
 
+import Compiler.MLIR.IR.Block
 import Compiler.FFI
 
 public export
@@ -27,3 +28,9 @@ prim__funcOpCreate : GCAnyPtr -> String -> GCAnyPtr -> PrimIO AnyPtr
 namespace FuncOp
   export
   create : HasIO io => Location -> String -> FunctionType -> io FuncOp
+
+addEntryBlock : HasIO io => FuncOp -> io Block
+addEntryBlock (MkFuncOp op) = do
+  block <- primIO $ prim__addEntryBlock op
+  block <- onCollectAny (primIO . prim__deleteBlock) block
+  pure (MkBlock block)

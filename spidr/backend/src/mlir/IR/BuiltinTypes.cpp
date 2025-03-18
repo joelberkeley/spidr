@@ -19,6 +19,8 @@ limitations under the License.
 #include "Types.h"
 
 extern "C" {
+    struct FloatType;
+
     FunctionType* FunctionType_get(
         MLIRContext* ctx, Type* inputs, size_t inputs_len, Type* results, size_t results_len
     ) {
