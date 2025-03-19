@@ -16,7 +16,14 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.ValueRange
 
+import Compiler.MLIR.IR.Value
 import Compiler.FFI
 
 public export
 data ValueRange = MkValueRange GCAnyPtr
+
+export
+valueRange : HasIO io => List Value -> io ValueRange
+
+public export
+data ResultRange = MkResultRange GCAnyPtr

@@ -19,10 +19,15 @@ module Compiler.Stablehlo.Dialect.StablehloOps
 import Compiler.MLIR.IR.BuiltinAttributes
 import Compiler.MLIR.IR.Builders
 import Compiler.MLIR.IR.Location
+import Compiler.MLIR.IR.Operation
 import Compiler.FFI
 
 public export
 data ConstantOp = MkConstantOp GCAnyPtr
+
+export
+Cast ConstantOp Operation where
+  cast (MkConstantOp ptr) = MkOperation ptr  -- valid?
 
 %foreign (libxla "OpBuilder_create_ConstantOp")
 prim__opBuilderCreateConstantOp : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr

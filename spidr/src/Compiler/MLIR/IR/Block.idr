@@ -16,6 +16,7 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.Block
 
+import Compiler.MLIR.IR.Value
 import Compiler.FFI
 
 public export
@@ -34,3 +35,14 @@ mkBlock = do
   block <- primIO prim__mkBlock
   block <- onCollectAny block (primIO . prim__deleteBlock)
   pure (MkBlock block)
+
+export
+%foreign (libxla "Block_getArgument")
+prim__blockGetArgument : GCAnyPtr -> Bits64 -> AnyPtr  -- I assume this isn't in IO
+
+export
+(.getArgument) : HasIO io => Block -> Nat -> io BlockArgument
+(MkBlock block).getArgument i = do
+  let arg = prim__blockGetArgument block (cast i)
+  arg <- onCollectAny arg (const $ pure ())  -- I assume this is owned by the block
+  pure (MkBlockArgument arg)

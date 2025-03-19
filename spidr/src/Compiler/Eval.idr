@@ -34,6 +34,7 @@ import Compiler.MLIR.IR.Block
 import Compiler.MLIR.IR.Builders
 import Compiler.MLIR.IR.BuiltinAttributes
 import Compiler.MLIR.IR.BuiltinLocationAttributes
+import Compiler.MLIR.IR.BuiltinTypeInterfaces
 import Compiler.MLIR.IR.BuiltinTypes
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
@@ -43,6 +44,8 @@ import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.IR.SymbolTable
 import Compiler.MLIR.IR.TypeRange
 import Compiler.MLIR.IR.Types
+import Compiler.MLIR.IR.Value
+import Compiler.MLIR.IR.ValueRange
 import Compiler.MLIR.Pass.PassManager
 import Compiler.MLIR.Pass.PassRegistry
 import Compiler.MLIR.Transforms.Passes
@@ -184,16 +187,25 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 
     -- replace main function
     erase !(lookupSymbolIn !(getOperation stablehlo) "main")
-    tensorShape <- RankedTensorType.get shape (cast @{FloatTypeType_} !(getF64Type !(opBuilder mlirCtx)))
+    tensorShape <- RankedTensorType.get
+      shape (cast @{FloatTypeType_} !(getF64Type !(opBuilder mlirCtx)))
     funcType <- FunctionType.get mlirCtx [cast tensorShape] [cast tensorShape]
     funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
     pushBack stablehlo (cast funcOp)
     entryBlock <- addEntryBlock funcOp
     blockBuilder <- atBlockEnd entryBlock
     scalarShape <- RankedTensorType.get [] (cast @{FloatTypeType_} !(getF64Type blockBuilder))
-    createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) !(DenseElementsAttr.get (cast @{RTTShaped} scalarShape) 1.0)
-    fdiffCallOp <- createCallOp blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" !(typeRange [cast tensorShape])
-    createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(?getOpResults fdiffCallOp)
+    revInit <- createConstantOp
+      blockBuilder
+      !(UnknownLoc.get mlirCtx)
+      !(DenseElementsAttr.get (cast @{RTTShaped} scalarShape) 1.0)
+    fdiffCallOp <- createCallOp
+      blockBuilder
+      !(UnknownLoc.get mlirCtx)
+      "fdiff"
+      !(typeRange [cast tensorShape])
+      !(valueRange [cast !(entryBlock.getArgument 0), cast !((cast revInit).getOpResult 0)])
+    ignore $ createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(cast fdiffCallOp).getOpResults
 
     -- convert back to XLA HLO, and call
     hloProto <- convertStablehloToHlo stablehlo

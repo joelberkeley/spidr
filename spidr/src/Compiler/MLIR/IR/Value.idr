@@ -14,24 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Operation
+module Compiler.MLIR.IR.Value
 
-import Compiler.MLIR.IR.Value
-import Compiler.MLIR.IR.ValueRange
 import Compiler.FFI
 
 public export
-data Operation = MkOperation GCAnyPtr
+data Value = MkValue GCAnyPtr
 
-%foreign (libxla "Operation_erase")
-prim__operationErase : GCAnyPtr -> PrimIO ()
-
-export
-erase : HasIO io => Operation -> io ()
-erase (MkOperation op) = primIO $ prim__operationErase op
+public export
+data BlockArgument = MkBlockArgument GCAnyPtr
 
 export
-(.getOpResults) : HasIO io => Operation -> io ResultRange
+Cast BlockArgument Value where
+  cast (MkBlockArgument a) = MkValue a
+
+public export
+data OpResult = MkOpResult GCAnyPtr
 
 export
-(.getOpResult) : HasIO io => Operation -> Nat -> io OpResult
+Cast OpResult Value where
+  cast (MkOpResult r) = MkValue r

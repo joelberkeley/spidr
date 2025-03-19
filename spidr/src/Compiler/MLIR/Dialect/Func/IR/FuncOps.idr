@@ -22,17 +22,22 @@ import Compiler.MLIR.IR.BuiltinTypes
 import Compiler.MLIR.IR.Location
 import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.IR.TypeRange
+import Compiler.MLIR.IR.ValueRange
 import Compiler.FFI
 
 public export
 data CallOp = MkCallOp GCAnyPtr
+
+export
+Cast CallOp Operation where
+  cast (MkCallOp ptr) = MkOperation ptr
 
 %foreign (libxla "CallOp_create")
 prim__callOpCreate : GCAnyPtr -> String -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace OpBuilder
   export
-  createCallOp : HasIO io => OpBuilder -> Location -> String -> TypeRange -> io CallOp
+  createCallOp : HasIO io => OpBuilder -> Location -> String -> TypeRange -> ValueRange -> io CallOp
 
 public export
 data FuncOp = MkFuncOp GCAnyPtr
@@ -56,7 +61,7 @@ prim__returnOpCreate : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Bits64 -> PrimIO AnyP
 
 namespace OpBuilder
   export
-  createReturnOp : HasIO io => OpBuilder -> Location -> List Operation -> io ReturnOp
+  createReturnOp : HasIO io => OpBuilder -> Location -> ResultRange -> io ReturnOp
 
 %foreign (libxla "FuncOp_addEntryBlock")
 prim__funcOpAddEntryBlock : GCAnyPtr -> PrimIO AnyPtr

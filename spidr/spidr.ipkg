@@ -17,6 +17,7 @@ modules =
 
   Compiler.LLVM.Support.RawOStream,
 
+  Compiler.MLIR.Dialect.Func.IR.FuncOps,
   Compiler.MLIR.IR.Attributes,
   Compiler.MLIR.IR.Block,
   Compiler.MLIR.IR.Builders,
@@ -31,13 +32,16 @@ modules =
   Compiler.MLIR.IR.Operation,
   Compiler.MLIR.IR.SymbolTable,
   Compiler.MLIR.IR.TypeRange,
+  Compiler.MLIR.IR.Types,
   Compiler.MLIR.IR.ValueRange,
+  Compiler.MLIR.IR.Value,
   Compiler.MLIR.Pass.PassManager,
   Compiler.MLIR.Pass.PassRegistry,
   Compiler.MLIR.Transforms.Passes,
 
   Compiler.Stablehlo.Dialect.Register,
   Compiler.Stablehlo.Dialect.Serialization,
+  Compiler.Stablehlo.Dialect.StablehloOps,
   Compiler.Stablehlo.Dialect.Version,
 
   Compiler.Xla.Client.ExecutableBuildOptions,
