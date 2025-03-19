@@ -41,8 +41,8 @@ export
 prim__blockGetArgument : GCAnyPtr -> Bits64 -> AnyPtr  -- I assume this isn't in IO
 
 export
-(.getArgument) : HasIO io => Block -> Nat -> io BlockArgument
-(MkBlock block).getArgument i = do
+getArgument : HasIO io => Block -> Nat -> io BlockArgument
+getArgument (MkBlock block) i = do
   let arg = prim__blockGetArgument block (cast i)
   arg <- onCollectAny arg (const $ pure ())  -- I assume this is owned by the block
   pure (MkBlockArgument arg)

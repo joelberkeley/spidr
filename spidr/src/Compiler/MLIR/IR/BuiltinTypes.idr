@@ -30,7 +30,7 @@ export
 prim__deleteFloatType : AnyPtr -> PrimIO ()
 
 export
-[FloatTypeType_] Cast FloatType Type_ where
+Cast FloatType Type_ where
   cast (MkFloatType t) = MkType_ t
 
 public export

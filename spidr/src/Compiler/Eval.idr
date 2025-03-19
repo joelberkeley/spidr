@@ -187,14 +187,13 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 
     -- replace main function
     erase !(lookupSymbolIn !(getOperation stablehlo) "main")
-    tensorShape <- RankedTensorType.get
-      shape (cast @{FloatTypeType_} !(getF64Type !(opBuilder mlirCtx)))
+    tensorShape <- RankedTensorType.get shape (cast !(getF64Type !(opBuilder mlirCtx)))
     funcType <- FunctionType.get mlirCtx [cast tensorShape] [cast tensorShape]
     funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
     pushBack stablehlo (cast funcOp)
     entryBlock <- addEntryBlock funcOp
     blockBuilder <- atBlockEnd entryBlock
-    scalarShape <- RankedTensorType.get [] (cast @{FloatTypeType_} !(getF64Type blockBuilder))
+    scalarShape <- RankedTensorType.get [] (cast !(getF64Type blockBuilder))
     revInit <- createConstantOp
       blockBuilder
       !(UnknownLoc.get mlirCtx)
@@ -204,8 +203,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       !(UnknownLoc.get mlirCtx)
       "fdiff"
       !(typeRange [cast tensorShape])
-      !(valueRange [cast !(entryBlock.getArgument 0), cast !((cast revInit).getOpResult 0)])
-    ignore $ createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(cast fdiffCallOp).getOpResults
+      !(valueRange [cast !(getArgument entryBlock 0), cast !(getOpResult (cast revInit) 0)])
+    _ <- createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(getOpResults $ cast fdiffCallOp)
 
     -- convert back to XLA HLO, and call
     hloProto <- convertStablehloToHlo stablehlo

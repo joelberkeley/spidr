@@ -30,8 +30,22 @@ export
 erase : HasIO io => Operation -> io ()
 erase (MkOperation op) = primIO $ prim__operationErase op
 
-export
-(.getOpResults) : HasIO io => Operation -> io ResultRange
+%foreign (libxla "Operation_getOpResults")
+prim__operationGetOpResults : GCAnyPtr -> AnyPtr
 
 export
-(.getOpResult) : HasIO io => Operation -> Nat -> io OpResult
+getOpResults : HasIO io => Operation -> io ResultRange
+getOpResults (MkOperation op) = do
+  let res = prim__operationGetOpResults op
+  res <- onCollectAny res (const $ pure ())
+  pure (MkResultRange res)
+
+%foreign (libxla "Operation_getOpResult")
+prim__operationGetOpResult : GCAnyPtr -> Bits64 -> AnyPtr
+
+export
+getOpResult : HasIO io => Operation -> Nat -> io OpResult
+getOpResult (MkOperation op) idx = do
+  let res = prim__operationGetOpResult op (cast idx)
+  res <- onCollectAny res (const $ pure ())
+  pure (MkOpResult res)

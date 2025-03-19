@@ -16,10 +16,25 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.Value
 
+import Util
 import Compiler.FFI
 
 public export
 data Value = MkValue GCAnyPtr
+
+public export
+data ValueArray = MkValueArray GCAnyPtr
+
+%foreign (libxla "set_array_Type")
+prim__setArrayValue : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
+
+export
+mkValueArray : HasIO io => List Value -> io ValueArray
+mkValueArray xs = do
+  ptr <- malloc (cast (length xs) * cast {from = Bits64} ?sizeofValue)  -- how to get size? do all values have the same size? probably not
+  ptr <- onCollectAny ptr free
+  traverse_ (\(idx, MkValue x) => primIO $ prim__setArrayValue ptr (cast idx) (cast x)) (enumerate xs)
+  pure (MkValueArray ptr)
 
 public export
 data BlockArgument = MkBlockArgument GCAnyPtr

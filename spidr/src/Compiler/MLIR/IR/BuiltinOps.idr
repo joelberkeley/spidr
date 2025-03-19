@@ -29,13 +29,13 @@ prim__delete : AnyPtr -> PrimIO ()
 
 export
 %foreign (libxla "ModuleOp_getOperation")
-prim__moduleOpGetOperation : GCAnyPtr -> AnyPtr  -- I assume the ModuleOp owns the Operation
+prim__moduleOpGetOperation : GCAnyPtr -> AnyPtr
 
 export
 getOperation : HasIO io => ModuleOp -> io Operation
 getOperation (MkModuleOp moduleOp) = do
   let op = prim__moduleOpGetOperation moduleOp
-  op <- onCollectAny op (const $ pure ())
+  op <- onCollectAny op (const $ pure ())  -- I assume the ModuleOp owns the Operation
   pure (MkOperation op)
 
 export
