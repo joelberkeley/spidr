@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.StableHLO.Dialect.Version
+module Compiler.Stablehlo.Dialect.Version
 
 import Compiler.FFI
 

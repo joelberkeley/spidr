@@ -14,27 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Types
-
-import Compiler.FFI
-import Util
+module Compiler.MLIR.IR.BuiltinTypeInterfaces
 
 public export
-data Type_ = MkType_ GCAnyPtr
-
-public export
-data TypeArray = MkTypeArray GCAnyPtr
-
-%foreign (libxla "sizeof_Type")
-sizeofType : Bits64
-
-%foreign (libxla "set_array_Type")
-prim__setArrayType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
-export
-mkTypeArray : HasIO io => List Type_ -> io TypeArray
-mkTypeArray xs = do
-  ptr <- malloc (cast (length xs) * cast sizeofType)
-  ptr <- onCollectAny ptr free
-  traverse_ (\(idx, MkType_ x) => primIO $ prim__setArrayType ptr (cast idx) (cast x)) (enumerate xs)
-  pure (MkTypeArray ptr)
+data ShapedType = MkShapedType GCAnyPtr

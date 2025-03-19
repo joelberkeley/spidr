@@ -17,25 +17,24 @@ limitations under the License.
 module Compiler.MLIR.IR.Builders
 
 import Compiler.MLIR.IR.Block
+import Compiler.MLIR.IR.BuiltinTypes
 import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.IR.Types
 import Compiler.FFI
-
-%foreign (libxla "Builder_getF64Type")
-prim__builderGetF64Type : AnyPtr -> PrimIO AnyPtr
 
 public export
 data OpBuilder = MkOpBuilder GCAnyPtr
 
-%foreign (libxla "OpBuilder_new")
-prim__mkOpBuilder : AnyPtr -> PrimIO AnyPtr
-
 %foreign (libxla "OpBuilder_delete")
 prim__deleteOpBuilder : AnyPtr -> PrimIO ()
 
+%foreign (libxla "OpBuilder_new")
+prim__opBuilder : GCAnyPtr -> PrimIO AnyPtr
+
 export
-mkOpBuilder : HasIO io => MLIRContext -> io OpBuilder
-mkOpBuilder (MkMLIRContext ctx) = do
-  builder <- primIO $ prim__mkOpBuilder ctx
+opBuilder : HasIO io => MLIRContext -> io OpBuilder
+opBuilder (MkMLIRContext ctx) = do
+  builder <- primIO $ prim__opBuilder ctx
   builder <- onCollectAny builder (primIO . prim__deleteOpBuilder)
   pure (MkOpBuilder builder)
 
@@ -46,12 +45,15 @@ export
 atBlockEnd : HasIO io => Block -> io OpBuilder
 atBlockEnd (MkBlock block) = do
   builder <- primIO $ prim__opBuilderAtBlockEnd block
-  builder <- onCollectAny (primIO . prim__deleteOpBuilder) builder
+  builder <- onCollectAny builder (primIO . prim__deleteOpBuilder)
   pure (MkOpBuilder builder)
 
+%foreign (libxla "Builder_getF64Type")
+prim__builderGetF64Type : GCAnyPtr -> PrimIO AnyPtr
+
 export
-getF64Type : HasIO io => OpBuilder -> io Types.Type
+getF64Type : HasIO io => OpBuilder -> io FloatType
 getF64Type (MkOpBuilder builder) = do
   type <- primIO $ prim__builderGetF64Type builder
-  type <- onCollectAny (primIO . prim__deleteFloatType) type
+  type <- onCollectAny type (primIO . prim__deleteFloatType)
   pure (MkFloatType type)

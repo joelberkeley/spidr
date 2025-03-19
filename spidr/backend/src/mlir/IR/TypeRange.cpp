@@ -1,5 +1,5 @@
-{--
-Copyright 2024 Joel Berkeley
+/*
+Copyright 2025 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,15 +12,17 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
---}
-||| For internal spidr use only.
-module Compiler.MLIR.IR.Location
+*/
+#include "mlir/IR/TypeRange.h"
 
-import Compiler.FFI
+#include "Types.h"
 
-public export
-data Location = MkLocation GCAnyPtr
+extern "C" {
+    struct TypeRange;
 
-export
-%foreign (libxla "Location_delete")
-prim__deleteLocation : AnyPtr -> PrimIO ()
+    TypeRange* TypeRange_new(Type* types, size_t types_len) {
+        auto types_ = reinterpret_cast<mlir::Type*>(types);
+        auto types_ar = llvm::ArrayRef(types_, types_len);
+        return new mlir::TypeRange(types_ar);
+    }
+}

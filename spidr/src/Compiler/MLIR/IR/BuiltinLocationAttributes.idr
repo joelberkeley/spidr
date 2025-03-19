@@ -25,11 +25,8 @@ prim__unknownLocGet : GCAnyPtr -> PrimIO AnyPtr
 
 namespace UnknownLoc
   export
-  get : HasIO io => MLIRContext -> io OpBuilder
+  get : HasIO io => MLIRContext -> io Location
   get (MkMLIRContext ctx) = do
-    op <- primIO $ prim__unknownLocGet ctx
-    op <- onCollectAny op (Location.delete)
-    pure (MkOpBuilder op)  -- opbuilder should be [Unknown]Location
-
-export
-getF64Type : HasIO io => OpBuilder -> io Types.Type
+    loc <- primIO $ prim__unknownLocGet ctx
+    loc <- onCollectAny loc (primIO . prim__deleteLocation)
+    pure (MkLocation loc)

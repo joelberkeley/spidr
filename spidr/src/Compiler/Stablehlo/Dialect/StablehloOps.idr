@@ -14,27 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Types
+module Compiler.Stablehlo.Dialect.StablehloOps
 
 import Compiler.FFI
-import Util
 
 public export
-data Type_ = MkType_ GCAnyPtr
+data ConstantOp = MkConstantOp GCAnyPtr
 
-public export
-data TypeArray = MkTypeArray GCAnyPtr
+%foreign (libxla "OpBuilder_create_ConstantOp")
+prim__opBuilderCreateConstantOp : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO ()
 
-%foreign (libxla "sizeof_Type")
-sizeofType : Bits64
-
-%foreign (libxla "set_array_Type")
-prim__setArrayType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
-export
-mkTypeArray : HasIO io => List Type_ -> io TypeArray
-mkTypeArray xs = do
-  ptr <- malloc (cast (length xs) * cast sizeofType)
-  ptr <- onCollectAny ptr free
-  traverse_ (\(idx, MkType_ x) => primIO $ prim__setArrayType ptr (cast idx) (cast x)) (enumerate xs)
-  pure (MkTypeArray ptr)
+namespace OpBuilder
+  export
+  createConstantOp : HasIO io => OpBuilder -> Location -> DenseElementsAttr -> io ConstantOp
+  createConstantOp (MkOpBuilder builder) (MkLocation location) (MkDenseElementsAttr attr) = do
+    op <- primIO $ prim__opBuilderCreateConstantOp builder location attr
+    op <- onCollectAny (primIO . prim__delete) op
+    pure (MkConstantOp op)

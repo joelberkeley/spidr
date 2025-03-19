@@ -16,17 +16,22 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.BuiltinTypes
 
+import Compiler.MLIR.IR.BuiltinTypeInterfaces
 import Compiler.MLIR.IR.MLIRContext
+import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.IR.Types
 import Compiler.FFI
 
 public export
 data FloatType = MkFloatType GCAnyPtr
 
+export
 %foreign (libxla "FloatType_delete")
 prim__deleteFloatType : AnyPtr -> PrimIO ()
 
-delete :
+export
+[FloatTypeType_] Cast FloatType Type_ where
+  cast (MkFloatType t) = MkType_ t
 
 public export
 data FunctionType = MkFunctionType GCAnyPtr
@@ -36,19 +41,23 @@ prim__functionTypeGet : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 namespace FunctionType
   export
-  get : HasIO io => MLIRContext -> List Types.Type -> List Types.Type -> io Operation
+  get : HasIO io => MLIRContext -> List Types.Type_ -> List Types.Type_ -> io FunctionType
   get (MkMLIRContext ctx) inputs results = ?weahrae
 
 public export
 data RankedTensorType = MkRankedTensorType GCAnyPtr
+
+export
+Cast RankedTensorType Type_ where
+  cast (MkRankedTensorType t) = MkType_ t
 
 %foreign (libxla "RankedTensorType_get")
 prim__rankedTensorTypeGet : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 namespace RankedTensorType
   export
-  get : HasIO io => List Nat -> Types.Type -> io Operation
-  get (MkModuleOp moduleOp) = do
-    let op = prim__moduleOpGetOperation moduleOp
-    op <- onCollectAny op (const $ pure ())
-    pure (MkOperation op)
+  get : HasIO io => List Nat -> Types.Type_ -> io RankedTensorType
+
+export
+Cast RankedTensorType ShapedType where
+  cast (MkRankedTensorType t) = MkShapedType t

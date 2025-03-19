@@ -29,18 +29,23 @@ import Compiler.Enzyme.MLIR.Passes.Passes
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.XLADerivatives
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 import Compiler.LLVM.Support.RawOStream
+import Compiler.MLIR.Dialect.Func.IR.FuncOps
+import Compiler.MLIR.IR.Builders
+import Compiler.MLIR.IR.BuiltinAttributes
+import Compiler.MLIR.IR.BuiltinLocationAttributes
 import Compiler.MLIR.IR.BuiltinTypes
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.IR.SymbolTable
+import Compiler.MLIR.IR.Types
 import Compiler.MLIR.Pass.PassManager
 import Compiler.MLIR.Pass.PassRegistry
 import Compiler.MLIR.Transforms.Passes
-import Compiler.StableHLO.Dialect.Register
-import Compiler.StableHLO.Dialect.Serialization
-import Compiler.StableHLO.Dialect.Version
+import Compiler.Stablehlo.Dialect.Register
+import Compiler.Stablehlo.Dialect.Serialization
+import Compiler.Stablehlo.Dialect.Version
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
 import Compiler.Xla.HLO.Builder.Lib.Constants
@@ -140,12 +145,15 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
   interpretE (Grad shape f x) = do
+    -- compile to XLA HLO
     subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/grad:f"
     computation <- compile subBuilder f
 
+    -- convert to StableHLO
     mlirCtx <- mkMLIRContext
     stablehlo <- hloModuleProtoToStableHLO mlirCtx !(proto computation)
 
+    -- generate derivative
     loadDialectEnzymeDialect mlirCtx
     registerenzymePasses
     dialectRegistry <- mkDialectRegistry
@@ -154,7 +162,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     registerCHLODialectAutoDiffInterface dialectRegistry
     insertEnzymeDialect dialectRegistry
     appendDialectRegistry mlirCtx dialectRegistry
-
     passManager <- mkPassManager mlirCtx
     let enzymePass = "enzyme-wrap{infn=main outfn=fdiff argTys=enzyme_active retTys=enzyme_active mode=ReverseModeCombined}"
     pipelineParseErrMsg <- cppString
@@ -164,7 +171,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
         \{!(toString pipelineParseErrMsg)}
         """
     -- CppString.delete {io = ErrIO} cppString
-
     addCanonicalizerPass passManager
     addCSEPass passManager
     addRemoveUnusedEnzymeOpsPass passManager
@@ -172,34 +178,21 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     True <- run passManager !(getOperation stablehlo)
       | False => throwE $ MlirPassError "Failed to run autodiff MLIR passes"
 
+    -- replace main function
     erase !(lookupSymbolIn !(getOperation stablehlo) "main")
-    tensorShape <- RankedTensorType.get shape !(getF64Type !(mkOpBuilder mlirCtx))
-    funcType <- FunctionType.get mlirCtx !(mkTypeArray tensorShape) !(mkTypeArray tensorShape)
+    tensorShape <- RankedTensorType.get shape (cast @{FloatTypeType_} !(getF64Type !(opBuilder mlirCtx)))
+    funcType <- FunctionType.get mlirCtx [cast tensorShape] [cast tensorShape]
     funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
-    pushBack stablehlo funcOp
+    pushBack stablehlo (cast funcOp)
     entryBlock <- addEntryBlock funcOp
     blockBuilder <- atBlockEnd entryBlock
-    scalarShape <- RankedTensorType.get [] !(getF64Type blockBuilder)
+    scalarShape <- RankedTensorType.get [] (cast !(getF64Type blockBuilder))
+    createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) !(DenseElementsAttr.get (cast scalarShape) 1.0)
+    fdiffCallOp <- createCallOp
+      blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" !(typeRange [tensorShape])
+    createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(getOpResults fdiffCallOp)
 
-{-
-        auto rev_init = block_builder.create<mlir::stablehlo::ConstantOp>(
-            mlir::UnknownLoc::get(ctx), mlir::DenseElementsAttr::get(scalar_shape, 1.0)
-        );
-
-        auto fdiff_callop = block_builder.create<mlir::func::CallOp>(
-            mlir::UnknownLoc::get(ctx),
-            "fdiff",
-            mlir::TypeRange({tensor_shape}),
-            mlir::ValueRange({entry_block->getArgument(0), rev_init->getOpResult(0)})
-        );
-
-        block_builder.create<mlir::func::ReturnOp>(
-            mlir::UnknownLoc::get(ctx), fdiff_callop->getOpResults()
-        );
--}
-
-    enzymeAD shape stablehlo mlirCtx
-
+    -- convert back to XLA HLO, and call
     hloProto <- convertStablehloToHlo stablehlo
     computation <- mkXlaComputation hloProto
     call xlaBuilder computation [!(interpretE x)]

@@ -14,17 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.StableHLO.Dialect.Serialization
+module Compiler.Stablehlo.Dialect.Register
 
-import Compiler.LLVM.Support.RawOStream
-import Compiler.MLIR.IR.BuiltinOps
+import Compiler.MLIR.IR.DialectRegistry
 import Compiler.FFI
 
-%foreign (libxla "serializePortableArtifact")
-prim__serializePortableArtifact : GCAnyPtr -> AnyPtr -> GCAnyPtr -> PrimIO Int
+%foreign (libxla "registerAllDialects")
+prim__registerAllDialects : GCAnyPtr -> PrimIO ()
 
 export
-serializePortableArtifact : HasIO io => ModuleOp -> CppString -> RawStringOStream -> io Bool
-serializePortableArtifact (MkModuleOp moduleOp) (MkCppString version) (MkRawStringOStream os) = do
-  ok <- primIO $ prim__serializePortableArtifact moduleOp version os
-  pure (cIntToBool ok)
+registerAllDialects : HasIO io => DialectRegistry -> io ()
+registerAllDialects (MkDialectRegistry reg) = primIO $ prim__registerAllDialects reg

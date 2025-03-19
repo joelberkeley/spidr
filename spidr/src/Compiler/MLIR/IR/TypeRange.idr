@@ -14,27 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Types
+module Compiler.MLIR.IR.TypeRange
 
+import Compiler.MLIR.IR.Types
 import Compiler.FFI
-import Util
 
 public export
-data Type_ = MkType_ GCAnyPtr
+data TypeRange = MkTypeRange GCAnyPtr
+
+%foreign (libxla "delete_TypeRange")
+prim__deleteTypeRange : AnyPtr -> PrimIO ()
+
+%foreign (libxla "TypeRange_new")
+prim__typeRange : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 public export
-data TypeArray = MkTypeArray GCAnyPtr
-
-%foreign (libxla "sizeof_Type")
-sizeofType : Bits64
-
-%foreign (libxla "set_array_Type")
-prim__setArrayType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
-export
-mkTypeArray : HasIO io => List Type_ -> io TypeArray
-mkTypeArray xs = do
-  ptr <- malloc (cast (length xs) * cast sizeofType)
-  ptr <- onCollectAny ptr free
-  traverse_ (\(idx, MkType_ x) => primIO $ prim__setArrayType ptr (cast idx) (cast x)) (enumerate xs)
-  pure (MkTypeArray ptr)
+typeRange : HasIO io => List Type_ -> io TypeRange
+typeRange types = do
+  MkTypeArray typesAr <- mkTypeArray types
+  tr <- primIO $ prim__typeRange typesAr (cast $ length types)
+  tr <- onCollectAny tr (primIO . prim__deleteTypeRange)
+  pure (MkTypeRange tr)

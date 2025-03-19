@@ -14,13 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Location
+module Compiler.Stablehlo.Dialect.Serialization
 
+import Compiler.LLVM.Support.RawOStream
+import Compiler.MLIR.IR.BuiltinOps
 import Compiler.FFI
 
-public export
-data Location = MkLocation GCAnyPtr
+%foreign (libxla "serializePortableArtifact")
+prim__serializePortableArtifact : GCAnyPtr -> AnyPtr -> GCAnyPtr -> PrimIO Int
 
 export
-%foreign (libxla "Location_delete")
-prim__deleteLocation : AnyPtr -> PrimIO ()
+serializePortableArtifact : HasIO io => ModuleOp -> CppString -> RawStringOStream -> io Bool
+serializePortableArtifact (MkModuleOp moduleOp) (MkCppString version) (MkRawStringOStream os) = do
+  ok <- primIO $ prim__serializePortableArtifact moduleOp version os
+  pure (cIntToBool ok)

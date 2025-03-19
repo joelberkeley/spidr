@@ -14,27 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.MLIR.IR.Types
+module Compiler.MLIR.IR.BuiltinAttributes
 
 import Compiler.FFI
-import Util
 
-public export
-data Type_ = MkType_ GCAnyPtr
+%foreign (libxla "UnknownLoc_get")
+prim__denseElementsAttrGet : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
-public export
-data TypeArray = MkTypeArray GCAnyPtr
-
-%foreign (libxla "sizeof_Type")
-sizeofType : Bits64
-
-%foreign (libxla "set_array_Type")
-prim__setArrayType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
-export
-mkTypeArray : HasIO io => List Type_ -> io TypeArray
-mkTypeArray xs = do
-  ptr <- malloc (cast (length xs) * cast sizeofType)
-  ptr <- onCollectAny ptr free
-  traverse_ (\(idx, MkType_ x) => primIO $ prim__setArrayType ptr (cast idx) (cast x)) (enumerate xs)
-  pure (MkTypeArray ptr)
+namespace DenseElementsAttr
+  export
+  get : HasIO io => ShapedType -> Double -> io DenseElementsAttr
+  get (MkShapedType st) value = do
+    attr <- primIO $ prim__denseElementsAttrGet st value
+    attr <- onCollectAny attr ?del
+    pure (MkDenseElementsAttr attr)

@@ -42,5 +42,6 @@ export
 %foreign (libxla "ModuleOp_push_back")
 prim__moduleOpPushBack : GCAnyPtr -> GCAnyPtr -> PrimIO ()
 
+export
 pushBack : HasIO io => ModuleOp -> Operation -> io ()
 pushBack (MkModuleOp mOp) (MkOperation op) = primIO $ prim__moduleOpPushBack mOp op

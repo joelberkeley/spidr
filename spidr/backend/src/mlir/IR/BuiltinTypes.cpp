@@ -21,6 +21,10 @@ limitations under the License.
 extern "C" {
     struct FloatType;
 
+    void FloatType_delete(FloatType* s) {
+        delete reinterpret_cast<mlir::FloatType*>(s);
+    }
+
     FunctionType* FunctionType_get(
         MLIRContext* ctx, Type* inputs, size_t inputs_len, Type* results, size_t results_len
     ) {
