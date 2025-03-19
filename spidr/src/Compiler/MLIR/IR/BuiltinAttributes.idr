@@ -16,10 +16,14 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.MLIR.IR.BuiltinAttributes
 
+import Compiler.MLIR.IR.BuiltinTypeInterfaces
 import Compiler.FFI
 
+public export
+data DenseElementsAttr = MkDenseElementsAttr GCAnyPtr
+
 %foreign (libxla "UnknownLoc_get")
-prim__denseElementsAttrGet : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+prim__denseElementsAttrGet : GCAnyPtr -> Double -> PrimIO AnyPtr
 
 namespace DenseElementsAttr
   export

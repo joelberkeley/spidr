@@ -47,6 +47,11 @@ namespace FunctionType
 public export
 data RankedTensorType = MkRankedTensorType GCAnyPtr
 
+-- is this cast valid?
+export
+[RTTShaped] Cast RankedTensorType ShapedType where
+  cast (MkRankedTensorType t) = MkShapedType t
+
 export
 Cast RankedTensorType Type_ where
   cast (MkRankedTensorType t) = MkType_ t

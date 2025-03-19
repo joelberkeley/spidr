@@ -30,21 +30,25 @@ import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.XLADerivatives
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.Dialect.Func.IR.FuncOps
+import Compiler.MLIR.IR.Block
 import Compiler.MLIR.IR.Builders
 import Compiler.MLIR.IR.BuiltinAttributes
 import Compiler.MLIR.IR.BuiltinLocationAttributes
 import Compiler.MLIR.IR.BuiltinTypes
 import Compiler.MLIR.IR.BuiltinOps
 import Compiler.MLIR.IR.DialectRegistry
+import Compiler.MLIR.IR.Location
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.IR.SymbolTable
+import Compiler.MLIR.IR.TypeRange
 import Compiler.MLIR.IR.Types
 import Compiler.MLIR.Pass.PassManager
 import Compiler.MLIR.Pass.PassRegistry
 import Compiler.MLIR.Transforms.Passes
 import Compiler.Stablehlo.Dialect.Register
 import Compiler.Stablehlo.Dialect.Serialization
+import Compiler.Stablehlo.Dialect.StablehloOps
 import Compiler.Stablehlo.Dialect.Version
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder.Lib.Arithmetic
@@ -186,11 +190,10 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     pushBack stablehlo (cast funcOp)
     entryBlock <- addEntryBlock funcOp
     blockBuilder <- atBlockEnd entryBlock
-    scalarShape <- RankedTensorType.get [] (cast !(getF64Type blockBuilder))
-    createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) !(DenseElementsAttr.get (cast scalarShape) 1.0)
-    fdiffCallOp <- createCallOp
-      blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" !(typeRange [tensorShape])
-    createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(getOpResults fdiffCallOp)
+    scalarShape <- RankedTensorType.get [] (cast @{FloatTypeType_} !(getF64Type blockBuilder))
+    createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) !(DenseElementsAttr.get (cast @{RTTShaped} scalarShape) 1.0)
+    fdiffCallOp <- createCallOp blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" !(typeRange [cast tensorShape])
+    createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(?getOpResults fdiffCallOp)
 
     -- convert back to XLA HLO, and call
     hloProto <- convertStablehloToHlo stablehlo

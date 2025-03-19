@@ -16,18 +16,21 @@ limitations under the License.
 ||| For internal spidr use only.
 module Compiler.Stablehlo.Dialect.StablehloOps
 
+import Compiler.MLIR.IR.BuiltinAttributes
+import Compiler.MLIR.IR.Builders
+import Compiler.MLIR.IR.Location
 import Compiler.FFI
 
 public export
 data ConstantOp = MkConstantOp GCAnyPtr
 
 %foreign (libxla "OpBuilder_create_ConstantOp")
-prim__opBuilderCreateConstantOp : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO ()
+prim__opBuilderCreateConstantOp : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace OpBuilder
   export
   createConstantOp : HasIO io => OpBuilder -> Location -> DenseElementsAttr -> io ConstantOp
   createConstantOp (MkOpBuilder builder) (MkLocation location) (MkDenseElementsAttr attr) = do
     op <- primIO $ prim__opBuilderCreateConstantOp builder location attr
-    op <- onCollectAny (primIO . prim__delete) op
+    op <- onCollectAny op (primIO . ?prim__delete)
     pure (MkConstantOp op)
