@@ -22,6 +22,7 @@ extern "C" {
         return sizeof(mlir::Type);
     }
 
+    // will this work? don't we have subclasses of Type with different sizes?
     void set_array_Type(Type* arr, size_t idx, Type* value) {
         reinterpret_cast<mlir::Type*>(arr)[idx] = *value;
     }

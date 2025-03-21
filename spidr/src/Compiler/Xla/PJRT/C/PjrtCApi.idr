@@ -354,8 +354,8 @@ export
 pjrtLoadedExecutableExecute :
   PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> Pjrt (Vect outputs PjrtBuffer)
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs = do
-  outputListsInner <- malloc (cast outputs * sizeofPtr)
-  outputLists <- malloc sizeofPtr
+  outputListsInner <- malloc (cast outputs * cast sizeofPtr)
+  outputLists <- malloc $ cast sizeofPtr
   primIO $ prim__setArrayPtr outputLists 0 outputListsInner
   options <- primIO prim__mkPjrtExecuteOptions
   args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists

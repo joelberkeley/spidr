@@ -22,6 +22,9 @@ import Compiler.MLIR.IR.Location
 import Compiler.MLIR.IR.Operation
 import Compiler.FFI
 
+%foreign (libxla "ConstantOp_delete")
+prim__deleteConstantOp : AnyPtr -> PrimIO ()
+
 public export
 data ConstantOp = MkConstantOp GCAnyPtr
 
@@ -37,5 +40,5 @@ namespace OpBuilder
   createConstantOp : HasIO io => OpBuilder -> Location -> DenseElementsAttr -> io ConstantOp
   createConstantOp (MkOpBuilder builder) (MkLocation location) (MkDenseElementsAttr attr) = do
     op <- primIO $ prim__opBuilderCreateConstantOp builder location attr
-    op <- onCollectAny op (primIO . ?prim__delete)
+    op <- onCollectAny op (primIO . prim__deleteConstantOp)
     pure (MkConstantOp op)

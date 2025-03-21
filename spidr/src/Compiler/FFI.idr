@@ -141,7 +141,7 @@ mkInt64Array xs = do
 
 export
 %foreign (libxla "sizeof_ptr")
-sizeofPtr : Int
+sizeofPtr : Bits64
 
 export
 %foreign (libxla "set_array_ptr")
