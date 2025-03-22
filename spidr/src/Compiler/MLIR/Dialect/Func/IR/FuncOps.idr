@@ -25,6 +25,9 @@ import Compiler.MLIR.IR.TypeRange
 import Compiler.MLIR.IR.ValueRange
 import Compiler.FFI
 
+%foreign (libxla "CallOp_delete")
+prim__deleteCallOp : AnyPtr -> PrimIO ()
+
 public export
 data CallOp = MkCallOp GCAnyPtr
 
@@ -32,12 +35,25 @@ export
 Cast CallOp Operation where
   cast (MkCallOp ptr) = MkOperation ptr
 
-%foreign (libxla "CallOp_create")
-prim__callOpCreate : GCAnyPtr -> String -> GCAnyPtr -> PrimIO AnyPtr
+%foreign (libxla "OpBuilder_create_CallOp")
+prim__opBuilderCreateCallOp :
+  GCAnyPtr -> GCAnyPtr -> String -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace OpBuilder
   export
   createCallOp : HasIO io => OpBuilder -> Location -> String -> TypeRange -> ValueRange -> io CallOp
+  createCallOp
+    (MkOpBuilder builder)
+    (MkLocation location)
+    name
+    (MkTypeRange returnTypes)
+    (MkValueRange operands) = do
+      op <- primIO $ prim__opBuilderCreateCallOp builder location name returnTypes operands
+      op <- onCollectAny op (primIO . prim__deleteCallOp)
+      pure (MkCallOp op)
+
+%foreign (libxla "FuncOp_delete")
+prim__deleteFuncOp : AnyPtr -> PrimIO ()
 
 public export
 data FuncOp = MkFuncOp GCAnyPtr
@@ -52,16 +68,27 @@ prim__funcOpCreate : GCAnyPtr -> String -> GCAnyPtr -> PrimIO AnyPtr
 namespace FuncOp
   export
   create : HasIO io => Location -> String -> FunctionType -> io FuncOp
+  create (MkLocation location) name (MkFunctionType type) = do
+    op <- primIO $ prim__funcOpCreate location name type
+    op <- onCollectAny op (primIO . prim__deleteFuncOp)
+    pure (MkFuncOp op)
+
+%foreign (libxla "ReturnOp_delete")
+prim__deleteReturnOp : AnyPtr -> PrimIO ()
 
 public export
 data ReturnOp = MkReturnOp GCAnyPtr
 
 %foreign (libxla "ReturnOp_create")
-prim__returnOpCreate : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Bits64 -> PrimIO AnyPtr
+prim__returnOpCreate : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace OpBuilder
   export
   createReturnOp : HasIO io => OpBuilder -> Location -> ResultRange -> io ReturnOp
+  createReturnOp (MkOpBuilder builder) (MkLocation location) (MkResultRange results) = do
+    op <- primIO $ prim__returnOpCreate builder location results
+    op <- onCollectAny op (primIO . prim__deleteReturnOp)
+    pure (MkReturnOp op)
 
 %foreign (libxla "FuncOp_addEntryBlock")
 prim__funcOpAddEntryBlock : GCAnyPtr -> PrimIO AnyPtr

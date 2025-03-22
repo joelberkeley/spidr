@@ -19,10 +19,13 @@ module Compiler.MLIR.IR.BuiltinAttributes
 import Compiler.MLIR.IR.BuiltinTypeInterfaces
 import Compiler.FFI
 
+%foreign (libxla "DenseElementsAttr_delete")
+prim__deleteDenseElementsAttr : AnyPtr -> PrimIO ()
+
 public export
 data DenseElementsAttr = MkDenseElementsAttr GCAnyPtr
 
-%foreign (libxla "UnknownLoc_get")
+%foreign (libxla "DenseElementsAttr_get")
 prim__denseElementsAttrGet : GCAnyPtr -> Double -> PrimIO AnyPtr
 
 namespace DenseElementsAttr
@@ -30,5 +33,5 @@ namespace DenseElementsAttr
   get : HasIO io => ShapedType -> Double -> io DenseElementsAttr
   get (MkShapedType st) value = do
     attr <- primIO $ prim__denseElementsAttrGet st value
-    attr <- onCollectAny attr ?del
+    attr <- onCollectAny attr (primIO . prim__deleteDenseElementsAttr)
     pure (MkDenseElementsAttr attr)
