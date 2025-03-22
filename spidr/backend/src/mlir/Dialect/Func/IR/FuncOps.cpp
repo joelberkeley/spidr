@@ -15,6 +15,7 @@ limitations under the License.
 */
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
+#include "../../../IR/Block.h"
 #include "../../../IR/BuiltinDialectBytecode.h"
 #include "../../../IR/Location.h"
 
