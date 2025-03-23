@@ -208,10 +208,13 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" !(typeRange [cast tensorShape]) diffOperands
     printLn 7
     _ <- createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(getOpResults $ cast fdiffCallOp)
+    printLn 8
 
     -- convert back to XLA HLO, and call
     hloProto <- convertStablehloToHlo stablehlo
+    printLn 9
     computation <- mkXlaComputation hloProto
+    printLn 10
     call xlaBuilder computation [!(interpretE x)]
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
   interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder

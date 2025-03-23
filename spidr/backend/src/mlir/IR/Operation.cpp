@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "mlir/IR/Operation.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"  // todo: extract to funcops
 
 #include "Operation.h"
 #include "Value.h"
+#include "ValueRange.h"
 
 extern "C" {
     void Operation_erase(Operation& s) {
@@ -25,6 +27,12 @@ extern "C" {
     }
 
     struct CallOp;
+
+    ResultRange* Operation_getOpResults(CallOp& s) {
+        auto& s_ = reinterpret_cast<mlir::func::CallOp&>(s);
+        auto res = s_.getOperation()->getOpResults();  // todo extract getOperation to funcops
+        return reinterpret_cast<ResultRange*>(new mlir::ResultRange(res));
+    }
 
     OpResult* Operation_getOpResult(CallOp& s, unsigned idx) {
         auto& s_ = reinterpret_cast<mlir::func::CallOp&>(s);

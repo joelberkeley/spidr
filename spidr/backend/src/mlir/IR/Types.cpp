@@ -22,7 +22,6 @@ extern "C" {
         return sizeof(mlir::Type);
     }
 
-    // how does this work? are types not different sizes, and therefore have
     void set_array_Type(Type** arr, size_t idx, Type* value) {
         reinterpret_cast<mlir::Type**>(arr)[idx] = reinterpret_cast<mlir::Type*>(value);
     }

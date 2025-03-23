@@ -31,12 +31,12 @@ erase : HasIO io => Operation -> io ()
 erase (MkOperation op) = primIO $ prim__operationErase op
 
 %foreign (libxla "Operation_getOpResults")
-prim__operationGetOpResults : GCAnyPtr -> AnyPtr
+prim__operationGetOpResults : GCAnyPtr -> PrimIO $ AnyPtr
 
 export
 getOpResults : HasIO io => Operation -> io ResultRange
 getOpResults (MkOperation op) = do
-  let res = prim__operationGetOpResults op
+  res <- primIO $ prim__operationGetOpResults op
   res <- onCollectAny res (const $ pure ())
   pure (MkResultRange res)
 

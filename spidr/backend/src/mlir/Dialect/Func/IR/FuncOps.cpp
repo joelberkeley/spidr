@@ -16,10 +16,26 @@ limitations under the License.
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 #include "../../../IR/Block.h"
+#include "../../../IR/Builders.h"
 #include "../../../IR/BuiltinDialectBytecode.h"
 #include "../../../IR/Location.h"
+#include "../../../IR/TypeRange.h"
+#include "../../../IR/ValueRange.h"
 
 extern "C" {
+    struct CallOp;
+
+    CallOp* OpBuilder_create_CallOp(
+        OpBuilder& s, Location& location, char* name, TypeRange& types, ValueRange& operands
+    ) {
+        auto s_ = reinterpret_cast<mlir::OpBuilder&>(s);
+        auto location_ = reinterpret_cast<mlir::Location&>(location);
+        auto types_ = reinterpret_cast<mlir::TypeRange&>(types);
+        auto operands_ = reinterpret_cast<mlir::ValueRange&>(operands);
+        auto res = s_.create<mlir::func::CallOp>(location_, types_, operands_);
+        return reinterpret_cast<CallOp*>(new mlir::func::CallOp(res));
+    }
+
     struct FuncOp;
 
     FuncOp* FuncOp_create(Location& location, char* name, FunctionType& type) {
@@ -32,5 +48,15 @@ extern "C" {
     Block* FuncOp_addEntryBlock(FuncOp& s) {
         auto s_ = reinterpret_cast<mlir::func::FuncOp&>(s);
         return reinterpret_cast<Block*>(&s_.front());  // why do we now not need to add an entry block?
+    }
+
+    struct ReturnOp;
+
+    ReturnOp* OpBuilder_create_ReturnOp(OpBuilder& s, Location& location, ResultRange& results) {
+        auto s_ = reinterpret_cast<mlir::OpBuilder&>(s);
+        auto location_ = reinterpret_cast<mlir::Location&>(location);
+        auto results_ = reinterpret_cast<mlir::ResultRange&>(results);
+        auto res = s_.create<mlir::func::ReturnOp>(location_, results_);
+        return reinterpret_cast<ReturnOp*>(new mlir::func::ReturnOp(res));
     }
 }

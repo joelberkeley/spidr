@@ -79,7 +79,7 @@ prim__deleteReturnOp : AnyPtr -> PrimIO ()
 public export
 data ReturnOp = MkReturnOp GCAnyPtr
 
-%foreign (libxla "ReturnOp_create")
+%foreign (libxla "OpBuilder_create_ReturnOp")
 prim__returnOpCreate : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace OpBuilder

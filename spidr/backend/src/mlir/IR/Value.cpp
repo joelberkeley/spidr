@@ -18,6 +18,12 @@ limitations under the License.
 #include "Value.h"
 
 extern "C" {
+    struct Value;
+
+    void set_array_Value(Value** arr, size_t idx, Value* value) {
+        reinterpret_cast<mlir::Value**>(arr)[idx] = reinterpret_cast<mlir::Value*>(value);
+    }
+
     void BlockArgument_delete(BlockArgument* s) {
         delete reinterpret_cast<mlir::BlockArgument*>(s);
     }
