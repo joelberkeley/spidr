@@ -15,14 +15,13 @@ limitations under the License.
 */
 #include "mlir/IR/TypeRange.h"
 
+#include "TypeRange.h"
 #include "Types.h"
 
 extern "C" {
-    struct TypeRange;
-
     TypeRange* TypeRange_new(Type* types, size_t types_len) {
         auto types_ = reinterpret_cast<mlir::Type*>(types);
         auto types_ar = llvm::ArrayRef(types_, types_len);
-        return new mlir::TypeRange(types_ar);
+        return reinterpret_cast<TypeRange*>(new mlir::TypeRange(types_ar));
     }
 }

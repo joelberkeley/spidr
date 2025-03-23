@@ -15,12 +15,13 @@ limitations under the License.
 */
 #include "mlir/IR/BuiltinAttributes.h"
 
-#include "Location.h"
+#include "BuiltinAttributes.h"
+#include "BuiltinDialectBytecode.h"
 
 extern "C" {
     DenseElementsAttr* DenseElementsAttr_get(ShapedType& type, double value) {
-        auto type_ = reinterpret_cast<mlir::ShapedType*>(type);
+        auto type_ = reinterpret_cast<mlir::ShapedType&>(type);
         auto res = mlir::DenseElementsAttr::get(type_, value);
-        return reinterpret_cast<DenseElementsAttr*>(res);
+        return reinterpret_cast<DenseElementsAttr*>(new mlir::DenseElementsAttr(res));
     }
 }

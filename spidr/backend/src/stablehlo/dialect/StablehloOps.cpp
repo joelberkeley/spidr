@@ -16,8 +16,12 @@ limitations under the License.
 #include "stablehlo/dialect/StablehloOps.h"
 
 #include "../../mlir/IR/Builders.h"
+#include "../../mlir/IR/BuiltinAttributes.h"
+#include "../../mlir/IR/Location.h"
 
 extern "C" {
+    struct ConstantOp;
+
     ConstantOp* OpBuilder_create_ConstantOp(
         OpBuilder& s, Location& location, DenseElementsAttr& attr
     ) {
@@ -26,6 +30,6 @@ extern "C" {
         auto attr_ = reinterpret_cast<mlir::DenseElementsAttr&>(attr);
 
         auto res = s_.create<mlir::stablehlo::ConstantOp>(location_, attr_);
-        return reinterpret_cast<ConstantOp*>(res);  // heap allocated?
+        return reinterpret_cast<ConstantOp*>(&res);  // heap allocated?
     }
 }

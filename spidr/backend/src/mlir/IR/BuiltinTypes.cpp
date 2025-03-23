@@ -14,28 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/TypeRange.h"
 
 #include "BuiltinTypes.h"
+#include "MLIRContext.h"
+#include "TypeRange.h"
 #include "Types.h"
 
 extern "C" {
-    struct FloatType;
-
     void FloatType_delete(FloatType* s) {
         delete reinterpret_cast<mlir::FloatType*>(s);
     }
 
-    FunctionType* FunctionType_get(
-        MLIRContext* ctx, Type* inputs, size_t inputs_len, Type* results, size_t results_len
-    ) {
-        auto ctx_ = reinterpret_cast<mlir::MLIRContext*>(ctx);
-        auto inputs_ = reinterpret_cast<mlir::Type*>(inputs);
-        auto inputs_ar = llvm::ArrayRef(inputs_, inputs_len);
-        auto results_ = reinterpret_cast<mlir::Type*>(results);
-        auto results_ar = llvm::ArrayRef(results_, results_len);
+    struct FunctionType;
 
-        auto res = mlir::func::FunctionType::get(ctx_, inputs_ar, results_ar);
-        return reinterpret_cast<FunctionType*>(new mlir::func::FunctionType(res));
+    FunctionType* FunctionType_get(MLIRContext* ctx, TypeRange* inputs, TypeRange* results) {
+        auto ctx_ = reinterpret_cast<mlir::MLIRContext*>(ctx);
+        auto inputs_ = reinterpret_cast<mlir::TypeRange*>(inputs);
+        auto results_ = reinterpret_cast<mlir::TypeRange*>(results);
+
+        auto res = mlir::FunctionType::get(ctx_, *inputs_, *results_);
+        return reinterpret_cast<FunctionType*>(new mlir::FunctionType(res));
     }
 
     RankedTensorType* RankedTensorType_get(int64_t* shape, size_t shape_len, Type& elementType) {

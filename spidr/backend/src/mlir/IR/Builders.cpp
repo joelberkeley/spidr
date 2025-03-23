@@ -19,10 +19,13 @@ limitations under the License.
 #include "mlir/IR/MLIRContext.h"
 
 #include "Block.h"
+#include "Builders.h"
 #include "BuiltinTypes.h"
 #include "MLIRContext.h"
 
 extern "C" {
+    struct Builder;
+
     FloatType* Builder_getF64Type(Builder& s) {
         auto s_ = reinterpret_cast<mlir::Builder&>(s);
         auto res = s_.getF64Type();
@@ -37,9 +40,8 @@ extern "C" {
     }
 
     OpBuilder* OpBuilder_atBlockEnd(Block* block) {
-        auto block_ = reinterpret_cast<mlir::Block*)(block);
+        auto block_ = reinterpret_cast<mlir::Block*>(block);
         auto builder = mlir::OpBuilder::atBlockEnd(block_);
         return reinterpret_cast<OpBuilder*>(new mlir::OpBuilder(builder));
     }
 }
-

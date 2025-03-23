@@ -13,17 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "mlir/IR/Types.h"
-
-#include "Types.h"
-
 extern "C" {
-    int sizeof_Type() {
-        return sizeof(mlir::Type);
-    }
-
-    // how does this work? are types not different sizes, and therefore have
-    void set_array_Type(Type** arr, size_t idx, Type* value) {
-        reinterpret_cast<mlir::Type**>(arr)[idx] = reinterpret_cast<mlir::Type*>(value);
-    }
+    struct TypeRange;
 }

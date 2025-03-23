@@ -188,7 +188,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     -- replace main function
     erase !(lookupSymbolIn !(getOperation stablehlo) "main")
     tensorShape <- RankedTensorType.get shape (cast !(getF64Type !(opBuilder mlirCtx)))
-    funcType <- FunctionType.get mlirCtx [cast tensorShape] [cast tensorShape]
+    funcType <- FunctionType.get mlirCtx !(typeRange [cast tensorShape]) !(typeRange [cast tensorShape])
     funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
     pushBack stablehlo (cast funcOp)
     entryBlock <- addEntryBlock funcOp

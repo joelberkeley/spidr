@@ -20,6 +20,7 @@ import Compiler.MLIR.IR.BuiltinTypeInterfaces
 import Compiler.MLIR.IR.MLIRContext
 import Compiler.MLIR.IR.Operation
 import Compiler.MLIR.IR.Types
+import Compiler.MLIR.IR.TypeRange
 import Compiler.FFI
 
 public export
@@ -44,10 +45,8 @@ prim__functionTypeGet : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace FunctionType
   export
-  get : HasIO io => MLIRContext -> List Types.Type_ -> List Types.Type_ -> io FunctionType
-  get (MkMLIRContext ctx) inputs results = do
-    MkTypeArray inputs <- mkTypeArray inputs
-    MkTypeArray results <- mkTypeArray results
+  get : HasIO io => MLIRContext -> TypeRange -> TypeRange -> io FunctionType
+  get (MkMLIRContext ctx) (MkTypeRange inputs) (MkTypeRange results) = do
     ftype <- primIO $ prim__functionTypeGet inputs results
     ftype <- onCollectAny ftype (primIO . prim__deleteFunctionType)
     pure (MkFunctionType ftype)
