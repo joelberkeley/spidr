@@ -16,6 +16,7 @@ limitations under the License.
 #include "mlir/IR/Block.h"
 
 #include "Block.h"
+#include "Value.h"
 
 extern "C" {
     Block* Block_new() {
@@ -24,5 +25,11 @@ extern "C" {
 
     void Block_delete(Block* s) {
         delete reinterpret_cast<mlir::Block*>(s);
+    }
+
+    BlockArgument* Block_getArgument(Block& s, unsigned i) {
+        auto& s_ = reinterpret_cast<mlir::Block&>(s);
+        auto res = s_.getArgument(i);
+        return reinterpret_cast<BlockArgument*>(new mlir::BlockArgument(res));
     }
 }

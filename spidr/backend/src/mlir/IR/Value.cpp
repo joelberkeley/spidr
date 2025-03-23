@@ -13,22 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "mlir/IR/Operation.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"  // todo: extract to funcops
+#include "mlir/IR/Value.h"
 
-#include "Operation.h"
 #include "Value.h"
 
 extern "C" {
-    void Operation_erase(Operation& s) {
-        reinterpret_cast<mlir::Operation&>(s).erase();
-    }
-
-    struct CallOp;
-
-    OpResult* Operation_getOpResult(CallOp& s, unsigned idx) {
-        auto& s_ = reinterpret_cast<mlir::func::CallOp&>(s);
-        auto res = s_.getOperation()->getOpResult(idx);  // todo extract getOperation to funcops
-        return reinterpret_cast<OpResult*>(new mlir::OpResult(res));
+    void BlockArgument_delete(BlockArgument* s) {
+        delete reinterpret_cast<mlir::BlockArgument*>(s);
     }
 }

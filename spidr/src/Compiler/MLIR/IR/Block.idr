@@ -38,11 +38,11 @@ mkBlock = do
 
 export
 %foreign (libxla "Block_getArgument")
-prim__blockGetArgument : GCAnyPtr -> Bits64 -> AnyPtr  -- I assume this isn't in IO
+prim__blockGetArgument : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 export
 getArgument : HasIO io => Block -> Nat -> io BlockArgument
 getArgument (MkBlock block) i = do
-  let arg = prim__blockGetArgument block (cast i)
-  arg <- onCollectAny arg (const $ pure ())  -- I assume this is owned by the block
+  arg <- primIO $ prim__blockGetArgument block (cast i)
+  arg <- onCollectAny arg (primIO . prim__deleteBlockArgument)
   pure (MkBlockArgument arg)

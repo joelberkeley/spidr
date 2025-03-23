@@ -30,6 +30,6 @@ extern "C" {
         auto attr_ = reinterpret_cast<mlir::DenseElementsAttr&>(attr);
 
         auto res = s_.create<mlir::stablehlo::ConstantOp>(location_, attr_);
-        return reinterpret_cast<ConstantOp*>(&res);  // heap allocated?
+        return reinterpret_cast<ConstantOp*>(new mlir::stablehlo::ConstantOp(res));
     }
 }

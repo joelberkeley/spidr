@@ -38,12 +38,20 @@ mkValueArray xs = do
   traverse_ (\(idx, MkValue x) => primIO $ prim__setArrayValue ptr (cast idx) (cast x)) (enumerate xs)
   pure (MkValueArray ptr)
 
+export
+%foreign (libxla "BlockArgument_delete")
+prim__deleteBlockArgument : AnyPtr -> PrimIO ()
+
 public export
 data BlockArgument = MkBlockArgument GCAnyPtr
 
 export
 Cast BlockArgument Value where
   cast (MkBlockArgument a) = MkValue a
+
+export
+%foreign (libxla "OpResult_delete")
+prim__deleteOpResult : AnyPtr -> PrimIO ()
 
 public export
 data OpResult = MkOpResult GCAnyPtr

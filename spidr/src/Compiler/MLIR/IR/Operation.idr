@@ -41,11 +41,11 @@ getOpResults (MkOperation op) = do
   pure (MkResultRange res)
 
 %foreign (libxla "Operation_getOpResult")
-prim__operationGetOpResult : GCAnyPtr -> Bits64 -> AnyPtr
+prim__operationGetOpResult : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 export
 getOpResult : HasIO io => Operation -> Nat -> io OpResult
 getOpResult (MkOperation op) idx = do
-  let res = prim__operationGetOpResult op (cast idx)
-  res <- onCollectAny res (const $ pure ())
+  res <- primIO $ prim__operationGetOpResult op (cast idx)
+  res <- onCollectAny res (primIO . prim__deleteOpResult)
   pure (MkOpResult res)

@@ -198,17 +198,15 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     printLn 2
     scalarShape <- RankedTensorType.get [] (cast !(getF64Type blockBuilder))
     printLn 3
-    foo <- DenseElementsAttr.get (cast @{RTTShaped} scalarShape) 1.0
-    printLn 3.0
-    revInit <- createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) foo
+    scalarOne <- DenseElementsAttr.get (cast @{RTTShaped} scalarShape) 1.0
     printLn 4
-    fdiffCallOp <- createCallOp
-      blockBuilder
-      !(UnknownLoc.get mlirCtx)
-      "fdiff"
-      !(typeRange [cast tensorShape])
-      !(valueRange [cast !(getArgument entryBlock 0), cast !(getOpResult (cast revInit) 0)])
+    revInit <- createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) scalarOne
     printLn 5
+    diffOperands <- valueRange [cast !(getArgument entryBlock 0), cast !(getOpResult (cast revInit) 0)]
+    printLn 6
+    fdiffCallOp <- createCallOp
+      blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" !(typeRange [cast tensorShape]) diffOperands
+    printLn 7
     _ <- createReturnOp blockBuilder !(UnknownLoc.get mlirCtx) !(getOpResults $ cast fdiffCallOp)
 
     -- convert back to XLA HLO, and call
