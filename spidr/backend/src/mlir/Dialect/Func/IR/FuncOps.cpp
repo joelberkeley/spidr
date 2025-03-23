@@ -31,6 +31,6 @@ extern "C" {
 
     Block* FuncOp_addEntryBlock(FuncOp& s) {
         auto s_ = reinterpret_cast<mlir::func::FuncOp&>(s);
-        return reinterpret_cast<Block*>(s_.addEntryBlock());
+        return reinterpret_cast<Block*>(&s_.front());  // why do we now not need to add an entry block?
     }
 }
