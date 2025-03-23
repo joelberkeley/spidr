@@ -41,13 +41,13 @@ public export
 data FunctionType = MkFunctionType GCAnyPtr
 
 %foreign (libxla "FunctionType_get")
-prim__functionTypeGet : GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+prim__functionTypeGet : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace FunctionType
   export
   get : HasIO io => MLIRContext -> TypeRange -> TypeRange -> io FunctionType
   get (MkMLIRContext ctx) (MkTypeRange inputs) (MkTypeRange results) = do
-    ftype <- primIO $ prim__functionTypeGet inputs results
+    ftype <- primIO $ prim__functionTypeGet ctx inputs results
     ftype <- onCollectAny ftype (primIO . prim__deleteFunctionType)
     pure (MkFunctionType ftype)
 
@@ -67,14 +67,14 @@ Cast RankedTensorType Type_ where
   cast (MkRankedTensorType t) = MkType_ t
 
 %foreign (libxla "RankedTensorType_get")
-prim__rankedTensorTypeGet : GCPtr Int64 -> GCAnyPtr -> PrimIO AnyPtr
+prim__rankedTensorTypeGet : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO AnyPtr
 
 namespace RankedTensorType
   export
   get : HasIO io => List Nat -> Types.Type_ -> io RankedTensorType
   get shape (MkType_ elementType) = do
-    MkInt64Array shape <- mkInt64Array (map cast shape)
-    rtt <- primIO $ prim__rankedTensorTypeGet shape elementType
+    MkInt64Array shapeAr <- mkInt64Array (map cast shape)
+    rtt <- primIO $ prim__rankedTensorTypeGet shapeAr (cast $ length shape) elementType
     rtt <- onCollectAny rtt (primIO . prim__deleteRankedTensorType)
     pure (MkRankedTensorType rtt)
 
