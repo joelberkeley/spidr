@@ -27,7 +27,7 @@ extern "C" {
     struct Builder;
 
     FloatType* Builder_getF64Type(Builder& s) {
-        auto s_ = reinterpret_cast<mlir::Builder&>(s);
+        auto s_ = reinterpret_cast<mlir::OpBuilder&>(s);
         auto res = s_.getF64Type();
         return reinterpret_cast<FloatType*>(new mlir::FloatType(res));
     }

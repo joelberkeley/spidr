@@ -20,8 +20,16 @@ limitations under the License.
 extern "C" {
     struct Value;
 
-    void set_array_Value(Value** arr, size_t idx, Value* value) {
-        reinterpret_cast<mlir::Value**>(arr)[idx] = reinterpret_cast<mlir::Value*>(value);
+    size_t sizeof_Value() {
+        return sizeof(mlir::Value);
+    }
+
+    void set_array_BlockArgument(Value* arr, size_t idx, BlockArgument* value) {
+        reinterpret_cast<mlir::Value*>(arr)[idx] = *reinterpret_cast<mlir::BlockArgument*>(value);
+    }
+
+    void set_array_OpResult(Value* arr, size_t idx, OpResult* value) {
+        reinterpret_cast<mlir::Value*>(arr)[idx] = *reinterpret_cast<mlir::OpResult*>(value);
     }
 
     void BlockArgument_delete(BlockArgument* s) {

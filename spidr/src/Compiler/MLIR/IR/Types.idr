@@ -20,7 +20,7 @@ import Compiler.FFI
 import Util
 
 public export
-data Type_ = MkType_ GCAnyPtr
+data Type_ = MkType_ GCAnyPtr (GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ())
 
 public export
 data TypeArray = MkTypeArray GCAnyPtr
@@ -34,7 +34,7 @@ prim__setArrayType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 export
 mkTypeArray : HasIO io => List Type_ -> io TypeArray
 mkTypeArray xs = do
-  ptr <- malloc (cast (length xs) * cast sizeofType)
-  ptr <- onCollectAny ptr free
-  traverse_ (\(idx, MkType_ x) => primIO $ prim__setArrayType ptr (cast idx) (cast x)) (enumerate xs)
-  pure (MkTypeArray ptr)
+  arr <- malloc (cast (length xs) * cast sizeofType)
+  arr <- onCollectAny arr free
+  traverse_ (\(idx, MkType_ x set) => primIO $ set arr (cast idx) x) (enumerate xs)
+  pure (MkTypeArray arr)

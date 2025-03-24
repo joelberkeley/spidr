@@ -18,11 +18,7 @@ limitations under the License.
 #include "Types.h"
 
 extern "C" {
-    int sizeof_Type() {
+    size_t sizeof_Type() {
         return sizeof(mlir::Type);
-    }
-
-    void set_array_Type(Type** arr, size_t idx, Type* value) {
-        reinterpret_cast<mlir::Type**>(arr)[idx] = reinterpret_cast<mlir::Type*>(value);
     }
 }

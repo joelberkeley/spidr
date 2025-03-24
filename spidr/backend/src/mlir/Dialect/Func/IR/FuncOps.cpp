@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "mlir/IR/Block.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 #include "../../../IR/Block.h"
@@ -32,7 +33,7 @@ extern "C" {
         auto location_ = reinterpret_cast<mlir::Location&>(location);
         auto types_ = reinterpret_cast<mlir::TypeRange&>(types);
         auto operands_ = reinterpret_cast<mlir::ValueRange&>(operands);
-        auto res = s_.create<mlir::func::CallOp>(location_, types_, operands_);
+        auto res = s_.create<mlir::func::CallOp>(location_, name, types_, operands_);
         return reinterpret_cast<CallOp*>(new mlir::func::CallOp(res));
     }
 
@@ -47,7 +48,7 @@ extern "C" {
 
     Block* FuncOp_addEntryBlock(FuncOp& s) {
         auto s_ = reinterpret_cast<mlir::func::FuncOp&>(s);
-        return reinterpret_cast<Block*>(&s_.front());  // why do we now not need to add an entry block?
+        return reinterpret_cast<Block*>(s_.addEntryBlock());  // why do we now not need to add an entry block?
     }
 
     struct ReturnOp;

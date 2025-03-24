@@ -30,9 +30,12 @@ export
 %foreign (libxla "FloatType_delete")
 prim__deleteFloatType : AnyPtr -> PrimIO ()
 
+%foreign (libxla "set_array_FloatType")
+prim__setArrayFloatType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
+
 export
 Cast FloatType Type_ where
-  cast (MkFloatType t) = MkType_ t
+  cast (MkFloatType t) = MkType_ t prim__setArrayFloatType
 
 %foreign (libxla "FunctionType_delete")
 prim__deleteFunctionType : AnyPtr -> PrimIO ()
@@ -51,6 +54,9 @@ namespace FunctionType
     ftype <- onCollectAny ftype (primIO . prim__deleteFunctionType)
     pure (MkFunctionType ftype)
 
+%foreign (libxla "set_array_RankedTensorType")
+prim__setArrayRankedTensorType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
+
 %foreign (libxla "RankedTensorType_delete")
 prim__deleteRankedTensorType : AnyPtr -> PrimIO ()
 
@@ -64,7 +70,7 @@ export
 
 export
 Cast RankedTensorType Type_ where
-  cast (MkRankedTensorType t) = MkType_ t
+  cast (MkRankedTensorType t) = MkType_ t prim__setArrayRankedTensorType
 
 %foreign (libxla "RankedTensorType_get")
 prim__rankedTensorTypeGet : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO AnyPtr
@@ -72,9 +78,9 @@ prim__rankedTensorTypeGet : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO AnyPtr
 namespace RankedTensorType
   export
   get : HasIO io => List Nat -> Types.Type_ -> io RankedTensorType
-  get shape (MkType_ elementType) = do
-    MkInt64Array shapeAr <- mkInt64Array (map cast shape)
-    rtt <- primIO $ prim__rankedTensorTypeGet shapeAr (cast $ length shape) elementType
+  get shape (MkType_ elementType _) = do
+    MkInt64Array arr <- mkInt64Array (map cast shape)
+    rtt <- primIO $ prim__rankedTensorTypeGet arr (cast $ length shape) elementType
     rtt <- onCollectAny rtt (primIO . prim__deleteRankedTensorType)
     pure (MkRankedTensorType rtt)
 

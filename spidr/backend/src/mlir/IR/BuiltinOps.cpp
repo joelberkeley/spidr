@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"  // todo
 
 #include "BuiltinOps.h"
 #include "MLIRContext.h"
@@ -24,14 +25,18 @@ extern "C" {
         delete reinterpret_cast<mlir::ModuleOp*>(s);
     }
 
+    void ModuleOp_dump(ModuleOp& s) {
+        reinterpret_cast<mlir::ModuleOp&>(s).dump();
+    }
+
     Operation* ModuleOp_getOperation(ModuleOp& s) {
         auto s_ = reinterpret_cast<mlir::ModuleOp&>(s);
         return reinterpret_cast<Operation*>(s_.getOperation());
     }
 
-    void ModuleOp_push_back(ModuleOp& s, Operation* op) {
+    void ModuleOp_push_back(ModuleOp& s, void* op) {
         auto s_ = reinterpret_cast<mlir::ModuleOp&>(s);
-        auto op_ = reinterpret_cast<mlir::Operation*>(op);
-        s_.push_back(op_);
+        auto op_ = reinterpret_cast<mlir::func::FuncOp*>(op);  // todo
+        s_.push_back(op_->getOperation());
     }
 }

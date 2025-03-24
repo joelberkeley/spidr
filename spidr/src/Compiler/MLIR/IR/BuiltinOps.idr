@@ -28,6 +28,14 @@ export
 prim__delete : AnyPtr -> PrimIO ()
 
 export
+%foreign (libxla "ModuleOp_dump")
+prim__moduleOpDump : GCAnyPtr -> PrimIO ()
+
+export
+dump : HasIO io => ModuleOp -> io ()
+dump (MkModuleOp op) = primIO $ prim__moduleOpDump op
+
+export
 %foreign (libxla "ModuleOp_getOperation")
 prim__moduleOpGetOperation : GCAnyPtr -> AnyPtr
 
