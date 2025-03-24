@@ -29,12 +29,12 @@ data OpBuilder = MkOpBuilder GCAnyPtr
 prim__deleteOpBuilder : AnyPtr -> PrimIO ()
 
 %foreign (libxla "OpBuilder_new")
-prim__opBuilder : GCAnyPtr -> PrimIO AnyPtr
+prim__mkOpBuilder : GCAnyPtr -> PrimIO AnyPtr
 
 export
-opBuilder : HasIO io => MLIRContext -> io OpBuilder
-opBuilder (MkMLIRContext ctx) = do
-  builder <- primIO $ prim__opBuilder ctx
+mkOpBuilder : HasIO io => MLIRContext -> io OpBuilder
+mkOpBuilder (MkMLIRContext ctx) = do
+  builder <- primIO $ prim__mkOpBuilder ctx
   builder <- onCollectAny builder (primIO . prim__deleteOpBuilder)
   pure (MkOpBuilder builder)
 

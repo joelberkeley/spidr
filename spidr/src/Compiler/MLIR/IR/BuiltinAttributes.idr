@@ -19,11 +19,11 @@ module Compiler.MLIR.IR.BuiltinAttributes
 import Compiler.MLIR.IR.BuiltinTypeInterfaces
 import Compiler.FFI
 
-%foreign (libxla "DenseElementsAttr_delete")
-prim__deleteDenseElementsAttr : AnyPtr -> PrimIO ()
-
 public export
 data DenseElementsAttr = MkDenseElementsAttr GCAnyPtr
+
+%foreign (libxla "DenseElementsAttr_delete")
+prim__deleteDenseElementsAttr : AnyPtr -> PrimIO ()
 
 %foreign (libxla "DenseElementsAttr_get")
 prim__denseElementsAttrGet : GCAnyPtr -> Double -> PrimIO AnyPtr

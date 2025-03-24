@@ -17,12 +17,10 @@ limitations under the License.
 #include "mlir/IR/BuiltinTypes.h"
 
 #include "BuiltinAttributes.h"
-#include "BuiltinDialectBytecode.h"
+#include "BuiltinTypes.h"
 
 extern "C" {
-    DenseElementsAttr* DenseElementsAttr_get(ShapedType& type, double value) {
-        // why can't I use this as a ShapedType? (note it doesn't matter, I can just specialise it
-        // to RankedTensorType
+    DenseElementsAttr* DenseElementsAttr_get(RankedTensorType& type, double value) {
         auto type_ = reinterpret_cast<mlir::RankedTensorType&>(type);
         auto res = mlir::DenseElementsAttr::get(type_, value);
         return reinterpret_cast<DenseElementsAttr*>(new mlir::DenseElementsAttr(res));

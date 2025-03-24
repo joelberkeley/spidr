@@ -22,16 +22,16 @@ import Compiler.FFI
 public export
 data TypeRange = MkTypeRange GCAnyPtr
 
-%foreign (libxla "delete_TypeRange")
+%foreign (libxla "TypeRange_delete")
 prim__deleteTypeRange : AnyPtr -> PrimIO ()
 
 %foreign (libxla "TypeRange_new")
-prim__typeRange : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
+prim__mkTypeRange : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 public export
-typeRange : HasIO io => List Type_ -> io TypeRange
-typeRange types = do
+mkTypeRange : HasIO io => List Type_ -> io TypeRange
+mkTypeRange types = do
   MkTypeArray arr <- mkTypeArray types
-  tr <- primIO $ prim__typeRange arr (cast $ length types)
+  tr <- primIO $ prim__mkTypeRange arr (cast $ length types)
   tr <- onCollectAny tr (primIO . prim__deleteTypeRange)
   pure (MkTypeRange tr)

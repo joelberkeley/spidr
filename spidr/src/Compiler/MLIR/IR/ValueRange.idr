@@ -19,22 +19,26 @@ module Compiler.MLIR.IR.ValueRange
 import Compiler.MLIR.IR.Value
 import Compiler.FFI
 
-%foreign (libxla "ValueRange_delete")
-prim__deleteValueRange : AnyPtr -> PrimIO ()
-
 public export
 data ValueRange = MkValueRange GCAnyPtr
 
+%foreign (libxla "ValueRange_delete")
+prim__deleteValueRange : AnyPtr -> PrimIO ()
+
 %foreign (libxla "ValueRange_new")
-prim__valueRange : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
+prim__mkValueRange : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 public export
-valueRange : HasIO io => List Value -> io ValueRange
-valueRange values = do
+mkValueRange : HasIO io => List Value -> io ValueRange
+mkValueRange values = do
   MkValueArray arr <- mkValueArray values
-  vr <- primIO $ prim__valueRange arr (cast $ length values)
+  vr <- primIO $ prim__mkValueRange arr (cast $ length values)
   vr <- onCollectAny vr (primIO . prim__deleteValueRange)
   pure (MkValueRange vr)
+
+export
+%foreign (libxla "ResultRange_delete")
+prim__deleteResultRange : AnyPtr -> PrimIO ()
 
 public export
 data ResultRange = MkResultRange GCAnyPtr

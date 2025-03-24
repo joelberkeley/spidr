@@ -37,11 +37,11 @@ export
 Cast FloatType Type_ where
   cast (MkFloatType t) = MkType_ t prim__setArrayFloatType
 
-%foreign (libxla "FunctionType_delete")
-prim__deleteFunctionType : AnyPtr -> PrimIO ()
-
 public export
 data FunctionType = MkFunctionType GCAnyPtr
+
+%foreign (libxla "FunctionType_delete")
+prim__deleteFunctionType : AnyPtr -> PrimIO ()
 
 %foreign (libxla "FunctionType_get")
 prim__functionTypeGet : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
@@ -54,23 +54,24 @@ namespace FunctionType
     ftype <- onCollectAny ftype (primIO . prim__deleteFunctionType)
     pure (MkFunctionType ftype)
 
+public export
+data RankedTensorType = MkRankedTensorType GCAnyPtr
+
 %foreign (libxla "set_array_RankedTensorType")
 prim__setArrayRankedTensorType : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 %foreign (libxla "RankedTensorType_delete")
 prim__deleteRankedTensorType : AnyPtr -> PrimIO ()
 
-public export
-data RankedTensorType = MkRankedTensorType GCAnyPtr
+namespace ShapedType
+  export
+  Cast RankedTensorType ShapedType where
+    cast (MkRankedTensorType t) = MkShapedType t
 
--- is this cast valid?
-export
-[RTTShaped] Cast RankedTensorType ShapedType where
-  cast (MkRankedTensorType t) = MkShapedType t
-
-export
-Cast RankedTensorType Type_ where
-  cast (MkRankedTensorType t) = MkType_ t prim__setArrayRankedTensorType
+namespace Type_
+  export
+  Cast RankedTensorType Type_ where
+    cast (MkRankedTensorType t) = MkType_ t prim__setArrayRankedTensorType
 
 %foreign (libxla "RankedTensorType_get")
 prim__rankedTensorTypeGet : GCPtr Int64 -> Bits64 -> GCAnyPtr -> PrimIO AnyPtr
@@ -83,7 +84,3 @@ namespace RankedTensorType
     rtt <- primIO $ prim__rankedTensorTypeGet arr (cast $ length shape) elementType
     rtt <- onCollectAny rtt (primIO . prim__deleteRankedTensorType)
     pure (MkRankedTensorType rtt)
-
-export
-Cast RankedTensorType ShapedType where
-  cast (MkRankedTensorType t) = MkShapedType t

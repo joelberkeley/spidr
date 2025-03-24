@@ -28,39 +28,38 @@ data ValueArray = MkValueArray GCAnyPtr
 %foreign (libxla "sizeof_Value")
 sizeofValue : Bits64
 
-%foreign (libxla "set_array_BlockArgument")
-prim__setArrayBlockArgument : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
-%foreign (libxla "set_array_OpResult")
-prim__setArrayOpResult : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
-
 export
 mkValueArray :  HasIO io => List Value -> io ValueArray
 mkValueArray xs = do
-  -- i can only guess this is an array of Value* (not Value), else how else do we create this?
   arr <- malloc (cast (length xs) * cast sizeofValue)
   arr <- onCollectAny arr free
   traverse_ (\(idx, MkValue x set) => primIO $ set arr (cast idx) x) (enumerate xs)
   pure (MkValueArray arr)
 
-export
-%foreign (libxla "BlockArgument_delete")
-prim__deleteBlockArgument : AnyPtr -> PrimIO ()
-
 public export
 data BlockArgument = MkBlockArgument GCAnyPtr
 
 export
-Cast BlockArgument Value where
-  cast (MkBlockArgument a) = MkValue a prim__setArrayBlockArgument
+%foreign (libxla "BlockArgument_delete")
+prim__deleteBlockArgument : AnyPtr -> PrimIO ()
+
+%foreign (libxla "set_array_BlockArgument")
+prim__setArrayBlockArgument : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 export
-%foreign (libxla "OpResult_delete")
-prim__deleteOpResult : AnyPtr -> PrimIO ()
+Cast BlockArgument Value where
+  cast (MkBlockArgument ptr) = MkValue ptr prim__setArrayBlockArgument
 
 public export
 data OpResult = MkOpResult GCAnyPtr
 
 export
+%foreign (libxla "OpResult_delete")
+prim__deleteOpResult : AnyPtr -> PrimIO ()
+
+%foreign (libxla "set_array_OpResult")
+prim__setArrayOpResult : GCAnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
+
+export
 Cast OpResult Value where
-  cast (MkOpResult r) = MkValue r prim__setArrayOpResult
+  cast (MkOpResult ptr) = MkValue ptr prim__setArrayOpResult

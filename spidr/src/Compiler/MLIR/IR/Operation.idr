@@ -23,6 +23,9 @@ import Compiler.FFI
 public export
 data Operation = MkOperation GCAnyPtr
 
+%foreign (libxla "Operation_delete")
+prim__deleteOperation : AnyPtr -> PrimIO ()
+
 %foreign (libxla "Operation_erase")
 prim__operationErase : GCAnyPtr -> PrimIO ()
 
@@ -37,7 +40,7 @@ export
 getOpResults : HasIO io => Operation -> io ResultRange
 getOpResults (MkOperation op) = do
   res <- primIO $ prim__operationGetOpResults op
-  res <- onCollectAny res (const $ pure ())
+  res <- onCollectAny res (primIO . prim__deleteResultRange)
   pure (MkResultRange res)
 
 %foreign (libxla "Operation_getOpResult")
