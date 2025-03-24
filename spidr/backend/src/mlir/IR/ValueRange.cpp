@@ -26,7 +26,6 @@ extern "C" {
         delete reinterpret_cast<mlir::ValueRange*>(s);
     }
 
-    // is this right? we're accepting Value*, but that type isn't constructible afaik
     ValueRange* ValueRange_new(Value* values, size_t values_len) {
         auto values_ = reinterpret_cast<mlir::Value*>(values);
         auto values_ar = llvm::ArrayRef(values_, values_len);
