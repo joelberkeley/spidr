@@ -15,7 +15,6 @@ limitations under the License.
 */
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/ValueRange.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"  // todo: extract to funcops
 
 #include "Operation.h"
 #include "Value.h"
@@ -26,17 +25,15 @@ extern "C" {
         reinterpret_cast<mlir::Operation&>(s).erase();
     }
 
-    struct CallOp;
-
-    ResultRange* Operation_getOpResults(CallOp& s) {
-        auto& s_ = reinterpret_cast<mlir::func::CallOp&>(s);
-        auto res = s_.getOperation()->getOpResults();  // todo extract getOperation to funcops
+    ResultRange* Operation_getOpResults(Operation& s) {
+        auto& s_ = reinterpret_cast<mlir::Operation&>(s);
+        auto res = s_.getOpResults();
         return reinterpret_cast<ResultRange*>(new mlir::ResultRange(res));
     }
 
-    OpResult* Operation_getOpResult(CallOp& s, unsigned idx) {
-        auto& s_ = reinterpret_cast<mlir::func::CallOp&>(s);
-        auto res = s_.getOperation()->getOpResult(idx);  // todo extract getOperation to funcops
+    OpResult* Operation_getOpResult(Operation& s, unsigned idx) {
+        auto& s_ = reinterpret_cast<mlir::Operation&>(s);
+        auto res = s_.getOpResult(idx);
         return reinterpret_cast<OpResult*>(new mlir::OpResult(res));
     }
 }

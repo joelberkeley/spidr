@@ -18,6 +18,7 @@ limitations under the License.
 #include "../../mlir/IR/Builders.h"
 #include "../../mlir/IR/BuiltinAttributes.h"
 #include "../../mlir/IR/Location.h"
+#include "../../mlir/IR/Operation.h"
 
 extern "C" {
     struct ConstantOp;
@@ -31,5 +32,11 @@ extern "C" {
 
         auto res = s_.create<mlir::stablehlo::ConstantOp>(location_, attr_);
         return reinterpret_cast<ConstantOp*>(new mlir::stablehlo::ConstantOp(res));
+    }
+
+    Operation* ConstantOp_getOperation(ConstantOp& s) {
+        auto& s_ = reinterpret_cast<mlir::stablehlo::ConstantOp&>(s);
+        auto res = s_.getOperation();
+        return reinterpret_cast<Operation*>(res);
     }
 }

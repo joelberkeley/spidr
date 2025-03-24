@@ -28,10 +28,6 @@ prim__deleteConstantOp : AnyPtr -> PrimIO ()
 public export
 data ConstantOp = MkConstantOp GCAnyPtr
 
-export
-Cast ConstantOp Operation where
-  cast (MkConstantOp ptr) = MkOperation ptr  -- valid?
-
 %foreign (libxla "OpBuilder_create_ConstantOp")
 prim__opBuilderCreateConstantOp : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 
@@ -42,3 +38,13 @@ namespace OpBuilder
     op <- primIO $ prim__opBuilderCreateConstantOp builder location attr
     op <- onCollectAny op (primIO . prim__deleteConstantOp)
     pure (MkConstantOp op)
+
+%foreign (libxla "ConstantOp_getOperation")
+prim__constantOpGetOperation : GCAnyPtr -> PrimIO AnyPtr
+
+export
+getOperation : HasIO io => ConstantOp -> io Operation
+getOperation (MkConstantOp op) = do
+  opr <- primIO $ prim__constantOpGetOperation op
+  opr <- onCollectAny opr (const $ pure ())
+  pure (MkOperation opr)

@@ -31,10 +31,6 @@ prim__deleteCallOp : AnyPtr -> PrimIO ()
 public export
 data CallOp = MkCallOp GCAnyPtr
 
-export
-Cast CallOp Operation where
-  cast (MkCallOp ptr) = MkOperation ptr
-
 %foreign (libxla "OpBuilder_create_CallOp")
 prim__opBuilderCreateCallOp :
   GCAnyPtr -> GCAnyPtr -> String -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
@@ -52,15 +48,22 @@ namespace OpBuilder
       op <- onCollectAny op (primIO . prim__deleteCallOp)
       pure (MkCallOp op)
 
-%foreign (libxla "FuncOp_delete")
-prim__deleteFuncOp : AnyPtr -> PrimIO ()
+%foreign (libxla "CallOp_getOperation")
+prim__callOpGetOperation : GCAnyPtr -> PrimIO AnyPtr
+
+namespace CallOp
+  export
+  getOperation : HasIO io => CallOp -> io Operation
+  getOperation (MkCallOp op) = do
+    opr <- primIO $ prim__callOpGetOperation op
+    opr <- onCollectAny opr (const $ pure ())
+    pure (MkOperation opr)
 
 public export
 data FuncOp = MkFuncOp GCAnyPtr
 
-export
-Cast FuncOp Operation where
-  cast (MkFuncOp op) = MkOperation op
+%foreign (libxla "FuncOp_delete")
+prim__deleteFuncOp : AnyPtr -> PrimIO ()
 
 %foreign (libxla "FuncOp_create")
 prim__funcOpCreate : GCAnyPtr -> String -> GCAnyPtr -> PrimIO AnyPtr
@@ -73,11 +76,22 @@ namespace FuncOp
     op <- onCollectAny op (primIO . prim__deleteFuncOp)
     pure (MkFuncOp op)
 
-%foreign (libxla "ReturnOp_delete")
-prim__deleteReturnOp : AnyPtr -> PrimIO ()
+%foreign (libxla "FuncOp_getOperation")
+prim__funcOpGetOperation : GCAnyPtr -> PrimIO AnyPtr
+
+namespace FuncOp
+  export
+  getOperation : HasIO io => FuncOp -> io Operation
+  getOperation (MkFuncOp op) = do
+    opr <- primIO $ prim__funcOpGetOperation op
+    opr <- onCollectAny opr (const $ pure ())
+    pure (MkOperation opr)
 
 public export
 data ReturnOp = MkReturnOp GCAnyPtr
+
+%foreign (libxla "ReturnOp_delete")
+prim__deleteReturnOp : AnyPtr -> PrimIO ()
 
 %foreign (libxla "OpBuilder_create_ReturnOp")
 prim__returnOpCreate : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr

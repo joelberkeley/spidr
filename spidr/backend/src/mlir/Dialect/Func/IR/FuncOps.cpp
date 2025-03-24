@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "mlir/IR/Block.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
 #include "../../../IR/Block.h"
 #include "../../../IR/Builders.h"
 #include "../../../IR/BuiltinDialectBytecode.h"
 #include "../../../IR/Location.h"
+#include "../../../IR/Operation.h"
 #include "../../../IR/TypeRange.h"
 #include "../../../IR/ValueRange.h"
 
@@ -37,7 +39,19 @@ extern "C" {
         return reinterpret_cast<CallOp*>(new mlir::func::CallOp(res));
     }
 
+    Operation* CallOp_getOperation(CallOp& s) {
+        auto& s_ = reinterpret_cast<mlir::func::CallOp&>(s);
+        auto res = s_.getOperation();
+        return reinterpret_cast<Operation*>(res);
+    }
+
     struct FuncOp;
+
+    Operation* FuncOp_getOperation(FuncOp& s) {
+        auto& s_ = reinterpret_cast<mlir::func::FuncOp&>(s);
+        auto res = s_.getOperation();
+        return reinterpret_cast<Operation*>(res);
+    }
 
     FuncOp* FuncOp_create(Location& location, char* name, FunctionType& type) {
         auto location_ = reinterpret_cast<mlir::Location&>(location);
