@@ -17,7 +17,6 @@ limitations under the License.
 module Compiler.Eval
 
 import Control.Monad.Either
-import Control.Monad.Reader
 import Control.Monad.Trans
 import Data.IOArray
 import Data.List
@@ -30,22 +29,7 @@ import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.XLADerivatives
 import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
 import Compiler.LLVM.Support.RawOStream
 import Compiler.MLIR.Dialect.Func.IR.FuncOps
-import Compiler.MLIR.IR.Block
-import Compiler.MLIR.IR.Builders
-import Compiler.MLIR.IR.BuiltinAttributes
-import Compiler.MLIR.IR.BuiltinLocationAttributes
-import Compiler.MLIR.IR.BuiltinTypeInterfaces
-import Compiler.MLIR.IR.BuiltinTypes
-import Compiler.MLIR.IR.BuiltinOps
-import Compiler.MLIR.IR.DialectRegistry
-import Compiler.MLIR.IR.Location
-import Compiler.MLIR.IR.MLIRContext
-import Compiler.MLIR.IR.Operation
-import Compiler.MLIR.IR.SymbolTable
-import Compiler.MLIR.IR.TypeRange
-import Compiler.MLIR.IR.Types
-import Compiler.MLIR.IR.Value
-import Compiler.MLIR.IR.ValueRange
+import Compiler.MLIR.IR
 import Compiler.MLIR.Pass.PassManager
 import Compiler.MLIR.Pass.PassRegistry
 import Compiler.MLIR.Transforms.Passes
@@ -54,13 +38,7 @@ import Compiler.Stablehlo.Dialect.Serialization
 import Compiler.Stablehlo.Dialect.StablehloOps
 import Compiler.Stablehlo.Dialect.Version
 import Compiler.Xla.Client.ExecutableBuildOptions
-import Compiler.Xla.HLO.Builder.Lib.Arithmetic
-import Compiler.Xla.HLO.Builder.Lib.Constants
-import Compiler.Xla.HLO.Builder.Lib.Math
-import Compiler.Xla.HLO.Builder.Lib.Matrix
-import Compiler.Xla.HLO.Builder.Lib.PRNG
-import Compiler.Xla.HLO.Builder.XlaBuilder
-import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.HLO.Builder
 import Compiler.Xla.HLO.Translate.StableHLO
 import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
@@ -78,8 +56,6 @@ import Primitive
 import Types
 import Util
 import Device
-
-import System
 
 export
 data Err
@@ -177,7 +153,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
         Failed to parse enzyme autodiff pass directive
         \{!(toString pipelineParseErrMsg)}
         """
-    -- CppString.delete {io = ErrIO} cppString
+    CppString.delete pipelineParseErrMsg
     addCanonicalizerPass passManager
     addCSEPass passManager
     addRemoveUnusedEnzymeOpsPass passManager
