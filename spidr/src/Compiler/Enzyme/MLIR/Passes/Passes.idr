@@ -20,11 +20,11 @@ import Compiler.MLIR.Pass.PassManager
 import Compiler.FFI
 
 %foreign (libxla "registerenzymePasses")
-prim__registerenzymePasses : PrimIO ()
+prim__registerEnzymePasses : PrimIO ()
 
 export
-registerenzymePasses : HasIO io => io ()
-registerenzymePasses = primIO $ prim__registerenzymePasses
+registerEnzymePasses : HasIO io => io ()
+registerEnzymePasses = primIO $ prim__registerEnzymePasses
 
 %foreign (libxla "PassManager_addPass_RemoveUnusedEnzymeOpsPass")
 prim__passManagerAddPassRemoveUnusedEnzymeOpsPass : GCAnyPtr -> PrimIO ()

@@ -162,7 +162,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
 
     -- generate derivative
     loadDialectEnzymeDialect mlirCtx
-    registerenzymePasses
+    registerEnzymePasses
     dialectRegistry <- mkDialectRegistry
     registerCoreDialectAutodiffInterfaces dialectRegistry
     registerStableHLODialectAutoDiffInterface dialectRegistry
