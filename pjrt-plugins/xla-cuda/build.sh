@@ -6,7 +6,7 @@ cuda_version=$(cat CUDA_VERSION)
 cudnn_version=$(cat CUDNN_VERSION)
 cd ../..
 . ./dev.sh
-rev=$(cat XLA_VERSION)
+xla_version=$(cat XLA_VERSION)
 
 osu="$(uname)"
 case $osu in
@@ -19,7 +19,7 @@ case $osu in
 esac
 
 xla_dir=$(mktemp -d)
-install_xla "$rev" "$xla_dir"
+install_xla "$xla_version" "$xla_dir"
 (
   cd "$xla_dir"
   # note we're not using `./configure.py --backend=CUDA` as it requires a GPU, but the build
