@@ -1,4 +1,5 @@
 package pjrt-plugin-xla-cpu
+version = 0.0.1
 
 depends = spidr
 modules = PjrtPluginXlaCpu
