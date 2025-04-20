@@ -17,9 +17,7 @@ jobs:
           "
       - name: Check PJRT XLA CPU plugin versions are equal
         working-directory: pjrt-plugins/xla-cpu
-        run: |
-          sh -c "grep -Fx \"version = $(cat VERSION)\" pjrt-plugin-xla-cpu.ipkg"
+        run: grep -Fx "version = $(cat VERSION)" pjrt-plugin-xla-cpu.ipkg
       - name: Check PJRT XLA CUDA plugin versions are equal
         working-directory: pjrt-plugins/xla-cuda
-        run: |
-          sh -c "grep -Fx \"version = $(cat VERSION)\" pjrt-plugin-xla-cuda.ipkg"
+        run: grep -Fx "version = $(cat VERSION)" pjrt-plugin-xla-cuda.ipkg
