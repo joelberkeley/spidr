@@ -17,7 +17,5 @@ case $os in
     ;;
 esac
 
-# check the versions are the same as in .ipkg files - a simple grep for `version=$rev`
-# should also delete previous versions?
 curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cuda-linux-x86_64-v$rev/pjrt_plugin_xla_cuda.so" \
   -o pjrt_plugin_xla_cuda.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cuda-$rev/lib"
