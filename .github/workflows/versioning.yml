@@ -3,7 +3,7 @@ on:
     branches: master
 
 jobs:
-  versioning:
+  pjrt-hlo:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -15,6 +15,12 @@ jobs:
           (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ spidr/backend/**) || \
             ! git diff --quiet HEAD^ spidr/backend/VERSION
           "
+  pjrt-xla-cpu:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: Check PJRT XLA CPU plugin version is updated when necessary
         run: |
           sh -c "
@@ -24,6 +30,12 @@ jobs:
       - name: Check PJRT XLA CPU plugin versions are equal
         working-directory: pjrt-plugins/xla-cpu
         run: grep -Fx "version = $(cat VERSION)" pjrt-plugin-xla-cpu.ipkg
+  pjrt-xla-cuda:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: Check PJRT XLA CUDA plugin version is updated when necessary
         run: |
           sh -c "
