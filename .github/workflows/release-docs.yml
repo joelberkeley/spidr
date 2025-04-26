@@ -1,16 +1,3 @@
-# Copyright 2021 Joel Berkeley
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 on:
   workflow_dispatch:
   push:
@@ -22,18 +9,21 @@ env:
 
 jobs:
   docs:
-    runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
-    - uses: actions/checkout@v3
-    - run: |
-        pack switch HEAD
-        pack --no-prompt --with-docs install spidr
-        mv build/docs .
-    - run: |
-        git config --global --add safe.directory "$GITHUB_WORKSPACE"
-        git add .
-        git config user.email "none"
-        git config user.name "none"
-        git commit -m "build documentation"
-        git push -f origin HEAD:gh-pages
+      - uses: actions/checkout@v4
+      - name: Build docs
+        run: |
+          apt-get update && apt-get install -y curl
+          pack switch HEAD
+          SPIDR_INSTALL_SUPPORT_LIBS=false pack --no-prompt --with-docs install spidr
+          mv spidr/build/docs .
+      - name: Upload docs
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git add .
+          git config user.email "none"
+          git config user.name "none"
+          git commit -m "build documentation"
+          git push -f origin HEAD:gh-pages

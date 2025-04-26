@@ -1,0 +1,29 @@
+package runner
+
+depends =
+  spidr,
+  hedgehog,
+  sop
+
+modules =
+  Unit.Model.TestKernel,
+
+  Unit.TestTensor.Elementwise,
+  Unit.TestTensor.HigherOrder,
+  Unit.TestTensor.Sampling,
+  Unit.TestTensor.Slice,
+  Unit.TestTensor.Structure,
+
+  Unit.TestDistribution,
+  Unit.TestLiteral,
+  Unit.TestTensor,
+  Unit.TestUtil,
+
+  Utils.Cases,
+  Utils.Comparison,
+  Utils.Proof,
+  Utils.TestComparison,
+
+  TestRunner,
+  TestUtils,
+  Utils
