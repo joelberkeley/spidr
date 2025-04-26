@@ -68,6 +68,17 @@ extern "C" {
         return api->PJRT_Error_GetCode(args);
     }
 
+    PJRT_Plugin_Initialize_Args* PJRT_Plugin_Initialize_Args_new() {
+        return new PJRT_Plugin_Initialize_Args{
+            .struct_size = PJRT_Plugin_Initialize_Args_STRUCT_SIZE,
+            .extension_start = nullptr,
+        };
+    }
+
+    PJRT_Error* pjrt_plugin_initialize(PJRT_Api* api, PJRT_Plugin_Initialize_Args* args) {
+        return api->PJRT_Plugin_Initialize(args);
+    }
+
     PJRT_Event_Destroy_Args* PJRT_Event_Destroy_Args_new(PJRT_Event* event) {
         return new PJRT_Event_Destroy_Args{
             .struct_size = PJRT_Event_Destroy_Args_STRUCT_SIZE,
