@@ -3,7 +3,7 @@
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
 . ./dev.sh
-rev=$(cat XLA_VERSION)
+xla_version=$(cat XLA_VERSION)
 
 osu="$(uname)"
 case $osu in
@@ -25,7 +25,7 @@ esac
 
 xla_dir=pjrt-plugins/xla-cpu/xla
 mkdir "$xla_dir"
-install_xla "$rev" "$xla_dir"
+install_xla "$xla_version" "$xla_dir"
 (
   cd "$xla_dir"
   ./configure.py --backend=CPU --os=$os
