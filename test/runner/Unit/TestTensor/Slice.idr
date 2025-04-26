@@ -357,7 +357,7 @@ updateSliceMixed = fixedProperty $ do
                          [[21, 22, 23],
                           [24, 25, 26]]]
 
-  -- this suggests we're making too much use of list overloading
+  -- this suggests we're making too much use of list overloading.
   -- note this will affect compiles times, even if it does compile
   let at : MultiIndex _ _ = [u64 1, 0, u64 3]
   updateSlice at update target ===# expected
