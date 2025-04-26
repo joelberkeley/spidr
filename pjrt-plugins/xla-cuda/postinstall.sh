@@ -17,5 +17,5 @@ case $os in
     ;;
 esac
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cuda-linux-x86_64-v$rev/pjrt_plugin_xla_cuda.so" \
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cuda-v$rev/pjrt_plugin_xla_cuda-linux-x86_64.so" \
   -o pjrt_plugin_xla_cuda.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cuda-$rev/lib"

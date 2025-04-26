@@ -23,5 +23,5 @@ case $os in
     ;;
 esac
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cpu-$platform-v$rev/pjrt_plugin_xla_cpu.$ext" \
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cpu-v$rev/pjrt_plugin_xla_cpu-$platform.$ext" \
   -o "pjrt_plugin_xla_cpu.$ext" --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cpu-$rev/lib"

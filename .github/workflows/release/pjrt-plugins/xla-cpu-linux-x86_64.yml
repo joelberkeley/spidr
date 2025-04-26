@@ -22,12 +22,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: pjrt-plugin-xla-cpu-linux-x86_64-v${{ env.PLUGIN_REV }}
-          release_name: PJRT plugin XLA CPU Linux x86_64, revision ${{ env.PLUGIN_REV }}
-          body: "PJRT plugin XLA CPU Linux x86_64, revision ${{ env.PLUGIN_REV }}"
+          tag_name: pjrt-plugin-xla-cpu-v${{ env.PLUGIN_REV }}
+          release_name: PJRT plugin XLA CPU, revision ${{ env.PLUGIN_REV }}
+          body: "PJRT plugin XLA CPU, revision ${{ env.PLUGIN_REV }}"
   pjrt-plugin-xla-cpu-linux-x86_64:
-    needs:
-      - create-release
+    needs: create-release
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -48,4 +47,20 @@ jobs:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: pjrt_plugin_xla_cpu-linux-x86_64.so
           asset_name: pjrt_plugin_xla_cpu-linux-x86_64.so
+          asset_content_type: application/x-sharedlib
+  pjrt-plugin-xla-cpu-darwin-aarch64:
+    needs: create-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build plugin
+        run: ./pjrt-plugins/xla-cpu/build.sh
+      - name: Publish plugin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
+          asset_name: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
           asset_content_type: application/x-sharedlib

@@ -22,12 +22,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: pjrt-plugin-xla-cuda-linux-x86_64-v${{ env.PLUGIN_REV }}
-          release_name: PJRT plugin XLA CUDA Linux x86_64, revision ${{ env.PLUGIN_REV }}
-          body: "PJRT plugin XLA CUDA Linux x86_64, revision ${{ env.PLUGIN_REV }}"
+          tag_name: pjrt-plugin-xla-cuda-v${{ env.PLUGIN_REV }}
+          release_name: PJRT plugin XLA CUDA, revision ${{ env.PLUGIN_REV }}
+          body: "PJRT plugin XLA CUDA, revision ${{ env.PLUGIN_REV }}"
   pjrt-plugin-xla-cuda-linux-x86_64:
-    needs:
-      - create-release
+    needs: create-release
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
