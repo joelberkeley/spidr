@@ -39,6 +39,10 @@ extern "C" {
         return reinterpret_cast<OpBuilder*>(new mlir::OpBuilder(ctx_));
     }
 
+    void OpBuilder_delete(OpBuilder* s) {
+        delete reinterpret_cast<mlir::OpBuilder*>(s);
+    }
+
     OpBuilder* OpBuilder_atBlockEnd(Block* block) {
         auto block_ = reinterpret_cast<mlir::Block*>(block);
         auto builder = mlir::OpBuilder::atBlockEnd(block_);
