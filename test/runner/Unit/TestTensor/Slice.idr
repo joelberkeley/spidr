@@ -362,7 +362,7 @@ updateSliceMixed = fixedProperty $ do
   let at : MultiIndex _ _ = [u64 1, 0, u64 3]
   updateSlice at update target ===# expected
 
-export partial
+export
 all : Device => List (PropertyName, Property)
 all = [
       ("MultiSlice.slice", MultiSlice.slice)
