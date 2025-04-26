@@ -195,7 +195,7 @@ extern "C" {
         XlaOp& operand, XlaOp& update, XlaOp* start_indices, int start_indices_len
     ) {
         auto& operand_ = reinterpret_cast<xla::XlaOp&>(operand);
-        auto& update_ = reinterpret_cast<xla::XlaOp&>(operand);
+        auto& update_ = reinterpret_cast<xla::XlaOp&>(update);
         auto start_indices_ = reinterpret_cast<xla::XlaOp*>(start_indices);
 
         xla::XlaOp res = xla::DynamicUpdateSlice(
