@@ -35,7 +35,7 @@ jobs:
         with:
           name: openxla-dev
           path: /tmp
-      - name: Build XLA CUDA plugin for Linux x86_64
+      - name: Build XLA CUDA plugin
         run: |
           docker build -t openxla-dev -f openxla-dev.Dockerfile
           docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cuda/build.sh"

@@ -53,9 +53,9 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Build plugin
+      - name: Build XLA CPU plugin for AArch64
         run: ./pjrt-plugins/xla-cpu/build.sh
-      - name: Publish plugin
+      - name: Publish XLA CPU plugin for AArch64
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
