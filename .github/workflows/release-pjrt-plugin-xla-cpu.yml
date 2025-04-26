@@ -30,11 +30,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Download OpenXLA dev Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: openxla-dev
-          path: /tmp
       - name: Build XLA CPU plugin for Linux x86_64
         run: |
           docker build -t openxla-dev -f openxla-dev.Dockerfile
