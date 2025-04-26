@@ -554,7 +554,7 @@ namespace MultiIndex
 ||| ```
 ||| The starting index can be specified along each axis using either a `Nat` or a `U64` scalar.
 ||| Note that the updated slice will always be replaced by `update`, and lie fully within `target`.
-||| This is constrained by the types for `Nat`. However, for `U64` scalar, the start index `at` is
+||| This is checked statically for `Nat`. However, for `U64` scalar, the start index `at` is
 ||| truncated to the maximum index for which the slice remains within `target`. For example,
 ||| `updateSlice [0, (tensor $ Scalar 2)] update target` and
 ||| `updateSlice [0, (tensor $ Scalar 3)] update target`
@@ -568,7 +568,7 @@ namespace MultiIndex
 ||| ```
 |||
 ||| @at The starting index of the slice to replace.
-||| @replacement The tensor to replace the slice with.
+||| @update The tensor to replace the slice with.
 ||| @target The tensor in which to replace the slice.
 export
 updateSlice :
