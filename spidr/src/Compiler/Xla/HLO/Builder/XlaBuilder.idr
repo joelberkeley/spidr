@@ -205,6 +205,19 @@ dynamicSlice (MkXlaOp opPtr) startIndices sizeIndices = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+export
+%foreign (libxla "DynamicUpdateSlice")
+prim__dynamicUpdateSlice : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> Bits64 -> PrimIO AnyPtr
+
+export
+dynamicUpdateSlice : HasIO io => XlaOp -> XlaOp -> List XlaOp -> io XlaOp
+dynamicUpdateSlice (MkXlaOp operand) (MkXlaOp update) startIndices = do
+  MkXlaOpArray startIndicesArrayPtr <- mkXlaOpArray startIndices
+  opPtr <- primIO $ prim__dynamicUpdateSlice
+    operand update startIndicesArrayPtr (cast $ length startIndices)
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
 %foreign (libxla "ConcatInDim")
 prim__concatInDim : GCAnyPtr -> GCAnyPtr -> Int -> Int -> PrimIO AnyPtr
 

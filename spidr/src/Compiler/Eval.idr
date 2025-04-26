@@ -107,6 +107,8 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Slice starts stops strides x) = slice !(interpretE x) starts stops strides
   interpretE (DynamicSlice starts sizes x) =
     dynamicSlice !(interpretE x) !(traverse interpretE starts) sizes
+  interpretE (DynamicUpdateSlice operand update starts) =
+    dynamicUpdateSlice !(interpretE operand) !(interpretE update) !(traverse interpretE starts)
   interpretE (Concat axis x y) =
     concatInDim xlaBuilder [!(interpretE x), !(interpretE y)] (cast axis)
   interpretE (Diag x) = getMatrixDiagonal !(interpretE x)

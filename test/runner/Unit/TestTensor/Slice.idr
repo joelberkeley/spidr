@@ -194,6 +194,174 @@ sliceForVariableIndex = property $ do
   inDim {idx = 0} = LTESucc LTEZero
   inDim {idx = (S k)} = LTESucc inDim
 
+updateSliceScalar : Device => Property
+updateSliceScalar = fixedProperty $ do
+  updateSlice [] 2.0 3.0 ===# tensor 2.0
+
+updateSliceStatic : Device => Property
+updateSliceStatic = fixedProperty $ do
+  let target = tensor {dtype = S32} [3, 4, 5]
+
+  updateSlice [0] (tensor [6, 7, 8]) target ===# tensor [6, 7, 8]
+
+  updateSlice [0] (tensor [6, 7]) target ===# tensor [6, 7, 5]
+  updateSlice [1] (tensor [6, 7]) target ===# tensor [3, 6, 7]
+
+  updateSlice [0] (tensor [6]) target ===# tensor [6, 4, 5]
+  updateSlice [1] (tensor [6]) target ===# tensor [3, 6, 5]
+  updateSlice [2] (tensor [6]) target ===# tensor [3, 4, 6]
+
+  updateSlice [0] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [1] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [2] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [3] (tensor []) target ===# tensor [3, 4, 5]
+
+  let target = tensor {dtype = S32} [[ 3,  4,  5,  6],
+                                     [ 7,  8,  9, 10],
+                                     [11, 12, 13, 14]]
+      update = tensor [[20, 21, 22], [23, 24, 25]]
+
+  updateSlice [0, 0] update target ===# tensor [[20, 21, 22,  6],
+                                                [23, 24, 25, 10],
+                                                [11, 12, 13, 14]]
+  updateSlice [0, 1] update target ===# tensor [[ 3, 20, 21, 22],
+                                                [ 7, 23, 24, 25],
+                                                [11, 12, 13, 14]]
+  updateSlice [1, 0] update target ===# tensor [[ 3,  4,  5,  6],
+                                                [20, 21, 22, 10],
+                                                [23, 24, 25, 14]]
+  updateSlice [1, 1] update target ===# tensor [[ 3,  4,  5,  6],
+                                                [ 7, 20, 21, 22],
+                                                [11, 23, 24, 25]]
+
+updateSliceDynamic : Device => Property
+updateSliceDynamic = fixedProperty $ do
+  let target = tensor {dtype = S32} [3, 4, 5]
+
+  updateSlice [u64 0] (tensor [6, 7, 8]) target ===# tensor [6, 7, 8]
+  updateSlice [u64 1] (tensor [6, 7, 8]) target ===# tensor [6, 7, 8]
+  updateSlice [u64 2] (tensor [6, 7, 8]) target ===# tensor [6, 7, 8]
+  updateSlice [u64 3] (tensor [6, 7, 8]) target ===# tensor [6, 7, 8]
+  updateSlice [u64 4] (tensor [6, 7, 8]) target ===# tensor [6, 7, 8]
+
+  updateSlice [u64 0] (tensor [6, 7]) target ===# tensor [6, 7, 5]
+  updateSlice [u64 1] (tensor [6, 7]) target ===# tensor [3, 6, 7]
+  updateSlice [u64 2] (tensor [6, 7]) target ===# tensor [3, 6, 7]
+  updateSlice [u64 3] (tensor [6, 7]) target ===# tensor [3, 6, 7]
+  updateSlice [u64 4] (tensor [6, 7]) target ===# tensor [3, 6, 7]
+
+  updateSlice [u64 0] (tensor [6]) target ===# tensor [6, 4, 5]
+  updateSlice [u64 1] (tensor [6]) target ===# tensor [3, 6, 5]
+  updateSlice [u64 2] (tensor [6]) target ===# tensor [3, 4, 6]
+  updateSlice [u64 3] (tensor [6]) target ===# tensor [3, 4, 6]
+  updateSlice [u64 4] (tensor [6]) target ===# tensor [3, 4, 6]
+
+  updateSlice [u64 0] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [u64 1] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [u64 2] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [u64 3] (tensor []) target ===# tensor [3, 4, 5]
+  updateSlice [u64 4] (tensor []) target ===# tensor [3, 4, 5]
+
+  let target = tensor {dtype = S32} [[ 3,  4,  5,  6],
+                                     [ 7,  8,  9, 10],
+                                     [11, 12, 13, 14]]
+      update = tensor [[20, 21, 22], [23, 24, 25]]
+
+  updateSlice [u64 0, u64 0] update target ===# tensor [[20, 21, 22,  6],
+                                                        [23, 24, 25, 10],
+                                                        [11, 12, 13, 14]]
+  updateSlice [u64 0, u64 1] update target ===# tensor [[ 3, 20, 21, 22],
+                                                        [ 7, 23, 24, 25],
+                                                        [11, 12, 13, 14]]
+  updateSlice [u64 0, u64 2] update target ===# tensor [[ 3, 20, 21, 22],
+                                                        [ 7, 23, 24, 25],
+                                                        [11, 12, 13, 14]]
+  updateSlice [u64 1, u64 0] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [20, 21, 22, 10],
+                                                        [23, 24, 25, 14]]
+  updateSlice [u64 1, u64 1] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [ 7, 20, 21, 22],
+                                                        [11, 23, 24, 25]]
+  updateSlice [u64 1, u64 2] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [ 7, 20, 21, 22],
+                                                        [11, 23, 24, 25]]
+  updateSlice [u64 2, u64 0] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [20, 21, 22, 10],
+                                                        [23, 24, 25, 14]]
+  updateSlice [u64 2, u64 1] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [ 7, 20, 21, 22],
+                                                        [11, 23, 24, 25]]
+  updateSlice [u64 2, u64 2] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [ 7, 20, 21, 22],
+                                                        [11, 23, 24, 25]]
+  updateSlice [u64 5, u64 5] update target ===# tensor [[ 3,  4,  5,  6],
+                                                        [ 7, 20, 21, 22],
+                                                        [11, 23, 24, 25]]
+
+updateSliceMixed : Device => Property
+updateSliceMixed = fixedProperty $ do
+  let target = tensor {dtype = S32} [[ 3,  4,  5,  6],
+                                     [ 7,  8,  9, 10],
+                                     [11, 12, 13, 14]]
+      update = tensor [[20, 21, 22], [23, 24, 25]]
+
+  updateSlice [0, u64 0] update target ===# tensor [[20, 21, 22,  6],
+                                                    [23, 24, 25, 10],
+                                                    [11, 12, 13, 14]]
+  updateSlice [u64 0, 0] update target ===# tensor [[20, 21, 22,  6],
+                                                    [23, 24, 25, 10],
+                                                    [11, 12, 13, 14]]
+  updateSlice [0, u64 1] update target ===# tensor [[ 3, 20, 21, 22],
+                                                    [ 7, 23, 24, 25],
+                                                    [11, 12, 13, 14]]
+  updateSlice [u64 0, 1] update target ===# tensor [[ 3, 20, 21, 22],
+                                                    [ 7, 23, 24, 25],
+                                                    [11, 12, 13, 14]]
+  updateSlice [0, u64 2] update target ===# tensor [[ 3, 20, 21, 22],
+                                                    [ 7, 23, 24, 25],
+                                                    [11, 12, 13, 14]]
+  updateSlice [1, u64 0] update target ===# tensor [[ 3,  4,  5,  6],
+                                                    [20, 21, 22, 10],
+                                                    [23, 24, 25, 14]]
+  updateSlice [u64 1, 0] update target ===# tensor [[ 3,  4,  5,  6],
+                                                    [20, 21, 22, 10],
+                                                    [23, 24, 25, 14]]
+  updateSlice [1, u64 1] update target ===# tensor [[ 3,  4,  5,  6],
+                                                    [ 7, 20, 21, 22],
+                                                    [11, 23, 24, 25]]
+  updateSlice [1, u64 2] update target ===# tensor [[ 3,  4,  5,  6],
+                                                    [ 7, 20, 21, 22],
+                                                    [11, 23, 24, 25]]
+  updateSlice [u64 2, 0] update target ===# tensor [[ 3,  4,  5,  6],
+                                                    [20, 21, 22, 10],
+                                                    [23, 24, 25, 14]]
+  updateSlice [u64 2, 1] update target ===# tensor [[ 3,  4,  5,  6],
+                                                    [ 7, 20, 21, 22],
+                                                    [11, 23, 24, 25]]
+
+  let target = tensor {dtype = S32} [[[ 3,  4,  5],
+                                      [ 6,  7,  8]],
+                                     [[ 9, 10, 11],
+                                      [12, 13, 14]],
+                                     [[15, 16, 17],
+                                      [18, 19, 20]],
+                                     [[21, 22, 23],
+                                      [24, 25, 26]]]
+      update = tensor [[[40, 41, 42]], [[43, 44, 45]]]
+      expected = tensor [[[ 3,  4,  5],
+                          [ 6,  7,  8]],
+                         [[40, 41, 42],
+                          [12, 13, 14]],
+                         [[43, 44, 45],
+                          [18, 19, 20]],
+                         [[21, 22, 23],
+                          [24, 25, 26]]]
+
+  -- this suggests we're making too much use of list overloading.
+  -- note this will affect compiles times, even if it does compile
+  let at : MultiIndex _ _ = [u64 1, 0, u64 3]
+  updateSlice at update target ===# expected
+
 export
 all : Device => List (PropertyName, Property)
 all = [
@@ -205,4 +373,8 @@ all = [
     , ("slice for static index and slice", sliceStaticMixed)
     , ("slice for mixed static and dynamic index and slice", sliceMixed)
     , ("slice for variable index", sliceForVariableIndex)
+    , ("update slice for scalar", updateSliceScalar)
+    , ("update slice for static start", updateSliceStatic)
+    , ("update slice for dynamic start", updateSliceDynamic)
+    , ("update slice for mixed static and dynamic start", updateSliceMixed)
   ]

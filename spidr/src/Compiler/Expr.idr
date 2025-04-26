@@ -115,6 +115,7 @@ data Expr : Type where
   Reshape : (from, to : Shape) -> Expr -> Expr
   Slice : (starts, stops, strides : List Nat) -> Expr -> Expr
   DynamicSlice : (starts : List Expr) -> (sizes : List Nat) -> Expr -> Expr
+  DynamicUpdateSlice : (operand : Expr) -> (update : Expr) -> (startIndices : List Expr) -> Expr
   Concat : (axis : Nat) -> Expr -> Expr -> Expr
   Diag : Expr -> Expr
   Triangle : (lower : Bool) -> Expr -> Expr
@@ -197,6 +198,9 @@ showExpr indent (Slice starts stops strides x) =
   "Slice {starts = \{starts}, stops = \{stops}, strides = \{strides}} (\{showExpr indent x})"
 showExpr indent (DynamicSlice starts sizes x) =
   "DynamicSlice {starts = \{showExprList indent starts}, sizes = \{sizes}} (\{showExpr indent x})"
+showExpr indent (DynamicUpdateSlice x update starts) =
+  "DynamicUpdateSlice {update = \{showExpr indent update}," ++
+    "starts = \{showExprList indent starts}} (\{showExpr indent x})"
 showExpr indent (Concat axis x y) =
   "Concat {axis = \{axis}} (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (Diag x) = "Diag (\{showExpr indent x})"
