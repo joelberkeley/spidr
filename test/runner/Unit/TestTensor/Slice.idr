@@ -225,7 +225,7 @@ updateSliceStatic = fixedProperty $ do
                                                 [23, 24, 25, 10],
                                                 [11, 12, 13, 14]]
   updateSlice [0, 1] update target ===# tensor [[ 3, 20, 21, 22],
-                                                [ 4, 23, 24, 25],
+                                                [ 7, 23, 24, 25],
                                                 [11, 12, 13, 14]]
   updateSlice [1, 0] update target ===# tensor [[ 3,  4,  5,  6],
                                                 [20, 21, 22, 10],
