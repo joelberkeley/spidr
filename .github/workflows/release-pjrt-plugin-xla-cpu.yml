@@ -1,0 +1,66 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: master
+    paths:
+      - 'pjrt-plugins/xla-cpu/VERSION'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-24.04
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read plugin version
+        run: |
+          rev="$(cat pjrt-plugins/xla-cpu/VERSION)"
+          echo "PLUGIN_REV=$rev" >> $GITHUB_ENV
+      - name: Create release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: pjrt-plugin-xla-cpu-v${{ env.PLUGIN_REV }}
+          release_name: PJRT plugin XLA CPU, revision ${{ env.PLUGIN_REV }}
+          body: "PJRT plugin XLA CPU, revision ${{ env.PLUGIN_REV }}"
+  pjrt-plugin-xla-cpu-linux-x86_64:
+    needs: create-release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download OpenXLA dev Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: openxla-dev
+          path: /tmp
+      - name: Build XLA CPU plugin for Linux x86_64
+        run: |
+          docker build -t openxla-dev -f openxla-dev.Dockerfile
+          docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cpu/build.sh"
+      - name: Publish XLA CPU plugin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: pjrt_plugin_xla_cpu-linux-x86_64.so
+          asset_name: pjrt_plugin_xla_cpu-linux-x86_64.so
+          asset_content_type: application/x-sharedlib
+  pjrt-plugin-xla-cpu-darwin-aarch64:
+    needs: create-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build XLA CPU plugin for AArch64
+        run: ./pjrt-plugins/xla-cpu/build.sh
+      - name: Publish XLA CPU plugin for AArch64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
+          asset_name: pjrt_plugin_xla_cpu-darwin-aarch64.dylib
+          asset_content_type: application/x-sharedlib
