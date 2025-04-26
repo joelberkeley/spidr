@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build XLA CUDA plugin
         run: |
-          docker build -t openxla-dev -f openxla-dev.Dockerfile
+          docker build -t openxla-dev -f openxla-dev.Dockerfile .
           docker run -v $(pwd):/spidr -w /spidr openxla-dev sh -c "./pjrt-plugins/xla-cuda/build.sh"
       - name: Publish XLA CUDA plugin
         uses: actions/upload-release-asset@v1
