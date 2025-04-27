@@ -26,6 +26,10 @@ extern "C" {
         delete reinterpret_cast<mlir::FloatType*>(s);
     }
 
+    void RankedTensorType_delete(RankedTensorType* s) {
+        delete reinterpret_cast<mlir::RankedTensorType*>(s);
+    }
+
     void set_array_RankedTensorType(Type* arr, size_t idx, RankedTensorType* value) {
         reinterpret_cast<mlir::Type*>(arr)[idx] = *reinterpret_cast<mlir::RankedTensorType*>(value);
     }
@@ -35,6 +39,10 @@ extern "C" {
     }
 
     struct FunctionType;
+
+    void FunctionType_delete(FunctionType* s) {
+        delete reinterpret_cast<mlir::FunctionType*>(s);
+    }
 
     FunctionType* FunctionType_get(MLIRContext* ctx, TypeRange* inputs, TypeRange* results) {
         auto ctx_ = reinterpret_cast<mlir::MLIRContext*>(ctx);

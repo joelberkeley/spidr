@@ -13,19 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "mlir/IR/TypeRange.h"
+#include "mlir/IR/Location.h"
 
-#include "TypeRange.h"
-#include "Types.h"
+#include "Location.h"
 
 extern "C" {
-    void TypeRange_delete(TypeRange* s) {
-        delete reinterpret_cast<mlir::TypeRange*>(s);
-    }
-
-    TypeRange* TypeRange_new(Type* types, size_t types_len) {
-        auto types_ = reinterpret_cast<mlir::Type*>(types);
-        auto types_ar = llvm::ArrayRef(types_, types_len);
-        return reinterpret_cast<TypeRange*>(new mlir::TypeRange(types_ar));
+    void Location_delete(Location* s) {
+        delete reinterpret_cast<mlir::Location*>(s);
     }
 }

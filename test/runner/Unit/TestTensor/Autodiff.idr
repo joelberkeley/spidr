@@ -54,6 +54,6 @@ higherDerivatives @{device} = fixedProperty $ do
 export
 all : Device => List (PropertyName, Property)
 all = [
-      ("first derivatives", firstDerivative)
+      ("first derivative", firstDerivative)
     , ("higher derivatives", higherDerivatives)
   ]

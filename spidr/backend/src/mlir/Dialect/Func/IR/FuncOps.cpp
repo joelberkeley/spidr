@@ -47,6 +47,10 @@ extern "C" {
 
     struct FuncOp;
 
+    void FuncOp_delete(FuncOp* s) {
+        delete reinterpret_cast<mlir::func::FuncOp*>(s);
+    }
+
     Operation* FuncOp_getOperation(FuncOp& s) {
         auto& s_ = reinterpret_cast<mlir::func::FuncOp&>(s);
         auto res = s_.getOperation();
