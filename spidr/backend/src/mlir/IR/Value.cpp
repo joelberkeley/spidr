@@ -35,4 +35,8 @@ extern "C" {
     void BlockArgument_delete(BlockArgument* s) {
         delete reinterpret_cast<mlir::BlockArgument*>(s);
     }
+
+    void OpResult_delete(OpResult* s) {
+        delete reinterpret_cast<mlir::OpResult*>(s);
+    }
 }

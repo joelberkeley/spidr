@@ -28,6 +28,10 @@ limitations under the License.
 extern "C" {
     struct CallOp;
 
+    void CallOp_delete(CallOp* s) {
+        delete reinterpret_cast<mlir::func::CallOp*>(s);
+    }
+
     CallOp* OpBuilder_create_CallOp(
         OpBuilder& s, Location& location, char* name, TypeRange& types, ValueRange& operands
     ) {
@@ -70,6 +74,10 @@ extern "C" {
     }
 
     struct ReturnOp;
+
+    void ReturnOp_delete(ReturnOp* s) {
+        delete reinterpret_cast<mlir::func::ReturnOp*>(s);
+    }
 
     ReturnOp* OpBuilder_create_ReturnOp(OpBuilder& s, Location& location, ResultRange& results) {
         auto s_ = reinterpret_cast<mlir::OpBuilder&>(s);

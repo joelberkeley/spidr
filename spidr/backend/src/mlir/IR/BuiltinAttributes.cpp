@@ -20,6 +20,10 @@ limitations under the License.
 #include "BuiltinTypes.h"
 
 extern "C" {
+    void DenseElementsAttr_delete(DenseElementsAttr* s) {
+        delete reinterpret_cast<mlir::DenseElementsAttr*>(s);
+    }
+
     DenseElementsAttr* DenseElementsAttr_get(RankedTensorType& type, double value) {
         auto type_ = reinterpret_cast<mlir::RankedTensorType&>(type);
         auto res = mlir::DenseElementsAttr::get(type_, value);

@@ -23,6 +23,10 @@ limitations under the License.
 extern "C" {
     struct ConstantOp;
 
+    void ConstantOp_delete(ConstantOp* s) {
+        delete reinterpret_cast<mlir::stablehlo::ConstantOp*>(s);
+    }
+
     ConstantOp* OpBuilder_create_ConstantOp(
         OpBuilder& s, Location& location, DenseElementsAttr& attr
     ) {

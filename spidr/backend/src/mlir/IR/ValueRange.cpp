@@ -20,8 +20,6 @@ limitations under the License.
 #include "ValueRange.h"
 
 extern "C" {
-    struct ValueRange;
-
     void ValueRange_delete(ValueRange* s) {
         delete reinterpret_cast<mlir::ValueRange*>(s);
     }
@@ -30,5 +28,9 @@ extern "C" {
         auto values_ = reinterpret_cast<mlir::Value*>(values);
         auto values_ar = llvm::ArrayRef(values_, values_len);
         return reinterpret_cast<ValueRange*>(new mlir::ValueRange(values_ar));
+    }
+
+    void ResultRange_delete(ResultRange* s) {
+        delete reinterpret_cast<mlir::ResultRange*>(s);
     }
 }

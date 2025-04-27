@@ -32,7 +32,7 @@ export
 mkMLIRContext : HasIO io => io MLIRContext
 mkMLIRContext = do
   ctx <- primIO prim__mkMLIRContext
-  ctx <- onCollectAny ctx (primIO . prim__deleteMLIRContext)
+  ctx <- onCollectAny ctx (const $ pure ())
   pure (MkMLIRContext ctx)
 
 %foreign (libxla "MLIRContext_appendDialectRegistry")

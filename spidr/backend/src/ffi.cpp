@@ -39,8 +39,8 @@ extern "C" {
 
     char* string_c_str(string* s) {
         auto str = reinterpret_cast<std::string*>(s);
-        auto len = str->size();
-        auto res = (char *) malloc(len + 1);
+        auto len = 1 + str->size();
+        auto res = (char *) malloc(len);
         std::memcpy(res, str->c_str(), len * sizeof(char));
         return res;
     }
