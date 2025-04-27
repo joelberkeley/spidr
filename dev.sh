@@ -1,11 +1,6 @@
 #!/bin/sh -e
 
-install_xla () {
-  if [ -z "$2" ]; then
-    echo "Usage: install_xla <xla-revision> <install-path>."
-    exit 1;
-  fi
-
+install_git_repository () {
   if [ "$(ls -A "$2")" ]; then
     echo "Directory at path $2 is not empty, refusing to install XLA to this directory."
     exit 1;
@@ -14,8 +9,16 @@ install_xla () {
   (
     cd "$2"
     git init
-    git remote add origin https://github.com/openxla/xla
+    git remote add origin "$3"
     git fetch --depth 1 origin "$1"
     git checkout FETCH_HEAD
   )
+}
+
+install_xla () {
+  install_git_repository "$1" "$2" https://github.com/openxla/xla
+}
+
+install_enzyme () {
+  install_git_repository "$1" "$2" https://github.com/EnzymeAD/Enzyme-JAX.git
 }

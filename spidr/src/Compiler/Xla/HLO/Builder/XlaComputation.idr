@@ -17,28 +17,45 @@ limitations under the License.
 module Compiler.Xla.HLO.Builder.XlaComputation
 
 import Compiler.FFI
+import Compiler.Xla.Shape
+import Compiler.Xla.Service.HloProto
 
 public export
 data XlaComputation : Type where
   MkXlaComputation : GCAnyPtr -> XlaComputation
+
+%foreign (libxla "XlaComputation_new")
+prim__mkXlaComputation : GCAnyPtr -> PrimIO AnyPtr
 
 %foreign (libxla "XlaComputation_delete")
 prim__delete : AnyPtr -> PrimIO ()
 
 export
 delete : AnyPtr -> IO ()
-delete = primIO . prim__delete
+delete = primIO . XlaComputation.prim__delete
 
 export
+mkXlaComputation : HasIO io => HloModuleProto -> io XlaComputation
+mkXlaComputation (MkHloModuleProto proto) = do
+  comp <- primIO $ prim__mkXlaComputation proto
+  comp <- onCollectAny comp XlaComputation.delete
+  pure (MkXlaComputation comp)
+
+%foreign (libxla "XlaComputation_proto")
+prim__xlaComputationProto : GCAnyPtr -> PrimIO AnyPtr
+
+export
+proto : HasIO io => XlaComputation -> io HloModuleProto
+proto (MkXlaComputation comp) = do
+  proto <- primIO $ prim__xlaComputationProto comp
+  proto <- onCollectAny proto (primIO . HloProto.prim__delete)
+  pure (MkHloModuleProto proto)
+
 %foreign (libxla "XlaComputation_SerializeAsString")
 prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
 
-||| It is up to the caller to deallocate the CharArray.
 export
 serializeAsString : HasIO io => XlaComputation -> io CharArray
 serializeAsString (MkXlaComputation computation) = do
   str <- primIO $ prim__xlaComputationSerializeAsString computation
-  data' <- primIO $ prim__stringData str
-  let size = prim__stringSize str
-  primIO $ prim__stringDelete str
-  pure (MkCharArray data' size)
+  stringToCharArray (MkCppString str)
