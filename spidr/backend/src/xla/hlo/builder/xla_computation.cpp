@@ -36,4 +36,10 @@ extern "C" {
         auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
         return reinterpret_cast<HloModuleProto*>(new xla::HloModuleProto(s_->proto()));
     }
+
+    string* XlaComputation_SerializeAsString(XlaComputation* s) {
+        auto s_ = reinterpret_cast<xla::XlaComputation*>(s);
+        auto serialized = s_->proto().SerializeAsString();
+        return reinterpret_cast<string*>(new std::string(serialized));
+    }
 }

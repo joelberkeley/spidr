@@ -310,13 +310,11 @@ execute : Device -> Fn 0 -> {outputs : _} -> Vect outputs Xla.Shape -> ErrIO $ V
 execute (MkDevice api client) f@(MkFn _ _ env) shapes = do
   xlaBuilder <- mkXlaBuilder "root"
   computation <- compile @{!(newArray $ cast $ counter env)} xlaBuilder f
-  mlirCtx <- mkMLIRContext
-  code <- serializeStableHLO !(hloModuleProtoToStableHLO mlirCtx !(proto computation))
-  executableBuildOptions <- mkExecutableBuildOptions
-  compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
-  program <- mkPjrtProgram code
   bimapEitherT PjrtErr id $ do
-    loadedExec <- pjrtClientCompile api client program compileOptions
+    code <- serializeAsString computation
+    executableBuildOptions <- mkExecutableBuildOptions
+    compileOptions <- serializeAsString !(mkCompileOptions executableBuildOptions)
+    loadedExec <- pjrtClientCompile api client !(mkPjrtProgram code) compileOptions
     free code
     free compileOptions
     delete executableBuildOptions

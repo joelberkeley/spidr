@@ -50,3 +50,12 @@ proto (MkXlaComputation comp) = do
   proto <- primIO $ prim__xlaComputationProto comp
   proto <- onCollectAny proto (primIO . HloProto.prim__delete)
   pure (MkHloModuleProto proto)
+
+%foreign (libxla "XlaComputation_SerializeAsString")
+prim__xlaComputationSerializeAsString : GCAnyPtr -> PrimIO AnyPtr
+
+export
+serializeAsString : HasIO io => XlaComputation -> io CharArray
+serializeAsString (MkXlaComputation computation) = do
+  str <- primIO $ prim__xlaComputationSerializeAsString computation
+  stringToCharArray (MkCppString str)
