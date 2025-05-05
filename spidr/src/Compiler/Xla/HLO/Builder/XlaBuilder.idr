@@ -612,6 +612,16 @@ rngBitGenerator algorithm (MkXlaOp initialState) (MkShape shape) = do
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
+%foreign (libxla "While")
+prim__while : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+while : HasIO io => XlaComputation -> XlaComputation -> XlaOp -> io XlaOp
+while (MkXlaComputation condition) (MkXlaComputation body) (MkXlaOp init) = do
+  opPtr <- primIO $ prim__while condition body init
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
 %foreign (libxla "Conditional")
 prim__conditional : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
 

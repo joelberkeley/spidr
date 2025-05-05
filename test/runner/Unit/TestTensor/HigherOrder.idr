@@ -211,6 +211,32 @@ condResultWithReusedArgs = fixedProperty $ do
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
+while : Device => Property
+while = fixedProperty $ do
+  let initial = tensor {dtype = S32} 10
+      condition = \x => pure $ x * x > 4
+      body = \x => pure $ x - 1
+
+  while condition body initial ===# pure 2
+
+  let initial = tensor {dtype = S32} 4
+      condition = \x => pure $ x < 4
+      body = \x => pure $ 2 * x
+
+  while condition body initial ===# pure 4
+
+  let initial = tensor {dtype = S32} 4
+      condition = \x => pure $ x <= 4
+      body = \x => pure $ 2 * x
+
+  while condition body initial ===# pure 8
+
+  let initial = tensor [1.0, 2.0]
+      condition = \x => pure $ slice [at 0] x < 30.0
+      body = \x : Tensor [2] F64 => pure $ 2.0 * x
+
+  while condition body initial ===# pure (tensor [32.0, 64.0])
+
 export
 all : Device => List (PropertyName, Property)
 all = [
@@ -224,4 +250,5 @@ all = [
     , ("sort with repeated elements", sortWithRepeatedElements)
     , ("cond for trivial usage", condResultTrivialUsage)
     , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("while", while)
   ]

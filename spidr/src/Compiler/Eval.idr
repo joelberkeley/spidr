@@ -192,6 +192,12 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     compTrue <- compile subBuilderT fTrue
     compFalse <- compile subBuilderF fFalse
     conditional !(interpretE pred) !(interpretE true) compTrue !(interpretE false) compFalse
+  interpretE (While condition body init) = do
+    subBuilderC <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/while:condition"
+    subBuilderB <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/while:body"
+    condition <- compile subBuilderC condition
+    body <- compile subBuilderB body
+    while condition body !(interpretE init)
   interpretE (Dot l r) = dot !(interpretE l) !(interpretE r)
   interpretE (DotGeneral lb rb lc rc l r) = do
     dimensionNumbers <- allocDotDimensionNumbers

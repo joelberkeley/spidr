@@ -131,6 +131,7 @@ data Expr : Type where
   Select : (predicate, onTrue, onFalse : Expr) -> Expr
   Cond : (pred : Expr) -> (onTrue : Fn 1) -> (onTrueArg : Expr) ->
          (onFalse : Fn 1) -> (onFalseArg : Expr) -> Expr
+  While : (condition : Fn n) -> (body : Fn n) -> (init : Expr) -> Expr
   Dot : Expr -> Expr -> Expr
   DotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) -> Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
@@ -225,6 +226,8 @@ showExpr indent (Cond p ft t ff f) =
   "Cond {predicate = \{showExpr indent p}, onTrueFn = \{showFn indent ft}," ++
     " onTrueArg = \{showExpr indent t}, onFalseFn = \{showFn indent ff}," ++
     " onFalseArg = \{showExpr indent f}}"
+showExpr indent (While c b i) =
+  "While {condition = \{showFn indent c}, body = \{showFn indent b}, initial = {showExpr indent i}}"
 showExpr indent (Dot x y) = "Dot (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (DotGeneral lBatch lContract rBatch rContract x y) =
   "DotGeneral {lBatch = \{lBatch}, lContract = \{lContract}," ++

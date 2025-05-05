@@ -756,6 +756,29 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 
 ----------------------------- generic operations ----------------------------
 
+fn1 : {s : _} -> Parameter -> (Tensor s a -> Tag $ Tensor s' a') -> State Env (Fn 1)
+fn1 p0 f = do
+  addr <- reserve
+
+  let MkTagT app = f (MkTensor $ Var addr)
+      (env, MkTensor res) = runState (emptyFrom !get) app
+      f = MkFn [(addr, p0)] res env
+
+  updateCounterFrom env
+  pure f
+
+fn2 : {s, s' : _} -> (p0, p1 : Parameter) -> (Tensor s a -> Tensor s' a' -> Tag $ Tensor s'' a'') -> State Env (Fn 2)
+fn2 p0 p1 f = do
+  addr0 <- reserve
+  addr1 <- reserve
+
+  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
+      (env, MkTensor res) = runState (emptyFrom !get) app
+      f = MkFn [(addr0, p0), (addr1, p1)] res env
+
+  updateCounterFrom env
+  pure f
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```
@@ -772,13 +795,8 @@ map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Tag $ Tensor [] b) ->
       Tensor shape a -> Tag $ Tensor shape b
 map f $ MkTensor {shape = _} x = MkTagT $ do
-  addr <- reserve
-  let MkTagT app = f (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr, MkParameter [] a)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x] (range $ length shape)
+  f <- fn1 (MkParameter [] a) f
+  pure $ MkTensor $ Map f [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -797,14 +815,8 @@ map2 :
   (Tensor [] a -> Tensor [] b -> Tag $ Tensor [] c) ->
   Tensor shape a -> Tensor shape b -> Tag $ Tensor shape c
 map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x, x'] (range $ length shape)
+  f <- fn2 (MkParameter [] a) (MkParameter [] b) f
+  pure $ MkTensor $ Map f [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
@@ -833,14 +845,9 @@ reduce axes $ MkTensor x = MkTagT $ do
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-  addr0 <- reserve
-  addr1 <- reserve
-
-  let MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      g = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
-      MkTensor neutral' = neutral @{reducer}
-
-  pure $ MkTensor $ Reduce g neutral' axes x
+  monoid <- fn2 (MkParameter [] dtype) (MkParameter [] dtype) (pure .: (<+>) @{semigroup reducer})
+  let MkTensor neutral' = neutral @{reducer}
+  pure $ MkTensor $ Reduce monoid neutral' axes x
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -867,13 +874,8 @@ sort :
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Tag $ Tensor shape dtype
-sort comp dimension $ MkTensor x = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-
-  let MkTensor res = comp (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      comparator = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
-
+sort comparator dimension $ MkTensor x = MkTagT $ do
+  comparator <- fn2 (MkParameter [] dtype) (MkParameter [] dtype) (pure .: comparator)
   pure $ MkTensor $ Sort comparator dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
@@ -1055,21 +1057,30 @@ cond :
   (onFalse : Tensor fs ft -> Tag $ Tensor shape dtype) -> Tensor fs ft ->
   Tag $ Tensor shape dtype
 cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTagT $ do
-  addr <- reserve
-
-  let MkTagT app = onTrue (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      onTrue = MkFn [(addr, MkParameter ts tt)] res env
-
-  updateCounterFrom env
-  addr <- reserve
-
-  let MkTagT app = onFalse (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      onFalse = MkFn [(addr, MkParameter fs ft)] res env
-
-  updateCounterFrom env
+  onTrue <- fn1 (MkParameter ts tt) onTrue
+  onFalse <- fn1 (MkParameter fs ft) onFalse
   pure $ MkTensor $ Cond pred onTrue true onFalse false
+
+||| A while loop: iteratively execute a function until a condition is met.
+|||
+||| Each iteration starts with a tensor `x`. If `condition x` is falsy, return `x`, else begin the next iteration
+||| with `f x`. Start the first iteration with `initial`.
+|||
+||| **Note:** If `condition` is never satisfied, `while` will not return.
+|||
+||| @condition The stopping condition.
+||| @f The iterative function.
+||| @initial The starting value.
+export covering
+while :
+  Primitive dtype =>
+  (condition : Tensor shape dtype -> Tag $ Tensor [] PRED) ->
+  (f : Tensor shape dtype -> Tag $ Tensor shape dtype) ->
+  (initial : Tensor shape dtype) -> Tag $ Tensor shape dtype
+while condition body (MkTensor initial) = MkTagT $ do
+  condition <- fn1 (MkParameter shape dtype) condition
+  body <- fn1 (MkParameter shape dtype) body
+  pure $ MkTensor $ While condition body initial
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 export infixl 9 @@
