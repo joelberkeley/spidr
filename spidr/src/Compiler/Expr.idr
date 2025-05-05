@@ -131,7 +131,7 @@ data Expr : Type where
   Select : (predicate, onTrue, onFalse : Expr) -> Expr
   Cond : (pred : Expr) -> (onTrue : Fn 1) -> (onTrueArg : Expr) ->
          (onFalse : Fn 1) -> (onFalseArg : Expr) -> Expr
-  While : (condition : Fn n) -> (body : Fn n) -> (init : Expr) -> Expr
+  While : (condition : Fn 1) -> (body : Fn 1) -> (init : Expr) -> Expr
   Dot : Expr -> Expr -> Expr
   DotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) -> Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
