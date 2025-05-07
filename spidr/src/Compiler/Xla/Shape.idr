@@ -32,10 +32,10 @@ delete : AnyPtr -> IO ()
 delete = primIO . prim__delete
 
 %foreign (libxla "sizeof_Shape")
-sizeOfShape : Int
+sizeOfShape : Bits64
 
 %foreign (libxla "set_array_Shape")
-prim__setArrayShape : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
+prim__setArrayShape : AnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 public export
 data ShapeArray = MkShapeArray GCAnyPtr
@@ -43,8 +43,7 @@ data ShapeArray = MkShapeArray GCAnyPtr
 export
 mkShapeArray : HasIO io => List Shape -> io ShapeArray
 mkShapeArray shapes = do
-  arr <- malloc (cast (length shapes) * sizeOfShape)
-  traverse_ (\(idx, MkShape shape) =>
-    primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate (fromList shapes))
+  arr <- malloc (cast (length shapes) * cast sizeOfShape)
+  traverse_ (\(idx, MkShape shape) => primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate shapes)
   arr <- onCollectAny arr free
   pure (MkShapeArray arr)
