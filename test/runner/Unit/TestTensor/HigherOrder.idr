@@ -214,22 +214,22 @@ condResultWithReusedArgs = fixedProperty $ do
 while : Device => Property
 while = fixedProperty $ do
   let initial = [tensor {dtype = S32} 10]
-      condition = \[x] => pure $ x * x > 4
-      body = \[x] => pure $ [x - 1]
+      condition : TensorList' [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x * x > 4
+      body : TensorList' [[]] [S32] -> Tag $ TensorList' [[]] [S32] = \[x] => pure [x - 1]
 
-  (do [x] <- while condition body initial; pure x) ===# pure 2
-
-  let initial = [tensor {dtype = S32} 4]
-      condition = \[x] => pure $ x < 4
-      body = \[x] => pure $ [2 * x]
-
-  (do [x] <- while condition body initial; pure x) ===# pure 4
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 2)
 
   let initial = [tensor {dtype = S32} 4]
-      condition = \[x] => pure $ x <= 4
-      body = \[x] => pure $ [2 * x]
+      condition : TensorList' [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x < 4
+      body : TensorList' [[]] [S32] -> Tag $ TensorList' [[]] [S32] = \[x] => pure [2 * x]
 
-  (do [x] <- while condition body initial; pure x) ===# the (Tag $ Tensor [] S32) (pure 8)
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 4)
+
+  let initial = [tensor {dtype = S32} 4]
+      condition : TensorList' [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x <= 4
+      body : TensorList' [[]] [S32] -> Tag $ TensorList' [[]] [S32] = \[x] => pure [2 * x]
+
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 8)
 
   let initial : TensorList' [[2]] [F64] := [tensor {dtype = F64} [1.0, 2.0]]
       condition : TensorList' [[2]] [F64] -> Tag _ := \[x] => pure $ slice [at 0] x < 30.0
