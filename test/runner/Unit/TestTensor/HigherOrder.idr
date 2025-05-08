@@ -45,9 +45,9 @@ mapNonTrivial = fixedProperty $ do
   map {a = S32} (map (\x => pure $ x + 1)) 1 ===# res
 
   let x : Tag $ Tensor [] S32 = do
-      tag =<< Tensor.map (\y => do
-          Prelude.map (y +) $ tag =<< Tensor.map (
-              \u => do v <- tag (tensor 3); pure $ u * v
+      copy =<< Tensor.map (\y => do
+          Prelude.map (y +) $ copy =<< Tensor.map (
+              \u => do v <- copy (tensor 3); pure $ u * v
             ) y
         ) (tensor 7)
   x ===# pure 28
@@ -205,8 +205,8 @@ condResultWithReusedArgs = fixedProperty $ do
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
-  let f : Taggable a => (a -> a -> a) -> a -> Tag a
-      f g x = tag x <&> \x => g x x
+  let f : Copy a => (a -> a -> a) -> a -> Tag a
+      f g x = copy x <&> \x => g x x
 
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9

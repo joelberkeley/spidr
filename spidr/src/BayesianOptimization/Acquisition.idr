@@ -24,20 +24,26 @@ import Tensor
 import Data
 import Model
 
-%prefix_record_projections off
-
 ||| A `DataModel` packages data with a model over that data.
 public export
-record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t marginal modelType} where
-  constructor MkDataModel
+data DataModel : {features, targets : Shape} -> Type -> Type where
+  MkDataModel : m -@ (Dataset features targets -@ DataModel {features, targets} m)
 
-  ||| A probabilistic model
-  model : modelType
+export
+Copy model => Copy (DataModel {features, targets} model) where
+  copy (MkDataModel m d) = do
+    MkBang m <- copy m
+    MkBang d <- copy d
+    pure $ MkBang $ MkDataModel m d
+  discard (MkDataModel m d) = discarding m $ discard d
 
-  ||| The data the model is trained on
-  dataset : Dataset f t
+export
+(.model) : DataModel m -@ m
+(MkDataModel m d).model = discarding d m
 
-%prefix_record_projections on
+export
+(.dataset) : Copy m => DataModel {features, targets} m -@ Dataset features targets
+(MkDataModel m d).dataset = discarding m d
 
 ||| An `Acquisition` function quantifies how useful it would be to query the objective at a given  
 ||| set of points, towards the goal of optimizing the objective.
@@ -47,7 +53,7 @@ record DataModel modelType {auto probabilisticModel : ProbabilisticModel f t mar
 ||| @features The shape of the feature domain.
 public export 0
 Acquisition : (0 batchSize : Nat) -> {auto 0 _ : GT batchSize 0} -> (0 features : Shape) -> Type
-Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tag $ Tensor [] F64
+Acquisition batchSize features = Tensor (batchSize :: features) F64 -@ Tag $ Tensor [] F64
 
 ||| Construct the acquisition function that estimates the absolute improvement in the best
 ||| observation if we were to evaluate the objective at a given point.
@@ -57,15 +63,15 @@ Acquisition batchSize features = Tensor (batchSize :: features) F64 -> Tag $ Ten
 export
 expectedImprovement :
   ProbabilisticModel features [1] Gaussian m =>
-  (model : m) ->
-  (best : Tensor [] F64) ->
+  (1 model : m) ->
+  (1 best : Tensor [] F64) ->
   Acquisition 1 features
 expectedImprovement model best at = do
-  best <- tag best
-  marginal <- tag =<< marginalise model at
+  MkBang best <- copy best
+  MkBang marginal <- copy !(marginalise model at)
   let best' = broadcast {to = [_, 1]} best
-  pdf <- tag =<< pdf marginal best'
-  cdf <- tag =<< cdf marginal best'
+  MkBang pdf <- copy !(pdf marginal best')
+  MkBang cdf <- copy !(cdf marginal best')
   let mean = squeeze !(mean {event = [1]} {dim = 1} marginal)
       variance = squeeze !(variance {event = [1]} marginal)
   pure $ (best - mean) * cdf + variance * pdf
@@ -74,12 +80,14 @@ expectedImprovement model best at = do
 ||| the observation value at each point.
 export
 expectedImprovementByModel :
+  Copy modelType =>
   ProbabilisticModel features [1] Gaussian modelType =>
-  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
-expectedImprovementByModel = MkReaderT $ \env => do
-  marginal <- marginalise env.model env.dataset.features
-  best <- tag $ squeeze !(reduce @{Min} [0] !(mean {event = [1]} marginal))
-  pure $ expectedImprovement env.model best
+  DataModel {features, targets = [1]} modelType -@ Tag $ Acquisition 1 features
+expectedImprovementByModel (MkDataModel model (MkDataset features targets)) = do
+  MkBang model <- copy model
+  marginal <- marginalise model (discarding targets features)
+  MkBang best <- copy $ squeeze {to = []} !(reduce @{Min} [0] !(mean marginal))
+  pure $ expectedImprovement model best
 
 ||| Build an acquisition function that returns the probability that any given point will take a
 ||| value less than the specified `limit`.
@@ -88,9 +96,9 @@ probabilityOfFeasibility :
   (limit : Tensor [] F64) ->
   ClosedFormDistribution [1] dist =>
   ProbabilisticModel features [1] dist modelType =>
-  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
-probabilityOfFeasibility limit =
-  asks $ \env, at => do cdf !(marginalise env.model at) (broadcast {to = [_, 1]} limit)
+  DataModel modelType -@ Acquisition 1 features
+probabilityOfFeasibility limit env at =
+  cdf !(marginalise env.model at) (broadcast {to = [_, 1]} limit)
 
 ||| Build an acquisition function that returns the negative of the lower confidence bound of the
 ||| probabilistic model. The variance contribution is weighted by a factor `beta`.
@@ -101,9 +109,9 @@ negativeLowerConfidenceBound :
   (beta : Double) ->
   {auto 0 betaNonNegative : beta >= 0 = True} ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  ReaderT (DataModel modelType) Tag $ Acquisition 1 features
-negativeLowerConfidenceBound beta = asks $ \env, at => do
-  marginal <- tag =<< marginalise env.model at
+  DataModel modelType -@ Acquisition 1 features
+negativeLowerConfidenceBound beta env at = do
+  MkBang marginal <- copy !(marginalise env.model at)
   pure $ squeeze $
     !(mean {event = [1]} marginal) - fromDouble beta * !(variance {event = [1]} marginal)
 
@@ -117,4 +125,4 @@ export
 expectedConstrainedImprovement :
   (limit : Tensor [] F64) ->
   ProbabilisticModel features [1] Gaussian modelType =>
-  ReaderT (DataModel modelType) Tag (Acquisition 1 features -> Acquisition 1 features)
+  DataModel modelType -@ Tag (Acquisition 1 features -> Acquisition 1 features)

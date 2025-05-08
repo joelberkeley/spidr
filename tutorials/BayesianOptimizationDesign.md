@@ -207,7 +207,7 @@ newPoint'' = do
   let eci = objective >$< expectedConstrainedImprovement @{Latent} 0.5
       pof = failure >$< probabilityOfFeasibility @{%search} @{Latent} 0.5
       acquisition = do lift $ optimizer !(eci <*> pof)
-  (hist, fail) <- tag (historicalData, failureData)
+  (hist, fail) <- copy (historicalData, failureData)
   let dataAndModel = Label (MkDataModel !(model hist) hist) (MkDataModel !(failureModel fail) fail)
   runReaderT dataAndModel acquisition
 ```
@@ -229,7 +229,7 @@ We can repeat this process indefinitely to produce an infinite stream of values
 ```idris
 covering
 steps : Tag $ TagStream $ DataModel {probabilisticModel = Latent} (ConjugateGPRegression [2])
-steps = tag historicalData >>= \hist => iterate step' (MkDataModel !(model hist) hist)
+steps = copy historicalData >>= \hist => iterate step' (MkDataModel !(model hist) hist)
 ```
 We can now iterate over this stream, choosing to stop according to a variety of stopping conditions, such as a number of repetitions
 ```idris
