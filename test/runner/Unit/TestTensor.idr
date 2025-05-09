@@ -85,7 +85,7 @@ evalTuple @{device} = property $ do
 
 evalTupleNonTrivial : Device => Property
 evalTupleNonTrivial @{device} = property $ do
-  let xs : Tag (TensorList [[], [2]] [Double, Double]) = do
+  let xs : Tag (TensorEvalList [[], [2]] [Double, Double]) = do
         let y0 = tensor {dtype = F64} [1.0, -2.0, 0.4]
             y1 = tensor {dtype = F64} 3.0
         u <- tag $ exp y0
