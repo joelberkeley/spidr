@@ -211,6 +211,32 @@ condResultWithReusedArgs = fixedProperty $ do
   cond (tensor True) (f (+)) x (f (*)) y ===# pure 2
   cond (tensor False) (f (+)) x (f (*)) y ===# pure 9
 
+while : Device => Property
+while = fixedProperty $ do
+  let initial = [tensor {dtype = S32} 10]
+      condition : TensorList [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x * x > 4
+      body : TensorList [[]] [S32] -> Tag $ TensorList [[]] [S32] = \[x] => pure [x - 1]
+
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 2)
+
+  let initial = [tensor {dtype = S32} 4]
+      condition : TensorList [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x < 4
+      body : TensorList [[]] [S32] -> Tag $ TensorList [[]] [S32] = \[x] => pure [2 * x]
+
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 4)
+
+  let initial = [tensor {dtype = S32} 4]
+      condition : TensorList [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x <= 4
+      body : TensorList [[]] [S32] -> Tag $ TensorList [[]] [S32] = \[x] => pure [2 * x]
+
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 8)
+
+  let initial : TensorList [[2]] [F64] := [tensor {dtype = F64} [1.0, 2.0]]
+      condition : TensorList [[2]] [F64] -> Tag _ := \[x] => pure $ slice [at 0] x < 30.0
+      body : TensorList [[2]] [F64] -> Tag $ TensorList [[2]] [F64] := \[x] => pure [2.0 * x]
+
+  (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = F64} [32.0, 64.0])
+
 export
 all : Device => List (PropertyName, Property)
 all = [
@@ -224,4 +250,5 @@ all = [
     , ("sort with repeated elements", sortWithRepeatedElements)
     , ("cond for trivial usage", condResultTrivialUsage)
     , ("cond for re-used arguments", condResultWithReusedArgs)
+    , ("while", while)
   ]

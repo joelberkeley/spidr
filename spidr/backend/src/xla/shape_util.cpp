@@ -23,6 +23,7 @@ extern "C" {
     ShapeIndex* ShapeIndex_new() {
         return reinterpret_cast<ShapeIndex*>(new xla::ShapeIndex());
     }
+
     void ShapeIndex_delete(ShapeIndex* s) {
         delete reinterpret_cast<xla::ShapeIndex*>(s);
     }
@@ -33,6 +34,16 @@ extern "C" {
 
     void ShapeIndex_push_front(ShapeIndex& shape_index, int value) {
         reinterpret_cast<xla::ShapeIndex&>(shape_index).push_front(value);
+    }
+
+    Shape* MakeTupleShape(Shape* shapes, size_t shapes_len) {
+        auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
+        auto shapes_span = absl::Span<const xla::Shape>(shapes_, shapes_len);
+
+        xla::Shape* xla_shape = new xla::Shape();
+        *xla_shape = xla::ShapeUtil::MakeTupleShape(shapes_span);
+
+        return reinterpret_cast<Shape*>(xla_shape);
     }
 
     Shape* MakeShape(int primitive_type, int* shape, int rank) {

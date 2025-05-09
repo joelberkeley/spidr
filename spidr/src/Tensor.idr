@@ -54,6 +54,9 @@ export
 data Tensor : (shape : Shape) -> (dtype : Type) -> Type where
   MkTensor : Expr -> {shape : _} -> Tensor shape dtype
 
+expr : Tensor shape dtype -> Expr
+expr (MkTensor e) = e
+
 ||| The effect of tagging nodes in a computational graph.
 export
 data TagT : (Type -> Type) -> Type -> Type where
@@ -100,12 +103,12 @@ interface Taggable a where
   ||| See tutorial [_Nuisances in the Tensor API_](https://github.com/joelberkeley/spidr/blob/master/tutorials/Nuisances.md) for details.
   tag : Monad m => a -> TagT m a
 
+Taggable Expr where
+  tag = MkTagT . Expr.tag
+
 export
 Taggable (Tensor shape dtype) where
-  -- `Var` case is an optimization. Note this will mean you cannot re-bind a value
-  -- to an inner scope, but I can't see why that would be useful
-  tag x@(MkTensor (Var _)) = pure x
-  tag (MkTensor x) = MkTagT $ do pure $ MkTensor !(Expr.tag x)
+  tag (MkTensor x) = pure $ MkTensor !(tag x)
 
 export
 (Taggable a, Taggable b) => Taggable (a, b) where
@@ -155,18 +158,18 @@ export covering
 eval : Device -> PrimitiveRW dtype ty => Tensor shape dtype -> IO (Literal shape ty)
 eval device x = eval device (pure x)
 
-namespace TensorList
-  namespace Tag
-    ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
-    ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
-    public export
-    data TensorList : List Shape -> List Type -> Type where
-      Nil : TensorList [] []
-      (::) : PrimitiveRW dtype ty =>
-             Tensor shape dtype ->
-             TensorList shapes tys ->
-             TensorList (shape :: shapes) (ty :: tys)
+namespace TensorEvalList
+  ||| A list of `Tensor`s, along with the conversions needed to evaluate them to `Literal`s.
+  ||| The list is parametrized by the shapes and types of the resulting `Literal`s.
+  public export
+  data TensorEvalList : List Shape -> List Type -> Type where
+    Nil : TensorEvalList [] []
+    (::) : PrimitiveRW dtype ty =>
+           Tensor shape dtype ->
+           TensorEvalList shapes tys ->
+           TensorEvalList (shape :: shapes) (ty :: tys)
 
+  namespace Tag
     ||| Evaluate a list of `Tensor`s as a list of `Literal`s. Tensors in the list can have different
     ||| shapes and element types. For example,
     ||| ```
@@ -180,7 +183,7 @@ namespace TensorList
     ||| In contrast to `Tensor.eval` when called on multiple tensors, this function constructs and
     ||| compiles the graph just once.
     export covering
-    eval : Device -> Tag (TensorList shapes tys) -> IO (All2 Literal shapes tys)
+    eval : Device -> Tag (TensorEvalList shapes tys) -> IO (All2 Literal shapes tys)
     eval device (MkTagT xs) =
       let (env, xs) = runState empty xs
           root = Tuple $ nodes xs
@@ -192,25 +195,25 @@ namespace TensorList
 
       where
 
-      lengthC : TensorList s t -> (n ** n === length s)
+      lengthC : TensorEvalList s t -> (n ** n === length s)
       lengthC [] = (0 ** Refl)
       lengthC (_ :: xs) = let (n ** eq) = lengthC xs in (S n ** cong S eq)
 
-      buildShapes : HasIO io => TensorList s t -> io $ Vect (length s) XlaShape
+      buildShapes : HasIO io => TensorEvalList s t -> io $ Vect (length s) XlaShape
       buildShapes [] = pure []
       buildShapes (MkTensor {shape, dtype} _ :: ts) = [| mkShape shape {dtype} :: buildShapes ts |]
 
-      nodes : TensorList s t -> List Expr
+      nodes : TensorEvalList s t -> List Expr
       nodes [] = []
       nodes (MkTensor x :: xs) = x :: nodes xs
 
-      readAll : HasIO io => TensorList s t -> Vect (length s) Literal -> io $ All2 Literal s t
+      readAll : HasIO io => TensorEvalList s t -> Vect (length s) Literal -> io $ All2 Literal s t
       readAll [] _ = pure []
       readAll (MkTensor {dtype} _ :: ts) (l :: ls) = [| read {dtype} [] l :: readAll ts ls |]
 
   ||| A convenience wrapper for `TensorList.Tag.eval`, for use with a bare `TensorList`.
   export covering
-  eval : Device -> TensorList shapes tys -> IO (All2 Literal shapes tys)
+  eval : Device -> TensorEvalList shapes tys -> IO (All2 Literal shapes tys)
   eval device xs = eval device (pure xs)
 
 ||| A string representation of a tensor graph.
@@ -756,6 +759,32 @@ iota dimension = MkTensor $ Iota shape {dtype} dimension
 
 ----------------------------- generic operations ----------------------------
 
+fn1raw : FullShape -> (Expr -> Tag Expr) -> Tag (Fn 1)
+fn1raw p0 f = MkTagT $ do
+  addr <- reserve
+
+  let MkTagT app = f (Var addr)
+      (env, res) = runState (emptyFrom !get) app
+      f = MkFn [(addr, p0)] res env
+
+  updateCounterFrom env
+  pure f
+
+fn1 : {s : _} -> FullShape -> (Tensor s a -> Tag $ Tensor s' a') -> Tag (Fn 1)
+fn1 p0 f = fn1raw p0 (\x => do MkTensor x <- f (MkTensor x); pure x)
+
+fn2 : {s, s' : _} -> (p0, p1 : FullShape) -> (Tensor s a -> Tensor s' a' -> Tag $ Tensor s'' a'') -> Tag (Fn 2)
+fn2 p0 p1 f = MkTagT $ do
+  addr0 <- reserve
+  addr1 <- reserve
+
+  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
+      (env, MkTensor res) = runState (emptyFrom !get) app
+      f = MkFn [(addr0, p0), (addr1, p1)] res env
+
+  updateCounterFrom env
+  pure f
+
 ||| Lift a unary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
 ||| ```
@@ -771,14 +800,9 @@ export
 map : (Primitive a, Primitive b) =>
       (Tensor [] a -> Tag $ Tensor [] b) ->
       Tensor shape a -> Tag $ Tensor shape b
-map f $ MkTensor {shape = _} x = MkTagT $ do
-  addr <- reserve
-  let MkTagT app = f (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr, MkParameter [] a)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x] (range $ length shape)
+map f $ MkTensor {shape = _} x = do
+  f <- fn1 (SingleShape [] a) f
+  pure $ MkTensor $ Map f [x] (range $ length shape)
 
 ||| Lift a binary function on scalars to an element-wise function on `Tensor`s of arbitrary shape.
 ||| For example,
@@ -796,15 +820,9 @@ map2 :
   (Primitive a, Primitive b, Primitive c) =>
   (Tensor [] a -> Tensor [] b -> Tag $ Tensor [] c) ->
   Tensor shape a -> Tensor shape b -> Tag $ Tensor shape c
-map2 f (MkTensor {shape = _} x) (MkTensor x') = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-  let MkTagT app = f (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      g = MkFn [(addr0, MkParameter [] a), (addr1, MkParameter [] b)] res env
-
-  updateCounterFrom env
-  pure $ MkTensor $ Map g [x, x'] (range $ length shape)
+map2 f (MkTensor {shape = _} x) (MkTensor x') = do
+  f <- fn2 (SingleShape [] a) (SingleShape [] b) f
+  pure $ MkTensor $ Map f [x, x'] (range $ length shape)
 
 ||| Reduce elements along one `axis` of a `Tensor` according to a specified `reducer` `Monoid`.
 ||| For example, if `x = tensor [[0, 1, 2], [3, 4, 5]]`, then reduce @{Sum} 0 x` produces
@@ -829,18 +847,13 @@ reduce :
   {auto 0 axesInBounds : All (flip InBounds shape) axes} ->
   Tensor shape dtype ->
   Tag $ Tensor (deleteAt axes shape) dtype
-reduce axes $ MkTensor x = MkTagT $ do
+reduce axes $ MkTensor x = do
   let semigroup : Monoid a -> Semigroup a
       semigroup _ = %search
 
-  addr0 <- reserve
-  addr1 <- reserve
-
-  let MkTensor res := (<+>) @{semigroup reducer} (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      g = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
-      MkTensor neutral' = neutral @{reducer}
-
-  pure $ MkTensor $ Reduce g neutral' axes x
+  monoid <- fn2 (SingleShape [] dtype) (SingleShape [] dtype) (pure .: (<+>) @{semigroup reducer})
+  let MkTensor neutral' = neutral @{reducer}
+  pure $ MkTensor $ Reduce monoid neutral' axes x
 
 ||| Sort the elements of a `Tensor` along a specified `dimension` according to a scalar-wise
 ||| ordering. For sorting function `f`, elements are sorted such that for consecutive sorted
@@ -867,13 +880,8 @@ sort :
   Tensor shape dtype ->
   {auto 0 dimInBounds : InBounds dimension shape} ->
   Tag $ Tensor shape dtype
-sort comp dimension $ MkTensor x = MkTagT $ do
-  addr0 <- reserve
-  addr1 <- reserve
-
-  let MkTensor res = comp (MkTensor $ Var addr0) (MkTensor $ Var addr1)
-      comparator = MkFn [(addr0, MkParameter [] dtype), (addr1, MkParameter [] dtype)] res empty
-
+sort comparator dimension $ MkTensor x = do
+  comparator <- fn2 (SingleShape [] dtype) (SingleShape [] dtype) (pure .: comparator)
   pure $ MkTensor $ Sort comparator dimension False [x]
 
 ||| Reverse elements along the specified axes. For example, for
@@ -1054,22 +1062,67 @@ cond :
   (onTrue : Tensor ts tt -> Tag $ Tensor shape dtype) -> Tensor ts tt ->
   (onFalse : Tensor fs ft -> Tag $ Tensor shape dtype) -> Tensor fs ft ->
   Tag $ Tensor shape dtype
-cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = MkTagT $ do
-  addr <- reserve
-
-  let MkTagT app = onTrue (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      onTrue = MkFn [(addr, MkParameter ts tt)] res env
-
-  updateCounterFrom env
-  addr <- reserve
-
-  let MkTagT app = onFalse (MkTensor $ Var addr)
-      (env, MkTensor res) = runState (emptyFrom !get) app
-      onFalse = MkFn [(addr, MkParameter fs ft)] res env
-
-  updateCounterFrom env
+cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
+  onTrue <- fn1 (SingleShape ts tt) onTrue
+  onFalse <- fn1 (SingleShape fs ft) onFalse
   pure $ MkTensor $ Cond pred onTrue true onFalse false
+
+namespace TensorList
+  ||| A tuple-like list of tensor, parameterized by the shapes and types of the individual tensors.
+  |||
+  ||| This differs from `TensorEvalList` in that the types parametrizing a `TensorList`
+  ||| are the data types of the `Tensor`s (F64, S32, etc.), whereas for `TensorEvalList` they are the
+  ||| Idris builtin types of the elements of the corresponding `Literal` (Double, Int32, etc.).
+  public export
+  data TensorList : List Shape -> List Type -> Type where
+    Nil : TensorList [] []
+    (::) :
+      Tensor shape dtype ->
+      TensorList shapes dtypes ->
+      TensorList (shape :: shapes) (dtype :: dtypes)
+
+-- test thoroughly, I'm seeing intermittent failures
+
+||| A while loop; iteratively execute a function until a condition is met.
+|||
+||| Each iteration starts with a set of tensor `xs`. If `condition xs` is falsy, return `xs`, else
+||| begin the next iteration with `f xs`. Start the first iteration with `initial`.
+|||
+||| **Note:** If `condition` is never satisfied, `while` will not return.
+|||
+||| @condition The stopping condition.
+||| @f The iterative function.
+||| @initial The starting values.
+export covering
+while :
+  forall s, ss, t, tt .
+  All Primitive (t :: tt) => let T = TensorList (s :: ss) (t :: tt) in
+  (condition : T -> Tag $ Tensor [] PRED) -> (f : T -> Tag T) -> (initial : T) -> Tag T
+while condition body initials = do
+  let tupleShape = TupleShape $ singleShapes initials
+  condition <- fn1raw tupleShape (\tuple => expr <$> condition !(asTensorList tuple))
+  body <- fn1raw tupleShape (\tuple => Tuple <$> exprs <$> body !(asTensorList tuple))
+  resTuple <- tag $ While condition body (Tuple $ exprs initials)
+  asTensorList resTuple
+
+  where
+
+  singleShapes : All Primitive dtypes => TensorList _ dtypes -> List FullShape
+  singleShapes [] = []
+  singleShapes @{_ :: _} (MkTensor _ {shape, dtype} :: xs) =
+    SingleShape shape dtype :: singleShapes xs
+
+  asTensorList : Expr -> Tag $ TensorList (s :: ss) (t ::tt)
+  asTensorList e = pure $ impl 0 !(tag e) initials
+
+    where
+    impl : Nat -> Expr -> TensorList s' t' -> TensorList s' t'
+    impl _ e [] = []
+    impl n e (MkTensor {dtype} _ :: xs) = MkTensor {dtype} (GetTupleElement n e) :: impl (S n) e xs
+
+  exprs : TensorList _ _ -> List Expr
+  exprs [] = []
+  exprs (MkTensor x :: xs) = x :: exprs xs
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 export infixl 9 @@

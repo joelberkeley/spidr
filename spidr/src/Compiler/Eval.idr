@@ -62,6 +62,11 @@ public export 0
 ErrIO : Type -> Type
 ErrIO = EitherT Err IO
 
+covering  -- actually total, but no benefit to asserting as such
+interpretShape : FullShape -> ErrIO Xla.Shape
+interpretShape (SingleShape shape dtype) = mkShape shape {dtype}
+interpretShape (TupleShape shapes) = mkTupleShape =<< for shapes interpretShape
+
 covering
 interpret : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaOp
 
@@ -86,9 +91,9 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     Nothing <- readArray cache (cast idx) | Just op => right op
     left $ let max = cast (max cache) in if idx >= max then OutOfBounds idx max else ValueNotFound idx
 
-  interpretParameter : (Nat, Nat, Parameter) -> ErrIO ()
-  interpretParameter (fPos, graphPos, MkParameter shape dtype) = do
-    xlaShape <- mkShape {dtype} shape
+  interpretParameter : (Nat, Nat, FullShape) -> ErrIO ()
+  interpretParameter (fPos, graphPos, shape) = do
+    xlaShape <- interpretShape shape
     param <- parameter xlaBuilder fPos xlaShape (show fPos)
     set graphPos param
 
@@ -192,6 +197,12 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     compTrue <- compile subBuilderT fTrue
     compFalse <- compile subBuilderF fFalse
     conditional !(interpretE pred) !(interpretE true) compTrue !(interpretE false) compFalse
+  interpretE (While condition body init) = do
+    subBuilderC <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/while:condition"
+    subBuilderB <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/while:body"
+    condition <- compile subBuilderC condition
+    body <- compile subBuilderB body
+    while condition body !(interpretE init)
   interpretE (Dot l r) = dot !(interpretE l) !(interpretE r)
   interpretE (DotGeneral lb rb lc rc l r) = do
     dimensionNumbers <- allocDotDimensionNumbers

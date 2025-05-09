@@ -35,12 +35,16 @@ import Util
 Show a => Interpolation (List a) where
   interpolate = show
 
-public export
-data Parameter : Type where
-  MkParameter : Shape -> (0 dtype : Type) -> Primitive dtype => Parameter
+namespace FullShape
+  public export
+  data FullShape : Type where
+    SingleShape : Shape -> (0 dtype : Type) -> Primitive dtype => FullShape
+    TupleShape : List FullShape -> FullShape  -- can a tuple contain tuples? If not, don't make it inductive, use a separate type
 
-Show Parameter where
-  show (MkParameter shape dtype) = "\{shape} \{xlaIdentifier {dtype}}"
+covering
+Show FullShape where
+  show (SingleShape shape dtype) = "\{shape} \{xlaIdentifier {dtype}}"
+  show (TupleShape shapes) = show shapes
 
 public export
 data Expr : Type
@@ -81,7 +85,7 @@ data Fn : Nat -> Type where
   ||| @result The function result.
   ||| @env Bindings within the function. Includes only nodes in this scope, not outer or inner scope.
   MkFn : {arity : _} ->
-         (params : Vect arity (Nat, Parameter)) ->
+         (params : Vect arity (Nat, FullShape)) ->
          (result : Expr) ->
          (env : Env) ->
          Fn arity
@@ -131,6 +135,7 @@ data Expr : Type where
   Select : (predicate, onTrue, onFalse : Expr) -> Expr
   Cond : (pred : Expr) -> (onTrue : Fn 1) -> (onTrueArg : Expr) ->
          (onFalse : Fn 1) -> (onFalseArg : Expr) -> Expr
+  While : (condition : Fn 1) -> (body : Fn 1) -> (init : Expr) -> Expr
   Dot : Expr -> Expr -> Expr
   DotGeneral : (lBatch, lContract, rBatch, rContract : List Nat) -> Expr -> Expr -> Expr
   Cholesky : Expr -> Expr
@@ -138,8 +143,11 @@ data Expr : Type where
   UniformFloatingPoint : (key, initialState, minval, maxval : Expr) -> (shape : Shape) -> Expr
   NormalFloatingPoint : (key, initialState : Expr) -> (shape : Shape) -> Expr
 
+-- `Var` case is an optimization. Note this will mean you cannot re-bind a value
+-- to an inner scope, but I can't see why that would be useful
 export
 tag : Monad m => Expr -> StateT Env m Expr
+tag (Var x) = pure (Var x)
 tag expr = do
   MkEnv next env <- get
   put $ MkEnv (S next) ((next, expr) :: env)
@@ -225,6 +233,8 @@ showExpr indent (Cond p ft t ff f) =
   "Cond {predicate = \{showExpr indent p}, onTrueFn = \{showFn indent ft}," ++
     " onTrueArg = \{showExpr indent t}, onFalseFn = \{showFn indent ff}," ++
     " onFalseArg = \{showExpr indent f}}"
+showExpr indent (While c b i) =
+  "While {condition = \{showFn indent c}, body = \{showFn indent b}, initial = {showExpr indent i}}"
 showExpr indent (Dot x y) = "Dot (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (DotGeneral lBatch lContract rBatch rContract x y) =
   "DotGeneral {lBatch = \{lBatch}, lContract = \{lContract}," ++

@@ -441,6 +441,15 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
+    XlaOp* While(XlaComputation& condition, XlaComputation& body, XlaOp& init) {
+        auto& condition_ = reinterpret_cast<xla::XlaComputation&>(condition);
+        auto& body_ = reinterpret_cast<xla::XlaComputation&>(body);
+        auto& init_ = reinterpret_cast<xla::XlaOp&>(init);
+
+        xla::XlaOp res = xla::While(condition_, body_, init_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
     XlaOp* Conditional(
         XlaOp& predicate,
         XlaOp& true_operand,
