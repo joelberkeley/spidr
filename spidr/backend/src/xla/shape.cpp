@@ -23,11 +23,11 @@ extern "C" {
         delete reinterpret_cast<xla::Shape*>(s);
     }
 
-    size_t sizeof_Shape() {
-        return sizeof(xla::Shape);
+    void delete_array_Shape(Shape* arr) {
+        delete[] reinterpret_cast<xla::Shape*>(arr);
     }
 
-    Shape* mallocShapeArray(size_t size) {
+    Shape* new_array_Shape(size_t size) {
         return reinterpret_cast<Shape*>(new xla::Shape[size]);
     }
 

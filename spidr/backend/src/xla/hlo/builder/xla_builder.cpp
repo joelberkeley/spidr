@@ -38,16 +38,20 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
-    int sizeof_XlaOp() {
-        return sizeof(xla::XlaOp);
-    }
-
-    void set_array_XlaOp(XlaOp* arr, int idx, XlaOp* op) {
-        reinterpret_cast<xla::XlaOp*>(arr)[idx] = *reinterpret_cast<xla::XlaOp*>(op);
-    }
-
     void XlaOp_delete(XlaOp* s) {
         delete reinterpret_cast<xla::XlaOp*>(s);
+    }
+
+    void delete_array_XlaOp(XlaOp* arr) {
+        delete[] reinterpret_cast<xla::XlaOp*>(arr);
+    }
+
+    XlaOp* new_array_XlaOp(size_t size) {
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp[size]);
+    }
+
+    void set_array_XlaOp(XlaOp* arr, size_t idx, XlaOp* op) {
+        reinterpret_cast<xla::XlaOp*>(arr)[idx] = *reinterpret_cast<xla::XlaOp*>(op);
     }
 
     XlaBuilder* XlaBuilder_new(const char* computation_name) {

@@ -83,7 +83,7 @@ export
 build : HasIO io => XlaBuilder -> XlaOp -> io XlaComputation
 build (MkXlaBuilder ptr) (MkXlaOp root)= do
   let computationPtr = prim__build ptr root
-  computationPtr <- onCollectAny computationPtr (const $ pure ()) -- XlaComputation.delete
+  computationPtr <- onCollectAny computationPtr XlaComputation.delete
   pure (MkXlaComputation computationPtr)
 
 %foreign (libxla "XlaBuilder_OpToString")
@@ -96,8 +96,14 @@ opToString (MkXlaBuilder builderPtr) (MkXlaOp opPtr) = prim__opToString builderP
 %foreign (libxla "sizeof_XlaOp")
 sizeOfXlaOp : Int
 
+%foreign (libxla "delete_array_XlaOp")
+prim__deleteArrayXlaOp : AnyPtr -> PrimIO ()
+
+%foreign (libxla "new_array_XlaOp")
+prim__newArrayXlaOp : Bits64 -> PrimIO AnyPtr
+
 %foreign (libxla "set_array_XlaOp")
-prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
+prim__setArrayXlaOp : AnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 data XlaOpArray : Type where
   MkXlaOpArray : GCAnyPtr -> XlaOpArray
@@ -105,10 +111,10 @@ data XlaOpArray : Type where
 export
 mkXlaOpArray : HasIO io => List XlaOp -> io XlaOpArray
 mkXlaOpArray ops = do
-  arr <- malloc (cast (length ops) * sizeOfXlaOp)
+  arr <- primIO $ prim__newArrayXlaOp $ cast (length ops)
   traverse_ (\(idx, (MkXlaOp opPtr)) =>
     primIO $ prim__setArrayXlaOp arr (cast idx) opPtr) (enumerate (fromList ops))
-  arr <- onCollectAny arr free
+  arr <- onCollectAny arr (primIO . prim__deleteArrayXlaOp)
   pure (MkXlaOpArray arr)
 
 %foreign (libxla "Parameter")
@@ -241,7 +247,7 @@ tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
 tuple (MkXlaBuilder builder) elements = do
   MkXlaOpArray xlaOpArrayPtr <- mkXlaOpArray elements
   opPtr <- primIO $ prim__tuple builder xlaOpArrayPtr (cast $ length elements)
-  opPtr <- onCollectAny opPtr (const $ pure ()) -- XlaOp.delete
+  opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
 %foreign (libxla "GetTupleElement")
@@ -251,7 +257,7 @@ export
 getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
 getTupleElement (MkXlaOp tuple_) index = do
   opPtr <- primIO $ prim__getTupleElement tuple_ (cast index)
-  opPtr <- onCollectAny opPtr (const $ pure ()) -- XlaOp.delete
+  opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
 binaryOp : HasIO io => (GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr) -> XlaOp -> XlaOp -> io XlaOp
@@ -619,7 +625,7 @@ export
 while : HasIO io => XlaComputation -> XlaComputation -> XlaOp -> io XlaOp
 while (MkXlaComputation condition) (MkXlaComputation body) (MkXlaOp init) = do
   opPtr <- primIO $ prim__while condition body init
-  opPtr <- onCollectAny opPtr (const $ pure ()) -- XlaOp.delete
+  opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
 %foreign (libxla "Conditional")
