@@ -43,9 +43,6 @@ prim__newArrayShape : Bits64 -> PrimIO AnyPtr
 %foreign (libxla "set_array_Shape")
 prim__setArrayShape : AnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
---%foreign (libxla "shapearray")
---prim__shapearray : GCAnyPtr -> PrimIO AnyPtr
-
 public export
 data ShapeArray = MkShapeArray GCAnyPtr
 
@@ -53,6 +50,7 @@ export
 mkShapeArray : HasIO io => List Shape -> io ShapeArray
 mkShapeArray shapes = do
   arr <- primIO $ prim__newArrayShape $ cast (length shapes)
-  traverse_ (\(idx, MkShape shape) => primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate shapes)
+  traverse_ (\(idx, MkShape shape) =>
+    primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate shapes)
   arr <- onCollectAny arr (primIO . prim__deleteArrayShape)
   pure (MkShapeArray arr)

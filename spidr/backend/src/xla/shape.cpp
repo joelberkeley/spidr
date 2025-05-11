@@ -16,7 +16,6 @@ limitations under the License.
 #include "xla/shape.h"
 
 #include "shape.h"
-#include "xla/shape_util.h"
 
 extern "C" {
     void Shape_delete(Shape* s) {
@@ -32,33 +31,6 @@ extern "C" {
     }
 
     void set_array_Shape(Shape* arr, size_t idx, Shape* shape) {
-        auto arr_ = reinterpret_cast<xla::Shape*>(arr);
-        auto shape_ = reinterpret_cast<xla::Shape*>(shape);
-        // ideas:
-        // * array has not enough space allocated, and so is being overwritten
-        // * something is being freed too early
-
-//        printf("set_array_Shape\n");
-//        printf("%zu: ", idx);
-//        printf("%s\n", xla::ShapeUtil::HumanString(*shape_).c_str());
-
-//        printf("get shape_\n");
-//        printf("sizeof shape_: %d\n", (int) sizeof(shape_));
-//        printf("assign\n");
-        arr_[idx] = *shape_;
-
-//        printf("set_array_Shape return\n");
+        reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
     }
-
-//    // this seems to work
-//    Shape* shapearray(Shape* shape) {
-//        auto shape_ = reinterpret_cast<xla::Shape*>(shape);
-//        // ideas:
-//        // * array has not enough space allocated, and so is being overwritten
-//        // * something is being freed too early
-//        auto arr_ = new xla::Shape[1];
-//        arr_[0] = *shape_;
-//
-//        return reinterpret_cast<Shape*>(arr_);
-//    }
 }

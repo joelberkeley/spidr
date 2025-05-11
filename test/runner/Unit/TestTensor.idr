@@ -490,7 +490,7 @@ group = MkGroup "Tensor" $ [
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
-    --, ("dotGeneral", dotGeneral)
+    , ("dotGeneral", dotGeneral)
     , ("argmin", argmin)
     , ("argmax", argmax)
     , ("select", select)

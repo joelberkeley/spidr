@@ -213,30 +213,90 @@ condResultWithReusedArgs = fixedProperty $ do
 
 while : Device => Property
 while = fixedProperty $ do
-  let initial = [tensor {dtype = S32} 10]
-      condition : TensorList [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x * x > 4
-      body : TensorList [[]] [S32] -> Tag $ TensorList [[]] [S32] = \[x] => pure [x - 1]
+  let T : Type
+      T = TensorList [[]] [S32]
+
+      initial : T := [tensor {dtype = S32} 10]
+      condition : T -> Tag _ := \[x] => pure $ x * x > 4
+      body : T -> Tag T := \[x] => pure [x - 1]
 
   (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 2)
 
-  let initial = [tensor {dtype = S32} 4]
-      condition : TensorList [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x < 4
-      body : TensorList [[]] [S32] -> Tag $ TensorList [[]] [S32] = \[x] => pure [2 * x]
+  let initial : T := [tensor {dtype = S32} 4]
+      condition : T -> Tag _ := \[x] => pure $ x < 4
+      body : T -> Tag T := \[x] => pure [2 * x]
 
   (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 4)
 
-  let initial = [tensor {dtype = S32} 4]
-      condition : TensorList [[]] [S32] -> Tag $ Tensor [] PRED = \[x] => pure $ x <= 4
-      body : TensorList [[]] [S32] -> Tag $ TensorList [[]] [S32] = \[x] => pure [2 * x]
+  let initial : T := [tensor {dtype = S32} 4]
+      condition : T -> Tag _ := \[x] => pure $ x <= 4
+      body : T -> Tag T := \[x] => pure [2 * x]
 
   (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 8)
 
-  -- it's only this last test that's failing ... note the shape is not scalar
-  let initial : TensorList [[2]] [F64] := [tensor {dtype = F64} [1.0, 2.0]]
-      condition : TensorList [[2]] [F64] -> Tag _ := \[x] => pure $ slice [at 0] x < 30.0
-      body : TensorList [[2]] [F64] -> Tag $ TensorList [[2]] [F64] := \[x] => pure [2.0 * x]
+  let T : Type
+      T = TensorList [[2]] [F64]
+
+      initial : T := [tensor {dtype = F64} [1.0, 2.0]]
+      condition : T -> Tag _ := \[x] => pure $ slice [at 0] x < 30.0
+      body : T -> Tag T := \[x] => pure [2.0 * x]
 
   (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = F64} [32.0, 64.0])
+
+  let T : Type
+      T = TensorList [[], [2]] [S32, F64]
+
+      initial : T := [0, tensor [1.0, 2.0]]
+      condition : T -> Tag _ := \[count, x] => pure $ count <= 2
+      body : T -> Tag T := \[count, x] => pure [count + 1, x]
+
+      [c, x] = unsafeEval $ do [c, x] <- while condition body initial; pure [c, x]
+
+  c === 3
+  x ==~ [1.0, 2.0]
+
+  let T : Type
+      T = TensorList [[], []] [S32, S32]
+
+      initial : T := [0, 5]
+      condition : T -> Tag _ := \[x, y] => pure $ x < y
+      body : T -> Tag T := \[x, y] => pure [x + 1, y - 1]
+
+      [x, y] = unsafeEval $ do [x, y] <- while condition body initial; pure [x, y]
+
+  x === 3
+  y === 2
+
+  let T : Type
+      T = TensorList [[], [], []] [S32, S32, S32]
+
+      initial : T := [0, 2, 0]
+      condition : T -> Tag _ := \[x, y, _] => pure $ y /= 0
+      body : T -> Tag T := \[x, y, c] => pure [y - x, x + 1, c + 1]
+
+      [x, y, c] = unsafeEval $ do [x, y, c] <- while condition body initial; pure [x, y, c]
+
+  -- 0, 2
+  -- 2, 1
+  -- -1, 3
+  -- 4, 0
+
+  x === 4
+  y === 0
+  c === 3
+
+  let T : Type
+      T = TensorList [[1], [], [2]] [PRED, S32, F64]
+
+      initial : T := [tensor [True], 0, tensor [0.1, 3.14]]
+      condition : T -> Tag _ := \[b, i, f] => pure $ i < 3
+      body : T -> Tag T := \[b, i, f] => pure [not b, i + 1, 0.1 * f]
+
+      [b, i, f] = unsafeEval $ do [b, i, f] <- while condition body initial; pure [b, i, f]
+
+  b === [False]
+  i === 3
+  f ==~ [0.0001, 0.00314]
 
 export
 all : Device => List (PropertyName, Property)

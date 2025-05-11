@@ -1067,6 +1067,8 @@ cond (MkTensor pred) onTrue (MkTensor true) onFalse (MkTensor false) = do
   onFalse <- fn1 (SingleShape fs ft) onFalse
   pure $ MkTensor $ Cond pred onTrue true onFalse false
 
+-- tensorlist/tensorevallist has horrid ergonomics - either merge the two tensorlists, or change the syntax of one
+
 namespace TensorList
   ||| A tuple-like list of tensor, parameterized by the shapes and types of the individual tensors.
   |||
@@ -1081,33 +1083,15 @@ namespace TensorList
       TensorList shapes dtypes ->
       TensorList (shape :: shapes) (dtype :: dtypes)
 
--- test thoroughly, I'm seeing intermittent failures
-
-
-singleShapes : All Primitive dtypes => TensorList _ dtypes -> List FullShape
-singleShapes [] = []
-singleShapes @{_ :: _} (MkTensor _ {shape, dtype} :: xs) =
-  SingleShape shape dtype :: singleShapes xs
-
-asTensorList : Expr -> TensorList (s :: ss) (t :: tt) -> Tag $ TensorList (s :: ss) (t :: tt)
-asTensorList e as = pure $ impl 0 !(tag e) as
-
-  where
-
-  impl : Nat -> Expr -> TensorList s' t' -> TensorList s' t'
-  impl _ e [] = []
-  impl n e (MkTensor {dtype} _ :: xs) = MkTensor {dtype} (GetTupleElement n e) :: impl (S n) e xs
-
-exprs : TensorList _ _ -> List Expr
-exprs [] = []
-exprs (MkTensor x :: xs) = x :: exprs xs
-
 ||| A while loop; iteratively execute a function until a condition is met.
 |||
 ||| Each iteration starts with a set of tensor `xs`. If `condition xs` is falsy, return `xs`, else
 ||| begin the next iteration with `f xs`. Start the first iteration with `initial`.
 |||
 ||| **Note:** If `condition` is never satisfied, `while` will not return.
+|||
+||| **Note:** Values tagged in the same scope as `while` cannot then be used within the `condition`
+||| or `body`. This is due to an [issue in XLA](https://github.com/openxla/xla/issues/14299).
 |||
 ||| @condition The stopping condition.
 ||| @f The iterative function.
@@ -1119,10 +1103,29 @@ while :
   (condition : T -> Tag $ Tensor [] PRED) -> (f : T -> Tag T) -> (initial : T) -> Tag T
 while condition body initials = do
   let tupleShape = TupleShape $ singleShapes initials
-  condition <- fn1raw tupleShape (\tuple => expr <$> condition !(asTensorList tuple initials))
-  body <- fn1raw tupleShape (\tuple => Tuple <$> exprs <$> body !(asTensorList tuple initials))
-  resTuple <- tag $ While condition body (Tuple $ exprs initials)
-  asTensorList resTuple initials
+  condition <- fn1raw tupleShape (\tuple => expr <$> condition !(asTensorList tuple))
+  body <- fn1raw tupleShape (\tuple => Tuple <$> exprs <$> body !(asTensorList tuple))
+  asTensorList =<< tag (While condition body (Tuple $ exprs initials))
+
+  where
+
+  singleShapes : All Primitive dtypes => TensorList _ dtypes -> List FullShape
+  singleShapes [] = []
+  singleShapes @{_ :: _} (MkTensor _ {shape, dtype} :: xs) =
+    SingleShape shape dtype :: singleShapes xs
+
+  asTensorList : Expr -> Tag $ TensorList (s :: ss) (t :: tt)
+  asTensorList e = pure $ impl 0 !(tag e) initials
+
+    where
+
+    impl : Nat -> Expr -> TensorList s' t' -> TensorList s' t'
+    impl _ e [] = []
+    impl n e (MkTensor {dtype} _ :: xs) = MkTensor {dtype} (GetTupleElement n e) :: impl (S n) e xs
+
+  exprs : TensorList _ _ -> List Expr
+  exprs [] = []
+  exprs (MkTensor x :: xs) = x :: exprs xs
 
 -- see https://www.python.org/dev/peps/pep-0465/#precedence-and-associativity
 export infixl 9 @@

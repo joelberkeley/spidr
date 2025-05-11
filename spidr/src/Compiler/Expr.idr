@@ -39,7 +39,7 @@ namespace FullShape
   public export
   data FullShape : Type where
     SingleShape : Shape -> (0 dtype : Type) -> Primitive dtype => FullShape
-    TupleShape : List FullShape -> FullShape  -- can a tuple contain tuples? If not, don't make it inductive, use a separate type
+    TupleShape : List FullShape -> FullShape
 
 covering
 Show FullShape where
@@ -160,7 +160,7 @@ reserve = do
   put $ MkEnv (S next) env
   pure next
 
-export covering
+covering
 showExpr : Nat -> Expr -> String
 
 covering
