@@ -39,9 +39,9 @@ unsafeEval @{device} x = unsafePerformIO $ eval device (pure x)
 namespace TensorList
   namespace Tag
     export
-    unsafeEval : Device => Tag (TensorList shapes tys) -> All2 Literal shapes tys
+    unsafeEval : Device => Tag (TensorEvalList shapes tys) -> All2 Literal shapes tys
     unsafeEval @{device} = unsafePerformIO . eval device
 
   export
-  unsafeEval : Device => TensorList shapes tys -> All2 Literal shapes tys
+  unsafeEval : Device => TensorEvalList shapes tys -> All2 Literal shapes tys
   unsafeEval @{device} xs = unsafePerformIO $ eval device (pure xs)

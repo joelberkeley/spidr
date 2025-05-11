@@ -22,11 +22,15 @@ extern "C" {
         delete reinterpret_cast<xla::Shape*>(s);
     }
 
-    int sizeof_Shape() {
-        return sizeof(xla::Shape);
+    void delete_array_Shape(Shape* arr) {
+        delete[] reinterpret_cast<xla::Shape*>(arr);
     }
 
-    void set_array_Shape(Shape* arr, int idx, Shape* shape) {
+    Shape* new_array_Shape(size_t size) {
+        return reinterpret_cast<Shape*>(new xla::Shape[size]);
+    }
+
+    void set_array_Shape(Shape* arr, size_t idx, Shape* shape) {
         reinterpret_cast<xla::Shape*>(arr)[idx] = *reinterpret_cast<xla::Shape*>(shape);
     }
 }
