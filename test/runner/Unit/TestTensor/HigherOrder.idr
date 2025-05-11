@@ -231,6 +231,7 @@ while = fixedProperty $ do
 
   (do [x] <- while condition body initial; pure x) ===# pure (tensor {dtype = S32} 8)
 
+  -- it's only this last test that's failing ... note the shape is not scalar
   let initial : TensorList [[2]] [F64] := [tensor {dtype = F64} [1.0, 2.0]]
       condition : TensorList [[2]] [F64] -> Tag _ := \[x] => pure $ slice [at 0] x < 30.0
       body : TensorList [[2]] [F64] -> Tag $ TensorList [[2]] [F64] := \[x] => pure [2.0 * x]

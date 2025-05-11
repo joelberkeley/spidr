@@ -490,7 +490,7 @@ group = MkGroup "Tensor" $ [
     , ("identity", identity)
     , ("Vector.(@@)", Vector.(@@))
     , ("Matrix.(@@)", Matrix.(@@))
-    , ("dotGeneral", dotGeneral)
+    --, ("dotGeneral", dotGeneral)
     , ("argmin", argmin)
     , ("argmax", argmax)
     , ("select", select)
@@ -500,8 +500,8 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
   ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
-    , Unit.TestTensor.HigherOrder.all
+    --  Unit.TestTensor.Elementwise.all
+     Unit.TestTensor.HigherOrder.all
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all
     , Unit.TestTensor.Structure.all

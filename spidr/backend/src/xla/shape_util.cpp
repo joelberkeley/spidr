@@ -40,21 +40,50 @@ extern "C" {
         auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
         auto shapes_span = absl::Span<const xla::Shape>(shapes_, shapes_len);
 
-        xla::Shape* xla_shape = new xla::Shape();
-        *xla_shape = xla::ShapeUtil::MakeTupleShape(shapes_span);
+        auto shape = xla::ShapeUtil::MakeTupleShape(shapes_span);
 
-        return reinterpret_cast<Shape*>(xla_shape);
+        return reinterpret_cast<Shape*>(new xla::Shape(shape));
     }
 
-    Shape* MakeShape(int primitive_type, int* shape, int rank) {
+    Shape* MakeShape(int primitive_type, int* shape, size_t rank) {
         int64_t shape64[rank];
         std::copy(shape, shape + rank, shape64);
 
-        xla::Shape* xla_shape = new xla::Shape();
-        *xla_shape = xla::ShapeUtil::MakeShape(
+        auto xla_shape = xla::ShapeUtil::MakeShape(
             (xla::PrimitiveType) primitive_type,
             absl::Span<const int64_t>(shape64, rank)
         );
-        return reinterpret_cast<Shape*>(xla_shape);
+
+        return reinterpret_cast<Shape*>(new xla::Shape(xla_shape));
     }
+
+//
+//    Shape* MakeTupleShape(Shape* shapes, size_t shapes_len) {
+//        auto shapes_ = reinterpret_cast<xla::Shape*>(shapes);
+//
+////        for (int i = 0; i < shapes_len; i++) {
+////          printf("%d: ", i);
+////          printf("%s\n", xla::ShapeUtil::HumanString(shapes_[i]).c_str());
+////        }
+//        std::vector<xla::Shape> tuple_shapes(shapes_, shapes_ + shapes_len);
+//
+//        auto xla_shape = new xla::Shape(tuple_shapes);
+//
+////        printf("tuple: %s\n", xla::ShapeUtil::HumanString(*xla_shape).c_str());
+//
+//        return reinterpret_cast<Shape*>(xla_shape);
+//    }
+//
+//    Shape* MakeShape(int primitive_type, int* shape, size_t rank) {
+//        int64_t shape64[rank];
+//        std::copy(shape, shape + rank, shape64);
+//
+//        auto xla_shape = new xla::Shape(
+//            (xla::PrimitiveType) primitive_type,
+//            absl::Span<const int64_t>(shape64, rank)
+//        );
+//
+//        return reinterpret_cast<Shape*>(xla_shape);
+//    }
+
 }

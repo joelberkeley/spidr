@@ -83,7 +83,7 @@ mkIntArray xs = do
   ptr <- malloc (cast (length xs) * sizeofInt)
   let ptr = prim__castPtr ptr
   traverse_ (\(idx, x) => primIO $ prim__setArrayInt ptr (cast idx) (cast x)) (enumerate xs)
-  ptr <- onCollect ptr (free . prim__forgetPtr)
+  ptr <- onCollect ptr (const $ pure ()) -- (free . prim__forgetPtr)
   pure (MkIntArray ptr)
 
 export

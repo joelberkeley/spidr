@@ -37,13 +37,24 @@ sizeOfShape : Bits64
 %foreign (libxla "set_array_Shape")
 prim__setArrayShape : AnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
+%foreign (libxla "mallocShapeArray")
+prim__mallocShapeArray : Bits64 -> PrimIO AnyPtr
+
+--%foreign (libxla "shapearray")
+--prim__shapearray : GCAnyPtr -> PrimIO AnyPtr
+
 public export
 data ShapeArray = MkShapeArray GCAnyPtr
 
 export
 mkShapeArray : HasIO io => List Shape -> io ShapeArray
 mkShapeArray shapes = do
-  arr <- malloc (cast (length shapes) * cast sizeOfShape)
+  --arr <- malloc (cast (length shapes) * cast sizeOfShape)
+  arr <- primIO $ prim__mallocShapeArray (cast (length shapes) * cast sizeOfShape)
+  --putStrLn $ "cast (length shapes) * cast sizeOfShape: " ++ show (cast (length shapes) * cast sizeOfShape)
   traverse_ (\(idx, MkShape shape) => primIO $ prim__setArrayShape arr (cast idx) shape) (enumerate shapes)
-  arr <- onCollectAny arr free
+  -- [arr] <- traverse (\(MkShape shape) => primIO $ prim__shapearray shape) shapes
+  --  | _ => ?hrtjstjtr
+  --putStrLn "mkShapeArray gc"
+  arr <- onCollectAny arr (const $ pure ()) -- free
   pure (MkShapeArray arr)

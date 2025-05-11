@@ -68,7 +68,7 @@ mkTupleShape shapes = do
   let len = cast $ length shapes
   MkShapeArray shapes <- mkShapeArray shapes
   shape <- primIO $ prim__mkTupleShape shapes len
-  shape <- onCollectAny shape Shape.delete
+  shape <- onCollectAny shape (const $ pure ()) -- Shape.delete
   pure (MkShape shape)
 
 %foreign (libxla "MakeShape")
@@ -80,5 +80,5 @@ mkShape shape = do
   let dtypeEnum = xlaIdentifier {dtype}
   MkIntArray shapeArrayPtr <- mkIntArray shape
   shapePtr <- primIO $ prim__mkShape dtypeEnum shapeArrayPtr (cast $ length shape)
-  shapePtr <- onCollectAny shapePtr Shape.delete
+  shapePtr <- onCollectAny shapePtr (const $ pure ()) -- Shape.delete
   pure (MkShape shapePtr)

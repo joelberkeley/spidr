@@ -65,7 +65,10 @@ ErrIO = EitherT Err IO
 covering  -- actually total, but no benefit to asserting as such
 interpretShape : FullShape -> ErrIO Xla.Shape
 interpretShape (SingleShape shape dtype) = mkShape shape {dtype}
-interpretShape (TupleShape shapes) = mkTupleShape =<< for shapes interpretShape
+interpretShape (TupleShape shapes) = do
+  shapes <- for shapes interpretShape
+  t <- mkTupleShape shapes
+  pure t
 
 covering
 interpret : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaOp
@@ -198,6 +201,7 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
     compFalse <- compile subBuilderF fFalse
     conditional !(interpretE pred) !(interpretE true) compTrue !(interpretE false) compFalse
   interpretE (While condition body init) = do
+    --putStrLn (showExpr 0 $ While condition body init)
     subBuilderC <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/while:condition"
     subBuilderB <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/while:body"
     condition <- compile subBuilderC condition

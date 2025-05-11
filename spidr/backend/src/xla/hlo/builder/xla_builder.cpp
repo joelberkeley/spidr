@@ -209,7 +209,7 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
-    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len) {
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, size_t elements_len) {
         auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         auto elements_ = reinterpret_cast<xla::XlaOp*>(elements);
         auto elements_span = absl::Span<const xla::XlaOp>(elements_, elements_len);
