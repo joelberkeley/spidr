@@ -34,9 +34,7 @@ import Compiler.MLIR.Pass.PassManager
 import Compiler.MLIR.Pass.PassRegistry
 import Compiler.MLIR.Transforms.Passes
 import Compiler.Stablehlo.Dialect.Register
-import Compiler.Stablehlo.Dialect.Serialization
 import Compiler.Stablehlo.Dialect.StablehloOps
-import Compiler.Stablehlo.Dialect.Version
 import Compiler.Xla.Client.ExecutableBuildOptions
 import Compiler.Xla.HLO.Builder
 import Compiler.Xla.HLO.Translate.StableHLO
@@ -62,7 +60,6 @@ data Err
   = OutOfBounds Nat Nat
   | ValueNotFound Nat
   | PjrtErr PjrtError
-  | SerializationError String
   | MlirPassError String
 
 export
@@ -70,19 +67,11 @@ Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
   show (PjrtErr err) = show err
-  show (SerializationError err) = "SerializationError: \{err}"
   show (MlirPassError err) = "MlirPassError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
 ErrIO = EitherT Err IO
-
-serializeStableHLO : ModuleOp -> ErrIO CharArray
-serializeStableHLO stablehlo = do
-  code <- cppString
-  version <- toString !getMinimumVersion
-  ok <- serializePortableArtifact stablehlo version !(rawStringOStream code)
-  if ok then stringToCharArray code else throwE (SerializationError "Failed to serialize StableHLO")
 
 hloModuleProtoToStableHLO : MLIRContext -> HloModuleProto -> ErrIO ModuleOp
 hloModuleProtoToStableHLO mlirCtx proto = do

@@ -19,10 +19,6 @@ limitations under the License.
 #include "Value.h"
 
 extern "C" {
-    Block* Block_new() {
-        return reinterpret_cast<Block*>(new mlir::Block());
-    }
-
     void Block_delete(Block* s) {
         delete reinterpret_cast<mlir::Block*>(s);
     }

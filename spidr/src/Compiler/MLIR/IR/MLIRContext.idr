@@ -25,6 +25,8 @@ data MLIRContext = MkMLIRContext GCAnyPtr
 %foreign (libxla "MLIRContext_new")
 prim__mkMLIRContext : PrimIO AnyPtr
 
+-- test if we need to delete the MLIRContext,
+-- else delete this and the C++ function, and use AnyPtr if possible
 %foreign (libxla "MLIRContext_delete")
 prim__deleteMLIRContext : AnyPtr -> PrimIO ()
 

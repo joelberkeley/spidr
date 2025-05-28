@@ -22,19 +22,9 @@ import Compiler.FFI
 public export
 data Block = MkBlock GCAnyPtr
 
-%foreign (libxla "Block_new")
-prim__mkBlock : PrimIO AnyPtr
-
 export
 %foreign (libxla "Block_delete")
 prim__deleteBlock : AnyPtr -> PrimIO ()
-
-export
-mkBlock : HasIO io => io Block
-mkBlock = do
-  block <- primIO prim__mkBlock
-  block <- onCollectAny block (primIO . prim__deleteBlock)
-  pure (MkBlock block)
 
 export
 %foreign (libxla "Block_getArgument")

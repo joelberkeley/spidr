@@ -19,7 +19,6 @@ modules =
 
   Compiler.MLIR.Dialect.Func.IR.FuncOps,
   Compiler.MLIR.IR,
-  Compiler.MLIR.IR.Attributes,
   Compiler.MLIR.IR.Block,
   Compiler.MLIR.IR.Builders,
   Compiler.MLIR.IR.BuiltinAttributes,
@@ -41,9 +40,7 @@ modules =
   Compiler.MLIR.Transforms.Passes,
 
   Compiler.Stablehlo.Dialect.Register,
-  Compiler.Stablehlo.Dialect.Serialization,
   Compiler.Stablehlo.Dialect.StablehloOps,
-  Compiler.Stablehlo.Dialect.Version,
 
   Compiler.Xla.Client.ExecutableBuildOptions,
   Compiler.Xla.HLO.Builder,
