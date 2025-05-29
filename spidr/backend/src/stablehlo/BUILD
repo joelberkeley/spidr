@@ -6,8 +6,6 @@ cc_library(
     hdrs = glob(["**/*.h"]),
     deps = [
         "@stablehlo//:register",
-        "@stablehlo//:stablehlo_serialization",
-        "//src/llvm",
         "//src/mlir",
     ],
     visibility = ["//visibility:public"],
