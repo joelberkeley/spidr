@@ -38,16 +38,20 @@ const char* c_string_copy(std::string str) {
 }
 
 extern "C" {
-    int sizeof_XlaOp() {
-        return sizeof(xla::XlaOp);
-    }
-
-    void set_array_XlaOp(XlaOp* arr, int idx, XlaOp* op) {
-        reinterpret_cast<xla::XlaOp*>(arr)[idx] = *reinterpret_cast<xla::XlaOp*>(op);
-    }
-
     void XlaOp_delete(XlaOp* s) {
         delete reinterpret_cast<xla::XlaOp*>(s);
+    }
+
+    void delete_array_XlaOp(XlaOp* arr) {
+        delete[] reinterpret_cast<xla::XlaOp*>(arr);
+    }
+
+    XlaOp* new_array_XlaOp(size_t size) {
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp[size]);
+    }
+
+    void set_array_XlaOp(XlaOp* arr, size_t idx, XlaOp* op) {
+        reinterpret_cast<xla::XlaOp*>(arr)[idx] = *reinterpret_cast<xla::XlaOp*>(op);
     }
 
     XlaBuilder* XlaBuilder_new(const char* computation_name) {
@@ -209,7 +213,7 @@ extern "C" {
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 
-    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, int elements_len) {
+    XlaOp* Tuple(XlaBuilder* builder, XlaOp* elements, size_t elements_len) {
         auto builder_ = reinterpret_cast<xla::XlaBuilder*>(builder);
         auto elements_ = reinterpret_cast<xla::XlaOp*>(elements);
         auto elements_span = absl::Span<const xla::XlaOp>(elements_, elements_len);
@@ -438,6 +442,15 @@ extern "C" {
         auto initial_state_ = reinterpret_cast<xla::XlaOp&>(initial_state);
         auto shape_ = reinterpret_cast<xla::Shape&>(shape);
         xla::XlaOp res = xla::RngBitGenerator(algorithm_, initial_state_, shape_);
+        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
+    }
+
+    XlaOp* While(XlaComputation& condition, XlaComputation& body, XlaOp& init) {
+        auto& condition_ = reinterpret_cast<xla::XlaComputation&>(condition);
+        auto& body_ = reinterpret_cast<xla::XlaComputation&>(body);
+        auto& init_ = reinterpret_cast<xla::XlaOp&>(init);
+
+        xla::XlaOp res = xla::While(condition_, body_, init_);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
 

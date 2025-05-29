@@ -96,8 +96,14 @@ opToString (MkXlaBuilder builderPtr) (MkXlaOp opPtr) = prim__opToString builderP
 %foreign (libxla "sizeof_XlaOp")
 sizeOfXlaOp : Int
 
+%foreign (libxla "delete_array_XlaOp")
+prim__deleteArrayXlaOp : AnyPtr -> PrimIO ()
+
+%foreign (libxla "new_array_XlaOp")
+prim__newArrayXlaOp : Bits64 -> PrimIO AnyPtr
+
 %foreign (libxla "set_array_XlaOp")
-prim__setArrayXlaOp : AnyPtr -> Int -> GCAnyPtr -> PrimIO ()
+prim__setArrayXlaOp : AnyPtr -> Bits64 -> GCAnyPtr -> PrimIO ()
 
 data XlaOpArray : Type where
   MkXlaOpArray : GCAnyPtr -> XlaOpArray
@@ -105,10 +111,10 @@ data XlaOpArray : Type where
 export
 mkXlaOpArray : HasIO io => List XlaOp -> io XlaOpArray
 mkXlaOpArray ops = do
-  arr <- malloc (cast (length ops) * sizeOfXlaOp)
+  arr <- primIO $ prim__newArrayXlaOp $ cast (length ops)
   traverse_ (\(idx, (MkXlaOp opPtr)) =>
     primIO $ prim__setArrayXlaOp arr (cast idx) opPtr) (enumerate (fromList ops))
-  arr <- onCollectAny arr free
+  arr <- onCollectAny arr (primIO . prim__deleteArrayXlaOp)
   pure (MkXlaOpArray arr)
 
 %foreign (libxla "Parameter")
@@ -234,7 +240,7 @@ select (MkXlaOp pred) (MkXlaOp onTrue) (MkXlaOp onFalse) = do
   pure (MkXlaOp opPtr)
 
 %foreign (libxla "Tuple")
-prim__tuple : GCAnyPtr -> GCAnyPtr -> Int -> PrimIO AnyPtr
+prim__tuple : GCAnyPtr -> GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 export
 tuple : HasIO io => XlaBuilder -> List XlaOp -> io XlaOp
@@ -245,7 +251,7 @@ tuple (MkXlaBuilder builder) elements = do
   pure (MkXlaOp opPtr)
 
 %foreign (libxla "GetTupleElement")
-prim__getTupleElement : GCAnyPtr -> Int -> PrimIO AnyPtr
+prim__getTupleElement : GCAnyPtr -> Bits64 -> PrimIO AnyPtr
 
 export
 getTupleElement : HasIO io => XlaOp -> Nat -> io XlaOp
@@ -609,6 +615,16 @@ rngBitGenerator algorithm (MkXlaOp initialState) (MkShape shape) = do
         RngThreeFry => 1
         RngPhilox => 2
   opPtr <- primIO $ prim__rngBitGenerator algorithm initialState shape
+  opPtr <- onCollectAny opPtr XlaOp.delete
+  pure (MkXlaOp opPtr)
+
+%foreign (libxla "While")
+prim__while : GCAnyPtr -> GCAnyPtr -> GCAnyPtr -> PrimIO AnyPtr
+
+export
+while : HasIO io => XlaComputation -> XlaComputation -> XlaOp -> io XlaOp
+while (MkXlaComputation condition) (MkXlaComputation body) (MkXlaOp init) = do
+  opPtr <- primIO $ prim__while condition body init
   opPtr <- onCollectAny opPtr XlaOp.delete
   pure (MkXlaOp opPtr)
 
