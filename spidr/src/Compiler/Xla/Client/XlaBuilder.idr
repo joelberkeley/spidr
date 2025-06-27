@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.HLO.Builder.XlaBuilder
+module Compiler.Xla.Client.XlaBuilder
 
 import Compiler.FFI
-import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.Client.XlaComputation
 import Compiler.Xla.XlaData
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape

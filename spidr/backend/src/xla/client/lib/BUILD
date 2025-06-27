@@ -5,11 +5,11 @@ cc_library(
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
     deps = [
-        "@xla//xla/hlo/builder/lib:math",
-        "@xla//xla/hlo/builder/lib:matrix",
-        "@xla//xla/hlo/builder/lib:prng",
+        "@xla//xla/client/lib:math",
+        "@xla//xla/client/lib:matrix",
+        "@xla//xla/client/lib:prng",
         "//src/xla",
-        "//src/xla/hlo/builder",
+        "//src/xla/client",
     ],
     visibility = ["//visibility:public"],
 )

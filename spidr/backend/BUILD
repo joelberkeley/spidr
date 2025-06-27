@@ -14,8 +14,7 @@ cc_binary(
     srcs = [
         "//src/xla",
         "//src/xla/client",
-        "//src/xla/hlo/builder",
-        "//src/xla/hlo/builder/lib",
+        "//src/xla/client/lib",
         "//src/xla/pjrt",
         "//src/xla/pjrt/c",
         "//src",
@@ -23,8 +22,7 @@ cc_binary(
     deps = [
         "//src/xla",
         "//src/xla/client",
-        "//src/xla/hlo/builder",
-        "//src/xla/hlo/builder/lib",
+        "//src/xla/client/lib",
         "//src/xla/pjrt",
         "//src/xla/pjrt/c",
         "//src",

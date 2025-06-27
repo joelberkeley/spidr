@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-if [ "$SPIDR_INSTALL_SUPPORT_LIBS" = false ]; then exit 0; fi
-
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 xla_ext_version=$(cat "$script_dir/backend/VERSION")
 
