@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 --}
-||| Gaussian process inference.
+||| This module contains functionality for Gaussian process inference.
 module Model.GaussianProcess
 
 import Control.Relation
