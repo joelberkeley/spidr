@@ -1,5 +1,3 @@
-_spidr has paused releases while the author resolves concerns around Google's recent activity in the political sphere. (Google is the primary contributor to OpenXLA, spidr's runtime.)_
-
 # spidr
 
 _Accelerated machine learning with dependent types_
