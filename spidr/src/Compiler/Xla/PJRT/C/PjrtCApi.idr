@@ -73,9 +73,9 @@ export
 Show PjrtError where
   show e =
     let code = case e.code of
-          Nothing => "not found"
+          Nothing => "unknown"
           Just c => show c
-     in "PjrtError \{show e.message} (code \{code})"
+     in "PjrtError (error code \{code})\n\{e.message}"
 
 %foreign (libxla "PJRT_Error_Destroy_Args_new")
 prim__mkPjrtErrorDestroyArgs : AnyPtr -> PrimIO AnyPtr
@@ -337,8 +337,8 @@ export
 pjrtLoadedExecutableExecute :
   PjrtApi -> PjrtLoadedExecutable -> (outputs : Nat) -> Pjrt (Vect outputs PjrtBuffer)
 pjrtLoadedExecutableExecute (MkPjrtApi api) (MkPjrtLoadedExecutable executable) outputs = do
-  outputListsInner <- malloc (cast outputs * sizeofPtr)
-  outputLists <- malloc sizeofPtr
+  outputListsInner <- malloc (cast outputs * cast sizeofPtr)
+  outputLists <- malloc $ cast sizeofPtr
   primIO $ prim__setArrayPtr outputLists 0 outputListsInner
   options <- primIO prim__mkPjrtExecuteOptions
   args <- primIO $ prim__mkPjrtLoadedExecutableExecuteArgs executable options outputLists

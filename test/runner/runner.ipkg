@@ -8,6 +8,7 @@ depends =
 modules =
   Unit.Model.TestKernel,
 
+  Unit.TestTensor.Autodiff,
   Unit.TestTensor.Elementwise,
   Unit.TestTensor.HigherOrder,
   Unit.TestTensor.Sampling,

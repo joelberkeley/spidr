@@ -239,6 +239,20 @@ export
 castDtype : Primitive.Integral a => Tensor shape a -> Tensor shape F64
 castDtype $ MkTensor x = MkTensor $ ConvertElementType {dtype = F64} x
 
+||| Reverse-mode automatic differentiation.
+|||
+||| This function is experimental, and only implemented for a subset of the tensor API.
+export partial
+grad : (Tensor shape F64 -> Tag $ Tensor [] F64) -> Tensor shape F64 -> Tag $ Tensor shape F64
+grad f (MkTensor x) = MkTagT $ do
+  addr <- reserve
+  let MkTagT app = f (MkTensor $ Var addr)
+      (env, MkTensor res) = runState (emptyFrom !get) app
+      g = MkFn [(addr, MkParameter shape F64)] res env
+
+  updateCounterFrom env
+  pure $ MkTensor $ Grad shape g x
+
 ----------------------------- structural operations ----------------------------
 
 ||| Reshape a `Tensor`. For example, `reshape {to = [2, 1]} (tensor [3, 4])` is
@@ -465,10 +479,11 @@ slice :
   (at : MultiSlice shape) ->
   Tensor shape dtype ->
   Tensor (slice at) dtype
-slice at $ MkTensor x = MkTensor
-  $ Reshape (mapd size id at) (MultiSlice.slice at)
-    $ DynamicSlice (dynStarts [] at) (mapd size id at)
-      $ Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) x
+slice at $ MkTensor x = MkTensor $
+  let x = Slice (mapd start (const 0) at) (mapd stop id at) (replicate (length shape) 1) x
+      -- we shortcut DynamicSlice to allow autodiff for static slicing
+      x = if isDynamic at then DynamicSlice (dynStarts [] at) (mapd size id at) x else x
+   in Reshape (mapd size id at) (MultiSlice.slice at) x
 
       where
       mapd : ((Nat -> a) -> {d : Nat} -> SliceOrIndex d -> a) ->
@@ -497,6 +512,12 @@ slice at $ MkTensor x = MkTensor
 
       zero : Expr
       zero = FromLiteral {shape = []} {dtype = U64} 0
+
+      isDynamic : {shape : _} -> MultiSlice shape -> Bool
+      isDynamic [] = False
+      isDynamic {shape = (_ :: _)} (DynamicSlice _ _ :: _) = True
+      isDynamic {shape = (_ :: _)} (DynamicIndex _ :: _) = True
+      isDynamic (_ :: ds) = isDynamic ds
 
       dynStarts : List Expr -> {shape : _} -> MultiSlice shape -> List Expr
       dynStarts idxs {shape} [] = replicate (length shape) zero ++ idxs
@@ -1466,7 +1487,7 @@ export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
 argmin x = do
   MkTensor x <- highlightNan True x
-  pure $ MkTensor $ Argmin {out = U64} 0 x
+  pure $ MkTensor $ Argmax {out = U64} 0 $ UnaryElementwise Neg x
 
 ||| The first index of the maximum value in a vector. For example,
 ||| `argmax (tensor [-1, 3, -2, -2, 3])` produces `tensor 1`. If the vector contains NaN values,

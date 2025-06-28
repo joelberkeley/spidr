@@ -15,6 +15,7 @@ limitations under the License.
 --}
 module Unit.TestTensor
 
+import Unit.TestTensor.Autodiff
 import Unit.TestTensor.Elementwise
 import Unit.TestTensor.HigherOrder
 import Unit.TestTensor.Sampling
@@ -500,7 +501,8 @@ group = MkGroup "Tensor" $ [
     , (#"(|\) and (/|) ignore opposite elements"#, triangularSolveIgnoresOppositeElems)
     , ("trace", trace)
   ] ++ concat (the (List _) [
-      Unit.TestTensor.Elementwise.all
+      Unit.TestTensor.Autodiff.all
+    , Unit.TestTensor.Elementwise.all
     , Unit.TestTensor.HigherOrder.all
     , Unit.TestTensor.Sampling.all
     , Unit.TestTensor.Slice.all

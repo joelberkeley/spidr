@@ -5,7 +5,8 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
-xla_dir=$(mktemp -d)
+xla_dir=pjrt-plugins/xla-cpu/xla
+mkdir "$xla_dir"
 install_xla "$rev" "$xla_dir"
 (
   cd "$xla_dir"
