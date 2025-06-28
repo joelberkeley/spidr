@@ -1357,7 +1357,7 @@ cos = unary Cos
 ||| The element-wise tangent.
 export
 tan : Tensor shape F64 -> Tensor shape F64
-tan x = sin x / cos x
+tan = unary Tan
 
 ||| The element-wise inverse sine.
 export
