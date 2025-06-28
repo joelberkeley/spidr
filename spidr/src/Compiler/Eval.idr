@@ -36,7 +36,13 @@ import Compiler.MLIR.Transforms.Passes
 import Compiler.Stablehlo.Dialect.Register
 import Compiler.Stablehlo.Dialect.StablehloOps
 import Compiler.Xla.Client.ExecutableBuildOptions
-import Compiler.Xla.HLO.Builder
+import Compiler.Xla.HLO.Builder.XlaBuilder
+import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.HLO.Builder.Lib.Arithmetic
+import Compiler.Xla.HLO.Builder.Lib.Constants
+import Compiler.Xla.HLO.Builder.Lib.Math
+import Compiler.Xla.HLO.Builder.Lib.Matrix
+import Compiler.Xla.HLO.Builder.Lib.PRNG
 import Compiler.Xla.HLO.Translate.StableHLO
 import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi

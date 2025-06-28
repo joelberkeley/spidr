@@ -6,29 +6,11 @@ cd "$script_dir/../.."
 xla_rev="$(cat XLA_VERSION)"
 enzyme_rev="$(cat spidr/backend/ENZYME_JAX_VERSION)"
 
-osu="$(uname)"
-case $osu in
-  'Linux')
-    os=linux
-    arch=x86_64
-    ext=so
-    ;;
-  'Darwin')
-    os=darwin
-    arch=aarch64
-    ext=dylib
-    ;;
-  *)
-    echo "OS $osu not handled"
-    exit 1
-    ;;
-esac
-
 (
   cd spidr/backend
   mkdir xla
   install_xla "$xla_rev" xla
-  (cd xla; ./configure.py --backend=cpu --os=$os)
+  (cd xla; ./configure.py --backend=cpu)
   # depending on Enzyme-JAX is problematic as it fixes the XLA version. Can we only depend on enzyme?
   # seems unlikely that they could decouple XLA entirely. They almost certainly can't decouple stablehlo
   mkdir Enzyme-JAX
@@ -37,4 +19,4 @@ esac
   bazel build //:c_xla
   rm -rf xla Enzyme-JAX
 )
-mv "spidr/backend/bazel-bin/libc_xla.$ext" "libc_xla-$os-$arch.$ext"
+mv spidr/backend/bazel-bin/libc_xla.so libc_xla-linux.so

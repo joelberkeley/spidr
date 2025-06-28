@@ -1,0 +1,70 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: master
+    paths:
+      - 'XLA_VERSION'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Read XLA version
+      run: |
+        . ./dev.sh
+        xla_rev="$(cat XLA_VERSION)"
+        echo "XLA_REV=$(short_revision $xla_rev)" >> $GITHUB_ENV
+    - name: Create C XLA release
+      id: create-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: xla-${{ env.XLA_REV }}
+        release_name: XLA revision ${{ env.XLA_REV }}
+        body: "XLA revision ${{ env.XLA_REV }}"
+  pjrt-plugin-xla-cpu-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build XLA CPU plugin for Linux
+      run: |
+        rm -rf /opt/hostedtoolcache
+        docker run \
+          -v $(pwd):/spidr -w /spidr \
+          tensorflow/build:latest-python3.9 \
+          sh -c "pjrt-plugins/xla-cpu/build.sh"
+    - name: Publish XLA CPU plugin
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: pjrt_plugin_xla_cpu-linux.so
+        asset_name: pjrt_plugin_xla_cpu-linux.so
+        asset_content_type: application/x-sharedlib
+  pjrt-plugin-xla-cuda-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build XLA CUDA plugin for Linux
+      run: |
+        rm -rf /opt/hostedtoolcache
+        docker run \
+          -v $(pwd):/spidr -w /spidr \
+          tensorflow/build:latest-python3.9 \
+          sh -c "pjrt-plugins/xla-cuda/build.sh"
+    - name: Publish XLA CUDA plugin
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: pjrt_plugin_xla_cuda-linux.so
+        asset_name: pjrt_plugin_xla_cuda-linux.so
+        asset_content_type: application/x-sharedlib

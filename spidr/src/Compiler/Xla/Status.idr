@@ -1,5 +1,5 @@
 {--
-Copyright 2025 Joel Berkeley
+Copyright 2022 Joel Berkeley
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --}
 ||| For internal spidr use only.
-module Compiler.Xla.HLO.Builder
+module Compiler.Xla.Status
 
-import public Compiler.Xla.HLO.Builder.Lib.Arithmetic
-import public Compiler.Xla.HLO.Builder.Lib.Constants
-import public Compiler.Xla.HLO.Builder.Lib.Math
-import public Compiler.Xla.HLO.Builder.Lib.Matrix
-import public Compiler.Xla.HLO.Builder.Lib.PRNG
-import public Compiler.Xla.HLO.Builder.XlaBuilder
-import public Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.FFI
+
+public export
+data Status : Type where
+  MkStatus : GCAnyPtr -> Status
+
+%foreign (libxla "Status_delete")
+prim__delete : AnyPtr -> PrimIO ()
+
+export
+delete : AnyPtr -> IO ()
+delete = primIO . prim__delete
+
+%foreign (libxla "Status_ok")
+prim__ok : GCAnyPtr -> Int
+
+export
+ok : Status -> Bool
+ok (MkStatus ptr) = cIntToBool (prim__ok ptr)

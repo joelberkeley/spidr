@@ -1,27 +1,18 @@
 #!/bin/sh -e
 
-if [ "$SPIDR_INSTALL_SUPPORT_LIBS" = false ]; then exit 0; fi
+if [ SPIDR_LOCAL_INSTALL=true ]; then exit 0; fi;
 
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
-cd "$script_dir"
-rev=$(cat VERSION)
+cd "$script_dir/../.."
+. ./dev.sh
+rev=$(cat XLA_VERSION)
 cd - > /dev/null 2>&1
 
-os="$(uname)"
-case $os in
-  'Linux')
-    platform=linux-x86_64
-    ext=so
-    ;;
-  'Darwin')
-    platform=darwin-aarch64
-    ext=dylib
-    ;;
-  *)
-    echo "WARNING: OS $os not supported, unable to fetch supporting libraries."
-    exit 0
-    ;;
-esac
+os=$(uname)
+if [ "$os" != "Linux" ]; then
+  echo "OS ${os} not supported, unable to fetch supporting libraries."
+  exit 0;
+fi;
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cpu-v$rev/pjrt_plugin_xla_cpu-$platform.$ext" \
-  -o "pjrt_plugin_xla_cpu.$ext" --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cpu-$rev/lib"
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cpu-linux.so" \
+  -o pjrt_plugin_xla_cpu.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cpu-0.0.1/lib"

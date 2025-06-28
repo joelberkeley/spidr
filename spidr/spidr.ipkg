@@ -43,7 +43,6 @@ modules =
   Compiler.Stablehlo.Dialect.StablehloOps,
 
   Compiler.Xla.Client.ExecutableBuildOptions,
-  Compiler.Xla.HLO.Builder,
   Compiler.Xla.HLO.Builder.Lib.Arithmetic,
   Compiler.Xla.HLO.Builder.Lib.Constants,
   Compiler.Xla.HLO.Builder.Lib.Math,

@@ -6,9 +6,9 @@ cc_library(
     hdrs = glob(["**/*.h"]),
     deps = [
         "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:Pass",
         "@llvm-project//mlir:Transforms",
-        "@llvm-project//mlir:FuncDialect",
         "//src",
         "//src/llvm",
     ],

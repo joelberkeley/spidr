@@ -9,6 +9,4 @@ bazel
 bazel-*
 bazelisk
 *.so
-*.dylib
 *.tar.gz
-*.deb
