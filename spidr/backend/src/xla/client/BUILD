@@ -7,6 +7,7 @@ cc_library(
     deps = [
         "@xla//xla/client:executable_build_options",
         "@xla//xla/client:xla_builder",
+        "@xla//xla/client:xla_computation",
         "//src",
         "//src/xla",
     ],
