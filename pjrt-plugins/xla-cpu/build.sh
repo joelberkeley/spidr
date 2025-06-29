@@ -3,7 +3,7 @@
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
 . ./dev.sh
-rev=$(cat XLA_VERSION)
+xla_rev=$(cat XLA_VERSION)
 
 cd "$script_dir"
 
