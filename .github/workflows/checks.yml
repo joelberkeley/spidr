@@ -103,6 +103,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build tests
       working-directory: test/xla-cpu
+      env:
+        SPIDR_LOCAL_INSTALL: true
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
@@ -121,6 +123,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build tests
       working-directory: test/xla-cuda
+      env:
+        SPIDR_LOCAL_INSTALL: true
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
@@ -175,6 +179,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Type-check README
+      env:
+        SPIDR_LOCAL_INSTALL: true
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
@@ -185,6 +191,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Type-check tutorials
+      env:
+        SPIDR_LOCAL_INSTALL: true
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
