@@ -9,8 +9,8 @@ env:
 
 jobs:
   docs:
-    runs-on: ubuntu-latest
-    container: ghcr.io/stefan-hoeck/idris2-pack
+    runs-on: ubuntu-24.04
+    container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build docs

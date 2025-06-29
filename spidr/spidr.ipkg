@@ -22,7 +22,6 @@ modules =
   Compiler.Xla.Shape,
   Compiler.Xla.ShapeUtil,
   Compiler.Xla.XlaData,
-  Compiler.Xla.Status,
 
   Compiler.Eval,
   Compiler.Expr,
