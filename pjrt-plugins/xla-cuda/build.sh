@@ -20,7 +20,6 @@ install_xla "$xla_rev" xla
     --config release_gpu_linux \
     --repo_env HERMETIC_CUDA_VERSION="$cuda_version" \
     --repo_env HERMETIC_CUDNN_VERSION="$cudnn_version" \
-    # --config nonccl \
     //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
 )
 mv xla/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so pjrt_plugin_xla_cuda-linux.so
