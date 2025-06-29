@@ -10,5 +10,3 @@ bazel-*
 bazelisk
 *.so
 *.tar.gz
-
-xla/
