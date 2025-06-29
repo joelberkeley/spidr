@@ -10,11 +10,12 @@ cd ../..
 . ./dev.sh
 xla_rev=$(cat XLA_VERSION)
 
-cd "$script_dir"
-
-mkdir xla
-install_xla "$xla_rev" xla
 (
+  cd "$script_dir"
+
+  mkdir xla
+  install_xla "$xla_rev" xla
+
   cd xla
   # note we're not using `./configure.py --backend=CUDA` as it requires a GPU, but the build
   # itself doesn't, see https://github.com/openxla/xla/issues/12017
@@ -24,6 +25,6 @@ install_xla "$xla_rev" xla
     --repo_env HERMETIC_CUDNN_VERSION="$cudnn_version" \
     //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
 )
-mv xla/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so pjrt_plugin_xla_cuda-linux.so
+mv "$script_dir/xla/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" pjrt_plugin_xla_cuda-linux.so
 
-rm -rf xla
+rm -rf "$script_dir/xla"

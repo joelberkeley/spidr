@@ -10,7 +10,8 @@ jobs:
       with:
         fetch-depth: 2
     - name: Check backend version is updated when necessary
-      run: sh -c "
+      run: |
+        sh -c "
         (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ spidr/backend/**) || \
           ! git diff --quiet HEAD^ spidr/backend/VERSION
         "

@@ -1477,7 +1477,7 @@ argmax x = do
 ||| the value returned by `reduce @{Min}`.
 export
 argmin : Primitive.Ord dtype => Tensor [S n] dtype -> Tag $ Tensor [] U64
-argmin x = argmax {dtype = U64} $ unary Neg x
+argmin x = argmax {dtype} $ unary Neg x
 
 ---------------------------- other ----------------------------------
 
