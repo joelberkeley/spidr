@@ -4,7 +4,7 @@ on:
 
 jobs:
   shellcheck:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Install shellcheck
@@ -15,7 +15,7 @@ jobs:
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
   pjrt-linux:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
       with:
@@ -42,7 +42,7 @@ jobs:
         path: libc_xla.so
         if-no-files-found: error
   pjrt-plugin-xla-cpu-linux:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
       with:
@@ -69,7 +69,7 @@ jobs:
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,7 +97,7 @@ jobs:
           path: pjrt_plugin_xla_cuda.so
           if-no-files-found: error
   build-tests-xla-cpu:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
     - uses: actions/checkout@v4
@@ -115,7 +115,7 @@ jobs:
         path: test/xla-cpu/tests-xla-cpu.tar.gz
         if-no-files-found: error
   build-tests-xla-cuda:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
     - uses: actions/checkout@v4
@@ -137,7 +137,7 @@ jobs:
       - pjrt-linux
       - pjrt-plugin-xla-cpu-linux
       - build-tests-xla-cpu
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -155,7 +155,7 @@ jobs:
       - pjrt-linux
       - pjrt-plugin-xla-cuda-linux
       - build-tests-xla-cuda
-    runs-on: ubuntu:24.04  # needs a CUDA runner
+    runs-on: ubuntu-24.04  # needs a CUDA runner
     container: nvcr.io/nvidia/tensorrt:23.11-py3
     steps:
     - name: Download artifacts
@@ -170,7 +170,7 @@ jobs:
         tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
         exit 0  # we can't run tests without a GPU
   readme:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
     - uses: actions/checkout@v4
@@ -180,7 +180,7 @@ jobs:
         pack switch HEAD
         pack --no-prompt typecheck readme.ipkg
   tutorials:
-    runs-on: ubuntu:24.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/stefan-hoeck/idris2-pack:noble
     steps:
     - uses: actions/checkout@v4
