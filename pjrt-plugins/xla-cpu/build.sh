@@ -5,6 +5,8 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev=$(cat XLA_VERSION)
 
+cd "$script_dir"
+
 mkdir xla
 install_xla "$xla_rev" xla
 (
