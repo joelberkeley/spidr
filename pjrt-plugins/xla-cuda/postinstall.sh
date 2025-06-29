@@ -1,5 +1,7 @@
 #!/bin/sh -e
-exit 0;
+
+if [[ "$SPIDR_LOCAL_INSTALL" = true ]]; then exit 0; fi
+
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
 . ./dev.sh
