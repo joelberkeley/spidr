@@ -25,13 +25,9 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
           curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
         else
-          # free up space not used if running in Docker, see
-          # https://github.com/orgs/community/discussions/25678#discussioncomment-5242449
           rm -rf /opt/hostedtoolcache
-          docker run \
-            -v $(pwd):/spidr -w /spidr \
-            tensorflow/build:latest-python3.9 \
-            sh -c "spidr/backend/build.sh"
+          docker build -t openxla-dev -f openxla-dev.Dockerfile .
+          docker run -v $(pwd):/spidr -w /spidr sh -c "spidr/backend/build.sh"
         fi
 
         mv libc_xla-linux.so libc_xla.so
@@ -55,10 +51,8 @@ jobs:
           curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
         else
           rm -rf /opt/hostedtoolcache
-          docker run \
-            -v $(pwd):/spidr -w /spidr \
-            tensorflow/build:latest-python3.9 \
-            sh -c "pjrt-plugins/xla-cpu/build.sh"
+          docker build -t openxla-dev -f openxla-dev.Dockerfile .
+          docker run -v $(pwd):/spidr -w /spidr sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
 
         mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
@@ -82,11 +76,8 @@ jobs:
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
           else
             rm -rf /opt/hostedtoolcache
-            # note this implies specific versions of CUDA and cuDNN
-            docker run \
-              -v $(pwd):/spidr -w /spidr \
-              tensorflow/build:latest-python3.9 \
-              sh -c "pjrt-plugins/xla-cuda/build.sh"
+            docker build -t openxla-dev -f openxla-dev.Dockerfile .
+            docker run -v $(pwd):/spidr -w /spidr sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
 
           mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so

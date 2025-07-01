@@ -34,10 +34,8 @@ jobs:
     - name: Build XLA CPU plugin for Linux
       run: |
         rm -rf /opt/hostedtoolcache
-        docker run \
-          -v $(pwd):/spidr -w /spidr \
-          tensorflow/build:latest-python3.9 \
-          sh -c "pjrt-plugins/xla-cpu/build.sh"
+        docker build -t openxla-dev -f openxla-dev.Dockerfile .
+        docker run -v $(pwd):/spidr -w /spidr sh -c "pjrt-plugins/xla-cpu/build.sh"
     - name: Publish XLA CPU plugin
       uses: actions/upload-release-asset@v1
       env:
@@ -55,10 +53,8 @@ jobs:
     - name: Build XLA CUDA plugin for Linux
       run: |
         rm -rf /opt/hostedtoolcache
-        docker run \
-          -v $(pwd):/spidr -w /spidr \
-          tensorflow/build:latest-python3.9 \
-          sh -c "pjrt-plugins/xla-cuda/build.sh"
+        docker build -t openxla-dev -f openxla-dev.Dockerfile .
+        docker run -v $(pwd):/spidr -w /spidr sh -c "pjrt-plugins/xla-cuda/build.sh"
     - name: Publish XLA CUDA plugin
       uses: actions/upload-release-asset@v1
       env:
