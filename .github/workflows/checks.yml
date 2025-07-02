@@ -16,7 +16,6 @@ jobs:
           shellcheck **/*.sh
   pjrt-linux:
     runs-on: ubuntu-24.04
-    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
       with:
@@ -26,7 +25,11 @@ jobs:
         if [ ! "$(git diff --exit-code HEAD^ spidr/backend/VERSION)" ]; then
           curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/c-xla-v$(cat spidr/backend/VERSION)/libc_xla-linux.so"
         else
-          ./spidr/backend/build.sh
+          rm -rf /opt/hostedtoolcache
+          docker run \
+            -v $(pwd):/spidr -w /spidr \
+            joelberkeley/openxla-dev:noble \
+            sh -c "spidr/backend/build.sh"
         fi
 
         mv libc_xla-linux.so libc_xla.so
@@ -38,7 +41,6 @@ jobs:
         if-no-files-found: error
   pjrt-plugin-xla-cpu-linux:
     runs-on: ubuntu-24.04
-    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
       with:
@@ -50,7 +52,11 @@ jobs:
           rev=$(cat XLA_VERSION)
           curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
         else
-          ./pjrt-plugins/xla-cpu/build.sh
+          rm -rf /opt/hostedtoolcache
+          docker run \
+            -v $(pwd):/spidr -w /spidr \
+            joelberkeley/openxla-dev:noble \
+            sh -c "pjrt-plugins/xla-cpu/build.sh"
         fi
 
         mv pjrt_plugin_xla_cpu-linux.so pjrt_plugin_xla_cpu.so
@@ -62,7 +68,6 @@ jobs:
         if-no-files-found: error
   pjrt-plugin-xla-cuda-linux:
     runs-on: ubuntu-24.04
-    container: joelberkeley/openxla-dev:noble
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,7 +79,11 @@ jobs:
             rev=$(cat XLA_VERSION)
             curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
           else
-            ./pjrt-plugins/xla-cuda/build.sh
+            rm -rf /opt/hostedtoolcache
+            docker run \
+              -v $(pwd):/spidr -w /spidr \
+              joelberkeley/openxla-dev:noble \
+              sh -c "pjrt-plugins/xla-cuda/build.sh"
           fi
 
           mv pjrt_plugin_xla_cuda-linux.so pjrt_plugin_xla_cuda.so
