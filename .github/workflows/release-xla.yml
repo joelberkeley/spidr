@@ -29,13 +29,11 @@ jobs:
   pjrt-plugin-xla-cpu-linux:
     needs: create-release
     runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CPU plugin for Linux
-      run: |
-        rm -rf /opt/hostedtoolcache
-        docker build -t openxla-dev -f openxla-dev.Dockerfile .
-        docker run -v $(pwd):/spidr -w /spidr sh -c "pjrt-plugins/xla-cpu/build.sh"
+      run: ./pjrt-plugins/xla-cpu/build.sh
     - name: Publish XLA CPU plugin
       uses: actions/upload-release-asset@v1
       env:
@@ -48,13 +46,11 @@ jobs:
   pjrt-plugin-xla-cuda-linux:
     needs: create-release
     runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CUDA plugin for Linux
-      run: |
-        rm -rf /opt/hostedtoolcache
-        docker build -t openxla-dev -f openxla-dev.Dockerfile .
-        docker run -v $(pwd):/spidr -w /spidr sh -c "pjrt-plugins/xla-cuda/build.sh"
+      run: ./pjrt-plugins/xla-cuda/build.sh
     - name: Publish XLA CUDA plugin
       uses: actions/upload-release-asset@v1
       env:

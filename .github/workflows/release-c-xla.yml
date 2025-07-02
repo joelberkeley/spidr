@@ -26,13 +26,11 @@ jobs:
   c-xla:
     needs: create-release
     runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build C XLA lib
-      run: |
-        rm -rf /opt/hostedtoolcache
-        docker build -t openxla-dev -f openxla-dev.Dockerfile .
-        docker run -v $(pwd):/spidr -w /spidr sh -c "./spidr/backend/build.sh"
+      run: ./spidr/backend/build.sh
     - name: Publish C XLA lib
       uses: actions/upload-release-asset@v1
       env:
