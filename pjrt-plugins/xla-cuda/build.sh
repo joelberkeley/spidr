@@ -25,6 +25,7 @@ xla_rev=$(cat XLA_VERSION)
     --repo_env HERMETIC_CUDNN_VERSION="$cudnn_version" \
     //xla/pjrt/c:pjrt_c_api_gpu_plugin.so
 )
+
 mv "$script_dir/xla/bazel-bin/xla/pjrt/c/pjrt_c_api_gpu_plugin.so" pjrt_plugin_xla_cuda-linux.so
 
 rm -rf "$script_dir/xla"
