@@ -159,15 +159,13 @@ jobs:
       - pjrt-plugin-xla-cuda-linux
       - build-tests-xla-cuda
     runs-on: ubuntu-24.04  # needs a CUDA runner
-    container: nvcr.io/nvidia/tensorrt:23.11-py3
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
         merge-multiple: true
-    - name: Install runtime dependencies
-      run: |
-        apt-get update && apt-get install chezscheme
+    - name: Build Docker container
+      run: docker build -t spidr -f pjrt-plugins/xla-cuda/Dockerfile .
     - name: Run tests
       run: |
         tar xfz tests-xla-cuda.tar.gz . && rm tests-xla-cuda.tar.gz
