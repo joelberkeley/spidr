@@ -1,13 +1,5 @@
 #!/bin/sh -e
 
-short_revision () {
-  # https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
-  # > Generally, eight to ten characters are more
-  # > than enough to be unique within a project.
-  rev=$1
-  echo "${rev%%"${rev##??????????}"}"
-}
-
 install_xla () {
   if [ -z "$2" ]; then
     echo "Usage: install_xla <xla-revision> <install-path>."

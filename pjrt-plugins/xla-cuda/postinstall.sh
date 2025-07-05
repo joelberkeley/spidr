@@ -3,10 +3,7 @@
 if [ "$SPIDR_LOCAL_INSTALL" = true ]; then exit 0; fi
 
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
-cd "$script_dir/../.."
-. ./dev.sh
-rev=$(cat XLA_VERSION)
-cd - > /dev/null 2>&1
+rev=$(cat "$script_dir/VERSION")
 
 os=$(uname)
 if [ "$os" != "Linux" ]; then
@@ -14,5 +11,5 @@ if [ "$os" != "Linux" ]; then
   exit 0;
 fi;
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision "$rev")/pjrt_plugin_xla_cuda-linux.so" \
-  -o pjrt_plugin_xla_cuda.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cuda-0.0.1/lib"
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt_plugin_xla_cuda-$rev/pjrt_plugin_xla_cuda-linux.so" \
+  -o pjrt_plugin_xla_cuda.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cuda-$rev/lib"
