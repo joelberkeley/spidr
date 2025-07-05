@@ -23,10 +23,4 @@ extern "C" {
         xla::XlaOp res = xla::ArgMax(input_, (xla::PrimitiveType) output_type, axis);
         return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
     }
-
-    XlaOp* ArgMin(XlaOp& input, int output_type, int axis) {
-        auto& input_ = reinterpret_cast<xla::XlaOp&>(input);
-        xla::XlaOp res = xla::ArgMin(input_, (xla::PrimitiveType) output_type, axis);
-        return reinterpret_cast<XlaOp*>(new xla::XlaOp(res));
-    }
 }

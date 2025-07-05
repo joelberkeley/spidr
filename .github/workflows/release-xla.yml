@@ -7,7 +7,7 @@ on:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
@@ -28,16 +28,12 @@ jobs:
         body: "XLA revision ${{ env.XLA_REV }}"
   pjrt-plugin-xla-cpu-linux:
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CPU plugin for Linux
-      run: |
-        rm -rf /opt/hostedtoolcache
-        docker run \
-          -v $(pwd):/spidr -w /spidr \
-          tensorflow/build:latest-python3.9 \
-          sh -c "pjrt-plugins/xla-cpu/build.sh"
+      run: ./pjrt-plugins/xla-cpu/build.sh
     - name: Publish XLA CPU plugin
       uses: actions/upload-release-asset@v1
       env:
@@ -49,16 +45,12 @@ jobs:
         asset_content_type: application/x-sharedlib
   pjrt-plugin-xla-cuda-linux:
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build XLA CUDA plugin for Linux
-      run: |
-        rm -rf /opt/hostedtoolcache
-        docker run \
-          -v $(pwd):/spidr -w /spidr \
-          tensorflow/build:latest-python3.9 \
-          sh -c "pjrt-plugins/xla-cuda/build.sh"
+      run: ./pjrt-plugins/xla-cuda/build.sh
     - name: Publish XLA CUDA plugin
       uses: actions/upload-release-asset@v1
       env:

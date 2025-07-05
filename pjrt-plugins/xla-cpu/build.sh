@@ -3,13 +3,19 @@
 script_dir=$(CDPATH="" cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/../.."
 . ./dev.sh
-rev=$(cat XLA_VERSION)
+xla_rev=$(cat XLA_VERSION)
 
-xla_dir=$(mktemp -d)
-install_xla "$rev" "$xla_dir"
 (
-  cd "$xla_dir"
+  cd "$script_dir"
+
+  mkdir xla
+  install_xla "$xla_rev" xla
+
+  cd xla
   ./configure.py --backend=CPU
   bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 )
-mv "$xla_dir/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" pjrt_plugin_xla_cpu-linux.so
+
+mv "$script_dir/xla/bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so" pjrt_plugin_xla_cpu-linux.so
+
+rm -rf "$script_dir/xla"

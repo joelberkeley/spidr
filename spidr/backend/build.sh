@@ -5,12 +5,14 @@ cd "$script_dir/../.."
 . ./dev.sh
 rev="$(cat XLA_VERSION)"
 
-mkdir spidr/backend/xla
-install_xla "$rev" spidr/backend/xla
-
 (
   cd spidr/backend
+
+  mkdir xla
+  install_xla "$rev" xla
+
   bazel build //:c_xla
   rm -rf xla
 )
+
 mv spidr/backend/bazel-bin/libc_xla.so libc_xla-linux.so

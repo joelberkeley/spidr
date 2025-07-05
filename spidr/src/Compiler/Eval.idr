@@ -183,7 +183,6 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
       Asinh      => asinh
       Acosh      => acosh
       Atanh      => atanh
-  interpretE (Argmin {out} axis x) = argMin {outputType = out} !(interpretE x) axis
   interpretE (Argmax {out} axis x) = argMax {outputType = out} !(interpretE x) axis
   interpretE (Select pred true false) =
     select !(interpretE pred) !(interpretE true) !(interpretE false)

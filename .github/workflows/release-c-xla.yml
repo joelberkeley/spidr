@@ -7,7 +7,7 @@ on:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
@@ -25,8 +25,8 @@ jobs:
         body: "C XLA release ${{ env.C_XLA_VERSION }}"
   c-xla:
     needs: create-release
-    runs-on: ubuntu-latest
-    container: tensorflow/build:latest-python3.9
+    runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
     steps:
     - uses: actions/checkout@v4
     - name: Build C XLA lib

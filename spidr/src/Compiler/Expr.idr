@@ -43,7 +43,7 @@ Show Parameter where
   show (MkParameter shape dtype) = "\{shape} \{xlaIdentifier {dtype}}"
 
 public export
-data Expr : Type where
+data Expr : Type
 
 -- we use `List (Nat, Expr)` for O(1) append (all we do when building the graph is append)
 -- we can't use `(Nat, List Expr)`, or even better `(n ** Vect n Expr)`, because we don't handle
@@ -127,7 +127,6 @@ data Expr : Type where
   Reverse : (axes : List Nat) -> Expr -> Expr
   BinaryElementwise : BinaryOp -> Expr -> Expr -> Expr
   UnaryElementwise : UnaryOp -> Expr -> Expr
-  Argmin : Primitive out => (axis : Nat) -> Expr -> Expr
   Argmax : Primitive out => (axis : Nat) -> Expr -> Expr
   Select : (predicate, onTrue, onFalse : Expr) -> Expr
   Cond : (pred : Expr) -> (onTrue : Fn 1) -> (onTrueArg : Expr) ->
@@ -217,8 +216,6 @@ showExpr indent (Reverse axes x) = "Reverse \{axes} (\{showExpr indent x})"
 showExpr indent (BinaryElementwise op x y) =
   "\{show op} (\{showExpr indent x}) (\{showExpr indent y})"
 showExpr indent (UnaryElementwise op x) = "\{show op} (\{showExpr indent x})"
-showExpr indent (Argmin {out} axis x) =
-  "Argmin {outType = \{xlaIdentifier {dtype = out}}} \{axis} (\{showExpr indent x})"
 showExpr indent (Argmax {out} axis x) =
   "Argmax {outType = \{xlaIdentifier {dtype = out}}} \{axis} (\{showExpr indent x})"
 showExpr indent (Select p t f) =

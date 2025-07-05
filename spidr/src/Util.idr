@@ -24,12 +24,6 @@ import public Data.List.Quantifiers
 import public Data.Nat
 import public Data.Vect
 
-||| A dependent variant of `flip` where the return type can depend on the input values. `dflip`
-||| flips the order of arguments for a function, such that `dflip f x y` is the same as `f y x`.
-public export
-dflip : {0 c : a -> b -> Type} -> ((x : a) -> (y : b) -> c x y) -> (y : b) -> (x : a) -> c x y
-dflip f y x = f x y
-
 ||| A `Neq x y` proves `x` is not equal to `y`.
 public export 0
 Neq : Nat -> Nat -> Type
@@ -108,7 +102,12 @@ namespace List
                (xs : List a) ->
                {auto 0 inBounds : All (flip InBounds xs) idxs} ->
                List a
-  multiIndex idxs xs = map (dflip index xs) idxs
+  multiIndex idxs xs = map f idxs
+
+    where
+
+    f : (i : Nat) -> {0 _ : InBounds i xs} -> a
+    f i = index i xs
 
   ||| Delete values from a list at specified indices. For example `deleteAt [0, 2] [5, 6, 7, 8]`
   ||| is `[6, 8]`.

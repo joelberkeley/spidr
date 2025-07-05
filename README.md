@@ -14,7 +14,7 @@ pack install pjrt-plugin-xla-cpu
 ```
 or read the [plugin documentation](pjrt-plugins/README.md) for the CUDA-enabled GPU plugin and custom plugin builds.
 
-We have tested spidr on Ubuntu Linux 22.04. It may work on other Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact).
+We have tested spidr on Ubuntu Linux 24.04. It may work on other Linux distributions. If spidr doesn't work on your platform, [get in touch](#contact).
 
 ### Motivation
 
