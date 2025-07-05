@@ -29,8 +29,20 @@ extern "C" {
         return ptr == nullptr;
     }
 
+    string* string_new() {
+        return reinterpret_cast<string*>(new std::string());
+    }
+
     void string_delete(string* s) {
         delete reinterpret_cast<std::string*>(s);
+    }
+
+    char* string_c_str(string* s) {
+        auto str = reinterpret_cast<std::string*>(s);
+        auto len = 1 + str->size();
+        auto res = (char *) malloc(len);
+        std::memcpy(res, str->c_str(), len * sizeof(char));
+        return res;
     }
 
     char* string_data(string* s) {
@@ -49,6 +61,10 @@ extern "C" {
         return sizeof(int);
     }
 
+    int sizeof_int64_t() {
+        return sizeof(int64_t);
+    }
+
     int sizeof_ptr() {
         return sizeof(void*);
     }
@@ -60,6 +76,10 @@ extern "C" {
     }
 
     void set_array_int(int* arr, int idx, int value) {
+        arr[idx] = value;
+    }
+
+    void set_array_int64_t(int64_t* arr, size_t idx, int64_t value) {
         arr[idx] = value;
     }
 
