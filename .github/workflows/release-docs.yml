@@ -14,6 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build docs
+      env:
+        SPIDR_LOCAL_INSTALL: true
       run: |
         apt-get update && apt-get install -y curl
         pack switch HEAD
