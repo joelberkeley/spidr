@@ -14,6 +14,18 @@ jobs:
         run: |
           shopt -s extglob nullglob globstar
           shellcheck **/*.sh
+  pjrt-linux-version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check backend version is updated when necessary
+        run: |
+          sh -c "
+          (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ spidr/backend/**) || \
+            ! git diff --quiet HEAD^ spidr/backend/VERSION
+          "
   pjrt-linux:
     runs-on: ubuntu-24.04
     steps:
@@ -41,6 +53,21 @@ jobs:
         name: libc_xla.so
         path: libc_xla.so
         if-no-files-found: error
+  pjrt-plugin-xla-cpu-version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check version is updated when necessary
+        run: |
+          sh -c "
+          (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ pjrt-plugins/xla-cpu/**) || \
+            ! git diff --quiet HEAD^ pjrt-plugins/xla-cpu/VERSION
+          "
+      - name: Check version matches ipkg file
+        working-directory: pjrt-plugins/xla-cpu
+        run: grep "^version = $(cat VERSION)$" pjrt-plugin-xla-cpu.ipkg
   pjrt-plugin-xla-cpu-linux:
     runs-on: ubuntu-24.04
     steps:
@@ -50,9 +77,8 @@ jobs:
     - name: Build or fetch XLA CPU PJRT plugin
       run: |
         if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-          . ./dev.sh
-          rev=$(cat XLA_VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cpu-linux.so"
+          rev=$(cat pjrt-plugins/xla-cpu/VERSION)
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/pjrt_plugin_xla_cpu-$rev/pjrt_plugin_xla_cpu-linux.so"
         else
           rm -rf /opt/hostedtoolcache
           docker run \
@@ -68,6 +94,21 @@ jobs:
         name: pjrt_plugin_xla_cpu.so
         path: pjrt_plugin_xla_cpu.so
         if-no-files-found: error
+  pjrt-plugin-xla-cuda-version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check version is updated when necessary
+        run: |
+          sh -c "
+          (git diff --quiet HEAD^ XLA_VERSION && git diff --quiet HEAD^ pjrt-plugins/xla-cuda/**) || \
+            ! git diff --quiet HEAD^ pjrt-plugins/xla-cuda/VERSION
+          "
+      - name: Check version matches ipkg file
+        working-directory: pjrt-plugins/xla-cuda
+        run: grep "^version = $(cat VERSION)$" pjrt-plugin-xla-cuda.ipkg
   pjrt-plugin-xla-cuda-linux:
     runs-on: ubuntu-24.04
     steps:
@@ -77,9 +118,8 @@ jobs:
       - name: Build or fetch XLA CUDA PJRT plugin
         run: |
           if [ ! "$(git diff --exit-code HEAD^ XLA_VERSION)" ]; then
-            . ./dev.sh
-            rev=$(cat XLA_VERSION)
-            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/xla-$(short_revision $rev)/pjrt_plugin_xla_cuda-linux.so"
+            rev=$(cat pjrt-plugins/xla-cuda/VERSION)
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/pjrt_plugin_xla_cuda-$rev/pjrt_plugin_xla_cuda-linux.so"
           else
             rm -rf /opt/hostedtoolcache
             docker run \
