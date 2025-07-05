@@ -17,29 +17,44 @@ limitations under the License.
 module Compiler.Eval
 
 import Control.Monad.Either
-import Control.Monad.Reader
 import Control.Monad.Trans
 import Data.IOArray
 import Data.List
 import Data.List.Elem
 
-import Compiler.Expr
-import Compiler.FFI
-import Compiler.LiteralRW
-import Compiler.Xla.Client.Lib.Arithmetic
-import Compiler.Xla.Client.Lib.Constants
-import Compiler.Xla.Client.Lib.Math
-import Compiler.Xla.Client.Lib.Matrix
-import Compiler.Xla.Client.Lib.PRNG
+import Compiler.Enzyme.MLIR.Dialect.Dialect
+import Compiler.Enzyme.MLIR.Implementations.CoreDialectsAutoDiffImplementations
+import Compiler.Enzyme.MLIR.Passes.Passes
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Implementations.XLADerivatives
+import Compiler.EnzymeJAX.Src.EnzymeAD.JAX.Passes.Passes
+import Compiler.LLVM.Support.RawOStream
+import Compiler.MLIR.Dialect.Func.IR.FuncOps
+import Compiler.MLIR.IR
+import Compiler.MLIR.Pass.PassManager
+import Compiler.MLIR.Pass.PassRegistry
+import Compiler.MLIR.Transforms.Passes
+import Compiler.Stablehlo.Dialect.Register
+import Compiler.Stablehlo.Dialect.StablehloOps
 import Compiler.Xla.Client.ExecutableBuildOptions
-import Compiler.Xla.Client.XlaBuilder
-import Compiler.Xla.Client.XlaComputation
+import Compiler.Xla.HLO.Builder.XlaBuilder
+import Compiler.Xla.HLO.Builder.XlaComputation
+import Compiler.Xla.HLO.Builder.Lib.Arithmetic
+import Compiler.Xla.HLO.Builder.Lib.Constants
+import Compiler.Xla.HLO.Builder.Lib.Math
+import Compiler.Xla.HLO.Builder.Lib.Matrix
+import Compiler.Xla.HLO.Builder.Lib.PRNG
+import Compiler.Xla.HLO.Translate.StableHLO
+import Compiler.Xla.MLIRHLO.MHLO.IR.Register
 import Compiler.Xla.PJRT.C.PjrtCApi
 import Compiler.Xla.PJRT.PjrtExecutable
+import Compiler.Xla.Service.HloProto
 import Compiler.Xla.Literal
 import Compiler.Xla.Shape
 import Compiler.Xla.ShapeUtil
 import Compiler.Xla.XlaData
+import Compiler.Expr
+import Compiler.FFI
+import Compiler.LiteralRW
 import Literal
 import Primitive
 import Types
@@ -51,16 +66,26 @@ data Err
   = OutOfBounds Nat Nat
   | ValueNotFound Nat
   | PjrtErr PjrtError
+  | MlirPassError String
 
 export
 Show Err where
   show (OutOfBounds idx size) = "Index \{show idx} is out of bounds for array of size \{show size}"
   show (ValueNotFound idx) = "Value not found at index \{show idx}"
-  show (PjrtErr err)= show err
+  show (PjrtErr err) = show err
+  show (MlirPassError err) = "MlirPassError: \{err}"
 
 public export 0
 ErrIO : Type -> Type
 ErrIO = EitherT Err IO
+
+hloModuleProtoToStableHLO : MLIRContext -> HloModuleProto -> ErrIO ModuleOp
+hloModuleProtoToStableHLO mlirCtx proto = do
+  dialectRegistry <- mkDialectRegistry
+  registerAllMhloDialects dialectRegistry
+  registerAllDialects dialectRegistry
+  appendDialectRegistry mlirCtx dialectRegistry
+  convertHloToStablehlo mlirCtx proto
 
 covering
 interpret : IOArray XlaOp => XlaBuilder -> Fn arity -> ErrIO XlaOp
@@ -97,6 +122,63 @@ interpret @{cache} xlaBuilder (MkFn params root env) = do
   interpretE (Var x) = get x
   interpretE (Tuple xs) = tuple xlaBuilder !(traverse interpretE xs)
   interpretE (GetTupleElement idx x) = getTupleElement !(interpretE x) idx
+  interpretE (Grad shape f x) = do
+    -- compile to XLA HLO
+    subBuilder <- createSubBuilder xlaBuilder "\{!(name xlaBuilder)}/grad:f"
+    computation <- compile subBuilder f
+
+    -- convert to StableHLO
+    mlirCtx <- mkMLIRContext
+    stablehlo <- hloModuleProtoToStableHLO mlirCtx !(proto computation)
+
+    -- generate derivative
+    loadDialectEnzymeDialect mlirCtx
+    registerEnzymePasses
+    dialectRegistry <- mkDialectRegistry
+    registerCoreDialectAutodiffInterfaces dialectRegistry
+    registerStableHLODialectAutoDiffInterface dialectRegistry
+    registerCHLODialectAutoDiffInterface dialectRegistry
+    insertEnzymeDialect dialectRegistry
+    appendDialectRegistry mlirCtx dialectRegistry
+    passManager <- mkPassManager mlirCtx
+    let enzymePass = "enzyme-wrap{infn=main outfn=fdiff argTys=enzyme_active retTys=enzyme_active mode=ReverseModeCombined}"
+    pipelineParseErrMsg <- cppString
+    True <- parsePassPipeline enzymePass passManager !(rawStringOStream pipelineParseErrMsg)
+      | False => throwE $ MlirPassError """
+        Failed to parse enzyme autodiff pass directive
+        \{!(toString pipelineParseErrMsg)}
+        """
+    CppString.delete pipelineParseErrMsg
+    addCanonicalizerPass passManager
+    addCSEPass passManager
+    addRemoveUnusedEnzymeOpsPass passManager
+    addArithRaisingPass passManager
+    True <- run passManager !(getOperation stablehlo)
+      | False => throwE $ MlirPassError "Failed to run autodiff MLIR passes"
+
+    -- replace main function
+    erase !(lookupSymbolIn !(getOperation stablehlo) "main")
+    tensorShape <- RankedTensorType.get shape (cast !(getF64Type !(mkOpBuilder mlirCtx)))
+    tensorShapeL <- mkTypeRange [cast tensorShape]
+    funcType <- FunctionType.get mlirCtx tensorShapeL tensorShapeL
+    funcOp <- FuncOp.create !(UnknownLoc.get mlirCtx) "main" funcType
+    pushBack stablehlo !(getOperation funcOp)
+    entryBlock <- addEntryBlock funcOp
+    blockBuilder <- atBlockEnd entryBlock
+    scalarShape <- RankedTensorType.get [] (cast !(getF64Type blockBuilder))
+    scalarOne <- DenseElementsAttr.get (cast scalarShape) 1.0
+    revInit <- createConstantOp blockBuilder !(UnknownLoc.get mlirCtx) scalarOne
+    diffOperands <- mkValueRange
+      [cast !(getArgument entryBlock 0), cast !(getOpResult !(getOperation revInit) 0)]
+    fdiffCallOp <- createCallOp
+      blockBuilder !(UnknownLoc.get mlirCtx) "fdiff" tensorShapeL diffOperands
+    _ <- createReturnOp
+      blockBuilder !(UnknownLoc.get mlirCtx) !(getOpResults !(getOperation fdiffCallOp))
+
+    -- convert back to XLA HLO, and call
+    hloProto <- convertStablehloToHlo stablehlo
+    computation <- mkXlaComputation hloProto
+    call xlaBuilder computation [!(interpretE x)]
   interpretE (MinValue {dtype}) = minValue {dtype} xlaBuilder
   interpretE (MaxValue {dtype}) = maxValue {dtype} xlaBuilder
   interpretE (MinFiniteValue {dtype}) = minFiniteValue {dtype} xlaBuilder
