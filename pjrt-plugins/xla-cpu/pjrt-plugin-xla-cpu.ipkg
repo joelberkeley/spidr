@@ -6,6 +6,6 @@ modules = PjrtPluginXlaCpu
 
 brief = "XLA PJRT plugin for CPU."
 readme = "README.md"
-license = "Apache License, Version 2.0"
+license = "AGPL-3.0-or-later"
 
 postinstall = "./postinstall.sh"
