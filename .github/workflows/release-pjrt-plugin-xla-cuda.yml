@@ -1,0 +1,42 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: master
+    paths:
+      - 'pjrt-plugins/xla-cuda/VERSION'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-24.04
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read plugin version
+        run: echo "PLUGIN_REV=$(cat pjrt-plugins/xla-cuda/VERSION)" >> $GITHUB_ENV
+      - name: Create release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: pjrt-plugin-xla-cuda-v${{ env.PLUGIN_REV }}
+          release_name: "PJRT plugin: XLA CUDA, version ${{ env.PLUGIN_REV }}"
+          body: "PJRT plugin: XLA CUDA, version ${{ env.PLUGIN_REV }}"
+  build-and-release:
+    needs: create-release
+    runs-on: ubuntu-24.04
+    container: joelberkeley/openxla-dev:noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build plugin
+        run: ./pjrt-plugins/xla-cuda/build.sh
+      - name: Publish plugin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: pjrt_plugin_xla_cuda-linux.so
+          asset_name: pjrt_plugin_xla_cuda-linux.so
+          asset_content_type: application/x-sharedlib
