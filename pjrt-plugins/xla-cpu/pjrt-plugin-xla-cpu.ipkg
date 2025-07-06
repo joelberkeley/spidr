@@ -1,11 +1,11 @@
 package pjrt-plugin-xla-cpu
-version = 0.0.1
+version = 0.0.2
 
 depends = spidr
 modules = PjrtPluginXlaCpu
 
 brief = "XLA PJRT plugin for CPU."
 readme = "README.md"
-license = "Apache License, Version 2.0"
+license = "AGPL-3.0-or-later"
 
 postinstall = "./postinstall.sh"
