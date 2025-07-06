@@ -12,17 +12,17 @@ jobs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Read XLA CUDA plugin version
+      - name: Read plugin version
         run: echo "PLUGIN_REV=$(cat pjrt-plugins/xla-cuda/VERSION)" >> $GITHUB_ENV
-      - name: Create XLA CUDA plugin release
+      - name: Create release
         id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: pjrt-${{ env.PLUGIN_REV }}
-          release_name: XLA revision ${{ env.PLUGIN_REV }}
-          body: "XLA CUDA PJRT plugin, version ${{ env.PLUGIN_REV }}"
+          tag_name: pjrt-plugin-xla-cuda-v${{ env.PLUGIN_REV }}
+          release_name: "PJRT plugin: XLA CUDA, version ${{ env.PLUGIN_REV }}"
+          body: "PJRT plugin: XLA CUDA, version ${{ env.PLUGIN_REV }}"
   build-and-release:
     needs: create-release
     runs-on: ubuntu-24.04

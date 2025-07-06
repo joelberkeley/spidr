@@ -11,32 +11,32 @@ jobs:
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v4
-    - name: Read XLA CPU plugin version
-      run: echo "PLUGIN_REV=$(cat pjrt-plugins/xla-cpu/VERSION)" >> $GITHUB_ENV
-    - name: Create XLA CPU plugin release
-      id: create-release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: pjrt-${{ env.PLUGIN_REV }}
-        release_name: XLA revision ${{ env.PLUGIN_REV }}
-        body: "XLA CPU PJRT plugin, version ${{ env.PLUGIN_REV }}"
+      - uses: actions/checkout@v4
+      - name: Read plugin version
+        run: echo "PLUGIN_REV=$(cat pjrt-plugins/xla-cpu/VERSION)" >> $GITHUB_ENV
+      - name: Create release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: pjrt-plugin-xla-cpu-v${{ env.PLUGIN_REV }}
+          release_name: "PJRT plugin: XLA CPU, version ${{ env.PLUGIN_REV }}"
+          body: "PJRT plugin: XLA CPU, version ${{ env.PLUGIN_REV }}"
   build-and-release:
     needs: create-release
     runs-on: ubuntu-24.04
     container: joelberkeley/openxla-dev:noble
     steps:
-    - uses: actions/checkout@v4
-    - name: Build plugin
-      run: ./pjrt-plugins/xla-cpu/build.sh
-    - name: Publish plugin
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: pjrt_plugin_xla_cpu-linux.so
-        asset_name: pjrt_plugin_xla_cpu-linux.so
-        asset_content_type: application/x-sharedlib
+      - uses: actions/checkout@v4
+      - name: Build plugin
+        run: ./pjrt-plugins/xla-cpu/build.sh
+      - name: Publish plugin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: pjrt_plugin_xla_cpu-linux.so
+          asset_name: pjrt_plugin_xla_cpu-linux.so
+          asset_content_type: application/x-sharedlib
