@@ -1,3 +1,5 @@
+### xla
+
 # this must be a local repository not http archive
 # so we can run ./configure.py before invoking bazel
 local_repository(name = "xla", path = "xla")
@@ -6,13 +8,13 @@ load("@xla//third_party/py:python_init_rules.bzl", "python_init_rules")
 python_init_rules()
 
 load("@xla//third_party/py:python_init_repositories.bzl", "python_init_repositories")
-python_init_repositories(requirements = {"3.11": "//:requirements_lock_3_11.txt"})
+python_init_repositories(requirements = {"3.11": "@xla//:requirements_lock_3_11.txt"})
 
 load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
 python_init_toolchains()
 
-load("@xla//third_party/py:python_init_pip.bzl", "python_init_pip")
-python_init_pip()
+# load("@xla//third_party/py:python_init_pip.bzl", "python_init_pip")
+# python_init_pip()
 
 load("@xla//:workspace4.bzl", "xla_workspace4")
 xla_workspace4()
@@ -70,3 +72,34 @@ load(
     "nccl_configure",
 )
 nccl_configure(name = "local_config_nccl")
+
+# Enzyme-JAX
+
+# should we use http_archive for enzyme-jax?
+# how best to use enzyme's XLA version?
+local_repository(name = "enzyme-jax", path = "Enzyme-JAX")
+load("@enzyme-jax//:workspace.bzl", "JAX_COMMIT", "JAX_SHA256", "ENZYME_COMMIT", "ENZYME_SHA256")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "hedron_compile_commands",
+    url = "https://github.com/hedronvision/bazel-compile-commands-extractor/archive/4f28899228fb3ad0126897876f147ca15026151e.tar.gz",
+    strip_prefix = "bazel-compile-commands-extractor-4f28899228fb3ad0126897876f147ca15026151e",
+)
+
+http_archive(
+    name = "jax",
+    sha256 = JAX_SHA256,
+    strip_prefix = "jax-" + JAX_COMMIT,
+    urls = ["https://github.com/google/jax/archive/{commit}.tar.gz".format(commit = JAX_COMMIT)],
+    patch_args = ["-p1"],
+    patches = ["@enzyme-jax//:patches/jax.patch"],
+)
+
+http_archive(
+    name = "enzyme",
+    sha256 = ENZYME_SHA256,
+    strip_prefix = "Enzyme-" + ENZYME_COMMIT + "/enzyme",
+    urls = ["https://github.com/EnzymeAD/Enzyme/archive/{commit}.tar.gz".format(commit = ENZYME_COMMIT)],
+)
