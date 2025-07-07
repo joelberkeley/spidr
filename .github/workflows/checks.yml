@@ -78,7 +78,7 @@ jobs:
       run: |
         if [ ! "$(git diff --exit-code HEAD^ pjrt-plugins/xla-cpu/VERSION)" ]; then
           rev=$(cat pjrt-plugins/xla-cpu/VERSION)
-          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/pjrt_plugin_xla_cpu-v$rev/pjrt_plugin_xla_cpu-linux.so"
+          curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cpu-v$rev/pjrt_plugin_xla_cpu-linux.so"
         else
           rm -rf /opt/hostedtoolcache
           docker run \
@@ -119,7 +119,7 @@ jobs:
         run: |
           if [ ! "$(git diff --exit-code HEAD^ pjrt-plugins/xla-cuda/VERSION)" ]; then
             rev=$(cat pjrt-plugins/xla-cuda/VERSION)
-            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/pjrt_plugin_xla_cuda-v$rev/pjrt_plugin_xla_cuda-linux.so"
+            curl -LO --fail-with-body "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cuda-v$rev/pjrt_plugin_xla_cuda-linux.so"
           else
             rm -rf /opt/hostedtoolcache
             docker run \
