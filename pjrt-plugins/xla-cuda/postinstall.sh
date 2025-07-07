@@ -11,5 +11,5 @@ if [ "$os" != "Linux" ]; then
   exit 0;
 fi;
 
-curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt_plugin_xla_cuda-v$rev/pjrt_plugin_xla_cuda-linux.so" \
+curl -fsL "https://github.com/joelberkeley/spidr/releases/download/pjrt-plugin-xla-cuda-v$rev/pjrt_plugin_xla_cuda-linux.so" \
   -o pjrt_plugin_xla_cuda.so --create-dirs --output-dir "$(idris2 --libdir)/pjrt-plugin-xla-cuda-$rev/lib"
