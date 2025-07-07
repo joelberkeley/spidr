@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Model.GaussianProcess</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Model.GaussianProcess
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Model.GaussianProcess</h1><pre>This module contains functionality for Gaussian process inference.
+</pre></div><code></code><h2>Definitions</h2><dl class="decls"><dt id="Model.GaussianProcess.GaussianProcess"><code><span class="keyword">data</span>&ensp;<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.GaussianProcess"><span class="name type">GaussianProcess</span></a>&ensp;:&ensp;(<span class="keyword">0</span>&ensp;<span class="boundvar">_</span>&ensp;:&ensp;<a class="type" href="Types.html#Types.Shape"><span class="name function">Shape</span></a>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd><pre>  A Gaussian process is a collection of random variables, any finite number of which have joint<br>  Gaussian distribution. It can be viewed as a function from a feature space to a joint Gaussian<br>  distribution over a target space.<br>  <br>  @features The shape of the feature domain.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="Model.GaussianProcess.MkGP"><code><a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.MkGP"><span class="name constructor">MkGP</span></a>&ensp;:&ensp;<a class="type" href="Model.MeanFunction.html#Model.MeanFunction.MeanFunction"><span class="name function">MeanFunction</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Model.Kernel.html#Model.Kernel.Kernel"><span class="name function">Kernel</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.GaussianProcess"><span class="name type">GaussianProcess</span></a>&ensp;<span class="boundvar">features</span></code></dt><dd><pre>  Construct a `GaussianProcess` as a pair of mean function and kernel.</pre></dd></dl></dd><dt id="Model.GaussianProcess.ConjugateGPRegression"><code><span class="keyword">data</span>&ensp;<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.ConjugateGPRegression"><span class="name type">ConjugateGPRegression</span></a>&ensp;:&ensp;(<span class="keyword">0</span>&ensp;<span class="boundvar">_</span>&ensp;:&ensp;<a class="type" href="Types.html#Types.Shape"><span class="name function">Shape</span></a>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd><pre>  A trainable model implementing vanilla Gaussian process regression. That is, regression with a<br>  Gaussian process as conjugate prior for homoscedastic Gaussian likelihoods. See the following<br>  for details:<br>  <br>  Gaussian Processes for Machine Learning<br>  Carl Edward Rasmussen and Christopher K. I. Williams<br>  The MIT Press, 2006. ISBN 0-262-18253-X.<br>  <br>  or<br>  <br>  Pattern Recognition and Machine Learning, Christopher M. Bishop</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="Model.GaussianProcess.MkConjugateGPR"><code><a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.MkConjugateGPR"><span class="name constructor">MkConjugateGPR</span></a>&ensp;:&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">p</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.GaussianProcess"><span class="name type">GaussianProcess</span></a>&ensp;<span class="boundvar">features</span>))&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">p</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.ConjugateGPRegression"><span class="name type">ConjugateGPRegression</span></a>&ensp;<span class="boundvar">features</span></code></dt><dd><pre>  @gpFromHyperparameters Constructs a Gaussian process from the hyperparameters (presented as<br>    a vector)<br>  @hyperparameters The hyperparameters (excluding noise) presented as a vector.<br>  @noise The likehood amplitude, or observation noise.</pre></dd></dl></dd><dt id="Model.GaussianProcess.fit"><code><a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.fit"><span class="name function">fit</span></a>&ensp;:&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">n</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Optimize.html#Optimize.Optimizer"><span class="name function">Optimizer</span></a>&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">n</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>))&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">features</span>&ensp;[<span class="name constructor">1</span>]&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.ConjugateGPRegression"><span class="name type">ConjugateGPRegression</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="Model.GaussianProcess.html#Model.GaussianProcess.ConjugateGPRegression"><span class="name type">ConjugateGPRegression</span></a>&ensp;<span class="boundvar">features</span>)</code></dt><dd><pre>  Fit the Gaussian process and noise to the specified data.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Compiler.FFI</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Compiler.FFI
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Compiler.FFI</h1><pre>For internal spidr use only.
+</pre></div><h2>Reexports</h2><code><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;System.FFI</code><h2>Definitions</h2><dl class="decls"><dt id="Compiler.FFI.libxla"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.libxla"><span class="name function">libxla</span></a>&ensp;:&ensp;<span class="name type">String</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">String</span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Compiler.FFI.CharArray"><code><span class="keyword">data</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.CharArray"><span class="name type">CharArray</span></a>&ensp;:&ensp;<span class="name type">Type</span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="Compiler.FFI.MkCharArray"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.MkCharArray"><span class="name constructor">MkCharArray</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.Ptr"><span class="name type">Ptr</span></span>&ensp;<span class="name type">Char</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Bits64</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.CharArray"><span class="name type">CharArray</span></a></code></dt></dl></dd><dt id="Compiler.FFI.CharArray.free"><code><span class="type resolved" title="Compiler.FFI.CharArray.free"><span class="name function">free</span></span>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.CharArray"><span class="name type">CharArray</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;()</code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.FFI.prim__stringDelete"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.prim__stringDelete"><span class="name function">prim__stringDelete</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.PrimIO"><span class="name function">PrimIO</span></span>&ensp;()</code></dt><dt id="Compiler.FFI.prim__stringData"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.prim__stringData"><span class="name function">prim__stringData</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.PrimIO"><span class="name function">PrimIO</span></span>&ensp;(<span class="type resolved" title="PrimIO.Ptr"><span class="name type">Ptr</span></span>&ensp;<span class="name type">Char</span>)</code></dt><dt id="Compiler.FFI.prim__stringSize"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.prim__stringSize"><span class="name function">prim__stringSize</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Bits64</span></code></dt><dt id="Compiler.FFI.prim__index"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.prim__index"><span class="name function">prim__index</span></a>&ensp;:&ensp;<span class="name type">Int</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span></code></dt><dt id="Compiler.FFI.cIntToBool"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.cIntToBool"><span class="name function">cIntToBool</span></a>&ensp;:&ensp;<span class="name type">Int</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.Bool"><span class="name type">Bool</span></span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.FFI.isNullPtr"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.isNullPtr"><span class="name function">isNullPtr</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.Bool"><span class="name type">Bool</span></span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.FFI.boolToCInt"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.boolToCInt"><span class="name function">boolToCInt</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.Basics.Bool"><span class="name type">Bool</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Int</span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.FFI.IntArray"><code><span class="keyword">data</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.IntArray"><span class="name type">IntArray</span></a>&ensp;:&ensp;<span class="name type">Type</span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="Compiler.FFI.MkIntArray"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.MkIntArray"><span class="name constructor">MkIntArray</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.GCPtr"><span class="name type">GCPtr</span></span>&ensp;<span class="name type">Int</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.IntArray"><span class="name type">IntArray</span></a></code></dt></dl></dd><dt id="Compiler.FFI.mkIntArray"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.mkIntArray"><span class="name function">mkIntArray</span></a>&ensp;:&ensp;(<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>,&ensp;<span class="type resolved" title="Prelude.Cast.Cast"><span class="name type">Cast</span></span>&ensp;<span class="boundvar">a</span>&ensp;<span class="name type">Int</span>)&ensp;<span class="keyword">=&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.IntArray"><span class="name type">IntArray</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.FFI.sizeofPtr"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.sizeofPtr"><span class="name function">sizeofPtr</span></a>&ensp;:&ensp;<span class="name type">Int</span></code></dt><dt id="Compiler.FFI.prim__setArrayPtr"><code><a class="type" href="Compiler.FFI.html#Compiler.FFI.prim__setArrayPtr"><span class="name function">prim__setArrayPtr</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Int</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.AnyPtr"><span class="name type">AnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.PrimIO"><span class="name function">PrimIO</span></span>&ensp;()</code></dt></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Model.Kernel</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Model.Kernel
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Model.Kernel</h1><pre>This module contains definitions for and implementations of kernel functions, intended
+particularly for use in Gaussian processes.
+</pre></div><code></code><h2>Definitions</h2><dl class="decls"><dt id="Model.Kernel.Kernel"><code><span class="keyword">0</span>&ensp;<a class="type" href="Model.Kernel.html#Model.Kernel.Kernel"><span class="name function">Kernel</span></a>&ensp;:&ensp;(<span class="keyword">0</span>&ensp;<span class="boundvar">_</span>&ensp;:&ensp;<a class="type" href="Types.html#Types.Shape"><span class="name function">Shape</span></a>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd><pre>  A `Kernel` function maps pairs of points in a feature space to the covariance between those two<br>  points in some target space.<br>  <br>  @features The shape of the feature domain.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Model.Kernel.rbf"><code><a class="type" href="Model.Kernel.html#Model.Kernel.rbf"><span class="name function">rbf</span></a>&ensp;:&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Model.Kernel.html#Model.Kernel.Kernel"><span class="name function">Kernel</span></a>&ensp;[<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;<span class="boundvar">d</span>]</code></dt><dd><pre>  The radial basis function, or squared exponential kernel. This is a stationary kernel with form<br>  <br>  (\mathbf x_i, \mathbf x_j) \mapsto \exp \left(- \frac{r^2}{2l^2} \right)<br>  <br>  where `r^2 = (\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j)` and the<br>  length scale `l &gt; 0`.<br>  <br>  Two points that are close in feature space will be more tightly correlated than points that<br>  are further apart. The distance over which the correlation reduces is given by the length<br>  scale `l`. Smaller length scales result in faster-varying target values.<br>  <br>  @lengthScale The length scale `l`.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Model.Kernel.matern52"><code><a class="type" href="Model.Kernel.html#Model.Kernel.matern52"><span class="name function">matern52</span></a>&ensp;:&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Model.Kernel.html#Model.Kernel.Kernel"><span class="name function">Kernel</span></a>&ensp;[<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;<span class="boundvar">d</span>]</code></dt><dd><pre>  The Matern kernel for parameter 5/2. This is a stationary kernel with form<br>  <br>  (\mathbf x_i, \mathbf x_j) \mapsto \sigma^2 \left(<br>    1 + \frac{\sqrt{5}r}{l} + \frac{5 r^2}{3 l^2}<br>  \right) \exp \left( -\frac{\sqrt{5}r}{l} \right)<br>  <br>  where `r^2 = (\mathbf x_i - \mathbf x_j)^ \intercal (\mathbf x_i - \mathbf x_j)` and the<br>  length scale `l &gt; 0`.<br>  <br>  @amplitude The amplitude `\sigma`.<br>  @length_scale The length scale `l`.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

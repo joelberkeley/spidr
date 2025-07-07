@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>BayesianOptimization</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : BayesianOptimization
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>BayesianOptimization</h1><pre>This module defines functionality for Bayesian optimization, the data-efficient optimization of
+objective functions. Bayesian optimization recommends new points at which to query your
+objective by placing a probabilistic model over historic data then, typically, optimizing an
+_acquisition function_ which quantifies how useful it would be to evaluate the objective at any
+given set of points.
+</pre></div><h2>Reexports</h2><code><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;BayesianOptimization.Acquisition&ensp;<span class="keyword">as</span>&ensp;BayesianOptimization</code><h2>Definitions</h2><dl class="decls"><dt id="BayesianOptimization.TagStream"><code><span class="keyword">data</span>&ensp;<a class="type" href="BayesianOptimization.html#BayesianOptimization.TagStream"><span class="name type">TagStream</span></a>&ensp;:&ensp;<span class="name type">Type</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd><pre>  A `Stream`-like collection where each successive element can extend the set of `Tag`s.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="BayesianOptimization.(::)"><code><a class="type" href="BayesianOptimization.html#BayesianOptimization.(::)"><span class="name constructor">(::)</span></a>&ensp;:&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">-&gt;</span>&ensp;Inf&ensp;(<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="BayesianOptimization.html#BayesianOptimization.TagStream"><span class="name type">TagStream</span></a>&ensp;<span class="boundvar">a</span>))&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="BayesianOptimization.html#BayesianOptimization.TagStream"><span class="name type">TagStream</span></a>&ensp;<span class="boundvar">a</span></code></dt></dl></dd><dt id="BayesianOptimization.take"><code><a class="type" href="BayesianOptimization.html#BayesianOptimization.take"><span class="name function">take</span></a>&ensp;:&ensp;(<span class="boundvar">n</span>&ensp;:&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="BayesianOptimization.html#BayesianOptimization.TagStream"><span class="name type">TagStream</span></a>&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<span class="type resolved" title="Data.Vect.Vect"><span class="name type">Vect</span></span>&ensp;<span class="boundvar">n</span>&ensp;<span class="boundvar">a</span>)</code></dt><dd><pre>  Take `n` values from a `TagStream`, sequencing the `Tag` effects.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="BayesianOptimization.iterate"><code><a class="type" href="BayesianOptimization.html#BayesianOptimization.iterate"><span class="name function">iterate</span></a>&ensp;:&ensp;(<span class="boundvar">a</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;<span class="boundvar">a</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="BayesianOptimization.html#BayesianOptimization.TagStream"><span class="name type">TagStream</span></a>&ensp;<span class="boundvar">a</span>)</code></dt><dd><pre>  Create an infinite stream of values from a generator function and a starting value.</pre><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="BayesianOptimization.step"><code><a class="type" href="BayesianOptimization.html#BayesianOptimization.step"><span class="name function">step</span></a>&ensp;:&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="boundvar">n</span>&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">features</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="boundvar">n</span>&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">targets</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>))&ensp;<span class="keyword">-&gt;</span>&ensp;{<span class="keyword">auto</span>&ensp;<span class="boundvar">probabilisticModel</span>&ensp;:&ensp;<a class="type" href="Model.html#Model.ProbabilisticModel"><span class="name type">ProbabilisticModel</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="boundvar">targets</span>&ensp;<span class="boundvar">marginal</span>&ensp;<span class="boundvar">model</span>}&ensp;<span class="keyword">-&gt;</span>&ensp;(<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="boundvar">targets</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">model</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;<span class="boundvar">model</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Control.Monad.Reader.Reader.ReaderT"><span class="name type">ReaderT</span></span>&ensp;(<a class="type" href="BayesianOptimization.Acquisition.html#BayesianOptimization.Acquisition.DataModel"><span class="name type">DataModel</span></a>&ensp;<span class="boundvar">model</span>)&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="name constructor">1</span>&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">features</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>)&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="BayesianOptimization.Acquisition.html#BayesianOptimization.Acquisition.DataModel"><span class="name type">DataModel</span></a>&ensp;<span class="boundvar">model</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tag"><span class="name function">Tag</span></a>&ensp;(<a class="type" href="BayesianOptimization.Acquisition.html#BayesianOptimization.Acquisition.DataModel"><span class="name type">DataModel</span></a>&ensp;<span class="boundvar">model</span>)</code></dt><dd><pre>  Construct a single simple Bayesian optimization step.<br>  <br>  @objective The objective function to optimize.<br>  @train Used to train the model on new data.<br>  @tactic The tactic, such as an optimized acquisition function, to find a new point from the<br>    data and model</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

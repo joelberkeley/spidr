@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Optimize</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Optimize
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Optimize</h1><pre>This module contains definitions of function optimizers.
+</pre></div><code></code><h2>Definitions</h2><dl class="decls"><dt id="Optimize.Optimizer"><code><span class="keyword">0</span>&ensp;<a class="type" href="Optimize.html#Optimize.Optimizer"><span class="name function">Optimizer</span></a>&ensp;:&ensp;(<span class="keyword">0</span>&ensp;<span class="boundvar">_</span>&ensp;:&ensp;<span class="name type">Type</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd><pre>  An `Optimizer` finds the value, in a `Tensor`-valued feature space, which (approximately)<br>  optimizes a scalar-valued function over that space.<br>  <br>  @domain The type of the domain over which to find the optimal value.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Optimize.gridSearch"><code>gridSearch&ensp;:&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">d</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.U32"><span class="name type">U32</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">d</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">d</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Optimize.html#Optimize.Optimizer"><span class="name function">Optimizer</span></a>&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">d</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>)</code></dt><dd><pre>  Construct an `Optimizer` that implements grid search over a scalar feature space. Grid search<br>  approximates the optimum by evaluating the objective over a finite, evenly-spaced grid.<br>  <br>  **NOTE** This function is not yet implemented.<br>  <br>  @density The density of the grid.<br>  @lower The lower (inclusive) bound of the grid.<br>  @upper The upper (exclusive) bound of the grid.</pre></dd><dt id="Optimize.lbfgs"><code>lbfgs&ensp;:&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">n</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Optimize.html#Optimize.Optimizer"><span class="name function">Optimizer</span></a>&ensp;(<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;[<span class="boundvar">n</span>]&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>)</code></dt><dd><pre>  The limited-memory BFGS (L-BFGS) optimization tactic, see<br>  <br>  Nocedal, Jorge, Updating quasi-Newton matrices with limited storage.<br>  Math. Comp. 35 (1980), no. 151, 773&#8211;782.<br>  <br>  available at<br>  <br>  https://www.ams.org/journals/mcom/1980-35-151/S0025-5718-1980-0572855-7/<br>  <br>  **NOTE** This function is not yet implemented.<br>  <br>  @initialPoints The points from which to start optimization.</pre></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

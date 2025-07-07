@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Compiler.Xla.Client.Lib.Math</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Compiler.Xla.Client.Lib.Math
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Compiler.Xla.Client.Lib.Math</h1><pre>For internal spidr use only.
+</pre></div><code></code><h2>Definitions</h2><dl class="decls"><dt id="Compiler.Xla.Client.Lib.Math.square"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.square"><span class="name function">square</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.reciprocal"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.reciprocal"><span class="name function">reciprocal</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.acos"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.acos"><span class="name function">acos</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.asin"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.asin"><span class="name function">asin</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.atan"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.atan"><span class="name function">atan</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.tan"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.tan"><span class="name function">tan</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.acosh"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.acosh"><span class="name function">acosh</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.asinh"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.asinh"><span class="name function">asinh</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.atanh"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.atanh"><span class="name function">atanh</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.cosh"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.cosh"><span class="name function">cosh</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.sinh"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.sinh"><span class="name function">sinh</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.Client.Lib.Math.erf"><code><a class="type" href="Compiler.Xla.Client.Lib.Math.html#Compiler.Xla.Client.Lib.Math.erf"><span class="name function">erf</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.Client.XlaBuilder.html#Compiler.Xla.Client.XlaBuilder.XlaOp"><span class="name type">XlaOp</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

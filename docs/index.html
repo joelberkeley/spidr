@@ -1,0 +1,431 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>spidr</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="index">
+<header>
+  <strong>Idris2Doc</strong> : spidr
+  <nav><a href="index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><h1>Package spidr - Namespaces</h1><ul class="names"><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/BayesianOptimization.html">BayesianOptimization</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module defines functionality for Bayesian optimization, the data-efficient optimization of
+objective functions. Bayesian optimization recommends new points at which to query your
+objective by placing a probabilistic model over historic data then, typically, optimizing an
+_acquisition function_ which quantifies how useful it would be to evaluate the objective at any
+given set of points.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/BayesianOptimization.Acquisition.html">BayesianOptimization.Acquisition</a>
+    </div>
+    <div class="index-namespace-doc">
+      
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.Lib.Arithmetic.html">Compiler.Xla.Client.Lib.Arithmetic</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.Lib.Constants.html">Compiler.Xla.Client.Lib.Constants</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.Lib.Math.html">Compiler.Xla.Client.Lib.Math</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.Lib.Matrix.html">Compiler.Xla.Client.Lib.Matrix</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.Lib.PRNG.html">Compiler.Xla.Client.Lib.PRNG</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.XlaBuilder.html">Compiler.Xla.Client.XlaBuilder</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.ExecutableBuildOptions.html">Compiler.Xla.Client.ExecutableBuildOptions</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Client.XlaComputation.html">Compiler.Xla.Client.XlaComputation</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.PJRT.C.PjrtCApi.html">Compiler.Xla.PJRT.C.PjrtCApi</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use, and use by plugin developers.
+
+The Idris API for PJRT.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.PJRT.PjrtExecutable.html">Compiler.Xla.PJRT.PjrtExecutable</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Literal.html">Compiler.Xla.Literal</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.Shape.html">Compiler.Xla.Shape</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.ShapeUtil.html">Compiler.Xla.ShapeUtil</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Xla.XlaData.html">Compiler.Xla.XlaData</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Eval.html">Compiler.Eval</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.Expr.html">Compiler.Expr</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.FFI.html">Compiler.FFI</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Compiler.LiteralRW.html">Compiler.LiteralRW</a>
+    </div>
+    <div class="index-namespace-doc">
+      For internal spidr use only.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Constants.html">Constants</a>
+    </div>
+    <div class="index-namespace-doc">
+      
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Data.html">Data</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains definitions and utilities for datasets.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Device.html">Device</a>
+    </div>
+    <div class="index-namespace-doc">
+      
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Distribution.html">Distribution</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains definitions for probability distributions.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Literal.html">Literal</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains the `Literal` type, which is a single value or array of values with a
+specified shape. It is similar to the `Tensor` type, but differs in a number of important ways:
+
+* `Literal` offers a convenient syntax for constructing `Literal`s with boolean and numeric
+  contents. For example, `True`, `1` and `[1, 2, 3]` are all valid `Literal`s. This makes it
+  useful for constructing `Tensor`s.
+* `Literal` is *not* accelerated by XLA, so operations on large `Literal`s, and large sequences
+  of operations on any `Literal`, can be expected to be slower than they would on an equivalent
+  `Tensor`.
+* A `Literal` is implemented in pure Idris. As such, it can contain elements of any type, and
+  implements a number of standard Idris interfaces. This, along with its convenient syntax,
+  makes it particularly useful for testing operations on `Tensor`s.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Model.html">Model</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains definitions and utilities for probabilistic models.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Model.GaussianProcess.html">Model.GaussianProcess</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains functionality for Gaussian process inference.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Model.Kernel.html">Model.Kernel</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains definitions for and implementations of kernel functions, intended
+particularly for use in Gaussian processes.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Model.MeanFunction.html">Model.MeanFunction</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains definitions for and implementations of mean functions, particularly for
+use in Gaussian processes.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Optimize.html">Optimize</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains definitions of function optimizers.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Primitive.html">Primitive</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module defines supported primitive backend types and their interaction with Idris.
+
+The module contains a number of interfaces (`Primitive.Num`, `Primitive.Eq` etc.). These
+indicate what operations can be performed on primitive data in the backend. They are entirely
+distinct from the Idris interfaces `Prelude.Num` etc. but carry largely the same meaning.
+For example, primitive types satsifying `Primitive.Ord` have a notion of ordering.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Tensor.html">Tensor</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains the `Tensor`, an array of numbers or booleans, along with a
+number of functions operating on `Tensor`s. spidr tracks tensor shape and data type in the
+types, so you can be sure that if your tensor code compiles, the shapes and types are
+consistent.
+
+spidr achieves efficient reuse of tensor computations with `Tag`. See the tutorial
+_Nuisances in the Tensor API_ for a discussion of pitfalls to avoid when using `Tag`.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Types.html">Types</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains common library types.
+
+    </div>
+  </div>
+</li><li>
+  <div class="index-wrapper">
+    <div class="index-namespace-url">
+      <a class="code" href="docs/Util.html">Util</a>
+    </div>
+    <div class="index-namespace-doc">
+      This module contains general library utilities.
+
+    </div>
+  </div>
+</li></ul></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

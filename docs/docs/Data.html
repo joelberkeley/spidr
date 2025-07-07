@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Data</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Data
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Data</h1><pre>This module contains definitions and utilities for datasets.
+</pre></div><code></code><h2>Definitions</h2><dl class="decls"><dt id="Data.Dataset"><code><span class="keyword">record</span>&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;:&ensp;(<span class="keyword">0</span>&ensp;<span class="boundvar">_</span>&ensp;:&ensp;<a class="type" href="Types.html#Types.Shape"><span class="name function">Shape</span></a>)&ensp;<span class="keyword">-&gt;</span>&ensp;(<span class="keyword">0</span>&ensp;<span class="boundvar">_</span>&ensp;:&ensp;<a class="type" href="Types.html#Types.Shape"><span class="name function">Shape</span></a>)&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd><pre>  Observed pairs of data points from feature and target domains. Data sets such as this are<br>  commonly used in supervised learning settings.<br>  <br>  @features The shape of the feature domain.<br>  @targets The shape of the target domain.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="Data.MkDataset"><code><a class="type" href="Data.html#Data.MkDataset"><span class="name constructor">MkDataset</span></a>&ensp;:&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;<span class="boundvar">s</span>&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">featureShape</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;<span class="boundvar">s</span>&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span></code></dt></dl><br>  <b>Projections</b>:<br><dl class="decls">  <dt id="Data.Dataset.(.features)"><code><span class="type resolved" title="Data.Dataset.(.features)"><span class="name function">.features</span></span>&ensp;:&ensp;(<span class="boundvar">{rec:0}</span>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;(<span class="boundvar">{rec:0}</span>&ensp;<span class="type resolved" title="Data.Dataset.(.s)"><span class="name function">.s</span></span>)&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">featureShape</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a></code></dt><dd><pre>  The feature data</pre></dd>  <dt id="Data.Dataset.(.s)"><code><span class="type resolved" title="Data.Dataset.(.s)"><span class="name function">.s</span></span>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span></code></dt>  <dt id="Data.Dataset.(.targets)"><code><span class="type resolved" title="Data.Dataset.(.targets)"><span class="name function">.targets</span></span>&ensp;:&ensp;(<span class="boundvar">{rec:0}</span>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;(<span class="boundvar">{rec:0}</span>&ensp;<span class="type resolved" title="Data.Dataset.(.s)"><span class="name function">.s</span></span>)&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a></code></dt><dd><pre>  The target data</pre></dd></dl><br>  <b>Hint</b>:&ensp;<dl class="decls"><dt id="$resolved11280"><code><a class="type" href="Tensor.html#Tensor.Taggable"><span class="name type">Taggable</span></a>&ensp;(<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">f</span>&ensp;<span class="boundvar">t</span>)</code></dt></dl></dd><dt id="Data.Dataset.(.s)"><code><span class="type resolved" title="Data.Dataset.(.s)"><span class="name function">.s</span></span>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Data.Dataset.(.features)"><code><span class="type resolved" title="Data.Dataset.(.features)"><span class="name function">.features</span></span>&ensp;:&ensp;(<span class="boundvar">{rec:0}</span>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;(<span class="boundvar">{rec:0}</span>&ensp;<span class="type resolved" title="Data.Dataset.(.s)"><span class="name function">.s</span></span>)&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">featureShape</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a></code></dt><dd><pre>  The feature data</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Data.Dataset.(.targets)"><code><span class="type resolved" title="Data.Dataset.(.targets)"><span class="name function">.targets</span></span>&ensp;:&ensp;(<span class="boundvar">{rec:0}</span>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">featureShape</span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Tensor.html#Tensor.Tensor"><span class="name type">Tensor</span></a>&ensp;(<span class="type resolved" title="Prelude.Types.S"><span class="name constructor">S</span></span>&ensp;(<span class="boundvar">{rec:0}</span>&ensp;<span class="type resolved" title="Data.Dataset.(.s)"><span class="name function">.s</span></span>)&ensp;<span class="type resolved" title="Prelude.Basics.(::)"><span class="name constructor">::</span></span>&ensp;<span class="boundvar">targetShape</span>)&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a></code></dt><dd><pre>  The target data</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Data.concat"><code><a class="type" href="Data.html#Data.concat"><span class="name function">concat</span></a>&ensp;:&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="boundvar">targets</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="boundvar">targets</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Data.html#Data.Dataset"><span class="name type">Dataset</span></a>&ensp;<span class="boundvar">features</span>&ensp;<span class="boundvar">targets</span></code></dt><dd><pre>  Concatenate two datasets along their leading axis.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

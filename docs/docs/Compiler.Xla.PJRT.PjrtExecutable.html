@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Compiler.Xla.PJRT.PjrtExecutable</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Compiler.Xla.PJRT.PjrtExecutable
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Compiler.Xla.PJRT.PjrtExecutable</h1><pre>For internal spidr use only.
+</pre></div><code></code><h2>Definitions</h2><dl class="decls"><dt id="Compiler.Xla.PJRT.PjrtExecutable.CompileOptions"><code><span class="keyword">data</span>&ensp;<a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.CompileOptions"><span class="name type">CompileOptions</span></a>&ensp;:&ensp;<span class="name type">Type</span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span><br>  <b>Constructor</b>:&ensp;<dl class="decls"><dt id="Compiler.Xla.PJRT.PjrtExecutable.MkCompileOptions"><code><a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.MkCompileOptions"><span class="name constructor">MkCompileOptions</span></a>&ensp;:&ensp;<span class="type resolved" title="PrimIO.GCAnyPtr"><span class="name type">GCAnyPtr</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.CompileOptions"><span class="name type">CompileOptions</span></a></code></dt></dl></dd><dt id="Compiler.Xla.PJRT.PjrtExecutable.mkCompileOptions"><code><a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.mkCompileOptions"><span class="name function">mkCompileOptions</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.Client.ExecutableBuildOptions.html#Compiler.Xla.Client.ExecutableBuildOptions.ExecutableBuildOptions"><span class="name type">ExecutableBuildOptions</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.CompileOptions"><span class="name type">CompileOptions</span></a></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.Xla.PJRT.PjrtExecutable.serializeAsString"><code><a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.serializeAsString"><span class="name function">serializeAsString</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.Xla.PJRT.PjrtExecutable.html#Compiler.Xla.PJRT.PjrtExecutable.CompileOptions"><span class="name type">CompileOptions</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<a class="type" href="Compiler.FFI.html#Compiler.FFI.CharArray"><span class="name type">CharArray</span></a></code></dt><dd><pre>  It is up to the caller to deallocate the CharArray.</pre><br>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Compiler.LiteralRW</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Compiler.LiteralRW
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Compiler.LiteralRW</h1><pre>For internal spidr use only.
+</pre></div><h2>Reexports</h2><code><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Compiler.Xla.Literal</code><h2>Definitions</h2><dl class="decls"><dt id="Compiler.LiteralRW.LiteralRW"><code><span class="keyword">interface</span>&ensp;<a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;:&ensp;<span class="name type">Type</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="name type">Type</span></code></dt><dd>  <b>Parameters</b>:&ensp;dtype,&ensp;ty<br><b>Constraints</b>:&ensp;Primitive&ensp;dtype<br><b>Methods</b>:<br><dl class="decls">  <dt id="Compiler.LiteralRW.set"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.set"><span class="name function">set</span></a>&ensp;:&ensp;<span class="type resolved" title="Compiler.Xla.Literal.Xla.Literal"><span class="name type">Literal</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.Xla.ShapeUtil.html#Compiler.Xla.ShapeUtil.ShapeIndex"><span class="name type">ShapeIndex</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">ty</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.IO"><span class="name type">IO</span></span>&ensp;()</code></dt>  <dt id="Compiler.LiteralRW.get"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.get"><span class="name function">get</span></a>&ensp;:&ensp;<span class="type resolved" title="Compiler.Xla.Literal.Xla.Literal"><span class="name type">Literal</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.Xla.ShapeUtil.html#Compiler.Xla.ShapeUtil.ShapeIndex"><span class="name type">ShapeIndex</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">ty</span></code></dt></dl><br><b>Implementations</b>:<br><dl class="decls">  <dt id="$resolved7797"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.PRED"><span class="name type">PRED</span></a>&ensp;<span class="type resolved" title="Prelude.Basics.Bool"><span class="name type">Bool</span></span></code></dt>  <dt id="$resolved7798"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.F64"><span class="name type">F64</span></a>&ensp;<span class="name type">Double</span></code></dt>  <dt id="$resolved7796"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.S32"><span class="name type">S32</span></a>&ensp;<span class="name type">Int32</span></code></dt>  <dt id="$resolved7795"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.U32"><span class="name type">U32</span></a>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span></code></dt>  <dt id="$resolved7794"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<a class="type" href="Compiler.Xla.XlaData.html#Compiler.Xla.XlaData.U64"><span class="name type">U64</span></a>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span></code></dt></dl></dd><dt id="Compiler.LiteralRW.set"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.set"><span class="name function">set</span></a>&ensp;:&ensp;<a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<span class="boundvar">dtype</span>&ensp;<span class="boundvar">ty</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<span class="type resolved" title="Compiler.Xla.Literal.Xla.Literal"><span class="name type">Literal</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.Xla.ShapeUtil.html#Compiler.Xla.ShapeUtil.ShapeIndex"><span class="name type">ShapeIndex</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">ty</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="PrimIO.IO"><span class="name type">IO</span></span>&ensp;()</code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Compiler.LiteralRW.get"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.get"><span class="name function">get</span></a>&ensp;:&ensp;<a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<span class="boundvar">dtype</span>&ensp;<span class="boundvar">ty</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<span class="type resolved" title="Compiler.Xla.Literal.Xla.Literal"><span class="name type">Literal</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Compiler.Xla.ShapeUtil.html#Compiler.Xla.ShapeUtil.ShapeIndex"><span class="name type">ShapeIndex</span></a>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">ty</span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">public&ensp;export</span></dd><dt id="Compiler.LiteralRW.write"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.write"><span class="name function">write</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<span class="boundvar">dtype</span>&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<a class="type" href="Literal.html#Literal.Literal"><span class="name type">Literal</span></a>&ensp;<span class="boundvar">shape</span>&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;<span class="type resolved" title="Compiler.Xla.Literal.Xla.Literal"><span class="name type">Literal</span></span></code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd><dt id="Compiler.LiteralRW.read"><code><a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.read"><span class="name function">read</span></a>&ensp;:&ensp;<span class="type resolved" title="Prelude.IO.HasIO"><span class="name type">HasIO</span></span>&ensp;<span class="boundvar">io</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<a class="type" href="Compiler.LiteralRW.html#Compiler.LiteralRW.LiteralRW"><span class="name type">LiteralRW</span></a>&ensp;<span class="boundvar">dtype</span>&ensp;<span class="boundvar">a</span>&ensp;<span class="keyword">=&gt;</span>&ensp;<span class="type resolved" title="Prelude.Basics.List"><span class="name type">List</span></span>&ensp;<span class="type resolved" title="Prelude.Types.Nat"><span class="name type">Nat</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="type resolved" title="Compiler.Xla.Literal.Xla.Literal"><span class="name type">Literal</span></span>&ensp;<span class="keyword">-&gt;</span>&ensp;<span class="boundvar">io</span>&ensp;(<a class="type" href="Literal.html#Literal.Literal"><span class="name type">Literal</span></a>&ensp;<span class="boundvar">shape</span>&ensp;<span class="boundvar">a</span>)</code></dt><dd>  <b>Totality</b>:&ensp;<span class="keyword">total</span><br>  <b>Visibility</b>:&ensp;<span class="keyword">export</span></dd></dl></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>
