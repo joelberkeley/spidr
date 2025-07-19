@@ -1,3 +1,6 @@
+> [!CAUTION]
+> spidr has moved to [Codeberg](https://codeberg.org/joelberkeley/spidr). This GitHub repository will not receive updates.
+
 # spidr
 
 _Accelerated machine learning with dependent types_
